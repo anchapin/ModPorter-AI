@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+
+  ai-engine:
+    build: ./ai-engine
+    volumes:
+      - ./ai-engine:/app
+    environment:
+      - PYTHONPATH=/app
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
