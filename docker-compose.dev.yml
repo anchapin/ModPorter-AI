@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_HMR_PORT=3001
+    ports:
+      - "3000:3000"
+      - "3001:3001"  # Vite HMR port
+
+  backend:
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    environment:
+      - DEBUG=True
+      - LOG_LEVEL=DEBUG
+      - PYTHONDONTWRITEBYTECODE=1
+
+  ai-engine:
+    command: python -m src.main --debug
+    volumes:
+      - ./ai-engine:/app
+    environment:
+      - DEBUG=True
+      - LOG_LEVEL=DEBUG

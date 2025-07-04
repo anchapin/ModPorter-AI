@@ -2,23 +2,8 @@ import pytest
 import asyncio
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from main import app
-
-# Test database configuration
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-# Create test engine with in-memory database
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from src.main import app
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -38,22 +23,6 @@ async def async_client():
     """Create an async test client for the FastAPI app."""
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
-
-@pytest.fixture
-def db_session():
-    """Create a database session for testing."""
-    # Create tables
-    # Base.metadata.create_all(bind=engine)
-    
-    # Create session
-    session = TestingSessionLocal()
-    
-    try:
-        yield session
-    finally:
-        session.close()
-        # Drop tables
-        # Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture
 def sample_mod_file():

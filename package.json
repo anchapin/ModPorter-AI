@@ -2,32 +2,42 @@
   "name": "modporter-ai",
   "version": "1.0.0",
   "description": "AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "npm run test:frontend && npm run test:backend && npm run test:ai-engine",
-    "test:frontend": "cd frontend && npm test -- --coverage --watchAll=false",
-    "test:backend": "cd backend && pytest",
-    "test:ai-engine": "cd ai-engine && pytest",
-    "install-all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt && cd ../ai-engine && pip install -r requirements.txt",
-    "dev": "npm run dev:frontend & npm run dev:backend & npm run dev:ai-engine",
-    "dev:frontend": "cd frontend && npm start",
-    "dev:backend": "cd backend && uvicorn main:app --reload --port 8000",
-    "dev:ai-engine": "cd ai-engine && uvicorn main:app --reload --port 8001",
-    "lint": "npm run lint:frontend && npm run lint:backend && npm run lint:ai-engine",
+    "install-all": "npm install && cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && source .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && source .venv/bin/activate && python -m pytest",
+    "test:watch": "concurrently \"npm run test:frontend -- --watch\" \"npm run test:backend -- --watch\"",
+    "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "cd frontend && npm run lint",
-    "lint:backend": "cd backend && flake8 src/ tests/",
-    "lint:ai-engine": "cd ai-engine && flake8 src/ tests/",
-    "build": "cd frontend && npm run build"
+    "lint:backend": "cd backend && source .venv/bin/activate && python -m ruff check src/ tests/",
+    "format": "npm run format:frontend && npm run format:backend",
+    "format:frontend": "cd frontend && npm run lint -- --fix",
+    "format:backend": "cd backend && source .venv/bin/activate && python -m black src/ tests/ && python -m ruff check --fix src/ tests/",
+    "storybook": "cd frontend && npm run storybook",
+    "build-storybook": "cd frontend && npm run build-storybook"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/anchapin/ModPorter-AI.git"
+  "keywords": [
+    "minecraft",
+    "modding",
+    "ai",
+    "conversion",
+    "java",
+    "bedrock"
+  ],
+  "author": "ModPorter AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/anchapin/ModPorter-AI/issues"
-  },
-  "homepage": "https://github.com/anchapin/ModPorter-AI#readme"
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
 }

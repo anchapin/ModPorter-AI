@@ -27,3 +27,15 @@ Thumbs.db
 # Virtual environments
 venv/
 env/
+.venv/
+*/.venv/
+
+# Docker
+*.dockerfile
+Dockerfile.dev
+
+# Documentation temp files
+*.md:Zone.Identifier
+
+# Setup scripts
+setup-*.sh
