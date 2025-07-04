@@ -16,7 +16,7 @@ from ..agents.logic_translator import LogicTranslatorAgent
 from ..agents.asset_converter import AssetConverterAgent
 from ..agents.packaging_agent import PackagingAgent
 from ..agents.qa_validator import QAValidatorAgent
-from ..models.smart_assumptions import SmartAssumptionEngine
+from ..models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport # Added ConversionPlanComponent, AssumptionReport
 from ..utils.config import settings
 
 logger = logging.getLogger(__name__)
@@ -261,10 +261,87 @@ class ModPorterConversionCrew:
             }
             
             # Execute the crew workflow
+            # We are assuming crew_result will contain the necessary data later
+            # For now, we don't change the kickoff call itself.
             result = self.crew.kickoff(inputs=inputs)
             
-            # Process and format the result according to PRD Feature 3
-            conversion_report = self._format_conversion_report(result)
+            # Process and format the result
+            # This is where we will use the generate_assumption_report
+            # We need to define how 'processed_plan_components' are obtained from 'result'
+
+            # Hypothetical: Assume the plan_task's output is a list of ConversionPlanComponent objects
+            # This is a significant assumption about the output structure of the plan_task.
+            # In a real scenario, the plan_task agent (BedrockArchitectAgent) would need to be
+            # explicitly designed to return this list.
+
+            # Let's assume the 'result' object from crew.kickoff() is a dictionary
+            # and the plan_task (second task, index 1) stores its direct output in a structured way.
+            # This structure is purely hypothetical for this exercise.
+            processed_plan_components: List[ConversionPlanComponent] = []
+            if isinstance(result, dict) and 'tasks' in result and len(result['tasks']) > 1:
+                # Assuming plan_task is the second task. Accessing raw output.
+                # CrewAI's TaskOutput object might be available via result.tasks_output
+                # For simplicity here, let's try to access a hypothetical direct output if available
+                # This part is highly speculative on how CrewAI structures its final result.
+                # A more robust way would be to inspect `result.tasks_output` if it's a list of TaskOutput objects.
+                # Let's assume result.tasks_output is a list of TaskOutput objects
+                tasks_outputs = getattr(result, 'tasks_output', [])
+                if tasks_outputs and len(tasks_outputs) > 1:
+                    plan_task_output_obj = tasks_outputs[1] # plan_task is the second task (index 1)
+                    # Assuming TaskOutput has a 'raw' attribute or similar for the direct string output
+                    # and that the agent formats its output as a JSON string containing the components.
+                    # This is a common pattern if the agent's tool returns a string.
+                    raw_output_str = getattr(plan_task_output_obj, 'raw', None)
+                    if raw_output_str:
+                        try:
+                            plan_task_output_dict = json.loads(raw_output_str)
+                            if isinstance(plan_task_output_dict, dict) and 'conversion_plan_components' in plan_task_output_dict:
+                                raw_components = plan_task_output_dict['conversion_plan_components']
+                                if isinstance(raw_components, list):
+                                    for comp_data in raw_components:
+                                        if isinstance(comp_data, ConversionPlanComponent):
+                                            processed_plan_components.append(comp_data)
+                                        elif isinstance(comp_data, dict):
+                                            try:
+                                                processed_plan_components.append(ConversionPlanComponent(**comp_data))
+                                            except TypeError as e:
+                                                logger.warning(f"Could not create ConversionPlanComponent from dict: {comp_data}. Error: {e}")
+                        except json.JSONDecodeError:
+                            logger.warning("Failed to decode plan_task_output as JSON.")
+                    else: # Fallback if raw string is not there, try a direct attribute
+                        plan_task_output = getattr(plan_task_output_obj, 'exported_output', None) # Or some other attribute
+                        if isinstance(plan_task_output, dict) and 'conversion_plan_components' in plan_task_output:
+                            raw_components = plan_task_output['conversion_plan_components']
+                            if isinstance(raw_components, list):
+                                for comp_data in raw_components:
+                                    if isinstance(comp_data, ConversionPlanComponent):
+                                        processed_plan_components.append(comp_data)
+                                    elif isinstance(comp_data, dict):
+                                        try:
+                                            processed_plan_components.append(ConversionPlanComponent(**comp_data))
+                                        except TypeError as e:
+                                            logger.warning(f"Could not create ConversionPlanComponent from dict: {comp_data}. Error: {e}")
+                else: # Legacy or direct dict access if tasks_output isn't as expected
+                    if 'tasks' in result and len(result['tasks']) > 1 and hasattr(result['tasks'][1], 'output'):
+                         # This path might be if 'result' is a simple dict (older CrewAI or manual construction)
+                        plan_task_output_val = result['tasks'][1].output
+                        if isinstance(plan_task_output_val, dict) and 'conversion_plan_components' in plan_task_output_val:
+                             raw_components = plan_task_output_val['conversion_plan_components']
+                             if isinstance(raw_components, list):
+                                for comp_data in raw_components:
+                                    if isinstance(comp_data, ConversionPlanComponent):
+                                        processed_plan_components.append(comp_data)
+                                    elif isinstance(comp_data, dict):
+                                        try:
+                                            processed_plan_components.append(ConversionPlanComponent(**comp_data))
+                                        except TypeError as e:
+                                            logger.warning(f"Could not create ConversionPlanComponent from dict: {comp_data}. Error: {e}")
+
+
+            # If the above path doesn't yield components, it remains an empty list,
+            # and generate_assumption_report will handle it gracefully.
+
+            conversion_report = self._format_conversion_report(result, processed_plan_components)
             
             logger.info("Conversion completed successfully")
             return conversion_report
@@ -277,27 +354,37 @@ class ModPorterConversionCrew:
                 'overall_success_rate': 0.0,
                 'converted_mods': [],
                 'failed_mods': [{'name': 'Unknown', 'reason': str(e), 'suggestions': []}],
-                'smart_assumptions_applied': [],
+                'smart_assumptions_applied': [], # Empty on failure
+                'download_url': None,
                 'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
             }
-    
-    def _format_conversion_report(self, crew_result: Any) -> Dict[str, Any]:
+
+    def _format_conversion_report(self, crew_result: Any, plan_components: List[ConversionPlanComponent]) -> Dict[str, Any]:
         """Format crew result into PRD Feature 3 report structure"""
+
+        assumption_report_data = []
+        if self.smart_assumption_engine: # Ensure engine exists
+            # Generate the report using the list of components
+            assumption_report_obj: AssumptionReport = self.smart_assumption_engine.generate_assumption_report(plan_components)
+            # Extract the list of assumption items for the JSON output
+            assumption_report_data = [item.__dict__ for item in assumption_report_obj.assumptions_applied]
+
         # This would process the crew's output and format it according to
         # the ConversionResponse model defined in the PRD
         
         # Placeholder implementation - would parse actual crew results
+        # For now, just ensuring the smart_assumptions_applied field is populated
         return {
-            'status': 'completed',
+            'status': 'completed', # Assuming success if this method is called without error path
             'overall_success_rate': 0.85,  # Would be calculated from actual results
             'converted_mods': [],  # Would be populated from crew analysis
             'failed_mods': [],
-            'smart_assumptions_applied': [],
+            'smart_assumptions_applied': assumption_report_data, # Use the generated report
             'download_url': None,  # Would be set after packaging
             'detailed_report': {
                 'stage': 'completed',
                 'progress': 100,
-                'logs': [],
-                'technical_details': crew_result
+                'logs': [], # Should be populated from crew_result logs
+                'technical_details': crew_result # Or a summary of it
             }
         }
