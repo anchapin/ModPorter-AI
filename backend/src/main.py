@@ -5,7 +5,6 @@ Modern FastAPI implementation
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import Optional
 import logging
 

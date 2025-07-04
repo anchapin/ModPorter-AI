@@ -4,10 +4,9 @@ Testing PRD Feature 2: AI Conversion Engine requirements
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
-import json
 
 from src.crew.conversion_crew import ModPorterConversionCrew
 

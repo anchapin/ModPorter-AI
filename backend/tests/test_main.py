@@ -2,7 +2,6 @@
 Modern test suite for ModPorter AI backend
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from src.main import app
 

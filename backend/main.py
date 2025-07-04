@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -17,8 +17,8 @@ TEMP_UPLOADS_DIR = "temp_uploads"
 CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
-# In-memory database for conversion jobs
-conversion_jobs_db: Dict[str, ConversionJob] = {}
+# In-memory database for conversion jobs (type annotation added after class definition)
+conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(

@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, patch
 import asyncio
 import tempfile
 import os
-import json
 
 # Mock conversion workflow classes
 class ConversionWorkflow:
