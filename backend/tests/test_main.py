@@ -31,7 +31,7 @@ def test_convert_endpoint_with_url():
     data = response.json()
     assert "job_id" in data
     assert isinstance(data["job_id"], str)
-    assert data["status"] == "processing"
+    assert data["status"] == "preprocessing" # Initial status is preprocessing
 
 def test_convert_endpoint_response_structure():
     """Test that response has correct structure"""

@@ -105,7 +105,7 @@ class TestAPIIntegration:
             await async_client.post("/api/upload", files=files)
             
             # Create conversion task
-            conversion_request = {"file_name": f"mod_{i}.jar"}
+            conversion_request = {"file_id": f"mod_{i}.jar", "original_filename": f"mod_{i}.jar"}
             task = async_client.post("/api/convert", json=conversion_request)
             tasks.append(task)
         
