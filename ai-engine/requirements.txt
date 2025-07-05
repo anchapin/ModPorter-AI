@@ -6,6 +6,7 @@ python-multipart>=0.0.6
 # AI Framework
 crewai>=0.1.0
 langchain>=0.1.0
+langchain-openai>=0.1.0
 openai>=1.0.0
 
 # Data Processing

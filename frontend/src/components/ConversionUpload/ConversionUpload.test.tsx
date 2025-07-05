@@ -3,7 +3,7 @@
  * Visual learner-friendly component testing (updated for Vitest)
  */
 
-import React from 'react';
+import React, { act } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
@@ -62,7 +62,10 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       });
       
       const fileInput = screen.getByLabelText(/file upload/i);
-      await user.upload(fileInput, file);
+      
+      await act(async () => {
+        await user.upload(fileInput, file);
+      });
       
       // Visual feedback for file selection
       expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
@@ -70,17 +73,26 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
     });
 
     test('validates file types according to PRD specs', async () => {
-      const user = userEvent.setup();
       render(<ConversionUpload />);
       
-      // Test invalid file type
+      // Test invalid file type via drag and drop which bypasses accept filter
+      const dropZone = screen.getByText(/drag.*drop/i).closest('div');
       const invalidFile = new File(['content'], 'test.txt', { type: 'text/plain' });
-      const fileInput = screen.getByLabelText(/file upload/i);
       
-      await user.upload(fileInput, invalidFile);
+      await act(async () => {
+        const mockDataTransfer = {
+          files: [invalidFile],
+          items: [],
+          types: []
+        };
+        fireEvent.drop(dropZone!, {
+          dataTransfer: mockDataTransfer
+        });
+      });
       
-      expect(screen.getByText(/Unsupported file type/)).toBeInTheDocument();
-      expect(screen.getByText(/\.jar.*\.zip/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Unsupported file type.*\.jar or \.zip files only/)).toBeInTheDocument();
+      });
     });
 
     test('handles drag and drop functionality', async () => {
@@ -89,11 +101,20 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       const dropZone = screen.getByText(/drag.*drop/i).closest('div');
       const file = new File(['content'], 'modpack.zip', { type: 'application/zip' });
       
-      fireEvent.dragEnter(dropZone!);
+      await act(async () => {
+        fireEvent.dragEnter(dropZone!);
+      });
       expect(dropZone).toHaveClass('drag-active'); // Visual feedback
       
-      fireEvent.drop(dropZone!, {
-        dataTransfer: { files: [file] }
+      await act(async () => {
+        const mockDataTransfer = {
+          files: [file],
+          items: [],
+          types: []
+        };
+        fireEvent.drop(dropZone!, {
+          dataTransfer: mockDataTransfer
+        });
       });
       
       await waitFor(() => {
@@ -122,11 +143,16 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       // Upload file
       const file = new File(['content'], 'test.jar', { type: 'application/java-archive' });
       const fileInput = screen.getByLabelText(/file upload/i);
-      await user.upload(fileInput, file);
+      
+      await act(async () => {
+        await user.upload(fileInput, file);
+      });
       
       // Click convert
       const convertButton = screen.getByRole('button', { name: /convert/i });
-      await user.click(convertButton);
+      await act(async () => {
+        await user.click(convertButton);
+      });
       
       expect(mockConvert).toHaveBeenCalledWith({
         file: expect.any(File),
@@ -156,10 +182,15 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       // Setup and trigger conversion
       const file = new File(['content'], 'test.jar', { type: 'application/java-archive' });
       const fileInput = screen.getByLabelText(/file upload/i);
-      await user.upload(fileInput, file);
+      
+      await act(async () => {
+        await user.upload(fileInput, file);
+      });
       
       const convertButton = screen.getByRole('button', { name: /convert/i });
-      await user.click(convertButton);
+      await act(async () => {
+        await user.click(convertButton);
+      });
       
       // Visual loading indicators
       expect(screen.getByText(/converting/i)).toBeInTheDocument();
@@ -185,7 +216,9 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       render(<ConversionUpload />);
       
       const infoButton = screen.getByRole('button', { name: /learn more/i });
-      await user.click(infoButton);
+      await act(async () => {
+        await user.click(infoButton);
+      });
       
       // PRD Table of Smart Assumptions examples
       expect(screen.getByText(/custom dimensions/i)).toBeInTheDocument();
