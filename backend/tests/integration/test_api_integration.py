@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 from unittest.mock import patch, AsyncMock
 import asyncio
+from main import app
 
 
 @pytest.mark.asyncio
