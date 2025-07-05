@@ -60,7 +60,7 @@ class SmartAssumptionEngine:
                 java_feature="Custom GUI/HUD",
                 inconvertible_aspect="No Bedrock API for creating new UI screens",
                 bedrock_workaround="Recreate interface using in-game items",
-                impact=AssumptionImpact.MEDIUM,
+                impact=AssumptionImpact.HIGH,
                 description="Use books or signs for information display",
                 implementation_notes="Significant UX change but information access preserved"
             ),
