@@ -162,8 +162,16 @@ async def upload_file(file: UploadFile = File(...)):
 
     # Save the uploaded file
     try:
+        real_file_size = 0
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            for chunk in file.file:
+                real_file_size += len(chunk)
+                if real_file_size > MAX_UPLOAD_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+                    )
+                buffer.write(chunk)
     except Exception as e:
         # Log the error for debugging
         print(f"Error saving file: {e}")
