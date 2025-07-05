@@ -5,8 +5,7 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 
 from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
-from typing import Dict, List, Any, Optional
-import json
+from typing import Dict, Any
 import logging
 from pathlib import Path
 
@@ -17,7 +16,6 @@ from ..agents.asset_converter import AssetConverterAgent
 from ..agents.packaging_agent import PackagingAgent
 from ..agents.qa_validator import QAValidatorAgent
 from ..models.smart_assumptions import SmartAssumptionEngine
-from ..utils.config import settings
 
 logger = logging.getLogger(__name__)
 

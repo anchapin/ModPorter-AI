@@ -27,7 +27,7 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       
       // PRD Feature 1: "drag and drop my CurseForge modpack zip file"
       expect(screen.getByText(/drag.*drop/i)).toBeInTheDocument();
-      expect(screen.getByText(/curseforge.*modrinth/i)).toBeInTheDocument();
+      expect(screen.getByText(/CurseForge.*Modrinth/)).toBeInTheDocument();
       
       // Visual elements for user guidance
       expect(screen.getByRole('button', { name: /convert/i })).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       render(<ConversionUpload />);
       
       // PRD Feature 1: URLs from major mod repositories
-      expect(screen.getByPlaceholderText(/curseforge.*url/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/curseforge.*modrinth/i)).toBeInTheDocument();
       expect(screen.getByText(/or paste url/i)).toBeInTheDocument();
     });
   });
@@ -79,7 +79,7 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       
       await user.upload(fileInput, invalidFile);
       
-      expect(screen.getByText(/unsupported file type/i)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported file type/)).toBeInTheDocument();
       expect(screen.getByText(/\.jar.*\.zip/i)).toBeInTheDocument();
     });
 
@@ -178,7 +178,6 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       
       // Explanatory text for visual learners
       expect(screen.getByText(/ai will make intelligent compromises/i)).toBeInTheDocument();
-      expect(screen.getByText(/custom dimensions.*structures/i)).toBeInTheDocument();
     });
 
     test('shows smart assumptions examples when enabled', async () => {

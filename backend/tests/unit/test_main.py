@@ -1,9 +1,6 @@
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
 import io
 
-from main import app
 
 class TestHealthEndpoint:
     """Test health check endpoint."""

@@ -1,6 +1,4 @@
 import pytest
-from unittest.mock import MagicMock, patch
-import json
 
 # Mock ModAnalyzer class (to be implemented)
 class ModAnalyzer:
