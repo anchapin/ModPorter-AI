@@ -3,7 +3,7 @@ ModPorter AI Backend API
 Modern FastAPI implementation
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
