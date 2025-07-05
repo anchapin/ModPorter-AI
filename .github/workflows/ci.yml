@@ -38,7 +38,7 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        npm test -- --coverage --watchAll=false
+        npm test -- --coverage --run
     
     - name: Upload frontend coverage
       uses: codecov/codecov-action@v3
@@ -75,12 +75,12 @@ jobs:
     - name: Run backend linting
       run: |
         cd backend
-        flake8 src/ tests/
+        ruff check .
     
     - name: Run backend tests
       run: |
         cd backend
-        pytest --cov=src tests/ --cov-report=xml
+        pytest --cov=. tests/ --cov-report=xml
     
     - name: Upload backend coverage
       uses: codecov/codecov-action@v3
@@ -109,7 +109,7 @@ jobs:
     - name: Run AI engine tests
       run: |
         cd ai-engine
-        pytest --cov=src tests/ --cov-report=xml
+        PYTHONPATH=. pytest --cov=src tests/ --cov-report=xml
       env:
         # Mock API keys for testing
         OPENAI_API_KEY: "test-key"
@@ -164,13 +164,13 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background
-        cd backend && python -m uvicorn src.main:app --port 8000 &
+        cd backend && python -m uvicorn main:app --port 8000 &
         
         # Wait for backend to start
         sleep 10
         
         # Run integration tests
-        python -m pytest tests/integration/ -v
+        cd backend && python -m pytest tests/integration/ -v
       env:
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
