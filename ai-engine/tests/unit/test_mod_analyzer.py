@@ -20,11 +20,20 @@ class ModAnalyzer:
     
     def extract_features(self, mod_structure):
         """Extract key features from mod structure."""
+        # Calculate complexity based on number of components
+        items_count = len(mod_structure.get("items", []))
+        blocks_count = len(mod_structure.get("blocks", []))
+        recipes_count = len(mod_structure.get("recipes", []))
+        
+        # Base complexity calculation
+        total_components = items_count + blocks_count + recipes_count
+        complexity_score = min(0.9, max(0.1, total_components * 0.02))
+        
         return {
-            "has_items": len(mod_structure.get("items", [])) > 0,
-            "has_blocks": len(mod_structure.get("blocks", [])) > 0,
-            "has_recipes": len(mod_structure.get("recipes", [])) > 0,
-            "complexity_score": 0.7
+            "has_items": items_count > 0,
+            "has_blocks": blocks_count > 0,
+            "has_recipes": recipes_count > 0,
+            "complexity_score": complexity_score
         }
     
     async def analyze_with_ai(self, mod_files):
