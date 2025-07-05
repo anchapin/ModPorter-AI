@@ -1,9 +1,10 @@
 import pytest
+import pytest_asyncio
 import asyncio
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
-from main import app
+from src.main import app
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -15,13 +16,20 @@ def event_loop():
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
+    # Clear the in-memory database before each test
+    from src.main import conversions_db, uploaded_files
+    conversions_db.clear()
+    uploaded_files.clear()
+    
     with TestClient(app) as c:
         yield c
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_client():
     """Create an async test client for the FastAPI app."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    from httpx import ASGITransport
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 @pytest.fixture
