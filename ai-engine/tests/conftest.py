@@ -1,7 +1,24 @@
 import pytest
 import os
+import sys
 from unittest.mock import MagicMock
 from httpx import AsyncClient
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Set test environment variables
 os.environ["OPENAI_API_KEY"] = "test-key"
