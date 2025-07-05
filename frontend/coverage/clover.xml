@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1751755990515" clover="3.2.0">
-  <project timestamp="1751755990516" name="All files">
+<coverage generated="1751756494426" clover="3.2.0">
+  <project timestamp="1751756494426" name="All files">
     <metrics statements="355" coveredstatements="259" conditionals="19" coveredconditionals="14" methods="9" coveredmethods="4" elements="383" coveredelements="277" complexity="0" loc="355" ncloc="355" packages="2" files="2" classes="2"/>
     <package name="components.ConversionUpload">
       <metrics statements="299" coveredstatements="203" conditionals="19" coveredconditionals="14" methods="9" coveredmethods="4"/>
