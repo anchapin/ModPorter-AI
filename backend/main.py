@@ -7,7 +7,6 @@ from datetime import datetime
 import uvicorn
 import os
 import uuid
-import shutil
 import asyncio # Added for simulated AI conversion
 from dotenv import load_dotenv
 
@@ -138,8 +137,12 @@ async def upload_file(file: UploadFile = File(...)):
     # Create temporary uploads directory if it doesn't exist
     os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
 
+    # Read file content to check size and validate
+    file_content = await file.read()
+    file_size = len(file_content)
+    
     # Validate file size
-    if file.size > MAX_UPLOAD_SIZE:
+    if file_size > MAX_UPLOAD_SIZE:
         raise HTTPException(
             status_code=413,
             detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
@@ -162,28 +165,18 @@ async def upload_file(file: UploadFile = File(...)):
 
     # Save the uploaded file
     try:
-        real_file_size = 0
         with open(file_path, "wb") as buffer:
-            for chunk in file.file:
-                real_file_size += len(chunk)
-                if real_file_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-                    )
-                buffer.write(chunk)
+            buffer.write(file_content)
     except Exception as e:
         # Log the error for debugging
         print(f"Error saving file: {e}")
         raise HTTPException(status_code=500, detail="Could not save file")
-    finally:
-        file.file.close()
     
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
         saved_filename=filename, # The name with job_id and extension
-        size=file.size if file.size else 0, # Ensure size is not None
+        size=file_size,
         content_type=file.content_type,
         message=f"File '{original_filename}' saved successfully as '{filename}'"
     )

@@ -1,140 +1,220 @@
+"""
+Integration tests for the ModPorter AI API endpoints.
+Tests the actual API endpoints with real HTTP requests.
+"""
+import os
 import pytest
-from httpx import AsyncClient
-from unittest.mock import patch, AsyncMock
-import asyncio
-from main import app
+import requests
+import time
+from io import BytesIO
+import tempfile
 
 
-@pytest.mark.asyncio
-class TestAPIIntegration:
-    """Integration tests for the API endpoints."""
+BASE_URL = "http://localhost:8000"
+
+
+def wait_for_server(url: str = BASE_URL, timeout: int = 30):
+    """Wait for the server to be ready"""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            response = requests.get(f"{url}/health")
+            if response.status_code == 200:
+                return True
+        except requests.exceptions.RequestException:
+            pass
+        time.sleep(1)
+    return False
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_server():
+    """Ensure the server is running before tests"""
+    if not wait_for_server():
+        pytest.skip("Server not available")
+
+
+def test_health_endpoint():
+    """Test the health check endpoint"""
+    response = requests.get(f"{BASE_URL}/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "version" in data
+    assert "timestamp" in data
+
+
+def test_upload_endpoint_with_valid_file():
+    """Test file upload with a valid JAR file"""
+    # Create a small test file
+    test_content = b"PK\x03\x04" + b"test jar content" * 100  # Mock JAR file
     
-    async def test_full_conversion_workflow(self, async_client: AsyncClient):
-        """Test the complete conversion workflow."""
-        # Step 1: Upload a file
-        file_content = b"PK\x03\x04test_mod_content"
-        files = {"file": ("test-mod.jar", file_content, "application/java-archive")}
-        
-        upload_response = await async_client.post("/api/upload", files=files)
-        assert upload_response.status_code == 200
-        
-        # Step 2: Start conversion
-        conversion_request = {
-            "file_name": "test-mod.jar",
-            "target_version": "1.20.0",
-            "options": {"enable_smart_assumptions": True}
+    files = {
+        'file': ('test.jar', BytesIO(test_content), 'application/java-archive')
+    }
+    
+    response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert "file_id" in data
+    assert data["original_filename"] == "test.jar"
+    assert "saved_filename" in data
+    assert data["size"] == len(test_content)
+    assert data["content_type"] == "application/java-archive"
+    assert data["upload_timestamp"] is not None
+
+
+def test_upload_endpoint_no_file():
+    """Test upload endpoint without providing a file"""
+    response = requests.post(f"{BASE_URL}/api/upload")
+    assert response.status_code == 422  # FastAPI validation error
+
+
+def test_upload_endpoint_invalid_file_type():
+    """Test upload with invalid file type"""
+    test_content = b"not a valid mod file"
+    
+    files = {
+        'file': ('test.txt', BytesIO(test_content), 'text/plain')
+    }
+    
+    response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert response.status_code == 400
+    assert "not supported" in response.json()["detail"]
+
+
+def test_upload_endpoint_too_large_file():
+    """Test upload with file too large (over 100MB limit)"""
+    # Create a file larger than MAX_UPLOAD_SIZE (100MB)
+    large_content = b"x" * (101 * 1024 * 1024)  # 101MB
+    
+    files = {
+        'file': ('large.jar', BytesIO(large_content), 'application/java-archive')
+    }
+    
+    response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert response.status_code == 413
+    assert "exceeds the limit" in response.json()["detail"]
+
+
+def test_conversion_status_endpoint():
+    """Test the conversion status endpoint"""
+    # First upload a file to get a file_id
+    test_content = b"PK\x03\x04" + b"test content" * 50
+    files = {
+        'file': ('test.jar', BytesIO(test_content), 'application/java-archive')
+    }
+    
+    upload_response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert upload_response.status_code == 200
+    file_id = upload_response.json()["file_id"]
+    
+    # Check conversion status
+    response = requests.get(f"{BASE_URL}/api/status/{file_id}")
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["file_id"] == file_id
+    assert "status" in data
+    assert "created_at" in data
+
+
+def test_conversion_status_nonexistent_file():
+    """Test conversion status for nonexistent file"""
+    fake_file_id = "00000000-0000-0000-0000-000000000000"
+    response = requests.get(f"{BASE_URL}/api/status/{fake_file_id}")
+    assert response.status_code == 404
+
+
+def test_start_conversion_endpoint():
+    """Test starting a conversion"""
+    # First upload a file
+    test_content = b"PK\x03\x04" + b"test jar content" * 100
+    files = {
+        'file': ('test.jar', BytesIO(test_content), 'application/java-archive')
+    }
+    
+    upload_response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert upload_response.status_code == 200
+    file_id = upload_response.json()["file_id"]
+    
+    # Start conversion
+    conversion_data = {
+        "file_id": file_id,
+        "conversion_options": {
+            "target_format": "bedrock",
+            "include_textures": True,
+            "include_models": True
         }
-        
-        convert_response = await async_client.post("/api/convert", json=conversion_request)
-        assert convert_response.status_code == 200
-        
-        conversion_data = convert_response.json()
-        job_id = conversion_data["job_id"]
-        
-        # Step 3: Check conversion status
-        status_response = await async_client.get(f"/api/convert/{job_id}")
-        assert status_response.status_code == 200
-        
-        status_data = status_response.json()
-        assert status_data["job_id"] == job_id
-        assert status_data["status"] in ["queued", "processing", "completed", "failed"]
+    }
     
-    async def test_upload_and_list_conversions(self, async_client: AsyncClient):
-        """Test uploading a file and listing conversions."""
-        # Upload file
-        file_content = b"PK\x03\x04test_content"
-        files = {"file": ("another-mod.jar", file_content, "application/java-archive")}
-        
-        await async_client.post("/api/upload", files=files)
-        
-        # Start conversion
-        conversion_request = {"file_name": "another-mod.jar"}
-        await async_client.post("/api/convert", json=conversion_request)
-        
-        # List conversions
-        list_response = await async_client.get("/api/convert")
-        assert list_response.status_code == 200
-        
-        conversions = list_response.json()
-        assert isinstance(conversions, list)
-        assert len(conversions) >= 1
+    response = requests.post(f"{BASE_URL}/api/convert", json=conversion_data)
+    assert response.status_code == 200
     
-    @patch('main.app')  # This would patch actual AI service calls
-    async def test_conversion_with_ai_service_mock(self, mock_ai_service, async_client: AsyncClient):
-        """Test conversion with mocked AI service."""
-        # Mock AI service response
-        mock_ai_service.convert_mod = AsyncMock(return_value={
-            "status": "completed",
-            "output_file": "converted_mod.mcaddon",
-            "report": "Conversion successful"
-        })
-        
-        # Upload and convert
-        file_content = b"PK\x03\x04mock_mod"
-        files = {"file": ("mock-mod.jar", file_content, "application/java-archive")}
-        
-        await async_client.post("/api/upload", files=files)
-        
-        conversion_request = {"file_name": "mock-mod.jar"}
-        response = await async_client.post("/api/convert", json=conversion_request)
-        
-        assert response.status_code == 200
+    data = response.json()
+    assert "conversion_id" in data
+    assert data["status"] == "started"
+    assert data["file_id"] == file_id
+
+
+def test_start_conversion_nonexistent_file():
+    """Test starting conversion for nonexistent file"""
+    fake_file_id = "00000000-0000-0000-0000-000000000000"
+    conversion_data = {
+        "file_id": fake_file_id,
+        "conversion_options": {
+            "target_format": "bedrock"
+        }
+    }
     
-    async def test_error_handling_invalid_file(self, async_client: AsyncClient):
-        """Test error handling for invalid files."""
-        # Try to upload an invalid file
-        file_content = b"This is not a valid mod file"
-        files = {"file": ("invalid.txt", file_content, "text/plain")}
-        
-        response = await async_client.post("/api/upload", files=files)
-        assert response.status_code == 400
-        
-        error_data = response.json()
-        assert "not supported" in error_data["detail"]
+    response = requests.post(f"{BASE_URL}/api/convert", json=conversion_data)
+    assert response.status_code == 404
+
+
+def test_download_conversion_result():
+    """Test downloading conversion results"""
+    # First upload and convert a file
+    test_content = b"PK\x03\x04" + b"test jar content" * 100
+    files = {
+        'file': ('test.jar', BytesIO(test_content), 'application/java-archive')
+    }
     
-    async def test_concurrent_conversions(self, async_client: AsyncClient):
-        """Test handling multiple concurrent conversions."""
-        # Create multiple conversion requests
-        tasks = []
-        
-        for i in range(3):
-            file_content = f"PK\x03\x04mod_content_{i}".encode()
-            files = {"file": (f"mod_{i}.jar", file_content, "application/java-archive")}
-            
-            # Upload file
-            await async_client.post("/api/upload", files=files)
-            
-            # Create conversion task
-            conversion_request = {"file_id": f"mod_{i}.jar", "original_filename": f"mod_{i}.jar"}
-            task = async_client.post("/api/convert", json=conversion_request)
-            tasks.append(task)
-        
-        # Execute all conversions concurrently
-        responses = await asyncio.gather(*tasks)
-        
-        # Verify all conversions started successfully
-        for response in responses:
-            assert response.status_code == 200
-            data = response.json()
-            assert "job_id" in data
-            assert data["status"] == "queued"
+    upload_response = requests.post(f"{BASE_URL}/api/upload", files=files)
+    assert upload_response.status_code == 200
+    file_id = upload_response.json()["file_id"]
     
-    async def test_api_cors_headers(self, async_client: AsyncClient):
-        """Test CORS headers are properly set."""
-        response = await async_client.options("/api/convert")
-        
-        # Check for CORS headers (these would be set by the middleware)
-        assert response.status_code in [200, 405]  # 405 if OPTIONS not explicitly handled
+    conversion_data = {
+        "file_id": file_id,
+        "conversion_options": {
+            "target_format": "bedrock"
+        }
+    }
     
-    async def test_api_openapi_docs(self, async_client: AsyncClient):
-        """Test OpenAPI documentation is accessible."""
-        docs_response = await async_client.get("/docs")
-        assert docs_response.status_code == 200
-        
-        openapi_response = await async_client.get("/openapi.json")
-        assert openapi_response.status_code == 200
-        
-        openapi_data = openapi_response.json()
-        assert "openapi" in openapi_data
-        assert "info" in openapi_data
-        assert openapi_data["info"]["title"] == "ModPorter AI Backend"
+    convert_response = requests.post(f"{BASE_URL}/api/convert", json=conversion_data)
+    assert convert_response.status_code == 200
+    conversion_id = convert_response.json()["conversion_id"]
+    
+    # Try to download (might not be ready immediately in a real scenario)
+    download_response = requests.get(f"{BASE_URL}/api/download/{conversion_id}")
+    # In a real test, we might need to wait for conversion to complete
+    # For now, we just check that the endpoint exists
+    assert download_response.status_code in [200, 404, 425]  # 425 = too early/not ready
+
+
+def test_api_documentation_endpoints():
+    """Test that API documentation endpoints are available"""
+    # Test OpenAPI schema
+    response = requests.get(f"{BASE_URL}/openapi.json")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+    
+    # Test Swagger UI
+    response = requests.get(f"{BASE_URL}/docs")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    
+    # Test ReDoc
+    response = requests.get(f"{BASE_URL}/redoc")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]

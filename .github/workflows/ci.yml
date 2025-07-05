@@ -38,7 +38,7 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        npm test -- --coverage --run
+        CI=true npm run test:coverage
     
     - name: Upload frontend coverage
       uses: codecov/codecov-action@v3
@@ -164,7 +164,7 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background
-        cd backend && python -m uvicorn main:app --port 8000 &
+        cd backend && python main.py &
         
         # Wait for backend to start
         sleep 10

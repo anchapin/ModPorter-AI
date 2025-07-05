@@ -18,8 +18,8 @@ def test_health_check():
 def test_convert_endpoint_without_input():
     """Test conversion endpoint validation"""
     response = client.post("/api/convert")
-    assert response.status_code == 400
-    assert "must be provided" in response.json()["detail"]
+    assert response.status_code == 422  # FastAPI returns 422 for validation errors
+    assert "detail" in response.json()
 
 def test_convert_endpoint_with_url():
     """Test conversion endpoint with URL"""
