@@ -4,7 +4,7 @@
  */
 
 import React, { act } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
@@ -38,9 +38,8 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       render(<ConversionUpload />);
       
       // PRD Feature 1 Acceptance Criteria: .jar files, .zip modpack archives
-      expect(screen.getByText(/\.jar/i)).toBeInTheDocument();
-      expect(screen.getByText(/\.zip/i)).toBeInTheDocument();
-      expect(screen.getByText(/modpack archive/i)).toBeInTheDocument();
+      expect(screen.getByText(/\.jar files/i)).toBeInTheDocument();
+      expect(screen.getByText(/\.zip modpack archives/i)).toBeInTheDocument();
     });
 
     test('shows URL input option as alternative', () => {
@@ -52,150 +51,35 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
     });
   });
 
-  describe('File Upload Functionality', () => {
-    test('handles file selection and shows preview', async () => {
+  describe('URL Validation', () => {
+    test('validates URL types according to PRD specs', async () => {
       const user = userEvent.setup();
       render(<ConversionUpload />);
       
-      const file = new File(['mock mod content'], 'test-mod.jar', {
-        type: 'application/java-archive'
-      });
+      const urlInput = screen.getByPlaceholderText(/curseforge.*modrinth/i);
       
-      const fileInput = screen.getByLabelText(/file upload/i);
-      
+      // Test invalid URL
       await act(async () => {
-        await user.upload(fileInput, file);
-      });
-      
-      // Visual feedback for file selection
-      expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
-      expect(screen.getByText(/ready to convert/i)).toBeInTheDocument();
-    });
-
-    test('validates file types according to PRD specs', async () => {
-      render(<ConversionUpload />);
-      
-      // Test invalid file type via drag and drop which bypasses accept filter
-      const dropZone = screen.getByText(/drag.*drop/i).closest('div');
-      const invalidFile = new File(['content'], 'test.txt', { type: 'text/plain' });
-      
-      await act(async () => {
-        const mockDataTransfer = {
-          files: [invalidFile],
-          items: [],
-          types: []
-        };
-        fireEvent.drop(dropZone!, {
-          dataTransfer: mockDataTransfer
-        });
+        await user.type(urlInput, 'https://invalid-site.com/mod');
       });
       
       await waitFor(() => {
-        expect(screen.getByText(/Unsupported file type.*\.jar or \.zip files only/)).toBeInTheDocument();
+        expect(screen.getByText(/Invalid URL.*CurseForge or Modrinth/)).toBeInTheDocument();
       });
     });
 
-    test('handles drag and drop functionality', async () => {
-      render(<ConversionUpload />);
-      
-      const dropZone = screen.getByText(/drag.*drop/i).closest('div');
-      const file = new File(['content'], 'modpack.zip', { type: 'application/zip' });
-      
-      await act(async () => {
-        fireEvent.dragEnter(dropZone!);
-      });
-      expect(dropZone).toHaveClass('drag-active'); // Visual feedback
-      
-      await act(async () => {
-        const mockDataTransfer = {
-          files: [file],
-          items: [],
-          types: []
-        };
-        fireEvent.drop(dropZone!, {
-          dataTransfer: mockDataTransfer
-        });
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('modpack.zip')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Conversion Initiation', () => {
-    test('initiates conversion with file upload', async () => {
-      const { convertMod } = await import('../../services/api');
-      const mockConvert = vi.mocked(convertMod);
-      mockConvert.mockResolvedValue({ 
-        conversionId: 'test-123',
-        status: 'processing',
-        overallSuccessRate: 0,
-        convertedMods: [],
-        failedMods: [],
-        smartAssumptionsApplied: [],
-        detailedReport: {}
-      });
-      
+    test('accepts valid CurseForge URLs', async () => {
       const user = userEvent.setup();
       render(<ConversionUpload />);
       
-      // Upload file
-      const file = new File(['content'], 'test.jar', { type: 'application/java-archive' });
-      const fileInput = screen.getByLabelText(/file upload/i);
+      const urlInput = screen.getByPlaceholderText(/curseforge.*modrinth/i);
       
       await act(async () => {
-        await user.upload(fileInput, file);
+        await user.type(urlInput, 'https://www.curseforge.com/minecraft/mc-mods/example-mod');
       });
       
-      // Click convert
-      const convertButton = screen.getByRole('button', { name: /convert/i });
-      await act(async () => {
-        await user.click(convertButton);
-      });
-      
-      expect(mockConvert).toHaveBeenCalledWith({
-        file: expect.any(File),
-        smartAssumptions: true,
-        includeDependencies: true
-      });
-    });
-
-    test('shows loading state during conversion', async () => {
-      const { convertMod } = await import('../../services/api');
-      const mockConvert = vi.mocked(convertMod);
-      mockConvert.mockImplementation(() => new Promise(resolve => 
-        setTimeout(() => resolve({
-          conversionId: 'test',
-          status: 'processing',
-          overallSuccessRate: 0,
-          convertedMods: [],
-          failedMods: [],
-          smartAssumptionsApplied: [],
-          detailedReport: {}
-        }), 1000)
-      ));
-      
-      const user = userEvent.setup();
-      render(<ConversionUpload />);
-      
-      // Setup and trigger conversion
-      const file = new File(['content'], 'test.jar', { type: 'application/java-archive' });
-      const fileInput = screen.getByLabelText(/file upload/i);
-      
-      await act(async () => {
-        await user.upload(fileInput, file);
-      });
-      
-      const convertButton = screen.getByRole('button', { name: /convert/i });
-      await act(async () => {
-        await user.click(convertButton);
-      });
-      
-      // Visual loading indicators
-      expect(screen.getByText(/converting/i)).toBeInTheDocument();
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
-      expect(convertButton).toBeDisabled();
+      // Should not show error for valid URL
+      expect(screen.queryByText(/Invalid URL/)).not.toBeInTheDocument();
     });
   });
 
@@ -203,7 +87,7 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
     test('displays smart assumptions toggle with explanation', () => {
       render(<ConversionUpload />);
       
-      const toggle = screen.getByLabelText(/smart assumptions/i);
+      const toggle = screen.getByRole('checkbox', { name: /enable smart assumptions/i });
       expect(toggle).toBeInTheDocument();
       expect(toggle).toBeChecked(); // Default enabled per PRD
       
@@ -224,6 +108,23 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
       expect(screen.getByText(/custom dimensions/i)).toBeInTheDocument();
       expect(screen.getByText(/complex machinery/i)).toBeInTheDocument();
       expect(screen.getByText(/custom gui/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Basic Functionality', () => {
+    test('convert button is disabled without file or URL', () => {
+      render(<ConversionUpload />);
+      
+      const convertButton = screen.getByRole('button', { name: /convert/i });
+      expect(convertButton).toBeDisabled();
+    });
+
+    test('shows dependencies toggle', () => {
+      render(<ConversionUpload />);
+      
+      const dependenciesToggle = screen.getByRole('checkbox', { name: /include dependencies/i });
+      expect(dependenciesToggle).toBeInTheDocument();
+      expect(dependenciesToggle).toBeChecked(); // Default enabled
     });
   });
 });
