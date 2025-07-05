@@ -302,7 +302,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     )
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status(job_id: str = Path(..., regex="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID).")):
+async def get_conversion_status(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID).")):
     """
     Get the current status of a specific conversion job.
 
@@ -361,7 +361,7 @@ async def list_conversions():
     return statuses
 
 @app.delete("/api/convert/{job_id}", tags=["conversion"])
-async def cancel_conversion(job_id: str = Path(..., regex="^[a-f0-9]{32}$", description="Unique identifier for the conversion job to be cancelled (32-character hex UUID).")):
+async def cancel_conversion(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job to be cancelled (32-character hex UUID).")):
     """
     Cancel an ongoing conversion job.
 
@@ -389,7 +389,7 @@ async def cancel_conversion(job_id: str = Path(..., regex="^[a-f0-9]{32}$", desc
 
 # Download endpoint
 @app.get("/api/download/{job_id}", tags=["files"])
-async def download_converted_mod(job_id: str = Path(..., regex="^[a-f0-9]{32}$", description="Unique identifier for the conversion job whose output is to be downloaded (32-character hex UUID).")):
+async def download_converted_mod(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job whose output is to be downloaded (32-character hex UUID).")):
     """
     Download the converted mod file.
 
