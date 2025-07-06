@@ -1,6 +1,6 @@
 import json
 import redis.asyncio as aioredis
-from config import settings
+from src.config import settings
 from typing import Optional
 
 class CacheService:
