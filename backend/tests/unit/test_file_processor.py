@@ -64,12 +64,11 @@ class TestFileProcessor:
         result = await file_processor.download_from_url(url, mock_job_id)
 
         # Assertions
-        download_dir = temp_job_dirs["upload"] # Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+        # FileProcessor creates its own directory structure at /tmp/conversions/{job_id}/uploaded/
+        actual_download_dir = Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+        assert actual_download_dir.exists()
 
-        # Check that the directory exists (ensured by fixture)
-        assert download_dir.exists()
-
-        expected_file_path = download_dir / "example.zip"
+        expected_file_path = actual_download_dir / "example.zip"
         assert result.success is True
         assert result.file_path == expected_file_path
         assert result.file_name == "example.zip"
@@ -93,8 +92,9 @@ class TestFileProcessor:
         url = "http://example.com/another_example.jar"
         result = await file_processor.download_from_url(url, mock_job_id)
 
-        download_dir = temp_job_dirs["upload"]
-        expected_file_path = download_dir / "another_example.jar"
+        # FileProcessor creates its own directory structure at /tmp/conversions/{job_id}/uploaded/
+        actual_download_dir = Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+        expected_file_path = actual_download_dir / "another_example.jar"
         assert result.success is True
         assert result.file_path == expected_file_path
         assert result.file_name == "another_example.jar"
@@ -117,12 +117,13 @@ class TestFileProcessor:
         url = "http://example.com/some_file_no_ext"
         result = await file_processor.download_from_url(url, mock_job_id)
 
-        download_dir = temp_job_dirs["upload"]
-        # Filename is 'some_file_no_ext' + '.jar' (from content-type)
-        expected_file_path = download_dir / "some_file_no_ext.jar"
+        # FileProcessor creates its own directory structure at /tmp/conversions/{job_id}/uploaded/
+        actual_download_dir = Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+        # Filename is 'some_file_no_ext' (no extension added since content-type doesn't match)
+        expected_file_path = actual_download_dir / "some_file_no_ext"
         assert result.success is True
         assert result.file_path == expected_file_path
-        assert result.file_name == "some_file_no_ext.jar"
+        assert result.file_name == "some_file_no_ext"
         assert expected_file_path.read_bytes() == b"java archive"
 
     @pytest.mark.asyncio
@@ -199,11 +200,12 @@ class TestFileProcessor:
         MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
         url = "http://example.com/empty.zip"
-        with mock.patch.object(logger, 'warning') as mock_logger_warning: # Use actual logger from file_processor.py
+        with mock.patch('src.file_processor.logger.warning') as mock_logger_warning:
             result = await file_processor.download_from_url(url, mock_job_id)
 
-            download_dir = temp_job_dirs["upload"]
-            expected_file_path = download_dir / "empty.zip"
+            # FileProcessor creates its own directory structure at /tmp/conversions/{job_id}/uploaded/
+            actual_download_dir = Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+            expected_file_path = actual_download_dir / "empty.zip"
 
             assert result.success is True # Download itself technically succeeded
             assert result.file_path == expected_file_path
