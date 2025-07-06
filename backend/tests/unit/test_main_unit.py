@@ -1,9 +1,6 @@
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
 import io
 
-from main import app
 
 class TestHealthEndpoint:
     """Test health check endpoint."""
@@ -93,8 +90,17 @@ class TestConversionEndpoints:
     
     def test_get_conversion_status(self, client: TestClient):
         """Test getting conversion job status."""
-        job_id = "test_job_123"
+        # First create a conversion job
+        request_data = {
+            "file_name": "test-mod.jar",
+            "target_version": "1.20.0"
+        }
         
+        create_response = client.post("/api/convert", json=request_data)
+        assert create_response.status_code == 200
+        job_id = create_response.json()["job_id"]
+        
+        # Now test getting its status
         response = client.get(f"/api/convert/{job_id}")
         assert response.status_code == 200
         
@@ -114,8 +120,17 @@ class TestConversionEndpoints:
     
     def test_cancel_conversion(self, client: TestClient):
         """Test cancelling a conversion job."""
-        job_id = "test_job_123"
+        # First create a conversion job
+        request_data = {
+            "file_name": "test-mod.jar",
+            "target_version": "1.20.0"
+        }
         
+        create_response = client.post("/api/convert", json=request_data)
+        assert create_response.status_code == 200
+        job_id = create_response.json()["job_id"]
+        
+        # Now test cancelling it
         response = client.delete(f"/api/convert/{job_id}")
         assert response.status_code == 200
         

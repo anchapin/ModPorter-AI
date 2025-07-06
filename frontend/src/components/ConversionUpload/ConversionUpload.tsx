@@ -52,7 +52,13 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+    // Handle rejected files first
+    if (rejectedFiles.length > 0) {
+      setError('Unsupported file type. Please upload .jar or .zip files only.');
+      return;
+    }
+    
     const file = acceptedFiles[0];
     
     if (!file) return;
