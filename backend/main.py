@@ -370,7 +370,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     )
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID)."), db: AsyncSession = Depends(get_db)):
+async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Get the current status of a specific conversion job.
     """
@@ -507,7 +507,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
     return statuses
 
 @app.delete("/api/convert/{job_id}", tags=["conversion"])
-async def cancel_conversion(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job to be cancelled (32-character hex UUID)."), db: AsyncSession = Depends(get_db)):
+async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Cancel an ongoing conversion job.
     """
@@ -538,7 +538,7 @@ async def cancel_conversion(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", de
 
 # Download endpoint
 @app.get("/api/download/{job_id}", tags=["files"])
-async def download_converted_mod(job_id: str = Path(..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job whose output is to be downloaded (32-character hex UUID).")):
+async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
     """
     Download the converted mod file.
 

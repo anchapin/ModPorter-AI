@@ -2,13 +2,27 @@ import json
 import redis.asyncio as aioredis
 from src.config import settings
 from typing import Optional
+from datetime import datetime
 
 class CacheService:
     def __init__(self) -> None:
         self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
 
+    def _make_json_serializable(self, obj):
+        """
+        Recursively convert non-serializable types (e.g., datetime) to JSON-serializable formats.
+        """
+        if isinstance(obj, dict):
+            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(item) for item in obj]
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        else:
+            return obj
+
     async def set_job_status(self, job_id: str, status: dict) -> None:
-        await self._client.set(f"conversion_jobs:{job_id}:status", json.dumps(status))
+        await self._client.set(f"conversion_jobs:{job_id}:status", json.dumps(self._make_json_serializable(status)))
 
     async def get_job_status(self, job_id: str) -> Optional[dict]:
         raw = await self._client.get(f"conversion_jobs:{job_id}:status")

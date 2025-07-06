@@ -15,7 +15,7 @@ async def create_job(
     options: Optional[dict] = None
 ) -> models.ConversionJob:
     job = models.ConversionJob(
-        status="preprocessing",
+        status="queued",
         input_data={
             "file_id": file_id,
             "original_filename": original_filename,
@@ -23,15 +23,10 @@ async def create_job(
             "options": options or {},
         }
     )
+    # By using the relationship, SQLAlchemy will handle creating both
+    # records and linking them in a single transaction.
+    job.progress = models.JobProgress(progress=0)
     session.add(job)
-    await session.commit()
-    await session.refresh(job)
-    # Also create initial JobProgress row at 0
-    progress = models.JobProgress(
-        job_id=job.id,
-        progress=0
-    )
-    session.add(progress)
     await session.commit()
     await session.refresh(job)
     return job
@@ -56,19 +51,17 @@ async def update_job_status(session: AsyncSession, job_id: str, status: str) -> 
     return job
 
 async def upsert_progress(session: AsyncSession, job_id: str, progress: int) -> models.JobProgress:
-    # Try to update, else insert
-    stmt = select(models.JobProgress).where(models.JobProgress.job_id == job_id)
+    # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
+    from sqlalchemy import func
+    stmt = pg_insert(models.JobProgress).values(
+        job_id=job_id,
+        progress=progress
+    ).on_conflict_do_update(
+        index_elements=['job_id'],
+        set_={'progress': progress, 'last_update': func.now()}
+    ).returning(models.JobProgress)
+
     result = await session.execute(stmt)
-    prog = result.scalar_one_or_none()
-    if prog:
-        prog.progress = progress
-        session.add(prog)
-        await session.commit()
-        await session.refresh(prog)
-        return prog
-    else:
-        prog = models.JobProgress(job_id=job_id, progress=progress)
-        session.add(prog)
-        await session.commit()
-        await session.refresh(prog)
-        return prog
+    prog = result.scalar_one()
+    await session.commit()
+    return prog
