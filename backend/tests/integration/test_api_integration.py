@@ -6,6 +6,7 @@ including file uploads, conversion processing, and result retrieval.
 """
 
 import io
+import pytest
 import time
 from fastapi.testclient import TestClient
 from src.main import app

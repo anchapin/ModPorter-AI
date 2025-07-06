@@ -381,8 +381,195 @@ class TestFileProcessor:
     # --- (Optional) Tests for validate_upload ---
     # These are more complex due to UploadFile interaction, might skip if focusing on the new/modified logic first
 
-    # --- (Optional) Tests for scan_for_malware ---
-    # Would need mock zip files or more intricate setup
+    # --- Tests for scan_for_malware ---
+    
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_safe_zip(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan on a safe ZIP file."""
+        import zipfile
+        
+        # Create a safe ZIP file
+        safe_zip_path = temp_job_dirs["upload"] / "safe.zip"
+        with zipfile.ZipFile(safe_zip_path, 'w') as zip_file:
+            zip_file.writestr("normal_file.txt", "This is normal content")
+            zip_file.writestr("subdir/another_file.java", "public class Test {}")
+        
+        result = await file_processor.scan_for_malware(safe_zip_path, "zip")
+        
+        assert result.is_safe is True
+        assert "passed implemented security checks" in result.message
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_path_traversal_dotdot(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan detects path traversal with .. sequences."""
+        import zipfile
+        
+        # Create a ZIP with path traversal attempt
+        malicious_zip_path = temp_job_dirs["upload"] / "malicious_dotdot.zip"
+        with zipfile.ZipFile(malicious_zip_path, 'w') as zip_file:
+            zip_file.writestr("../../../etc/passwd", "root:x:0:0:root:/root:/bin/bash")
+            zip_file.writestr("normal_file.txt", "Normal content")
+        
+        result = await file_processor.scan_for_malware(malicious_zip_path, "zip")
+        
+        assert result.is_safe is False
+        assert "path traversal" in result.message.lower()
+        assert "details" in result.model_dump()
+        assert "../../../etc/passwd" in result.details["filename"]
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_path_traversal_absolute(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan detects absolute path traversal."""
+        import zipfile
+        
+        # Create a ZIP with absolute path
+        malicious_zip_path = temp_job_dirs["upload"] / "malicious_absolute.zip"
+        with zipfile.ZipFile(malicious_zip_path, 'w') as zip_file:
+            zip_file.writestr("/etc/shadow", "root:$6$...")
+            zip_file.writestr("normal_file.txt", "Normal content")
+        
+        result = await file_processor.scan_for_malware(malicious_zip_path, "zip")
+        
+        assert result.is_safe is False
+        assert "path traversal" in result.message.lower()
+        assert "/etc/shadow" in result.details["filename"]
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_zip_bomb_compression_ratio(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan detects ZIP bomb via high compression ratio."""
+        import zipfile
+        from unittest import mock
+        
+        # Create a ZIP file and mock its info to simulate a ZIP bomb
+        zip_bomb_path = temp_job_dirs["upload"] / "zip_bomb.zip"
+        with zipfile.ZipFile(zip_bomb_path, 'w') as zip_file:
+            zip_file.writestr("bomb.txt", "A" * 1000)  # Small content for real file
+        
+        # Mock the ZipFile.infolist to return a member with extreme compression ratio
+        mock_member = mock.Mock()
+        mock_member.filename = "bomb.txt"
+        mock_member.file_size = 2 * 1024 * 1024 * 1024  # 2GB uncompressed
+        mock_member.compress_size = 1024  # 1KB compressed (ratio > 100)
+        
+        with mock.patch('zipfile.ZipFile') as mock_zipfile:
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [mock_member]
+            
+            result = await file_processor.scan_for_malware(zip_bomb_path, "zip")
+        
+        assert result.is_safe is False
+        assert "zip bomb" in result.message.lower()
+        assert "extreme compression ratio" in result.message
+        assert result.details["filename"] == "bomb.txt"
+        assert result.details["ratio"] > 100
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_excessive_files(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan detects ZIP bomb via excessive file count."""
+        import zipfile
+        from unittest import mock
+        
+        zip_bomb_path = temp_job_dirs["upload"] / "file_bomb.zip"
+        with zipfile.ZipFile(zip_bomb_path, 'w') as zip_file:
+            zip_file.writestr("test.txt", "test")
+        
+        # Mock to return excessive number of files
+        mock_members = []
+        for i in range(100001):  # Exceeds MAX_TOTAL_FILES (100000)
+            mock_member = mock.Mock()
+            mock_member.filename = f"file_{i}.txt"
+            mock_member.file_size = 100
+            mock_member.compress_size = 50
+            mock_members.append(mock_member)
+        
+        with mock.patch('zipfile.ZipFile') as mock_zipfile:
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = mock_members
+            
+            result = await file_processor.scan_for_malware(zip_bomb_path, "zip")
+        
+        assert result.is_safe is False
+        assert "zip bomb" in result.message.lower()
+        assert "excessive number of files" in result.message
+        assert result.details["num_files"] == 100001
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_corrupted_archive(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan handles corrupted ZIP files."""
+        # Create a file that looks like ZIP but is corrupted
+        corrupted_zip_path = temp_job_dirs["upload"] / "corrupted.zip"
+        with open(corrupted_zip_path, "wb") as f:
+            f.write(b"PK\x03\x04" + b"corrupted data that is not a valid zip")
+        
+        result = await file_processor.scan_for_malware(corrupted_zip_path, "zip")
+        
+        assert result.is_safe is False
+        assert "invalid or corrupted" in result.message.lower()
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_unsupported_file_type(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan with unsupported file type."""
+        # Create a dummy file
+        text_file_path = temp_job_dirs["upload"] / "test.txt"
+        text_file_path.write_text("This is just text")
+        
+        # scan_for_malware should handle non-archive types gracefully
+        result = await file_processor.scan_for_malware(text_file_path, "txt")
+        
+        # Should pass basic checks since it's not an archive
+        assert result.is_safe is True
+        assert "passed implemented security checks" in result.message
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_jar_file(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan on JAR file (which is a ZIP)."""
+        import zipfile
+        
+        # Create a safe JAR file
+        safe_jar_path = temp_job_dirs["upload"] / "safe.jar"
+        with zipfile.ZipFile(safe_jar_path, 'w') as zip_file:
+            zip_file.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
+            zip_file.writestr("com/example/Main.class", b"\xCA\xFE\xBA\xBE")  # Mock class file
+        
+        result = await file_processor.scan_for_malware(safe_jar_path, "jar")
+        
+        assert result.is_safe is True
+        assert "passed implemented security checks" in result.message
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_exception_handling(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan handles unexpected exceptions."""
+        zip_path = temp_job_dirs["upload"] / "test.zip"
+        
+        # Mock zipfile.ZipFile to raise an unexpected exception
+        with mock.patch('zipfile.ZipFile', side_effect=Exception("Unexpected error")):
+            result = await file_processor.scan_for_malware(zip_path, "zip")
+        
+        assert result.is_safe is False
+        assert "error during archive scanning" in result.message.lower()
+        assert "Unexpected error" in result.message
+
+    @pytest.mark.asyncio
+    async def test_scan_for_malware_edge_case_zero_compression(self, file_processor, temp_job_dirs, mock_job_id):
+        """Test malware scan handles zero compression size edge case."""
+        import zipfile
+        from unittest import mock
+        
+        zip_path = temp_job_dirs["upload"] / "zero_compression.zip"
+        with zipfile.ZipFile(zip_path, 'w') as zip_file:
+            zip_file.writestr("test.txt", "test")
+        
+        # Mock member with zero compress_size to test division by zero protection
+        mock_member = mock.Mock()
+        mock_member.filename = "test.txt"
+        mock_member.file_size = 1000
+        mock_member.compress_size = 0  # This could cause division by zero
+        
+        with mock.patch('zipfile.ZipFile') as mock_zipfile:
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [mock_member]
+            
+            result = await file_processor.scan_for_malware(zip_path, "zip")
+        
+        # Should handle gracefully and not crash
+        assert result.is_safe is True  # Should pass since division by zero is protected
 
     # --- (Optional) Tests for extract_mod_files ---
     # Similar to scan_for_malware, needs mock archives
