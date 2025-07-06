@@ -14,6 +14,17 @@ build/
 dist/
 *.egg-info/
 
+# Temporary upload files
+temp_uploads/
+*/temp_uploads/
+
+# Testing artifacts
+.pytest_cache/
+*/.pytest_cache/
+coverage.xml
+htmlcov/
+.coverage*
+
 # IDE
 .vscode/
 .idea/
@@ -39,3 +50,13 @@ Dockerfile.dev
 
 # Setup scripts
 setup-*.sh
+
+# Test coverage
+.coverage
+coverage.xml
+*/.coverage
+*/coverage.xml
+
+# Temporary uploads
+temp_uploads/
+*/temp_uploads/

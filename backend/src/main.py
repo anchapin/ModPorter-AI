@@ -64,7 +64,6 @@ async def health_check_v1():
         "version": "1.0.0",
         "message": "ModPorter AI Backend is running"
     }
-
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a mod file for conversion"""
