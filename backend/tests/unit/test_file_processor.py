@@ -5,8 +5,7 @@ import logging
 from pathlib import Path
 from unittest import mock # For mock.patch
 
-from fastapi import UploadFile # Though not directly used for FileProcessor unit tests, good to have if expanding
-from backend.src.file_processor import FileProcessor, DownloadResult, ValidationResult, ScanResult, ExtractionResult
+from src.file_processor import FileProcessor
 
 # Configure basic logging for tests if needed, or mock it out
 # logging.basicConfig(level=logging.DEBUG) # Could be noisy

@@ -1,12 +1,15 @@
 import logging
+import os
+import re
+import shutil
+import zipfile
+from email.message import EmailMessage
 from pathlib import Path
+from typing import Optional, Dict
+
+import httpx
 from fastapi import UploadFile
 from pydantic import BaseModel
-from typing import Optional, Dict
-import re
-
-import httpx # Import httpx
-import cgi # For parsing Content-Disposition
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
@@ -14,9 +17,6 @@ logger = logging.getLogger(__name__)
 
 # Note: For enhanced security, file processing operations (especially extraction and handling of potentially untrusted files)
 # should ideally be executed within isolated, ephemeral containers (e.g., Docker) to limit potential impact from malicious files.
-
-import zipfile
-import os
 
 # --- Pydantic Models ---
 class ValidationResult(BaseModel):
@@ -342,28 +342,49 @@ class FileProcessor:
         found_manifest_type: Optional[str] = None
         manifest_files_priority = ["fabric.mod.json", "mods.toml", "mcmod.info"] # Order of preference
 
-        # Ensure tomllib is available for .toml (Python 3.11+)
-        # For older versions, you'd need to ensure 'toml' is installed and import it.
+        # Handle .toml parsing with Python version compatibility
         import json
+        tomllib = None
+        toml_lib = None
+        
         try:
             import tomllib # Python 3.11+
         except ImportError:
-            logger.warning("tomllib not found, .toml manifest parsing will be skipped. Consider installing 'toml' for older Python.")
-            tomllib = None # type: ignore
+            try:
+                import tomli as tomllib # Fallback for Python <3.11
+                logger.info("Using tomli for .toml parsing (Python <3.11)")
+            except ImportError:
+                try:
+                    import toml as toml_lib # Alternative fallback
+                    logger.info("Using toml library for .toml parsing")
+                except ImportError:
+                    logger.warning("No TOML library found. .toml manifest parsing will be skipped. Install 'tomli' or 'toml' for TOML support.")
+                    tomllib = None
+                    toml_lib = None
 
         for manifest_name in manifest_files_priority:
             potential_manifest_path = extraction_dir / manifest_name
             if potential_manifest_path.is_file():
                 logger.info(f"Found potential manifest file: {manifest_name} for job_id: {job_id}")
                 try:
-                    with open(potential_manifest_path, 'rb') as f: # Open in binary for tomllib
-                        if manifest_name.endswith(".json"):
+                    if manifest_name.endswith(".json"):
+                        with open(potential_manifest_path, 'rb') as f:
                             manifest_data = json.load(f)
                             found_manifest_type = "json"
-                        elif manifest_name.endswith(".toml") and tomllib:
-                            manifest_data = tomllib.load(f) # tomllib.load takes a binary file
-                            found_manifest_type = "toml"
-                        elif manifest_name.endswith(".info"): # mcmod.info can be JSON-like but not always strictly
+                    elif manifest_name.endswith(".toml"):
+                        if tomllib:
+                            with open(potential_manifest_path, 'rb') as f:
+                                manifest_data = tomllib.load(f) # tomllib/tomli.load takes a binary file
+                                found_manifest_type = "toml"
+                        elif toml_lib:
+                            with open(potential_manifest_path, 'r') as f:
+                                manifest_data = toml_lib.load(f) # toml.load takes a text file
+                                found_manifest_type = "toml"
+                        else:
+                            logger.warning(f"Cannot parse {manifest_name} - no TOML library available for job_id: {job_id}")
+                            continue
+                    elif manifest_name.endswith(".info"): # mcmod.info can be JSON-like but not always strictly
+                        with open(potential_manifest_path, 'rb') as f:
                             try:
                                 manifest_data = json.load(f)
                                 found_manifest_type = "mcmod.info (json)"
@@ -416,9 +437,10 @@ class FileProcessor:
                 content_disposition = response.headers.get("Content-Disposition")
                 filename_from_header = None
                 if content_disposition:
-                    value, params = cgi.parse_header(content_disposition)
-                    if "filename" in params:
-                        filename_from_header = params["filename"]
+                    # Parse Content-Disposition header using email.message
+                    msg = EmailMessage()
+                    msg["Content-Disposition"] = content_disposition
+                    filename_from_header = msg.get_param("filename", header="Content-Disposition")
 
                 if filename_from_header:
                     raw_filename = filename_from_header
