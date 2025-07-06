@@ -68,10 +68,21 @@ app.add_middleware(
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
-    file_id: str = Field(..., min_length=1, description="Unique identifier of the uploaded file.")
-    original_filename: str = Field(..., min_length=1, description="Original name of the uploaded file.")
+    # Legacy
+    file_name: Optional[str] = None
+    # New
+    file_id: Optional[str] = None
+    original_filename: Optional[str] = None
     target_version: str = Field(default="1.20.0", description="Target Minecraft version for the conversion.")
     options: Optional[dict] = Field(default=None, description="Optional conversion settings.")
+
+    @property
+    def resolved_file_id(self) -> str:
+        return self.file_id or str(uuid.uuid4())
+
+    @property
+    def resolved_original_name(self) -> str:
+        return self.original_filename or self.file_name or ""
 
 class UploadResponse(BaseModel):
     """Response model for file upload"""
