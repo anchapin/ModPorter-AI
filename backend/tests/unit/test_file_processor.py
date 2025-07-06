@@ -42,7 +42,7 @@ def temp_job_dirs(mock_job_id):
 
 class TestFileProcessor:
     @pytest.mark.asyncio
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_disposition(self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -81,7 +81,7 @@ class TestFileProcessor:
             MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_once_with(url, follow_redirects=True, timeout=30.0)
 
     @pytest.mark.asyncio
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_url_path_filename(self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -104,7 +104,7 @@ class TestFileProcessor:
         assert expected_file_path.read_bytes() == b"jar content"
 
     @pytest.mark.asyncio
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_type_extension(self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -134,7 +134,7 @@ class TestFileProcessor:
         (500, "HTTP error 500"),
         (403, "HTTP error 403")
     ])
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_http_errors(self, MockAsyncClient, file_processor, mock_job_id, status_code, error_type_expected, temp_job_dirs):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = status_code
@@ -161,7 +161,7 @@ class TestFileProcessor:
         (httpx.RequestError, "Request error while downloading"), # Generic network error
         (IOError, "IO error saving downloaded file") # Simulate an issue during file write
     ])
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_network_io_exceptions(self, MockAsyncClient, file_processor, mock_job_id, exception_type, error_message_expected_part, temp_job_dirs):
         if exception_type == IOError:
             # For IOError, the client.get call succeeds, but writing the file fails
@@ -188,7 +188,7 @@ class TestFileProcessor:
         assert error_message_expected_part.lower() in result.message.lower()
 
     @pytest.mark.asyncio
-    @mock.patch("backend.src.file_processor.httpx.AsyncClient")
+    @mock.patch("src.file_processor.httpx.AsyncClient")
     async def test_download_from_url_empty_file(self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -300,7 +300,7 @@ class TestFileProcessor:
 
         assert job_dir_path.exists()
 
-        with mock.patch("backend.src.file_processor.shutil.rmtree") as mock_rmtree:
+        with mock.patch("src.file_processor.shutil.rmtree") as mock_rmtree:
             result = file_processor.cleanup_temp_files(mock_job_id)
 
             assert result is True
@@ -321,8 +321,8 @@ class TestFileProcessor:
         if job_dir_path.exists():
             shutil.rmtree(job_dir_path)
 
-        with mock.patch("backend.src.file_processor.shutil.rmtree") as mock_rmtree:
-            with mock.patch.object(logging.getLogger('backend.src.file_processor'), 'info') as mock_logger_info:
+        with mock.patch("src.file_processor.shutil.rmtree") as mock_rmtree:
+            with mock.patch.object(logging.getLogger('src.file_processor'), 'info') as mock_logger_info:
                 result = file_processor.cleanup_temp_files(mock_job_id)
 
                 assert result is True
@@ -331,8 +331,8 @@ class TestFileProcessor:
                     f"Temporary directory {job_dir_path} not found for job_id: {mock_job_id}. No cleanup needed."
                 )
 
-    @mock.patch("backend.src.file_processor.shutil.rmtree", side_effect=PermissionError("Test permission error"))
-    @mock.patch.object(logging.getLogger('backend.src.file_processor'), 'error')
+    @mock.patch("src.file_processor.shutil.rmtree", side_effect=PermissionError("Test permission error"))
+    @mock.patch.object(logging.getLogger('src.file_processor'), 'error')
     def test_cleanup_temp_files_permission_error(self, mock_logger_error, mock_rmtree, file_processor, mock_job_id):
         job_dir_path = Path(f"/tmp/conversions/{mock_job_id}")
         job_dir_path.mkdir(parents=True, exist_ok=True) # Directory needs to exist for rmtree to be called
@@ -351,8 +351,8 @@ class TestFileProcessor:
             shutil.rmtree(job_dir_path)
 
 
-    @mock.patch("backend.src.file_processor.shutil.rmtree", side_effect=Exception("Test generic error"))
-    @mock.patch.object(logging.getLogger('backend.src.file_processor'), 'error')
+    @mock.patch("src.file_processor.shutil.rmtree", side_effect=Exception("Test generic error"))
+    @mock.patch.object(logging.getLogger('src.file_processor'), 'error')
     def test_cleanup_temp_files_generic_error(self, mock_logger_error, mock_rmtree, file_processor, mock_job_id):
         job_dir_path = Path(f"/tmp/conversions/{mock_job_id}")
         job_dir_path.mkdir(parents=True, exist_ok=True)
@@ -382,7 +382,7 @@ class TestFileProcessor:
 
 # Example of how to run: pytest backend/tests/unit/test_file_processor.py
 # Remember to create __init__.py in directories if Python complains about imports.
-# For these tests, assuming backend.src.file_processor is importable from the test execution path.
+# For these tests, assuming src.file_processor is importable from the test execution path.
 # This might require setting PYTHONPATH environment variable or specific pytest configurations.
 # e.g. export PYTHONPATH=$PYTHONPATH:./
 # or in pytest.ini:
