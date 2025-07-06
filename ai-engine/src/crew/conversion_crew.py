@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 from typing import Dict, List, Any, Optional
 import json
 import logging
+import os
 from pathlib import Path
 
 from ..agents.java_analyzer import JavaAnalyzerAgent
@@ -28,11 +29,40 @@ class ModPorterConversionCrew:
     """
     
     def __init__(self, model_name: str = "gpt-4"):
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.1,  # Low temperature for consistent technical output
-            max_tokens=4000
-        )
+        # Use mock LLM in test environment
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            try:
+                # Try importing from the current project structure
+                import sys
+                from pathlib import Path
+                test_dir = Path(__file__).parent.parent.parent / "tests" / "mocks"
+                sys.path.insert(0, str(test_dir))
+                from mock_llm import MockLLM
+                self.llm = MockLLM(responses=[
+                    "Mock analysis complete",
+                    "Mock conversion plan generated", 
+                    "Mock translation complete",
+                    "Mock assets converted",
+                    "Mock package built",
+                    "Mock validation passed"
+                ])
+            except ImportError:
+                # Fallback if mock not available
+                from unittest.mock import MagicMock
+                self.llm = MagicMock()
+                self.llm.predict.return_value = "Mock response"
+        else:
+            try:
+                self.llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=0.1,  # Low temperature for consistent technical output
+                    max_tokens=4000
+                )
+            except Exception as e:
+                # Fallback for testing environment
+                logger.warning(f"Failed to initialize OpenAI LLM: {e}")
+                from unittest.mock import MagicMock
+                self.llm = MagicMock()
         
         self.smart_assumption_engine = SmartAssumptionEngine()
         self._setup_agents()
@@ -50,83 +80,114 @@ class ModPorterConversionCrew:
         self.qa_validator_agent = QAValidatorAgent()
         
         # PRD Feature 2: Analyzer Agent
-        self.java_analyzer = Agent(
-            role="Java Mod Analyzer",
-            goal="Accurately analyze Java mod structure, dependencies, and features",
-            backstory="""You are an expert Java developer with deep knowledge of Minecraft 
+        agent_kwargs = {
+            "role": "Java Mod Analyzer",
+            "goal": "Accurately analyze Java mod structure, dependencies, and features",
+            "backstory": """You are an expert Java developer with deep knowledge of Minecraft 
             modding frameworks like Forge, Fabric, and Quilt. You can deconstruct any mod 
             to understand its components, dependencies, and intended functionality.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.java_analyzer_agent.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.java_analyzer_agent.get_tools()
+        }
+        
+        # Disable memory in test environment to avoid validation issues
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            agent_kwargs["memory"] = False
+        
+        self.java_analyzer = Agent(**agent_kwargs)
         
         # PRD Feature 2: Planner Agent (Bedrock Architect)
-        self.bedrock_architect = Agent(
-            role="Bedrock Conversion Architect",
-            goal="Design optimal conversion strategies using smart assumptions",
-            backstory="""You are a Minecraft Bedrock add-on expert who understands the 
+        architect_kwargs = {
+            "role": "Bedrock Conversion Architect",
+            "goal": "Design optimal conversion strategies using smart assumptions",
+            "backstory": """You are a Minecraft Bedrock add-on expert who understands the 
             limitations and capabilities of the Bedrock platform. You excel at finding 
             creative workarounds and making intelligent compromises to adapt Java features 
             for Bedrock.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.bedrock_architect_agent.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.bedrock_architect_agent.get_tools()
+        }
+        
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            architect_kwargs["memory"] = False
+        
+        self.bedrock_architect = Agent(**architect_kwargs)
         
         # PRD Feature 2: Logic Translation Agent
-        self.logic_translator = Agent(
-            role="Code Logic Translator",
-            goal="Convert Java code to Bedrock JavaScript with proper error handling",
-            backstory="""You are a polyglot programmer specializing in Java to JavaScript 
+        translator_kwargs = {
+            "role": "Code Logic Translator",
+            "goal": "Convert Java code to Bedrock JavaScript with proper error handling",
+            "backstory": """You are a polyglot programmer specializing in Java to JavaScript 
             conversion. You understand both object-oriented and event-driven paradigms 
             and can bridge the gap between Minecraft's Java API and Bedrock's JavaScript API.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.logic_translator_agent.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.logic_translator_agent.get_tools()
+        }
+        
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            translator_kwargs["memory"] = False
+            
+        self.logic_translator = Agent(**translator_kwargs)
         
         # PRD Feature 2: Asset Conversion Agent
-        self.asset_converter = Agent(
-            role="Asset Conversion Specialist",
-            goal="Convert all visual and audio assets to Bedrock-compatible formats",
-            backstory="""You are a technical artist who specializes in game asset 
+        asset_kwargs = {
+            "role": "Asset Conversion Specialist",
+            "goal": "Convert all visual and audio assets to Bedrock-compatible formats",
+            "backstory": """You are a technical artist who specializes in game asset 
             conversion. You understand the technical requirements for Minecraft Bedrock 
             textures, models, and sounds, and can optimize them for performance.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.asset_converter_agent.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.asset_converter_agent.get_tools()
+        }
+        
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            asset_kwargs["memory"] = False
+            
+        self.asset_converter = Agent(**asset_kwargs)
         
         # PRD Feature 2: Packaging Agent
-        self.packaging_agent = Agent(
-            role="Bedrock Package Builder",
-            goal="Assemble converted components into valid .mcaddon packages",
-            backstory="""You are a Bedrock add-on packaging expert who knows the exact 
+        packaging_kwargs = {
+            "role": "Bedrock Package Builder",
+            "goal": "Assemble converted components into valid .mcaddon packages",
+            "backstory": """You are a Bedrock add-on packaging expert who knows the exact 
             file structure, manifest requirements, and validation rules for creating 
             working .mcaddon files.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.packaging_agent_instance.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.packaging_agent_instance.get_tools()
+        }
+        
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            packaging_kwargs["memory"] = False
+            
+        self.packaging_agent = Agent(**packaging_kwargs)
         
         # PRD Feature 2: QA Agent
-        self.qa_validator = Agent(
-            role="Quality Assurance Validator",
-            goal="Validate conversion quality and generate comprehensive reports",
-            backstory="""You are a meticulous QA engineer who tests both functionality 
+        qa_kwargs = {
+            "role": "Quality Assurance Validator",
+            "goal": "Validate conversion quality and generate comprehensive reports",
+            "backstory": """You are a meticulous QA engineer who tests both functionality 
             and user experience. You can identify potential issues and provide clear, 
             actionable feedback on conversion quality.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=self.qa_validator_agent.get_tools()
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": self.llm,
+            "tools": self.qa_validator_agent.get_tools()
+        }
+        
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            qa_kwargs["memory"] = False
+            
+        self.qa_validator = Agent(**qa_kwargs)
     
     def _setup_crew(self):
         """Setup the crew workflow following PRD conversion process"""

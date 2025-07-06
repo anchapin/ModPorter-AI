@@ -7,6 +7,7 @@ from typing import Dict, List, Any, Optional
 import logging
 import json
 import re
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
@@ -51,12 +52,37 @@ class LogicTranslatorAgent:
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
-            self.translate_java_method,
-            self.convert_java_class,
-            self.map_java_apis,
-            self.generate_event_handlers,
-            self.validate_javascript_syntax
+            self.translate_java_method_tool,
+            self.convert_java_class_tool,
+            self.map_java_apis_tool,
+            self.generate_event_handlers_tool,
+            self.validate_javascript_syntax_tool
         ]
+    
+    @tool
+    def translate_java_method_tool(self, method_data: str) -> str:
+        """Translate Java method to JavaScript."""
+        return self.translate_java_method(method_data)
+    
+    @tool
+    def convert_java_class_tool(self, class_data: str) -> str:
+        """Convert Java class to JavaScript."""
+        return self.convert_java_class(class_data)
+    
+    @tool
+    def map_java_apis_tool(self, api_data: str) -> str:
+        """Map Java APIs to JavaScript."""
+        return self.map_java_apis(api_data)
+    
+    @tool
+    def generate_event_handlers_tool(self, event_data: str) -> str:
+        """Generate event handlers for JavaScript."""
+        return self.generate_event_handlers(event_data)
+    
+    @tool
+    def validate_javascript_syntax_tool(self, js_data: str) -> str:
+        """Validate JavaScript syntax."""
+        return self.validate_javascript_syntax(js_data)
     
     
     def translate_java_method(self, method_data: str) -> str:

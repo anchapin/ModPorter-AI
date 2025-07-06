@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 import uuid
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
@@ -83,12 +84,37 @@ class PackagingAgent:
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
-            self.analyze_conversion_components,
-            self.create_package_structure,
-            self.generate_manifests,
-            self.validate_package,
-            self.build_mcaddon
+            self.analyze_conversion_components_tool,
+            self.create_package_structure_tool,
+            self.generate_manifests_tool,
+            self.validate_package_tool,
+            self.build_mcaddon_tool
         ]
+    
+    @tool
+    def analyze_conversion_components_tool(self, component_data: str) -> str:
+        """Analyze conversion components for packaging."""
+        return self.analyze_conversion_components(component_data)
+    
+    @tool
+    def create_package_structure_tool(self, structure_data: str) -> str:
+        """Create package structure for Bedrock addon."""
+        return self.create_package_structure(structure_data)
+    
+    @tool
+    def generate_manifests_tool(self, manifest_data: str) -> str:
+        """Generate manifest files for the addon."""
+        return self.generate_manifests(manifest_data)
+    
+    @tool
+    def validate_package_tool(self, validation_data: str) -> str:
+        """Validate the package structure."""
+        return self.validate_package(validation_data)
+    
+    @tool
+    def build_mcaddon_tool(self, build_data: str) -> str:
+        """Build the final mcaddon package."""
+        return self.build_mcaddon(build_data)
     
     
     def analyze_conversion_components(self, components_data: str) -> str:

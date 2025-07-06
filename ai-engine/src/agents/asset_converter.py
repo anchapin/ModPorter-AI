@@ -7,6 +7,7 @@ import logging
 import json
 import base64
 from pathlib import Path
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
@@ -61,12 +62,37 @@ class AssetConverterAgent:
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
-            self.analyze_assets,
-            self.convert_textures,
-            self.convert_models,
-            self.convert_audio,
-            self.validate_bedrock_assets
+            self.analyze_assets_tool,
+            self.convert_textures_tool,
+            self.convert_models_tool,
+            self.convert_audio_tool,
+            self.validate_bedrock_assets_tool
         ]
+    
+    @tool
+    def analyze_assets_tool(self, asset_data: str) -> str:
+        """Analyze assets for conversion."""
+        return self.analyze_assets(asset_data)
+    
+    @tool
+    def convert_textures_tool(self, texture_data: str) -> str:
+        """Convert textures to Bedrock format."""
+        return self.convert_textures(texture_data)
+    
+    @tool
+    def convert_models_tool(self, model_data: str) -> str:
+        """Convert models to Bedrock format."""
+        return self.convert_models(model_data)
+    
+    @tool
+    def convert_audio_tool(self, audio_data: str) -> str:
+        """Convert audio files to Bedrock format."""
+        return self.convert_audio(audio_data)
+    
+    @tool
+    def validate_bedrock_assets_tool(self, validation_data: str) -> str:
+        """Validate assets for Bedrock compatibility."""
+        return self.validate_bedrock_assets(validation_data)
     
     
     def analyze_assets(self, asset_data: str) -> str:

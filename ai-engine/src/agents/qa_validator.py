@@ -8,6 +8,7 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent, AssumptionReport
 )
@@ -64,12 +65,37 @@ class QAValidatorAgent:
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
-            self.validate_conversion_quality,
-            self.run_functional_tests,
-            self.analyze_bedrock_compatibility,
-            self.assess_performance_metrics,
-            self.generate_qa_report
+            self.validate_conversion_quality_tool,
+            self.run_functional_tests_tool,
+            self.analyze_bedrock_compatibility_tool,
+            self.assess_performance_metrics_tool,
+            self.generate_qa_report_tool
         ]
+    
+    @tool
+    def validate_conversion_quality_tool(self, quality_data: str) -> str:
+        """Validate overall conversion quality."""
+        return self.validate_conversion_quality(quality_data)
+    
+    @tool
+    def run_functional_tests_tool(self, test_data: str) -> str:
+        """Run functional tests on the converted addon."""
+        return self.run_functional_tests(test_data)
+    
+    @tool
+    def analyze_bedrock_compatibility_tool(self, compatibility_data: str) -> str:
+        """Analyze Bedrock compatibility of the conversion."""
+        return self.analyze_bedrock_compatibility(compatibility_data)
+    
+    @tool
+    def assess_performance_metrics_tool(self, performance_data: str) -> str:
+        """Assess performance metrics of the converted addon."""
+        return self.assess_performance_metrics(performance_data)
+    
+    @tool
+    def generate_qa_report_tool(self, report_data: str) -> str:
+        """Generate comprehensive QA report."""
+        return self.generate_qa_report(report_data)
     
     
     def validate_conversion_quality(self, validation_data: str) -> str:

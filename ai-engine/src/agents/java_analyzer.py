@@ -8,6 +8,7 @@ import json
 import zipfile
 import os
 from pathlib import Path
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext
 )
@@ -58,13 +59,79 @@ class JavaAnalyzerAgent:
     
     def get_tools(self) -> List:
         """Get tools available to this agent"""
+        # Return actual tool functions for proper agent functionality
         return [
-            self.analyze_mod_structure,
-            self.extract_mod_metadata,
-            self.identify_features,
-            self.analyze_dependencies,
-            self.extract_assets
+            self.analyze_mod_structure_tool,
+            self.extract_mod_metadata_tool,
+            self.identify_features_tool,
+            self.analyze_dependencies_tool,
+            self.extract_assets_tool
         ]
+
+    @tool
+    def analyze_mod_structure_tool(self, mod_data: str) -> str:
+        """
+        Analyze the overall structure of a Java mod.
+        
+        Args:
+            mod_data: JSON string containing mod file path and analysis options
+        
+        Returns:
+            JSON string with structural analysis results
+        """
+        return self.analyze_mod_structure(mod_data)
+
+    @tool
+    def extract_mod_metadata_tool(self, mod_data: str) -> str:
+        """
+        Extract metadata from mod files.
+        
+        Args:
+            mod_data: JSON string containing mod file path
+        
+        Returns:
+            JSON string with metadata
+        """
+        return self.extract_mod_metadata(mod_data)
+
+    @tool 
+    def identify_features_tool(self, mod_data: str) -> str:
+        """
+        Identify features in the mod.
+        
+        Args:
+            mod_data: JSON string containing analysis data
+        
+        Returns:
+            JSON string with identified features
+        """
+        return self.identify_features(mod_data)
+
+    @tool
+    def analyze_dependencies_tool(self, mod_data: str) -> str:
+        """
+        Analyze mod dependencies.
+        
+        Args:
+            mod_data: JSON string containing mod information
+        
+        Returns:
+            JSON string with dependency analysis
+        """
+        return self.analyze_dependencies(mod_data)
+
+    @tool
+    def extract_assets_tool(self, mod_data: str) -> str:
+        """
+        Extract assets from the mod.
+        
+        Args:
+            mod_data: JSON string containing mod file path
+        
+        Returns:
+            JSON string with asset information
+        """
+        return self.extract_assets(mod_data)
     
     def analyze_mod_structure(self, mod_data: str) -> str:
         """

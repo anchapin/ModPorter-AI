@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional
 
 import logging
 import json
+from langchain.tools import tool
 from ..models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, AssumptionResult, 
     ConversionPlanComponent, AssumptionReport
@@ -26,12 +27,37 @@ class BedrockArchitectAgent:
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
-            self.analyze_java_feature,
-            self.apply_smart_assumption,
-            self.create_conversion_plan,
-            self.get_assumption_conflicts,
-            self.validate_bedrock_compatibility
+            self.analyze_java_feature_tool,
+            self.apply_smart_assumption_tool,
+            self.create_conversion_plan_tool,
+            self.get_assumption_conflicts_tool,
+            self.validate_bedrock_compatibility_tool
         ]
+    
+    @tool
+    def analyze_java_feature_tool(self, feature_data: str) -> str:
+        """Analyze a Java mod feature to determine applicable smart assumptions."""
+        return self.analyze_java_feature(feature_data)
+    
+    @tool
+    def apply_smart_assumption_tool(self, assumption_data: str) -> str:
+        """Apply smart assumption to a feature."""
+        return self.apply_smart_assumption(assumption_data)
+    
+    @tool
+    def create_conversion_plan_tool(self, plan_data: str) -> str:
+        """Create a conversion plan for features."""
+        return self.create_conversion_plan(plan_data)
+    
+    @tool
+    def get_assumption_conflicts_tool(self, conflict_data: str) -> str:
+        """Get assumption conflicts for features."""
+        return self.get_assumption_conflicts(conflict_data)
+    
+    @tool
+    def validate_bedrock_compatibility_tool(self, compatibility_data: str) -> str:
+        """Validate Bedrock compatibility of features."""
+        return self.validate_bedrock_compatibility(compatibility_data)
     
     
     def analyze_java_feature(self, feature_data: str) -> str:
