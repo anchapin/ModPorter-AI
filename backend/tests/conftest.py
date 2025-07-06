@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 from src.main import app
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
@@ -13,39 +14,45 @@ def event_loop():
     yield loop
     loop.close()
 
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
     # Clear the in-memory database before each test
     from src.main import conversions_db, uploaded_files
+
     conversions_db.clear()
     uploaded_files.clear()
-    
+
     with TestClient(app) as c:
         yield c
+
 
 @pytest_asyncio.fixture
 async def async_client():
     """Create an async test client for the FastAPI app."""
     from httpx import ASGITransport
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
 
 @pytest.fixture
 def sample_mod_file():
     """Create a sample mod file for testing."""
     import io
     import zipfile
-    
+
     # Create a simple zip file in memory
     zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
         zip_file.writestr("mod.json", '{"name": "TestMod", "version": "1.0.0"}')
         zip_file.writestr("main.java", "public class Main {}")
-    
+
     zip_buffer.seek(0)
     return zip_buffer
+
 
 @pytest.fixture
 def mock_ai_response():
@@ -55,6 +62,6 @@ def mock_ai_response():
         "status": "completed",
         "result": {
             "converted_files": ["output.mcaddon"],
-            "report": "Conversion successful"
-        }
+            "report": "Conversion successful",
+        },
     }

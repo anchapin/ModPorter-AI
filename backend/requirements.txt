@@ -6,12 +6,15 @@ pydantic-settings==2.1.0
 
 # File handling
 python-multipart==0.0.6
+tomli==2.0.1  # TOML parsing for Python <3.11
+
+# HTTP Client for file downloads
+httpx==0.25.2
 
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.0.0
-httpx==0.25.2
 
 # Code Quality
 ruff==0.1.6
