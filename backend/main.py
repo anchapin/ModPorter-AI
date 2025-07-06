@@ -325,7 +325,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
             if not original_filename:
                 original_filename = request.file_name
         else:
-            raise HTTPException(status_code=400, detail="Must provide either (file_id and original_filename) or legacy file_name.")
+            raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
 
     # Persist job to DB (status 'queued', progress 0)
     job = await crud.create_job(
@@ -339,11 +339,12 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     job = await crud.update_job_status(db, job.id, "queued")
 
     # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
+    # Set mirror status to 'preprocessing', but leave DB as 'queued'
     mirror = ConversionJob(
         job_id=str(job.id),
         file_id=file_id,
         original_filename=original_filename,
-        status="queued",
+        status="preprocessing",
         progress=0,
         target_version=request.target_version,
         options=request.options,
@@ -363,8 +364,8 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
 
     return ConversionResponse(
         job_id=str(job.id),
-        status="queued",
-        message="Conversion job started and is now queued.",
+        status="preprocessing",
+        message="Conversion job started and is now preprocessing.",
         estimated_time=35
     )
 
