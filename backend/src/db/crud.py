@@ -4,7 +4,7 @@ from sqlalchemy import select, update, insert
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from src.db import models
+from db import models
 
 async def create_job(
     session: AsyncSession,
