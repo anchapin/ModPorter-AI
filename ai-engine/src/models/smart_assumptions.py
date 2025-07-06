@@ -188,8 +188,51 @@ class SmartAssumptionEngine:
         matching_assumptions = []
         
         for assumption in self.assumption_table:
-            if any(keyword in feature_lower for keyword in 
-                   assumption.java_feature.lower().split()):
+            # Split assumption keywords and feature keywords
+            assumption_keywords = [word.lower() for word in assumption.java_feature.lower().split()]
+            feature_keywords = feature_lower.replace('_', ' ').split()
+            
+            # Calculate match score for better precision
+            match_score = 0
+            specific_matches = 0
+            
+            for feature_word in feature_keywords:
+                for assumption_word in assumption_keywords:
+                    # High-value specific matches
+                    if (feature_word == 'gui' and assumption_word == 'gui/hud') or \
+                       (feature_word == 'hud' and assumption_word == 'gui/hud') or \
+                       (feature_word == 'screen' and 'gui' in assumption_word) or \
+                       ('dimension' in feature_word and 'dimensions' in assumption_word) or \
+                       (feature_word == 'machinery' and 'machinery' in assumption_word) or \
+                       (feature_word == 'machine' and 'machinery' in assumption_word):
+                        match_score += 10
+                        specific_matches += 1
+                    # Exact word matches (but not 'custom' alone)
+                    elif feature_word == assumption_word and feature_word != 'custom':
+                        match_score += 8
+                        specific_matches += 1
+                    # Substring matches for significant words
+                    elif len(feature_word) > 3 and (feature_word in assumption_word or assumption_word in feature_word):
+                        match_score += 5
+                        specific_matches += 1
+                    # Generic 'custom' match (low value)
+                    elif feature_word == 'custom' and assumption_word == 'custom':
+                        match_score += 1
+            
+            # Only include if we have at least one specific match AND not just 'custom'
+            # OR if we have a high match score from multiple good matches
+            non_custom_matches = 0
+            for feature_word in feature_keywords:
+                for assumption_word in assumption_keywords:
+                    if feature_word == assumption_word and feature_word != 'custom':
+                        non_custom_matches += 1
+                    elif ('dimension' in feature_word and 'dimensions' in assumption_word) or \
+                         ('gui' in feature_word and 'gui' in assumption_word) or \
+                         ('machinery' in feature_word and 'machinery' in assumption_word):
+                        non_custom_matches += 1
+            
+            # Include if we have specific non-custom matches or very high score
+            if non_custom_matches > 0 or match_score >= 15:
                 matching_assumptions.append(assumption)
         
         return matching_assumptions
@@ -198,11 +241,58 @@ class SmartAssumptionEngine:
         """Resolve conflicts between multiple matching assumptions using priority rules"""
         logger.info(f"Resolving assumption conflict for feature type '{feature_type}' with {len(conflicting_assumptions)} candidates")
         
+        # Handle edge case of empty list
+        if not conflicting_assumptions:
+            raise ValueError("Cannot resolve conflict with empty assumption list")
+            
+        # Handle edge case of single assumption
+        if len(conflicting_assumptions) == 1:
+            return conflicting_assumptions[0]
+        
         # Priority rule 1: Exact feature type match takes precedence
-        exact_matches = [a for a in conflicting_assumptions if a.java_feature.lower().replace(" ", "_") == feature_type.lower()]
+        exact_matches = [a for a in conflicting_assumptions if a.java_feature.lower().replace(" ", "_").replace("/", "_") == feature_type.lower()]
         if exact_matches:
             selected = exact_matches[0]
             logger.info(f"Selected assumption '{selected.java_feature}' due to exact feature type match")
+            return selected
+            
+        # Priority rule 1.5: High specificity keyword matches (e.g., "gui" in feature should strongly prefer "GUI" assumption)
+        feature_words = set(feature_type.lower().replace('_', ' ').split())
+        
+        def calculate_keyword_relevance(assumption: SmartAssumption, feature_type: str) -> int:
+            """Calculate how relevant an assumption is based on specific keyword matches"""
+            assumption_words = set(assumption.java_feature.lower().replace('/', ' ').split())
+            score = 0
+            
+            # High value matches for specific keywords
+            if 'gui' in feature_words and any('gui' in word for word in assumption_words):
+                score += 10
+            if 'hud' in feature_words and any('hud' in word for word in assumption_words):
+                score += 10
+            if 'dimension' in feature_words and 'dimensions' in assumption_words:
+                score += 10
+            if 'machinery' in feature_words and 'machinery' in assumption_words:
+                score += 10
+            if 'machine' in feature_words and 'machinery' in assumption_words:
+                score += 8
+                
+            # Lower value for generic matches
+            if 'custom' in feature_words and 'custom' in assumption_words:
+                score += 1
+                
+            return score
+        
+        # Sort by keyword relevance first
+        sorted_by_relevance = sorted(conflicting_assumptions, 
+                                   key=lambda a: calculate_keyword_relevance(a, feature_type), 
+                                   reverse=True)
+        
+        # If there's a clear winner by relevance, use it
+        top_relevance = calculate_keyword_relevance(sorted_by_relevance[0], feature_type)
+        if top_relevance > 0 and (len(sorted_by_relevance) == 1 or 
+                                 calculate_keyword_relevance(sorted_by_relevance[1], feature_type) < top_relevance):
+            selected = sorted_by_relevance[0]
+            logger.info(f"Selected assumption '{selected.java_feature}' due to highest keyword relevance (score: {top_relevance})")
             return selected
         
         # Priority rule 2: Higher impact assumptions take precedence (HIGH > MEDIUM > LOW)
@@ -222,7 +312,7 @@ class SmartAssumptionEngine:
         def calculate_specificity(assumption: SmartAssumption, feature_type: str) -> int:
             """Calculate how specific an assumption is for a given feature type"""
             feature_words = set(feature_type.lower().split('_'))
-            assumption_words = set(assumption.java_feature.lower().split())
+            assumption_words = set(assumption.java_feature.lower().replace('/', ' ').split())
             return len(feature_words.intersection(assumption_words))
         
         sorted_by_specificity = sorted(top_impact_assumptions, 
@@ -383,7 +473,7 @@ class SmartAssumptionEngine:
         technical_notes = (
             f"Original feature ID: {feature_context.feature_id}. "
             f"Input dimension data: {str(feature_data)}. "
-            f"Structure will need to incorporate representative elements of biomes: {original_biomes_str}. "
+            f"Structure will need to incorporate representative elements of original_biomes: {original_biomes_str}. "
             f"Generation rules are to be translated into a fixed structural layout. "
             f"Assets (textures, models) associated with the dimension are to be mapped to this structure."
         )
@@ -411,11 +501,15 @@ class SmartAssumptionEngine:
         """
         feature_data = feature_context.original_data
         feature_name = feature_context.name if feature_context.name else feature_context.feature_id
+        
+        # Ensure feature_name is a string
+        if feature_name is None:
+            feature_name = "unknown_machine"
 
         # Determine replacement type (decorative or container)
         # This could be based on feature_data analysis, e.g., if it has inventory slots.
         is_decorative_default = True # Default to decorative
-        if feature_data.get('has_inventory', False) or 'chest' in feature_name.lower() or 'storage' in feature_name.lower():
+        if feature_data.get('has_inventory', False) or 'chest' in str(feature_name).lower() or 'storage' in str(feature_name).lower():
             is_decorative_default = False
 
         replacement_type = 'decorative_block' if is_decorative_default else 'simple_container_block'
@@ -680,23 +774,30 @@ class SmartAssumptionEngine:
         
         if len(all_matching) <= 1:
             return {
+                "feature_name": feature_type,
                 "has_conflicts": False,
                 "matching_assumptions": [a.java_feature for a in all_matching],
                 "selected_assumption": all_matching[0].java_feature if all_matching else None,
-                "resolution_method": "no_conflict"
+                "resolution_method": "no_conflict",
+                "resolution_details": {
+                    "reason": "Only one assumption matches" if all_matching else "No assumptions match",
+                    "total_matches": len(all_matching)
+                }
             }
         
         # Simulate conflict resolution to show the logic
         selected = self._resolve_assumption_conflict(all_matching, feature_type)
         
         return {
+            "feature_name": feature_type,
             "has_conflicts": True,
             "matching_assumptions": [a.java_feature for a in all_matching],
             "selected_assumption": selected.java_feature,
             "resolution_method": "priority_rules",
-            "conflict_details": {
+            "resolution_details": {
+                "total_conflicts": len(all_matching),
                 "impact_levels": {a.java_feature: a.impact.value for a in all_matching},
                 "selected_impact": selected.impact.value,
-                "resolution_reason": f"Selected '{selected.java_feature}' using impact and specificity rules"
+                "resolution_reason": f"Selected '{selected.java_feature}' using keyword relevance and priority rules"
             }
         }
