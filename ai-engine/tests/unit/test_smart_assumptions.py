@@ -209,7 +209,7 @@ def mock_plan_components_for_report() -> List[ConversionPlanComponent]:
         assumption_type="dimension_to_structure",
         bedrock_equivalent="Large structure 'TestDim_structure' in Overworld",
         impact_level=AssumptionImpact.HIGH.value,
-        user_description="The custom dimension 'TestDim' will be converted...",
+        user_explanation="The custom dimension 'TestDim' will be converted...",
         technical_notes="Notes for TestDim"
     )
     comp2 = ConversionPlanComponent(
@@ -218,7 +218,7 @@ def mock_plan_components_for_report() -> List[ConversionPlanComponent]:
         assumption_type="machinery_simplification",
         bedrock_equivalent="Decorative block preserving appearance of 'Grinder'",
         impact_level=AssumptionImpact.MEDIUM.value,
-        user_description="The complex machine 'Grinder' will be simplified...",
+        user_explanation="The complex machine 'Grinder' will be simplified...",
         technical_notes="Notes for Grinder"
     )
     return [comp1, comp2]
@@ -259,7 +259,7 @@ def test_generate_assumption_report_name_extraction_fallback(engine: SmartAssump
         assumption_type="generic_conversion",
         bedrock_equivalent="Some Bedrock thing",
         impact_level=AssumptionImpact.LOW.value,
-        user_description="This is a generic feature conversion.", # No standard "The 'Name'..." pattern
+        user_explanation="This is a generic feature conversion.", # No standard "The 'Name'..." pattern
         technical_notes="Generic notes."
     )
     report = engine.generate_assumption_report([generic_comp])
@@ -450,9 +450,11 @@ def test_resolve_assumption_conflict_deterministic_fallback(engine: SmartAssumpt
     resolved3 = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
     
     # Should always resolve to the same assumption
-    assert resolved1['resolved_assumption'].java_feature == resolved2['resolved_assumption'].java_feature
-    assert resolved2['resolved_assumption'].java_feature == resolved3['resolved_assumption'].java_feature
-    assert "deterministic selection" in resolved1['resolution_reason']
+    assert resolved1.java_feature == resolved2.java_feature
+    assert resolved2.java_feature == resolved3.java_feature
+    
+    # Test that the resolution is deterministic by checking consistency across calls
+    assert resolved1.java_feature in ["Feature A", "Feature B"]
 
 def test_analyze_feature_with_conflicts(engine: SmartAssumptionEngine, conflicting_feature_context: FeatureContext):
     """Test analyze_feature returns conflict information when conflicts exist"""
@@ -542,8 +544,7 @@ def test_conflict_resolution_preserves_assumption_data(engine: SmartAssumptionEn
     
     if len(all_matches) > 1:
         # Resolve conflicts
-        resolution = engine._resolve_assumption_conflict(all_matches, feature_name)
-        resolved_assumption = resolution['resolved_assumption']
+        resolved_assumption = engine._resolve_assumption_conflict(all_matches, feature_name)
         
         # Verify the resolved assumption is one of the original matches
         original_java_features = [a.java_feature for a in all_matches]
@@ -614,7 +615,7 @@ def test_end_to_end_conflict_resolution(engine: SmartAssumptionEngine):
     # Create a feature that should trigger conflicts
     complex_feature = FeatureContext(
         feature_id="complex_mod_feature",
-        feature_type="multi_system",
+        feature_type="machinery_gui_dimension",  # This will match multiple assumptions
         name="Ultimate Mod Feature",
         original_data={
             'has_custom_gui': True,

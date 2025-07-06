@@ -25,6 +25,17 @@ class SmartAssumption:
     impact: AssumptionImpact
     description: str
     implementation_notes: str
+    # Additional fields expected by tests
+    match_patterns: List[str] = None
+    explanation: str = None
+    
+    def __post_init__(self):
+        # Set explanation to description if not provided for backward compatibility
+        if self.explanation is None:
+            self.explanation = self.description
+        # Set default match_patterns if not provided
+        if self.match_patterns is None:
+            self.match_patterns = [word.lower() for word in self.java_feature.split()]
 
 # New Data Classes Start Here
 
@@ -46,12 +57,15 @@ class AssumptionResult:
     applied_assumption: Optional[SmartAssumption] = None # The assumption that applies
     conflicting_assumptions: List[SmartAssumption] = None # Other assumptions that also matched
     conflict_resolution_reason: Optional[str] = None # Why this assumption was selected over others
+    had_conflict: bool = False # Whether conflicts were detected during analysis
     # If no assumption applies, this can remain None, or a specific 'no_assumption_needed' or 'cannot_convert' status could be added.
     # For now, None indicates either it's directly convertible or no specific smart assumption handles it.
 
     def __post_init__(self):
         if self.conflicting_assumptions is None:
             self.conflicting_assumptions = []
+        # Set had_conflict based on the number of conflicting assumptions
+        self.had_conflict = len(self.conflicting_assumptions) > 1
 
 @dataclass
 class ConversionPlanComponent:
@@ -325,6 +339,23 @@ class SmartAssumptionEngine:
         
         return selected
 
+    def _resolve_assumption_conflict_with_details(self, conflicting_assumptions: List[SmartAssumption], feature_type: str) -> Dict[str, Any]:
+        """Resolve conflicts and return detailed information for testing/analysis purposes"""
+        if not conflicting_assumptions:
+            raise ValueError("Cannot resolve conflict with empty assumption list")
+            
+        if len(conflicting_assumptions) == 1:
+            return {
+                'resolved_assumption': conflicting_assumptions[0],
+                'resolution_reason': "Only one assumption provided - no conflict to resolve"
+            }
+        
+        selected = self._resolve_assumption_conflict(conflicting_assumptions, feature_type)
+        return {
+            'resolved_assumption': selected,
+            'resolution_reason': f"Selected '{selected.java_feature}' using conflict resolution rules"
+        }
+
     def analyze_feature(self, feature_context: FeatureContext) -> AssumptionResult:
         """
         Analyzes a given feature context to determine if a smart assumption applies.
@@ -359,7 +390,8 @@ class SmartAssumptionEngine:
             feature_context=feature_context,
             applied_assumption=applicable_assumption,
             conflicting_assumptions=all_matching if len(all_matching) > 1 else [],
-            conflict_resolution_reason=conflict_resolution_reason
+            conflict_resolution_reason=conflict_resolution_reason,
+            had_conflict=len(all_matching) > 1
         )
     
     def apply_assumption(self, analysis_result: AssumptionResult) -> Optional[ConversionPlanComponent]:
@@ -389,11 +421,11 @@ class SmartAssumptionEngine:
 
         # PRD Phase 1: Three core assumptions
         if "dimension" in feature_type_lower and "custom dimensions" in assumption.java_feature.lower():
-            conversion_details_dict = self._convert_custom_dimension(feature_context, assumption)
+            conversion_details_dict = self._convert_custom_dimension(feature_context, assumption, analysis_result)
         elif "machinery" in feature_type_lower and "complex machinery" in assumption.java_feature.lower():
-            conversion_details_dict = self._convert_complex_machinery(feature_context, assumption)
+            conversion_details_dict = self._convert_complex_machinery(feature_context, assumption, analysis_result)
         elif ("gui" in feature_type_lower or "hud" in feature_type_lower) and "custom gui/hud" in assumption.java_feature.lower():
-            conversion_details_dict = self._convert_custom_gui(feature_context, assumption)
+            conversion_details_dict = self._convert_custom_gui(feature_context, assumption, analysis_result)
 
         # Placeholder for other assumptions from the PRD table (not part of Phase 1 implementation focus)
         elif "rendering" in feature_type_lower and "client-side rendering" in assumption.java_feature.lower():
@@ -436,7 +468,7 @@ class SmartAssumptionEngine:
                 technical_notes=f"Generic assumption applied. Specific conversion path not detailed in Phase 1. {assumption.implementation_notes}"
             )
 
-    def _convert_custom_dimension(self, feature_context: FeatureContext, assumption: SmartAssumption) -> Dict[str, Any]:
+    def _convert_custom_dimension(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
         """
         Generates conversion details for turning a custom dimension into a large structure.
 
@@ -477,6 +509,15 @@ class SmartAssumptionEngine:
             f"Generation rules are to be translated into a fixed structural layout. "
             f"Assets (textures, models) associated with the dimension are to be mapped to this structure."
         )
+        
+        # Add conflict information if there were conflicts
+        if analysis_result and analysis_result.had_conflict:
+            conflict_info = (
+                f" Multiple assumptions matched this feature ({len(analysis_result.conflicting_assumptions)} conflicts): "
+                f"{[a.java_feature for a in analysis_result.conflicting_assumptions]}. "
+                f"Selected '{assumption.java_feature}' using conflict resolution rules."
+            )
+            technical_notes += conflict_info
 
         return {
             'original_feature_id': feature_context.feature_id,
@@ -488,7 +529,7 @@ class SmartAssumptionEngine:
             'technical_notes': technical_notes
         }
     
-    def _convert_complex_machinery(self, feature_context: FeatureContext, assumption: SmartAssumption) -> Dict[str, Any]:
+    def _convert_complex_machinery(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
         """
         Generates conversion details for simplifying complex machinery.
 
@@ -537,6 +578,15 @@ class SmartAssumptionEngine:
             f"Target Bedrock type: {replacement_type}. "
             f"Asset conversion for models and textures is critical. Any animations tied to logic will likely be lost or simplified."
         )
+        
+        # Add conflict information if there were conflicts
+        if analysis_result and analysis_result.had_conflict:
+            conflict_info = (
+                f" Multiple assumptions matched this feature ({len(analysis_result.conflicting_assumptions)} conflicts): "
+                f"{[a.java_feature for a in analysis_result.conflicting_assumptions]}. "
+                f"Selected '{assumption.java_feature}' using conflict resolution rules."
+            )
+            technical_notes += conflict_info
 
         return {
             'original_feature_id': feature_context.feature_id,
@@ -667,7 +717,7 @@ class SmartAssumptionEngine:
         logger.info(f"Generated assumption report with {len(report_items)} items.")
         return AssumptionReport(assumptions_applied=report_items)
 
-    def _convert_custom_gui(self, feature_context: FeatureContext, assumption: SmartAssumption) -> Dict[str, Any]:
+    def _convert_custom_gui(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
         """
         Generates conversion details for adapting a custom GUI to a book/sign interface.
 
@@ -708,6 +758,15 @@ class SmartAssumptionEngine:
             f"All interactive components (buttons, checkboxes, text inputs) are mapped to static text descriptions. "
             f"Layout is simplified to sequential pages."
         )
+        
+        # Add conflict information if there were conflicts
+        if analysis_result and analysis_result.had_conflict:
+            conflict_info = (
+                f" Multiple assumptions matched this feature ({len(analysis_result.conflicting_assumptions)} conflicts): "
+                f"{[a.java_feature for a in analysis_result.conflicting_assumptions]}. "
+                f"Selected '{assumption.java_feature}' using conflict resolution rules."
+            )
+            technical_notes += conflict_info
 
         return {
             'original_feature_id': feature_context.feature_id,
@@ -777,27 +836,26 @@ class SmartAssumptionEngine:
                 "feature_name": feature_type,
                 "has_conflicts": False,
                 "matching_assumptions": [a.java_feature for a in all_matching],
-                "selected_assumption": all_matching[0].java_feature if all_matching else None,
-                "resolution_method": "no_conflict",
                 "resolution_details": {
-                    "reason": "Only one assumption matches" if all_matching else "No assumptions match",
+                    "resolved_assumption": all_matching[0] if all_matching else None,
+                    "resolution_reason": "No conflicts detected - only one or zero assumptions match",
                     "total_matches": len(all_matching)
                 }
             }
         
-        # Simulate conflict resolution to show the logic
-        selected = self._resolve_assumption_conflict(all_matching, feature_type)
+        # Resolve conflict to determine selected assumption
+        conflict_resolution = self._resolve_assumption_conflict_with_details(all_matching, feature_type)
+        selected = conflict_resolution['resolved_assumption']
         
         return {
             "feature_name": feature_type,
             "has_conflicts": True,
             "matching_assumptions": [a.java_feature for a in all_matching],
-            "selected_assumption": selected.java_feature,
-            "resolution_method": "priority_rules",
             "resolution_details": {
+                "resolved_assumption": selected,
+                "resolution_reason": conflict_resolution['resolution_reason'],
                 "total_conflicts": len(all_matching),
                 "impact_levels": {a.java_feature: a.impact.value for a in all_matching},
-                "selected_impact": selected.impact.value,
-                "resolution_reason": f"Selected '{selected.java_feature}' using keyword relevance and priority rules"
+                "selected_impact": selected.impact.value
             }
         }
