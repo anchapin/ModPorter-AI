@@ -141,7 +141,7 @@ To empower Minecraft players and creators with a "one-click" AI-powered tool tha
 * **Description:** The user provides a Java mod or modpack via a single file upload or a link to a popular repository.  
 * **User Story:** "As a player, I want to simply drag and drop my CurseForge modpack zip file into the tool and click 'Convert' to start the process."  
 * **Acceptance Criteria:**  
-  * The tool accepts .jar files, .zip modpack archives, and URLs from major mod repositories (e.g., CurseForge, Modrinth).  
+  * The tool accepts and processes .jar files, .zip modpack archives, and URLs from major mod repositories (e.g., CurseForge, Modrinth) for download and conversion.
   * It successfully parses manifests (fabric.mod.json, etc.) to identify all mods and their dependencies within a pack.
 
 #### **Feature 2: AI Conversion Engine**
@@ -206,7 +206,13 @@ To empower Minecraft players and creators with a "one-click" AI-powered tool tha
 * **Non-Functional Requirements:**  
   * **Scalability:** The cloud architecture must scale to handle numerous concurrent conversion requests.  
   * **Transparency:** The tool must never fail silently. All errors and assumptions must be clearly communicated to the user in the final report.  
-  * **Security:** User-uploaded code must be handled in isolated, secure environments and deleted after processing to protect intellectual property. The local validation agent must only interact with the Minecraft applications and not access other user data.
+  * **Temporary File Management:** The system creates temporary directories for processing uploaded or downloaded files. These directories and their contents are automatically cleaned up after processing is complete or in the event of an error to ensure no orphaned files remain.
+  * **Security:**
+    * User-uploaded code must be handled in isolated, secure environments and deleted after processing to protect intellectual property.
+    * Basic internal checks for archive integrity (like ZIP bomb path traversal) are performed. Integration with an external, comprehensive malware scanner (e.g., ClamAV) is recommended for production deployments.
+    * File processing operations should be executed within isolated, ephemeral containers (e.g., Docker) in production to mitigate risks from potentially malicious file uploads.
+    * Rate limiting for API endpoints (e.g., per IP/user) should be implemented at the API gateway, reverse proxy, or via dedicated middleware in production to prevent abuse.
+    * The local validation agent (Feature 4) must only interact with the Minecraft applications and not access other user data.
 
 ### **Section 3.4: Legal and Ethical Considerations**
 
