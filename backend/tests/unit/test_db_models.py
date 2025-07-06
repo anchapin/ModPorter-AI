@@ -1,4 +1,4 @@
-from db import models
+from src.db import models
 
 def test_model_tablenames() -> None:
     assert models.ConversionJob.__tablename__ == "conversion_jobs"
