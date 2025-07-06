@@ -1,18 +1,15 @@
 """
-"""
 Logic Translator Agent - Converts Java code to Bedrock JavaScript
 """
 
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from crewai_tools import BaseTool, tool
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
 
-class JavaToJavaScriptTranslator(BaseTool):
+class JavaToJavaScriptTranslator:
     """Tool for translating Java code to Bedrock JavaScript"""
     
     name: str = "Java to JavaScript Translator"
@@ -262,7 +259,6 @@ class LogicTranslatorAgent:
         self.translator = JavaToJavaScriptTranslator()
         logger.info("LogicTranslatorAgent initialized")
     
-    @tool("Java to JavaScript Code Translator")
     def translate_java_code(self, java_code: str, feature_type: str = "general") -> str:
         """
         Translate Java code to Bedrock JavaScript equivalent.
@@ -276,7 +272,6 @@ class LogicTranslatorAgent:
         """
         return self.translator._run(java_code, feature_type)
     
-    @tool("API Mapping Generator")
     def generate_api_mappings(self, java_apis: str) -> str:
         """
         Generate mappings from Java APIs to Bedrock equivalents.
@@ -379,7 +374,6 @@ class LogicTranslatorAgent:
             logger.error(f"Error generating API mappings: {e}")
             return json.dumps({"error": f"Failed to generate API mappings: {str(e)}"})
     
-    @tool("Code Complexity Analyzer")
     def analyze_code_complexity(self, java_code: str) -> str:
         """
         Analyze complexity of Java code for translation difficulty assessment.

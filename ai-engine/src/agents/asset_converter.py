@@ -1,18 +1,16 @@
 """
-"""
 Asset Converter Agent - Converts visual and audio assets to Bedrock formats
 """
 
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from crewai_tools import BaseTool, tool
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 
-class TextureConverterTool(BaseTool):
+class TextureConverterTool:
     """Tool for converting textures to Bedrock format"""
     
     name: str = "Texture Converter Tool"
@@ -67,7 +65,6 @@ class TextureConverterTool(BaseTool):
     def _convert_single_texture(self, texture_path: str, output_path: str) -> Dict[str, Any]:
         """Convert a single texture file"""
         # Simulate texture conversion logic
-        texture_name = Path(texture_path).stem
         
         # Determine appropriate size based on texture type
         if "block" in texture_path.lower():
@@ -120,8 +117,8 @@ class TextureConverterTool(BaseTool):
         return f"textures/items/{Path(java_path).name}"
 
 
-class ModelConverterTool(BaseTool):
-    """Tool for converting 3D models to Bedrock geometry format"""
+class ModelConverterTool:
+    """Tool for converting three-dimensional models to Bedrock geometry format"""
     
     name: str = "Model Converter Tool"
     description: str = "Converts Java mod models to Bedrock geometry format"
@@ -204,7 +201,7 @@ class ModelConverterTool(BaseTool):
         }
 
 
-class SoundConverterTool(BaseTool):
+class SoundConverterTool:
     """Tool for converting audio files to Bedrock format"""
     
     name: str = "Sound Converter Tool"
@@ -294,7 +291,6 @@ class AssetConverterAgent:
         self.sound_converter = SoundConverterTool()
         logger.info("AssetConverterAgent initialized")
     
-    @tool("Texture Conversion Tool")
     def convert_textures(self, texture_list: str, output_path: str) -> str:
         """
         Convert Java mod textures to Bedrock format.
@@ -308,7 +304,6 @@ class AssetConverterAgent:
         """
         return self.texture_converter._run(texture_list, output_path)
     
-    @tool("Model Conversion Tool")
     def convert_models(self, model_list: str, output_path: str) -> str:
         """
         Convert Java mod models to Bedrock geometry format.
@@ -322,7 +317,6 @@ class AssetConverterAgent:
         """
         return self.model_converter._run(model_list, output_path)
     
-    @tool("Sound Conversion Tool")
     def convert_sounds(self, sound_list: str, output_path: str) -> str:
         """
         Convert Java mod sounds to Bedrock audio format.
@@ -336,7 +330,6 @@ class AssetConverterAgent:
         """
         return self.sound_converter._run(sound_list, output_path)
     
-    @tool("Asset Organization Tool")
     def organize_assets(self, asset_data: str, output_path: str) -> str:
         """
         Organize all converted assets into proper Bedrock resource pack structure.
@@ -409,7 +402,6 @@ class AssetConverterAgent:
             logger.error(f"Error organizing assets: {e}")
             return json.dumps({"error": f"Failed to organize assets: {str(e)}"})
     
-    @tool("Asset Quality Checker")
     def check_asset_quality(self, asset_data: str) -> str:
         """
         Check quality and compatibility of converted assets.

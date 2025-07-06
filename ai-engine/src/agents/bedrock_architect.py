@@ -1,18 +1,15 @@
 """
-"""
 Bedrock Architect Agent - Designs conversion strategies using Smart Assumptions
 """
 
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from crewai_tools import BaseTool, tool
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 
-class ConversionPlannerTool(BaseTool):
+class ConversionPlannerTool:
     """Tool for creating conversion plans with smart assumptions"""
     
     name: str = "Conversion Planner Tool"
@@ -239,7 +236,6 @@ class BedrockArchitectAgent:
         self.conversion_planner = ConversionPlannerTool()
         logger.info("BedrockArchitectAgent initialized")
     
-    @tool("Bedrock Conversion Planning Tool")
     def create_conversion_plan(self, analysis_data: str, smart_assumptions_table: str) -> str:
         """
         Create a detailed conversion plan based on mod analysis data.
@@ -254,7 +250,6 @@ class BedrockArchitectAgent:
         """
         return self.conversion_planner._run(analysis_data, smart_assumptions_table)
     
-    @tool("Feature Compatibility Checker")
     def check_feature_compatibility(self, feature_list: str) -> str:
         """
         Check compatibility of Java features with Bedrock platform.

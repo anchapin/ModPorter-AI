@@ -1,20 +1,17 @@
 """
-"""
 Packaging Agent - Assembles converted components into .mcaddon packages
 """
 
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from crewai_tools import BaseTool, tool
+from typing import Dict, List
 import uuid
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-class ManifestGeneratorTool(BaseTool):
+class ManifestGeneratorTool:
     """Tool for generating Bedrock add-on manifest files"""
     
     name: str = "Manifest Generator Tool"
@@ -67,7 +64,6 @@ class ManifestGeneratorTool(BaseTool):
             # Add dependencies if both packs are present
             if pack_type == "both" and len(manifest_data["modules"]) > 1:
                 # Resource pack depends on behavior pack
-                resource_module = next(m for m in manifest_data["modules"] if m["type"] == "resources")
                 behavior_module = next(m for m in manifest_data["modules"] if m["type"] == "data")
                 
                 manifest_data["dependencies"] = [
@@ -124,7 +120,7 @@ class ManifestGeneratorTool(BaseTool):
             return [1, 0, 0]  # Default version
 
 
-class PackageAssemblerTool(BaseTool):
+class PackageAssemblerTool:
     """Tool for assembling all components into final package structure"""
     
     name: str = "Package Assembler Tool"
@@ -285,7 +281,7 @@ class PackageAssemblerTool(BaseTool):
         return instructions
 
 
-class PackageValidatorTool(BaseTool):
+class PackageValidatorTool:
     """Tool for validating assembled packages"""
     
     name: str = "Package Validator Tool"
@@ -416,7 +412,6 @@ class PackagingAgent:
         self.package_validator = PackageValidatorTool()
         logger.info("PackagingAgent initialized")
     
-    @tool("Manifest Generation Tool")
     def generate_manifest(self, mod_info: str, pack_type: str = "both") -> str:
         """
         Generate manifest.json files for Bedrock add-on.
@@ -430,7 +425,6 @@ class PackagingAgent:
         """
         return self.manifest_generator._run(mod_info, pack_type)
     
-    @tool("Package Assembly Tool")
     def assemble_package(self, conversion_data: str, output_path: str) -> str:
         """
         Assemble all converted components into final package structure.
@@ -444,7 +438,6 @@ class PackagingAgent:
         """
         return self.package_assembler._run(conversion_data, output_path)
     
-    @tool("Package Validation Tool")
     def validate_package(self, package_data: str) -> str:
         """
         Validate assembled package for correctness and completeness.
@@ -457,7 +450,6 @@ class PackagingAgent:
         """
         return self.package_validator._run(package_data)
     
-    @tool("Installation Guide Generator")
     def generate_installation_guide(self, package_data: str, mod_info: str) -> str:
         """
         Generate comprehensive installation guide for converted add-on.

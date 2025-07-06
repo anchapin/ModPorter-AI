@@ -9,12 +9,6 @@ from typing import Dict, Any
 import logging
 from pathlib import Path
 
-from ..agents.java_analyzer import JavaAnalyzerAgent
-from ..agents.bedrock_architect import BedrockArchitectAgent
-from ..agents.logic_translator import LogicTranslatorAgent
-from ..agents.asset_converter import AssetConverterAgent
-from ..agents.packaging_agent import PackagingAgent
-from ..agents.qa_validator import QAValidatorAgent
 from ..models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
@@ -50,7 +44,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[JavaAnalyzerAgent().get_tools()]
+            tools=[]
         )
         
         # PRD Feature 2: Planner Agent (Bedrock Architect)
@@ -64,7 +58,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[BedrockArchitectAgent().get_tools()]
+            tools=[]
         )
         
         # PRD Feature 2: Logic Translation Agent
@@ -77,7 +71,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[LogicTranslatorAgent().get_tools()]
+            tools=[]
         )
         
         # PRD Feature 2: Asset Conversion Agent
@@ -90,7 +84,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[AssetConverterAgent().get_tools()]
+            tools=[]
         )
         
         # PRD Feature 2: Packaging Agent
@@ -103,7 +97,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[PackagingAgent().get_tools()]
+            tools=[]
         )
         
         # PRD Feature 2: QA Agent
@@ -116,7 +110,7 @@ class ModPorterConversionCrew:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[QAValidatorAgent().get_tools()]
+            tools=[]
         )
     
     def _setup_crew(self):

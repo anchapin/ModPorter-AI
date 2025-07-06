@@ -1,8 +1,6 @@
 import logging
 import zipfile
-import os
 from pathlib import Path
-from crewai_tools import BaseTool, tool # Import tool decorator
 import json
 import shutil # For cleaning up temp directory
 
@@ -20,7 +18,7 @@ ASSET_CONFIG = {
     "font": {"extensions": [".ttf", ".otf", ".png"], "paths": ["assets/**/font"]}
 }
 
-class ExtractModFileToolInternal(BaseTool): # Renamed to avoid conflict if used elsewhere
+class ExtractModFileToolInternal: # Renamed to avoid conflict if used elsewhere
     name: str = "Internal Extract Mod File Tool"
     description: str = "Extracts the contents of a .jar or .zip mod file to a temporary directory and returns the path to this directory."
 
@@ -49,7 +47,7 @@ class ExtractModFileToolInternal(BaseTool): # Renamed to avoid conflict if used 
             logger.error(f"Error extracting mod file {mod_file_path}: {e}")
             return json.dumps({"error": f"Error extracting mod file {mod_file_path}: {str(e)}"})
 
-class IdentifyModFrameworkToolInternal(BaseTool): # Renamed
+class IdentifyModFrameworkToolInternal: # Renamed
     name: str = "Internal Identify Mod Framework Tool"
     description: str = "Identifies the mod framework."
 
@@ -62,16 +60,20 @@ class IdentifyModFrameworkToolInternal(BaseTool): # Renamed
             fabric_manifest_path = base_path / "fabric.mod.json"
             if fabric_manifest_path.exists():
                 try:
-                    with open(fabric_manifest_path, 'r') as f: data = json.load(f)
+                    with open(fabric_manifest_path, 'r') as f:
+                        data = json.load(f)
                     return json.dumps({"framework": "fabric", "id": data.get("id"), "version": data.get("version"), "minecraft_version": data.get("depends", {}).get("minecraft"), "dependencies": data.get("depends")})
-                except Exception as e: return json.dumps({"framework": "fabric", "error": f"Error parsing fabric.mod.json: {str(e)}"})
+                except Exception as e:
+                    return json.dumps({"framework": "fabric", "error": f"Error parsing fabric.mod.json: {str(e)}"})
 
             quilt_manifest_path = base_path / "quilt.mod.json"
             if quilt_manifest_path.exists():
                 try:
-                    with open(quilt_manifest_path, 'r') as f: data = json.load(f)
+                    with open(quilt_manifest_path, 'r') as f:
+                        data = json.load(f)
                     return json.dumps({"framework": "quilt", "id": data.get("quilt_loader", {}).get("id"), "version": data.get("quilt_loader", {}).get("version"), "minecraft_version": data.get("quilt_loader",{}).get("depends", {}).get("minecraft")})
-                except Exception as e: return json.dumps({"framework": "quilt", "error": f"Error parsing quilt.mod.json: {str(e)}"})
+                except Exception as e:
+                    return json.dumps({"framework": "quilt", "error": f"Error parsing quilt.mod.json: {str(e)}"})
 
             forge_manifest_path_toml = base_path / "META-INF" / "mods.toml"
             if forge_manifest_path_toml.exists():
@@ -80,15 +82,18 @@ class IdentifyModFrameworkToolInternal(BaseTool): # Renamed
             forge_manifest_path_mcmod = base_path / "mcmod.info"
             if forge_manifest_path_mcmod.exists():
                 try:
-                    with open(forge_manifest_path_mcmod, 'r') as f: content = f.read()
+                    with open(forge_manifest_path_mcmod, 'r') as f:
+                        content = f.read()
                     data = json.loads(content)
                     mod_info = data[0] if isinstance(data, list) and data else data
                     return json.dumps({"framework": "forge", "manifest_type": "mcmod.info", "id": mod_info.get("modid"), "version": mod_info.get("version"), "minecraft_version": mod_info.get("mcversion")})
-                except Exception as e: return json.dumps({"framework": "forge", "manifest_type": "mcmod.info", "error": f"Error parsing mcmod.info: {str(e)}"})
+                except Exception as e:
+                    return json.dumps({"framework": "forge", "manifest_type": "mcmod.info", "error": f"Error parsing mcmod.info: {str(e)}"})
             return json.dumps({"framework": "unknown", "message": "No known manifest file found."})
-        except Exception as e: return json.dumps({"error": f"Error identifying mod framework: {str(e)}"})
+        except Exception as e:
+            return json.dumps({"error": f"Error identifying mod framework: {str(e)}"})
 
-class CatalogAssetsToolInternal(BaseTool): # Renamed
+class CatalogAssetsToolInternal: # Renamed
     name: str = "Internal Catalog Mod Assets Tool"
     description: str = "Catalogs assets."
     def _run(self, extracted_mod_path: str) -> str:
@@ -96,32 +101,42 @@ class CatalogAssetsToolInternal(BaseTool): # Renamed
             base_path = Path(extracted_mod_path)
             if not base_path.exists() or not base_path.is_dir():
                 return json.dumps({"error": f"Extraction path not found: {extracted_mod_path}"})
-            found_assets = {category: [] for category in ASSET_CONFIG.keys()}; found_assets["other"] = []
+            found_assets = {category: [] for category in ASSET_CONFIG.keys()}
+            found_assets["other"] = []
             for file_path in base_path.rglob("*"):
                 if file_path.is_file():
-                    relative_path_str = str(file_path.relative_to(base_path)).replace("\\", "/"); categorized = False
+                    relative_path_str = str(file_path.relative_to(base_path)).replace("\\", "/")
+                    categorized = False
                     for category, config in ASSET_CONFIG.items():
                         if file_path.suffix.lower() in config["extensions"]:
                             if any(Path(relative_path_str).match(pattern) for pattern in config["paths"]):
-                                found_assets[category].append(relative_path_str); categorized = True; break
+                                found_assets[category].append(relative_path_str)
+                                categorized = True
+                                break
                     if not categorized:
-                        if "assets/" in relative_path_str.lower() and file_path.suffix.lower() in ASSET_CONFIG["textures"]["extensions"] and "/textures/" in relative_path_str.lower() : found_assets["textures"].append(relative_path_str); categorized = True
-                        elif not categorized: found_assets["other"].append(relative_path_str)
+                        if "assets/" in relative_path_str.lower() and file_path.suffix.lower() in ASSET_CONFIG["textures"]["extensions"] and "/textures/" in relative_path_str.lower():
+                            found_assets["textures"].append(relative_path_str)
+                            categorized = True
+                        elif not categorized:
+                            found_assets["other"].append(relative_path_str)
             final_catalog = {k: v for k,v in found_assets.items() if v}
             return json.dumps(final_catalog)
-        except Exception as e: return json.dumps({"error": f"Error cataloging assets: {str(e)}"})
+        except Exception as e:
+            return json.dumps({"error": f"Error cataloging assets: {str(e)}"})
 
-class ParseJavaCodeToolInternal(BaseTool): # Renamed
+class ParseJavaCodeToolInternal: # Renamed
     name: str = "Internal Parse Java Code Tool"
     description: str = "Identifies Java source files."
     def _run(self, extracted_mod_path: str) -> str:
         try:
             base_path = Path(extracted_mod_path)
-            if not base_path.exists() or not base_path.is_dir(): return json.dumps({"error": f"Extraction path not found: {extracted_mod_path}"})
+            if not base_path.exists() or not base_path.is_dir():
+                return json.dumps({"error": f"Extraction path not found: {extracted_mod_path}"})
             java_files = [str(fp.relative_to(base_path)).replace("\\", "/") for fp in base_path.rglob("*.java") if fp.is_file()]
             identified_features = {"blocks": [], "items": [], "entities": [], "dimensions": [], "guis": [], "recipes_in_code": [], "dependencies_in_code": []}
             return json.dumps({"java_files_found": java_files, "identified_features_placeholder": identified_features, "analysis_status": "Initial scan for .java files completed."})
-        except Exception as e: return json.dumps({"error": f"Error during initial Java code scan: {str(e)}"})
+        except Exception as e:
+            return json.dumps({"error": f"Error during initial Java code scan: {str(e)}"})
 
 
 class JavaAnalyzerAgent:
@@ -135,7 +150,6 @@ class JavaAnalyzerAgent:
         self._asset_catalog_tool_internal = CatalogAssetsToolInternal()
         self._java_parser_tool_internal = ParseJavaCodeToolInternal()
 
-    @tool("Java Mod Analysis Tool")
     def analyze_mod_file(self, mod_file_path: str) -> str:
         """
         Analyzes a Java mod file (.jar or .zip) and returns a comprehensive JSON report.
@@ -181,18 +195,21 @@ class JavaAnalyzerAgent:
                 assets_result_str = self._asset_catalog_tool_internal._run(extracted_path_str)
                 assets_result = json.loads(assets_result_str)
                 final_report["raw_analysis_data"]["asset_catalog"] = assets_result
-                if "error" not in assets_result: final_report["assets"] = assets_result
-                else: final_report["errors"].append(f"Asset catalog error: {assets_result['error']}")
+                if "error" not in assets_result:
+                    final_report["assets"] = assets_result
+                else:
+                    final_report["errors"].append(f"Asset catalog error: {assets_result['error']}")
 
                 java_scan_result_str = self._java_parser_tool_internal._run(extracted_path_str)
                 java_scan_result = json.loads(java_scan_result_str)
                 final_report["raw_analysis_data"]["java_code_scan"] = java_scan_result
                 if "error" not in java_scan_result:
                     final_report["features"].update(java_scan_result.get("identified_features_placeholder", {}))
-                else: final_report["errors"].append(f"Java scan error: {java_scan_result['error']}")
+                else:
+                    final_report["errors"].append(f"Java scan error: {java_scan_result['error']}")
 
                 final_report["complexity_score"] = 5.0
-            except Exception as e_main_analysis: # Catch errors during the main analysis phase
+            except Exception as e_main_analysis:  # Catch errors during the main analysis phase
                 logger.error(f"Error during main analysis of {extracted_path_str}: {e_main_analysis}")
                 final_report["errors"].append(f"Main analysis phase error: {str(e_main_analysis)}")
             finally:
@@ -205,7 +222,7 @@ class JavaAnalyzerAgent:
                         logger.error(f"Error cleaning up temp directory {extracted_path_obj}: {e}")
                         final_report["errors"].append(f"Cleanup error: {str(e)}")
                 elif extracted_path_obj.exists():
-                     logger.warning(f"Skipping cleanup of {extracted_path_obj} as it is not in the designated temp area {self.temp_base_path.resolve()}.")
+                    logger.warning(f"Skipping cleanup of {extracted_path_obj} as it is not in the designated temp area {self.temp_base_path.resolve()}.")
 
         return json.dumps(final_report, indent=2)
 

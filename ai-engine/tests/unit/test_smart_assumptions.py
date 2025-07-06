@@ -2,8 +2,7 @@
 Unit tests for Smart Assumption Engine
 """
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
     SmartAssumption,

@@ -1,19 +1,16 @@
 """
-"""
 QA Validator Agent - Validates conversion quality and generates comprehensive reports
 """
 
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from crewai_tools import BaseTool, tool
+from typing import Dict, List
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
-class ConversionQualityChecker(BaseTool):
+class ConversionQualityChecker:
     """Tool for checking overall conversion quality"""
     
     name: str = "Conversion Quality Checker"
@@ -290,7 +287,7 @@ class ConversionQualityChecker(BaseTool):
         assessment["recommendations"] = recommendations
 
 
-class ConversionReportGenerator(BaseTool):
+class ConversionReportGenerator:
     """Tool for generating comprehensive conversion reports"""
     
     name: str = "Conversion Report Generator"
@@ -504,7 +501,6 @@ class QAValidatorAgent:
         self.report_generator = ConversionReportGenerator()
         logger.info("QAValidatorAgent initialized")
     
-    @tool("Conversion Quality Assessment Tool")
     def assess_conversion_quality(self, conversion_data: str) -> str:
         """
         Assess the overall quality of the mod conversion.
@@ -517,7 +513,6 @@ class QAValidatorAgent:
         """
         return self.quality_checker._run(conversion_data)
     
-    @tool("Conversion Report Generator")
     def generate_conversion_report(self, conversion_data: str, quality_assessment: str) -> str:
         """
         Generate comprehensive conversion report.
@@ -531,7 +526,6 @@ class QAValidatorAgent:
         """
         return self.report_generator._run(conversion_data, quality_assessment)
     
-    @tool("Feature Validation Tool")
     def validate_converted_features(self, feature_data: str) -> str:
         """
         Validate individual converted features for correctness.
@@ -619,8 +613,6 @@ class QAValidatorAgent:
     def _validate_item_feature(self, feature: Dict) -> bool:
         """Validate a converted item feature"""
         # Check for required item properties
-        required_properties = ["max_stack_size", "durability"]
-        
         properties = feature.get("properties", {})
         if not properties:
             if "validation_issues" not in feature:
@@ -633,8 +625,6 @@ class QAValidatorAgent:
     def _validate_entity_feature(self, feature: Dict) -> bool:
         """Validate a converted entity feature"""
         # Check for required entity components
-        required_components = ["health", "movement"]
-        
         components = feature.get("components", {})
         if not components:
             if "validation_issues" not in feature:
