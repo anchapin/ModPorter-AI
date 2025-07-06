@@ -4,6 +4,14 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
+# Database
+sqlalchemy>=2.0.23
+asyncpg>=0.29
+alembic==1.12.0
+
+# Caching
+redis[asyncio]==5.0.1
+
 # File handling
 python-multipart==0.0.6
 
