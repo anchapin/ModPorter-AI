@@ -60,25 +60,22 @@ class TestFileProcessor:
 
         url = "http://example.com/download.zip" # URL passed to function can be different
 
-        # Mock Path.mkdir to check if it's called, though temp_job_dirs fixture already creates it
-        with mock.patch.object(Path, 'mkdir', wraps=Path.mkdir) as mock_mkdir:
-            result = await file_processor.download_from_url(url, mock_job_id)
+        # The temp_job_dirs fixture already creates the directory
+        result = await file_processor.download_from_url(url, mock_job_id)
 
-            # Assertions
-            download_dir = temp_job_dirs["upload"] # Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
+        # Assertions
+        download_dir = temp_job_dirs["upload"] # Path(f"/tmp/conversions/{mock_job_id}/uploaded/")
 
-            # Check if mkdir was called for the specific download_dir structure if not already existing
-            # This can be tricky if the fixture always creates it.
-            # A more direct check is that the directory exists, which the fixture ensures.
-            assert download_dir.exists()
+        # Check that the directory exists (ensured by fixture)
+        assert download_dir.exists()
 
-            expected_file_path = download_dir / "example.zip"
-            assert result.success is True
-            assert result.file_path == expected_file_path
-            assert result.file_name == "example.zip"
-            assert expected_file_path.read_bytes() == b"file content"
+        expected_file_path = download_dir / "example.zip"
+        assert result.success is True
+        assert result.file_path == expected_file_path
+        assert result.file_name == "example.zip"
+        assert expected_file_path.read_bytes() == b"file content"
 
-            MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_once_with(url, follow_redirects=True, timeout=30.0)
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_once_with(url, follow_redirects=True, timeout=30.0)
 
     @pytest.mark.asyncio
     @mock.patch("src.file_processor.httpx.AsyncClient")
