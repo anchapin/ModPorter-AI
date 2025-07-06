@@ -5,6 +5,7 @@ python-multipart>=0.0.6
 
 # AI Framework
 crewai>=0.1.0
+crewai-tools>=0.1.0
 langchain>=0.0.354,<0.0.355
 langchain-openai>=0.0.2,<0.0.3
 openai>=1.0.0

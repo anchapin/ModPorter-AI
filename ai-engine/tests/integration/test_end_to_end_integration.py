@@ -33,6 +33,43 @@ class TestEndToEndIntegration:
         """Set up test environment"""
         self.smart_engine = SmartAssumptionEngine()
         
+        # Test features for integration testing
+        self.test_features = [
+            {
+                'feature_type': 'custom_dimension',
+                'feature_data': {
+                    'id': 'twilight_forest_dim_001',
+                    'name': 'Twilight Forest',
+                    'theme': 'forest_like',
+                    'biomes': ['twilight_forest', 'dense_forest'],
+                    'generation_rules': {'tree_density': 'high', 'mob_spawns': 'custom'}
+                }
+            },
+            {
+                'feature_type': 'complex_machinery',
+                'feature_data': {
+                    'id': 'industrial_crusher_001',
+                    'name': 'Industrial Crusher',
+                    'has_inventory': True,
+                    'power_related': True,
+                    'item_io_ports': True,
+                    'processing_logic': 'complex_ore_processing'
+                }
+            },
+            {
+                'feature_type': 'custom_gui',
+                'feature_data': {
+                    'id': 'machine_control_panel_001',
+                    'name': 'Machine Control Panel',
+                    'elements': [
+                        {'type': 'label', 'text': 'Power Status', 'x': 10, 'y': 10},
+                        {'type': 'button', 'text': 'Start Process', 'action_id': 'start_processing'},
+                        {'type': 'slot', 'item_id': 'minecraft:diamond', 'x': 20, 'y': 30}
+                    ]
+                }
+            }
+        ]
+        
     def test_smart_assumption_engine_initialization(self):
         """Test that SmartAssumptionEngine initializes correctly with all assumptions"""
         assert self.smart_engine is not None
@@ -101,35 +138,6 @@ class TestEndToEndIntegration:
         assert plan_component.assumption_type == "dimension_to_structure"
         assert "Twilight Forest" in plan_component.user_explanation
         assert plan_component.impact_level == "high"
-                    'name': 'Industrial Crusher',
-                    'has_inventory': True,
-                    'power_related': True,
-                    'item_io_ports': True,
-                    'processing_logic': 'complex_ore_processing'
-                }
-            },
-            {
-                'feature_type': 'custom_gui',
-                'feature_data': {
-                    'id': 'machine_control_panel_001',
-                    'name': 'Machine Control Panel',
-                    'elements': [
-                        {'type': 'label', 'text': 'Power Status', 'x': 10, 'y': 10},
-                        {'type': 'button', 'text': 'Start Process', 'action_id': 'start_processing'},
-                        {'type': 'slot', 'item_id': 'minecraft:diamond', 'x': 20, 'y': 30}
-                    ]
-                }
-            },
-            {
-                'feature_type': 'custom_entity_ai',
-                'feature_data': {
-                    'id': 'smart_golem_001',
-                    'name': 'Smart Golem',
-                    'ai_behaviors': ['pathfinding', 'item_collection', 'defensive_actions'],
-                    'custom_logic': 'java_based_ai_controller'
-                }
-            }
-        ]
     
     def test_smart_assumption_engine_integration(self):
         """Test SmartAssumptionEngine with conflict detection and resolution"""
