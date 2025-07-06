@@ -92,6 +92,7 @@ class UploadResponse(BaseModel):
     size: int = Field(..., description="Size of the uploaded file in bytes.")
     content_type: Optional[str] = Field(default=None, description="Detected content type of the uploaded file.")
     message: str = Field(..., description="Status message confirming the upload.")
+    filename: str = Field(..., description="The uploaded filename (matches original_filename)")
 
 class ConversionResponse(BaseModel):
     """Response model for mod conversion"""
@@ -142,7 +143,7 @@ async def health_check():
 
 # File upload endpoint
 @app.post("/api/upload", response_model=UploadResponse, tags=["files"])
-async def upload_file(file: UploadFile = File(...), filename: str = None):
+async def upload_file(file: UploadFile = File(...)):
     """
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
 
@@ -171,8 +172,8 @@ async def upload_file(file: UploadFile = File(...), filename: str = None):
 
     # Generate unique file identifier
     file_id = str(uuid.uuid4())
-    filename = f"{file_id}{file_ext}"
-    file_path = os.path.join(TEMP_UPLOADS_DIR, filename)
+    saved_filename = f"{file_id}{file_ext}"
+    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
 
     # Save the uploaded file
     try:
@@ -196,11 +197,10 @@ async def upload_file(file: UploadFile = File(...), filename: str = None):
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
-        saved_filename=filename, # The name with job_id and extension
+        saved_filename=saved_filename, # The name with job_id and extension
         size=real_file_size,  # Use the actual size we read
         content_type=file.content_type,
-        message=f"File '{original_filename}' saved successfully as '{filename}'",
-        # Include the uploaded filename if available
+        message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
         filename=original_filename
     )
 
@@ -305,12 +305,32 @@ async def simulate_ai_conversion(job_id: str):
 async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Start a new mod conversion job.
+    Handles both legacy (file_name) and new (file_id+original_filename) fields.
+    Validates that a file_id and original_filename are resolved.
     """
+    # Legacy support: if file_id or original_filename missing, try to resolve from file_name
+    file_id = request.file_id
+    original_filename = request.original_filename
+
+    if not file_id or not original_filename:
+        # Try to resolve from legacy 'file_name'
+        if request.file_name:
+            # Try to extract file_id from a file_name pattern like "{file_id}.{ext}"
+            parts = os.path.splitext(request.file_name)
+            maybe_file_id = parts[0]
+            maybe_ext = parts[1]
+            if not file_id:
+                file_id = maybe_file_id
+            if not original_filename:
+                original_filename = request.file_name
+        else:
+            raise HTTPException(status_code=400, detail="Must provide either (file_id and original_filename) or legacy file_name.")
+
     # Persist job to DB (status 'queued', progress 0)
     job = await crud.create_job(
         db,
-        file_id=request.file_id,
-        original_filename=request.original_filename,
+        file_id=file_id,
+        original_filename=original_filename,
         target_version=request.target_version,
         options=request.options
     )
@@ -320,8 +340,8 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
     mirror = ConversionJob(
         job_id=str(job.id),
-        file_id=request.file_id,
-        original_filename=request.original_filename,
+        file_id=file_id,
+        original_filename=original_filename,
         status="queued",
         progress=0,
         target_version=request.target_version,
