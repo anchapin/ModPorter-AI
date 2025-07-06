@@ -3,7 +3,7 @@ ModPorter AI Backend API
 Modern FastAPI implementation with database integration
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path as FastAPIPath, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
@@ -436,7 +436,7 @@ async def start_conversion_simple(request: ConversionRequest):
     return conversion_data
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Get the current status of a specific conversion job.
     """
@@ -573,7 +573,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
     return statuses
 
 @app.delete("/api/convert/{job_id}", tags=["conversion"])
-async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Cancel an ongoing conversion job.
     """
@@ -604,7 +604,7 @@ async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-
 
 # Download endpoint
 @app.get("/api/download/{job_id}", tags=["files"])
-async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
+async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
     """
     Download the converted mod file.
 
