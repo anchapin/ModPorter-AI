@@ -436,6 +436,9 @@ async def start_conversion_simple(request: ConversionRequest):
     return conversion_data
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
+async def get_conversion_status(job_id: str = Path(default=..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID)."), db: AsyncSession = Depends(get_db)):
+async def get_conversion_status(job_id: str = Path(default=..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID)."), db: AsyncSession = Depends(get_db)):
+async def get_conversion_status(job_id: str = Path(default=..., pattern="^[a-f0-9]{32}$", description="Unique identifier for the conversion job (32-character hex UUID)."), db: AsyncSession = Depends(get_db)):
 async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Get the current status of a specific conversion job.
