@@ -108,6 +108,7 @@ class ConversionStatus(BaseModel):
     message: str
     result_url: Optional[str] = None
     error: Optional[str] = None
+    created_at: datetime
 
 class ConversionJob(BaseModel):
     """Detailed model for a conversion job"""
@@ -141,7 +142,7 @@ async def health_check():
 
 # File upload endpoint
 @app.post("/api/upload", response_model=UploadResponse, tags=["files"])
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), filename: str = None):
     """
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
 
@@ -198,7 +199,9 @@ async def upload_file(file: UploadFile = File(...)):
         saved_filename=filename, # The name with job_id and extension
         size=real_file_size,  # Use the actual size we read
         content_type=file.content_type,
-        message=f"File '{original_filename}' saved successfully as '{filename}'"
+        message=f"File '{original_filename}' saved successfully as '{filename}'",
+        # Include the uploaded filename if available
+        filename=original_filename
     )
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
@@ -303,7 +306,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     """
     Start a new mod conversion job.
     """
-    # Persist job to DB (status 'preprocessing', progress 0)
+    # Persist job to DB (status 'queued', progress 0)
     job = await crud.create_job(
         db,
         file_id=request.file_id,
@@ -311,13 +314,15 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         target_version=request.target_version,
         options=request.options
     )
+    # Immediately update job status to 'queued' after creation
+    job = await crud.update_job_status(db, job.id, "queued")
 
     # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
     mirror = ConversionJob(
         job_id=str(job.id),
         file_id=request.file_id,
         original_filename=request.original_filename,
-        status="preprocessing",
+        status="queued",
         progress=0,
         target_version=request.target_version,
         options=request.options,
@@ -337,8 +342,8 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
 
     return ConversionResponse(
         job_id=str(job.id),
-        status="preprocessing",
-        message="Conversion job started and is now preprocessing.",
+        status="queued",
+        message="Conversion job started and is now queued.",
         estimated_time=35
     )
 
@@ -378,7 +383,8 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[a-f0-9]{32}$"
             progress=progress,
             message=descriptive_message,
             result_url=result_url,
-            error=error_message
+            error=error_message,
+            created_at=cached.get("created_at", datetime.utcnow()) if cached else datetime.utcnow()
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
@@ -430,7 +436,8 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[a-f0-9]{32}$"
         progress=progress,
         message=descriptive_message,
         result_url=result_url,
-        error=error_message
+        error=error_message,
+        created_at=job.created_at
     )
 
 @app.get("/api/convert", response_model=List[ConversionStatus], tags=["conversion"])
@@ -472,7 +479,8 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             progress=progress,
             message=message,
             result_url=result_url,
-            error=error_message
+            error=error_message,
+            created_at=job.created_at
         ))
     return statuses
 
