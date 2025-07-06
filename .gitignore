@@ -39,3 +39,13 @@ Dockerfile.dev
 
 # Setup scripts
 setup-*.sh
+
+# Test coverage
+.coverage
+coverage.xml
+*/.coverage
+*/coverage.xml
+
+# Temporary uploads
+temp_uploads/
+*/temp_uploads/

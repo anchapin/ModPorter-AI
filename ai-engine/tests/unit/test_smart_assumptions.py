@@ -292,3 +292,408 @@ def test_analyze_feature_machinery_corrected(engine: SmartAssumptionEngine, comp
 # The fixture `mock_plan_components_for_report` is correctly used by creating a copy in `test_generate_assumption_report_with_none_component`.
 # The name extraction fallback test `test_generate_assumption_report_name_extraction_fallback` is also correct.
 # Looks good to go.
+
+# --- Tests for conflict detection and priority handling functionality ---
+
+@pytest.fixture
+def conflicting_feature_context() -> FeatureContext:
+    """Feature context that could match multiple assumptions (create conflicts)"""
+    return FeatureContext(
+        feature_id="multi_match_feature",
+        feature_type="dimensional_transport",  # Could match both Custom Dimensions and Teleportation
+        name="Dimensional Portal",
+        original_data={'creates_dimension': True, 'teleports_players': True, 'has_complex_logic': True}
+    )
+
+@pytest.fixture
+def exact_match_feature_context() -> FeatureContext:
+    """Feature context that should exactly match a specific assumption"""
+    return FeatureContext(
+        feature_id="exact_custom_dimension",
+        feature_type="custom_dimension",
+        name="Nether Portal Replica",
+        original_data={'is_dimension': True}
+    )
+
+def test_find_all_matching_assumptions_single_match(engine: SmartAssumptionEngine):
+    """Test find_all_matching_assumptions with a feature that matches only one assumption"""
+    matches = engine.find_all_matching_assumptions("simple_custom_dimension")
+    assert len(matches) == 1
+    assert matches[0].java_feature == "Custom Dimensions"
+
+def test_find_all_matching_assumptions_multiple_matches(engine: SmartAssumptionEngine):
+    """Test find_all_matching_assumptions with a feature that could match multiple assumptions"""
+    # Test with a feature name that could match multiple patterns
+    matches = engine.find_all_matching_assumptions("complex_dimensional_transport_system")
+    # Should match at least Custom Dimensions, might match others depending on assumptions table
+    assert len(matches) >= 1
+    java_features = [match.java_feature for match in matches]
+    assert "Custom Dimensions" in java_features
+
+def test_find_all_matching_assumptions_no_matches(engine: SmartAssumptionEngine):
+    """Test find_all_matching_assumptions with a feature that matches no assumptions"""
+    matches = engine.find_all_matching_assumptions("completely_unknown_feature_xyz")
+    assert len(matches) == 0
+
+def test_resolve_assumption_conflict_exact_match_priority(engine: SmartAssumptionEngine):
+    """Test that exact matches get highest priority in conflict resolution"""
+    # Create mock assumptions with different match types
+    assumption1 = SmartAssumption(
+        java_feature="Custom Dimensions",
+        match_patterns=["dimension", "world"],
+        bedrock_workaround="Structure-based dimension simulation",
+        impact=AssumptionImpact.HIGH,
+        explanation="Converts dimensions to structures"
+    )
+    
+    assumption2 = SmartAssumption(
+        java_feature="Teleportation Systems", 
+        match_patterns=["teleport", "transport"],
+        bedrock_workaround="Command-based teleportation",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Converts teleportation to commands"
+    )
+    
+    conflicting_assumptions = [assumption1, assumption2]
+    feature_name = "custom_dimension_teleporter"  # Should match both
+    
+    resolved = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    
+    # Should have a resolved assumption and conflict info
+    assert resolved['resolved_assumption'] is not None
+    assert resolved['had_conflict'] == True
+    assert len(resolved['conflicting_assumptions']) == 2
+    assert resolved['resolution_reason'] is not None
+
+def test_resolve_assumption_conflict_impact_priority(engine: SmartAssumptionEngine):
+    """Test that higher impact assumptions win when no exact match exists"""
+    assumption_high = SmartAssumption(
+        java_feature="High Impact Feature",
+        match_patterns=["feature"],
+        bedrock_workaround="High impact solution",
+        impact=AssumptionImpact.HIGH,
+        explanation="High impact conversion"
+    )
+    
+    assumption_low = SmartAssumption(
+        java_feature="Low Impact Feature",
+        match_patterns=["feature"],
+        bedrock_workaround="Low impact solution", 
+        impact=AssumptionImpact.LOW,
+        explanation="Low impact conversion"
+    )
+    
+    conflicting_assumptions = [assumption_low, assumption_high]  # Order shouldn't matter
+    feature_name = "some_feature_system"
+    
+    resolved = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    
+    assert resolved['resolved_assumption'].java_feature == "High Impact Feature"
+    assert resolved['resolution_reason'] == "Selected by impact level (HIGH vs others)"
+
+def test_resolve_assumption_conflict_specificity_priority(engine: SmartAssumptionEngine):
+    """Test that more specific assumptions win when impact is equal"""
+    assumption_specific = SmartAssumption(
+        java_feature="Specific Feature",
+        match_patterns=["very", "specific", "feature", "pattern"],
+        bedrock_workaround="Specific solution",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Specific conversion"
+    )
+    
+    assumption_generic = SmartAssumption(
+        java_feature="Generic Feature",
+        match_patterns=["feature"],
+        bedrock_workaround="Generic solution",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Generic conversion"
+    )
+    
+    conflicting_assumptions = [assumption_generic, assumption_specific]
+    feature_name = "specific_feature_implementation"
+    
+    resolved = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    
+    assert resolved['resolved_assumption'].java_feature == "Specific Feature"
+    assert "specificity" in resolved['resolution_reason']
+
+def test_resolve_assumption_conflict_deterministic_fallback(engine: SmartAssumptionEngine):
+    """Test that conflict resolution is deterministic when all else is equal"""
+    assumption1 = SmartAssumption(
+        java_feature="Feature A",
+        match_patterns=["feature"],
+        bedrock_workaround="Solution A",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Conversion A"
+    )
+    
+    assumption2 = SmartAssumption(
+        java_feature="Feature B", 
+        match_patterns=["feature"],
+        bedrock_workaround="Solution B",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Conversion B"
+    )
+    
+    conflicting_assumptions = [assumption1, assumption2]
+    feature_name = "feature_system"
+    
+    # Run multiple times to ensure deterministic behavior
+    resolved1 = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    resolved2 = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    resolved3 = engine._resolve_assumption_conflict(conflicting_assumptions, feature_name)
+    
+    # Should always resolve to the same assumption
+    assert resolved1['resolved_assumption'].java_feature == resolved2['resolved_assumption'].java_feature
+    assert resolved2['resolved_assumption'].java_feature == resolved3['resolved_assumption'].java_feature
+    assert "deterministic selection" in resolved1['resolution_reason']
+
+def test_analyze_feature_with_conflicts(engine: SmartAssumptionEngine, conflicting_feature_context: FeatureContext):
+    """Test analyze_feature returns conflict information when conflicts exist"""
+    result = engine.analyze_feature(conflicting_feature_context)
+    
+    assert result is not None
+    assert result.feature_context == conflicting_feature_context
+    
+    # Should have resolved to one assumption
+    assert result.applied_assumption is not None
+    
+    # Should have conflict information populated
+    assert hasattr(result, 'conflicting_assumptions')
+    assert hasattr(result, 'had_conflict')
+    assert hasattr(result, 'conflict_resolution_reason')
+    
+    if result.had_conflict:
+        assert len(result.conflicting_assumptions) >= 2
+        assert result.conflict_resolution_reason is not None
+
+def test_analyze_feature_exact_match_no_conflicts(engine: SmartAssumptionEngine, exact_match_feature_context: FeatureContext):
+    """Test analyze_feature with exact match that shouldn't have conflicts"""
+    result = engine.analyze_feature(exact_match_feature_context)
+    
+    assert result is not None
+    assert result.applied_assumption is not None
+    
+    # Check if conflict fields exist and are properly set
+    assert hasattr(result, 'conflicting_assumptions')
+    assert hasattr(result, 'had_conflict')
+    
+    # For exact matches, should have minimal conflicts
+    assert len(result.conflicting_assumptions) <= 1  # Might include itself
+
+def test_get_conflict_analysis(engine: SmartAssumptionEngine):
+    """Test get_conflict_analysis method returns proper conflict information"""
+    feature_name = "complex_dimensional_machinery_system"  # Designed to cause conflicts
+    conflict_analysis = engine.get_conflict_analysis(feature_name)
+    
+    assert 'feature_name' in conflict_analysis
+    assert 'matching_assumptions' in conflict_analysis
+    assert 'has_conflicts' in conflict_analysis
+    assert 'resolution_details' in conflict_analysis
+    
+    assert conflict_analysis['feature_name'] == feature_name
+    assert isinstance(conflict_analysis['matching_assumptions'], list)
+    assert isinstance(conflict_analysis['has_conflicts'], bool)
+    
+    if conflict_analysis['has_conflicts']:
+        assert len(conflict_analysis['matching_assumptions']) >= 2
+        assert conflict_analysis['resolution_details'] is not None
+        assert 'resolved_assumption' in conflict_analysis['resolution_details']
+        assert 'resolution_reason' in conflict_analysis['resolution_details']
+
+def test_get_conflict_analysis_no_conflicts(engine: SmartAssumptionEngine):
+    """Test get_conflict_analysis with a feature that has no conflicts"""
+    conflict_analysis = engine.get_conflict_analysis("simple_block_feature")
+    
+    assert conflict_analysis['has_conflicts'] == False
+    assert len(conflict_analysis['matching_assumptions']) <= 1
+    
+    if len(conflict_analysis['matching_assumptions']) == 1:
+        assert conflict_analysis['resolution_details']['resolved_assumption'] is not None
+        assert "no conflicts" in conflict_analysis['resolution_details']['resolution_reason'].lower()
+
+def test_enhanced_find_assumption_with_conflicts(engine: SmartAssumptionEngine):
+    """Test that the enhanced find_assumption method handles conflicts properly"""
+    # Test with a potentially conflicting feature name
+    assumption = engine.find_assumption("dimensional_transport_machinery")
+    
+    # Should return a single assumption (the resolved one)
+    assert assumption is None or isinstance(assumption, SmartAssumption)
+    
+    # If an assumption was found, it should be the result of conflict resolution
+    if assumption is not None:
+        # Test that calling it again returns the same result (deterministic)
+        assumption2 = engine.find_assumption("dimensional_transport_machinery")
+        if assumption2 is not None:
+            assert assumption.java_feature == assumption2.java_feature
+
+def test_conflict_resolution_preserves_assumption_data(engine: SmartAssumptionEngine):
+    """Test that conflict resolution preserves all assumption data correctly"""
+    feature_name = "complex_gui_machinery"  # Should match multiple assumptions
+    
+    # Get all matching assumptions first
+    all_matches = engine.find_all_matching_assumptions(feature_name)
+    
+    if len(all_matches) > 1:
+        # Resolve conflicts
+        resolution = engine._resolve_assumption_conflict(all_matches, feature_name)
+        resolved_assumption = resolution['resolved_assumption']
+        
+        # Verify the resolved assumption is one of the original matches
+        original_java_features = [a.java_feature for a in all_matches]
+        assert resolved_assumption.java_feature in original_java_features
+        
+        # Verify all assumption data is preserved
+        original_assumption = next(a for a in all_matches if a.java_feature == resolved_assumption.java_feature)
+        assert resolved_assumption.match_patterns == original_assumption.match_patterns
+        assert resolved_assumption.bedrock_workaround == original_assumption.bedrock_workaround
+        assert resolved_assumption.impact == original_assumption.impact
+        assert resolved_assumption.explanation == original_assumption.explanation
+
+def test_assumption_result_conflict_fields(engine: SmartAssumptionEngine):
+    """Test that AssumptionResult properly contains conflict-related fields"""
+    # Create a mock FeatureContext that might cause conflicts
+    test_context = FeatureContext(
+        feature_id="test_feature_conflicts",
+        feature_type="complex_system",
+        name="Complex Test Feature",
+        original_data={'has_gui': True, 'has_machinery': True, 'has_dimension': True}
+    )
+    
+    result = engine.analyze_feature(test_context)
+    
+    # Verify all expected fields exist
+    assert hasattr(result, 'feature_context')
+    assert hasattr(result, 'applied_assumption')
+    assert hasattr(result, 'conflicting_assumptions')
+    assert hasattr(result, 'had_conflict')
+    assert hasattr(result, 'conflict_resolution_reason')
+    
+    # Verify field types
+    assert isinstance(result.conflicting_assumptions, list)
+    assert isinstance(result.had_conflict, bool)
+    assert isinstance(result.conflict_resolution_reason, (str, type(None)))
+    
+    # If there was a conflict, verify the fields are properly populated
+    if result.had_conflict:
+        assert len(result.conflicting_assumptions) >= 2
+        assert result.conflict_resolution_reason is not None
+        assert len(result.conflict_resolution_reason) > 0
+
+def test_conflict_resolution_edge_cases(engine: SmartAssumptionEngine):
+    """Test edge cases in conflict resolution"""
+    
+    # Test with empty list
+    resolved = engine._resolve_assumption_conflict([], "test_feature")
+    assert resolved['resolved_assumption'] is None
+    assert resolved['had_conflict'] == False
+    
+    # Test with single assumption (no conflict)
+    single_assumption = SmartAssumption(
+        java_feature="Single Feature",
+        match_patterns=["single"],
+        bedrock_workaround="Single solution",
+        impact=AssumptionImpact.MEDIUM,
+        explanation="Single conversion"
+    )
+    
+    resolved = engine._resolve_assumption_conflict([single_assumption], "single_feature")
+    assert resolved['resolved_assumption'] == single_assumption
+    assert resolved['had_conflict'] == False
+    assert "no conflicts" in resolved['resolution_reason']
+
+# --- Integration tests for conflict resolution ---
+
+def test_end_to_end_conflict_resolution(engine: SmartAssumptionEngine):
+    """Test the complete conflict resolution flow from feature analysis to plan component"""
+    
+    # Create a feature that should trigger conflicts
+    complex_feature = FeatureContext(
+        feature_id="complex_mod_feature",
+        feature_type="multi_system",
+        name="Ultimate Mod Feature",
+        original_data={
+            'has_custom_gui': True,
+            'has_machinery': True, 
+            'creates_dimensions': True,
+            'handles_teleportation': True
+        }
+    )
+    
+    # Analyze the feature (should trigger conflict resolution)
+    analysis_result = engine.analyze_feature(complex_feature)
+    
+    # Should have successfully resolved despite potential conflicts
+    assert analysis_result is not None
+    assert analysis_result.applied_assumption is not None
+    
+    # Apply the assumption to create a plan component
+    plan_component = engine.apply_assumption(analysis_result)
+    
+    # Should successfully create a plan component
+    assert plan_component is not None
+    assert plan_component.original_feature_id == complex_feature.feature_id
+    assert len(plan_component.assumption_type) > 0
+    assert len(plan_component.bedrock_equivalent) > 0
+    
+    # If there were conflicts, they should be noted in technical notes
+    if analysis_result.had_conflict:
+        assert "conflict" in plan_component.technical_notes.lower() or \
+               "multiple" in plan_component.technical_notes.lower()
+
+def test_conflict_resolution_consistency_across_calls(engine: SmartAssumptionEngine):
+    """Test that conflict resolution is consistent across multiple calls"""
+    
+    test_feature_name = "complex_dimensional_gui_system"
+    
+    # Call conflict analysis multiple times
+    results = []
+    for _ in range(5):
+        conflict_analysis = engine.get_conflict_analysis(test_feature_name)
+        results.append(conflict_analysis)
+    
+    # All results should be identical
+    for i in range(1, len(results)):
+        assert results[0]['has_conflicts'] == results[i]['has_conflicts']
+        assert len(results[0]['matching_assumptions']) == len(results[i]['matching_assumptions'])
+        
+        if results[0]['has_conflicts']:
+            resolved_0 = results[0]['resolution_details']['resolved_assumption']
+            resolved_i = results[i]['resolution_details']['resolved_assumption']
+            assert resolved_0.java_feature == resolved_i.java_feature
+
+# --- Performance tests for conflict resolution ---
+
+def test_conflict_resolution_performance(engine: SmartAssumptionEngine):
+    """Test that conflict resolution doesn't significantly impact performance"""
+    import time
+    
+    # Test with various feature names that might cause conflicts
+    test_features = [
+        "complex_dimensional_machinery_gui_system",
+        "advanced_teleportation_interface",
+        "multi_world_processing_station",
+        "integrated_mod_management_hub"
+    ]
+    
+    start_time = time.time()
+    
+    for feature_name in test_features:
+        # Test both single assumption finding and conflict analysis
+        assumption = engine.find_assumption(feature_name)
+        conflict_analysis = engine.get_conflict_analysis(feature_name)
+        
+        # Create a test feature context and analyze it
+        test_context = FeatureContext(
+            feature_id=f"test_{feature_name}",
+            feature_type="complex_system",
+            name=feature_name.replace("_", " ").title(),
+            original_data={}
+        )
+        result = engine.analyze_feature(test_context)
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    
+    # Should complete reasonably quickly (less than 1 second for all operations)
+    assert execution_time < 1.0, f"Conflict resolution took too long: {execution_time:.2f} seconds"

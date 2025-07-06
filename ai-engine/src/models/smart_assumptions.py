@@ -44,8 +44,14 @@ class AssumptionResult:
     """Result of analyzing a feature against the smart assumption table."""
     feature_context: FeatureContext
     applied_assumption: Optional[SmartAssumption] = None # The assumption that applies
+    conflicting_assumptions: List[SmartAssumption] = None # Other assumptions that also matched
+    conflict_resolution_reason: Optional[str] = None # Why this assumption was selected over others
     # If no assumption applies, this can remain None, or a specific 'no_assumption_needed' or 'cannot_convert' status could be added.
     # For now, None indicates either it's directly convertible or no specific smart assumption handles it.
+
+    def __post_init__(self):
+        if self.conflicting_assumptions is None:
+            self.conflicting_assumptions = []
 
 @dataclass
 class ConversionPlanComponent:
@@ -164,15 +170,70 @@ class SmartAssumptionEngine:
         return self.assumption_table
     
     def find_assumption(self, feature_type: str) -> Optional[SmartAssumption]:
-        """Find appropriate assumption for a given feature type"""
+        """Find appropriate assumption for a given feature type with conflict detection"""
+        matching_assumptions = self.find_all_matching_assumptions(feature_type)
+        
+        if not matching_assumptions:
+            return None
+        elif len(matching_assumptions) == 1:
+            return matching_assumptions[0]
+        else:
+            # Handle conflicts by selecting highest priority assumption
+            logger.warning(f"Multiple assumptions match feature type '{feature_type}': {[a.java_feature for a in matching_assumptions]}")
+            return self._resolve_assumption_conflict(matching_assumptions, feature_type)
+    
+    def find_all_matching_assumptions(self, feature_type: str) -> List[SmartAssumption]:
+        """Find all assumptions that could apply to a given feature type"""
         feature_lower = feature_type.lower()
+        matching_assumptions = []
         
         for assumption in self.assumption_table:
             if any(keyword in feature_lower for keyword in 
                    assumption.java_feature.lower().split()):
-                return assumption
+                matching_assumptions.append(assumption)
         
-        return None
+        return matching_assumptions
+    
+    def _resolve_assumption_conflict(self, conflicting_assumptions: List[SmartAssumption], feature_type: str) -> SmartAssumption:
+        """Resolve conflicts between multiple matching assumptions using priority rules"""
+        logger.info(f"Resolving assumption conflict for feature type '{feature_type}' with {len(conflicting_assumptions)} candidates")
+        
+        # Priority rule 1: Exact feature type match takes precedence
+        exact_matches = [a for a in conflicting_assumptions if a.java_feature.lower().replace(" ", "_") == feature_type.lower()]
+        if exact_matches:
+            selected = exact_matches[0]
+            logger.info(f"Selected assumption '{selected.java_feature}' due to exact feature type match")
+            return selected
+        
+        # Priority rule 2: Higher impact assumptions take precedence (HIGH > MEDIUM > LOW)
+        impact_priority = {AssumptionImpact.HIGH: 3, AssumptionImpact.MEDIUM: 2, AssumptionImpact.LOW: 1}
+        sorted_by_impact = sorted(conflicting_assumptions, key=lambda a: impact_priority[a.impact], reverse=True)
+        
+        # If top impacts are equal, use specificity (more keywords = more specific)
+        top_impact = sorted_by_impact[0].impact
+        top_impact_assumptions = [a for a in sorted_by_impact if a.impact == top_impact]
+        
+        if len(top_impact_assumptions) == 1:
+            selected = top_impact_assumptions[0]
+            logger.info(f"Selected assumption '{selected.java_feature}' due to highest impact level ({selected.impact.value})")
+            return selected
+        
+        # Priority rule 3: More specific assumptions (more keywords) take precedence
+        def calculate_specificity(assumption: SmartAssumption, feature_type: str) -> int:
+            """Calculate how specific an assumption is for a given feature type"""
+            feature_words = set(feature_type.lower().split('_'))
+            assumption_words = set(assumption.java_feature.lower().split())
+            return len(feature_words.intersection(assumption_words))
+        
+        sorted_by_specificity = sorted(top_impact_assumptions, 
+                                     key=lambda a: calculate_specificity(a, feature_type), 
+                                     reverse=True)
+        
+        selected = sorted_by_specificity[0]
+        specificity_score = calculate_specificity(selected, feature_type)
+        logger.info(f"Selected assumption '{selected.java_feature}' due to highest specificity (score: {specificity_score})")
+        
+        return selected
 
     def analyze_feature(self, feature_context: FeatureContext) -> AssumptionResult:
         """
@@ -183,20 +244,32 @@ class SmartAssumptionEngine:
 
         Returns:
             An AssumptionResult containing the original feature context and any
-            SmartAssumption that applies.
+            SmartAssumption that applies, plus conflict resolution information.
         """
         logger.info(f"Analyzing feature: {feature_context.feature_id} of type {feature_context.feature_type}")
         
-        applicable_assumption = self.find_assumption(feature_context.feature_type)
+        # Find all matching assumptions to detect conflicts
+        all_matching = self.find_all_matching_assumptions(feature_context.feature_type)
+        applicable_assumption = None
+        conflict_resolution_reason = None
         
-        if applicable_assumption:
-            logger.info(f"Found applicable assumption for {feature_context.feature_type}: {applicable_assumption.java_feature} -> {applicable_assumption.bedrock_workaround}")
+        if all_matching:
+            if len(all_matching) == 1:
+                applicable_assumption = all_matching[0]
+                logger.info(f"Found single applicable assumption for {feature_context.feature_type}: {applicable_assumption.java_feature} -> {applicable_assumption.bedrock_workaround}")
+            else:
+                # Multiple matches - resolve conflict
+                applicable_assumption = self._resolve_assumption_conflict(all_matching, feature_context.feature_type)
+                conflict_resolution_reason = f"Selected from {len(all_matching)} conflicting assumptions using priority rules"
+                logger.info(f"Resolved conflict for {feature_context.feature_type}: selected {applicable_assumption.java_feature} from {[a.java_feature for a in all_matching]}")
         else:
             logger.info(f"No specific smart assumption found for feature type: {feature_context.feature_type}")
 
         return AssumptionResult(
             feature_context=feature_context,
-            applied_assumption=applicable_assumption
+            applied_assumption=applicable_assumption,
+            conflicting_assumptions=all_matching if len(all_matching) > 1 else [],
+            conflict_resolution_reason=conflict_resolution_reason
         )
     
     def apply_assumption(self, analysis_result: AssumptionResult) -> Optional[ConversionPlanComponent]:
@@ -397,13 +470,11 @@ class SmartAssumptionEngine:
             A list of strings, where each string can be a page in a Bedrock book.
         """
         pages = []
-        current_page_content = f"--- {feature_name} Interface ---
-"
+        current_page_content = f"--- {feature_name} Interface ---\n"
         lines_on_current_page = 1
 
         if not elements:
-            pages.append(current_page_content + "
-(No specific UI elements data found for this GUI)")
+            pages.append(current_page_content + "\n(No specific UI elements data found for this GUI)")
             return pages
 
         for i, element in enumerate(elements):
@@ -431,8 +502,7 @@ class SmartAssumptionEngine:
                 current_page_content = ""
                 lines_on_current_page = 0
 
-            current_page_content += element_text + "
-"
+            current_page_content += element_text + "\n"
             lines_on_current_page += 1
 
             if i == len(elements) - 1 and current_page_content.strip(): # Add last page if it has content
@@ -441,8 +511,7 @@ class SmartAssumptionEngine:
         if not pages and current_page_content.strip(): # Ensure at least one page if there was initial content
             pages.append(current_page_content)
         elif not pages: # Fallback if elements was empty and initial content was also somehow skipped
-            pages.append(f"--- {feature_name} Interface ---
-(No displayable content extracted)")
+            pages.append(f"--- {feature_name} Interface ---\n(No displayable content extracted)")
 
         # Ensure all pages are strings
         return [str(page_content) for page_content in pages]
@@ -604,3 +673,30 @@ class SmartAssumptionEngine:
             return 'simple'
         else:
             return 'complex'
+    
+    def get_conflict_analysis(self, feature_type: str) -> Dict[str, Any]:
+        """Get detailed analysis of assumption conflicts for a feature type"""
+        all_matching = self.find_all_matching_assumptions(feature_type)
+        
+        if len(all_matching) <= 1:
+            return {
+                "has_conflicts": False,
+                "matching_assumptions": [a.java_feature for a in all_matching],
+                "selected_assumption": all_matching[0].java_feature if all_matching else None,
+                "resolution_method": "no_conflict"
+            }
+        
+        # Simulate conflict resolution to show the logic
+        selected = self._resolve_assumption_conflict(all_matching, feature_type)
+        
+        return {
+            "has_conflicts": True,
+            "matching_assumptions": [a.java_feature for a in all_matching],
+            "selected_assumption": selected.java_feature,
+            "resolution_method": "priority_rules",
+            "conflict_details": {
+                "impact_levels": {a.java_feature: a.impact.value for a in all_matching},
+                "selected_impact": selected.impact.value,
+                "resolution_reason": f"Selected '{selected.java_feature}' using impact and specificity rules"
+            }
+        }
