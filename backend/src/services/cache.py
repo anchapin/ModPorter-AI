@@ -15,3 +15,10 @@ class CacheService:
 
     async def track_progress(self, job_id: str, progress: int) -> None:
         await self._client.set(f"conversion_jobs:{job_id}:progress", progress)
+
+    async def set_progress(self, job_id: str, progress: int) -> None:
+        """
+        Set the progress for a job and add job_id to the active set.
+        """
+        await self._client.set(f"conversion_jobs:{job_id}:progress", progress)
+        await self._client.sadd("conversion_jobs:active", job_id)
