@@ -3,7 +3,6 @@ Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
 from typing import Dict, List, Any, Optional, Tuple
-from crewai_tools import tool
 import logging
 import json
 import base64
@@ -69,7 +68,7 @@ class AssetConverterAgent:
             self.validate_bedrock_assets
         ]
     
-    @tool("Analyze Assets")
+    
     def analyze_assets(self, asset_data: str) -> str:
         """
         Analyze Java mod assets to determine conversion requirements.
@@ -148,7 +147,7 @@ class AssetConverterAgent:
             logger.error(f"Asset analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Convert Textures")
+    
     def convert_textures(self, texture_data: str) -> str:
         """
         Convert texture assets to Bedrock-compatible format.
@@ -195,7 +194,7 @@ class AssetConverterAgent:
             logger.error(f"Texture conversion error: {e}")
             return json.dumps(error_response)
     
-    @tool("Convert Models")
+    
     def convert_models(self, model_data: str) -> str:
         """
         Convert 3D models to Bedrock geometry format.
@@ -242,7 +241,7 @@ class AssetConverterAgent:
             logger.error(f"Model conversion error: {e}")
             return json.dumps(error_response)
     
-    @tool("Convert Audio")
+    
     def convert_audio(self, audio_data: str) -> str:
         """
         Convert audio assets to Bedrock-compatible format.
@@ -289,7 +288,7 @@ class AssetConverterAgent:
             logger.error(f"Audio conversion error: {e}")
             return json.dumps(error_response)
     
-    @tool("Validate Bedrock Assets")
+    
     def validate_bedrock_assets(self, validation_data: str) -> str:
         """
         Validate converted assets for Bedrock compatibility.

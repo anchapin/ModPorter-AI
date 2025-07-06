@@ -3,7 +3,7 @@ QA Validator Agent for validating conversion quality and generating comprehensiv
 """
 
 from typing import Dict, List, Any, Optional, Tuple
-from crewai_tools import tool
+
 import logging
 import json
 from datetime import datetime
@@ -71,7 +71,7 @@ class QAValidatorAgent:
             self.generate_qa_report
         ]
     
-    @tool("Validate Conversion Quality")
+    
     def validate_conversion_quality(self, validation_data: str) -> str:
         """
         Perform comprehensive quality validation of the conversion.
@@ -138,7 +138,7 @@ class QAValidatorAgent:
             logger.error(f"Quality validation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Run Functional Tests")
+    
     def run_functional_tests(self, test_data: str) -> str:
         """
         Run functional tests on converted components.
@@ -199,7 +199,7 @@ class QAValidatorAgent:
             logger.error(f"Functional test error: {e}")
             return json.dumps(error_response)
     
-    @tool("Analyze Bedrock Compatibility")
+    
     def analyze_bedrock_compatibility(self, compatibility_data: str) -> str:
         """
         Analyze Bedrock compatibility of converted components.
@@ -272,7 +272,7 @@ class QAValidatorAgent:
             logger.error(f"Compatibility analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Assess Performance Metrics")
+    
     def assess_performance_metrics(self, performance_data: str) -> str:
         """
         Assess performance metrics of converted components.
@@ -348,7 +348,7 @@ class QAValidatorAgent:
             logger.error(f"Performance assessment error: {e}")
             return json.dumps(error_response)
     
-    @tool("Generate QA Report")
+    
     def generate_qa_report(self, report_data: str) -> str:
         """
         Generate a comprehensive QA report combining all validation results.

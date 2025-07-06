@@ -3,7 +3,7 @@ Bedrock Architect Agent for conversion planning and smart assumption application
 """
 
 from typing import Dict, List, Any, Optional
-from crewai_tools import tool
+
 import logging
 import json
 from ..models.smart_assumptions import (
@@ -33,7 +33,7 @@ class BedrockArchitectAgent:
             self.validate_bedrock_compatibility
         ]
     
-    @tool("Analyze Java Feature")
+    
     def analyze_java_feature(self, feature_data: str) -> str:
         """
         Analyze a Java mod feature to determine applicable smart assumptions.
@@ -78,7 +78,7 @@ class BedrockArchitectAgent:
             logger.error(f"Feature analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Apply Smart Assumption")
+    
     def apply_smart_assumption(self, analysis_result_data: str) -> str:
         """
         Apply a smart assumption to a feature and generate conversion plan component.
@@ -133,7 +133,7 @@ class BedrockArchitectAgent:
             logger.error(f"Assumption application error: {e}")
             return json.dumps(error_response)
     
-    @tool("Create Conversion Plan")
+    
     def create_conversion_plan(self, features_data: str) -> str:
         """
         Create a comprehensive conversion plan for multiple features.
@@ -209,7 +209,7 @@ class BedrockArchitectAgent:
             logger.error(f"Conversion plan creation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Get Assumption Conflicts")
+    
     def get_assumption_conflicts(self, feature_type: str) -> str:
         """
         Get detailed information about assumption conflicts for a feature type.
@@ -230,7 +230,7 @@ class BedrockArchitectAgent:
             logger.error(f"Conflict analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Validate Bedrock Compatibility")
+    
     def validate_bedrock_compatibility(self, conversion_plan_data: str) -> str:
         """
         Validate that a conversion plan is compatible with Bedrock limitations.

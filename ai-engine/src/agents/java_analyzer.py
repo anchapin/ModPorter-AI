@@ -3,7 +3,6 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 """
 
 from typing import Dict, List, Any, Optional
-from crewai_tools import tool
 import logging
 import json
 import zipfile
@@ -67,7 +66,6 @@ class JavaAnalyzerAgent:
             self.extract_assets
         ]
     
-    @tool("Analyze Mod Structure")
     def analyze_mod_structure(self, mod_data: str) -> str:
         """
         Analyze the overall structure of a Java mod.
@@ -132,7 +130,6 @@ class JavaAnalyzerAgent:
             logger.error(f"Mod structure analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Extract Mod Metadata")
     def extract_mod_metadata(self, metadata_data: str) -> str:
         """
         Extract metadata from mod files (mcmod.info, fabric.mod.json, etc.).
@@ -178,7 +175,6 @@ class JavaAnalyzerAgent:
             logger.error(f"Metadata extraction error: {e}")
             return json.dumps(error_response)
     
-    @tool("Identify Features")
     def identify_features(self, feature_data: str) -> str:
         """
         Identify and categorize features present in the Java mod.
@@ -235,7 +231,6 @@ class JavaAnalyzerAgent:
             logger.error(f"Feature identification error: {e}")
             return json.dumps(error_response)
     
-    @tool("Analyze Dependencies")
     def analyze_dependencies(self, dependency_data: str) -> str:
         """
         Analyze mod dependencies and their impact on conversion.
@@ -289,7 +284,6 @@ class JavaAnalyzerAgent:
             logger.error(f"Dependency analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Extract Assets")
     def extract_assets(self, asset_data: str) -> str:
         """
         Extract and categorize assets from the Java mod.

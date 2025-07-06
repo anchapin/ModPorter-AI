@@ -3,7 +3,7 @@ Logic Translator Agent for Java to JavaScript code conversion
 """
 
 from typing import Dict, List, Any, Optional
-from crewai_tools import tool
+
 import logging
 import json
 import re
@@ -58,7 +58,7 @@ class LogicTranslatorAgent:
             self.validate_javascript_syntax
         ]
     
-    @tool("Translate Java Method")
+    
     def translate_java_method(self, method_data: str) -> str:
         """
         Translate a Java method to JavaScript for Bedrock.
@@ -119,7 +119,7 @@ class LogicTranslatorAgent:
             logger.error(f"Method translation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Convert Java Class")
+    
     def convert_java_class(self, class_data: str) -> str:
         """
         Convert a complete Java class to JavaScript for Bedrock.
@@ -194,7 +194,7 @@ class LogicTranslatorAgent:
             logger.error(f"Class conversion error: {e}")
             return json.dumps(error_response)
     
-    @tool("Map Java APIs")
+    
     def map_java_apis(self, api_usage_data: str) -> str:
         """
         Map Java Minecraft APIs to their Bedrock JavaScript equivalents.
@@ -250,7 +250,7 @@ class LogicTranslatorAgent:
             logger.error(f"API mapping error: {e}")
             return json.dumps(error_response)
     
-    @tool("Generate Event Handlers")
+    
     def generate_event_handlers(self, event_data: str) -> str:
         """
         Generate Bedrock JavaScript event handlers from Java event listeners.
@@ -317,7 +317,7 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
             logger.error(f"Event handler generation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Validate JavaScript Syntax")
+    
     def validate_javascript_syntax(self, code_data: str) -> str:
         """
         Validate and analyze generated JavaScript code for Bedrock compatibility.

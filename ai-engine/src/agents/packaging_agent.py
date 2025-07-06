@@ -3,7 +3,7 @@ Packaging Agent for assembling converted components into .mcaddon packages
 """
 
 from typing import Dict, List, Any, Optional, Union
-from crewai_tools import tool
+
 import logging
 import json
 import zipfile
@@ -90,7 +90,7 @@ class PackagingAgent:
             self.build_mcaddon
         ]
     
-    @tool("Analyze Conversion Components")
+    
     def analyze_conversion_components(self, components_data: str) -> str:
         """
         Analyze converted components to determine packaging strategy.
@@ -144,7 +144,7 @@ class PackagingAgent:
             logger.error(f"Component analysis error: {e}")
             return json.dumps(error_response)
     
-    @tool("Create Package Structure")
+    
     def create_package_structure(self, structure_data: str) -> str:
         """
         Create the directory structure for Bedrock packages.
@@ -189,7 +189,7 @@ class PackagingAgent:
             logger.error(f"Structure creation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Generate Manifests")
+    
     def generate_manifests(self, manifest_data: str) -> str:
         """
         Generate manifest.json files for Bedrock packages.
@@ -233,7 +233,7 @@ class PackagingAgent:
             logger.error(f"Manifest generation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Validate Package")
+    
     def validate_package(self, validation_data: str) -> str:
         """
         Validate a complete Bedrock package for compliance and quality.
@@ -291,7 +291,7 @@ class PackagingAgent:
             logger.error(f"Package validation error: {e}")
             return json.dumps(error_response)
     
-    @tool("Build McAddon")
+    
     def build_mcaddon(self, build_data: str) -> str:
         """
         Build the final .mcaddon package from prepared components.
