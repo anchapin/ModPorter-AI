@@ -151,7 +151,7 @@ class TestFileProcessor:
 
         assert result.success is False
         assert result.file_path is None
-        assert error_type_expected in result.message.lower() # Check if "HTTP error XYZ" is in the message
+        assert f"http error {status_code}" in result.message.lower() # Check if "HTTP error XYZ" is in the message
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("exception_type, error_message_expected_part", [
@@ -345,9 +345,13 @@ class TestFileProcessor:
             f"Permission error while trying to delete {job_dir_path} for job_id: {mock_job_id}. Manual cleanup may be required.",
             exc_info=True
         )
-        # Manual cleanup as rmtree was mocked and raised an error
-        if job_dir_path.exists():
-            shutil.rmtree(job_dir_path)
+        # Manual cleanup - use subprocess since rmtree is mocked
+        try:
+            import subprocess
+            if job_dir_path.exists():
+                subprocess.run(['rm', '-rf', str(job_dir_path)], check=True)
+        except Exception:
+            pass  # If cleanup fails, that's okay for the test
 
 
     @mock.patch("src.file_processor.shutil.rmtree", side_effect=Exception("Test generic error"))
@@ -365,8 +369,13 @@ class TestFileProcessor:
             f"An unexpected error occurred while deleting {job_dir_path} for job_id: {mock_job_id}: Test generic error",
             exc_info=True
         )
-        if job_dir_path.exists():
-            shutil.rmtree(job_dir_path)
+        # Manual cleanup - use subprocess since rmtree is mocked
+        try:
+            import subprocess
+            if job_dir_path.exists():
+                subprocess.run(['rm', '-rf', str(job_dir_path)], check=True)
+        except Exception:
+            pass  # If cleanup fails, that's okay for the test
 
 
     # --- (Optional) Tests for validate_upload ---
