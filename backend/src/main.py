@@ -324,7 +324,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
             if not original_filename:
                 original_filename = request.file_name
         else:
-            raise HTTPException(status_code=400, detail="Must provide either (file_id and original_filename) or legacy file_name.")
+            raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
 
     # Persist job to DB (status 'queued', progress 0)
     job = await crud.create_job(
