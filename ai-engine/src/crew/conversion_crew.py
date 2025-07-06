@@ -451,7 +451,7 @@ class ModPorterConversionCrew:
                 
                 # Get conflict analysis for transparency
                 if hasattr(self.smart_assumption_engine, 'get_conflict_analysis'):
-                    conflicts = self.smart_assumption_engine.get_conflict_analysis()
+                    conflicts = self.smart_assumption_engine.get_conflict_analysis("general")
                     if conflicts:
                         conflict_analysis = {
                             'total_conflicts_detected': len(conflicts),
@@ -519,7 +519,7 @@ class ModPorterConversionCrew:
     def get_assumption_conflicts(self) -> List[Dict[str, Any]]:
         """Get current assumption conflicts for transparency"""
         if hasattr(self.smart_assumption_engine, 'get_conflict_analysis'):
-            return self.smart_assumption_engine.get_conflict_analysis()
+            return self.smart_assumption_engine.get_conflict_analysis("general")
         return []
     
     def analyze_feature_with_assumptions(self, feature_type: str, feature_data: Dict[str, Any]) -> Dict[str, Any]:
