@@ -50,6 +50,29 @@ jobs:
   backend-tests:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: modporter
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -79,11 +102,21 @@ jobs:
         ruff check .
       continue-on-error: true
 
+    - name: Run database migrations
+      run: |
+        cd backend
+        alembic upgrade head
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+
     - name: Run backend tests
       if: always()
       run: |
         cd backend
         PYTHONPATH=. pytest --cov=. tests/ --cov-report=xml
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        REDIS_URL: redis://localhost:6379
     
     - name: Upload backend coverage
       uses: codecov/codecov-action@v3
@@ -130,6 +163,18 @@ jobs:
     needs: [frontend-tests, backend-tests, ai-engine-tests]
     
     services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: modporter
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:alpine
         ports:
@@ -164,6 +209,13 @@ jobs:
         cd frontend
         npm run build
     
+    - name: Run database migrations
+      run: |
+        cd backend
+        alembic upgrade head
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+    
     - name: Run integration tests
       run: |
         # Start backend in background
@@ -175,6 +227,7 @@ jobs:
         # Run integration tests
         cd backend && python -m pytest tests/integration/ -v
       env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
 

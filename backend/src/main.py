@@ -19,9 +19,6 @@ import uuid
 import asyncio # Added for simulated AI conversion
 from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
-from pathlib import Path
-import shutil
-from src.file_processor import FileProcessor
 import logging
 from db.init_db import init_db
 
@@ -279,7 +276,7 @@ async def simulate_ai_conversion(job_id: str):
             # Stage 1: Preprocessing -> Processing
             await asyncio.sleep(10)
             job = await crud.update_job_status(session, job_id, "processing")
-            progress = await crud.upsert_progress(session, job_id, 25)
+            await crud.upsert_progress(session, job_id, 25)
             # Mirror
             mirror = mirror_dict_from_job(job, 25)
             conversion_jobs_db[job_id] = mirror
@@ -295,7 +292,7 @@ async def simulate_ai_conversion(job_id: str):
                 print(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
             job = await crud.update_job_status(session, job_id, "postprocessing")
-            progress = await crud.upsert_progress(session, job_id, 75)
+            await crud.upsert_progress(session, job_id, 75)
             mirror = mirror_dict_from_job(job, 75)
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.dict())
@@ -310,7 +307,7 @@ async def simulate_ai_conversion(job_id: str):
                 return
 
             job = await crud.update_job_status(session, job_id, "completed")
-            progress = await crud.upsert_progress(session, job_id, 100)
+            await crud.upsert_progress(session, job_id, 100)
             # Create mock output file
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.zip"
@@ -364,7 +361,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
             # Try to extract file_id from a file_name pattern like "{file_id}.{ext}"
             parts = os.path.splitext(request.file_name)
             maybe_file_id = parts[0]
-            maybe_ext = parts[1]
+            # maybe_ext = parts[1]  # unused
             if not file_id:
                 file_id = maybe_file_id
             if not original_filename:

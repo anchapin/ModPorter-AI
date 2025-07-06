@@ -1,6 +1,5 @@
 from typing import Optional
 from sqlalchemy import (
-    Column,
     String,
     Integer,
     ForeignKey,
@@ -10,7 +9,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy.sql import expression
 from src.db.base import Base
 
 class ConversionJob(Base):
