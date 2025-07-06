@@ -1,4 +1,5 @@
 """
+"""
 Packaging Agent - Assembles converted components into .mcaddon packages
 """
 

@@ -1,4 +1,5 @@
 """
+"""
 Asset Converter Agent - Converts visual and audio assets to Bedrock formats
 """
 
