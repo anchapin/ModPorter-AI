@@ -133,6 +133,74 @@ class JavaAnalyzerAgent:
         """
         return self.extract_assets(mod_data)
     
+    def analyze_mod_file(self, mod_path: str) -> str:
+        """
+        Analyze a mod file and return comprehensive analysis results.
+        
+        Args:
+            mod_path: Path to the mod file
+        
+        Returns:
+            JSON string with complete mod analysis
+        """
+        try:
+            # Create analysis data structure
+            analysis_data = {
+                "mod_path": mod_path,
+                "analysis_depth": "standard"
+            }
+            
+            # Run comprehensive analysis
+            structure_result = self.analyze_mod_structure(json.dumps(analysis_data))
+            structure_data = json.loads(structure_result)
+            
+            # Extract features
+            features_result = self.identify_features(json.dumps(analysis_data))
+            features_data = json.loads(features_result)
+            
+            # Extract assets
+            assets_result = self.extract_assets(json.dumps(analysis_data))
+            assets_data = json.loads(assets_result)
+            
+            # Analyze dependencies
+            dependencies_result = self.analyze_dependencies(json.dumps(analysis_data))
+            dependencies_data = json.loads(dependencies_result)
+            
+            # Extract mod name from path
+            mod_name = Path(mod_path).stem.lower().replace('.jar', '').replace('.zip', '')
+            
+            # Combine all results
+            complete_analysis = {
+                "mod_info": {
+                    "name": mod_name,
+                    "path": mod_path,
+                    "type": structure_data.get("analysis_results", {}).get("mod_type", "unknown"),
+                    "framework": structure_data.get("analysis_results", {}).get("framework", "unknown"),
+                    **structure_data.get("analysis_results", {})
+                },
+                "assets": assets_data.get("assets", {}),
+                "features": features_data.get("features", {}),
+                "dependencies": dependencies_data.get("dependencies", {}),
+                "errors": []
+            }
+            
+            # Add any errors from sub-analyses
+            for result_data in [structure_data, features_data, assets_data, dependencies_data]:
+                if "errors" in result_data:
+                    complete_analysis["errors"].extend(result_data["errors"])
+            
+            return json.dumps(complete_analysis, indent=2)
+            
+        except Exception as e:
+            logger.error(f"Error in analyze_mod_file: {str(e)}")
+            return json.dumps({
+                "mod_info": {},
+                "assets": {},
+                "features": {},
+                "dependencies": {},
+                "errors": [f"Analysis failed: {str(e)}"]
+            })
+    
     def analyze_mod_structure(self, mod_data: str) -> str:
         """
         Analyze the overall structure of a Java mod.

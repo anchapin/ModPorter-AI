@@ -573,3 +573,66 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
         ]
         
         return notes
+    
+    def translate_java_code(self, java_code: str, code_type: str = "unknown") -> str:
+        """
+        Translate Java code to Bedrock JavaScript.
+        
+        Args:
+            java_code: Java source code to translate
+            code_type: Type of code (block, item, entity, etc.)
+        
+        Returns:
+            JSON string with translation results
+        """
+        try:
+            # Create method data structure that matches existing implementation
+            method_data = {
+                "java_code": java_code,
+                "method_type": code_type,
+                "conversion_context": {
+                    "target_platform": "bedrock",
+                    "minecraft_version": "1.19.4"
+                }
+            }
+            
+            # Use existing translation method
+            result_json = self.translate_java_method(json.dumps(method_data))
+            result = json.loads(result_json)
+            
+            # Transform to expected format for integration tests
+            return json.dumps({
+                "translated_javascript": result.get("translated_javascript", ""),
+                "original_java": java_code,
+                "success": result.get("success", True),
+                "conversion_notes": result.get("conversion_notes", []),
+                "api_mappings": result.get("api_mappings", {}),
+                "success_rate": result.get("success_rate", 1.0)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in translate_java_code: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "translated_javascript": "",
+                "conversion_notes": [f"Translation failed: {str(e)}"],
+                "api_mappings": {},
+                "success_rate": 0.0,
+                "error": str(e)
+            })
+            })
+
+    def get_tools(self):
+        """
+        Get all available tools for this agent.
+        
+        Returns:
+            List of tool functions for CrewAI integration
+        """
+        return [
+            self.translate_java_method_tool,
+            self.convert_java_class_tool,
+            self.map_java_apis_tool,
+            self.generate_event_handlers_tool,
+            self.validate_javascript_syntax_tool
+        ]

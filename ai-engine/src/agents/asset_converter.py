@@ -174,26 +174,42 @@ class AssetConverterAgent:
             return json.dumps(error_response)
     
     
-    def convert_textures(self, texture_data: str) -> str:
+    def convert_textures(self, texture_list: str, output_dir: str = None) -> str:
         """
         Convert texture assets to Bedrock-compatible format.
         
         Args:
-            texture_data: JSON string containing texture conversion requests
+            texture_list: JSON string or list of texture paths
+            output_dir: Optional output directory (for test compatibility)
         
         Returns:
             JSON string with conversion results
         """
         try:
-            data = json.loads(texture_data)
-            textures = data.get('textures', [])
+            # Handle both JSON string and plain list formats
+            if isinstance(texture_list, str):
+                if texture_list.startswith('[') or texture_list.startswith('{'):
+                    # It's JSON
+                    data = json.loads(texture_list)
+                    if isinstance(data, list):
+                        # Simple list of paths
+                        textures = [{"path": path} for path in data]
+                    else:
+                        # Structured data
+                        textures = data.get('textures', [])
+                else:
+                    # Single path
+                    textures = [{"path": texture_list}]
+            else:
+                # Assume it's already a list
+                textures = [{"path": path} for path in texture_list]
             
             conversion_results = []
             
             for texture in textures:
-                texture_path = texture.get('path', '')
-                metadata = texture.get('metadata', {})
-                target_usage = texture.get('usage', 'block')  # block, item, entity, etc.
+                texture_path = texture.get('path', '') if isinstance(texture, dict) else texture
+                metadata = texture.get('metadata', {}) if isinstance(texture, dict) else {}
+                target_usage = texture.get('usage', 'block') if isinstance(texture, dict) else 'block'
                 
                 result = self._convert_single_texture(texture_path, metadata, target_usage)
                 conversion_results.append(result)
@@ -203,12 +219,10 @@ class AssetConverterAgent:
             
             response = {
                 "success": True,
-                "conversion_results": conversion_results,
-                "summary": {
-                    "total_textures": len(textures),
-                    "successful_conversions": len(successful_conversions),
-                    "failed_conversions": len(failed_conversions)
-                },
+                "converted_textures": conversion_results,
+                "total_textures": len(textures),
+                "successful_conversions": len(successful_conversions),
+                "failed_conversions": len(failed_conversions),
                 "bedrock_texture_pack_structure": self._generate_texture_pack_structure(successful_conversions)
             }
             
