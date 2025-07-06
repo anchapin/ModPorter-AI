@@ -342,13 +342,25 @@ public class TestBlock extends Block {
             "smart_assumptions_applied": []
         })
         
-        quality_json = validator.assess_conversion_quality(conversion_data)
+        validation_data = json.dumps({
+            "conversion_results": {
+                "test_block": {"status": "success"},
+                "test_item": {"status": "success"}
+            },
+            "original_features": [
+                {"feature_id": "test_block", "feature_type": "block", "category": "blocks"},
+                {"feature_id": "test_item", "feature_type": "item", "category": "items"}
+            ],
+            "assumptions_applied": []
+        })
+        
+        quality_json = validator.validate_conversion_quality(validation_data)
         quality = json.loads(quality_json)
         
-        assert "overall_score" in quality
-        assert "feature_completeness" in quality
-        assert "asset_quality" in quality
-        assert quality["overall_score"] >= 0.0
+        assert quality["success"] is True
+        assert "quality_assessment" in quality
+        assert "overall_quality_score" in quality["quality_assessment"]
+        assert quality["quality_assessment"]["overall_quality_score"] >= 0.0
     
     @pytest.mark.integration
     def test_error_handling_in_workflow(self):

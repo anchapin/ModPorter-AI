@@ -620,19 +620,4 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
                 "success_rate": 0.0,
                 "error": str(e)
             })
-            })
 
-    def get_tools(self):
-        """
-        Get all available tools for this agent.
-        
-        Returns:
-            List of tool functions for CrewAI integration
-        """
-        return [
-            self.translate_java_method_tool,
-            self.convert_java_class_tool,
-            self.map_java_apis_tool,
-            self.generate_event_handlers_tool,
-            self.validate_javascript_syntax_tool
-        ]
