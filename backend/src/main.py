@@ -1,3 +1,8 @@
+"""
+ModPorter AI Backend API
+Modern FastAPI implementation with database integration
+"""
+
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
@@ -6,7 +11,7 @@ from src.services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uvicorn
 import os
@@ -14,6 +19,15 @@ import uuid
 import asyncio # Added for simulated AI conversion
 from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
+from pathlib import Path
+import shutil
+from src.file_processor import FileProcessor
+import logging
+from db.init_db import init_db
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -23,10 +37,15 @@ MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
 conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
+# In-memory storage for testing (would be replaced with database)
+conversions_db: Dict[str, Dict[str, Any]] = {}
+uploaded_files: List[str] = []
 
 # Cache service instance
 cache = CacheService()
 
+# Note: For production environments, rate limiting should be implemented to protect against abuse.
+# This can be done at the API gateway, reverse proxy (e.g., Nginx), or using FastAPI middleware like 'slowapi'.
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
     title="ModPorter AI Backend",
@@ -54,7 +73,9 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
-    ]
+    ],
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # CORS middleware
@@ -67,6 +88,7 @@ app.add_middleware(
 )
 
 # Pydantic models for API documentation
+# Request models
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
     # Legacy
@@ -132,7 +154,7 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: str
 
-# Health check endpoint
+# Health check endpoints
 @app.get("/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the API"""
@@ -141,6 +163,15 @@ async def health_check():
         version="1.0.0",
         timestamp=datetime.utcnow().isoformat()
     )
+
+@app.get("/api/v1/health")
+async def health_check_v1():
+    """Health check endpoint (v1 API)"""
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "message": "ModPorter AI Backend is running",
+    }
 
 # File upload endpoint
 @app.post("/api/upload", response_model=UploadResponse, tags=["files"])
@@ -161,11 +192,19 @@ async def upload_file(file: UploadFile = File(...)):
     # Note: file.size is not always available in FastAPI UploadFile
     # We'll validate size during the actual file reading process
 
-    # Validate file type
+    # Validate file type - combine both approaches
+    allowed_types = [
+        "application/java-archive",
+        "application/zip",
+        "application/octet-stream",
+    ]
     allowed_extensions = ['.jar', '.zip', '.mcaddon']
     original_filename = file.filename
     file_ext = os.path.splitext(original_filename)[1].lower()
-    if file_ext not in allowed_extensions:
+    
+    if (file_ext not in allowed_extensions and 
+        file.content_type not in allowed_types and 
+        not any(file.filename.endswith(ext) for ext in allowed_extensions)):
         raise HTTPException(
             status_code=400,
             detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
@@ -197,6 +236,9 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
+    
+    # Also store filename in memory for compatibility
+    uploaded_files.append(file.filename)
     
     return UploadResponse(
         file_id=file_id,
@@ -368,6 +410,30 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         message="Conversion job started and is now queued.",
         estimated_time=35
     )
+
+# Keep simple version for compatibility 
+@app.post("/api/convert/simple")
+async def start_conversion_simple(request: ConversionRequest):
+    """Start a conversion job (simple version for compatibility)"""
+    if not request.file_name:
+        raise HTTPException(status_code=422, detail="file_name is required")
+
+    job_id = str(uuid.uuid4())
+
+    conversion_data = {
+        "job_id": job_id,
+        "status": "queued",
+        "progress": 0,
+        "message": "Conversion queued",
+        "file_name": request.file_name,
+        "target_version": request.target_version,
+        "options": request.options or {},
+        "estimated_time": "5-10 minutes",
+        "created_at": datetime.now().isoformat(),
+    }
+
+    conversions_db[job_id] = conversion_data
+    return conversion_data
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
@@ -578,7 +644,38 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         filename=download_filename
     )
 
-from db.init_db import init_db
+# Simple compatibility endpoints
+@app.get("/api/convert/simple")
+async def list_conversions_simple():
+    """List all conversion jobs (simple version for compatibility)"""
+    return list(conversions_db.values())
+
+@app.get("/api/convert/simple/{job_id}")
+async def get_conversion_status_simple(job_id: str):
+    """Get conversion job status (simple version for compatibility)"""
+    if job_id not in conversions_db:
+        raise HTTPException(status_code=404, detail="Conversion job not found")
+    return conversions_db[job_id]
+
+@app.delete("/api/convert/simple/{job_id}")
+async def cancel_conversion_simple(job_id: str):
+    """Cancel a conversion job (simple version for compatibility)"""
+    if job_id not in conversions_db:
+        raise HTTPException(status_code=404, detail="Conversion job not found")
+    conversions_db[job_id]["status"] = "cancelled"
+    return {"message": f"Conversion job {job_id} has been cancelled"}
+
+@app.get("/api/download/simple/{job_id}")
+async def download_converted_mod_simple(job_id: str):
+    """Download converted mod (simple version for compatibility)"""
+    if job_id not in conversions_db:
+        raise HTTPException(status_code=404, detail="Conversion job not found")
+    conversion = conversions_db[job_id]
+    if conversion["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Conversion not completed yet")
+    # In real implementation, would return file download
+    return {"download_url": f"/files/{job_id}.mcaddon"}
+
 @app.on_event("startup")
 async def on_startup():
     await init_db()

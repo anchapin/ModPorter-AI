@@ -6,6 +6,7 @@ Testing PRD Feature 2: AI Conversion Engine requirements
 import pytest
 
 from src.crew.conversion_crew import ModPorterConversionCrew
+from src.models.smart_assumptions import FeatureContext
 
 
 class TestModPorterConversionCrew:
@@ -109,19 +110,27 @@ class TestSmartAssumptionEngine:
     def test_assumption_application_logic(self, assumption_engine):
         """Test smart assumption application follows PRD logic"""
         # Test custom dimension assumption
-        result = assumption_engine.apply_assumption(
+        feature_context = FeatureContext(
+            feature_id='twilight_forest_dim',
             feature_type='custom_dimension',
-            feature_data={'name': 'twilight_forest', 'biomes': ['dark_forest']}
+            name='Twilight Forest',
+            original_data={'name': 'twilight_forest', 'biomes': ['dark_forest']}
         )
+        analysis_result = assumption_engine.analyze_feature(feature_context)
+        result = assumption_engine.apply_assumption(analysis_result)
         
         assert result is not None
         assert 'structure' in str(result).lower() or 'overworld' in str(result).lower()
         
         # Test complex machinery assumption  
-        machinery_result = assumption_engine.apply_assumption(
+        machinery_context = FeatureContext(
+            feature_id='complex_machine_1',
             feature_type='complex_machinery',
-            feature_data={'power_system': True, 'multiblock': True}
+            name='Power Machine',
+            original_data={'power_system': True, 'multiblock': True}
         )
+        machinery_analysis = assumption_engine.analyze_feature(machinery_context)
+        machinery_result = assumption_engine.apply_assumption(machinery_analysis)
         
         assert machinery_result is not None
         # Should simplify to decorative or container per PRD

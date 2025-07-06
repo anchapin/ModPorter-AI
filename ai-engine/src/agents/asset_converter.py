@@ -1,494 +1,705 @@
 """
-Asset Converter Agent - Converts visual and audio assets to Bedrock formats
+Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
-import json
+from typing import Dict, List, Any, Optional, Tuple
 import logging
+import json
+import base64
 from pathlib import Path
-from typing import Dict, List, Any
+from langchain.tools import tool
+from ..models.smart_assumptions import (
+    SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
+)
 
 logger = logging.getLogger(__name__)
 
 
-class TextureConverterTool:
-    """Tool for converting textures to Bedrock format"""
-    
-    name: str = "Texture Converter Tool"
-    description: str = "Converts Java mod textures to Bedrock-compatible formats and resolutions"
-    
-    def _run(self, texture_list: str, output_path: str) -> str:
-        """
-        Convert textures to Bedrock format
-        
-        Args:
-            texture_list: JSON string with list of texture files
-            output_path: Path for converted textures
-            
-        Returns:
-            JSON string with conversion results
-        """
-        try:
-            textures = json.loads(texture_list)
-            
-            conversion_results = {
-                "converted_textures": [],
-                "conversion_notes": [],
-                "errors": [],
-                "total_textures": len(textures),
-                "successful_conversions": 0
-            }
-            
-            for texture_path in textures:
-                try:
-                    result = self._convert_single_texture(texture_path, output_path)
-                    conversion_results["converted_textures"].append(result)
-                    if result["success"]:
-                        conversion_results["successful_conversions"] += 1
-                except Exception as e:
-                    error_msg = f"Failed to convert {texture_path}: {str(e)}"
-                    conversion_results["errors"].append(error_msg)
-                    logger.error(error_msg)
-            
-            # Add general conversion notes
-            conversion_results["conversion_notes"].extend([
-                "All textures converted to PNG format for Bedrock compatibility",
-                "Textures resized to 16x16 or 32x32 for optimal performance",
-                "Texture paths updated for Bedrock resource pack structure"
-            ])
-            
-            return json.dumps(conversion_results, indent=2)
-            
-        except Exception as e:
-            logger.error(f"Error converting textures: {e}")
-            return json.dumps({"error": f"Failed to convert textures: {str(e)}"})
-    
-    def _convert_single_texture(self, texture_path: str, output_path: str) -> Dict[str, Any]:
-        """Convert a single texture file"""
-        # Simulate texture conversion logic
-        
-        # Determine appropriate size based on texture type
-        if "block" in texture_path.lower():
-            target_size = "16x16"
-        elif "item" in texture_path.lower():
-            target_size = "16x16"
-        elif "entity" in texture_path.lower():
-            target_size = "32x32"
-        else:
-            target_size = "16x16"
-        
-        # Generate Bedrock-compatible path
-        bedrock_path = self._generate_bedrock_texture_path(texture_path)
-        
-        return {
-            "original_path": texture_path,
-            "converted_path": bedrock_path,
-            "target_size": target_size,
-            "format": "PNG",
-            "success": True,
-            "notes": f"Converted to {target_size} PNG for Bedrock compatibility"
-        }
-    
-    def _generate_bedrock_texture_path(self, java_path: str) -> str:
-        """Generate Bedrock-compatible texture path"""
-        # Convert Java texture path to Bedrock format
-        # Java: assets/modid/textures/block/texture.png
-        # Bedrock: textures/blocks/texture.png
-        
-        path_parts = java_path.split('/')
-        if "textures" in path_parts:
-            texture_idx = path_parts.index("textures")
-            if texture_idx + 1 < len(path_parts):
-                category = path_parts[texture_idx + 1]
-                filename = path_parts[-1]
-                
-                # Map Java categories to Bedrock
-                category_mapping = {
-                    "block": "blocks",
-                    "item": "items", 
-                    "entity": "entity",
-                    "gui": "ui",
-                    "environment": "environment"
-                }
-                
-                bedrock_category = category_mapping.get(category, category)
-                return f"textures/{bedrock_category}/{filename}"
-        
-        # Fallback
-        return f"textures/items/{Path(java_path).name}"
-
-
-class ModelConverterTool:
-    """Tool for converting three-dimensional models to Bedrock geometry format"""
-    
-    name: str = "Model Converter Tool"
-    description: str = "Converts Java mod models to Bedrock geometry format"
-    
-    def _run(self, model_list: str, output_path: str) -> str:
-        """
-        Convert models to Bedrock geometry format
-        
-        Args:
-            model_list: JSON string with list of model files
-            output_path: Path for converted models
-            
-        Returns:
-            JSON string with conversion results
-        """
-        try:
-            models = json.loads(model_list)
-            
-            conversion_results = {
-                "converted_models": [],
-                "conversion_notes": [],
-                "errors": [],
-                "total_models": len(models),
-                "successful_conversions": 0
-            }
-            
-            for model_path in models:
-                try:
-                    result = self._convert_single_model(model_path, output_path)
-                    conversion_results["converted_models"].append(result)
-                    if result["success"]:
-                        conversion_results["successful_conversions"] += 1
-                except Exception as e:
-                    error_msg = f"Failed to convert {model_path}: {str(e)}"
-                    conversion_results["errors"].append(error_msg)
-                    logger.error(error_msg)
-            
-            # Add general conversion notes
-            conversion_results["conversion_notes"].extend([
-                "Models converted to Bedrock geometry format",
-                "Complex models may require manual adjustment",
-                "Animations converted to Bedrock animation format"
-            ])
-            
-            return json.dumps(conversion_results, indent=2)
-            
-        except Exception as e:
-            logger.error(f"Error converting models: {e}")
-            return json.dumps({"error": f"Failed to convert models: {str(e)}"})
-    
-    def _convert_single_model(self, model_path: str, output_path: str) -> Dict[str, Any]:
-        """Convert a single model file"""
-        model_name = Path(model_path).stem
-        
-        # Determine model type and complexity
-        if "block" in model_path.lower():
-            model_type = "block"
-            complexity = "simple"
-        elif "item" in model_path.lower():
-            model_type = "item"
-            complexity = "simple"
-        elif "entity" in model_path.lower():
-            model_type = "entity"
-            complexity = "complex"
-        else:
-            model_type = "unknown"
-            complexity = "medium"
-        
-        # Generate Bedrock geometry path
-        bedrock_path = f"models/entity/{model_name}.geo.json"
-        
-        return {
-            "original_path": model_path,
-            "converted_path": bedrock_path,
-            "model_type": model_type,
-            "complexity": complexity,
-            "format": "Bedrock Geometry",
-            "success": True,
-            "notes": f"Converted {model_type} model to Bedrock geometry format"
-        }
-
-
-class SoundConverterTool:
-    """Tool for converting audio files to Bedrock format"""
-    
-    name: str = "Sound Converter Tool"
-    description: str = "Converts Java mod sounds to Bedrock-compatible audio formats"
-    
-    def _run(self, sound_list: str, output_path: str) -> str:
-        """
-        Convert sounds to Bedrock format
-        
-        Args:
-            sound_list: JSON string with list of sound files
-            output_path: Path for converted sounds
-            
-        Returns:
-            JSON string with conversion results
-        """
-        try:
-            sounds = json.loads(sound_list)
-            
-            conversion_results = {
-                "converted_sounds": [],
-                "conversion_notes": [],
-                "errors": [],
-                "total_sounds": len(sounds),
-                "successful_conversions": 0
-            }
-            
-            for sound_path in sounds:
-                try:
-                    result = self._convert_single_sound(sound_path, output_path)
-                    conversion_results["converted_sounds"].append(result)
-                    if result["success"]:
-                        conversion_results["successful_conversions"] += 1
-                except Exception as e:
-                    error_msg = f"Failed to convert {sound_path}: {str(e)}"
-                    conversion_results["errors"].append(error_msg)
-                    logger.error(error_msg)
-            
-            # Add general conversion notes
-            conversion_results["conversion_notes"].extend([
-                "All sounds converted to OGG format for Bedrock",
-                "Audio quality optimized for mobile devices",
-                "Sound definitions created for Bedrock resource pack"
-            ])
-            
-            return json.dumps(conversion_results, indent=2)
-            
-        except Exception as e:
-            logger.error(f"Error converting sounds: {e}")
-            return json.dumps({"error": f"Failed to convert sounds: {str(e)}"})
-    
-    def _convert_single_sound(self, sound_path: str, output_path: str) -> Dict[str, Any]:
-        """Convert a single sound file"""
-        sound_name = Path(sound_path).stem
-        
-        # Determine sound category
-        if "block" in sound_path.lower():
-            category = "block"
-        elif "item" in sound_path.lower():
-            category = "item"
-        elif "entity" in sound_path.lower():
-            category = "entity"
-        elif "ambient" in sound_path.lower():
-            category = "ambient"
-        else:
-            category = "misc"
-        
-        # Generate Bedrock sound path
-        bedrock_path = f"sounds/{category}/{sound_name}.ogg"
-        
-        return {
-            "original_path": sound_path,
-            "converted_path": bedrock_path,
-            "category": category,
-            "format": "OGG",
-            "success": True,
-            "notes": f"Converted {category} sound to OGG format"
-        }
-
-
 class AssetConverterAgent:
-    """Agent for converting all types of assets to Bedrock formats"""
+    """
+    Asset Converter Agent responsible for converting visual and audio assets
+    to Bedrock-compatible formats as specified in PRD Feature 2.
+    """
     
     def __init__(self):
-        self.texture_converter = TextureConverterTool()
-        self.model_converter = ModelConverterTool()
-        self.sound_converter = SoundConverterTool()
-        logger.info("AssetConverterAgent initialized")
-    
-    def convert_textures(self, texture_list: str, output_path: str) -> str:
-        """
-        Convert Java mod textures to Bedrock format.
+        self.smart_assumption_engine = SmartAssumptionEngine()
         
-        Args:
-            texture_list: JSON string with list of texture file paths
-            output_path: Output directory for converted textures
-            
-        Returns:
-            JSON string with conversion results
-        """
-        return self.texture_converter._run(texture_list, output_path)
-    
-    def convert_models(self, model_list: str, output_path: str) -> str:
-        """
-        Convert Java mod models to Bedrock geometry format.
+        # Supported asset formats
+        self.texture_formats = {
+            'input': ['.png', '.jpg', '.jpeg', '.tga', '.bmp'],
+            'output': '.png'  # Bedrock uses PNG
+        }
         
-        Args:
-            model_list: JSON string with list of model file paths
-            output_path: Output directory for converted models
-            
-        Returns:
-            JSON string with conversion results
-        """
-        return self.model_converter._run(model_list, output_path)
-    
-    def convert_sounds(self, sound_list: str, output_path: str) -> str:
-        """
-        Convert Java mod sounds to Bedrock audio format.
+        self.model_formats = {
+            'input': ['.obj', '.fbx', '.json'],  # Java mod formats
+            'output': '.geo.json'  # Bedrock geometry format
+        }
         
-        Args:
-            sound_list: JSON string with list of sound file paths
-            output_path: Output directory for converted sounds
-            
-        Returns:
-            JSON string with conversion results
-        """
-        return self.sound_converter._run(sound_list, output_path)
-    
-    def organize_assets(self, asset_data: str, output_path: str) -> str:
-        """
-        Organize all converted assets into proper Bedrock resource pack structure.
+        self.audio_formats = {
+            'input': ['.ogg', '.wav', '.mp3'],
+            'output': '.ogg'  # Bedrock prefers OGG
+        }
         
-        Args:
-            asset_data: JSON string with asset conversion results
-            output_path: Base output directory for resource pack
-            
-        Returns:
-            JSON string with organization results
-        """
-        try:
-            assets = json.loads(asset_data)
-            
-            organization_results = {
-                "resource_pack_structure": {},
-                "file_mappings": [],
-                "manifest_entries": [],
-                "total_assets": 0
-            }
-            
-            # Define Bedrock resource pack structure
-            resource_pack_structure = {
-                "textures": ["blocks", "items", "entity", "ui", "environment"],
-                "models": ["entity", "blocks"],
-                "sounds": ["block", "item", "entity", "ambient", "misc"],
-                "animations": ["entity"],
-                "animation_controllers": ["entity"]
-            }
-            
-            organization_results["resource_pack_structure"] = resource_pack_structure
-            
-            # Process each asset type
-            for asset_type, asset_list in assets.items():
-                if isinstance(asset_list, list):
-                    for asset in asset_list:
-                        if isinstance(asset, dict) and "converted_path" in asset:
-                            organization_results["file_mappings"].append({
-                                "type": asset_type,
-                                "source": asset.get("original_path", ""),
-                                "destination": asset["converted_path"],
-                                "category": asset.get("category", "misc")
-                            })
-                            organization_results["total_assets"] += 1
-            
-            # Generate manifest entries
-            organization_results["manifest_entries"] = [
-                {
-                    "format_version": "1.16.0",
-                    "header": {
-                        "description": "Converted mod assets",
-                        "name": "Converted Resource Pack",
-                        "uuid": "generated-uuid-here",
-                        "version": [1, 0, 0]
-                    },
-                    "modules": [
-                        {
-                            "description": "Resource pack module",
-                            "type": "resources",
-                            "uuid": "generated-uuid-here",
-                            "version": [1, 0, 0]
-                        }
-                    ]
-                }
-            ]
-            
-            return json.dumps(organization_results, indent=2)
-            
-        except Exception as e:
-            logger.error(f"Error organizing assets: {e}")
-            return json.dumps({"error": f"Failed to organize assets: {str(e)}"})
-    
-    def check_asset_quality(self, asset_data: str) -> str:
-        """
-        Check quality and compatibility of converted assets.
+        # Bedrock asset constraints
+        self.texture_constraints = {
+            'max_resolution': 1024,  # Max texture size for performance
+            'must_be_power_of_2': True,
+            'supported_channels': ['rgb', 'rgba']
+        }
         
-        Args:
-            asset_data: JSON string with asset conversion results
-            
-        Returns:
-            JSON string with quality assessment
-        """
-        try:
-            assets = json.loads(asset_data)
-            
-            quality_assessment = {
-                "overall_quality": "Unknown",
-                "quality_checks": [],
-                "issues_found": [],
-                "recommendations": [],
-                "compatibility_score": 0.0
-            }
-            
-            total_assets = 0
-            quality_issues = 0
-            
-            # Check each asset type
-            for asset_type, asset_list in assets.items():
-                if isinstance(asset_list, list):
-                    for asset in asset_list:
-                        total_assets += 1
-                        
-                        # Check for common issues
-                        if isinstance(asset, dict):
-                            if not asset.get("success", False):
-                                quality_issues += 1
-                                quality_assessment["issues_found"].append(
-                                    f"Failed conversion: {asset.get('original_path', 'unknown')}"
-                                )
-                            
-                            # Check format compatibility
-                            if asset.get("format") not in ["PNG", "OGG", "Bedrock Geometry"]:
-                                quality_issues += 1
-                                quality_assessment["issues_found"].append(
-                                    f"Incompatible format: {asset.get('format', 'unknown')}"
-                                )
-            
-            # Calculate compatibility score
-            if total_assets > 0:
-                compatibility_score = 1.0 - (quality_issues / total_assets)
-            else:
-                compatibility_score = 0.0
-            
-            quality_assessment["compatibility_score"] = compatibility_score
-            
-            # Determine overall quality
-            if compatibility_score >= 0.9:
-                quality_assessment["overall_quality"] = "Excellent"
-            elif compatibility_score >= 0.75:
-                quality_assessment["overall_quality"] = "Good"
-            elif compatibility_score >= 0.5:
-                quality_assessment["overall_quality"] = "Fair"
-            else:
-                quality_assessment["overall_quality"] = "Poor"
-            
-            # Add recommendations
-            if quality_issues > 0:
-                quality_assessment["recommendations"].extend([
-                    "Review failed asset conversions",
-                    "Check asset format compatibility",
-                    "Test assets in Bedrock before finalizing"
-                ])
-            else:
-                quality_assessment["recommendations"].append(
-                    "All assets converted successfully - ready for packaging"
-                )
-            
-            return json.dumps(quality_assessment, indent=2)
-            
-        except Exception as e:
-            logger.error(f"Error checking asset quality: {e}")
-            return json.dumps({"error": f"Failed to check asset quality: {str(e)}"})
+        self.model_constraints = {
+            'max_vertices': 3000,  # Bedrock model complexity limit
+            'max_textures': 8,
+            'supported_bones': 60  # Max bones for animated models
+        }
+        
+        self.audio_constraints = {
+            'max_file_size_mb': 10,
+            'sample_rates': [22050, 44100],
+            'max_duration_seconds': 300
+        }
     
     def get_tools(self) -> List:
-        """Return available tools for this agent"""
+        """Get tools available to this agent"""
         return [
-            self.convert_textures,
-            self.convert_models,
-            self.convert_sounds,
-            self.organize_assets,
-            self.check_asset_quality
+            self.analyze_assets_tool,
+            self.convert_textures_tool,
+            self.convert_models_tool,
+            self.convert_audio_tool,
+            self.validate_bedrock_assets_tool
         ]
+    
+    @tool
+    def analyze_assets_tool(self, asset_data: str) -> str:
+        """Analyze assets for conversion."""
+        return self.analyze_assets(asset_data)
+    
+    @tool
+    def convert_textures_tool(self, texture_data: str) -> str:
+        """Convert textures to Bedrock format."""
+        return self.convert_textures(texture_data)
+    
+    @tool
+    def convert_models_tool(self, model_data: str) -> str:
+        """Convert models to Bedrock format."""
+        return self.convert_models(model_data)
+    
+    @tool
+    def convert_audio_tool(self, audio_data: str) -> str:
+        """Convert audio files to Bedrock format."""
+        return self.convert_audio(audio_data)
+    
+    @tool
+    def validate_bedrock_assets_tool(self, validation_data: str) -> str:
+        """Validate assets for Bedrock compatibility."""
+        return self.validate_bedrock_assets(validation_data)
+    
+    
+    def analyze_assets(self, asset_data: str) -> str:
+        """
+        Analyze Java mod assets to determine conversion requirements.
+        
+        Args:
+            asset_data: JSON string containing asset information:
+                       asset_list (list of asset objects with path, type, metadata)
+        
+        Returns:
+            JSON string with analysis results and conversion plan
+        """
+        try:
+            data = json.loads(asset_data)
+            asset_list = data.get('asset_list', [])
+            
+            analysis_results = {
+                'textures': {'count': 0, 'conversions_needed': [], 'issues': []},
+                'models': {'count': 0, 'conversions_needed': [], 'issues': []},
+                'audio': {'count': 0, 'conversions_needed': [], 'issues': []},
+                'other': {'count': 0, 'files': [], 'issues': []}
+            }
+            
+            for asset in asset_list:
+                asset_path = asset.get('path', '')
+                asset_type = asset.get('type', 'unknown')
+                metadata = asset.get('metadata', {})
+                
+                file_ext = Path(asset_path).suffix.lower()
+                
+                if file_ext in self.texture_formats['input']:
+                    analysis_results['textures']['count'] += 1
+                    texture_analysis = self._analyze_texture(asset_path, metadata)
+                    if texture_analysis['needs_conversion']:
+                        analysis_results['textures']['conversions_needed'].append(texture_analysis)
+                    if texture_analysis['issues']:
+                        analysis_results['textures']['issues'].extend(texture_analysis['issues'])
+                
+                elif file_ext in self.model_formats['input']:
+                    analysis_results['models']['count'] += 1
+                    model_analysis = self._analyze_model(asset_path, metadata)
+                    if model_analysis['needs_conversion']:
+                        analysis_results['models']['conversions_needed'].append(model_analysis)
+                    if model_analysis['issues']:
+                        analysis_results['models']['issues'].extend(model_analysis['issues'])
+                
+                elif file_ext in self.audio_formats['input']:
+                    analysis_results['audio']['count'] += 1
+                    audio_analysis = self._analyze_audio(asset_path, metadata)
+                    if audio_analysis['needs_conversion']:
+                        analysis_results['audio']['conversions_needed'].append(audio_analysis)
+                    if audio_analysis['issues']:
+                        analysis_results['audio']['issues'].extend(audio_analysis['issues'])
+                
+                else:
+                    analysis_results['other']['count'] += 1
+                    analysis_results['other']['files'].append(asset_path)
+                    if file_ext not in ['.txt', '.md', '.json']:  # Skip known text files
+                        analysis_results['other']['issues'].append(f"Unknown asset type: {asset_path}")
+            
+            # Generate conversion recommendations
+            recommendations = self._generate_conversion_recommendations(analysis_results)
+            
+            response = {
+                "success": True,
+                "analysis_results": analysis_results,
+                "recommendations": recommendations,
+                "total_assets": len(asset_list),
+                "conversion_complexity": self._assess_conversion_complexity(analysis_results)
+            }
+            
+            logger.info(f"Analyzed {len(asset_list)} assets")
+            return json.dumps(response)
+            
+        except Exception as e:
+            error_response = {"success": False, "error": f"Failed to analyze assets: {str(e)}"}
+            logger.error(f"Asset analysis error: {e}")
+            return json.dumps(error_response)
+    
+    
+    def convert_textures(self, texture_list: str, output_dir: str = None) -> str:
+        """
+        Convert texture assets to Bedrock-compatible format.
+        
+        Args:
+            texture_list: JSON string or list of texture paths
+            output_dir: Optional output directory (for test compatibility)
+        
+        Returns:
+            JSON string with conversion results
+        """
+        try:
+            # Handle both JSON string and plain list formats
+            if isinstance(texture_list, str):
+                if texture_list.startswith('[') or texture_list.startswith('{'):
+                    # It's JSON
+                    data = json.loads(texture_list)
+                    if isinstance(data, list):
+                        # Simple list of paths
+                        textures = [{"path": path} for path in data]
+                    else:
+                        # Structured data
+                        textures = data.get('textures', [])
+                else:
+                    # Single path
+                    textures = [{"path": texture_list}]
+            else:
+                # Assume it's already a list
+                textures = [{"path": path} for path in texture_list]
+            
+            conversion_results = []
+            
+            for texture in textures:
+                texture_path = texture.get('path', '') if isinstance(texture, dict) else texture
+                metadata = texture.get('metadata', {}) if isinstance(texture, dict) else {}
+                target_usage = texture.get('usage', 'block') if isinstance(texture, dict) else 'block'
+                
+                result = self._convert_single_texture(texture_path, metadata, target_usage)
+                conversion_results.append(result)
+            
+            successful_conversions = [r for r in conversion_results if r['success']]
+            failed_conversions = [r for r in conversion_results if not r['success']]
+            
+            response = {
+                "success": True,
+                "converted_textures": conversion_results,
+                "total_textures": len(textures),
+                "successful_conversions": len(successful_conversions),
+                "failed_conversions": len(failed_conversions),
+                "bedrock_texture_pack_structure": self._generate_texture_pack_structure(successful_conversions)
+            }
+            
+            logger.info(f"Converted {len(successful_conversions)}/{len(textures)} textures")
+            return json.dumps(response)
+            
+        except Exception as e:
+            error_response = {"success": False, "error": f"Failed to convert textures: {str(e)}"}
+            logger.error(f"Texture conversion error: {e}")
+            return json.dumps(error_response)
+    
+    
+    def convert_models(self, model_data: str) -> str:
+        """
+        Convert 3D models to Bedrock geometry format.
+        
+        Args:
+            model_data: JSON string containing model conversion requests
+        
+        Returns:
+            JSON string with conversion results
+        """
+        try:
+            data = json.loads(model_data)
+            models = data.get('models', [])
+            
+            conversion_results = []
+            
+            for model in models:
+                model_path = model.get('path', '')
+                metadata = model.get('metadata', {})
+                entity_type = model.get('entity_type', 'block')  # block, item, entity
+                
+                result = self._convert_single_model(model_path, metadata, entity_type)
+                conversion_results.append(result)
+            
+            successful_conversions = [r for r in conversion_results if r['success']]
+            failed_conversions = [r for r in conversion_results if not r['success']]
+            
+            response = {
+                "success": True,
+                "conversion_results": conversion_results,
+                "summary": {
+                    "total_models": len(models),
+                    "successful_conversions": len(successful_conversions),
+                    "failed_conversions": len(failed_conversions)
+                },
+                "bedrock_model_structure": self._generate_model_structure(successful_conversions)
+            }
+            
+            logger.info(f"Converted {len(successful_conversions)}/{len(models)} models")
+            return json.dumps(response)
+            
+        except Exception as e:
+            error_response = {"success": False, "error": f"Failed to convert models: {str(e)}"}
+            logger.error(f"Model conversion error: {e}")
+            return json.dumps(error_response)
+    
+    
+    def convert_audio(self, audio_data: str) -> str:
+        """
+        Convert audio assets to Bedrock-compatible format.
+        
+        Args:
+            audio_data: JSON string containing audio conversion requests
+        
+        Returns:
+            JSON string with conversion results
+        """
+        try:
+            data = json.loads(audio_data)
+            audio_files = data.get('audio_files', [])
+            
+            conversion_results = []
+            
+            for audio_file in audio_files:
+                audio_path = audio_file.get('path', '')
+                metadata = audio_file.get('metadata', {})
+                audio_type = audio_file.get('type', 'sound')  # sound, music, voice
+                
+                result = self._convert_single_audio(audio_path, metadata, audio_type)
+                conversion_results.append(result)
+            
+            successful_conversions = [r for r in conversion_results if r['success']]
+            failed_conversions = [r for r in conversion_results if not r['success']]
+            
+            response = {
+                "success": True,
+                "conversion_results": conversion_results,
+                "summary": {
+                    "total_audio_files": len(audio_files),
+                    "successful_conversions": len(successful_conversions),
+                    "failed_conversions": len(failed_conversions)
+                },
+                "bedrock_sound_structure": self._generate_sound_structure(successful_conversions)
+            }
+            
+            logger.info(f"Converted {len(successful_conversions)}/{len(audio_files)} audio files")
+            return json.dumps(response)
+            
+        except Exception as e:
+            error_response = {"success": False, "error": f"Failed to convert audio: {str(e)}"}
+            logger.error(f"Audio conversion error: {e}")
+            return json.dumps(error_response)
+    
+    
+    def validate_bedrock_assets(self, validation_data: str) -> str:
+        """
+        Validate converted assets for Bedrock compatibility.
+        
+        Args:
+            validation_data: JSON string containing assets to validate
+        
+        Returns:
+            JSON string with validation results
+        """
+        try:
+            data = json.loads(validation_data)
+            assets = data.get('assets', [])
+            
+            validation_results = {
+                'valid_assets': [],
+                'invalid_assets': [],
+                'warnings': [],
+                'optimization_suggestions': []
+            }
+            
+            for asset in assets:
+                asset_path = asset.get('path', '')
+                asset_type = asset.get('type', 'unknown')
+                metadata = asset.get('metadata', {})
+                
+                validation = self._validate_single_asset(asset_path, asset_type, metadata)
+                
+                if validation['is_valid']:
+                    validation_results['valid_assets'].append(validation)
+                else:
+                    validation_results['invalid_assets'].append(validation)
+                
+                validation_results['warnings'].extend(validation.get('warnings', []))
+                validation_results['optimization_suggestions'].extend(validation.get('optimizations', []))
+            
+            # Generate overall quality score
+            total_assets = len(assets)
+            valid_count = len(validation_results['valid_assets'])
+            quality_score = (valid_count / total_assets * 100) if total_assets > 0 else 0
+            
+            response = {
+                "success": True,
+                "validation_results": validation_results,
+                "quality_metrics": {
+                    "total_assets": total_assets,
+                    "valid_assets": valid_count,
+                    "invalid_assets": len(validation_results['invalid_assets']),
+                    "quality_score": round(quality_score, 2),
+                    "warning_count": len(validation_results['warnings']),
+                    "optimization_count": len(validation_results['optimization_suggestions'])
+                }
+            }
+            
+            logger.info(f"Validated {total_assets} assets with {quality_score:.1f}% quality score")
+            return json.dumps(response)
+            
+        except Exception as e:
+            error_response = {"success": False, "error": f"Failed to validate assets: {str(e)}"}
+            logger.error(f"Asset validation error: {e}")
+            return json.dumps(error_response)
+    
+    # Helper methods
+    
+    def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
+        """Analyze a single texture for conversion needs"""
+        width = metadata.get('width', 16)
+        height = metadata.get('height', 16)
+        channels = metadata.get('channels', 'rgba')
+        file_ext = Path(texture_path).suffix.lower()
+        
+        issues = []
+        needs_conversion = False
+        
+        # Check resolution
+        if width > self.texture_constraints['max_resolution'] or height > self.texture_constraints['max_resolution']:
+            issues.append(f"Resolution {width}x{height} exceeds maximum {self.texture_constraints['max_resolution']}")
+            needs_conversion = True
+        
+        # Check if power of 2
+        if self.texture_constraints['must_be_power_of_2']:
+            if not self._is_power_of_2(width) or not self._is_power_of_2(height):
+                issues.append(f"Resolution {width}x{height} is not power of 2")
+                needs_conversion = True
+        
+        # Check format
+        if file_ext != self.texture_formats['output']:
+            needs_conversion = True
+        
+        # Check channels
+        if channels not in self.texture_constraints['supported_channels']:
+            issues.append(f"Unsupported channel format: {channels}")
+            needs_conversion = True
+        
+        return {
+            'path': texture_path,
+            'needs_conversion': needs_conversion,
+            'issues': issues,
+            'current_format': file_ext,
+            'target_format': self.texture_formats['output'],
+            'current_resolution': f"{width}x{height}",
+            'recommended_resolution': self._get_recommended_resolution(width, height)
+        }
+    
+    def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
+        """Analyze a single model for conversion needs"""
+        vertex_count = metadata.get('vertices', 100)
+        texture_count = metadata.get('textures', 1)
+        bone_count = metadata.get('bones', 0)
+        file_ext = Path(model_path).suffix.lower()
+        
+        issues = []
+        needs_conversion = False
+        
+        # Check complexity
+        if vertex_count > self.model_constraints['max_vertices']:
+            issues.append(f"Vertex count {vertex_count} exceeds maximum {self.model_constraints['max_vertices']}")
+            needs_conversion = True
+        
+        if texture_count > self.model_constraints['max_textures']:
+            issues.append(f"Texture count {texture_count} exceeds maximum {self.model_constraints['max_textures']}")
+            needs_conversion = True
+        
+        if bone_count > self.model_constraints['supported_bones']:
+            issues.append(f"Bone count {bone_count} exceeds maximum {self.model_constraints['supported_bones']}")
+            needs_conversion = True
+        
+        # Check format
+        if file_ext != self.model_formats['output']:
+            needs_conversion = True
+        
+        return {
+            'path': model_path,
+            'needs_conversion': needs_conversion,
+            'issues': issues,
+            'current_format': file_ext,
+            'target_format': self.model_formats['output'],
+            'complexity': {
+                'vertices': vertex_count,
+                'textures': texture_count,
+                'bones': bone_count
+            }
+        }
+    
+    def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
+        """Analyze a single audio file for conversion needs"""
+        file_size_mb = metadata.get('file_size_mb', 1)
+        sample_rate = metadata.get('sample_rate', 44100)
+        duration = metadata.get('duration_seconds', 1)
+        file_ext = Path(audio_path).suffix.lower()
+        
+        issues = []
+        needs_conversion = False
+        
+        # Check file size
+        if file_size_mb > self.audio_constraints['max_file_size_mb']:
+            issues.append(f"File size {file_size_mb}MB exceeds maximum {self.audio_constraints['max_file_size_mb']}MB")
+            needs_conversion = True
+        
+        # Check sample rate
+        if sample_rate not in self.audio_constraints['sample_rates']:
+            issues.append(f"Sample rate {sample_rate} not in supported rates {self.audio_constraints['sample_rates']}")
+            needs_conversion = True
+        
+        # Check duration
+        if duration > self.audio_constraints['max_duration_seconds']:
+            issues.append(f"Duration {duration}s exceeds maximum {self.audio_constraints['max_duration_seconds']}s")
+            needs_conversion = True
+        
+        # Check format
+        if file_ext != self.audio_formats['output']:
+            needs_conversion = True
+        
+        return {
+            'path': audio_path,
+            'needs_conversion': needs_conversion,
+            'issues': issues,
+            'current_format': file_ext,
+            'target_format': self.audio_formats['output'],
+            'current_specs': {
+                'file_size_mb': file_size_mb,
+                'sample_rate': sample_rate,
+                'duration': duration
+            }
+        }
+    
+    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str) -> Dict:
+        """Convert a single texture (placeholder implementation)"""
+        # In a real implementation, this would use image processing libraries
+        # like PIL/Pillow to actually convert the texture
+        
+        return {
+            'success': True,
+            'original_path': texture_path,
+            'converted_path': f"textures/{usage}/{Path(texture_path).stem}.png",
+            'bedrock_format': 'png',
+            'optimizations_applied': [
+                'Converted to PNG format',
+                'Resized to power-of-2 dimensions',
+                'Optimized for Bedrock rendering'
+            ],
+            'bedrock_reference': f"{usage}_{Path(texture_path).stem}"
+        }
+    
+    def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
+        """Convert a single model (placeholder implementation)"""
+        # In a real implementation, this would convert OBJ/FBX to Bedrock geometry format
+        
+        return {
+            'success': True,
+            'original_path': model_path,
+            'converted_path': f"models/{entity_type}/{Path(model_path).stem}.geo.json",
+            'bedrock_format': 'geo.json',
+            'optimizations_applied': [
+                'Converted to Bedrock geometry format',
+                'Optimized vertex count',
+                'Generated bone mappings'
+            ],
+            'bedrock_identifier': f"geometry.{entity_type}.{Path(model_path).stem}"
+        }
+    
+    def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
+        """Convert a single audio file (placeholder implementation)"""
+        # In a real implementation, this would use audio processing libraries
+        # like pydub to convert audio formats
+        
+        return {
+            'success': True,
+            'original_path': audio_path,
+            'converted_path': f"sounds/{audio_type}/{Path(audio_path).stem}.ogg",
+            'bedrock_format': 'ogg',
+            'optimizations_applied': [
+                'Converted to OGG format',
+                'Optimized sample rate',
+                'Compressed for performance'
+            ],
+            'bedrock_sound_event': f"{audio_type}.{Path(audio_path).stem}"
+        }
+    
+    def _validate_single_asset(self, asset_path: str, asset_type: str, metadata: Dict) -> Dict:
+        """Validate a single asset for Bedrock compatibility"""
+        is_valid = True
+        warnings = []
+        optimizations = []
+        
+        if asset_type == 'texture':
+            width = metadata.get('width', 16)
+            height = metadata.get('height', 16)
+            
+            if width != height:
+                warnings.append("Non-square texture may cause rendering issues")
+            
+            if width > 64:
+                optimizations.append("Consider using lower resolution for better performance")
+        
+        elif asset_type == 'model':
+            vertex_count = metadata.get('vertices', 100)
+            
+            if vertex_count > 1000:
+                optimizations.append("High vertex count may impact performance")
+        
+        elif asset_type == 'audio':
+            duration = metadata.get('duration_seconds', 1)
+            
+            if duration > 30:
+                optimizations.append("Long audio files may impact memory usage")
+        
+        return {
+            'path': asset_path,
+            'type': asset_type,
+            'is_valid': is_valid,
+            'warnings': warnings,
+            'optimizations': optimizations
+        }
+    
+    def _is_power_of_2(self, n: int) -> bool:
+        """Check if a number is a power of 2"""
+        return n > 0 and (n & (n - 1)) == 0
+    
+    def _get_recommended_resolution(self, width: int, height: int) -> str:
+        """Get recommended resolution for texture"""
+        # Find the nearest power of 2 that's within constraints
+        max_res = self.texture_constraints['max_resolution']
+        
+        target_width = min(max_res, self._next_power_of_2(width))
+        target_height = min(max_res, self._next_power_of_2(height))
+        
+        return f"{target_width}x{target_height}"
+    
+    def _next_power_of_2(self, n: int) -> int:
+        """Get the next power of 2 greater than or equal to n"""
+        power = 1
+        while power < n:
+            power *= 2
+        return power
+    
+    def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
+        """Generate conversion recommendations based on analysis"""
+        recommendations = []
+        
+        texture_count = analysis['textures']['count']
+        model_count = analysis['models']['count']
+        audio_count = analysis['audio']['count']
+        
+        if texture_count > 0:
+            recommendations.append(f"Convert {texture_count} textures to PNG format with power-of-2 dimensions")
+        
+        if model_count > 0:
+            recommendations.append(f"Convert {model_count} models to Bedrock geometry format")
+        
+        if audio_count > 0:
+            recommendations.append(f"Convert {audio_count} audio files to OGG format")
+        
+        total_issues = (len(analysis['textures']['issues']) + 
+                       len(analysis['models']['issues']) + 
+                       len(analysis['audio']['issues']))
+        
+        if total_issues > 0:
+            recommendations.append(f"Address {total_issues} compatibility issues")
+        
+        return recommendations
+    
+    def _assess_conversion_complexity(self, analysis: Dict) -> str:
+        """Assess the complexity of the conversion task"""
+        total_conversions = (len(analysis['textures']['conversions_needed']) +
+                           len(analysis['models']['conversions_needed']) +
+                           len(analysis['audio']['conversions_needed']))
+        
+        total_issues = (len(analysis['textures']['issues']) +
+                       len(analysis['models']['issues']) +
+                       len(analysis['audio']['issues']))
+        
+        if total_conversions == 0 and total_issues == 0:
+            return "simple"
+        elif total_conversions < 5 and total_issues < 3:
+            return "moderate"
+        else:
+            return "complex"
+    
+    def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
+        """Generate Bedrock texture pack structure"""
+        return {
+            "pack_manifest": {
+                "format_version": 2,
+                "header": {
+                    "name": "Converted Texture Pack",
+                    "description": "Converted from Java mod",
+                    "uuid": "generated-uuid-here",
+                    "version": [1, 0, 0],
+                    "min_engine_version": [1, 16, 0]
+                },
+                "modules": [{
+                    "type": "resources",
+                    "uuid": "generated-module-uuid",
+                    "version": [1, 0, 0]
+                }]
+            },
+            "texture_list": [t['converted_path'] for t in textures]
+        }
+    
+    def _generate_model_structure(self, models: List[Dict]) -> Dict:
+        """Generate Bedrock model structure"""
+        return {
+            "geometry_files": [m['converted_path'] for m in models],
+            "entity_definitions": [m['bedrock_identifier'] for m in models]
+        }
+    
+    def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
+        """Generate Bedrock sound structure"""
+        return {
+            "sound_definitions": {s['bedrock_sound_event']: {
+                "sounds": [s['converted_path']] 
+            } for s in sounds}
+        }
