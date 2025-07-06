@@ -3,7 +3,7 @@
  * Visual development and testing for PRD Feature 1
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ConversionUpload } from './ConversionUpload';
 
 const meta: Meta<typeof ConversionUpload> = {

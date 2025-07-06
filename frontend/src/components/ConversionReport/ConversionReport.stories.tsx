@@ -3,7 +3,7 @@
  * Visual development for PRD Feature 3: Interactive Conversion Report
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ConversionReport } from './ConversionReport';
 import type { ConversionResponse } from '../../types/api';
 

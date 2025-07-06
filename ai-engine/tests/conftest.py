@@ -1,7 +1,21 @@
 import pytest
 import os
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from httpx import AsyncClient
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Set test environment variables
 os.environ["OPENAI_API_KEY"] = "test-key"
