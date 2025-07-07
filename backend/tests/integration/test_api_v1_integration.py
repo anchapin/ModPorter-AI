@@ -391,15 +391,26 @@ class TestV1FullWorkflowIntegration:
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
         jar_file = io.BytesIO(jar_content)
 
-        # Test with all possible options
+        # Step 1: Upload the file
+        upload_response = client.post(
+            "/api/v1/upload",
+            files={"file": ("full_options.jar", jar_file, "application/java-archive")}
+        )
+        assert upload_response.status_code == 200
+        upload_data = upload_response.json()
+        
+        # Step 2: Start conversion with all options
         conversion_response = client.post(
             "/api/v1/convert",
-            files={"mod_file": ("full_options.jar", jar_file, "application/java-archive")},
-            data={
-                "smart_assumptions": "false",
-                "include_dependencies": "true",
-                "mod_url": "https://example.com/mod-info",
-                "target_version": "1.19.4"
+            json={
+                "file_id": upload_data["file_id"],
+                "original_filename": upload_data["original_filename"],
+                "target_version": "1.19.4",
+                "options": {
+                    "smartAssumptions": False,
+                    "includeDependencies": True,
+                    "modUrl": "https://example.com/mod-info"
+                }
             }
         )
 

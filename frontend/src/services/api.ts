@@ -16,7 +16,7 @@ class ApiError extends Error {
   }
 }
 
-export const uploadFileActual = async (file: File): Promise<UploadResponse> => {
+export const uploadFile = async (file: File): Promise<UploadResponse> => {
   const formData = new FormData();
   formData.append('file', file); // Match backend parameter name 'file'
 
@@ -41,7 +41,7 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   }
 
   // Step 1: Upload the file
-  const uploadResponse = await uploadFileActual(params.file);
+  const uploadResponse = await uploadFile(params.file);
 
   // Step 2: Construct the ConversionRequest payload for the backend
   const backendRequestPayload: ConversionRequest = {
@@ -72,10 +72,8 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   return response.json();
 };
 
-export const getConversionStatus = async (conversionId: string): Promise<ConversionStatus> => { // Return type changed
-  // Endpoint corrected: /api/convert/{job_id} instead of /api/convert/{job_id}/status
-  // This path /api/v1/convert/{job_id} is handled by get_conversion on backend, which is fine.
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`);
+export const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -85,12 +83,23 @@ export const getConversionStatus = async (conversionId: string): Promise<Convers
   return response.json();
 };
 
-export const downloadConvertedMod = async (conversionId: string): Promise<Blob> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/download`);
+export const downloadResult = async (jobId: string): Promise<Blob> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
   
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
   }
 
   return response.blob();
+};
+
+export const cancelJob = async (jobId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
+  }
 };
