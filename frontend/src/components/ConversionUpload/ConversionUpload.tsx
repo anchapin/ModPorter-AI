@@ -7,6 +7,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { convertMod } from '../../services/api';
 import { ConversionRequest, ConversionResponse } from '../../types/api';
+import { ConversionProgress } from '../ConversionProgress/ConversionProgress'; // Import new component
 import './ConversionUpload.css';
 
 interface ConversionUploadProps {
@@ -21,6 +22,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
   const [smartAssumptions, setSmartAssumptions] = useState(true);
   const [includeDependencies, setIncludeDependencies] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
+  const [currentConversionId, setCurrentConversionId] = useState<string | null>(null); // New state
   const [error, setError] = useState<string | null>(null);
   const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
 
@@ -71,6 +73,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     setSelectedFile(file);
     setModUrl(''); // Clear URL if file is selected
     setError(null);
+    // Reset conversion if a new file is selected
+    setIsConverting(false);
+    setCurrentConversionId(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -90,7 +95,11 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       setError('Invalid URL. Please use CurseForge or Modrinth links only.');
     } else {
       setError(null);
-      setSelectedFile(null); // Clear file if URL is entered
+      if (url) { // Only clear file and reset conversion if URL is actively being entered
+        setSelectedFile(null);
+        setIsConverting(false);
+        setCurrentConversionId(null);
+      }
     }
   };
 
@@ -105,7 +114,8 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       return;
     }
 
-    setIsConverting(true);
+    setIsConverting(true); // Keep this to manage UI state for button, etc.
+    setCurrentConversionId(null); // Reset previous ID if any
     setError(null);
 
     try {
@@ -116,16 +126,33 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
         includeDependencies
       };
 
-      const response: ConversionResponse = await convertMod(request);
+      const response: ConversionResponse = await convertMod(request); // Assuming convertMod returns { conversionId: string; ... }
+
+      // The API response model from backend `ConversionResponse` has `job_id`
+      // Let's assume the `convertMod` service maps `job_id` to `conversionId` for frontend consistency
+      // or we use `response.job_id` directly if that's what `ConversionProgress` expects.
+      // Based on previous steps, ConversionProgress expects `conversionId`.
+      // The backend `ConversionResponse` has `job_id`. Let's assume `convertMod` returns it as `conversionId` or we adapt.
+      // For now, let's assume `response.conversionId` is correct based on `types/api.ts` potentially adapting this.
+      // If `convertMod` returns `job_id`, then it should be `response.job_id`.
+      // Let's use `response.job_id` as that's what the backend returns.
+      // And ensure `ConversionProgress` prop is also `job_id` or adapt here.
+      // For now, assuming `ConversionProgress` prop `conversionId` matches `job_id`.
+
+      setCurrentConversionId(response.job_id); // Set the new conversion ID
+      // isConverting remains true to show the ConversionProgress component
       
       if (onConversionStart) {
-        onConversionStart(response.conversionId);
+        onConversionStart(response.job_id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Conversion failed');
-    } finally {
-      setIsConverting(false);
+      setIsConverting(false); // Stop conversion display on error
+      setCurrentConversionId(null);
     }
+    // We don't set setIsConverting(false) in `finally` anymore if successful,
+    // as `ConversionProgress` will take over managing its display based on its internal state.
+    // `isConverting` will be set to false when a new file/URL is selected or cleared.
   };
 
   const canConvert = (selectedFile || (modUrl && validateUrl(modUrl))) && !isConverting;
@@ -157,6 +184,8 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedFile(null);
+                setIsConverting(false); // Reset conversion state
+                setCurrentConversionId(null);
               }}
             >
               ✕
@@ -257,42 +286,28 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       )}
 
       {/* Convert Button */}
-      <button
-        className={`convert-button ${!canConvert ? 'disabled' : ''}`}
-        onClick={handleConvert}
-        disabled={!canConvert}
-      >
-        {isConverting ? (
-          <>
-            <div className="spinner"></div>
-            Converting...
-            <div className="progress-bar" role="progressbar">
-              <div className="progress-fill"></div>
-            </div>
-          </>
-        ) : (
-          <>
-            🚀 Convert to Bedrock
-          </>
-        )}
-      </button>
+      {!currentConversionId && ( // Only show convert button if no active conversion for this component instance
+        <button
+          className={`convert-button ${!canConvert ? 'disabled' : ''}`}
+          onClick={handleConvert}
+          disabled={!canConvert || isConverting} // Disable if already attempting to convert (before ID is set)
+        >
+          {isConverting && !currentConversionId ? ( // Show spinner only during the very initial phase
+            <>
+              <div className="spinner"></div>
+              Initiating...
+            </>
+          ) : (
+            <>
+              🚀 Convert to Bedrock
+            </>
+          )}
+        </button>
+      )}
 
-      {/* Progress Indicator for Visual Learners */}
-      {isConverting && (
-        <div className="conversion-steps">
-          <div className="step active">
-            <div className="step-icon">🔍</div>
-            <span>Analyzing mod structure...</span>
-          </div>
-          <div className="step">
-            <div className="step-icon">🤖</div>
-            <span>AI processing conversion...</span>
-          </div>
-          <div className="step">
-            <div className="step-icon">📦</div>
-            <span>Packaging Bedrock add-on...</span>
-          </div>
-        </div>
+      {/* New ConversionProgress component rendering */}
+      {currentConversionId && ( // Render ConversionProgress if an ID is set
+        <ConversionProgress conversionId={currentConversionId} />
       )}
     </div>
   );

@@ -10,16 +10,28 @@ export interface ConversionRequest {
 }
 
 export interface ConversionResponse {
-  conversionId: string;
-  status: 'processing' | 'completed' | 'failed';
-  overallSuccessRate: number;
-  convertedMods: ConvertedMod[];
-  failedMods: FailedMod[];
-  smartAssumptionsApplied: SmartAssumption[];
-  downloadUrl?: string;
-  detailedReport: DetailedReport;
+  job_id: string; // Matches backend
+  status: string; // General status like 'queued', 'processing', etc.
+  message: string;
+  estimated_time?: number; // Initial estimated time for completion
 }
 
+// This new interface will match the backend's ConversionStatus model
+export interface ConversionStatus {
+  job_id: string;
+  status: string; // e.g., "queued", "preprocessing", "ai_conversion", "postprocessing", "completed", "failed", "cancelled"
+  progress: number; // Percentage 0-100
+  message: string;
+  stage?: string | null; // Descriptive stage name
+  estimated_time_remaining?: number | null; // In seconds
+  result_url?: string | null;
+  error?: string | null;
+  created_at: string; // ISO date string
+}
+
+// The following interfaces seem to be part of an older/different API design.
+// Leaving them here for now, but they are not directly used by
+// ConversionUpload, ConversionProgress for job status/initiation.
 export interface ConvertedMod {
   name: string;
   version: string;
@@ -48,7 +60,7 @@ export interface ModFeature {
   changes?: string;
 }
 
-export interface DetailedReport {
+export interface DetailedReport { // This might be for a more detailed report page, not the primary status.
   stage: string;
   progress: number;
   logs: string[];
