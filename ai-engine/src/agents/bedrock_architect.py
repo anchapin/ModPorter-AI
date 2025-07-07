@@ -437,7 +437,7 @@ class BedrockArchitectAgent:
                 "success": True,
                 "component_type": component_type,
                 "identifier": identifier,
-                "definition_json": json.dumps(placeholder_definition, indent=2), # Return the definition as a JSON string
+                "definition_json": placeholder_definition, # Return the definition as a JSON object, not a string
                 "message": f"Placeholder {component_type} definition generated successfully for {identifier}."
             }, indent=2)
 

@@ -76,7 +76,7 @@ class TestPackagingAgentManifests:
             "dependencies": [],
             "capabilities": ["scripting"]
         }
-        result_str = packaging_agent.generate_manifests_tool(json.dumps(manifest_data))
+        result_str = packaging_agent.generate_manifests(json.dumps(manifest_data))
         result = json.loads(result_str)
 
         assert result["success"] is True
@@ -112,7 +112,7 @@ class TestPackagingAgentManifests:
                 "has_resource_pack": False # Explicitly false
             }
         }
-        result_str = packaging_agent.generate_manifests_tool(json.dumps(manifest_data))
+        result_str = packaging_agent.generate_manifests(json.dumps(manifest_data))
         result = json.loads(result_str)
 
         assert result["success"] is True
@@ -129,7 +129,7 @@ class TestPackagingAgentManifests:
                 "has_resource_pack": True
             }
         }
-        result_str = packaging_agent.generate_manifests_tool(json.dumps(manifest_data))
+        result_str = packaging_agent.generate_manifests(json.dumps(manifest_data))
         result = json.loads(result_str)
 
         assert result["success"] is True
@@ -242,7 +242,7 @@ class TestPackagingAgentStructure:
             "components": [], # No actual components to place in this unit test for structure
             "target_directory": str(target_pack_dir)
         }
-        result_str = packaging_agent.create_package_structure_tool(json.dumps(structure_data))
+        result_str = packaging_agent.create_package_structure(json.dumps(structure_data))
         result = json.loads(result_str)
 
         assert result["success"] is True
@@ -345,7 +345,7 @@ class TestPackagingAgentMcAddon:
             "output_path": str(output_path),
             "metadata": {"addon_name": "My Super Addon"}
         }
-        result_str = packaging_agent.build_mcaddon_tool(json.dumps(build_data))
+        result_str = packaging_agent.build_mcaddon(json.dumps(build_data))
         result = json.loads(result_str)
 
         assert result["success"] is True
@@ -363,7 +363,7 @@ class TestPackagingAgentMcAddon:
             "source_directories": [str(non_existent_dir)],
             "output_path": str(output_path)
         }
-        result_str = packaging_agent.build_mcaddon_tool(json.dumps(build_data))
+        result_str = packaging_agent.build_mcaddon(json.dumps(build_data))
         result = json.loads(result_str)
 
         assert result["success"] is False
@@ -607,7 +607,7 @@ class TestPackagingAgentValidation:
             "package_paths": [str(bp_path), str(rp_path)],
             "requirements": {} # E.g. specific Bedrock version, etc. Not deeply tested here.
         }
-        result_str = packaging_agent.validate_package_tool(json.dumps(validation_input))
+        result_str = packaging_agent.validate_package(json.dumps(validation_input))
         result = json.loads(result_str)
 
         assert result["success"] is True

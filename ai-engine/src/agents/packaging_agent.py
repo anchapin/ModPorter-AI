@@ -9,6 +9,7 @@ import json
 import zipfile
 import tempfile
 import os
+import copy
 from pathlib import Path
 from datetime import datetime
 import uuid
@@ -683,7 +684,7 @@ class PackagingAgent:
 
     def _generate_behavior_manifest(self, package_info: Dict, dependencies: List[Dict], capabilities: List[str]) -> Dict:
         """Generate behavior pack manifest"""
-        manifest = self.manifest_template.copy()
+        manifest = copy.deepcopy(self.manifest_template)
         
         manifest['header']['name'] = package_info.get('name', 'My Converted Behavior Pack')
         manifest['header']['description'] = package_info.get('description', 'A behavior pack converted from a Java mod by ModPorter AI')
@@ -727,7 +728,7 @@ class PackagingAgent:
     
     def _generate_resource_manifest(self, package_info: Dict, dependencies: List[Dict]) -> Dict:
         """Generate resource pack manifest"""
-        manifest = self.manifest_template.copy()
+        manifest = copy.deepcopy(self.manifest_template)
         
         manifest['header']['name'] = package_info.get('name', 'My Converted Resource Pack')
         manifest['header']['description'] = package_info.get('description', 'A resource pack converted from a Java mod by ModPorter AI')
@@ -769,7 +770,7 @@ class PackagingAgent:
             'file_content_validation': {'passed': True, 'issues': []} # New category
         }
 
-        pack_type_guess = "behavior_pack" if "behavior" in Path(package_path).name.lower() else "resource_pack"
+        pack_type_guess = self._detect_pack_type_from_manifest(package_path)
         
         # 1. Manifest Validation
         manifest_path = Path(package_path) / 'manifest.json'
@@ -1311,3 +1312,39 @@ class PackagingAgent:
             return "1-5 minutes"
         else:
             return "5-15 minutes"
+    
+    def _detect_pack_type_from_manifest(self, package_path: str) -> str:
+        """
+        Detect pack type by analyzing the manifest.json content instead of relying on directory name.
+        
+        Args:
+            package_path: Path to the pack directory
+            
+        Returns:
+            'behavior_pack' or 'resource_pack', defaults to 'behavior_pack' if cannot determine
+        """
+        try:
+            manifest_path = Path(package_path) / 'manifest.json'
+            if not manifest_path.exists():
+                # No manifest - fall back to directory name heuristic
+                return "behavior_pack" if "behavior" in Path(package_path).name.lower() else "resource_pack"
+            
+            with open(manifest_path, 'r') as f:
+                manifest = json.load(f)
+            
+            # Check modules to determine pack type
+            modules = manifest.get('modules', [])
+            for module in modules:
+                module_type = module.get('type', '')
+                if module_type == 'resources':
+                    return "resource_pack"
+                elif module_type in ['data', 'script']:
+                    return "behavior_pack"
+            
+            # If no clear indication from modules, fall back to directory name
+            return "behavior_pack" if "behavior" in Path(package_path).name.lower() else "resource_pack"
+            
+        except (json.JSONDecodeError, IOError, KeyError) as e:
+            logger.warning(f"Could not detect pack type from manifest in {package_path}: {e}")
+            # Fall back to directory name heuristic
+            return "behavior_pack" if "behavior" in Path(package_path).name.lower() else "resource_pack"

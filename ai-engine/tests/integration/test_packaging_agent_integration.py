@@ -52,7 +52,7 @@ class TestPackagingAgentIntegration:
             },
             "capabilities": ["scripting"]
         }
-        manifest_result_str = agent.generate_manifests_tool(json.dumps(manifest_data_bp))
+        manifest_result_str = agent.generate_manifests(json.dumps(manifest_data_bp))
         manifest_result = json.loads(manifest_result_str)
 
         assert manifest_result["success"] is True
@@ -91,7 +91,7 @@ class TestPackagingAgentIntegration:
             "output_path": str(mcaddon_output_path),
             "metadata": {"addon_name": addon_name}
         }
-        build_result_str = agent.build_mcaddon_tool(json.dumps(build_data))
+        build_result_str = agent.build_mcaddon(json.dumps(build_data))
         build_result = json.loads(build_result_str)
 
         assert build_result["success"] is True
@@ -134,7 +134,7 @@ class TestPackagingAgentIntegration:
                 "has_resource_pack": True
             }
         }
-        manifest_result_str = agent.generate_manifests_tool(json.dumps(manifest_data))
+        manifest_result_str = agent.generate_manifests(json.dumps(manifest_data))
         manifest_result = json.loads(manifest_result_str)
 
         assert manifest_result["success"] is True
@@ -164,7 +164,7 @@ class TestPackagingAgentIntegration:
             "output_path": str(mcaddon_output_path),
             "metadata": {"addon_name": addon_name}
         }
-        build_result_str = agent.build_mcaddon_tool(json.dumps(build_data))
+        build_result_str = agent.build_mcaddon(json.dumps(build_data))
         build_result = json.loads(build_result_str)
 
         assert build_result["success"] is True
@@ -200,7 +200,7 @@ class TestPackagingAgentIntegration:
             "package_paths": [str(extracted_bp_path), str(extracted_rp_path)],
             "requirements": {}
         }
-        validation_tool_result_str = agent.validate_package_tool(json.dumps(validation_input))
+        validation_tool_result_str = agent.validate_package(json.dumps(validation_input))
         validation_tool_result = json.loads(validation_tool_result_str)
 
         assert validation_tool_result["success"] is True
