@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConversionStatus } from '../../types/api';
 import { getConversionStatus } from '../../services/api'; // Import the API service
 import './ConversionProgress.css';
@@ -43,38 +43,43 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const webSocketRef = useRef<WebSocket | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
+  const currentStatusRef = useRef<string>('queued');
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
   const stopPolling = () => {
     if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
+      window.clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
       console.log('Polling stopped.');
     }
   };
 
-  const updateProgressData = (newData: ConversionStatus) => {
+  const updateProgressData = useCallback((newData: ConversionStatus) => {
     setProgressData(newData);
+    currentStatusRef.current = newData.status;
     if (newData.status === 'completed' || newData.status === 'failed' || newData.status === 'cancelled') {
       console.log(`Conversion ended with status: ${newData.status}. Cleaning up connections.`);
       if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
         webSocketRef.current.close(1000, `Conversion ${newData.status}`);
       }
-      stopPolling();
+      if (pollingIntervalRef.current) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       setUsingWebSocket(false); // Ensure this is reset
     }
-  };
+  }, []);
 
-  const startPolling = ()_current => {
+  const startPolling = useCallback(() => {
     // Prevent multiple polling intervals
     stopPolling();
     console.log(`WebSocket failed or not supported. Falling back to polling for ${conversionId}.`);
     setUsingWebSocket(false);
 
-    pollingIntervalRef.current = setInterval(async () => {
+    pollingIntervalRef.current = window.setInterval(async () => {
       try {
         const status = await getConversionStatus(conversionId);
         console.log('Polling: Fetched status:', status);
@@ -86,7 +91,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
         // Optional: Implement max retries for polling or different error handling
       }
     }, 3000); // Poll every 3 seconds
-  };
+  }, [conversionId, updateProgressData]);
 
 
   useEffect(() => {
@@ -147,7 +152,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
         console.log(`WebSocket closed for ${conversionId}. Code: ${event.code}, Reason: ${event.reason}`);
         webSocketRef.current = null; // Clear the ref
         // Only start polling if the closure was unexpected and not a terminal state
-        if (progressData.status !== 'completed' && progressData.status !== 'failed' && progressData.status !== 'cancelled') {
+        if (currentStatusRef.current !== 'completed' && currentStatusRef.current !== 'failed' && currentStatusRef.current !== 'cancelled') {
             setConnectionError('WebSocket connection lost. Attempting to use polling.');
             startPolling();
         } else {
@@ -161,7 +166,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
 
     return cleanup; // Return the cleanup function
 
-  }, [conversionId, WS_BASE_URL]); // Re-run effect if conversionId or WS_BASE_URL changes
+  }, [conversionId, WS_BASE_URL, updateProgressData, startPolling]); // Re-run effect if conversionId or WS_BASE_URL changes
 
   const handleDownload = () => {
     if (progressData.result_url) {
