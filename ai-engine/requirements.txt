@@ -25,6 +25,9 @@ pydub
 httpx
 aiohttp
 
+# Redis for job management
+redis>=4.5.0
+
 # Configuration Management
 pydantic>=2.0.0
 pydantic-settings

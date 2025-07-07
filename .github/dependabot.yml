@@ -1,0 +1,99 @@
+version: 2
+updates:
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
+
+  # Root npm workspace
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "workspace"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
+
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "python"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
+
+  # AI Engine Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/ai-engine"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "ai-engine"
+      - "python"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/" # Scan the entire repository for Dockerfiles
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/.github" # Corrected directory for GitHub Actions
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "anchapin"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    open-pull-requests-limit: 10
+    timezone: "Etc/UTC"
