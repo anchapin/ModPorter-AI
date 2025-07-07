@@ -3,9 +3,11 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse } from '../types/api';
+import { ConversionRequest, ConversionResponse, ConversionStatus } from '../types/api';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+// Use relative URL for production (proxied by nginx) or localhost for development
+const API_BASE_URL = process.env.VITE_API_URL || 
+  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -42,8 +44,8 @@ export const convertMod = async (request: ConversionRequest): Promise<Conversion
   return response.json();
 };
 
-export const pollJobStatus = async (conversionId: string): Promise<ConversionResponse> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/status`);
+export const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`);
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -53,8 +55,8 @@ export const pollJobStatus = async (conversionId: string): Promise<ConversionRes
   return response.json();
 };
 
-export const downloadResult = async (conversionId: string): Promise<Blob> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/download`);
+export const downloadResult = async (jobId: string): Promise<Blob> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
   
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
@@ -63,8 +65,8 @@ export const downloadResult = async (conversionId: string): Promise<Blob> => {
   return response.blob();
 };
 
-export const cancelJob = async (conversionId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`, {
+export const cancelJob = async (jobId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`, {
     method: 'DELETE',
   });
 

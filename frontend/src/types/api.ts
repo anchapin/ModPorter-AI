@@ -10,30 +10,47 @@ export interface ConversionRequest {
 }
 
 export interface ConversionResponse {
-  conversionId: string;
-  status: ConversionStatus;
-  progress?: number; // Added progress
-  error?: string; // Added error message for failed status
-  overallSuccessRate: number;
-  convertedMods: ConvertedMod[];
-  failedMods: FailedMod[];
-  smartAssumptionsApplied: SmartAssumption[];
+  job_id: string; // Matches backend
+  status: string; // General status like 'queued', 'processing', etc.
+  message: string;
+  estimated_time?: number; // Initial estimated time for completion
+}
+
+// This interface will match the backend's ConversionStatus model
+export interface ConversionStatus {
+  job_id: string;
+  status: string; // e.g., "queued", "preprocessing", "ai_conversion", "postprocessing", "completed", "failed", "cancelled"
+  progress: number; // Percentage 0-100
+  message: string;
+  stage?: string | null; // Descriptive stage name
+  estimated_time_remaining?: number | null; // In seconds
+  result_url?: string | null;
+  error?: string | null;
+  created_at: string; // ISO date string
+}
+
+// Status enum for frontend type checking
+export enum ConversionStatusEnum {
+  PENDING = 'queued',
+  UPLOADING = 'uploading',
+  IN_PROGRESS = 'preprocessing',
+  ANALYZING = 'ai_conversion',
+  CONVERTING = 'ai_conversion',
+  PACKAGING = 'postprocessing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
+// Extended interfaces for rich reporting (maintaining backward compatibility)
+export interface ExtendedConversionResponse extends ConversionResponse {
+  overallSuccessRate?: number;
+  convertedMods?: ConvertedMod[];
+  failedMods?: FailedMod[];
+  smartAssumptionsApplied?: SmartAssumption[];
   downloadUrl?: string;
-  detailedReport: DetailedReport;
+  detailedReport?: DetailedReport;
 }
-
-export enum ConversionStatus {
-  PENDING = 'PENDING',
-  UPLOADING = 'UPLOADING', // If you have a distinct upload phase before backend processing
-  IN_PROGRESS = 'IN_PROGRESS', // General "processing" state from backend
-  ANALYZING = 'ANALYZING',
-  CONVERTING = 'CONVERTING',
-  PACKAGING = 'PACKAGING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED', // Frontend specific status
-}
-
 export interface ConvertedMod {
   name: string;
   version: string;

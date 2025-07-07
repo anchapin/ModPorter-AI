@@ -5,16 +5,17 @@
 
 import React, { useState } from 'react';
 import {
-  ConversionResponse,
+  ExtendedConversionResponse,
   ConversionStatus,
+  ConversionStatusEnum,
   ConvertedMod,
   FailedMod,
   SmartAssumption
 } from '../../types/api';
-import { downloadResult } from '../../services/api'; // Import the download function
+import { downloadResult } from '../../services/api';
 
 interface ConversionReportProps {
-  conversionResult?: ConversionResponse | null; // Allow null or undefined
+  conversionResult?: ExtendedConversionResponse | ConversionStatus | null;
 }
 
 export const ConversionReport: React.FC<ConversionReportProps> = ({
@@ -32,26 +33,29 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
     );
   }
 
-  const { 
-    conversionId,
-    status, 
-    overallSuccessRate, 
-    convertedMods, 
-    failedMods, 
-    smartAssumptionsApplied,
-    error: conversionMainError, // Get main error from response
-    detailedReport 
-  } = conversionResult;
+  const jobId = conversionResult.job_id;
+  const status = conversionResult.status;
+  const progress = conversionResult.progress || 0;
+  const message = conversionResult.message;
+  const error = conversionResult.error;
+  
+  // Extended properties for rich reporting (if available)
+  const overallSuccessRate = (conversionResult as ExtendedConversionResponse).overallSuccessRate || 0;
+  const convertedMods = (conversionResult as ExtendedConversionResponse).convertedMods || [];
+  const failedMods = (conversionResult as ExtendedConversionResponse).failedMods || [];
+  const smartAssumptionsApplied = (conversionResult as ExtendedConversionResponse).smartAssumptionsApplied || [];
+  const detailedReport = (conversionResult as ExtendedConversionResponse).detailedReport;
 
-  const getStatusColor = (currentStatus: ConversionStatus) => {
+  const getStatusColor = (currentStatus: string) => {
     switch (currentStatus) {
-      case ConversionStatus.COMPLETED: return '#10b981'; // green
-      case ConversionStatus.FAILED: return '#ef4444'; // red
-      case ConversionStatus.IN_PROGRESS: // Assuming 'processing' maps to IN_PROGRESS
-      case ConversionStatus.ANALYZING:
-      case ConversionStatus.CONVERTING:
-      case ConversionStatus.PACKAGING:
-      case ConversionStatus.PENDING:
+      case ConversionStatusEnum.COMPLETED: return '#10b981'; // green
+      case ConversionStatusEnum.FAILED: return '#ef4444'; // red
+      case ConversionStatusEnum.UPLOADING: // Added UPLOADING as suggested by Copilot
+      case ConversionStatusEnum.IN_PROGRESS:
+      case ConversionStatusEnum.ANALYZING:
+      case ConversionStatusEnum.CONVERTING:
+      case ConversionStatusEnum.PACKAGING:
+      case ConversionStatusEnum.PENDING:
         return '#f59e0b'; // yellow
       default: return '#6b7280'; // gray
     }
@@ -66,19 +70,18 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
 
 
   const handleDownload = async () => {
-    if (!conversionId) {
-      setDownloadError('Conversion ID is missing, cannot download.');
+    if (!jobId) {
+      setDownloadError('Job ID is missing, cannot download.');
       return;
     }
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      const blob = await downloadResult(conversionId);
+      const blob = await downloadResult(jobId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // Use a more generic name or derive from API if possible
-      a.download = `${conversionId}_converted_modpack.mcaddon`;
+      a.download = `${jobId}_converted_modpack.mcaddon`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -91,12 +94,12 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
   };
 
   // Handle cases where conversion is still processing or not yet started
-  if (status === ConversionStatus.PENDING ||
-      status === ConversionStatus.UPLOADING || // Added UPLOADING
-      status === ConversionStatus.IN_PROGRESS ||
-      status === ConversionStatus.ANALYZING ||
-      status === ConversionStatus.CONVERTING ||
-      status === ConversionStatus.PACKAGING) {
+  if (status === ConversionStatusEnum.PENDING ||
+      status === ConversionStatusEnum.UPLOADING ||
+      status === ConversionStatusEnum.IN_PROGRESS ||
+      status === ConversionStatusEnum.ANALYZING ||
+      status === ConversionStatusEnum.CONVERTING ||
+      status === ConversionStatusEnum.PACKAGING) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <div role="progressbar" style={{ marginBottom: '1rem' }}>
@@ -108,7 +111,7 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
             overflow: 'hidden'
           }}>
             <div style={{
-              width: `${conversionResult.progress || detailedReport?.progress || 0}%`,
+              width: `${progress}%`,
               height: '100%',
               backgroundColor: '#3b82f6',
               transition: 'width 0.3s ease'
@@ -117,8 +120,8 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
         </div>
         <h2>Converting your mod...</h2>
         <p>Status: {status}</p>
-        <p>Stage: {detailedReport?.stage || 'Processing...'}</p>
-        <p>Progress: {conversionResult.progress || detailedReport?.progress || 0}%</p>
+        <p>Message: {message}</p>
+        <p>Progress: {progress}%</p>
       </div>
     );
   }
@@ -132,16 +135,16 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
           fontSize: '2rem',
           marginBottom: '0.5rem'
         }}>
-          Conversion {status === ConversionStatus.COMPLETED ? 'Complete' : status === ConversionStatus.FAILED ? 'Failed' : 'Details'}
+          Conversion {status === ConversionStatusEnum.COMPLETED ? 'Complete' : status === ConversionStatusEnum.FAILED ? 'Failed' : 'Details'}
         </h1>
         
-        {status === ConversionStatus.FAILED && conversionMainError && (
+        {status === ConversionStatusEnum.FAILED && error && (
           <p style={{ color: getStatusColor(status), fontSize: '1.1rem', marginTop: '-0.5rem', marginBottom: '1rem' }}>
-            <strong>Error:</strong> {conversionMainError}
+            <strong>Error:</strong> {error}
           </p>
         )}
 
-        {status === ConversionStatus.COMPLETED && (
+        {status === ConversionStatusEnum.COMPLETED && overallSuccessRate > 0 && (
           <div style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
             <span style={{ color: getSuccessRateColor(overallSuccessRate) }}>
               {overallSuccessRate.toFixed(1)}% Overall Success Rate
@@ -151,7 +154,7 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
       </div>
 
       {/* Download Section */}
-      {status === ConversionStatus.COMPLETED && (
+      {status === ConversionStatusEnum.COMPLETED && (
         <div style={{ 
           backgroundColor: '#f0f9ff', 
           padding: '1rem', 
