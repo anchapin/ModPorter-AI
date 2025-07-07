@@ -281,7 +281,7 @@ async def simulate_ai_conversion(job_id: str):
             # Mirror
             mirror = mirror_dict_from_job(job, 25)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 25)
             print(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
@@ -296,7 +296,7 @@ async def simulate_ai_conversion(job_id: str):
             await crud.upsert_progress(session, job_id, 75)
             mirror = mirror_dict_from_job(job, 75)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 75)
             print(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
 
@@ -324,13 +324,13 @@ async def simulate_ai_conversion(job_id: str):
                 job = await crud.update_job_status(session, job_id, "failed")
                 mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
                 conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.dict())
+                await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
                 return
 
             mirror = mirror_dict_from_job(job, 100, result_url)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 100)
             print(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
 
@@ -339,7 +339,7 @@ async def simulate_ai_conversion(job_id: str):
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
             print(f"Job {job_id}: Status updated to FAILED due to error.")
     except Exception as e:
@@ -364,8 +364,23 @@ async def simulate_ai_conversion(job_id: str):
             await asyncio.sleep(10)
             conversion_jobs_db[job_id].status = "completed"
             conversion_jobs_db[job_id].progress = 100
-            conversion_jobs_db[job_id].result_url = f"/api/download/{job_id}"
-            print(f"Job {job_id}: Status updated to completed, Progress: 100% (in-memory)")
+            
+            # Create mock output file for in-memory fallback
+            os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
+            mock_output_filename_internal = f"{job_id}_converted.zip"
+            mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
+            
+            try:
+                with open(mock_output_filepath, "w") as f:
+                    f.write(f"This is a mock converted file for job {job_id} (in-memory fallback).\\n")
+                    f.write(f"Original filename: {conversion_jobs_db[job_id].original_filename}\\n")
+                conversion_jobs_db[job_id].result_url = f"/api/download/{job_id}"
+                print(f"Job {job_id}: Status updated to completed, Progress: 100% (in-memory)")
+            except IOError as e:
+                print(f"Error creating mock output file for job {job_id}: {e}")
+                conversion_jobs_db[job_id].status = "failed"
+                conversion_jobs_db[job_id].progress = 0
+                conversion_jobs_db[job_id].error_message = f"Failed to create output file: {e}"
 
 
 # Conversion endpoints
@@ -430,7 +445,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     conversion_jobs_db[job_id] = mirror
 
     # Write to Redis
-    await cache.set_job_status(job_id, mirror.dict())
+    await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
 
     print(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
@@ -688,7 +703,7 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
         updated_at=job_dict["updated_at"],
     )
     conversion_jobs_db[job_id] = mirror
-    await cache.set_job_status(job_id, mirror.dict())
+    await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
     return {"message": f"Conversion job {job_id} has been cancelled."}
 
