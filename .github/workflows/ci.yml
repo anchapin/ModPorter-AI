@@ -105,9 +105,9 @@ jobs:
     - name: Run database migrations
       run: |
         cd backend
-        alembic upgrade head
+        PYTHONPATH=. alembic upgrade head
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
 
     - name: Run backend tests
       if: always()
@@ -212,9 +212,9 @@ jobs:
     - name: Run database migrations
       run: |
         cd backend
-        alembic upgrade head
+        PYTHONPATH=. alembic upgrade head
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
     
     - name: Run integration tests
       run: |
