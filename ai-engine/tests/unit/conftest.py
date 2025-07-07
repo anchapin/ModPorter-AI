@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from PIL import Image
 import json
-from ai_engine.src.agents.asset_converter import AssetConverterAgent
+from src.agents.asset_converter import AssetConverterAgent
 
 @pytest.fixture(scope="module")
 def agent():

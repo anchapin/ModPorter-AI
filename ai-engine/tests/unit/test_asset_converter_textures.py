@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from PIL import Image
 import json
-from ai_engine.src.agents.asset_converter import AssetConverterAgent
+from src.agents.asset_converter import AssetConverterAgent
 # Assuming conftest.py is in the same directory or a parent directory configured for pytest
 
 # Helper function to get image dimensions directly for tests that might not open the image via agent

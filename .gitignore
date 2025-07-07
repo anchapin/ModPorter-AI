@@ -64,3 +64,6 @@ temp_uploads/
 # Conversion outputs (generated files)
 conversion_outputs/
 */conversion_outputs/
+
+# API Keys
+opencode.json

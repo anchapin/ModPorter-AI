@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ../frontend # Context is relative to the main project directory
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80" # Standard port for frontend
+    environment:
+      - VITE_API_URL=http://backend:8000 # Use service name for inter-container communication
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - modportertest-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend # Context is relative to the main project directory
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Standard port for backend
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/modporter_test # Use a separate test database
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - conversion-cache-test:/app/cache
+      - ../tests/fixtures:/app/test_fixtures # Mount test fixtures
+    networks:
+      - modportertest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  ai-engine:
+    build:
+      context: ../ai-engine # Context is relative to the main project directory
+      dockerfile: Dockerfile
+    environment:
+      - PYTHONPATH=/app
+      - OPENAI_API_KEY=${OPENAI_API_KEY} # These should be available in the CI environment
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} # These should be available in the CI environment
+      - LOG_LEVEL=INFO
+    volumes:
+      - model-cache-test:/app/models
+    networks:
+      - modportertest-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379" # No need to map to host for test, services will use internal network
+    volumes:
+      - redis-data-test:/data
+    networks:
+      - modportertest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432" # No need to map to host for test
+    environment:
+      - POSTGRES_DB=modporter_test # Separate test database
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres-data-test:/var/lib/postgresql/data
+      - ../backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql # Re-use existing init script
+    networks:
+      - modportertest-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter_test"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data-test:
+    driver: local
+  postgres-data-test:
+    driver: local
+  conversion-cache-test:
+    driver: local
+  model-cache-test:
+    driver: local
+
+networks:
+  modportertest-network: # Use a distinct network name for tests aligned with project name
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16 # Use a different subnet from the main docker-compose.yml

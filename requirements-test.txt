@@ -1,0 +1,10 @@
+# Test dependencies
+pytest
+pytest-asyncio
+pytest-cov
+pytest-mock
+requests
+
+# Docker testing
+pytest-docker
+docker

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 import json
-from ai_engine.src.agents.asset_converter import AssetConverterAgent
+from src.agents.asset_converter import AssetConverterAgent
 
 # Uses fixtures from conftest.py: agent, dummy_java_block_model,
 # dummy_java_rotated_block_model, dummy_item_generated_model
