@@ -8,9 +8,11 @@ import logging
 import json
 import re
 from langchain.tools import tool
+import javalang # Added javalang
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
+from src.agents.java_analyzer import JavaAnalyzerAgent # Added JavaAnalyzerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class LogicTranslatorAgent:
     
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
+        self.java_analyzer_agent = JavaAnalyzerAgent() # Added JavaAnalyzerAgent initialization
         
         # Java to JavaScript conversion mappings
         self.type_mappings = {
@@ -48,6 +51,94 @@ class LogicTranslatorAgent:
             'ItemStack': 'ItemStack',
             'Material': 'MinecraftItemType'
         }
+        self.api_mappings.update({
+            # Player Data
+            'player.getDisplayNameString()': 'player.nameTag',
+            'player.isSneaking()': 'player.isSneaking',
+            'player.experienceLevel': 'player.level',
+            'player.getFoodStats().getFoodLevel()': 'player.getComponent("minecraft:food").foodLevel',
+            # ItemStack Operations
+            '.getCount()': '.amount',
+            '.isEmpty()': '', # Special handling in _convert_java_body_to_javascript
+            # World
+            'world.isAirBlock(': 'world.getBlock(', # Needs suffix handling in _convert_java_body_to_javascript
+        })
+
+    def _translate_item_use_method(self, method_node: javalang.tree.MethodDeclaration, class_context: Optional[Dict]) -> Optional[str]:
+        """
+        Translates a Java method assumed to be an item interaction event handler
+        (e.g., onItemRightClick, onItemUse, onFoodEaten) to Bedrock JavaScript event handling.
+
+        Args:
+            method_node: The AST node of the Java method.
+            class_context: Optional dictionary providing context about the class this method belongs to (e.g., {"class_name": "MyCustomItem"}).
+
+        Returns:
+            A string containing the Bedrock JavaScript event subscription, or None if not applicable.
+        """
+        method_name = method_node.name.lower()
+        js_event_handler_body = self._convert_java_body_to_javascript(
+            self._reconstruct_java_body_from_ast(method_node)
+        )
+        # TODO: Replace js_event_handler_body with AST-based translation.
+
+        param_map = {
+            "player": "event.source",
+            "itemstack": "event.itemStack",
+            "world": "world",
+            "hand": "event.source.selectedSlot"
+        }
+        for java_param, bedrock_param in param_map.items():
+            js_event_handler_body = re.sub(r'\b' + re.escape(java_param) + r'\b', bedrock_param, js_event_handler_body)
+
+        bedrock_event_script = None
+        item_name_placeholder = class_context.get('class_name', 'my_custom_item').lower() if class_context else "my_custom_item"
+
+        if "onitemrightclick" in method_name or "useitem" in method_name or "onitemuse" in method_name:
+            bedrock_event_script = f"""
+world.afterEvents.itemUse.subscribe((event) => {{
+    // Original Java method: {method_node.name}
+    // Check if the used item is an instance of this custom item.
+    if (event.itemStack && event.itemStack.typeId === "custom:{item_name_placeholder}") {{
+        {js_event_handler_body}
+    }}
+}});
+"""
+            logger.info(f"Translated Java method {method_node.name} to Bedrock itemUse event for item '{item_name_placeholder}'.")
+        elif "onfoodeaten" in method_name or "itemcompleteuse" in method_name:
+            bedrock_event_script = f"""
+world.afterEvents.itemCompleteUse.subscribe((event) => {{
+    // Original Java method: {method_node.name}
+    // Check if the used item is an instance of this custom food item.
+    if (event.itemStack && event.itemStack.typeId === "custom:{item_name_placeholder}") {{
+        {js_event_handler_body}
+    }}
+}});
+"""
+            logger.info(f"Translated Java method {method_node.name} to Bedrock itemCompleteUse event for item '{item_name_placeholder}'.")
+
+        return bedrock_event_script
+
+    def analyze_java_code_ast(self, java_source: str) -> Optional[javalang.tree.CompilationUnit]:
+        """
+        Parses Java source code into an Abstract Syntax Tree (AST).
+
+        Args:
+            java_source: The Java source code as a string.
+
+        Returns:
+            A javalang.tree.CompilationUnit representing the AST, or None if parsing fails.
+        """
+        try:
+            tree = javalang.parse.parse(java_source)
+            logger.info("Successfully parsed Java source into AST.")
+            return tree
+        except javalang.parser.JavaSyntaxError as e:
+            logger.error(f"Java syntax error during AST parsing: {e.message} at position {e.position}")
+            return None
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during AST parsing: {str(e)}")
+            return None
     
     def get_tools(self) -> List:
         """Get tools available to this agent"""
@@ -56,7 +147,8 @@ class LogicTranslatorAgent:
             self.convert_java_class_tool,
             self.map_java_apis_tool,
             self.generate_event_handlers_tool,
-            self.validate_javascript_syntax_tool
+            self.validate_javascript_syntax_tool,
+            self.translate_crafting_recipe_tool # Added new tool
         ]
     
     @tool
@@ -85,27 +177,63 @@ class LogicTranslatorAgent:
         return self.validate_javascript_syntax(js_data)
     
     
-    def translate_java_method(self, method_data: str) -> str:
+    def translate_java_method(self, method_data: Any, feature_context_override: Optional[Dict] = None) -> str:
         """
         Translate a Java method to JavaScript for Bedrock.
         
         Args:
-            method_data: JSON string containing method information:
-                        method_name, return_type, parameters, body, feature_context
+            method_data: JSON string (containing method_name, return_type, parameters, body, feature_context)
+                         OR a javalang.tree.MethodDeclaration AST node.
+            feature_context_override: Optional dictionary for feature context, primarily used when method_data is an AST node.
         
         Returns:
             JSON string with translated JavaScript method
         """
         try:
-            data = json.loads(method_data)
+            method_name: str
+            return_type: str
+            parameters: List[Dict[str, str]] = []
+            body: str = ""
+            feature_context: Dict = {}
+
+            if isinstance(method_data, str):
+                data = json.loads(method_data)
+                method_name = data.get('method_name', 'unknownMethod')
+                return_type = data.get('return_type', 'void')
+                parameters = data.get('parameters', []) # List of dicts {name, type}
+                body = data.get('body', '')
+                feature_context = data.get('feature_context', {})
+
+            elif isinstance(method_data, javalang.tree.MethodDeclaration):
+                ast_node = method_data
+                method_name = ast_node.name
+
+                if ast_node.return_type:
+                    return_type = ast_node.return_type.name
+                    if ast_node.return_type.dimensions:
+                        return_type += "[]" * len(ast_node.return_type.dimensions)
+                else:
+                    return_type = 'void'
+
+                for param_node in ast_node.parameters:
+                    param_type_name = param_node.type.name
+                    if param_node.type.dimensions:
+                         param_type_name += "[]" * len(param_node.type.dimensions)
+                    parameters.append({'name': param_node.name, 'type': param_type_name})
+
+                body = self._reconstruct_java_body_from_ast(ast_node) # Call to new helper
+                if ast_node.body and not body:
+                    logger.warning(f"Method {method_name} AST node had a body, but reconstruction resulted in an empty string.")
+
+                if feature_context_override:
+                    feature_context = feature_context_override
+                else:
+                    feature_context = {}
             
-            method_name = data.get('method_name', 'unknownMethod')
-            return_type = data.get('return_type', 'void')
-            parameters = data.get('parameters', [])
-            body = data.get('body', '')
-            feature_context = data.get('feature_context', {})
-            
-            # Convert return type
+            else:
+                raise TypeError("method_data must be a JSON string or javalang.tree.MethodDeclaration")
+
+            # Convert return type (common logic)
             js_return_type = self.type_mappings.get(return_type, return_type)
             
             # Convert parameters
@@ -147,6 +275,7 @@ class LogicTranslatorAgent:
     
     
     def convert_java_class(self, class_data: str) -> str:
+        # UNIQUE_COMMENT_FOR_VERIFICATION
         """
         Convert a complete Java class to JavaScript for Bedrock.
         
@@ -168,6 +297,7 @@ class LogicTranslatorAgent:
             
             # Generate JavaScript class structure
             js_class_lines = [f"class {class_name} {{"]
+            bedrock_event_scripts = []
             
             # Convert fields to properties
             for field in fields:
@@ -181,24 +311,76 @@ class LogicTranslatorAgent:
                 js_class_lines.append("")  # Add blank line after fields
             
             # Convert methods
-            for method in methods:
-                method_result = self.translate_java_method(json.dumps(method))
-                method_data = json.loads(method_result)
+            # This was 'interaction_keywords' in a previous version, renamed for clarity
+            block_interaction_keywords = ["onblockactivated", "onblockrightclicked", "onblockbroken", "breakblock", "onblockplaced", "onblockadded"]
+            item_interaction_keywords = ["onitemrightclick", "onitemuse", "onfoodeaten", "useitem", "itemcompleteuse"] # Added item keywords
+
+            for method_dict in methods: # Assuming methods from JSON are dicts
+                method_source = method_dict.get("source_code", method_dict.get("body"))
+                method_name_from_json = method_dict.get("name", "unknownMethod")
+                actual_method_node: Optional[javalang.tree.MethodDeclaration] = None
+
+                if method_source:
+                    temp_class_wrapper = f"class TempWrapper {{ {method_source} }}"
+                    comp_unit = self.analyze_java_code_ast(temp_class_wrapper)
+                    if comp_unit and comp_unit.types and isinstance(comp_unit.types[0], javalang.tree.ClassDeclaration):
+                        if comp_unit.types[0].body and isinstance(comp_unit.types[0].body[0], javalang.tree.MethodDeclaration):
+                            actual_method_node = comp_unit.types[0].body[0]
                 
-                if method_data.get("success"):
-                    # Extract just the method signature and body
-                    js_method = method_data["javascript_method"]
-                    # Indent the method for class context
-                    indented_method = "    " + js_method.replace("\n", "\n    ")
-                    js_class_lines.append(indented_method)
-                    js_class_lines.append("")  # Add blank line after method
+                method_name_to_check = actual_method_node.name.lower() if actual_method_node else method_name_from_json.lower()
+
+                if actual_method_node and any(keyword in method_name_to_check for keyword in block_interaction_keywords):
+                    event_script = self._translate_block_interaction_method(
+                        actual_method_node,
+                        class_context={"class_name": class_name}
+                    )
+                    if event_script:
+                        bedrock_event_scripts.append(event_script)
+                elif actual_method_node and any(keyword in method_name_to_check for keyword in item_interaction_keywords): # Added elif for item methods
+                    event_script = self._translate_item_use_method(
+                        actual_method_node,
+                        class_context={"class_name": class_name}
+                    )
+                    if event_script:
+                        bedrock_event_scripts.append(event_script)
+                elif actual_method_node and any(keyword in method_name_to_check for keyword in item_interaction_keywords): # Added elif for item methods
+                    event_script = self._translate_item_use_method(
+                        actual_method_node,
+                        class_context={"class_name": class_name}
+                    )
+                    if event_script:
+                        bedrock_event_scripts.append(event_script)
+                else:
+                    # Process as a regular method
+                    if actual_method_node:
+                        # Pass feature_context from the class level
+                        method_result_json = self.translate_java_method(actual_method_node, feature_context_override=feature_context)
+                    else:
+                        # Fallback: if AST node couldn't be obtained, pass the original method dict as JSON
+                        method_dict_with_context = {**method_dict, "feature_context": method_dict.get("feature_context", feature_context)}
+                        method_result_json = self.translate_java_method(json.dumps(method_dict_with_context))
+
+                    method_output = json.loads(method_result_json)
+                    if method_output.get("success"):
+                        js_method_code = method_output.get("javascript_method", "")
+                        if js_method_code:
+                            indented_method = "    " + js_method_code.replace("\n", "\n    ")
+                            js_class_lines.append(indented_method)
+                            js_class_lines.append("")
             
             js_class_lines.append("}")
             
-            # Generate imports for Bedrock
             bedrock_imports = self._generate_bedrock_imports(imports, feature_context)
             
-            js_code = "\n".join(bedrock_imports + [""] + js_class_lines)
+            final_js_parts = bedrock_imports
+            if bedrock_imports:
+                final_js_parts.append("")
+            final_js_parts.extend(js_class_lines)
+            if bedrock_event_scripts:
+                final_js_parts.append("\n")
+            final_js_parts.extend(bedrock_event_scripts)
+
+            js_code = "\n".join(final_js_parts)
             
             response = {
                 "success": True,
@@ -206,7 +388,8 @@ class LogicTranslatorAgent:
                 "javascript_class": js_code,
                 "conversion_summary": {
                     "fields_converted": len(fields),
-                    "methods_converted": len(methods),
+                    "methods_converted": len(methods) - len(bedrock_event_scripts),
+                    "event_handlers_generated": len(bedrock_event_scripts),
                     "imports_adapted": len(bedrock_imports)
                 },
                 "bedrock_compatibility_notes": self._get_compatibility_notes(feature_context)
@@ -298,12 +481,29 @@ class LogicTranslatorAgent:
             for java_event in java_events:
                 event_name = java_event.get('name', 'unknownEvent')
                 event_type = java_event.get('type', 'unknown')
-                handler_body = java_event.get('handler_body', '')
-                
+                handler_source_code = java_event.get('handler_source_code')
+                handler_body_java = ""
+                actual_method_node: Optional[javalang.tree.MethodDeclaration] = None
+
+                if handler_source_code:
+                    temp_class_source = f"class TempEventHandlerWrapper {{ {handler_source_code} }}"
+                    ast_comp_unit = self.analyze_java_code_ast(temp_class_source)
+                    if ast_comp_unit and ast_comp_unit.types and \
+                       isinstance(ast_comp_unit.types[0], javalang.tree.ClassDeclaration) and \
+                       ast_comp_unit.types[0].body and \
+                       isinstance(ast_comp_unit.types[0].body[0], javalang.tree.MethodDeclaration):
+                        actual_method_node = ast_comp_unit.types[0].body[0]
+                        handler_body_java = self._reconstruct_java_body_from_ast(actual_method_node)
+                    else:
+                        logger.warning(f"Failed to parse or extract method AST from handler_source_code for event {event_name}. Falling back to handler_body.")
+                        handler_body_java = java_event.get('handler_body', '') # Fallback
+                else:
+                    handler_body_java = java_event.get('handler_body', '') # No source code provided
+
                 bedrock_event = self._map_java_event_to_bedrock(event_type)
                 
                 if bedrock_event:
-                    js_handler_body = self._convert_java_body_to_javascript(handler_body)
+                    js_handler_body = self._convert_java_body_to_javascript(handler_body_java)
                     
                     handler_code = f"""
 world.afterEvents.{bedrock_event}.subscribe((event) => {{
@@ -401,9 +601,115 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
             return json.dumps(error_response)
     
     # Helper methods
+
+    def _reconstruct_java_body_from_ast(self, method_node: javalang.tree.MethodDeclaration) -> str:
+        """
+        Attempts to reconstruct the Java method body from its AST node.
+        This is a simplified reconstruction and might not perfectly match original formatting.
+        Args:
+            method_node: The javalang.tree.MethodDeclaration AST node.
+        Returns:
+            A string representation of the method body.
+        """
+        if not method_node.body:
+            return ""
+
+        body_lines = []
+        for statement in method_node.body:
+            if hasattr(statement, 'children') and statement.children:
+                line_tokens = []
+                for child_path, child_node in statement:
+                    if hasattr(child_node, 'name'):
+                        line_tokens.append(str(child_node.name))
+                    elif hasattr(child_node, 'value'):
+                        line_tokens.append(str(child_node.value))
+                    elif isinstance(child_node, javalang.tree.Statement):
+                         line_tokens.append(f"// Complex statement: {type(child_node).__name__}")
+                    elif isinstance(child_node, list):
+                        for sub_node in child_node:
+                            if hasattr(sub_node, 'name'):
+                                line_tokens.append(str(sub_node.name))
+                            elif hasattr(sub_node, 'value'):
+                                line_tokens.append(str(sub_node.value))
+
+                reconstructed_line = " ".join(token for token in line_tokens if token)
+                if reconstructed_line:
+                    if not reconstructed_line.strip().endswith('}') and not reconstructed_line.strip().endswith('{') and not reconstructed_line.strip().startswith('//'):
+                         reconstructed_line += ";"
+                body_lines.append(reconstructed_line)
+            else:
+                body_lines.append(f"// Unsupported statement type: {type(statement).__name__}")
+
+        return "\n".join(body_lines)
+
+    def _translate_block_interaction_method(self, method_node: javalang.tree.MethodDeclaration, class_context: Optional[Dict]) -> Optional[str]:
+        """
+        Translates a Java method assumed to be a block interaction event handler
+        (e.g., onBlockActivated, onBlockBroken) to Bedrock JavaScript event handling.
+
+        Args:
+            method_node: The AST node of the Java method.
+            class_context: Optional dictionary providing context about the class this method belongs to.
+                           (e.g., {"class_name": "MyCustomBlock"})
+
+        Returns:
+            A string containing the Bedrock JavaScript event subscription, or None if not applicable.
+        """
+        method_name = method_node.name.lower()
+        js_event_handler_body = self._convert_java_body_to_javascript(
+            self._reconstruct_java_body_from_ast(method_node)
+        )
+
+        # TODO: Replace js_event_handler_body with AST-based translation of the method body in a future step.
+
+        param_map = {
+            "player": "event.player",
+            "world": "world",
+            "pos": "event.block.location",
+            "block": "event.block",
+            "itemStack": "event.itemStack"
+        }
+        for java_param, bedrock_param in param_map.items():
+            js_event_handler_body = re.sub(r'\b' + re.escape(java_param) + r'\b', bedrock_param, js_event_handler_body)
+
+        bedrock_event_script = None
+        block_name_placeholder = class_context.get('class_name', 'my_block').lower() if class_context else "my_block"
+
+        if "onblockactivated" in method_name or "onblockrightclicked" in method_name:
+            bedrock_event_script = f"""
+world.afterEvents.playerInteractWithBlock.subscribe((event) => {{
+    // Original Java method: {method_node.name}
+    // TODO: Add conditions to check if event.block is an instance of this custom block.
+    // Example: if (event.block.typeId === "custom:{block_name_placeholder}") {{
+    {js_event_handler_body}
+    // }}
+}});
+"""
+            logger.info(f"Translated Java method {method_node.name} to Bedrock playerInteractWithBlock event.")
+        elif "onblockbroken" in method_name or "breakblock" in method_name:
+            bedrock_event_script = f"""
+world.afterEvents.playerBreakBlock.subscribe((event) => {{
+    // Original Java method: {method_node.name}
+    // TODO: Add conditions to check if event.block is an instance of this custom block.
+    {js_event_handler_body}
+}});
+"""
+            logger.info(f"Translated Java method {method_node.name} to Bedrock playerBreakBlock event.")
+        elif "onblockplaced" in method_name or "onblockadded" in method_name:
+            bedrock_event_script = f"""
+world.afterEvents.playerPlaceBlock.subscribe((event) => {{
+    // Original Java method: {method_node.name}
+    // TODO: Add conditions to check if event.block is an instance of this custom block.
+    {js_event_handler_body}
+}});
+"""
+            logger.info(f"Translated Java method {method_node.name} to Bedrock playerPlaceBlock event.")
+
+        return bedrock_event_script
     
     def _convert_java_body_to_javascript(self, java_body: str) -> str:
         """Convert Java method body to JavaScript"""
+        # TODO: Refactor to use AST analysis for more robust body translation
         js_body = java_body
         
         # Apply API mappings
@@ -416,7 +722,70 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
         js_body = re.sub(r'\bnew HashMap<.*?>\(\)', r'new Map()', js_body)
         js_body = re.sub(r'\.add\(', r'.push(', js_body)
         js_body = re.sub(r'\.size\(\)', r'.length', js_body)
+
+        # Translate world.setBlockState(pos, Blocks.AIR.getDefaultState()[, flags])
+        # Pattern for specific Blocks.AIR.getDefaultState() or Blocks.air.getDefaultState()
+        set_block_state_air_pattern = r'world\.setBlockState\s*\(\s*([\w\.]+)\s*,\s*(?:Blocks\.AIR|Blocks\.air)\.getDefaultState\s*\(\s*\)\s*(?:,\s*[\w\.]+\s*)?\);?'
+
+        # Determine replacement based on context (presence of 'event.block')
+        # This is a heuristic. A more robust way would involve deeper context analysis.
+        # We check the original java_body string that was passed into this function for context
+        # as js_body might have been modified by previous rules.
+        if hasattr(self, '_original_java_body_for_context') and 'event.block' in self._original_java_body_for_context:
+            replacement_air = r'event.block.dimension.setBlockPermutation(\1, BlockPermutation.resolve("minecraft:air")); // Original: world.setBlockState(\1, Blocks.AIR.getDefaultState())'
+        else:
+            replacement_air = r'world.getDimension("overworld").setBlockPermutation(\1, BlockPermutation.resolve("minecraft:air")); // Original: world.setBlockState(\1, Blocks.AIR.getDefaultState())'
+
+        js_body = re.sub(set_block_state_air_pattern, replacement_air, js_body)
+
+        # Translate other world.setBlockState(pos, someState[, flags]) to a TODO comment
+        # This pattern tries to capture general setBlockState calls that weren't for AIR.
+        # It uses a negative lookahead to avoid re-matching Blocks.AIR.getDefaultState().
+        set_block_state_other_pattern = r'world\.setBlockState\s*\(\s*([\w\.]+)\s*,\s*((?!Blocks\.(?:AIR|air)\.getDefaultState\s*\(\s*\))[\w\.\(\)]+)\s*(?:,\s*[\w\.]+\s*)?\);?'
+
+        if hasattr(self, '_original_java_body_for_context') and 'event.block' in self._original_java_body_for_context:
+            replacement_other = r'// TODO: Bedrock: event.block.dimension.setBlockPermutation(\1, BlockPermutation.resolve("your_block_id_from_\2")); /* Original: world.setBlockState(\1, \2) */'
+        else:
+            replacement_other = r'// TODO: Bedrock: world.getDimension("overworld").setBlockPermutation(\1, BlockPermutation.resolve("your_block_id_from_\2")); /* Original: world.setBlockState(\1, \2) */'
+
+        js_body = re.sub(set_block_state_other_pattern, replacement_other, js_body)
+
+        # Add a general comment if BlockPermutation is likely used.
+        if "setBlockPermutation" in js_body or "BlockPermutation.resolve" in js_body:
+            # Check if the comment is already there to avoid duplicates if method is called multiple times with similar body
+            comment_to_add = '// Ensure \'BlockPermutation\' is imported from "@minecraft/server" for this script.'
+            if comment_to_add not in js_body:
+                 js_body += '\n' + comment_to_add
         
+        # Identify custom event bus posting and add TODO comment
+        custom_event_post_pattern = r'([\w\-\.]+)\.(?:MinecraftForge\.EVENT_BUS|EVENT_BUS|eventBus)\.post\s*\(\s*new\s+([\w\.<>]+)\s*\((.*?)\)\s*\);?'
+        replacement_custom_event = r'// TODO: Custom Java event posted: \2 with args: \3. Consider using Bedrock system.triggerEvent() or specific [player/entity/block].triggerEvent() and corresponding listeners. Original: \g<0>'
+        js_body = re.sub(custom_event_post_pattern, replacement_custom_event, js_body)
+
+        # Handle itemStack.isEmpty() -> !itemStack
+        js_body = re.sub(r'([\w\.]+)\.isEmpty\(\s*\)', r'(!\1)', js_body)
+
+        # Handle world.isAirBlock(pos) -> world.getBlock(pos).isAir
+        # This assumes world.isAirBlock( was already changed to world.getBlock( by api_mappings
+        js_body = re.sub(r'world\.getBlock\(([\w\.]+)\)\s*\)', r'world.getBlock(\1).isAir', js_body)
+
+        # Player inventory access: player.inventory.getStackInSlot(slot) -> player.getComponent('inventory').container.getItem(slot)
+        inventory_pattern_player = r'([\w\.]+)\.inventory\.getStackInSlot\s*\(\s*([\w\.]+)\s*\)'
+        js_body = re.sub(inventory_pattern_player, r'\1.getComponent("inventory").container.getItem(\2)', js_body)
+
+        # Add a TODO for more complex inventory operations:
+        js_body = re.sub(r'([\w\.]+)\.(?:inventory|getInventory\(\))\.(setInventorySlotContents|setStackInSlot|getSizeInventory|clear)\s*\(',
+                         r'// TODO: Bedrock: Review inventory operation: \g<0> - map to inventory component methods (e.g., container.setItem, container.size, container.clear). Original: ',
+                         js_body)
+
+        # world.spawnEntity(entity) -> dimension.spawnEntity(entityIdentifier, location)
+        spawn_entity_pattern = r'([\w\.]+)\.spawnEntity\s*\(\s*([\w\.]+)\s*\)'
+        js_body = re.sub(spawn_entity_pattern, r'// TODO: Bedrock: \1.getDimension("overworld").spawnEntity(identifier_from_\2, location_from_\2); /* Original: \g<0> */', js_body)
+
+        # player.getFoodStats().addStats(food, saturation) -> player.getComponent("minecraft:food").eat(foodAmount, saturationAmount)
+        add_food_stats_pattern = r'([\w\.]+)\.getFoodStats\(\)\.addStats\s*\(\s*([\w\.]+)\s*,\s*([\w\.]+)\s*\)'
+        js_body = re.sub(add_food_stats_pattern, r'\1.getComponent("minecraft:food").eat(\2, \3); // Approximated from addStats', js_body)
+
         # Add proper indentation
         lines = js_body.split('\n')
         indented_lines = ['    ' + line.strip() for line in lines if line.strip()]
@@ -488,10 +857,31 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
             'PlayerQuitEvent': 'playerLeave',
             'BlockBreakEvent': 'blockBreak',
             'BlockPlaceEvent': 'blockPlace',
-            'PlayerInteractEvent': 'itemUse',
+            'PlayerInteractEvent': 'itemUse', # Generic, might need more specific handling or rely on _translate_item_use_method
             'EntityDamageEvent': 'entityHurt',
-            'PlayerDeathEvent': 'entityDie'
+            'PlayerDeathEvent': 'entityDie', # Generic entity death
+            'LivingDeathEvent': 'entityDie', # More specific for living entities, maps to same Bedrock event
+
+            # Forge Events
+            'PlayerLoggedInEvent': 'playerJoin', # playerSpawn is also a candidate
+            'PlayerLoggedOutEvent': 'playerLeave',
+            # PlayerInteractEvent.RightClickBlock is handled by _translate_block_interaction_method
+            # PlayerInteractEvent.LeftClickBlock could map to playerStartDestroyingBlock or a custom interaction
+            'PlayerInteractEvent.LeftClickBlock': 'playerStartDestroyingBlock', # Approximate
+            'ExplosionEvent.Detonate': 'explosion', # Might need specific data extraction from event properties
+            'TickEvent.WorldTickEvent': 'worldTick', # Requires careful implementation, might map to system.runInterval
+            'TickEvent.ServerTickEvent': 'worldTick', # Similar to WorldTickEvent
+
+            # Bukkit Events
+            'PlayerCommandEvent': 'beforeChatSend', # For detecting and potentially cancelling commands
+            'InventoryClickEvent': None, # Complex, typically no direct Bedrock equivalent for general inventory clicks. Placeholder for TODO.
+            'EntitySpawnEvent': 'entitySpawn'
         }
+        # For InventoryClickEvent, translation would likely involve custom logic based on UI and specific needs.
+        # Logging a TODO or raising a specific error/warning during translation might be appropriate.
+        if java_event_type == 'InventoryClickEvent':
+            logger.warning("InventoryClickEvent has no direct Bedrock equivalent and requires manual translation.")
+
         return event_mappings.get(java_event_type)
     
     def _check_javascript_syntax(self, js_code: str) -> List[str]:
@@ -621,3 +1011,98 @@ world.afterEvents.{bedrock_event}.subscribe((event) => {{
                 "error": str(e)
             })
 
+    @tool
+    def translate_crafting_recipe_tool(self, recipe_json_data: str) -> str:
+        """Translate a Java crafting recipe JSON to Bedrock recipe JSON format."""
+        return self.translate_crafting_recipe_json(recipe_json_data)
+
+    def translate_crafting_recipe_json(self, recipe_json_data: str) -> str:
+        """
+        Translates a Java crafting recipe from a JSON representation to Bedrock's JSON format.
+
+        Args:
+            recipe_json_data: A JSON string representing the Java crafting recipe.
+                              Expected format (example):
+                              {
+                                  "type": "minecraft:crafting_shaped", // or "minecraft:crafting_shapeless"
+                                  "pattern": [
+                                      " S ",
+                                      "SCS",
+                                      " S "
+                                  ],
+                                  "key": {
+                                      "S": {"item": "minecraft:stick"},
+                                      "C": {"item": "minecraft:cobblestone"}
+                                  },
+                                  "result": {"item": "minecraft:furnace", "count": 1}
+                              }
+                              Or for shapeless:
+                              {
+                                  "type": "minecraft:crafting_shapeless",
+                                  "ingredients": [
+                                      {"item": "minecraft:sugar"},
+                                      {"item": "minecraft:egg"}
+                                  ],
+                                  "result": {"item": "minecraft:cake", "count": 1}
+                              }
+
+        Returns:
+            A JSON string representing the Bedrock crafting recipe, or an error JSON.
+        """
+        try:
+            java_recipe = json.loads(recipe_json_data)
+            bedrock_recipe = {"format_version": "1.12"}
+
+            recipe_type = java_recipe.get("type", "")
+            result_item_java = java_recipe.get("result", {}).get("item", "unknown_item")
+            result_count_java = java_recipe.get("result", {}).get("count", 1)
+
+            bedrock_item_id = result_item_java.replace("minecraft:", "")
+            recipe_key_str = "unknown_recipe_key" # Default
+
+            if "crafting_shaped" in recipe_type:
+                identifier = f"custom:{bedrock_item_id}_from_shaped_{java_recipe.get('group', 'recipe')}"
+                bedrock_recipe["minecraft:recipe_shaped"] = {
+                    "description": {"identifier": identifier},
+                    "tags": ["crafting_table"],
+                    "pattern": java_recipe.get("pattern", []),
+                    "key": {},
+                    "result": {"item": bedrock_item_id, "count": result_count_java}
+                }
+                recipe_key_str = identifier
+
+                java_keys = java_recipe.get("key", {})
+                for k, v_dict in java_keys.items():
+                    java_item = v_dict.get("item", "unknown_item")
+                    bedrock_recipe["minecraft:recipe_shaped"]["key"][k] = {
+                        "item": java_item.replace("minecraft:", "")
+                    }
+
+            elif "crafting_shapeless" in recipe_type:
+                identifier = f"custom:{bedrock_item_id}_from_shapeless_{java_recipe.get('group', 'recipe')}"
+                bedrock_recipe["minecraft:recipe_shapeless"] = {
+                    "description": {"identifier": identifier},
+                    "tags": ["crafting_table"],
+                    "ingredients": [],
+                    "result": {"item": bedrock_item_id, "count": result_count_java}
+                }
+                recipe_key_str = identifier
+
+                java_ingredients = java_recipe.get("ingredients", [])
+                for ing_dict in java_ingredients:
+                    java_item = ing_dict.get("item", "unknown_item")
+                    bedrock_recipe["minecraft:recipe_shapeless"]["ingredients"].append({
+                        "item": java_item.replace("minecraft:", "")
+                    })
+            else:
+                return json.dumps({"success": False, "error": f"Unsupported recipe type: {recipe_type}"})
+
+            logger.info(f"Successfully translated recipe for {result_item_java} to Bedrock format with key {recipe_key_str}")
+            return json.dumps({"success": True, "bedrock_recipe": bedrock_recipe, "recipe_identifier": recipe_key_str})
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decoding error in recipe translation: {e}")
+            return json.dumps({"success": False, "error": f"Invalid JSON input: {str(e)}"})
+        except Exception as e:
+            logger.error(f"Error translating crafting recipe: {e}")
+            return json.dumps({"success": False, "error": f"Failed to translate recipe: {str(e)}"})
