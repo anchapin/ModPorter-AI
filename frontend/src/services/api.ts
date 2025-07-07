@@ -42,7 +42,7 @@ export const convertMod = async (request: ConversionRequest): Promise<Conversion
   return response.json();
 };
 
-export const getConversionStatus = async (conversionId: string): Promise<ConversionResponse> => {
+export const pollJobStatus = async (conversionId: string): Promise<ConversionResponse> => {
   const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/status`);
   
   if (!response.ok) {
@@ -53,7 +53,7 @@ export const getConversionStatus = async (conversionId: string): Promise<Convers
   return response.json();
 };
 
-export const downloadConvertedMod = async (conversionId: string): Promise<Blob> => {
+export const downloadResult = async (conversionId: string): Promise<Blob> => {
   const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/download`);
   
   if (!response.ok) {
@@ -61,4 +61,15 @@ export const downloadConvertedMod = async (conversionId: string): Promise<Blob> 
   }
 
   return response.blob();
+};
+
+export const cancelJob = async (conversionId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
+  }
 };

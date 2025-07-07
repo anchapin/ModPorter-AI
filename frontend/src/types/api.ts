@@ -11,13 +11,27 @@ export interface ConversionRequest {
 
 export interface ConversionResponse {
   conversionId: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: ConversionStatus;
+  progress?: number; // Added progress
+  error?: string; // Added error message for failed status
   overallSuccessRate: number;
   convertedMods: ConvertedMod[];
   failedMods: FailedMod[];
   smartAssumptionsApplied: SmartAssumption[];
   downloadUrl?: string;
   detailedReport: DetailedReport;
+}
+
+export enum ConversionStatus {
+  PENDING = 'PENDING',
+  UPLOADING = 'UPLOADING', // If you have a distinct upload phase before backend processing
+  IN_PROGRESS = 'IN_PROGRESS', // General "processing" state from backend
+  ANALYZING = 'ANALYZING',
+  CONVERTING = 'CONVERTING',
+  PACKAGING = 'PACKAGING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED', // Frontend specific status
 }
 
 export interface ConvertedMod {

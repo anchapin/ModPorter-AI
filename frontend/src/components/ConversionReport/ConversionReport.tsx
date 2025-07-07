@@ -3,31 +3,56 @@
  * Visual, comprehensive reporting of conversion results
  */
 
-import React from 'react';
-import { ConversionResponse } from '../../types/api';
+import React, { useState } from 'react';
+import {
+  ConversionResponse,
+  ConversionStatus,
+  ConvertedMod,
+  FailedMod,
+  SmartAssumption
+} from '../../types/api';
+import { downloadResult } from '../../services/api'; // Import the download function
 
 interface ConversionReportProps {
-  conversionResult: ConversionResponse;
+  conversionResult?: ConversionResponse | null; // Allow null or undefined
 }
 
 export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
 }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  if (!conversionResult) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+        <h2>Conversion Report Not Available</h2>
+        <p>There was an issue loading the conversion details. Please try again later.</p>
+      </div>
+    );
+  }
+
   const { 
+    conversionId,
     status, 
     overallSuccessRate, 
     convertedMods, 
     failedMods, 
     smartAssumptionsApplied,
-    downloadUrl,
+    error: conversionMainError, // Get main error from response
     detailedReport 
   } = conversionResult;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#10b981'; // green
-      case 'failed': return '#ef4444'; // red
-      case 'processing': return '#f59e0b'; // yellow
+  const getStatusColor = (currentStatus: ConversionStatus) => {
+    switch (currentStatus) {
+      case ConversionStatus.COMPLETED: return '#10b981'; // green
+      case ConversionStatus.FAILED: return '#ef4444'; // red
+      case ConversionStatus.IN_PROGRESS: // Assuming 'processing' maps to IN_PROGRESS
+      case ConversionStatus.ANALYZING:
+      case ConversionStatus.CONVERTING:
+      case ConversionStatus.PACKAGING:
+      case ConversionStatus.PENDING:
+        return '#f59e0b'; // yellow
       default: return '#6b7280'; // gray
     }
   };
@@ -39,7 +64,39 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
     return '#ef4444'; // red
   };
 
-  if (status === 'processing') {
+
+  const handleDownload = async () => {
+    if (!conversionId) {
+      setDownloadError('Conversion ID is missing, cannot download.');
+      return;
+    }
+    setIsDownloading(true);
+    setDownloadError(null);
+    try {
+      const blob = await downloadResult(conversionId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Use a more generic name or derive from API if possible
+      a.download = `${conversionId}_converted_modpack.mcaddon`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setDownloadError(err.message ? `Download error: ${err.message}` : 'Download failed. Please check your connection and try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Handle cases where conversion is still processing or not yet started
+  if (status === ConversionStatus.PENDING ||
+      status === ConversionStatus.UPLOADING || // Added UPLOADING
+      status === ConversionStatus.IN_PROGRESS ||
+      status === ConversionStatus.ANALYZING ||
+      status === ConversionStatus.CONVERTING ||
+      status === ConversionStatus.PACKAGING) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <div role="progressbar" style={{ marginBottom: '1rem' }}>
@@ -51,7 +108,7 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
             overflow: 'hidden'
           }}>
             <div style={{
-              width: `${detailedReport.progress || 0}%`,
+              width: `${conversionResult.progress || detailedReport?.progress || 0}%`,
               height: '100%',
               backgroundColor: '#3b82f6',
               transition: 'width 0.3s ease'
@@ -59,14 +116,15 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
           </div>
         </div>
         <h2>Converting your mod...</h2>
-        <p>Stage: {detailedReport.stage}</p>
-        <p>Progress: {detailedReport.progress || 0}%</p>
+        <p>Status: {status}</p>
+        <p>Stage: {detailedReport?.stage || 'Processing...'}</p>
+        <p>Progress: {conversionResult.progress || detailedReport?.progress || 0}%</p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px' }}>
+    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
         <h1 style={{ 
@@ -74,20 +132,26 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
           fontSize: '2rem',
           marginBottom: '0.5rem'
         }}>
-          Conversion {status === 'completed' ? 'Complete' : 'Failed'}
+          Conversion {status === ConversionStatus.COMPLETED ? 'Complete' : status === ConversionStatus.FAILED ? 'Failed' : 'Details'}
         </h1>
         
-        {status === 'completed' && (
+        {status === ConversionStatus.FAILED && conversionMainError && (
+          <p style={{ color: getStatusColor(status), fontSize: '1.1rem', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+            <strong>Error:</strong> {conversionMainError}
+          </p>
+        )}
+
+        {status === ConversionStatus.COMPLETED && (
           <div style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
             <span style={{ color: getSuccessRateColor(overallSuccessRate) }}>
-              {overallSuccessRate.toFixed(1)}% Success Rate
+              {overallSuccessRate.toFixed(1)}% Overall Success Rate
             </span>
           </div>
         )}
       </div>
 
       {/* Download Section */}
-      {downloadUrl && (
+      {status === ConversionStatus.COMPLETED && (
         <div style={{ 
           backgroundColor: '#f0f9ff', 
           padding: '1rem', 
@@ -96,32 +160,34 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
           textAlign: 'center'
         }}>
           <h3>Your Bedrock Add-on is Ready!</h3>
-          <a 
-            href={downloadUrl}
-            download
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
             style={{
               display: 'inline-block',
-              backgroundColor: '#3b82f6',
+              backgroundColor: isDownloading ? '#9ca3af' : '#3b82f6',
               color: 'white',
               padding: '0.75rem 1.5rem',
               borderRadius: '6px',
-              textDecoration: 'none',
+              border: 'none',
+              cursor: isDownloading ? 'not-allowed' : 'pointer',
               fontWeight: 'bold',
               marginTop: '0.5rem'
             }}
           >
-            Download .mcaddon
-          </a>
+            {isDownloading ? 'Downloading...' : 'Download .mcaddon'}
+          </button>
+          {downloadError && <p style={{ color: 'red', marginTop: '0.5rem' }}>Error: {downloadError}</p>}
         </div>
       )}
 
       {/* Converted Mods */}
-      {convertedMods.length > 0 && (
+      {convertedMods && convertedMods.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ color: '#10b981', marginBottom: '1rem' }}>
             ✅ Successfully Converted ({convertedMods.length})
           </h3>
-          {convertedMods.map((mod: any, index: number) => (
+          {convertedMods.map((mod: ConvertedMod, index: number) => (
             <div key={index} style={{ 
               border: '1px solid #d1d5db',
               borderRadius: '6px',
@@ -129,7 +195,7 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
               marginBottom: '1rem'
             }}>
               <h4>{mod.name} {mod.version}</h4>
-              <p>Status: <span style={{ color: '#10b981' }}>{mod.status}</span></p>
+              <p>Status: <span style={{ color: mod.status === 'success' ? '#10b981' : mod.status === 'partial' ? '#f59e0b' : '#ef4444' }}>{mod.status}</span></p>
               {mod.warnings?.length > 0 && (
                 <div>
                   <strong>Warnings:</strong>
@@ -140,18 +206,19 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
                   </ul>
                 </div>
               )}
+              {/* Optionally display mod.features here */}
             </div>
           ))}
         </div>
       )}
 
       {/* Failed Mods */}
-      {failedMods.length > 0 && (
+      {failedMods && failedMods.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ color: '#ef4444', marginBottom: '1rem' }}>
             ❌ Failed to Convert ({failedMods.length})
           </h3>
-          {failedMods.map((mod: any, index: number) => (
+          {failedMods.map((mod: FailedMod, index: number) => (
             <div key={index} style={{ 
               border: '1px solid #fca5a5',
               borderRadius: '6px',
@@ -177,12 +244,12 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
       )}
 
       {/* Smart Assumptions */}
-      {smartAssumptionsApplied.length > 0 && (
+      {smartAssumptionsApplied && smartAssumptionsApplied.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ color: '#8b5cf6', marginBottom: '1rem' }}>
             🧠 Smart Assumptions Applied ({smartAssumptionsApplied.length})
           </h3>
-          {smartAssumptionsApplied.map((assumption: any, index: number) => (
+          {smartAssumptionsApplied.map((assumption: SmartAssumption, index: number) => (
             <div key={index} style={{ 
               border: '1px solid #c4b5fd',
               borderRadius: '6px',
