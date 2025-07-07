@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: anchapin/modporter-ai-frontend:latest
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000 # Adjust if backend is exposed differently
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - modporter-network
+    restart: unless-stopped
+
+  backend:
+    image: anchapin/modporter-ai-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/modporter
+      - LOG_LEVEL=INFO
+      # Add other necessary production environment variables here
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - conversion-cache:/app/cache # Or use a managed cloud storage service
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  ai-engine:
+    image: anchapin/modporter-ai-ai-engine:latest
+    environment:
+      - PYTHONPATH=/app
+      - OPENAI_API_KEY=${OPENAI_API_KEY} # Must be provided in the environment
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} # Must be provided in the environment
+      - LOG_LEVEL=INFO
+      # Add other necessary production environment variables here
+    volumes:
+      - model-cache:/app/models # Or use a managed cloud storage service
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=modporter
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password # Change for production
+      - POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # init.sql might not be needed if the image handles initialization
+      # or if you manage schema migrations separately for production
+      # - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data:
+    driver: local # Consider using managed Redis in production
+  postgres-data:
+    driver: local # Consider using managed PostgreSQL in production
+  conversion-cache:
+    driver: local
+  model-cache:
+    driver: local
+
+networks:
+  modporter-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
