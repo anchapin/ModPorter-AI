@@ -46,30 +46,38 @@ class PackagingAgent:
         # Required directories for different pack types
         self.pack_structures = {
             "behavior_pack": {
-                "manifest.json": "manifest",
-                "pack_icon.png": "icon",
-                "scripts/": "scripts",
-                "entities/": "entities", 
-                "items/": "items",
-                "blocks/": "blocks",
-                "functions/": "functions",
-                "loot_tables/": "loot_tables",
-                "recipes/": "recipes",
-                "spawn_rules/": "spawn_rules",
-                "trading/": "trading"
+                "required": {
+                    "manifest.json": "manifest"
+                },
+                "optional": {
+                    "pack_icon.png": "icon",
+                    "scripts/": "scripts",
+                    "entities/": "entities", 
+                    "items/": "items",
+                    "blocks/": "blocks",
+                    "functions/": "functions",
+                    "loot_tables/": "loot_tables",
+                    "recipes/": "recipes",
+                    "spawn_rules/": "spawn_rules",
+                    "trading/": "trading"
+                }
             },
             "resource_pack": {
-                "manifest.json": "manifest",
-                "pack_icon.png": "icon",
-                "textures/": "textures",
-                "models/": "models",
-                "sounds/": "sounds",
-                "animations/": "animations",
-                "animation_controllers/": "animation_controllers",
-                "attachables/": "attachables",
-                "entity/": "entity_textures",
-                "font/": "fonts",
-                "particles/": "particles"
+                "required": {
+                    "manifest.json": "manifest"
+                },
+                "optional": {
+                    "pack_icon.png": "icon",
+                    "textures/": "textures",
+                    "models/": "models",
+                    "sounds/": "sounds",
+                    "animations/": "animations",
+                    "animation_controllers/": "animation_controllers",
+                    "attachables/": "attachables",
+                    "entity/": "entity_textures",
+                    "font/": "fonts",
+                    "particles/": "particles"
+                }
             }
         }
         
@@ -518,14 +526,18 @@ class PackagingAgent:
     
     def _create_base_structure(self, package_type: str, target_dir: str) -> Dict:
         """Create base directory structure"""
-        structure = self.pack_structures.get(package_type, {})
+        structure_template = self.pack_structures.get(package_type, {})
         created_dirs = []
         
         # Create target directory
         os.makedirs(target_dir, exist_ok=True)
         
-        # Create subdirectories
-        for path, description in structure.items():
+        # Create subdirectories from both required and optional sections
+        all_dirs = {}
+        all_dirs.update(structure_template.get('required', {}))
+        all_dirs.update(structure_template.get('optional', {}))
+        
+        for path, description in all_dirs.items():
             if path.endswith('/'):  # It's a directory
                 dir_path = os.path.join(target_dir, path.rstrip('/'))
                 os.makedirs(dir_path, exist_ok=True)
@@ -535,7 +547,7 @@ class PackagingAgent:
             'package_type': package_type,
             'base_directory': target_dir,
             'created_directories': created_dirs,
-            'structure_template': structure
+            'structure_template': structure_template
         }
     
     def _organize_components(self, components: List[Dict], package_type: str, target_dir: str) -> Dict:
@@ -660,7 +672,9 @@ class PackagingAgent:
             validation_results["message"] = f"No structure template found for package type: {package_type}"
             return validation_results
 
-        essential_dirs = [dir_key.rstrip('/') for dir_key in pack_structure_template if dir_key.endswith('/')]
+        # Only check required directories for validation
+        required_structure = pack_structure_template.get('required', {})
+        essential_dirs = [dir_key.rstrip('/') for dir_key in required_structure if dir_key.endswith('/')]
 
         if not os.path.exists(base_path):
             validation_results["valid"] = False
@@ -1179,7 +1193,13 @@ class PackagingAgent:
         validation = {'valid': True, 'errors': [], 'warnings': [], 'missing_required_files': [], 'unexpected_root_items': []}
 
         root_items = [item.name for item in Path(package_path).iterdir()]
-        defined_structure_keys = [key.rstrip('/') for key in self.pack_structures.get(pack_type, {}).keys()]
+        
+        # Get all defined structure keys from both required and optional sections
+        pack_template = self.pack_structures.get(pack_type, {})
+        all_structure_items = {}
+        all_structure_items.update(pack_template.get('required', {}))
+        all_structure_items.update(pack_template.get('optional', {}))
+        defined_structure_keys = [key.rstrip('/') for key in all_structure_items.keys()]
 
         # Check for unexpected items at the root
         for item_name in root_items:
@@ -1191,7 +1211,12 @@ class PackagingAgent:
 
         # Check for pack_icon.png (conditionally required, but good practice)
         pack_icon_path = Path(package_path) / 'pack_icon.png'
-        if 'pack_icon.png' in self.pack_structures.get(pack_type, {}): # If defined as a key
+        # Check if pack_icon.png is defined in either required or optional sections
+        pack_template = self.pack_structures.get(pack_type, {})
+        has_pack_icon_defined = ('pack_icon.png' in pack_template.get('required', {}) or 
+                                'pack_icon.png' in pack_template.get('optional', {}))
+        
+        if has_pack_icon_defined:
             if not pack_icon_path.is_file():
                 validation['warnings'].append("Missing pack_icon.png at the root of the pack.")
                 validation['missing_required_files'].append('pack_icon.png')
