@@ -3,9 +3,11 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse } from '../types/api';
+import { ConversionRequest, ConversionResponse, ConversionStatus } from '../types/api'; // Added ConversionStatus
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+// Use relative URL for production (proxied by nginx) or localhost for development
+const API_BASE_URL = process.env.VITE_API_URL || 
+  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -42,8 +44,9 @@ export const convertMod = async (request: ConversionRequest): Promise<Conversion
   return response.json();
 };
 
-export const getConversionStatus = async (conversionId: string): Promise<ConversionResponse> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/status`);
+export const getConversionStatus = async (conversionId: string): Promise<ConversionStatus> => { // Return type changed
+  // Endpoint corrected: /api/convert/{job_id} instead of /api/convert/{job_id}/status
+  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`);
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));

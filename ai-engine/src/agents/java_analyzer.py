@@ -9,7 +9,7 @@ import zipfile
 import os
 from pathlib import Path
 from langchain.tools import tool
-from ..models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext
 )
 
