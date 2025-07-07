@@ -3,7 +3,7 @@ ModPorter AI Backend API
 Modern FastAPI implementation with database integration
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
@@ -131,6 +131,8 @@ class ConversionStatus(BaseModel):
     result_url: Optional[str] = None
     error: Optional[str] = None
     created_at: datetime
+    stage: Optional[str] = None
+    estimated_time_remaining: Optional[int] = None
 
 class ConversionJob(BaseModel):
     """Detailed model for a conversion job"""
@@ -500,19 +502,42 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
     # Try Redis first (for speed/freshness)
     cached = await cache.get_job_status(job_id)
     if cached:
-        # Compose descriptive message
         status = cached.get("status")
         progress = cached.get("progress", 0)
         error_message = cached.get("error_message")
         result_url = cached.get("result_url")
+
+        # Determine stage
+        if 0 <= progress <= 10:
+            stage = "Queued"
+        elif 11 <= progress <= 25:
+            stage = "Preprocessing"
+        elif 26 <= progress <= 75:
+            stage = "AI Conversion"
+        elif 76 <= progress <= 99:
+            stage = "Postprocessing"
+        elif progress == 100:
+            stage = "Completed"
+        else:
+            stage = None # Should not happen with valid progress
+
+        # Calculate estimated_time_remaining
+        total_conversion_time = 35  # seconds
+        if status in ["completed", "failed", "cancelled"]:
+            estimated_time_remaining = 0
+        elif progress == 0:
+            estimated_time_remaining = total_conversion_time
+        else:
+            estimated_time_remaining = int((1 - (progress / 100)) * total_conversion_time)
+
         descriptive_message = ""
         if status == "queued":
             descriptive_message = "Job is queued and waiting to start."
-        elif status == "preprocessing":
+        elif status == "preprocessing": # This status is set by simulate_ai_conversion, but stage mapping uses progress
             descriptive_message = "Preprocessing uploaded file."
-        elif status == "processing":
+        elif status == "processing": # This status is set by simulate_ai_conversion
             descriptive_message = f"AI conversion in progress ({progress}%)."
-        elif status == "postprocessing":
+        elif status == "postprocessing": # This status is set by simulate_ai_conversion
             descriptive_message = "Finalizing conversion results."
         elif status == "completed":
             descriptive_message = "Conversion completed successfully."
@@ -522,6 +547,7 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
             descriptive_message = "Job was cancelled by the user."
         else:
             descriptive_message = f"Job status: {status}."
+
         return ConversionStatus(
             job_id=job_id,
             status=status,
@@ -529,7 +555,9 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=parse_datetime(cached["created_at"])
+            created_at=parse_datetime(cached["created_at"]),
+            stage=stage,
+            estimated_time_remaining=estimated_time_remaining
         )
     # Fallback: load from DB or in-memory storage
     try:
@@ -583,6 +611,30 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         descriptive_message = "Job was cancelled by the user."
     else:
         descriptive_message = f"Job status: {status}."
+
+    # Determine stage for DB/in-memory fallback
+    if 0 <= progress <= 10:
+        stage = "Queued"
+    elif 11 <= progress <= 25:
+        stage = "Preprocessing"
+    elif 26 <= progress <= 75:
+        stage = "AI Conversion"
+    elif 76 <= progress <= 99:
+        stage = "Postprocessing"
+    elif progress == 100:
+        stage = "Completed"
+    else:
+        stage = None
+
+    # Calculate estimated_time_remaining for DB/in-memory fallback
+    total_conversion_time = 35  # seconds
+    if status in ["completed", "failed", "cancelled"]:
+        estimated_time_remaining = 0
+    elif progress == 0:
+        estimated_time_remaining = total_conversion_time
+    else:
+        estimated_time_remaining = int((1 - (progress / 100)) * total_conversion_time)
+
     # Mirror for legacy tests
     mirror = ConversionJob(
         job_id=str(job.id),
@@ -606,7 +658,9 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         message=descriptive_message,
         result_url=result_url,
         error=error_message,
-        created_at=job.created_at
+        created_at=job.created_at,
+        stage=stage,
+        estimated_time_remaining=estimated_time_remaining
     )
 
 @app.get("/api/convert", response_model=List[ConversionStatus], tags=["conversion"])
@@ -635,8 +689,8 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
                 original_filename=job.input_data.get("original_filename"),
                 status=status,
                 progress=progress,
-                target_version=job_input_data.get("target_version"),
-                options=job_input_data.get("options"),
+                target_version=job.input_data.get("target_version"),
+                options=job.input_data.get("options"),
                 result_url=result_url,
                 error_message=error_message,
                 created_at=job.created_at,
@@ -651,6 +705,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
                 result_url=result_url,
                 error=error_message,
                 created_at=job.created_at
+                # stage and ETR are not added to list view for now, can be added if needed
             ))
         return statuses
     except Exception as e:
@@ -658,14 +713,41 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
         # Fallback to in-memory listing
         statuses = []
         for data in conversion_jobs_db.values():
+            # Determine stage for in-memory fallback in list view
+            current_progress = data.progress
+            current_status = data.status
+            if 0 <= current_progress <= 10:
+                list_stage = "Queued"
+            elif 11 <= current_progress <= 25:
+                list_stage = "Preprocessing"
+            elif 26 <= current_progress <= 75:
+                list_stage = "AI Conversion"
+            elif 76 <= current_progress <= 99:
+                list_stage = "Postprocessing"
+            elif current_progress == 100:
+                list_stage = "Completed"
+            else:
+                list_stage = None
+
+            # Calculate estimated_time_remaining for in-memory fallback in list view
+            total_conversion_time = 35  # seconds
+            if current_status in ["completed", "failed", "cancelled"]:
+                list_etr = 0
+            elif current_progress == 0:
+                list_etr = total_conversion_time
+            else:
+                list_etr = int((1 - (current_progress / 100)) * total_conversion_time)
+
             statuses.append(ConversionStatus(
                 job_id=data.job_id,
-                status=data.status,
-                progress=data.progress,
-                message=f"Job status: {data.status}",
+                status=current_status,
+                progress=current_progress,
+                message=f"Job status: {current_status}.",
                 result_url=data.result_url,
                 error=data.error_message,
-                created_at=data.created_at
+                created_at=data.created_at,
+                stage=list_stage,
+                estimated_time_remaining=list_etr
             ))
         return statuses
 
@@ -702,8 +784,8 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
     job_dict = {
         "file_id": job.input_data.get("file_id"),
         "original_filename": job.input_data.get("original_filename"),
-        "target_version": job_input_data.get("target_version"),
-        "options": job_input_data.get("options"),
+        "target_version": job.input_data.get("target_version"),
+        "options": job.input_data.get("options"),
         "created_at": created_at,
         "updated_at": updated_at
     }
@@ -925,3 +1007,74 @@ if __name__ == "__main__":
         port=int(os.getenv("PORT", 8000)),
         reload=os.getenv("RELOAD", "true").lower() == "true"
     )
+
+
+# WebSocket endpoint for real-time progress updates
+@app.websocket("/ws/v1/convert/{conversion_id}/progress")
+async def websocket_conversion_progress(
+    websocket: WebSocket,
+    conversion_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."),
+    db: AsyncSession = Depends(get_db) # Allow DB access if needed, though get_conversion_status handles its own
+):
+    await websocket.accept()
+    logger.info(f"WebSocket connection established for conversion_id: {conversion_id}")
+
+    last_sent_progress = -1
+    last_sent_status = None
+
+    try:
+        while True:
+            try:
+                # Use existing get_conversion_status logic to fetch current status
+                # This ensures consistency with the HTTP endpoint
+                # A direct database session (db) is available if direct crud operations were preferred here
+                status_data: ConversionStatus = await get_conversion_status(job_id=conversion_id, db=db)
+
+                current_progress = status_data.progress
+                current_status = status_data.status
+
+                # Send data only if there's a change in progress or status
+                if current_progress != last_sent_progress or current_status != last_sent_status:
+                    await websocket.send_json(status_data.model_dump_json()) # Send Pydantic model as JSON string
+                    last_sent_progress = current_progress
+                    last_sent_status = current_status
+                    logger.debug(f"Sent progress update for {conversion_id}: {current_status} @ {current_progress}%")
+
+                # Stop sending updates if the job is in a terminal state
+                if current_status in ["completed", "failed", "cancelled"]:
+                    logger.info(f"Conversion {conversion_id} reached terminal state: {current_status}. Closing WebSocket.")
+                    break
+
+                await asyncio.sleep(1.5)  # Poll every 1.5 seconds
+
+            except HTTPException as e:
+                # If job not found or other HTTP error from get_conversion_status
+                logger.error(f"Error fetching status for {conversion_id} in WebSocket: {e.detail}")
+                await websocket.send_json({"error": str(e.detail), "job_id": conversion_id, "status_code": e.status_code})
+                break # Close WebSocket on error
+            except Exception as e:
+                # Catch any other unexpected errors
+                logger.error(f"Unexpected error in WebSocket for {conversion_id}: {str(e)}")
+                # Consider sending a generic error message before closing
+                try:
+                    await websocket.send_json({"error": "An unexpected error occurred.", "job_id": conversion_id})
+                except Exception: # If sending fails, just log and prepare to close
+                    pass
+                break # Close WebSocket on unexpected error
+
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for conversion_id: {conversion_id}")
+    except Exception as e:
+        # This catches errors during the accept() or if the loop breaks unexpectedly without disconnect
+        logger.error(f"Outer exception in WebSocket handler for {conversion_id}: {str(e)}")
+    finally:
+        # Ensure connection is closed if not already
+        try:
+            await websocket.close()
+            logger.info(f"WebSocket connection explicitly closed for {conversion_id}")
+        except RuntimeError as e:
+            # This can happen if the connection is already closed (e.g. client disconnects abruptly)
+            logger.warning(f"Error closing WebSocket for {conversion_id} (possibly already closed): {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error during WebSocket close for {conversion_id}: {str(e)}")
