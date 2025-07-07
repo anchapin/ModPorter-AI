@@ -235,7 +235,11 @@ class AssetConverterAgent:
                 },
                 "successful_results": successful_conversions,
                 "failed_results": failed_conversions_details,
-                "bedrock_pack_files": generated_pack_files
+                "bedrock_pack_files": generated_pack_files,
+                # Legacy fields for integration test compatibility
+                "converted_textures": successful_conversions,
+                "total_textures": len(textures),
+                "successful_conversions": len(successful_conversions)
             }
             
             logger.info(f"Texture conversion process complete. Requested: {len(textures)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}")
