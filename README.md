@@ -2,6 +2,8 @@
 
 An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons.
 
+[![codecov](https://codecov.io/gh/anchapin/ModPorter-AI/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/ModPorter-AI)
+
 ## 🎯 Vision
 Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
 
