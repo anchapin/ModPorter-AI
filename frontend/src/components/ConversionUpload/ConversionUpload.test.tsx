@@ -55,7 +55,7 @@ describe('ConversionUpload Component', () => {
       const urlInput = screen.getByPlaceholderText(/curseforge.*modrinth/i);
       await act(async () => { await user.type(urlInput, 'https://invalid-site.com/mod'); });
       await waitFor(() => {
-        expect(screen.getByText(/Invalid URL.*CurseForge or Modrinth/)).toBeInTheDocument();
+        expect(screen.getByText(/Please enter a valid CurseForge or Modrinth URL/)).toBeInTheDocument();
       });
     });
 
@@ -74,7 +74,7 @@ describe('ConversionUpload Component', () => {
       const toggle = screen.getByRole('checkbox', { name: /enable smart assumptions/i });
       expect(toggle).toBeInTheDocument();
       expect(toggle).toBeChecked();
-      expect(screen.getByText(/ai will make intelligent compromises/i)).toBeInTheDocument();
+      expect(screen.getByText(/intelligent assumptions to convert incompatible features/i)).toBeInTheDocument();
     });
 
     test('shows smart assumptions examples when info button clicked', async () => {
@@ -82,7 +82,7 @@ describe('ConversionUpload Component', () => {
       render(<ConversionUpload />);
       const infoButton = screen.getByRole('button', { name: /learn more about smart assumptions/i });
       await act(async () => { await user.click(infoButton); });
-      expect(screen.getByText(/What are Smart Assumptions?/i)).toBeInTheDocument();
+      expect(screen.getByText(/Smart Assumptions/i)).toBeInTheDocument();
       expect(screen.getByText(/Custom Dimensions/i)).toBeInTheDocument();
     });
   });
@@ -123,7 +123,7 @@ describe('ConversionUpload Component', () => {
       // 3. Check for initial status (e.g., PENDING or ANALYZING from mock)
       // MSW handler for POST /convert returns PENDING with 10% progress initially
       await waitFor(() => {
-        expect(screen.getByText(/upload complete, conversion pending.../i)).toBeInTheDocument();
+        expect(screen.getByText(/Queued for processing.../i)).toBeInTheDocument();
       }, { timeout: 2000 }); // Wait for initial state after convertMod
 
       // Polling should occur (mocked by MSW to simulate progress)

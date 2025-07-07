@@ -48,5 +48,22 @@ export default [
       },
     },
   },
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        describe: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+    env: { vitest: true },
+  },
   ...storybook.configs["flat/recommended"],
 ];
