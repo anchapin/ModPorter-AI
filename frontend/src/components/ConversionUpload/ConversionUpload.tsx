@@ -7,7 +7,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { convertMod } from '../../services/api';
 import { ConversionRequest, ConversionResponse } from '../../types/api';
-import { ConversionProgress } from '../ConversionProgress/ConversionProgress'; // Import new component
+import ConversionProgress from '../ConversionProgress/ConversionProgress'; // Import new component
 import './ConversionUpload.css';
 
 interface ConversionUploadProps {
