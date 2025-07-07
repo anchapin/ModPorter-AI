@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add project root to sys.path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pytest
 import pytest_asyncio
 import asyncio
