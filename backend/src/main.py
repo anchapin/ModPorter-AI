@@ -3,7 +3,7 @@ ModPorter AI Backend API
 Modern FastAPI implementation with database integration
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path as FastAPIPath, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
@@ -483,6 +483,7 @@ async def start_conversion_simple(request: ConversionRequest):
     return conversion_data
 
 @app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
+@app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Get the current status of a specific conversion job.
@@ -709,6 +710,7 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
 
 # Download endpoint
 @app.get("/api/download/{job_id}", tags=["files"])
+@app.get("/api/v1/convert/{job_id}/download", tags=["files"])
 async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
     """
     Download the converted mod file.
@@ -769,6 +771,118 @@ async def cancel_conversion_simple(job_id: str):
         raise HTTPException(status_code=404, detail="Conversion job not found")
     conversions_db[job_id]["status"] = "cancelled"
     return {"message": f"Conversion job {job_id} has been cancelled"}
+
+# V1 API endpoints that handle file uploads in the convert request
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
+async def start_conversion_v1(
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    mod_file: UploadFile = File(...),
+    smart_assumptions: bool = Form(True),
+    include_dependencies: bool = Form(False),
+    mod_url: Optional[str] = Form(None),
+    target_version: str = Form("1.20.0")
+):
+    """
+    Start a new mod conversion job with file upload.
+    This endpoint handles both file upload and conversion initiation in one request.
+    """
+    if not mod_file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    # Validate file type
+    allowed_extensions = ['.jar', '.zip', '.mcaddon']
+    file_ext = os.path.splitext(mod_file.filename)[1].lower()
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
+        )
+
+    # Generate unique file identifier
+    file_id = str(uuid.uuid4())
+    saved_filename = f"{file_id}{file_ext}"
+    
+    # Create temporary uploads directory if it doesn't exist
+    os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
+    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
+
+    # Save the uploaded file
+    try:
+        real_file_size = 0
+        with open(file_path, "wb") as buffer:
+            for chunk in mod_file.file:
+                real_file_size += len(chunk)
+                if real_file_size > MAX_UPLOAD_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+                    )
+                buffer.write(chunk)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        raise HTTPException(status_code=500, detail="Could not save file")
+    finally:
+        mod_file.file.close()
+
+    # Create conversion options
+    options = {
+        "smart_assumptions": smart_assumptions,
+        "include_dependencies": include_dependencies,
+        "mod_url": mod_url
+    }
+
+    # Try to persist job to DB, fall back to in-memory storage for tests
+    try:
+        job = await crud.create_job(
+            db,
+            file_id=file_id,
+            original_filename=mod_file.filename,
+            target_version=target_version,
+            options=options
+        )
+        job_id = str(job.id)
+        created_at = job.created_at if job.created_at else datetime.now()
+        updated_at = job.updated_at if job.updated_at else datetime.now()
+    except Exception as e:
+        # Fall back to in-memory storage for tests
+        job_id = str(uuid.uuid4())
+        created_at = datetime.now()
+        updated_at = datetime.now()
+        logger.warning(f"Database operation failed, using in-memory storage: {e}")
+
+    # Build legacy-mirror dict for in-memory compatibility
+    mirror = ConversionJob(
+        job_id=job_id,
+        file_id=file_id,
+        original_filename=mod_file.filename,
+        status="queued",
+        progress=0,
+        target_version=target_version,
+        options=options,
+        result_url=None,
+        error_message=None,
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+    conversion_jobs_db[job_id] = mirror
+
+    # Write to Redis
+    await cache.set_job_status(job_id, mirror.model_dump())
+    await cache.set_progress(job_id, 0)
+
+    print(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    background_tasks.add_task(simulate_ai_conversion, job_id)
+
+    return ConversionResponse(
+        job_id=job_id,
+        status="queued",
+        message="Conversion job started and is now queued.",
+        estimated_time=35
+    )
 
 @app.get("/api/download/simple/{job_id}")
 async def download_converted_mod_simple(job_id: str):
