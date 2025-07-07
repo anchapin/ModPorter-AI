@@ -17,8 +17,8 @@ import json
 from dotenv import load_dotenv
 import redis.asyncio as aioredis
 
-from crew.conversion_crew import ModPorterConversionCrew
-from models.smart_assumptions import SmartAssumptionEngine
+from src.crew.conversion_crew import ModPorterConversionCrew
+from src.models.smart_assumptions import SmartAssumptionEngine
 
 # Load environment variables
 load_dotenv()

@@ -11,13 +11,13 @@ import logging
 import os
 from pathlib import Path
 
-from agents.java_analyzer import JavaAnalyzerAgent
-from agents.bedrock_architect import BedrockArchitectAgent
-from agents.logic_translator import LogicTranslatorAgent
-from agents.asset_converter import AssetConverterAgent
-from agents.packaging_agent import PackagingAgent
-from agents.qa_validator import QAValidatorAgent
-from models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
+from src.agents.java_analyzer import JavaAnalyzerAgent
+from src.agents.bedrock_architect import BedrockArchitectAgent
+from src.agents.logic_translator import LogicTranslatorAgent
+from src.agents.asset_converter import AssetConverterAgent
+from src.agents.packaging_agent import PackagingAgent
+from src.agents.qa_validator import QAValidatorAgent
+from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
 
 logger = logging.getLogger(__name__)
 

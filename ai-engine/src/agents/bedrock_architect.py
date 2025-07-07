@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Optional
 import logging
 import json
 from langchain.tools import tool
-from models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, AssumptionResult, 
     ConversionPlanComponent, AssumptionReport
 )
