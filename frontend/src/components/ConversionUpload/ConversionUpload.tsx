@@ -237,7 +237,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
 
   // Polling effect with proper dependency array as suggested by Copilot
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
+    let intervalId: number | null = null;
 
     if (currentConversionId && isPolling) {
       if (pollingAttempts >= MAX_POLLING_ATTEMPTS) {
@@ -268,10 +268,10 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               setError(status.error);
             }
           }
-        } catch (err: any) {
+        } catch (error: any) {
           setPollingAttempts(prev => prev + 1);
           if (pollingAttempts >= MAX_POLLING_ATTEMPTS - 1) {
-            setError('Unable to check conversion status. Please try again later.');
+            setError(`Unable to check conversion status: ${error.message || 'Unknown error'}. Please try again later.`);
             setIsPolling(false);
             setIsConverting(false);
           }

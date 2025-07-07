@@ -34,7 +34,7 @@ export enum ConversionStatusEnum {
   PENDING = 'queued',
   UPLOADING = 'uploading',
   IN_PROGRESS = 'preprocessing',
-  ANALYZING = 'ai_conversion',
+  ANALYZING = 'analyzing',
   CONVERTING = 'ai_conversion',
   PACKAGING = 'postprocessing',
   COMPLETED = 'completed',

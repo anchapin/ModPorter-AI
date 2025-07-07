@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest'; // Keep for other potential mocks if needed, or remove if not used elsewhere
 import { ConversionUpload } from './ConversionUpload';
-import { ConversionStatus } from '../../types/api';
+import { ConversionStatusEnum } from '../../types/api';
 // MSW server is set up in `src/test/setup.ts` and will intercept API calls.
 // No need to mock '../../services/api' here if MSW is handling it.
 
@@ -181,7 +181,7 @@ describe('ConversionUpload Component', () => {
         http.get(`${API_BASE_URL}/convert/:id/status`, () => {
           return HttpResponse.json({
             conversionId: 'mock-fail-id',
-            status: ConversionStatus.FAILED,
+            status: ConversionStatusEnum.FAILED,
             progress: 50, // Or whatever progress it failed at
             error: 'Mocked conversion failure: Something went wrong during conversion.',
             overallSuccessRate: 0,
