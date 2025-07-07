@@ -484,6 +484,14 @@ async def get_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0
     """
     return await get_conversion_status(job_id, db)
 
+@app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
+async def get_conversion_status_v0(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+    """
+    Get the current status of a specific conversion job.
+    Legacy endpoint for backward compatibility.
+    """
+    return await get_conversion_status(job_id, db)
+
 @app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
@@ -627,8 +635,8 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
                 original_filename=job.input_data.get("original_filename"),
                 status=status,
                 progress=progress,
-                target_version=job.input_data.get("target_version"),
-                options=job.input_data.get("options"),
+                target_version=job_input_data.get("target_version"),
+                options=job_input_data.get("options"),
                 result_url=result_url,
                 error_message=error_message,
                 created_at=job.created_at,
@@ -694,8 +702,8 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
     job_dict = {
         "file_id": job.input_data.get("file_id"),
         "original_filename": job.input_data.get("original_filename"),
-        "target_version": job.input_data.get("target_version"),
-        "options": job.input_data.get("options"),
+        "target_version": job_input_data.get("target_version"),
+        "options": job_input_data.get("options"),
         "created_at": created_at,
         "updated_at": updated_at
     }
