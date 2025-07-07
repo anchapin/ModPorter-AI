@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
 from src.services.cache import CacheService
+# report_generator imports
+from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+from src.services.report_models import InteractiveReport, FullConversionReport
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -74,6 +77,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+report_generator = ConversionReportGenerator()
 
 # CORS middleware - Security hardened
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
@@ -1078,3 +1083,38 @@ async def websocket_conversion_progress(
             logger.warning(f"Error closing WebSocket for {conversion_id} (possibly already closed): {str(e)}")
         except Exception as e:
             logger.error(f"Unexpected error during WebSocket close for {conversion_id}: {str(e)}")
+
+
+@app.get("/api/v1/jobs/{job_id}/report", response_model=InteractiveReport, tags=["conversion"])
+async def get_conversion_report(job_id: str):
+    mock_data_source = None
+    if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    elif "success" in job_id: # Generic fallback for testing
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif "failure" in job_id: # Generic fallback for testing
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    else:
+        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+
+    report = report_generator.create_interactive_report(mock_data_source, job_id)
+    return report
+
+@app.get("/api/v1/jobs/{job_id}/report/prd", response_model=FullConversionReport, tags=["conversion"])
+async def get_conversion_report_prd(job_id: str):
+    mock_data_source = None
+    if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    elif "success" in job_id: # Generic fallback
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif "failure" in job_id: # Generic fallback
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    else:
+        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+
+    report = report_generator.create_full_conversion_report_prd_style(mock_data_source)
+    return report
