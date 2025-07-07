@@ -31,7 +31,7 @@ jobs:
     - name: Install frontend dependencies
       run: |
         cd frontend
-        pnpm ci
+        pnpm install
     
     - name: Run frontend linting
       run: |
