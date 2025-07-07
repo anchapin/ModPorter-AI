@@ -31,7 +31,11 @@ class BedrockArchitectAgent:
             self.apply_smart_assumption_tool,
             self.create_conversion_plan_tool,
             self.get_assumption_conflicts_tool,
-            self.validate_bedrock_compatibility_tool
+            self.validate_bedrock_compatibility_tool,
+            self.generate_block_definitions_tool,
+            self.generate_item_definitions_tool,
+            self.generate_recipe_definitions_tool,
+            self.generate_entity_definitions_tool
         ]
     
     @tool
@@ -340,3 +344,112 @@ class BedrockArchitectAgent:
             validation["recommendations"].append("Reorganize information for optimal book presentation")
         
         return validation
+
+    # --- Placeholder methods for Bedrock Definition Generation ---
+
+    @tool
+    def generate_block_definitions_tool(self, block_data: str) -> str:
+        """Generate Bedrock block definition files (placeholder).
+        Args:
+            block_data: JSON string containing block information (e.g., id, name, properties).
+        Returns:
+            JSON string with success status and placeholder block definition.
+        """
+        return self._generate_placeholder_definition(block_data, "block")
+
+    @tool
+    def generate_item_definitions_tool(self, item_data: str) -> str:
+        """Generate Bedrock item definition files (placeholder).
+        Args:
+            item_data: JSON string containing item information (e.g., id, name, components).
+        Returns:
+            JSON string with success status and placeholder item definition.
+        """
+        return self._generate_placeholder_definition(item_data, "item")
+
+    @tool
+    def generate_recipe_definitions_tool(self, recipe_data: str) -> str:
+        """Generate Bedrock recipe JSON files (placeholder).
+        Args:
+            recipe_data: JSON string containing recipe information (e.g., id, ingredients, result).
+        Returns:
+            JSON string with success status and placeholder recipe definition.
+        """
+        return self._generate_placeholder_definition(recipe_data, "recipe")
+
+    @tool
+    def generate_entity_definitions_tool(self, entity_data: str) -> str:
+        """Generate Bedrock entity definition files (placeholder).
+        Args:
+            entity_data: JSON string containing entity information (e.g., id, name, components, behaviors).
+        Returns:
+            JSON string with success status and placeholder entity definition.
+        """
+        return self._generate_placeholder_definition(entity_data, "entity")
+
+    def _generate_placeholder_definition(self, component_data_str: str, component_type: str) -> str:
+        """
+        Generic placeholder for generating Bedrock component definitions.
+        """
+        try:
+            component_data = json.loads(component_data_str)
+            identifier = component_data.get("identifier", f"custom:{component_data.get('id', f'{component_type}_placeholder')}")
+            name = component_data.get("name", f"Custom {component_type.capitalize()}")
+
+            # Basic placeholder structure common to many Bedrock definitions
+            placeholder_definition = {
+                "format_version": "1.20.0", # Using a recent common version
+                f"minecraft:{component_type}": {
+                    "description": {
+                        "identifier": identifier
+                    },
+                    "components": {
+                        "minecraft:display_name": { # Common component for user-visible name
+                            "value": name
+                        },
+                        # Specific components would vary greatly depending on component_type
+                        # Example: A block might have "minecraft:material_instances"
+                        # An item might have "minecraft:icon"
+                        # An entity might have "minecraft:collision_box"
+                    },
+                    "metadata_generated": { # Custom section for our tool's info
+                        "source_java_id": component_data.get('id', 'unknown_java_id'),
+                        "conversion_tool": "ModPorterAI_BedrockArchitect",
+                        "conversion_notes": f"This is an AI-generated placeholder {component_type} definition. Review and refine."
+                    }
+                }
+            }
+
+            # Add type-specific components if needed for a basic valid structure
+            if component_type == "block":
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:loot"] = f"loot_tables/blocks/{component_data.get('id', 'placeholder_block')}.json"
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:destructible_by_mining"] = {"seconds_to_destroy": 1.0}
+            elif component_type == "item":
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:icon"] = {"texture": component_data.get('id', 'placeholder_item_icon')}
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:max_stack_size"] = 64
+            elif component_type == "entity":
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:type_family"] = {"family": [component_type, "mob"]}
+                placeholder_definition[f"minecraft:{component_type}"]["components"]["minecraft:health"] = {"value": 20, "max": 20}
+
+
+            logger.info(f"Generated placeholder {component_type} definition for identifier: {identifier}")
+            return json.dumps({
+                "success": True,
+                "component_type": component_type,
+                "identifier": identifier,
+                "definition_json": json.dumps(placeholder_definition, indent=2), # Return the definition as a JSON string
+                "message": f"Placeholder {component_type} definition generated successfully for {identifier}."
+            }, indent=2)
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON input for placeholder {component_type} definition: {str(e)} - Input: {component_data_str[:500]}...", exc_info=True) # Log part of the input
+            return json.dumps({
+                "success": False,
+                "error": f"Invalid JSON input for {component_type} definition: {str(e)}"
+            }, indent=2)
+        except Exception as e:
+            logger.error(f"Error generating placeholder {component_type} definition: {e}", exc_info=True)
+            return json.dumps({
+                "success": False,
+                "error": f"Failed to generate placeholder {component_type} definition: {str(e)}"
+            }, indent=2)
