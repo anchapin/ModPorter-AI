@@ -16,7 +16,6 @@ class TestServiceHealth:
         """
         # The docker_environment fixture has already performed health checks.
         # If we are here, it means all services were deemed healthy by the fixture.
-        print("docker_environment fixture completed its health checks successfully.")
 
         backend_health_url = docker_environment.get("backend_health")
         assert backend_health_url, "Backend health URL not provided by docker_environment fixture"
@@ -27,7 +26,7 @@ class TestServiceHealth:
 
             health_data = response.json()
             assert health_data.get("status") == "healthy", f"Backend service reported unhealthy: {health_data}"
-            print(f"Explicit check to backend health endpoint {backend_health_url} successful.")
+            # Backend health endpoint check passed
 
         except requests.RequestException as e:
             pytest.fail(f"Failed to connect to backend health endpoint {backend_health_url}: {e}")
@@ -41,11 +40,10 @@ class TestServiceHealth:
             # This confirms the frontend server is up and serving something.
             assert "<!doctype html>" in response.text.lower() or "vite" in response.text.lower(), \
                 f"Frontend content at {frontend_url} did not seem like a valid HTML page."
-            print(f"Explicit check to frontend URL {frontend_url} successful, content seems valid.")
+            # Frontend URL check passed, content validation successful
 
         except requests.RequestException as e:
             pytest.fail(f"Failed to connect to frontend URL {frontend_url}: {e}")
 
         # If the test reaches here, it means the fixture worked and explicit checks passed.
-        print("All explicit checks passed.")
-        assert True
+        # Test passes implicitly without redundant assertion

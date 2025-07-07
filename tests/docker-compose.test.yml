@@ -13,7 +13,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - modporter-test-network
+      - modportertest-network
     restart: unless-stopped
 
   backend:
@@ -36,7 +36,7 @@ services:
       - conversion-cache-test:/app/cache
       - ../tests/fixtures:/app/test_fixtures # Mount test fixtures
     networks:
-      - modporter-test-network
+      - modportertest-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
@@ -57,7 +57,7 @@ services:
     volumes:
       - model-cache-test:/app/models
     networks:
-      - modporter-test-network
+      - modportertest-network
     restart: unless-stopped
     deploy:
       resources:
@@ -73,7 +73,7 @@ services:
     volumes:
       - redis-data-test:/data
     networks:
-      - modporter-test-network
+      - modportertest-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -95,7 +95,7 @@ services:
       - postgres-data-test:/var/lib/postgresql/data
       - ../backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql # Re-use existing init script
     networks:
-      - modporter-test-network
+      - modportertest-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d modporter_test"]
@@ -114,7 +114,7 @@ volumes:
     driver: local
 
 networks:
-  modporter-test-network: # Use a distinct network name for tests
+  modportertest-network: # Use a distinct network name for tests aligned with project name
     driver: bridge
     ipam:
       config:
