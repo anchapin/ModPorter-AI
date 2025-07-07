@@ -5,8 +5,6 @@ services:
     image: anchapin/modporter-ai-frontend:latest
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_URL=http://localhost:8000 # Adjust if backend is exposed differently
     depends_on:
       backend:
         condition: service_healthy

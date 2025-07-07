@@ -57,9 +57,11 @@ docker-compose ps
 
 **Service URLs:**
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
+- **Backend API**: http://localhost:8000 (or `/api/` when using frontend proxy)
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
+
+**Note**: The frontend uses Nginx to proxy API requests to the backend, so you can access the API through either `http://localhost:3000/api/` or directly at `http://localhost:8000/api/`.
 
 ### Option 2: Local Development Setup (Docker)
 
