@@ -219,13 +219,13 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background
-        cd backend && python main.py &
+        cd backend && PYTHONPATH=. python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
         
         # Wait for backend to start
-        sleep 10
+        sleep 15
         
         # Run integration tests
-        cd backend && python -m pytest tests/integration/ -v
+        cd backend && PYTHONPATH=. python -m pytest tests/integration/ -v
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
