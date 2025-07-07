@@ -3,7 +3,7 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse, ConversionStatus } from '../types/api'; // Added ConversionStatus
+import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api'; // Added UploadResponse, InitiateConversionParams
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 const API_BASE_URL = process.env.VITE_API_URL || 
@@ -16,24 +16,52 @@ class ApiError extends Error {
   }
 }
 
-export const convertMod = async (request: ConversionRequest): Promise<ConversionResponse> => {
+export const uploadFileActual = async (file: File): Promise<UploadResponse> => {
   const formData = new FormData();
-  
-  if (request.file) {
-    formData.append('mod_file', request.file);
+  formData.append('file', file); // Match backend parameter name 'file'
+
+  const response = await fetch(`${API_BASE_URL}/upload`, { // Corrected endpoint
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Upload failed with unknown error' }));
+    throw new ApiError(errorData.detail || 'File upload failed', response.status);
   }
-  
-  // Add other request data
-  formData.append('smart_assumptions', request.smartAssumptions.toString());
-  formData.append('include_dependencies', request.includeDependencies.toString());
-  
-  if (request.modUrl) {
-    formData.append('mod_url', request.modUrl);
+
+  return response.json();
+};
+
+export const convertMod = async (params: InitiateConversionParams): Promise<ConversionResponse> => {
+  if (!params.file) {
+    // As per instructions, conversion via modUrl alone without a file upload step is not currently supported
+    // by the backend's /api/v1/convert endpoint (which is start_conversion).
+    throw new Error("File is required for conversion.");
   }
+
+  // Step 1: Upload the file
+  const uploadResponse = await uploadFileActual(params.file);
+
+  // Step 2: Construct the ConversionRequest payload for the backend
+  const backendRequestPayload: ConversionRequest = {
+    file_id: uploadResponse.file_id,
+    original_filename: uploadResponse.original_filename,
+    target_version: params.target_version, // Pass through target_version
+    options: {
+      smartAssumptions: params.smartAssumptions,
+      includeDependencies: params.includeDependencies,
+      // modUrl can be part of options if needed by backend logic tied to a file_id
+      ...(params.modUrl && { modUrl: params.modUrl }),
+    },
+  };
 
   const response = await fetch(`${API_BASE_URL}/convert`, {
     method: 'POST',
-    body: formData,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(backendRequestPayload),
   });
 
   if (!response.ok) {
@@ -46,6 +74,7 @@ export const convertMod = async (request: ConversionRequest): Promise<Conversion
 
 export const getConversionStatus = async (conversionId: string): Promise<ConversionStatus> => { // Return type changed
   // Endpoint corrected: /api/convert/{job_id} instead of /api/convert/{job_id}/status
+  // This path /api/v1/convert/{job_id} is handled by get_conversion on backend, which is fine.
   const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`);
   
   if (!response.ok) {
