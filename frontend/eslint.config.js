@@ -63,7 +63,6 @@ export default [
         vi: 'readonly',
       },
     },
-    env: { vitest: true },
   },
   ...storybook.configs["flat/recommended"],
 ];
