@@ -7,17 +7,17 @@ conversion processing, status tracking, and error handling.
 
 import io
 import time
+import pytest
 from fastapi.testclient import TestClient
 from src.main import app
 
-# Create test client
-client = TestClient(app)
+# Test client will be provided by fixture
 
 
 class TestV1HealthIntegration:
     """Integration tests for v1 health check endpoint."""
 
-    def test_v1_health_endpoint_responds(self):
+    def test_v1_health_endpoint_responds(self, client):
         """Test that v1 health endpoint responds correctly."""
         response = client.get("/api/v1/health")
         assert response.status_code == 200
@@ -32,7 +32,7 @@ class TestV1HealthIntegration:
 class TestV1ConversionIntegration:
     """Integration tests for v1 conversion workflow with file upload."""
 
-    def test_v1_convert_with_jar_upload(self):
+    def test_v1_convert_with_jar_upload(self, client):
         """Test v1 conversion endpoint with JAR file upload."""
         # Create a mock JAR file
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"  # Valid ZIP/JAR header
@@ -59,7 +59,7 @@ class TestV1ConversionIntegration:
         assert data["status"] == "queued"
         assert "estimated_time" in data
 
-    def test_v1_convert_with_zip_upload(self):
+    def test_v1_convert_with_zip_upload(self, client):
         """Test v1 conversion endpoint with ZIP file upload."""
         # Create a mock ZIP file
         zip_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -85,7 +85,7 @@ class TestV1ConversionIntegration:
         assert "status" in data
         assert data["status"] == "queued"
 
-    def test_v1_convert_with_mcaddon_upload(self):
+    def test_v1_convert_with_mcaddon_upload(self, client):
         """Test v1 conversion endpoint with MCADDON file upload."""
         # Create a mock MCADDON file
         mcaddon_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -109,7 +109,7 @@ class TestV1ConversionIntegration:
         assert "status" in data
         assert data["status"] == "queued"
 
-    def test_v1_convert_invalid_file_type(self):
+    def test_v1_convert_invalid_file_type(self, client):
         """Test v1 conversion endpoint with invalid file type."""
         # Create a text file (invalid)
         text_content = b"This is not a valid mod file"
@@ -130,7 +130,7 @@ class TestV1ConversionIntegration:
         assert "detail" in data
         assert "not supported" in data["detail"]
 
-    def test_v1_convert_no_file(self):
+    def test_v1_convert_no_file(self, client):
         """Test v1 conversion endpoint without file upload."""
         response = client.post(
             "/api/v1/convert",
@@ -143,7 +143,7 @@ class TestV1ConversionIntegration:
         # Should require file upload
         assert response.status_code == 422
 
-    def test_v1_convert_large_file(self):
+    def test_v1_convert_large_file(self, client):
         """Test v1 conversion endpoint with oversized file."""
         # Create a file larger than the 100MB limit
         large_content = b"X" * (101 * 1024 * 1024)  # 101 MB
@@ -168,7 +168,7 @@ class TestV1ConversionIntegration:
 class TestV1StatusIntegration:
     """Integration tests for v1 status endpoints."""
 
-    def test_v1_check_conversion_status(self):
+    def test_v1_check_conversion_status(self, client):
         """Test checking conversion status via v1 endpoint."""
         # First start a conversion
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -203,7 +203,7 @@ class TestV1StatusIntegration:
         assert isinstance(status_data["progress"], int)
         assert 0 <= status_data["progress"] <= 100
 
-    def test_v1_check_status_nonexistent_job(self):
+    def test_v1_check_status_nonexistent_job(self, client):
         """Test checking status of non-existent job via v1 endpoint."""
         fake_job_id = "12345678-1234-1234-1234-123456789012"
 
@@ -213,7 +213,7 @@ class TestV1StatusIntegration:
         data = response.json()
         assert "detail" in data
 
-    def test_v1_check_status_invalid_job_id_format(self):
+    def test_v1_check_status_invalid_job_id_format(self, client):
         """Test checking status with invalid job ID format."""
         invalid_job_id = "invalid-job-id"
 
@@ -226,7 +226,7 @@ class TestV1StatusIntegration:
 class TestV1DownloadIntegration:
     """Integration tests for v1 download endpoints."""
 
-    def test_v1_download_converted_mod(self):
+    def test_v1_download_converted_mod(self, client):
         """Test downloading converted mod via v1 endpoint."""
         # First start a conversion
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -258,7 +258,7 @@ class TestV1DownloadIntegration:
             data = download_response.json()
             assert "detail" in data
 
-    def test_v1_download_nonexistent_job(self):
+    def test_v1_download_nonexistent_job(self, client):
         """Test downloading from non-existent job via v1 endpoint."""
         fake_job_id = "12345678-1234-1234-1234-123456789012"
 
@@ -272,19 +272,19 @@ class TestV1DownloadIntegration:
 class TestV1ErrorHandlingIntegration:
     """Integration tests for v1 error handling and edge cases."""
 
-    def test_v1_database_unavailable_simulation(self):
+    def test_v1_database_unavailable_simulation(self, client):
         """Test behavior when database is unavailable."""
         # This test would require mocking database failures
         # For now, we'll test the normal flow and assume proper error handling
         pass
 
-    def test_v1_redis_unavailable_simulation(self):
+    def test_v1_redis_unavailable_simulation(self, client):
         """Test behavior when Redis is unavailable."""
         # This test would require mocking Redis failures
         # For now, we'll test the normal flow and assume proper error handling
         pass
 
-    def test_v1_concurrent_requests(self):
+    def test_v1_concurrent_requests(self, client):
         """Test handling of concurrent conversion requests."""
         # Create multiple conversion requests
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -317,7 +317,7 @@ class TestV1ErrorHandlingIntegration:
 class TestV1FullWorkflowIntegration:
     """End-to-end integration tests for v1 API."""
 
-    def test_v1_complete_conversion_workflow(self):
+    def test_v1_complete_conversion_workflow(self, client):
         """Test the complete v1 workflow from upload to result."""
         # Step 1: Start conversion with file upload
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -363,7 +363,7 @@ class TestV1FullWorkflowIntegration:
             download_response = client.get(f"/api/v1/convert/{job_id}/download")
             assert download_response.status_code in [200, 404]  # File might not exist yet in mock
 
-    def test_v1_workflow_with_all_options(self):
+    def test_v1_workflow_with_all_options(self, client):
         """Test v1 workflow with all conversion options."""
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
         jar_file = io.BytesIO(jar_content)

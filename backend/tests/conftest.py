@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from src.main import app
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
     policy = asyncio.get_event_loop_policy()
@@ -20,52 +20,8 @@ def event_loop():
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
-    # Clear the in-memory database before each test
-    from src.main import conversions_db, uploaded_files
-
-    conversions_db.clear()
-    uploaded_files.clear()
-
-    # Mock the database dependency to avoid database connections in tests
-    from src.db.base import get_db
-    from unittest.mock import patch, AsyncMock
-    
-    async def mock_get_db():
-        """Mock database session that doesn't connect to real database."""
-        # Return a mock session that won't actually perform database operations
-        from unittest.mock import AsyncMock
-        
-        mock_session = AsyncMock()
-        
-        # Configure the mock to raise an exception for database operations asynchronously
-        # This will trigger the fallback to in-memory storage
-        async def raise_exception(*args, **kwargs):
-            raise Exception("Mock database error - using in-memory storage")
-        
-        mock_session.add = lambda *args, **kwargs: None  # Non-async operation
-        mock_session.commit = AsyncMock(side_effect=raise_exception)
-        mock_session.execute = AsyncMock(side_effect=raise_exception)
-        mock_session.refresh = AsyncMock(side_effect=raise_exception)
-        mock_session.scalar = AsyncMock(side_effect=raise_exception)
-        mock_session.get = AsyncMock(side_effect=raise_exception)
-        
-        yield mock_session
-    
-    app.dependency_overrides[get_db] = mock_get_db
-
-    # Mock Redis cache operations
-    with patch('src.main.cache') as mock_cache:
-        mock_cache.set_job_status = AsyncMock()
-        mock_cache.set_progress = AsyncMock()
-        mock_cache.get_job_status = AsyncMock(return_value=None)
-        mock_cache.update_job_status = AsyncMock()
-        mock_cache.update_progress = AsyncMock()
-        
-        with TestClient(app) as c:
-            yield c
-    
-    # Clean up dependency overrides
-    app.dependency_overrides.clear()
+    from fastapi.testclient import TestClient
+    return TestClient(app)
 
 
 @pytest_asyncio.fixture

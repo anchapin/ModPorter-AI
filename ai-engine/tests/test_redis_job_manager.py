@@ -14,9 +14,9 @@ from fastapi import HTTPException
 # Import the modules we need to test
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from main import RedisJobManager, ConversionStatus
+from src.main import RedisJobManager, ConversionStatus
 
 
 class TestRedisJobManager:

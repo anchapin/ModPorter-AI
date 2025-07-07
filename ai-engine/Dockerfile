@@ -39,7 +39,7 @@ USER appuser
 # Create directories for models and cache
 RUN mkdir -p /app/models /app/cache
 
-# Health check
+# Health check using curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8001/health || exit 1
 

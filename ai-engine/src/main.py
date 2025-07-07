@@ -23,8 +23,8 @@ from src.models.smart_assumptions import SmartAssumptionEngine
 # Load environment variables
 load_dotenv()
 
-# Conversion status enumeration
-class ConversionStatus(str, Enum):
+# Status enumeration for conversion states
+class ConversionStatusEnum(str, Enum):
     QUEUED = "queued"
     IN_PROGRESS = "in_progress" 
     COMPLETED = "completed"
@@ -75,7 +75,7 @@ class RedisJobManager:
         self.redis = redis_client
         self.available = True
     
-    async def set_job_status(self, job_id: str, status: ConversionStatus) -> None:
+    async def set_job_status(self, job_id: str, status: "ConversionStatus") -> None:
         """Store job status in Redis with error handling"""
         try:
             if not self.available:
@@ -95,7 +95,7 @@ class RedisJobManager:
             self.available = False
             raise HTTPException(status_code=503, detail="Job state storage failed")
     
-    async def get_job_status(self, job_id: str) -> Optional[ConversionStatus]:
+    async def get_job_status(self, job_id: str) -> Optional["ConversionStatus"]:
         """Retrieve job status from Redis with error handling"""
         try:
             if not self.available:
