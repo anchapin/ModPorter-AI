@@ -8,7 +8,7 @@ import logging
 import json
 import re
 from langchain.tools import tool
-from ..models.smart_assumptions import (
+from models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
 

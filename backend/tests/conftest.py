@@ -37,11 +37,17 @@ def client():
         
         mock_session = AsyncMock()
         
-        # Configure the mock to raise an exception for database operations
+        # Configure the mock to raise an exception for database operations asynchronously
         # This will trigger the fallback to in-memory storage
-        mock_session.add.side_effect = Exception("Mock database error - using in-memory storage")
-        mock_session.commit.side_effect = Exception("Mock database error - using in-memory storage")
-        mock_session.execute.side_effect = Exception("Mock database error - using in-memory storage")
+        async def raise_exception(*args, **kwargs):
+            raise Exception("Mock database error - using in-memory storage")
+        
+        mock_session.add = lambda *args, **kwargs: None  # Non-async operation
+        mock_session.commit = AsyncMock(side_effect=raise_exception)
+        mock_session.execute = AsyncMock(side_effect=raise_exception)
+        mock_session.refresh = AsyncMock(side_effect=raise_exception)
+        mock_session.scalar = AsyncMock(side_effect=raise_exception)
+        mock_session.get = AsyncMock(side_effect=raise_exception)
         
         yield mock_session
     

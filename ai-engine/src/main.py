@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from enum import Enum
 import uvicorn
 import os
 import uuid
@@ -21,6 +22,14 @@ from models.smart_assumptions import SmartAssumptionEngine
 
 # Load environment variables
 load_dotenv()
+
+# Conversion status enumeration
+class ConversionStatus(str, Enum):
+    QUEUED = "queued"
+    IN_PROGRESS = "in_progress" 
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 # Configure logging
 logging.basicConfig(

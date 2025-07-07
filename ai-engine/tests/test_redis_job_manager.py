@@ -178,7 +178,7 @@ class TestRedisJobManager:
             await job_manager.set_job_status("test", sample_status)
         
         assert exc_info.value.status_code == 503
-        assert "Job state storage unavailable" in str(exc_info.value.detail)
+        assert "Job state storage failed" in str(exc_info.value.detail)
         
         # Should return None when trying to get status
         result = await job_manager.get_job_status("test")
