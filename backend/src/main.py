@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
 from src.services.cache import CacheService
+from src.validation import ValidationFramework # Added import
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -30,7 +31,7 @@ load_dotenv()
 
 TEMP_UPLOADS_DIR = "temp_uploads"
 CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+# MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB - Removed, handled by ValidationFramework
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
 conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
@@ -189,26 +190,32 @@ async def upload_file(file: UploadFile = File(...)):
     # Create temporary uploads directory if it doesn't exist
     os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
 
-    # Note: file.size is not always available in FastAPI UploadFile
-    # We'll validate size during the actual file reading process
+    # Instantiate ValidationFramework
+    validator = ValidationFramework()
 
-    # Validate file type - combine both approaches
-    allowed_types = [
-        "application/java-archive",
-        "application/zip",
-        "application/octet-stream",
-    ]
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
+    # Validate the uploaded file using the framework
+    # We pass file.file which is the actual SpooledTemporaryFile
+    validation_result = validator.validate_upload(file.file, file.filename)
+
+    if not validation_result.is_valid:
+        # Determine appropriate status code based on error (optional refinement)
+        status_code = 400 # Default to Bad Request
+        if "exceeds the maximum allowed size" in (validation_result.error_message or ""):
+            status_code = 413 # Payload Too Large
+        elif "invalid file type" in (validation_result.error_message or ""):
+            status_code = 415 # Unsupported Media Type
+
+        # Clean up the (potentially partially read) file object from UploadFile
+        # as we are not saving it.
+        file.file.close()
+        raise HTTPException(status_code=status_code, detail=validation_result.error_message)
+
+    # IMPORTANT: Reset file pointer after validation, as validate_upload reads from it.
+    file.file.seek(0)
+    
+    # Ensure original_filename and file_ext are defined for use later
     original_filename = file.filename
     file_ext = os.path.splitext(original_filename)[1].lower()
-    
-    if (file_ext not in allowed_extensions and 
-        file.content_type not in allowed_types and 
-        not any(file.filename.endswith(ext) for ext in allowed_extensions)):
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
-        )
 
     # Generate unique file identifier
     file_id = str(uuid.uuid4())
@@ -219,33 +226,29 @@ async def upload_file(file: UploadFile = File(...)):
     try:
         real_file_size = 0
         with open(file_path, "wb") as buffer:
-            for chunk in file.file:
+            # Read in chunks from file.file (which has been reset by seek(0))
+            while chunk := file.file.read(8192): # Read in 8KB chunks
                 real_file_size += len(chunk)
-                if real_file_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-                    )
+                # The new framework already validated the total size.
+                # Old size check removed from here.
                 buffer.write(chunk)
-    except HTTPException as e:
-        # Re-raise client errors (e.g., 413 for file size limits)
-        raise e
+
     except Exception as e:
-        # Log the error for debugging
         logger.error(f"Error saving file: {e}", exc_info=True)
+        if os.path.exists(file_path):
+            os.remove(file_path) # Clean up partially written file on error
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
-        file.file.close()
-    
-    # Also store filename in memory for compatibility
-    uploaded_files.append(file.filename)
-    
+        file.file.close() # Ensure the spooled temporary file is closed
+
+    uploaded_files.append(original_filename) # Keep for compatibility if needed
+
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
-        saved_filename=saved_filename, # The name with job_id and extension
-        size=real_file_size,  # Use the actual size we read
-        content_type=file.content_type,
+        saved_filename=saved_filename,
+        size=real_file_size, # Use the actual size read during saving
+        content_type=file.content_type, # This is the browser-reported content type
         message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
         filename=original_filename
     )
@@ -888,15 +891,27 @@ async def start_conversion_v1(
     if not mod_file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
-    # Validate file type
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
-    file_ext = os.path.splitext(mod_file.filename)[1].lower()
-    
-    if file_ext not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
-        )
+    # Instantiate ValidationFramework
+    validator = ValidationFramework()
+
+    # Validate the uploaded file using the framework
+    validation_result = validator.validate_upload(mod_file.file, mod_file.filename)
+
+    if not validation_result.is_valid:
+        status_code = 400 # Default to Bad Request
+        if "exceeds the maximum allowed size" in (validation_result.error_message or ""):
+            status_code = 413 # Payload Too Large
+        elif "invalid file type" in (validation_result.error_message or ""):
+            status_code = 415 # Unsupported Media Type
+        mod_file.file.close()
+        raise HTTPException(status_code=status_code, detail=validation_result.error_message)
+
+    # IMPORTANT: Reset file pointer after validation
+    mod_file.file.seek(0)
+
+    # Ensure original_filename and file_ext are defined for use later
+    original_filename = mod_file.filename # Defined from mod_file.filename
+    file_ext = os.path.splitext(original_filename)[1].lower() # Defined from original_filename
 
     # Generate unique file identifier
     file_id = str(uuid.uuid4())
@@ -910,15 +925,14 @@ async def start_conversion_v1(
     try:
         real_file_size = 0
         with open(file_path, "wb") as buffer:
-            for chunk in mod_file.file:
+            # Read in chunks from mod_file.file (which has been reset by seek(0))
+            while chunk := mod_file.file.read(8192): # Read in 8KB chunks
                 real_file_size += len(chunk)
-                if real_file_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-                    )
+                # Size validation already handled by ValidationFramework
                 buffer.write(chunk)
-    except HTTPException as e:
+    except HTTPException as e: # This might be redundant if validator catches everything, but keep for safety
+        if os.path.exists(file_path):
+            os.remove(file_path)
         raise e
     except Exception as e:
         logger.error(f"Error saving file: {e}", exc_info=True)

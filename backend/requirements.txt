@@ -17,6 +17,7 @@ redis[asyncio]==5.0.1
 # File handling
 python-multipart==0.0.6
 tomli==2.0.1  # TOML parsing for Python <3.11
+python-magic==0.4.27
 
 # HTTP Client for file downloads
 httpx==0.25.2
