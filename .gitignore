@@ -60,3 +60,7 @@ coverage.xml
 # Temporary uploads
 temp_uploads/
 */temp_uploads/
+
+# Conversion outputs (generated files)
+conversion_outputs/
+*/conversion_outputs/

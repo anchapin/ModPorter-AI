@@ -143,7 +143,7 @@ class TestConversionEndpoints:
 
     def test_download_converted_mod_not_found(self, client: TestClient):
         """Test downloading a non-existent converted mod."""
-        job_id = "nonexistent_job"
+        job_id = "12345678-1234-1234-1234-123456789012"
 
         response = client.get(f"/api/download/{job_id}")
         assert response.status_code == 404

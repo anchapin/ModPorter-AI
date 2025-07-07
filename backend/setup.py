@@ -13,5 +13,10 @@ setup(
         'httpx',
         'pytest',
         'pytest-asyncio',
+        'sqlalchemy>=2.0.23',
+        'asyncpg>=0.29',
+        'alembic==1.12.0',
+        'redis[asyncio]==5.0.1',
+        'pydantic-settings==2.1.0',
     ],
 )

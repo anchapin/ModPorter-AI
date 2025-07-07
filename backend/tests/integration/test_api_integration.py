@@ -238,7 +238,7 @@ class TestErrorHandlingIntegration:
 
     def test_check_status_nonexistent_job(self):
         """Test checking status of non-existent job."""
-        fake_job_id = "non-existent-job-id"
+        fake_job_id = "12345678-1234-1234-1234-123456789012"
 
         response = client.get(f"/api/convert/{fake_job_id}")
 
