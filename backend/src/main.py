@@ -75,13 +75,14 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS middleware
+# CORS middleware - Security hardened
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # Pydantic models for API documentation
@@ -229,7 +230,7 @@ async def upload_file(file: UploadFile = File(...)):
         raise e
     except Exception as e:
         # Log the error for debugging
-        print(f"Error saving file: {e}")
+        logger.error(f"Error saving file: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
@@ -249,12 +250,12 @@ async def upload_file(file: UploadFile = File(...)):
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
-    print(f"Starting AI simulation for job_id: {job_id}")
+    logger.info(f"Starting AI simulation for job_id: {job_id}")
     try:
         async with AsyncSessionLocal() as session:
             job = await crud.get_job(session, job_id)
         if not job:
-            print(f"Error: Job {job_id} not found for AI simulation.")
+            logger.error(f"Error: Job {job_id} not found for AI simulation.")
             return
 
         def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
@@ -283,14 +284,14 @@ async def simulate_ai_conversion(job_id: str):
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 25)
-            print(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
+            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
             # Stage 2: Processing -> Postprocessing
             await asyncio.sleep(15)
             # Recheck cancellation
             job = await crud.get_job(session, job_id)
             if job.status == "cancelled":
-                print(f"Job {job_id} was cancelled. Stopping AI simulation.")
+                logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
             job = await crud.update_job_status(session, job_id, "postprocessing")
             await crud.upsert_progress(session, job_id, 75)
@@ -298,13 +299,13 @@ async def simulate_ai_conversion(job_id: str):
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 75)
-            print(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
+            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
 
             # Stage 3: Postprocessing -> Completed
             await asyncio.sleep(10)
             job = await crud.get_job(session, job_id)
             if job.status == "cancelled":
-                print(f"Job {job_id} was cancelled. Stopping AI simulation.")
+                logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
 
             job = await crud.update_job_status(session, job_id, "completed")
@@ -320,7 +321,7 @@ async def simulate_ai_conversion(job_id: str):
                     f.write(f"This is a mock converted file for job {job.id}.\n")
                     f.write(f"Original filename: {job.input_data.get('original_filename')}\n")
             except IOError as e:
-                print(f"Error creating mock output file for job {job_id}: {e}")
+                logger.error(f"Error creating mock output file for job {job_id}: {e}", exc_info=True)
                 job = await crud.update_job_status(session, job_id, "failed")
                 mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
                 conversion_jobs_db[job_id] = mirror
@@ -332,55 +333,32 @@ async def simulate_ai_conversion(job_id: str):
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 100)
-            print(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
+            logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
 
         except Exception as e:
-            print(f"Error during AI simulation for job {job_id}: {e}")
+            logger.error(f"Error during AI simulation for job {job_id}: {e}", exc_info=True)
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
-            print(f"Job {job_id}: Status updated to FAILED due to error.")
+            logger.error(f"Job {job_id}: Status updated to FAILED due to error.")
     except Exception as e:
-        # Fall back to in-memory only updates for tests
-        logger.warning(f"Database operation failed in background task, using in-memory storage: {e}")
-        if job_id in conversion_jobs_db:
-            # Simulate the conversion progression using only in-memory storage
-            
-            # Stage 1: Processing
-            await asyncio.sleep(10)
-            conversion_jobs_db[job_id].status = "processing"
-            conversion_jobs_db[job_id].progress = 25
-            print(f"Job {job_id}: Status updated to processing, Progress: 25% (in-memory)")
-            
-            # Stage 2: Postprocessing
-            await asyncio.sleep(15)
-            conversion_jobs_db[job_id].status = "postprocessing"
-            conversion_jobs_db[job_id].progress = 75
-            print(f"Job {job_id}: Status updated to postprocessing, Progress: 75% (in-memory)")
-            
-            # Stage 3: Completed
-            await asyncio.sleep(10)
-            conversion_jobs_db[job_id].status = "completed"
-            conversion_jobs_db[job_id].progress = 100
-            
-            # Create mock output file for in-memory fallback
-            os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
-            mock_output_filename_internal = f"{job_id}_converted.zip"
-            mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            
-            try:
-                with open(mock_output_filepath, "w") as f:
-                    f.write(f"This is a mock converted file for job {job_id} (in-memory fallback).\\n")
-                    f.write(f"Original filename: {conversion_jobs_db[job_id].original_filename}\\n")
-                conversion_jobs_db[job_id].result_url = f"/api/download/{job_id}"
-                print(f"Job {job_id}: Status updated to completed, Progress: 100% (in-memory)")
-            except IOError as e:
-                print(f"Error creating mock output file for job {job_id}: {e}")
+        # Fail fast instead of falling back to inconsistent storage
+        logger.error(f"Critical database failure during AI simulation for job {job_id}: {e}", exc_info=True)
+        
+        # Set job status to failed in cache if possible
+        try:
+            if job_id in conversion_jobs_db:
                 conversion_jobs_db[job_id].status = "failed"
                 conversion_jobs_db[job_id].progress = 0
-                conversion_jobs_db[job_id].error_message = f"Failed to create output file: {e}"
+                conversion_jobs_db[job_id].error_message = "Database service unavailable"
+                await cache.set_job_status(job_id, conversion_jobs_db[job_id].model_dump())
+        except Exception as cache_error:
+            logger.error(f"Failed to update cache after database error: {cache_error}", exc_info=True)
+        
+        # Do not continue processing with inconsistent state
+        return
 
 
 # Conversion endpoints
@@ -422,11 +400,9 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         created_at = job.created_at if job.created_at else datetime.now()
         updated_at = job.updated_at if job.updated_at else datetime.now()
     except Exception as e:
-        # Fall back to in-memory storage for tests
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-        logger.warning(f"Database operation failed, using in-memory storage: {e}")
+        # Fail fast if database is unavailable
+        logger.error(f"Database operation failed during job creation: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Database service unavailable")
 
     # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
     mirror = ConversionJob(
@@ -448,7 +424,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
 
-    print(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
     background_tasks.add_task(simulate_ai_conversion, job_id)
 
     return ConversionResponse(
@@ -482,7 +458,6 @@ async def start_conversion_simple(request: ConversionRequest):
     conversions_db[job_id] = conversion_data
     return conversion_data
 
-@app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
 @app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
@@ -528,21 +503,9 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         if not job:
             raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
     except Exception as e:
-        # Fall back to in-memory storage for tests
-        logger.warning(f"Database operation failed, using in-memory storage: {e}")
-        if job_id not in conversion_jobs_db:
-            raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
-        in_memory_job = conversion_jobs_db[job_id]
-        return ConversionStatus(
-            job_id=job_id,
-            status=in_memory_job.status,
-            progress=in_memory_job.progress,
-            message=f"Job status: {in_memory_job.status}.",
-            estimated_completion=None,
-            result_url=in_memory_job.result_url,
-            error=in_memory_job.error_message,
-            created_at=in_memory_job.created_at
-        )
+        # Fail fast if database is unavailable
+        logger.error(f"Database operation failed during status retrieval: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Database service unavailable")
     progress = job.progress.progress if job.progress else 0
     error_message = None
     result_url = None
@@ -638,20 +601,9 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             ))
         return statuses
     except Exception as e:
-        # Fall back to in-memory storage for tests
-        logger.warning(f"Database operation failed, using in-memory storage: {e}")
-        statuses = []
-        for job_id, job_data in conversion_jobs_db.items():
-            statuses.append(ConversionStatus(
-                job_id=job_id,
-                status=job_data.status,
-                progress=job_data.progress,
-                message=f"Job status: {job_data.status}.",
-                result_url=job_data.result_url,
-                error=job_data.error_message,
-                created_at=job_data.created_at
-            ))
-        return statuses
+        # Fail fast if database is unavailable
+        logger.error(f"Database operation failed during job listing: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Database service unavailable")
 
 @app.delete("/api/convert/{job_id}", tags=["conversion"])
 async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
@@ -669,17 +621,9 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
         created_at = job.created_at if job.created_at else datetime.now()
         updated_at = job.updated_at if job.updated_at else datetime.now()
     except Exception as e:
-        # Fall back to in-memory storage for tests
-        logger.warning(f"Database operation failed, using in-memory storage: {e}")
-        if job_id not in conversion_jobs_db:
-            raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
-        in_memory_job = conversion_jobs_db[job_id]
-        if in_memory_job.status == "cancelled":
-            return {"message": f"Conversion job {job_id} is already cancelled."}
-        # Update in-memory job to cancelled
-        in_memory_job.status = "cancelled"
-        in_memory_job.progress = 0
-        return {"message": f"Conversion job {job_id} has been cancelled."}
+        # Fail fast if database is unavailable
+        logger.error(f"Database operation failed during job cancellation: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Database service unavailable")
         
     # If database operation succeeded, continue with normal flow
     job_dict = {
@@ -709,7 +653,6 @@ async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}
     return {"message": f"Conversion job {job_id} has been cancelled."}
 
 # Download endpoint
-@app.get("/api/download/{job_id}", tags=["files"])
 @app.get("/api/v1/convert/{job_id}/download", tags=["files"])
 async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
     """
@@ -727,7 +670,7 @@ async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-
         raise HTTPException(status_code=400, detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.")
 
     if not job.result_url: # Should be set if status is completed and file was made
-        print(f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed.")
+        logger.error(f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed.")
         # This indicates an internal inconsistency if the job is 'completed'.
         raise HTTPException(status_code=404, detail=f"Result for job '{job_id}' not available or URL is missing.")
 
@@ -737,7 +680,7 @@ async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-
     file_path = os.path.join(CONVERSION_OUTPUTS_DIR, internal_filename)
 
     if not os.path.exists(file_path):
-        print(f"Error: Converted file not found at path: {file_path} for job {job_id}")
+        logger.error(f"Error: Converted file not found at path: {file_path} for job {job_id}")
         # This case might indicate an issue post-completion or if the file was manually removed.
         raise HTTPException(status_code=404, detail="Converted file not found on server.")
 
@@ -823,7 +766,7 @@ async def start_conversion_v1(
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(f"Error saving file: {e}")
+        logger.error(f"Error saving file: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         mod_file.file.close()
@@ -848,11 +791,9 @@ async def start_conversion_v1(
         created_at = job.created_at if job.created_at else datetime.now()
         updated_at = job.updated_at if job.updated_at else datetime.now()
     except Exception as e:
-        # Fall back to in-memory storage for tests
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-        logger.warning(f"Database operation failed, using in-memory storage: {e}")
+        # Fail fast if database is unavailable
+        logger.error(f"Database operation failed during job creation: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Database service unavailable")
 
     # Build legacy-mirror dict for in-memory compatibility
     mirror = ConversionJob(
@@ -874,7 +815,7 @@ async def start_conversion_v1(
     await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
 
-    print(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
     background_tasks.add_task(simulate_ai_conversion, job_id)
 
     return ConversionResponse(
