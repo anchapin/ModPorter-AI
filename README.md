@@ -25,6 +25,8 @@ Empower Minecraft players and creators with a "one-click" AI-powered tool that i
 
 ## 📦 Quick Start
 
+This project offers multiple deployment options:
+
 ### Prerequisites
 - **Docker & Docker Compose** (recommended - handles all dependencies)
 - OR for local development:
@@ -33,7 +35,35 @@ Empower Minecraft players and creators with a "one-click" AI-powered tool that i
   - PostgreSQL 15+
   - Redis 7+
 
-### Option 1: Docker Setup (Recommended)
+### Option 1: Production Deployment (Docker Hub)
+
+This option uses pre-built Docker images from Docker Hub for a production-like environment.
+
+```bash
+# Clone the repository
+git clone https://github.com/anchapin/ModPorter-AI.git
+cd ModPorter-AI
+
+# Copy environment variables
+cp .env.example .env
+# Edit .env and add your API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
+
+# Start all services using Docker Hub images
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check service status
+docker-compose ps
+```
+
+**Service URLs:**
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000 (or `/api/` when using frontend proxy)
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+
+**Note**: The frontend uses Nginx to proxy API requests to the backend, so you can access the API through either `http://localhost:3000/api/` or directly at `http://localhost:8000/api/`.
+
+### Option 2: Local Development Setup (Docker)
 
 #### Production Environment
 ```bash
@@ -83,7 +113,10 @@ docker-compose up -d --build
 docker-compose logs -f
 ```
 
-### Option 2: Local Development Setup
+### Option 3: Manual Local Setup (Advanced)
+
+If you prefer to run services locally without Docker:
+
 1. Clone the repository
 2. Install dependencies: `npm run install-all`
 3. Start development servers: `npm run dev`
@@ -240,12 +273,30 @@ docker-compose ps --services
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚠️ Legal Notice
+## 📞 Support
 
-Users are responsible for ensuring they have the right to convert mods. Respect original mod licenses and Minecraft's terms of service.
+- **Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/anchapin/ModPorter-AI/discussions)
+- **Documentation**: [Project Wiki](https://github.com/anchapin/ModPorter-AI/wiki)
+
+## 🏆 Acknowledgments
+
+- **CrewAI**: For the multi-agent AI framework
+- **FastAPI**: For the high-performance API framework
+- **React**: For the frontend framework
+- **Docker**: For containerization
+- **Minecraft Community**: For inspiration and support
+
+---
+
+Made with ❤️ by the ModPorter AI team
