@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from src.config import settings
-from .declarative_base import Base
+# Base is imported in models.py and migrations
+# from .declarative_base import Base
 
 async_engine = create_async_engine(
     settings.database_url,
