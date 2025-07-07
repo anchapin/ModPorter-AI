@@ -44,8 +44,9 @@ export const handlers = [
     conversionState.progress = 10;
 
     return HttpResponse.json({
-      conversionId: conversionState.conversionId,
+      job_id: conversionState.conversionId,
       status: conversionState.status,
+      message: 'Conversion started',
       progress: conversionState.progress,
       overallSuccessRate: 0,
       convertedMods: [],
@@ -78,9 +79,12 @@ export const handlers = [
     }
 
     return HttpResponse.json({
-      conversionId: conversionState.conversionId,
+      job_id: conversionState.conversionId,
       status: conversionState.status,
       progress: conversionState.progress,
+      message: `Status: ${conversionState.status}`,
+      stage: conversionState.status,
+      created_at: new Date().toISOString(),
       // Other fields can be added as needed for COMPLETED state
       overallSuccessRate: conversionState.status === ConversionStatusEnum.COMPLETED ? 100 : 0,
       convertedMods: conversionState.status === ConversionStatusEnum.COMPLETED ? [{ name: 'Test Mod', version: '1.0', status: 'success', features: [], warnings: [] }] : [],
