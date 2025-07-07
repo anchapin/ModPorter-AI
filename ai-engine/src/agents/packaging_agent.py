@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 import uuid
 from langchain.tools import tool
-from ..models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )
 

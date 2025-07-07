@@ -7,17 +7,13 @@ including file uploads, conversion processing, and result retrieval.
 
 import io
 import time
-from fastapi.testclient import TestClient
-from src.main import app
-
-# Create test client
-client = TestClient(app)
+import pytest
 
 
 class TestHealthIntegration:
     """Integration tests for health check endpoint."""
 
-    def test_health_endpoint_responds(self):
+    def test_health_endpoint_responds(self, client):
         """Test that health endpoint responds correctly."""
         response = client.get("/health")
         assert response.status_code == 200
@@ -31,7 +27,7 @@ class TestHealthIntegration:
 class TestFileUploadIntegration:
     """Integration tests for file upload functionality."""
 
-    def test_upload_jar_file_end_to_end(self):
+    def test_upload_jar_file_end_to_end(self, client):
         """Test complete JAR file upload workflow."""
         # Create a mock JAR file
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"  # Valid ZIP/JAR header
@@ -51,7 +47,7 @@ class TestFileUploadIntegration:
         assert "message" in data
         assert data["filename"] == "test.jar"
 
-    def test_upload_mcaddon_file_end_to_end(self):
+    def test_upload_mcaddon_file_end_to_end(self, client):
         """Test complete MCADDON file upload workflow."""
         # Create a mock MCADDON file (which is essentially a ZIP)
         mcaddon_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -75,7 +71,7 @@ class TestFileUploadIntegration:
 class TestConversionIntegration:
     """Integration tests for the conversion workflow."""
 
-    def test_start_conversion_workflow(self):
+    def test_start_conversion_workflow(self, client):
         """Test starting a conversion job."""
         # First upload a file
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -110,7 +106,7 @@ class TestConversionIntegration:
         assert "status" in conversion_data
         assert conversion_data["status"] in ["queued", "processing"]
 
-    def test_check_conversion_status(self):
+    def test_check_conversion_status(self, client):
         """Test checking conversion status."""
         # Start a conversion first
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -141,7 +137,7 @@ class TestConversionIntegration:
         job_id = conversion_response.json()["job_id"]
 
         # Check status
-        status_response = client.get(f"/api/convert/{job_id}")
+        status_response = client.get(f"/api/v1/convert/{job_id}")
 
         assert status_response.status_code == 200
         status_data = status_response.json()
@@ -153,7 +149,7 @@ class TestConversionIntegration:
         assert status_data["job_id"] == job_id
         assert status_data["status"] in ["queued", "processing", "completed", "failed"]
 
-    def test_list_conversions(self):
+    def test_list_conversions(self, client):
         """Test listing all conversions."""
         response = client.get("/api/convert")
 
@@ -174,13 +170,13 @@ class TestConversionIntegration:
 class TestFileManagementIntegration:
     """Integration tests for file management."""
 
-    def test_list_uploaded_files(self):
+    def test_list_uploaded_files(self, client):
         """Test listing uploaded files."""
         # This endpoint doesn't exist in the current API
         # Skip this test for now
         pass
 
-    def test_upload_and_delete_file(self):
+    def test_upload_and_delete_file(self, client):
         """Test uploading and then deleting a file."""
         # Upload a file
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
@@ -202,7 +198,7 @@ class TestFileManagementIntegration:
 class TestErrorHandlingIntegration:
     """Integration tests for error handling."""
 
-    def test_upload_invalid_file_type(self):
+    def test_upload_invalid_file_type(self, client):
         """Test uploading an invalid file type."""
         # Create a text file (invalid)
         text_content = b"This is not a valid mod file"
@@ -217,7 +213,7 @@ class TestErrorHandlingIntegration:
         data = response.json()
         assert "detail" in data
 
-    def test_convert_nonexistent_file(self):
+    def test_convert_nonexistent_file(self, client):
         """Test starting conversion with non-existent file."""
         fake_filename = "non-existent-file.jar"
 
@@ -236,7 +232,7 @@ class TestErrorHandlingIntegration:
         data = response.json()
         assert "job_id" in data
 
-    def test_check_status_nonexistent_job(self):
+    def test_check_status_nonexistent_job(self, client):
         """Test checking status of non-existent job."""
         fake_job_id = "12345678-1234-1234-1234-123456789012"
 
@@ -250,7 +246,7 @@ class TestErrorHandlingIntegration:
 class TestFullWorkflowIntegration:
     """End-to-end integration tests."""
 
-    def test_complete_conversion_workflow(self):
+    def test_complete_conversion_workflow(self, client):
         """Test the complete workflow from upload to result."""
         # Step 1: Upload a file
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
