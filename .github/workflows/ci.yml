@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   PYTHON_VERSION: '3.9'
 
 jobs:
@@ -25,20 +25,23 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
     
+    - name: Install pnpm
+      run: npm install -g pnpm
+    
     - name: Install frontend dependencies
       run: |
         cd frontend
-        npm ci
+        pnpm ci
     
     - name: Run frontend linting
       run: |
         cd frontend
-        npm run lint
+        pnpm run lint
     
     - name: Run frontend tests
       run: |
         cd frontend
-        CI=true npm run test:coverage
+        CI=true pnpm run test:coverage
     
     - name: Upload frontend coverage
       uses: codecov/codecov-action@v3
@@ -198,16 +201,19 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
+    - name: Install pnpm
+      run: npm install -g pnpm
+    
     - name: Install all dependencies
       run: |
-        npm run install-all
+        pnpm run install-all
         cd backend && pip install -r requirements.txt
         cd ../ai-engine && pip install -r requirements.txt
     
     - name: Build frontend
       run: |
         cd frontend
-        npm run build
+        pnpm run build
     
     - name: Run database migrations
       run: |
