@@ -9,7 +9,7 @@ import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'coverage'] },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -36,6 +36,22 @@ export default [
   {
     files: ['**/*.test.{ts,tsx}'],
     languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        describe: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    languageOptions: {
+      ecmaVersion: 2020,
       globals: {
         ...globals.browser,
         ...globals.node,

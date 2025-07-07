@@ -3,7 +3,7 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api'; // Added UploadResponse, InitiateConversionParams
+import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 const API_BASE_URL = process.env.VITE_API_URL || 
