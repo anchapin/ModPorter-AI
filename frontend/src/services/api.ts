@@ -3,7 +3,7 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse, ConversionStatus } from '../types/api'; // Added ConversionStatus
+import { ConversionRequest, ConversionResponse, ConversionStatus } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 const API_BASE_URL = process.env.VITE_API_URL || 
@@ -44,9 +44,8 @@ export const convertMod = async (request: ConversionRequest): Promise<Conversion
   return response.json();
 };
 
-export const getConversionStatus = async (conversionId: string): Promise<ConversionStatus> => { // Return type changed
-  // Endpoint corrected: /api/convert/{job_id} instead of /api/convert/{job_id}/status
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}`);
+export const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`);
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -56,12 +55,23 @@ export const getConversionStatus = async (conversionId: string): Promise<Convers
   return response.json();
 };
 
-export const downloadConvertedMod = async (conversionId: string): Promise<Blob> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${conversionId}/download`);
+export const downloadResult = async (jobId: string): Promise<Blob> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
   
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
   }
 
   return response.blob();
+};
+
+export const cancelJob = async (jobId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
+  }
 };

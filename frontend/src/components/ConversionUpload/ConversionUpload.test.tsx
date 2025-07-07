@@ -3,49 +3,44 @@
  * Visual learner-friendly component testing (updated for Vitest)
  */
 
-import React, { act } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
 import { ConversionUpload } from './ConversionUpload';
+// MSW server is set up in `src/test/setup.ts` and will intercept API calls.
+// No need to mock '../../services/api' here if MSW is handling it.
 
-// Mock the API service
-vi.mock('../../services/api', () => ({
-  convertMod: vi.fn(),
-  getConversionStatus: vi.fn(),
-}));
+// Helper function to create a mock file
+const createMockFile = (name: string, size: number, type: string): File => {
+  const file = new File(['a'.repeat(size)], name, { type });
+  return file;
+};
 
-describe('ConversionUpload Component - PRD Feature 1', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
 
-  describe('Visual Interface Requirements', () => {
+describe('ConversionUpload Component', () => {
+  // beforeEach(() => {
+  //   vi.clearAllMocks(); // If you have other vi.fn mocks, keep this. Otherwise, can be removed.
+  // });
+
+  // --- Existing Unit/UI Tests (can be kept, ensure they don't conflict with MSW) ---
+  describe('Visual Interface and Form Logic', () => {
     test('renders upload interface with clear visual cues', () => {
       render(<ConversionUpload />);
-      
-      // PRD Feature 1: "drag and drop my CurseForge modpack zip file"
       expect(screen.getByText(/drag.*drop/i)).toBeInTheDocument();
       expect(screen.getByText(/CurseForge.*Modrinth/)).toBeInTheDocument();
-      
-      // Visual elements for user guidance
-      expect(screen.getByRole('button', { name: /convert/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /convert to bedrock/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/file upload/i)).toBeInTheDocument();
     });
 
     test('displays supported file types clearly', () => {
       render(<ConversionUpload />);
-      
-      // PRD Feature 1 Acceptance Criteria: .jar files, .zip modpack archives
       expect(screen.getByText(/\.jar files/i)).toBeInTheDocument();
       expect(screen.getByText(/\.zip modpack archives/i)).toBeInTheDocument();
     });
 
     test('shows URL input option as alternative', () => {
       render(<ConversionUpload />);
-      
-      // PRD Feature 1: URLs from major mod repositories
       expect(screen.getByPlaceholderText(/curseforge.*modrinth/i)).toBeInTheDocument();
       expect(screen.getByText(/or paste url/i)).toBeInTheDocument();
     });
@@ -55,76 +50,109 @@ describe('ConversionUpload Component - PRD Feature 1', () => {
     test('validates URL types according to PRD specs', async () => {
       const user = userEvent.setup();
       render(<ConversionUpload />);
-      
       const urlInput = screen.getByPlaceholderText(/curseforge.*modrinth/i);
-      
-      // Test invalid URL
-      await act(async () => {
-        await user.type(urlInput, 'https://invalid-site.com/mod');
-      });
-      
+      await act(async () => { await user.type(urlInput, 'https://invalid-site.com/mod'); });
       await waitFor(() => {
-        expect(screen.getByText(/Invalid URL.*CurseForge or Modrinth/)).toBeInTheDocument();
+        expect(screen.getByText(/Please enter a valid CurseForge or Modrinth URL/)).toBeInTheDocument();
       });
     });
 
     test('accepts valid CurseForge URLs', async () => {
       const user = userEvent.setup();
       render(<ConversionUpload />);
-      
       const urlInput = screen.getByPlaceholderText(/curseforge.*modrinth/i);
-      
-      await act(async () => {
-        await user.type(urlInput, 'https://www.curseforge.com/minecraft/mc-mods/example-mod');
-      });
-      
-      // Should not show error for valid URL
+      await act(async () => { await user.type(urlInput, 'https://www.curseforge.com/minecraft/mc-mods/example-mod');});
       expect(screen.queryByText(/Invalid URL/)).not.toBeInTheDocument();
     });
   });
 
   describe('Smart Assumptions UI', () => {
-    test('displays smart assumptions toggle with explanation', () => {
-      render(<ConversionUpload />);
-      
-      const toggle = screen.getByRole('checkbox', { name: /enable smart assumptions/i });
-      expect(toggle).toBeInTheDocument();
-      expect(toggle).toBeChecked(); // Default enabled per PRD
-      
-      // Explanatory text for visual learners
-      expect(screen.getByText(/ai will make intelligent compromises/i)).toBeInTheDocument();
-    });
-
-    test('shows smart assumptions examples when enabled', async () => {
+    test('displays smart assumptions toggle with explanation', async () => {
       const user = userEvent.setup();
       render(<ConversionUpload />);
+      const toggle = screen.getByRole('checkbox', { name: /enable smart assumptions/i });
+      expect(toggle).toBeInTheDocument();
+      expect(toggle).toBeChecked();
       
-      const infoButton = screen.getByRole('button', { name: /learn more/i });
-      await act(async () => {
-        await user.click(infoButton);
+      // Click the info button to expand the explanation
+      const infoButton = screen.getByLabelText(/learn more about smart assumptions/i);
+      await user.click(infoButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/intelligent assumptions to convert incompatible features/i)).toBeInTheDocument();
       });
-      
-      // PRD Table of Smart Assumptions examples
-      expect(screen.getByText(/custom dimensions/i)).toBeInTheDocument();
-      expect(screen.getByText(/complex machinery/i)).toBeInTheDocument();
-      expect(screen.getByText(/custom gui/i)).toBeInTheDocument();
+    });
+
+    test('shows smart assumptions examples when info button clicked', async () => {
+      const user = userEvent.setup();
+      render(<ConversionUpload />);
+      const infoButton = screen.getByRole('button', { name: /learn more about smart assumptions/i });
+      await act(async () => { await user.click(infoButton); });
+      expect(screen.getByText(/Custom dimensions.*Large structures/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complex machinery.*Simplified blocks/i)).toBeInTheDocument();
     });
   });
 
   describe('Basic Functionality', () => {
     test('convert button is disabled without file or URL', () => {
       render(<ConversionUpload />);
-      
-      const convertButton = screen.getByRole('button', { name: /convert/i });
+      const convertButton = screen.getByRole('button', { name: /convert to bedrock/i });
       expect(convertButton).toBeDisabled();
     });
 
     test('shows dependencies toggle', () => {
       render(<ConversionUpload />);
-      
       const dependenciesToggle = screen.getByRole('checkbox', { name: /include dependencies/i });
       expect(dependenciesToggle).toBeInTheDocument();
-      expect(dependenciesToggle).toBeChecked(); // Default enabled
+      expect(dependenciesToggle).toBeChecked();
     });
+  });
+
+  // --- New Integration Tests with MSW ---
+  describe('API Integration Tests', () => {
+    test('handles file upload and conversion initiation', async () => {
+      const user = userEvent.setup({ delay: null });
+      render(<ConversionUpload />);
+
+      // 1. Upload a file
+      const fileInput = screen.getByLabelText(/file upload/i);
+      const mockFile = createMockFile('test-mod.zip', 1024, 'application/zip');
+      await act(async () => { await user.upload(fileInput, mockFile); });
+
+      expect(screen.getByText(mockFile.name)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /convert to bedrock/i })).not.toBeDisabled();
+
+      // 2. Click convert
+      await act(async () => { await user.click(screen.getByRole('button', { name: /convert to bedrock/i })); });
+
+      // 3. Check that conversion starts (button changes to "Converting...")
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /converting.../i })).toBeInTheDocument();
+      }, { timeout: 2000 });
+
+      // 4. Verify cancel button appears
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    });
+
+    test('shows cancel button during conversion', async () => {
+      const user = userEvent.setup({ delay: null });
+      render(<ConversionUpload />);
+
+      const fileInput = screen.getByLabelText(/file upload/i);
+      const mockFile = createMockFile('cancel-mod.zip', 1024, 'application/zip');
+      await act(async () => { await user.upload(fileInput, mockFile); });
+      await act(async () => { await user.click(screen.getByRole('button', { name: /convert to bedrock/i })); });
+
+      // Wait for conversion to start (button text changes)
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /converting.../i })).toBeInTheDocument();
+      }, { timeout: 2000 });
+
+      // Cancel button should be visible now
+      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      expect(cancelButton).toBeInTheDocument();
+      expect(cancelButton).not.toBeDisabled();
+    });
+
   });
 });
