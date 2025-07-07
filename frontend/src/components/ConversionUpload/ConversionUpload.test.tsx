@@ -69,12 +69,20 @@ describe('ConversionUpload Component', () => {
   });
 
   describe('Smart Assumptions UI', () => {
-    test('displays smart assumptions toggle with explanation', () => {
+    test('displays smart assumptions toggle with explanation', async () => {
+      const user = userEvent.setup();
       render(<ConversionUpload />);
       const toggle = screen.getByRole('checkbox', { name: /enable smart assumptions/i });
       expect(toggle).toBeInTheDocument();
       expect(toggle).toBeChecked();
-      expect(screen.getByText(/intelligent assumptions to convert incompatible features/i)).toBeInTheDocument();
+      
+      // Click the info button to expand the explanation
+      const infoButton = screen.getByLabelText(/learn more about smart assumptions/i);
+      await user.click(infoButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/intelligent assumptions to convert incompatible features/i)).toBeInTheDocument();
+      });
     });
 
     test('shows smart assumptions examples when info button clicked', async () => {
@@ -82,8 +90,8 @@ describe('ConversionUpload Component', () => {
       render(<ConversionUpload />);
       const infoButton = screen.getByRole('button', { name: /learn more about smart assumptions/i });
       await act(async () => { await user.click(infoButton); });
-      expect(screen.getByText(/Smart Assumptions/i)).toBeInTheDocument();
-      expect(screen.getByText(/Custom Dimensions/i)).toBeInTheDocument();
+      expect(screen.getByText(/Custom dimensions.*Large structures/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complex machinery.*Simplified blocks/i)).toBeInTheDocument();
     });
   });
 

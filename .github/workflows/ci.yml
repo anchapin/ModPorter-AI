@@ -18,15 +18,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Install pnpm
+      run: npm install -g pnpm
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
         cache-dependency-path: frontend/pnpm-lock.yaml
-    
-    - name: Install pnpm
-      run: npm install -g pnpm
     
     - name: Install frontend dependencies
       run: |
