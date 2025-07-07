@@ -155,7 +155,7 @@ class HealthResponse(BaseModel):
     timestamp: str
 
 # Health check endpoints
-@app.get("/health", response_model=HealthResponse, tags=["health"])
+@app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the API"""
     return HealthResponse(
@@ -164,17 +164,8 @@ async def health_check():
         timestamp=datetime.utcnow().isoformat()
     )
 
-@app.get("/api/v1/health")
-async def health_check_v1():
-    """Health check endpoint (v1 API)"""
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "message": "ModPorter AI Backend is running",
-    }
-
 # File upload endpoint
-@app.post("/api/upload", response_model=UploadResponse, tags=["files"])
+@app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
 async def upload_file(file: UploadFile = File(...)):
     """
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
@@ -331,7 +322,7 @@ async def simulate_ai_conversion(job_id: str):
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.zip"
             mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            result_url = f"/api/download/{job.id}"
+            result_url = f"/api/v1/convert/{job.id}/download" # Changed path
 
             try:
                 with open(mock_output_filepath, "w") as f:
@@ -379,7 +370,7 @@ async def simulate_ai_conversion(job_id: str):
 
 
 # Conversion endpoints
-@app.post("/api/convert", response_model=ConversionResponse, tags=["conversion"])
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Start a new mod conversion job.
@@ -455,7 +446,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     )
 
 # Keep simple version for compatibility 
-@app.post("/api/convert/simple")
+@app.post("/api/v1/convert/simple")
 async def start_conversion_simple(request: ConversionRequest):
     """Start a conversion job (simple version for compatibility)"""
     if not request.file_name:
@@ -483,14 +474,6 @@ async def get_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0
     """
     Get the current status of a specific conversion job.
     Alias for /status endpoint for backward compatibility.
-    """
-    return await get_conversion_status(job_id, db)
-
-@app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status_v0(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
-    """
-    Get the current status of a specific conversion job.
-    Legacy endpoint for backward compatibility.
     """
     return await get_conversion_status(job_id, db)
 
@@ -603,7 +586,7 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
     elif status == "completed":
         descriptive_message = "Conversion completed successfully."
         # Only set result_url if job is completed
-        result_url = f"/api/download/{job_id}"
+        result_url = f"/api/v1/convert/{job_id}/download" # Changed path
     elif status == "failed":
         error_message = "Conversion failed."
         descriptive_message = error_message
@@ -663,7 +646,7 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         estimated_time_remaining=estimated_time_remaining
     )
 
-@app.get("/api/convert", response_model=List[ConversionStatus], tags=["conversion"])
+@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -681,7 +664,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
                 error_message = "Conversion failed."
                 message = error_message
             elif status == "completed":
-                result_url = f"/api/download/{job.id}"
+                result_url = f"/api/v1/convert/{job.id}/download" # Changed path
             # Mirror for legacy tests
             mirror = ConversionJob(
                 job_id=str(job.id),
@@ -751,7 +734,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             ))
         return statuses
 
-@app.delete("/api/convert/{job_id}", tags=["conversion"])
+@app.delete("/api/v1/convert/{job_id}", tags=["conversion"])
 async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Cancel an ongoing conversion job.
@@ -850,19 +833,19 @@ async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-
     )
 
 # Simple compatibility endpoints
-@app.get("/api/convert/simple")
+@app.get("/api/v1/list/simple")
 async def list_conversions_simple():
     """List all conversion jobs (simple version for compatibility)"""
     return list(conversions_db.values())
 
-@app.get("/api/convert/simple/{job_id}")
+@app.get("/api/v1/convert/simple/{job_id}/status")
 async def get_conversion_status_simple(job_id: str):
     """Get conversion job status (simple version for compatibility)"""
     if job_id not in conversions_db:
         raise HTTPException(status_code=404, detail="Conversion job not found")
     return conversions_db[job_id]
 
-@app.delete("/api/convert/simple/{job_id}")
+@app.delete("/api/v1/convert/simple/{job_id}")
 async def cancel_conversion_simple(job_id: str):
     """Cancel a conversion job (simple version for compatibility)"""
     if job_id not in conversions_db:
@@ -870,120 +853,7 @@ async def cancel_conversion_simple(job_id: str):
     conversions_db[job_id]["status"] = "cancelled"
     return {"message": f"Conversion job {job_id} has been cancelled"}
 
-# V1 API endpoints that handle file uploads in the convert request
-@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion_v1(
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
-    mod_file: UploadFile = File(...),
-    smart_assumptions: bool = Form(True),
-    include_dependencies: bool = Form(False),
-    mod_url: Optional[str] = Form(None),
-    target_version: str = Form("1.20.0")
-):
-    """
-    Start a new mod conversion job with file upload.
-    This endpoint handles both file upload and conversion initiation in one request.
-    """
-    if not mod_file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
-
-    # Validate file type
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
-    file_ext = os.path.splitext(mod_file.filename)[1].lower()
-    
-    if file_ext not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
-        )
-
-    # Generate unique file identifier
-    file_id = str(uuid.uuid4())
-    saved_filename = f"{file_id}{file_ext}"
-    
-    # Create temporary uploads directory if it doesn't exist
-    os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
-    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
-
-    # Save the uploaded file
-    try:
-        real_file_size = 0
-        with open(file_path, "wb") as buffer:
-            for chunk in mod_file.file:
-                real_file_size += len(chunk)
-                if real_file_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-                    )
-                buffer.write(chunk)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error saving file: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Could not save file")
-    finally:
-        mod_file.file.close()
-
-    # Create conversion options
-    options = {
-        "smart_assumptions": smart_assumptions,
-        "include_dependencies": include_dependencies,
-        "mod_url": mod_url
-    }
-
-    # Try to persist job to DB, fall back to in-memory storage for tests
-    try:
-        job = await crud.create_job(
-            db,
-            file_id=file_id,
-            original_filename=mod_file.filename,
-            target_version=target_version,
-            options=options
-        )
-        job_id = str(job.id)
-        created_at = job.created_at if job.created_at else datetime.now()
-        updated_at = job.updated_at if job.updated_at else datetime.now()
-    except Exception as e:
-        # Log DB failure and fallback to in-memory storage for tests
-        logger.error(f"Database operation failed during v1 job creation: {e}", exc_info=True)
-        # Fallback to in-memory: generate job ID and timestamps
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-
-    # Build legacy-mirror dict for in-memory compatibility (v1)
-    mirror = ConversionJob(
-        job_id=job_id,
-        file_id=file_id,
-        original_filename=mod_file.filename,
-        status="queued",
-        progress=0,
-        target_version=target_version,
-        options=options,
-        result_url=None,
-        error_message=None,
-        created_at=created_at,
-        updated_at=updated_at,
-    )
-    conversion_jobs_db[job_id] = mirror
-
-    # Write to Redis
-    await cache.set_job_status(job_id, mirror.model_dump())
-    await cache.set_progress(job_id, 0)
-
-    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
-    background_tasks.add_task(simulate_ai_conversion, job_id)
-
-    return ConversionResponse(
-        job_id=job_id,
-        status="queued",
-        message="Conversion job started and is now queued.",
-        estimated_time=35
-    )
-
-@app.get("/api/download/simple/{job_id}")
+@app.get("/api/v1/download/simple/{job_id}")
 async def download_converted_mod_simple(job_id: str):
     """Download converted mod (simple version for compatibility)"""
     if job_id not in conversions_db:

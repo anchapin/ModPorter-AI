@@ -3,10 +3,33 @@
  */
 
 export interface ConversionRequest {
-  file?: File;
-  modUrl?: string;
+  file_id: string; // Made mandatory for the actual call to /api/v1/convert
+  original_filename: string; // Made mandatory for the actual call to /api/v1/convert
+  target_version?: string;
+  options?: {
+    smartAssumptions: boolean;
+    includeDependencies: boolean;
+    modUrl?: string; // modUrl can be part of options
+    // any other relevant options
+  };
+}
+
+export interface UploadResponse {
+  file_id: string;
+  original_filename: string;
+  saved_filename: string;
+  size: number;
+  content_type?: string;
+  message: string;
+  filename: string; // This seems to be the same as original_filename
+}
+
+export interface InitiateConversionParams {
+  file?: File; // User provides a file
+  modUrl?: string; // Or a URL
   smartAssumptions: boolean;
   includeDependencies: boolean;
+  target_version?: string; // Added
 }
 
 export interface ConversionResponse {
