@@ -92,14 +92,11 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(empty_content)
         filename = "empty_file.zip"
 
-        # Behavior for empty files might depend on how magic handles them
-        # Let's assume magic might return 'application/octet-stream' or similar for empty
-        with patch('magic.from_buffer', return_value="application/octet-stream") as mock_magic:
-            result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
-            self.assertFalse(result.is_valid)
-            self.assertIsNotNone(result.error_message)
-            self.assertIn("invalid file type: 'application/octet-stream'", result.error_message)
+        # Empty files should be rejected before MIME type checking
+        result = self.framework.validate_upload(mock_file, filename)
+        self.assertFalse(result.is_valid)
+        self.assertIsNotNone(result.error_message)
+        self.assertIn("is empty and cannot be processed", result.error_message)
 
 if __name__ == '__main__':
     unittest.main()

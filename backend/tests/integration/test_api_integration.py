@@ -187,7 +187,7 @@ class TestErrorHandlingIntegration:
         response = client.post(
             "/api/v1/upload", files={"file": ("test.txt", text_file, "text/plain")} # Changed path
         )
-        assert response.status_code == 400
+        assert response.status_code == 415
         data = response.json()
         assert "detail" in data
 

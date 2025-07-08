@@ -13,7 +13,8 @@ class ValidationFramework:
     ALLOWED_MIME_TYPES = [
         "application/zip",
         "application/java-archive",
-        "application/x-jar"
+        "application/x-jar",
+        "application/octet-stream"  # For .mcaddon files and generic archives
     ]
 
     def validate_upload(self, file: IO[bytes], filename: str) -> ValidationResult:
@@ -55,6 +56,12 @@ class ValidationFramework:
         file.seek(0, 2) # Move cursor to the end of the file
         file_size = file.tell()
         file.seek(0) # Reset cursor to the beginning
+
+        if file_size == 0:
+            return ValidationResult(
+                is_valid=False,
+                error_message=f"File '{filename}' is empty and cannot be processed."
+            )
 
         if file_size > self.MAX_FILE_SIZE_BYTES:
             return ValidationResult(
