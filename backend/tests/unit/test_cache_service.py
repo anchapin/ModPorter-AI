@@ -5,9 +5,9 @@ import base64
 from unittest.mock import AsyncMock, MagicMock, patch
 
 # Absolute import for src.services.cache
-from backend.src.services.cache import CacheService
+from src.services.cache import CacheService
 # Absolute import for src.models.cache_models
-from backend.src.models.cache_models import CacheStats
+from src.models.cache_models import CacheStats
 
 # Need to import datetime here for the global test data
 from datetime import datetime
@@ -59,6 +59,9 @@ async def test_get_mod_analysis_hit(cache_service: CacheService):
     cache_service._client.get.assert_called_once_with(expected_key)
     # Compare after serializing expected if it contains datetime or other special types
     assert result == cache_service._make_json_serializable(ANALYSIS_DATA)
+    # Verify cache hit counter is incremented
+    assert cache_service._cache_hits == 1
+    assert cache_service._cache_misses == 0
 
 
 @pytest.mark.asyncio
@@ -70,6 +73,9 @@ async def test_get_mod_analysis_miss(cache_service: CacheService):
 
     cache_service._client.get.assert_called_once_with(expected_key)
     assert result is None
+    # Verify cache miss counter is incremented
+    assert cache_service._cache_hits == 0
+    assert cache_service._cache_misses == 1
 
 # Tests for conversion_result
 @pytest.mark.asyncio
@@ -155,12 +161,18 @@ async def test_get_cache_stats_basic(cache_service: CacheService):
         [],
     ]
     cache_service._client.info.return_value = {"used_memory": 1024000}
+    
+    # Set some cache hit/miss counters
+    cache_service._cache_hits = 15
+    cache_service._cache_misses = 5
 
     stats = await cache_service.get_cache_stats()
 
     assert isinstance(stats, CacheStats)
     assert stats.current_items == 3
     assert stats.total_size_bytes == 1024000
+    assert stats.hits == 15
+    assert stats.misses == 5
 
     assert cache_service._client.keys.call_count == 3
     cache_service._client.keys.assert_any_call(f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}*")
@@ -174,7 +186,7 @@ async def test_get_cache_stats_redis_error(cache_service: CacheService):
     cache_service._client.keys.side_effect = Exception("Redis down")
 
     # Use absolute path for logger patch
-    with patch('backend.src.services.cache.logger') as mock_logger:
+    with patch('src.services.cache.logger') as mock_logger:
         stats = await cache_service.get_cache_stats()
 
         assert isinstance(stats, CacheStats)
@@ -191,7 +203,7 @@ async def test_cache_mod_analysis_redis_error(cache_service: CacheService):
 
     cache_service._client.set.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
-    with patch('backend.src.services.cache.logger') as mock_logger:
+    with patch('src.services.cache.logger') as mock_logger:
         await cache_service.cache_mod_analysis(MOD_HASH, ANALYSIS_DATA)
         mock_logger.warning.assert_called_once()
         assert getattr(cache_service, '_redis_available', True)
@@ -200,11 +212,36 @@ async def test_cache_mod_analysis_redis_error(cache_service: CacheService):
 async def test_get_mod_analysis_redis_error(cache_service: CacheService):
     cache_service._client.get.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
-    with patch('backend.src.services.cache.logger') as mock_logger:
+    with patch('src.services.cache.logger') as mock_logger:
         result = await cache_service.get_mod_analysis(MOD_HASH)
         assert result is None
         mock_logger.warning.assert_called_once()
         assert getattr(cache_service, '_redis_available', True)
+
+# Tests for set_progress method
+@pytest.mark.asyncio
+async def test_set_progress_success(cache_service: CacheService):
+    job_id = "test_job_123"
+    progress = 75
+    
+    await cache_service.set_progress(job_id, progress)
+    
+    expected_key = f"conversion_jobs:{job_id}:progress"
+    cache_service._client.set.assert_called_once_with(expected_key, progress)
+    cache_service._client.sadd.assert_called_once_with("conversion_jobs:active", job_id)
+
+@pytest.mark.asyncio
+async def test_set_progress_redis_error(cache_service: CacheService):
+    job_id = "test_job_123"
+    progress = 75
+    
+    cache_service._client.set.side_effect = Exception("Redis connection failed")
+    
+    with patch('src.services.cache.logger') as mock_logger:
+        await cache_service.set_progress(job_id, progress)
+        
+        mock_logger.warning.assert_called_once()
+        assert cache_service._redis_available is False
 
 # Redundant import of datetime at the end is removed as it's already at the top.
 # from datetime import datetime

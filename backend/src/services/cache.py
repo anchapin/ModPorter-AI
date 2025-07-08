@@ -17,6 +17,8 @@ class CacheService:
     def __init__(self) -> None:
         self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
         self._redis_available = True
+        self._cache_hits = 0
+        self._cache_misses = 0
 
     def _make_json_serializable(self, obj):
         """
@@ -77,10 +79,13 @@ class CacheService:
             key = f"{self.CACHE_MOD_ANALYSIS_PREFIX}{mod_hash}"
             raw = await self._client.get(key)
             if raw:
+                self._cache_hits += 1
                 return json.loads(raw)
+            self._cache_misses += 1
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_mod_analysis: {e}")
+            self._cache_misses += 1
             return None
 
     async def cache_conversion_result(self, mod_hash: str, result: dict, ttl_seconds: Optional[int] = 3600) -> None:
@@ -95,10 +100,13 @@ class CacheService:
             key = f"{self.CACHE_CONVERSION_RESULT_PREFIX}{mod_hash}"
             raw = await self._client.get(key)
             if raw:
+                self._cache_hits += 1
                 return json.loads(raw)
+            self._cache_misses += 1
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_conversion_result: {e}")
+            self._cache_misses += 1
             return None
 
     async def cache_asset_conversion(self, asset_hash: str, converted_asset: bytes, ttl_seconds: Optional[int] = 3600) -> None:
@@ -114,10 +122,13 @@ class CacheService:
             key = f"{self.CACHE_ASSET_CONVERSION_PREFIX}{asset_hash}"
             raw = await self._client.get(key)
             if raw:
+                self._cache_hits += 1
                 return base64.b64decode(raw.encode('utf-8'))
+            self._cache_misses += 1
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_asset_conversion: {e}")
+            self._cache_misses += 1
             return None
 
     async def invalidate_cache(self, cache_key: str) -> None:
@@ -127,17 +138,29 @@ class CacheService:
             logger.warning(f"Redis operation failed for invalidate_cache for key {cache_key}: {e}")
 
     async def get_cache_stats(self) -> CacheStats:
-        stats = CacheStats()
         try:
             mod_analysis_keys = await self._client.keys(f"{self.CACHE_MOD_ANALYSIS_PREFIX}*")
             conversion_result_keys = await self._client.keys(f"{self.CACHE_CONVERSION_RESULT_PREFIX}*")
             asset_conversion_keys = await self._client.keys(f"{self.CACHE_ASSET_CONVERSION_PREFIX}*")
 
-            stats.current_items = len(mod_analysis_keys) + len(conversion_result_keys) + len(asset_conversion_keys)
+            current_items = len(mod_analysis_keys) + len(conversion_result_keys) + len(asset_conversion_keys)
 
             info = await self._client.info('memory')
-            stats.total_size_bytes = info.get('used_memory', 0)
+            total_size_bytes = info.get('used_memory', 0)
+
+            stats = CacheStats(
+                hits=self._cache_hits,
+                misses=self._cache_misses,
+                current_items=current_items,
+                total_size_bytes=total_size_bytes
+            )
 
         except Exception as e:
             logger.warning(f"Redis operation failed for get_cache_stats: {e}")
+            stats = CacheStats(
+                hits=self._cache_hits,
+                misses=self._cache_misses,
+                current_items=0,
+                total_size_bytes=0
+            )
         return stats
