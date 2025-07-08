@@ -27,7 +27,9 @@ class LLMSemanticAnalyzer:
                 "findings": ["No code provided for analysis."]
             }
         print("LLMSemanticAnalyzer: Analyzing code snippet (first 50 chars): '" + code_snippet[:50] + "...'")
-        time.sleep(random.uniform(0.1, 0.3))
+        # Use asyncio.sleep in async context, time.sleep in sync context
+        # Since this is called from a synchronous context, we'll keep time.sleep but with a shorter duration
+        time.sleep(random.uniform(0.05, 0.1))  # Reduced sleep time
         intent_preserved = True
         confidence = random.uniform(0.75, 0.95)
         findings = []
