@@ -9,10 +9,10 @@ import json
 import re
 from langchain.tools import tool
 import javalang  # Added javalang
-from src.models.smart_assumptions import (
+from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from src.agents.java_analyzer import JavaAnalyzerAgent  # Added JavaAnalyzerAgent
+from agents.java_analyzer import JavaAnalyzerAgent  # Added JavaAnalyzerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -96,9 +96,16 @@ class LogicTranslatorAgent:
             "world": "world",
             "hand": "event.source.selectedSlot",
         }
+        # Apply mapping to both the reconstructed body and any simple variable usage
         for java_param, bedrock_param in param_map.items():
             js_event_handler_body = re.sub(
-                r"\b" + re.escape(java_param) + r"\b",
+                r"\\b" + re.escape(java_param) + r"\\b",
+                bedrock_param,
+                js_event_handler_body,
+            )
+            # Also handle capitalized (e.g., Player)
+            js_event_handler_body = re.sub(
+                r"\\b" + re.escape(java_param.capitalize()) + r"\\b",
                 bedrock_param,
                 js_event_handler_body,
             )
@@ -160,8 +167,10 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {{
             logger.info("Successfully parsed Java source into AST.")
             return tree
         except javalang.parser.JavaSyntaxError as e:
+            msg = str(e)
+            pos = getattr(e, 'position', 'unknown')
             logger.error(
-                f"Java syntax error during AST parsing: {e.message} at position {e.position}"
+                f"Java syntax error during AST parsing: {msg} at position {pos}"
             )
             return None
         except Exception as e:
@@ -233,33 +242,31 @@ world.afterEvents.itemCompleteUse.subscribe((event) => {{
                 body = data.get("body", "")
                 feature_context = data.get("feature_context", {})
 
-            elif isinstance(method_data, javalang.tree.MethodDeclaration):
+            elif hasattr(method_data, 'parameters') and hasattr(method_data, 'name'):
+                # Accept both MethodDeclaration and ConstructorDeclaration
                 ast_node = method_data
                 method_name = ast_node.name
-
-                if ast_node.return_type:
+                if hasattr(ast_node, 'return_type') and ast_node.return_type:
                     return_type = ast_node.return_type.name
                     if ast_node.return_type.dimensions:
                         return_type += "[]" * len(ast_node.return_type.dimensions)
                 else:
                     return_type = "void"
-
                 for param_node in ast_node.parameters:
                     param_type_name = param_node.type.name
                     if param_node.type.dimensions:
-                        param_type_name += "[]" * len(param_node.type.dimensions)
+                        js_type = self.type_mappings.get(param_type_name, param_type_name)
+                        param_type_name = f"{js_type}{'[]' * len(param_node.type.dimensions)}"
+                    else:
+                        param_type_name = self.type_mappings.get(param_type_name, param_type_name)
                     parameters.append(
                         {"name": param_node.name, "type": param_type_name}
                     )
-
-                body = self._reconstruct_java_body_from_ast(
-                    ast_node
-                )  # Call to new helper
-                if ast_node.body and not body:
+                body = self._reconstruct_java_body_from_ast(ast_node)
+                if hasattr(ast_node, 'body') and ast_node.body and not body:
                     logger.warning(
                         f"Method {method_name} AST node had a body, but reconstruction resulted in an empty string."
                     )
-
                 if feature_context_override:
                     feature_context = feature_context_override
                 else:
@@ -1248,66 +1255,55 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {{
             bedrock_item_id = result_item_java.replace("minecraft:", "")
             recipe_key_str = "unknown_recipe_key"  # Default
 
-            if "crafting_shaped" in recipe_type:
-                identifier = f"custom:{bedrock_item_id}_from_shaped_{java_recipe.get('group', 'recipe')}"
+            # Generate a unique recipe key for Bedrock (commonly based on result item)
+            recipe_key_str = f"{bedrock_item_id}_from_java_recipe"
+
+            if recipe_type == "minecraft:crafting_shaped":
                 bedrock_recipe["minecraft:recipe_shaped"] = {
-                    "description": {"identifier": identifier},
+                    "description": {
+                        "identifier": f"minecraft:{recipe_key_str}"
+                    },
                     "tags": ["crafting_table"],
                     "pattern": java_recipe.get("pattern", []),
                     "key": {},
-                    "result": {"item": bedrock_item_id, "count": result_count_java},
+                    "result": {
+                        "item": result_item_java,
+                        "count": result_count_java,
+                    },
                 }
-                recipe_key_str = identifier
+                # Convert key mapping
+                for k, v in java_recipe.get("key", {}).items():
+                    bedrock_recipe["minecraft:recipe_shaped"]["key"][k] = [v]
 
-                java_keys = java_recipe.get("key", {})
-                for k, v_dict in java_keys.items():
-                    java_item = v_dict.get("item", "unknown_item")
-                    bedrock_recipe["minecraft:recipe_shaped"]["key"][k] = {
-                        "item": java_item.replace("minecraft:", "")
-                    }
-
-            elif "crafting_shapeless" in recipe_type:
-                identifier = f"custom:{bedrock_item_id}_from_shapeless_{java_recipe.get('group', 'recipe')}"
+            elif recipe_type == "minecraft:crafting_shapeless":
                 bedrock_recipe["minecraft:recipe_shapeless"] = {
-                    "description": {"identifier": identifier},
+                    "description": {
+                        "identifier": f"minecraft:{recipe_key_str}"
+                    },
                     "tags": ["crafting_table"],
-                    "ingredients": [],
-                    "result": {"item": bedrock_item_id, "count": result_count_java},
+                    "ingredients": java_recipe.get("ingredients", []),
+                    "result": {
+                        "item": result_item_java,
+                        "count": result_count_java,
+                    },
                 }
-                recipe_key_str = identifier
-
-                java_ingredients = java_recipe.get("ingredients", [])
-                for ing_dict in java_ingredients:
-                    java_item = ing_dict.get("item", "unknown_item")
-                    bedrock_recipe["minecraft:recipe_shapeless"]["ingredients"].append(
-                        {"item": java_item.replace("minecraft:", "")}
-                    )
             else:
-                return json.dumps(
-                    {
-                        "success": False,
-                        "error": f"Unsupported recipe type: {recipe_type}",
-                    }
-                )
+                return json.dumps({
+                    "success": False,
+                    "error": f"Unsupported recipe type: {recipe_type}"
+                })
 
-            logger.info(
-                f"Successfully translated recipe for {result_item_java} to Bedrock format with key {recipe_key_str}"
-            )
-            return json.dumps(
-                {
-                    "success": True,
-                    "bedrock_recipe": bedrock_recipe,
-                    "recipe_identifier": recipe_key_str,
-                }
-            )
-
+            return json.dumps({
+                "success": True,
+                "bedrock_recipe": bedrock_recipe
+            })
         except json.JSONDecodeError as e:
-            logger.error(f"JSON decoding error in recipe translation: {e}")
-            return json.dumps(
-                {"success": False, "error": f"Invalid JSON input: {str(e)}"}
-            )
+            return json.dumps({
+                "success": False,
+                "error": f"Invalid JSON: {str(e)}"
+            })
         except Exception as e:
-            logger.error(f"Error translating crafting recipe: {e}")
-            return json.dumps(
-                {"success": False, "error": f"Failed to translate recipe: {str(e)}"}
-            )
+            return json.dumps({
+                "success": False,
+                "error": f"Error translating recipe: {str(e)}"
+            })
