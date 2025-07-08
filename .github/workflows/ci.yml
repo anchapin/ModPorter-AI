@@ -78,6 +78,7 @@ jobs:
       postgres:
         image: postgres:13
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: modporter
         ports:
@@ -130,9 +131,25 @@ jobs:
           echo "Ruff not found, skipping linting"
         fi
 
+    - name: Wait for PostgreSQL to be ready
+      run: |
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U postgres; then
+            echo "PostgreSQL is ready"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "PostgreSQL failed to be ready within 30 seconds"
+            exit 1
+          fi
+          sleep 1
+        done
+
     - name: Run database migrations
       run: |
         cd backend
+        export DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter
         python -m alembic upgrade head
       env:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
@@ -204,6 +221,7 @@ jobs:
       postgres:
         image: postgres:13
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: modporter
         ports:
@@ -255,9 +273,25 @@ jobs:
         cd frontend
         pnpm run build
     
+    - name: Wait for PostgreSQL to be ready (integration)
+      run: |
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U postgres; then
+            echo "PostgreSQL is ready"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "PostgreSQL failed to be ready within 30 seconds"
+            exit 1
+          fi
+          sleep 1
+        done
+
     - name: Run database migrations
       run: |
         cd backend
+        export DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter
         python -m alembic upgrade head
       env:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
