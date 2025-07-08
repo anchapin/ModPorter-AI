@@ -23,7 +23,10 @@ class MockValidationAgent:
     def validate_conversion(self, conversion_artifacts: Dict[str, Any]) -> MockAgentValidationReportModel:
         # Using string formatting for print
         print("MockValidationAgent: Validating conversion_id %s" % conversion_artifacts.get('conversion_id'))
-        time.sleep(0.5) # Simulate processing time
+        # Note: In a real implementation, this should be handled differently in background tasks
+        # For now, keeping minimal sleep for mock processing
+        import time
+        time.sleep(0.1)  # Minimal sleep for mock processing
         return MockAgentValidationReportModel(
             conversion_id=conversion_artifacts.get('conversion_id', str(uuid.uuid4())),
             semantic_analysis={"intent_preserved": True, "confidence": 0.85, "findings": ["Mock semantic finding"]},
