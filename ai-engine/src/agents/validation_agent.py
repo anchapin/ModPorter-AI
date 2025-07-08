@@ -68,7 +68,8 @@ class BehaviorAnalysisEngine:
         print("Java (first 50): '" + java_code[:50] + "...'")
         print("Bedrock (first 50): '" + bedrock_code[:50] + "...'")
 
-        time.sleep(random.uniform(0.1, 0.4))
+        # Reduced sleep time for mock processing
+        time.sleep(random.uniform(0.05, 0.1))
 
         behavior_diff = "No significant differences predicted (mock)."
         confidence = random.uniform(0.70, 0.90)
