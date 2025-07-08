@@ -12,14 +12,14 @@ psycopg2-binary>=2.9.7
 alembic==1.16.2
 
 # Caching
-redis[asyncio]==5.0.1
+redis==5.0.1
 
 # File handling
 python-multipart==0.0.6
 tomli==2.2.1  # TOML parsing for Python <3.11
 
 # HTTP Client for file downloads
-httpx==0.25.2
+httpx==0.27.2
 
 # Testing
 pytest>=8.2

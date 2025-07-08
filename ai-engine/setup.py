@@ -15,7 +15,10 @@ setup(
         'httpx',
         'pytest',
         'pytest-asyncio',
+        'pytest-cov',
+        'pytest-mock',
         'langchain-openai',
         'langchain-anthropic',
+        'ruff',
     ],
 )
