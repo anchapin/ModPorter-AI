@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
 import logging
 from src.db.init_db import init_db
+from src.api import comparison as comparison_api # New import for comparison routes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -93,6 +94,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.include_router(comparison_api.router, prefix="/api/v1/comparisons", tags=["comparisons"])
 
 report_generator = ConversionReportGenerator()
 
