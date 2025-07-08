@@ -1,9 +1,9 @@
 import unittest
 from io import BytesIO
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Adjust the import path based on your project structure
-from src.validation import ValidationFramework, ValidationResult
+from src.validation import ValidationFramework
 
 class TestValidationFramework(unittest.TestCase):
 

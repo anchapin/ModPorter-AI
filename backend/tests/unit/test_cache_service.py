@@ -1,8 +1,7 @@
-import asyncio
 import json
 import pytest
 import base64
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 # Absolute import for src.services.cache
 from src.services.cache import CacheService

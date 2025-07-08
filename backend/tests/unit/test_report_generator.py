@@ -3,8 +3,7 @@ from typing import cast
 # Assuming execution from backend/ directory or PYTHONPATH includes backend/
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 from src.services.report_models import (
-    SummaryReport, FeatureAnalysis, AssumptionsReport, DeveloperLog, InteractiveReport, FullConversionReport,
-    ModConversionStatus, SmartAssumption, FeatureConversionDetail, AssumptionDetail, LogEntry
+    FeatureConversionDetail, AssumptionDetail
 )
 
 class TestConversionReportGenerator(unittest.TestCase):

@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Optional
 import logging
 import json
 import re
-from langchain.tools import tool
+from crewai.tools import tool
 import javalang  # Added javalang
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
