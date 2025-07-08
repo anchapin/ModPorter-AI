@@ -175,14 +175,19 @@ export interface DetailedReport { // This is likely superseded by InteractiveRep
 }
 
 // Status enum for frontend type checking
-export type ConversionStatusEnum =
-  | 'queued'
-  | 'preprocessing'
-  | 'ai_conversion'
-  | 'postprocessing'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+export const ConversionStatusEnum = {
+  PENDING: 'queued',
+  UPLOADING: 'uploading',
+  IN_PROGRESS: 'preprocessing',
+  ANALYZING: 'analyzing',
+  CONVERTING: 'ai_conversion',
+  PACKAGING: 'postprocessing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled'
+} as const;
+
+export type ConversionStatusType = typeof ConversionStatusEnum[keyof typeof ConversionStatusEnum];
 
 // Extended interfaces for rich reporting (maintaining backward compatibility)
 export interface ExtendedConversionResponse extends ConversionResponse {
