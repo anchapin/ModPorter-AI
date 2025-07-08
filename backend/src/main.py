@@ -48,7 +48,7 @@ cache = CacheService()
 # Note: For production environments, rate limiting should be implemented to protect against abuse.
 # This can be done at the API gateway, reverse proxy (e.g., Nginx), or using FastAPI middleware like 'slowapi'.
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app):
     # Skip database initialization during tests or if explicitly disabled
     if os.getenv("PYTEST_CURRENT_TEST") is None and os.getenv("SKIP_DB_INIT") != "true":
         try:
