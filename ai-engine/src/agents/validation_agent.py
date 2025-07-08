@@ -4,7 +4,7 @@ import os
 import time
 import random
 
-from ai_engine.src.models.validation import (
+from ..models.validation import (
     ManifestValidationResult,
     SemanticAnalysisResult,
     BehaviorPredictionResult,
@@ -223,9 +223,9 @@ class ValidationAgent:
         recommendations = []
         if not semantic_model.intent_preserved or semantic_model.confidence < 0.7:
             recommendations.append("Semantic analysis suggests potential issues; manual review of code logic advised.")
-        for f_find in semantic_model.findings:
-            if "appears semantically sound" not in f_find and "Mock analysis complete" not in f_find:
-                recommendations.append("Semantic finding: " + f_find)
+        for finding in semantic_model.findings:
+            if "appears semantically sound" not in finding and "Mock analysis complete" not in finding:
+                recommendations.append("Semantic finding: " + finding)
 
         if behavior_model.confidence < 0.7 or "No significant differences predicted" not in behavior_model.behavior_diff :
             recommendations.append("Behavior prediction indicates potential differences: " + behavior_model.behavior_diff)

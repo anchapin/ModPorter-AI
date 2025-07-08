@@ -13,6 +13,8 @@ from src.validation import ValidationFramework # Added import
 # report_generator imports
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 from src.services.report_models import InteractiveReport, FullConversionReport
+# validation API imports
+from src.api.validation import router as validation_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -89,10 +91,17 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
+        {
+            "name": "validation",
+            "description": "AI-powered validation operations",
+        },
     ],
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Include API routers
+app.include_router(validation_router, prefix="/api/v1")
 
 report_generator = ConversionReportGenerator()
 
