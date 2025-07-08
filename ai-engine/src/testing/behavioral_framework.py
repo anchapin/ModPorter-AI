@@ -1,11 +1,17 @@
-class BehavioralTestingFramework:
-    pass
+"""
+Behavioral Testing Framework for ModPorter AI
+
+This module provides comprehensive behavioral testing capabilities for verifying
+that converted Bedrock add-ons maintain original mod functionality through
+automated in-game testing scenarios.
+"""
 
 import logging
 import json
 from typing import Dict, Any, List, Optional, Union
 import time
-import datetime # Added for BehavioralReportGenerator
+import datetime
+from pathlib import Path
 
 # Configure basic logging if not already configured by another module
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -358,6 +364,149 @@ class BehavioralReportGenerator:
         else:
             self.logger.error(f"Unsupported report format: {report_format}")
             raise ValueError(f"Unsupported format: {report_format}. Use json, text, or html.")
+
+
+class BehavioralTestingFramework:
+    """
+    Main behavioral testing framework that orchestrates all testing components.
+    
+    This class provides the primary interface for conducting behavioral tests,
+    managing test execution workflows, and generating comprehensive reports.
+    """
+    
+    def __init__(self, test_environment_config: Optional[Dict[str, Any]] = None):
+        """
+        Initialize the behavioral testing framework.
+        
+        Args:
+            test_environment_config: Configuration for the testing environment
+        """
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.config = test_environment_config or {}
+        
+        # Initialize core components
+        self.environment_manager = MinecraftEnvironmentManager(
+            server_ip=self.config.get('server_ip', 'localhost'),
+            server_port=self.config.get('server_port', 19132)
+        )
+        self.game_state_tracker = GameStateTracker()
+        self.scenario_executor = TestScenarioExecutor(
+            self.environment_manager, 
+            self.game_state_tracker
+        )
+        self.behavior_analyzer = BehavioralAnalyzer(self.game_state_tracker)
+        self.result_processor = TestResultProcessor()
+        self.report_generator = BehavioralReportGenerator(
+            report_directory=self.config.get('report_directory', './reports/behavioral')
+        )
+        
+        self.logger.info("BehavioralTestingFramework initialized successfully.")
+    
+    def run_behavioral_test(self, 
+                           test_scenarios: List[Dict[str, Any]], 
+                           expected_behaviors: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Execute a complete behavioral test suite.
+        
+        Args:
+            test_scenarios: List of test scenarios to execute
+            expected_behaviors: List of expected behavior specifications
+            
+        Returns:
+            Comprehensive test results and analysis
+        """
+        self.logger.info(f"Starting behavioral test execution with {len(test_scenarios)} scenarios.")
+        
+        try:
+            # Initialize test environment
+            self.environment_manager.initialize_environment()
+            self.environment_manager.start_server()
+            
+            scenario_results = []
+            behavioral_analyses = []
+            
+            # Execute each scenario
+            for i, scenario in enumerate(test_scenarios):
+                self.logger.info(f"Executing scenario {i+1}/{len(test_scenarios)}: {scenario.get('scenario', 'Unnamed')}")
+                
+                # Load and execute scenario
+                loaded_scenario = self.scenario_executor.load_scenario(scenario)
+                execution_result = self.scenario_executor.execute_scenario(loaded_scenario)
+                scenario_results.append(execution_result)
+                
+                # Perform behavioral analysis if expected behaviors provided
+                if expected_behaviors and i < len(expected_behaviors):
+                    analysis = self.behavior_analyzer.compare_behaviors(
+                        expected_behaviors[i],
+                        scenario_name=scenario.get('scenario', f'Scenario_{i+1}')
+                    )
+                    behavioral_analyses.append([analysis])
+                else:
+                    behavioral_analyses.append([])
+            
+            # Process results
+            processed_results = self.result_processor.process_batch_results(
+                scenario_results, 
+                behavioral_analyses
+            )
+            
+            # Generate summary and report
+            test_summary = self.result_processor.get_summary()
+            test_summary['processed_results_list'] = processed_results
+            
+            # Generate final report
+            final_report = self.report_generator.generate_report(
+                test_summary,
+                report_format=self.config.get('report_format', 'json')
+            )
+            
+            self.logger.info("Behavioral test execution completed successfully.")
+            
+            return {
+                'test_summary': test_summary,
+                'processed_results': processed_results,
+                'final_report': final_report,
+                'status': 'COMPLETED'
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error during behavioral test execution: {e}", exc_info=True)
+            return {
+                'status': 'FAILED',
+                'error': str(e),
+                'test_summary': self.result_processor.get_summary()
+            }
+        finally:
+            # Cleanup
+            try:
+                self.environment_manager.stop_server()
+            except Exception as cleanup_error:
+                self.logger.warning(f"Error during cleanup: {cleanup_error}")
+    
+    def validate_mod_conversion(self, 
+                               original_mod_path: str, 
+                               converted_addon_path: str) -> Dict[str, Any]:
+        """
+        Validate that a converted add-on maintains original mod behavior.
+        
+        Args:
+            original_mod_path: Path to original Java mod
+            converted_addon_path: Path to converted Bedrock add-on
+            
+        Returns:
+            Validation results comparing original vs converted behavior
+        """
+        self.logger.info(f"Starting mod conversion validation: {original_mod_path} -> {converted_addon_path}")
+        
+        # This would be implemented to generate test scenarios based on mod analysis
+        # For now, return a placeholder structure
+        return {
+            'validation_status': 'PENDING',
+            'message': 'Mod conversion validation is not yet fully implemented',
+            'original_mod': original_mod_path,
+            'converted_addon': converted_addon_path
+        }
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

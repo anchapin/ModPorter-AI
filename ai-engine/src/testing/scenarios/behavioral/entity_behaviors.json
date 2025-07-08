@@ -1,0 +1,269 @@
+{
+  "scenario_group": "Entity Behaviors",
+  "description": "Test scenarios for custom entity spawning, AI behavior, and interactions",
+  "scenarios": [
+    {
+      "scenario": "Custom Entity Spawning",
+      "description": "Test custom entity spawn behavior and initial state",
+      "steps": [
+        {
+          "action": "spawn_entity",
+          "type": "custom_mob",
+          "position": [0, 60, 0],
+          "metadata": {
+            "entity_id": "modid:custom_creature",
+            "spawn_conditions": "daylight",
+            "health": 20.0,
+            "initial_ai_state": "passive"
+          }
+        },
+        {
+          "action": "verify_entity_properties",
+          "entity_type": "custom_mob",
+          "expected_properties": {
+            "health": 20.0,
+            "ai_state": "passive",
+            "texture": "custom_texture"
+          },
+          "metadata": {
+            "verification_radius": 5,
+            "timeout_ms": 5000
+          }
+        },
+        {
+          "action": "verify_entity_count",
+          "entity_type": "custom_mob",
+          "expected_count": 1,
+          "search_radius": 10
+        }
+      ],
+      "expected_outcome": "Custom entity spawns with correct properties",
+      "java_behavior": "Entity spawns with custom model, AI, and behaviors",
+      "bedrock_behavior": "Entity spawns using behavior pack definition",
+      "smart_assumptions": [
+        {
+          "type": "entity_conversion",
+          "original": "java_entity_class",
+          "bedrock_equivalent": "behavior_pack_entity",
+          "reasoning": "Java entity code converted to Bedrock behavior definitions"
+        }
+      ],
+      "metadata": {
+        "category": "entity_spawning",
+        "difficulty": "medium",
+        "timeout_ms": 30000
+      }
+    },
+    {
+      "scenario": "Entity AI Behavior Patterns",
+      "description": "Test entity AI responses to player proximity and interactions",
+      "steps": [
+        {
+          "action": "spawn_entity",
+          "type": "hostile_custom_mob",
+          "position": [20, 60, 20],
+          "metadata": {
+            "initial_state": "idle",
+            "detection_range": 8.0,
+            "aggression_level": "medium"
+          }
+        },
+        {
+          "action": "player_approach",
+          "target": "hostile_custom_mob",
+          "distance": 10,
+          "metadata": {
+            "approach_speed": "walk",
+            "expected_reaction": "detect_player"
+          }
+        },
+        {
+          "action": "verify_behavior",
+          "expected_behavior_id": "neutral_state",
+          "metadata": {
+            "behavior_type": "ai_state",
+            "verification_method": "entity_data_check"
+          }
+        },
+        {
+          "action": "player_approach",
+          "target": "hostile_custom_mob", 
+          "distance": 5,
+          "metadata": {
+            "approach_speed": "walk",
+            "expected_reaction": "hostile_reaction"
+          }
+        },
+        {
+          "action": "verify_behavior",
+          "expected_behavior_id": "hostile_reaction",
+          "metadata": {
+            "behavior_indicators": ["target_player", "move_towards_player"],
+            "timeout_ms": 3000
+          }
+        }
+      ],
+      "expected_outcome": "Entity AI responds appropriately to player proximity",
+      "java_behavior": "Custom AI goals trigger based on distance and conditions",
+      "bedrock_behavior": "Behavior pack AI components handle detection and aggression",
+      "smart_assumptions": [
+        {
+          "type": "ai_goal_conversion",
+          "original": "java_ai_goals",
+          "bedrock_equivalent": "behavior_components",
+          "reasoning": "Java AI goal system mapped to Bedrock behavior components"
+        }
+      ],
+      "metadata": {
+        "category": "entity_ai",
+        "difficulty": "high",
+        "timeout_ms": 45000
+      }
+    },
+    {
+      "scenario": "Entity Interaction and Trading",
+      "description": "Test custom entity trading and interaction mechanics",
+      "steps": [
+        {
+          "action": "spawn_entity",
+          "type": "custom_trader",
+          "position": [30, 60, 30],
+          "metadata": {
+            "trader_type": "merchant",
+            "inventory_setup": "default_trades",
+            "interaction_radius": 3.0
+          }
+        },
+        {
+          "action": "player_approach",
+          "target": "custom_trader",
+          "distance": 2,
+          "metadata": {
+            "approach_method": "walk",
+            "expected_interaction": "trade_gui_available"
+          }
+        },
+        {
+          "action": "right_click_entity",
+          "target": "custom_trader",
+          "metadata": {
+            "interaction_type": "trade",
+            "expected_response": "trade_interface"
+          }
+        },
+        {
+          "action": "verify_trade_interface",
+          "expected_trades": [
+            {
+              "input": "emerald",
+              "output": "custom_item",
+              "quantity": 1
+            }
+          ],
+          "metadata": {
+            "interface_type": "trading",
+            "verification_method": "gui_content_check"
+          }
+        }
+      ],
+      "expected_outcome": "Custom trading interface opens with correct trades",
+      "java_behavior": "Custom trading GUI with mod-specific items and logic",
+      "bedrock_behavior": "Standard villager trading adapted for custom items",
+      "smart_assumptions": [
+        {
+          "type": "trading_system_adaptation",
+          "original": "custom_trading_gui",
+          "bedrock_equivalent": "villager_trading_modified",
+          "reasoning": "Custom trading system adapted to use Bedrock's villager trading mechanics"
+        }
+      ],
+      "metadata": {
+        "category": "entity_interaction",
+        "difficulty": "high",
+        "timeout_ms": 60000
+      }
+    },
+    {
+      "scenario": "Entity Death and Drops",
+      "description": "Test entity death behavior and custom item drops",
+      "steps": [
+        {
+          "action": "spawn_entity",
+          "type": "custom_mob_with_drops",
+          "position": [40, 60, 40],
+          "metadata": {
+            "health": 10.0,
+            "loot_table": "custom_mob_drops",
+            "experience_value": 5
+          }
+        },
+        {
+          "action": "damage_entity",
+          "target": "custom_mob_with_drops",
+          "damage": 10.0,
+          "damage_type": "player_attack",
+          "metadata": {
+            "weapon": "diamond_sword",
+            "expected_result": "entity_death"
+          }
+        },
+        {
+          "action": "verify_entity_death",
+          "entity_type": "custom_mob_with_drops",
+          "expected_count": 0,
+          "search_radius": 5
+        },
+        {
+          "action": "verify_drops",
+          "expected_items": ["custom_material", "rare_component"],
+          "position_radius": 3,
+          "metadata": {
+            "drop_verification_time": 2000,
+            "minimum_drops": 1
+          }
+        },
+        {
+          "action": "verify_experience_drop",
+          "expected_xp": 5,
+          "position_radius": 3,
+          "metadata": {
+            "xp_collection_timeout": 3000
+          }
+        }
+      ],
+      "expected_outcome": "Entity drops custom items and experience on death",
+      "java_behavior": "Custom loot table with mod items and experience calculation",
+      "bedrock_behavior": "Behavior pack loot table with equivalent drops",
+      "smart_assumptions": [
+        {
+          "type": "loot_table_conversion",
+          "original": "java_loot_table",
+          "bedrock_equivalent": "behavior_pack_loot",
+          "reasoning": "Java loot table format converted to Bedrock loot table structure"
+        }
+      ],
+      "metadata": {
+        "category": "entity_death",
+        "difficulty": "medium",
+        "timeout_ms": 30000
+      }
+    }
+  ],
+  "test_environment": {
+    "minecraft_version": "1.20.0",
+    "world_type": "flat",
+    "game_mode": "creative",
+    "required_features": ["custom_entities", "behavior_packs", "trading", "loot_tables"],
+    "spawn_protection": false
+  },
+  "validation_criteria": {
+    "success_threshold": 0.75,
+    "critical_scenarios": ["Custom Entity Spawning", "Entity AI Behavior Patterns"],
+    "optional_scenarios": ["Entity Interaction and Trading"]
+  },
+  "performance_expectations": {
+    "max_entities_per_test": 10,
+    "entity_spawn_timeout_ms": 5000,
+    "ai_response_timeout_ms": 3000
+  }
+}
