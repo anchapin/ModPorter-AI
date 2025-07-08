@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
 from src.services.cache import CacheService
+from src.validation import ValidationFramework # Added import
 # report_generator imports
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 from src.services.report_models import InteractiveReport, FullConversionReport
@@ -34,7 +35,7 @@ load_dotenv()
 
 TEMP_UPLOADS_DIR = "temp_uploads"
 CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+# MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB - Removed, handled by ValidationFramework
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
 conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
@@ -200,26 +201,32 @@ async def upload_file(file: UploadFile = File(...)):
     # Create temporary uploads directory if it doesn't exist
     os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
 
-    # Note: file.size is not always available in FastAPI UploadFile
-    # We'll validate size during the actual file reading process
+    # Instantiate ValidationFramework
+    validator = ValidationFramework()
 
-    # Validate file type - combine both approaches
-    allowed_types = [
-        "application/java-archive",
-        "application/zip",
-        "application/octet-stream",
-    ]
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
+    # Validate the uploaded file using the framework
+    # We pass file.file which is the actual SpooledTemporaryFile
+    validation_result = validator.validate_upload(file.file, file.filename)
+
+    if not validation_result.is_valid:
+        # Determine appropriate status code based on error (optional refinement)
+        status_code = 400 # Default to Bad Request
+        if "exceeds the maximum allowed size" in (validation_result.error_message or ""):
+            status_code = 413 # Payload Too Large
+        elif "invalid file type" in (validation_result.error_message or ""):
+            status_code = 415 # Unsupported Media Type
+
+        # Clean up the (potentially partially read) file object from UploadFile
+        # as we are not saving it.
+        file.file.close()
+        raise HTTPException(status_code=status_code, detail=validation_result.error_message)
+
+    # IMPORTANT: Reset file pointer after validation, as validate_upload reads from it.
+    file.file.seek(0)
+    
+    # Ensure original_filename and file_ext are defined for use later
     original_filename = file.filename
     file_ext = os.path.splitext(original_filename)[1].lower()
-    
-    if (file_ext not in allowed_extensions and 
-        file.content_type not in allowed_types and 
-        not any(file.filename.endswith(ext) for ext in allowed_extensions)):
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
-        )
 
     # Generate unique file identifier
     file_id = str(uuid.uuid4())
@@ -230,33 +237,29 @@ async def upload_file(file: UploadFile = File(...)):
     try:
         real_file_size = 0
         with open(file_path, "wb") as buffer:
-            for chunk in file.file:
+            # Read in chunks from file.file (which has been reset by seek(0))
+            while chunk := file.file.read(8192): # Read in 8KB chunks
                 real_file_size += len(chunk)
-                if real_file_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
-                    )
+                # The new framework already validated the total size.
+                # Old size check removed from here.
                 buffer.write(chunk)
-    except HTTPException as e:
-        # Re-raise client errors (e.g., 413 for file size limits)
-        raise e
+
     except Exception as e:
-        # Log the error for debugging
         logger.error(f"Error saving file: {e}", exc_info=True)
+        if os.path.exists(file_path):
+            os.remove(file_path) # Clean up partially written file on error
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
-        file.file.close()
-    
-    # Also store filename in memory for compatibility
-    uploaded_files.append(file.filename)
-    
+        file.file.close() # Ensure the spooled temporary file is closed
+
+    uploaded_files.append(original_filename) # Keep for compatibility if needed
+
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
-        saved_filename=saved_filename, # The name with job_id and extension
-        size=real_file_size,  # Use the actual size we read
-        content_type=file.content_type,
+        saved_filename=saved_filename,
+        size=real_file_size, # Use the actual size read during saving
+        content_type=file.content_type, # This is the browser-reported content type
         message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
         filename=original_filename
     )
@@ -872,6 +875,130 @@ async def cancel_conversion_simple(job_id: str):
         raise HTTPException(status_code=404, detail="Conversion job not found")
     conversions_db[job_id]["status"] = "cancelled"
     return {"message": f"Conversion job {job_id} has been cancelled"}
+
+# V1 API endpoints that handle file uploads in the convert request
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
+async def start_conversion_v1(
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    mod_file: UploadFile = File(...),
+    smart_assumptions: bool = Form(True),
+    include_dependencies: bool = Form(False),
+    mod_url: Optional[str] = Form(None),
+    target_version: str = Form("1.20.0")
+):
+    """
+    Start a new mod conversion job with file upload.
+    This endpoint handles both file upload and conversion initiation in one request.
+    """
+    if not mod_file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    # Instantiate ValidationFramework
+    validator = ValidationFramework()
+
+    # Validate the uploaded file using the framework
+    validation_result = validator.validate_upload(mod_file.file, mod_file.filename)
+
+    if not validation_result.is_valid:
+        status_code = 400 # Default to Bad Request
+        if "exceeds the maximum allowed size" in (validation_result.error_message or ""):
+            status_code = 413 # Payload Too Large
+        elif "invalid file type" in (validation_result.error_message or ""):
+            status_code = 415 # Unsupported Media Type
+        mod_file.file.close()
+        raise HTTPException(status_code=status_code, detail=validation_result.error_message)
+
+    # IMPORTANT: Reset file pointer after validation
+    mod_file.file.seek(0)
+
+    # Ensure original_filename and file_ext are defined for use later
+    original_filename = mod_file.filename # Defined from mod_file.filename
+    file_ext = os.path.splitext(original_filename)[1].lower() # Defined from original_filename
+
+    # Generate unique file identifier
+    file_id = str(uuid.uuid4())
+    saved_filename = f"{file_id}{file_ext}"
+    
+    # Create temporary uploads directory if it doesn't exist
+    os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
+    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
+
+    # Save the uploaded file
+    try:
+        real_file_size = 0
+        with open(file_path, "wb") as buffer:
+            # Read in chunks from mod_file.file (which has been reset by seek(0))
+            while chunk := mod_file.file.read(8192): # Read in 8KB chunks
+                real_file_size += len(chunk)
+                # Size validation already handled by ValidationFramework
+                buffer.write(chunk)
+    except HTTPException as e: # This might be redundant if validator catches everything, but keep for safety
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise e
+    except Exception as e:
+        logger.error(f"Error saving file: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Could not save file")
+    finally:
+        mod_file.file.close()
+
+    # Create conversion options
+    options = {
+        "smart_assumptions": smart_assumptions,
+        "include_dependencies": include_dependencies,
+        "mod_url": mod_url
+    }
+
+    # Try to persist job to DB, fall back to in-memory storage for tests
+    try:
+        job = await crud.create_job(
+            db,
+            file_id=file_id,
+            original_filename=mod_file.filename,
+            target_version=target_version,
+            options=options
+        )
+        job_id = str(job.id)
+        created_at = job.created_at if job.created_at else datetime.now()
+        updated_at = job.updated_at if job.updated_at else datetime.now()
+    except Exception as e:
+        # Log DB failure and fallback to in-memory storage for tests
+        logger.error(f"Database operation failed during v1 job creation: {e}", exc_info=True)
+        # Fallback to in-memory: generate job ID and timestamps
+        job_id = str(uuid.uuid4())
+        created_at = datetime.now()
+        updated_at = datetime.now()
+
+    # Build legacy-mirror dict for in-memory compatibility (v1)
+    mirror = ConversionJob(
+        job_id=job_id,
+        file_id=file_id,
+        original_filename=mod_file.filename,
+        status="queued",
+        progress=0,
+        target_version=target_version,
+        options=options,
+        result_url=None,
+        error_message=None,
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+    conversion_jobs_db[job_id] = mirror
+
+    # Write to Redis
+    await cache.set_job_status(job_id, mirror.model_dump())
+    await cache.set_progress(job_id, 0)
+
+    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    background_tasks.add_task(simulate_ai_conversion, job_id)
+
+    return ConversionResponse(
+        job_id=job_id,
+        status="queued",
+        message="Conversion job started and is now queued.",
+        estimated_time=35
+    )
 
 @app.get("/api/v1/download/simple/{job_id}")
 async def download_converted_mod_simple(job_id: str):
