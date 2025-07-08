@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.db import models
+import uuid
 
 async def create_job(
     session: AsyncSession,
@@ -31,7 +32,9 @@ async def create_job(
     return job
 
 async def get_job(session: AsyncSession, job_id: str) -> Optional[models.ConversionJob]:
-    stmt = select(models.ConversionJob).where(models.ConversionJob.id == job_id).options(selectinload(models.ConversionJob.progress))
+    # Convert string job_id to UUID for database query
+    job_uuid = uuid.UUID(job_id)
+    stmt = select(models.ConversionJob).where(models.ConversionJob.id == job_uuid).options(selectinload(models.ConversionJob.progress))
     result = await session.execute(stmt)
     job = result.scalar_one_or_none()
     return job
@@ -43,7 +46,9 @@ async def list_jobs(session: AsyncSession) -> List[models.ConversionJob]:
 
 async def update_job_status(session: AsyncSession, job_id: str, status: str) -> Optional[models.ConversionJob]:
     # Update status on ConversionJob
-    stmt = update(models.ConversionJob).where(models.ConversionJob.id == job_id).values(status=status)
+    # Convert string job_id to UUID for database query
+    job_uuid = uuid.UUID(job_id)
+    stmt = update(models.ConversionJob).where(models.ConversionJob.id == job_uuid).values(status=status)
     await session.execute(stmt)
     await session.commit()
     job = await get_job(session, job_id)
@@ -52,8 +57,10 @@ async def update_job_status(session: AsyncSession, job_id: str, status: str) -> 
 async def upsert_progress(session: AsyncSession, job_id: str, progress: int) -> models.JobProgress:
     # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
     from sqlalchemy import func
+    # Convert string job_id to UUID for database query
+    job_uuid = uuid.UUID(job_id)
     stmt = pg_insert(models.JobProgress).values(
-        job_id=job_id,
+        job_id=job_uuid,
         progress=progress
     ).on_conflict_do_update(
         index_elements=['job_id'],
