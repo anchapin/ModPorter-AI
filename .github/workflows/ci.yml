@@ -62,7 +62,7 @@ jobs:
     
     - name: Upload frontend coverage
       if: always()
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         directory: ./frontend/coverage
         flags: frontend
@@ -102,7 +102,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
@@ -165,7 +165,7 @@ jobs:
     
     - name: Upload backend coverage
       if: always()
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         directory: ./backend
         flags: backend
@@ -181,7 +181,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
@@ -204,7 +204,7 @@ jobs:
     
     - name: Upload AI engine coverage
       if: always()
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         directory: ./ai-engine
         flags: ai-engine
@@ -250,7 +250,7 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
     
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     

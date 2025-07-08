@@ -8,7 +8,11 @@ updates:
     labels:
       - "dependencies"
       - "frontend"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      npm-frontend-updates:
+        patterns:
+          - "*"
 
   # Root npm workspace
   - package-ecosystem: "npm"
@@ -18,7 +22,11 @@ updates:
     labels:
       - "dependencies"
       - "workspace"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      npm-root-updates:
+        patterns:
+          - "*"
 
   # Backend Python dependencies
   - package-ecosystem: "pip"
@@ -29,7 +37,11 @@ updates:
       - "dependencies"
       - "backend"
       - "python"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      pip-backend-updates:
+        patterns:
+          - "*"
 
   # AI Engine Python dependencies
   - package-ecosystem: "pip"
@@ -40,7 +52,11 @@ updates:
       - "dependencies"
       - "ai-engine"
       - "python"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      pip-ai-engine-updates:
+        patterns:
+          - "*"
 
   # Docker dependencies
   - package-ecosystem: "docker"
@@ -50,7 +66,11 @@ updates:
     labels:
       - "dependencies"
       - "docker"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      docker-root-updates:
+        patterns:
+          - "*"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -60,4 +80,8 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
+    groups:
+      github-actions-root-updates:
+        patterns:
+          - "*"

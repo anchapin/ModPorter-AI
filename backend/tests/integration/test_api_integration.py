@@ -7,7 +7,6 @@ including file uploads, conversion processing, and result retrieval.
 
 import io
 import time
-import pytest
 
 
 class TestHealthIntegration:

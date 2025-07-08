@@ -25,7 +25,6 @@ def event_loop():
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
-    from fastapi.testclient import TestClient
     return TestClient(app)
 
 

@@ -6,7 +6,7 @@ setup(
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     install_requires=[
-        'crewai',
+        'crewai==0.1.24',
         'crewai-tools',
         'python-dotenv',
         'fastapi',

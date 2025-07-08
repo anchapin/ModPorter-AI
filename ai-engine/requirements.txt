@@ -4,9 +4,9 @@ uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 
 # AI Framework
-crewai>=0.1.0
-langchain>=0.0.354,<0.0.355
-langchain-openai>=0.0.2,<0.0.3
+crewai==0.1.24
+langchain>=0.0.354,<0.3.27
+langchain-openai>=0.0.2,<0.3.28
 openai>=1.0.0
 
 # Data Processing
