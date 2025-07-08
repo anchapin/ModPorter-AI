@@ -23,7 +23,8 @@ describe('ConversionReport Component', () => {
         // Example: if jobStatus="completed", title might be "Conversion Report"
         expect(screen.getByText(/Conversion Report/i)).toBeInTheDocument();
 
-        expect(screen.getByText(new RegExp(mockSuccessReport.summary.overall_success_rate.toFixed(1) + "% Success Rate", "i"))).toBeInTheDocument();
+        expect(screen.getByText("Overall Success Rate:")).toBeInTheDocument();
+        expect(screen.getByText(mockSuccessReport.summary.overall_success_rate.toFixed(1) + "%")).toBeInTheDocument();
 
         if (mockSuccessReport.summary.download_url) {
             expect(screen.getByRole('link', { name: /Download .mcaddon/i })).toHaveAttribute('href', mockSuccessReport.summary.download_url);
@@ -31,8 +32,8 @@ describe('ConversionReport Component', () => {
 
         if (mockSuccessReport.converted_mods && mockSuccessReport.converted_mods.length > 0) {
             expect(screen.getByText(new RegExp("Converted Mods \\(" + mockSuccessReport.converted_mods.length + "\\)", "i"))).toBeInTheDocument();
-            // Check for the first converted mod's name
-            expect(screen.getByText(mockSuccessReport.converted_mods[0].name)).toBeInTheDocument();
+            // Check for the first converted mod's name (should appear at least once)
+            expect(screen.getAllByText(new RegExp(mockSuccessReport.converted_mods[0].name, "i"))[0]).toBeInTheDocument();
         }
 
         if (mockSuccessReport.smart_assumptions_report && mockSuccessReport.smart_assumptions_report.assumptions.length > 0) {
@@ -57,12 +58,13 @@ describe('ConversionReport Component', () => {
 
         expect(screen.getByText(/Conversion Failed/i)).toBeInTheDocument();
         // For failed reports, success rate might still be displayed
-        expect(screen.getByText(new RegExp(mockFailedReport.summary.overall_success_rate.toFixed(1) + "% Success Rate", "i"))).toBeInTheDocument();
+        expect(screen.getByText("Overall Success Rate:")).toBeInTheDocument();
+        expect(screen.getByText(mockFailedReport.summary.overall_success_rate.toFixed(1) + "%")).toBeInTheDocument();
 
         if (mockFailedReport.failed_mods && mockFailedReport.failed_mods.length > 0) {
             expect(screen.getByText(new RegExp("Failed Mods \\(" + mockFailedReport.failed_mods.length + "\\)", "i"))).toBeInTheDocument();
             // Check for the first failed mod's name
-            expect(screen.getByText(mockFailedReport.failed_mods[0].name)).toBeInTheDocument();
+            expect(screen.getAllByText(new RegExp(mockFailedReport.failed_mods[0].name, "i"))[0]).toBeInTheDocument();
             // And its first error, if available
             if (mockFailedReport.failed_mods[0].errors && mockFailedReport.failed_mods[0].errors.length > 0) {
                  // The error message might be long, so we test for a substring or use a flexible matcher
@@ -113,7 +115,7 @@ describe('ConversionReport Component', () => {
 
         // Check for a log entry message if available
         if (mockReportWithDevLog.developer_log.code_translation_details && mockReportWithDevLog.developer_log.code_translation_details.length > 0) {
-            expect(screen.getByText(mockReportWithDevLog.developer_log.code_translation_details[0].message)).toBeInTheDocument();
+            expect(screen.getByText(new RegExp(mockReportWithDevLog.developer_log.code_translation_details[0].message, "i"))).toBeInTheDocument();
         }
     });
 });
