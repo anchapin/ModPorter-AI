@@ -11,6 +11,9 @@ from langchain.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
+import os
+import zipfile
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
