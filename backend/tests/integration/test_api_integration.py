@@ -14,7 +14,7 @@ class TestHealthIntegration:
 
     def test_health_endpoint_responds(self, client):
         """Test that health endpoint responds correctly."""
-        response = client.get("/api/v1/health") # Changed path
+        response = client.get("/api/v1/health")  # Changed path
         assert response.status_code == 200
 
         data = response.json()
@@ -32,15 +32,15 @@ class TestFileUploadIntegration:
         jar_file = io.BytesIO(jar_content)
 
         response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("test.jar", jar_file, "application/java-archive")},
         )
         assert response.status_code == 200
         data = response.json()
 
-        assert "original_filename" in data # Changed key
+        assert "original_filename" in data  # Changed key
         assert "message" in data
-        assert data["original_filename"] == "test.jar" # Changed key
+        assert data["original_filename"] == "test.jar"  # Changed key
 
     def test_upload_mcaddon_file_end_to_end(self, client):
         """Test complete MCADDON file upload workflow."""
@@ -48,15 +48,15 @@ class TestFileUploadIntegration:
         mcaddon_file = io.BytesIO(mcaddon_content)
 
         response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("test.mcaddon", mcaddon_file, "application/zip")},
         )
         assert response.status_code == 200
         data = response.json()
 
-        assert "original_filename" in data # Changed key
+        assert "original_filename" in data  # Changed key
         assert "message" in data
-        assert data["original_filename"] == "test.mcaddon" # Changed key
+        assert data["original_filename"] == "test.mcaddon"  # Changed key
 
 
 class TestConversionIntegration:
@@ -68,7 +68,7 @@ class TestConversionIntegration:
         jar_file = io.BytesIO(jar_content)
 
         upload_response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("test.jar", jar_file, "application/java-archive")},
         )
         assert upload_response.status_code == 200
@@ -77,10 +77,10 @@ class TestConversionIntegration:
         original_filename = upload_data["original_filename"]
 
         conversion_response = client.post(
-            "/api/v1/convert", # Changed path
+            "/api/v1/convert",  # Changed path
             json={
-                "file_id": file_id, # Changed payload
-                "original_filename": original_filename, # Changed payload
+                "file_id": file_id,  # Changed payload
+                "original_filename": original_filename,  # Changed payload
                 "target_version": "1.20.0",
                 "options": {
                     "optimization_level": "standard",
@@ -101,7 +101,7 @@ class TestConversionIntegration:
         jar_file = io.BytesIO(jar_content)
 
         upload_response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("test.jar", jar_file, "application/java-archive")},
         )
         assert upload_response.status_code == 200
@@ -110,10 +110,10 @@ class TestConversionIntegration:
         original_filename = upload_data["original_filename"]
 
         conversion_response = client.post(
-            "/api/v1/convert", # Changed path
+            "/api/v1/convert",  # Changed path
             json={
-                "file_id": file_id, # Changed payload
-                "original_filename": original_filename, # Changed payload
+                "file_id": file_id,  # Changed payload
+                "original_filename": original_filename,  # Changed payload
                 "target_version": "1.20.0",
                 "options": {
                     "optimization_level": "standard",
@@ -124,7 +124,9 @@ class TestConversionIntegration:
         assert conversion_response.status_code == 200
         job_id = conversion_response.json()["job_id"]
 
-        status_response = client.get(f"/api/v1/convert/{job_id}/status") # Changed path for consistency
+        status_response = client.get(
+            f"/api/v1/convert/{job_id}/status"
+        )  # Changed path for consistency
         assert status_response.status_code == 200
         status_data = status_response.json()
 
@@ -136,7 +138,7 @@ class TestConversionIntegration:
 
     def test_list_conversions(self, client):
         """Test listing all conversions."""
-        response = client.get("/api/v1/conversions") # Changed path
+        response = client.get("/api/v1/conversions")  # Changed path
         assert response.status_code == 200
         data = response.json()
 
@@ -163,12 +165,12 @@ class TestFileManagementIntegration:
         jar_file = io.BytesIO(jar_content)
 
         upload_response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("test_delete.jar", jar_file, "application/java-archive")},
         )
         assert upload_response.status_code == 200
-        upload_data = upload_response.json() # Get full data
-        original_filename = upload_data["original_filename"] # Use correct key
+        upload_data = upload_response.json()  # Get full data
+        original_filename = upload_data["original_filename"]  # Use correct key
 
         # File deletion endpoint doesn't exist in current API
         # Skip deletion test for now
@@ -184,19 +186,20 @@ class TestErrorHandlingIntegration:
         text_file = io.BytesIO(text_content)
 
         response = client.post(
-            "/api/v1/upload", files={"file": ("test.txt", text_file, "text/plain")} # Changed path
+            "/api/v1/upload",
+            files={"file": ("test.txt", text_file, "text/plain")},  # Changed path
         )
         assert response.status_code == 415
         data = response.json()
         assert "detail" in data
 
-    def test_convert_nonexistent_file_id(self, client): # Renamed test
+    def test_convert_nonexistent_file_id(self, client):  # Renamed test
         """Test starting conversion with non-existent file_id."""
         response = client.post(
-            "/api/v1/convert", # Changed path
+            "/api/v1/convert",  # Changed path
             json={
-                "file_id": "non-existent-file-id", # Changed payload
-                "original_filename": "non-existent-file.jar", # Changed payload
+                "file_id": "non-existent-file-id",  # Changed payload
+                "original_filename": "non-existent-file.jar",  # Changed payload
                 "target_version": "1.20.0",
                 "options": {"optimization_level": "standard"},
             },
@@ -212,7 +215,7 @@ class TestErrorHandlingIntegration:
     def test_check_status_nonexistent_job(self, client):
         """Test checking status of non-existent job."""
         fake_job_id = "12345678-1234-1234-1234-123456789012"
-        response = client.get(f"/api/v1/convert/{fake_job_id}/status") # Changed path
+        response = client.get(f"/api/v1/convert/{fake_job_id}/status")  # Changed path
         assert response.status_code == 404
         data = response.json()
         assert "detail" in data
@@ -227,7 +230,7 @@ class TestFullWorkflowIntegration:
         jar_file = io.BytesIO(jar_content)
 
         upload_response = client.post(
-            "/api/v1/upload", # Changed path
+            "/api/v1/upload",  # Changed path
             files={"file": ("workflow_test.jar", jar_file, "application/java-archive")},
         )
         assert upload_response.status_code == 200
@@ -236,10 +239,10 @@ class TestFullWorkflowIntegration:
         original_filename = upload_data["original_filename"]
 
         conversion_response = client.post(
-            "/api/v1/convert", # Changed path
+            "/api/v1/convert",  # Changed path
             json={
-                "file_id": file_id, # Changed payload
-                "original_filename": original_filename, # Changed payload
+                "file_id": file_id,  # Changed payload
+                "original_filename": original_filename,  # Changed payload
                 "target_version": "1.20.0",
                 "options": {
                     "optimization_level": "standard",
@@ -252,7 +255,9 @@ class TestFullWorkflowIntegration:
 
         max_attempts = 10
         for attempt in range(max_attempts):
-            status_response = client.get(f"/api/v1/convert/{job_id}/status") # Changed path
+            status_response = client.get(
+                f"/api/v1/convert/{job_id}/status"
+            )  # Changed path
             assert status_response.status_code == 200
             status_data = status_response.json()
             status = status_data["status"]
@@ -260,11 +265,19 @@ class TestFullWorkflowIntegration:
                 break
             time.sleep(1)
 
-        final_status_response = client.get(f"/api/v1/convert/{job_id}/status") # Changed path
+        final_status_response = client.get(
+            f"/api/v1/convert/{job_id}/status"
+        )  # Changed path
         assert final_status_response.status_code == 200
         final_status = final_status_response.json()["status"]
         assert final_status in ["queued", "processing", "completed", "failed"]
 
         if final_status == "completed":
-            result_response = client.get(f"/api/v1/convert/{job_id}/download") # Changed path
-            assert result_response.status_code in [200, 400, 404] # 404 if file not really created by mock
+            result_response = client.get(
+                f"/api/v1/convert/{job_id}/download"
+            )  # Changed path
+            assert result_response.status_code in [
+                200,
+                400,
+                404,
+            ]  # 404 if file not really created by mock

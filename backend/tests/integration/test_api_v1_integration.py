@@ -7,6 +7,10 @@ conversion processing, status tracking, and error handling.
 
 import io
 import time
+from src.services.report_generator import (
+    MOCK_CONVERSION_RESULT_SUCCESS,
+    MOCK_CONVERSION_RESULT_FAILURE,
+)
 
 # Test client will be provided by fixture
 
@@ -36,7 +40,13 @@ class TestV1ConversionIntegration:
         # Step A: Upload file
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("test.jar", io.BytesIO(jar_content), "application/java-archive")}
+            files={
+                "file": (
+                    "test.jar",
+                    io.BytesIO(jar_content),
+                    "application/java-archive",
+                )
+            },
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -48,10 +58,7 @@ class TestV1ConversionIntegration:
             "file_id": file_id,
             "original_filename": original_filename,
             "target_version": "1.20.0",
-            "options": {
-                "smartAssumptions": True,
-                "includeDependencies": False
-            }
+            "options": {"smartAssumptions": True, "includeDependencies": False},
         }
         response = client.post("/api/v1/convert", json=conversion_payload)
         assert response.status_code == 200
@@ -68,7 +75,7 @@ class TestV1ConversionIntegration:
 
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("test.zip", io.BytesIO(zip_content), "application/zip")}
+            files={"file": ("test.zip", io.BytesIO(zip_content), "application/zip")},
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -82,8 +89,8 @@ class TestV1ConversionIntegration:
             "options": {
                 "smartAssumptions": False,
                 "includeDependencies": True,
-                "modUrl": "https://example.com/mod"
-            }
+                "modUrl": "https://example.com/mod",
+            },
         }
         response = client.post("/api/v1/convert", json=conversion_payload)
         assert response.status_code == 200
@@ -98,7 +105,13 @@ class TestV1ConversionIntegration:
 
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("test.mcaddon", io.BytesIO(mcaddon_content), "application/octet-stream")} # common type for mcaddon
+            files={
+                "file": (
+                    "test.mcaddon",
+                    io.BytesIO(mcaddon_content),
+                    "application/octet-stream",
+                )
+            },  # common type for mcaddon
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -108,10 +121,7 @@ class TestV1ConversionIntegration:
         conversion_payload = {
             "file_id": file_id,
             "original_filename": original_filename,
-            "options": {
-                "smartAssumptions": True,
-                "includeDependencies": False
-            }
+            "options": {"smartAssumptions": True, "includeDependencies": False},
         }
         response = client.post("/api/v1/convert", json=conversion_payload)
         assert response.status_code == 200
@@ -120,42 +130,53 @@ class TestV1ConversionIntegration:
         assert "job_id" in data
         assert data["status"] == "queued"
 
-    def test_v1_upload_invalid_file_type(self, client): # Renamed from test_v1_convert_invalid_file_type
+    def test_v1_upload_invalid_file_type(
+        self, client
+    ):  # Renamed from test_v1_convert_invalid_file_type
         """Test v1 upload endpoint with invalid file type."""
         text_content = b"This is not a valid mod file"
 
         response = client.post(
-            "/api/v1/upload", # Changed to /upload
-            files={"file": ("test.txt", io.BytesIO(text_content), "text/plain")}
+            "/api/v1/upload",  # Changed to /upload
+            files={"file": ("test.txt", io.BytesIO(text_content), "text/plain")},
         )
         assert response.status_code == 415
         data = response.json()
         assert "detail" in data
         assert "invalid file type" in data["detail"]
 
-    def test_v1_convert_missing_file_id(self, client): # Renamed from test_v1_convert_no_file
+    def test_v1_convert_missing_file_id(
+        self, client
+    ):  # Renamed from test_v1_convert_no_file
         """Test v1 conversion endpoint with missing file_id in JSON payload."""
         conversion_payload = {
             # "file_id": "some-id", # Missing
             "original_filename": "test.jar",
-            "options": {
-                "smartAssumptions": True,
-                "includeDependencies": False
-            }
+            "options": {"smartAssumptions": True, "includeDependencies": False},
         }
         response = client.post("/api/v1/convert", json=conversion_payload)
-        assert response.status_code == 422 # Expect 422 due to Pydantic validation
+        assert response.status_code == 422  # Expect 422 due to Pydantic validation
 
-    def test_v1_upload_large_file(self, client): # Renamed from test_v1_convert_large_file
+    def test_v1_upload_large_file(
+        self, client
+    ):  # Renamed from test_v1_convert_large_file
         """Test v1 upload endpoint with oversized file."""
         # Create a large file that has proper JAR header so it passes MIME type check
         # Use 501 MB to exceed the 500 MB limit
         jar_header = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
-        large_content = jar_header + b"X" * (501 * 1024 * 1024 - len(jar_header))  # 501 MB
+        large_content = jar_header + b"X" * (
+            501 * 1024 * 1024 - len(jar_header)
+        )  # 501 MB
 
         response = client.post(
-            "/api/v1/upload", # Changed to /upload
-            files={"file": ("large.jar", io.BytesIO(large_content), "application/java-archive")}
+            "/api/v1/upload",  # Changed to /upload
+            files={
+                "file": (
+                    "large.jar",
+                    io.BytesIO(large_content),
+                    "application/java-archive",
+                )
+            },
         )
         assert response.status_code == 413
         data = response.json()
@@ -172,7 +193,13 @@ class TestV1StatusIntegration:
 
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("test.jar", io.BytesIO(jar_content), "application/java-archive")}
+            files={
+                "file": (
+                    "test.jar",
+                    io.BytesIO(jar_content),
+                    "application/java-archive",
+                )
+            },
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -182,10 +209,7 @@ class TestV1StatusIntegration:
         conversion_payload = {
             "file_id": file_id,
             "original_filename": original_filename,
-            "options": {
-                "smartAssumptions": True,
-                "includeDependencies": False
-            }
+            "options": {"smartAssumptions": True, "includeDependencies": False},
         }
         conversion_response = client.post("/api/v1/convert", json=conversion_payload)
         assert conversion_response.status_code == 200
@@ -237,7 +261,13 @@ class TestV1DownloadIntegration:
 
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("test.jar", io.BytesIO(jar_content), "application/java-archive")}
+            files={
+                "file": (
+                    "test.jar",
+                    io.BytesIO(jar_content),
+                    "application/java-archive",
+                )
+            },
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -247,10 +277,7 @@ class TestV1DownloadIntegration:
         conversion_payload = {
             "file_id": file_id,
             "original_filename": original_filename,
-            "options": {
-                "smartAssumptions": True,
-                "includeDependencies": False
-            }
+            "options": {"smartAssumptions": True, "includeDependencies": False},
         }
         conversion_response = client.post("/api/v1/convert", json=conversion_payload)
         assert conversion_response.status_code == 200
@@ -299,12 +326,18 @@ class TestV1ErrorHandlingIntegration:
     def test_v1_concurrent_requests(self, client):
         """Test handling of concurrent conversion requests."""
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
-        
+
         upload_responses_data = []
         for i in range(3):
             upload_response = client.post(
                 "/api/v1/upload",
-                files={"file": (f"test_concurrent_{i}.jar", io.BytesIO(jar_content), "application/java-archive")}
+                files={
+                    "file": (
+                        f"test_concurrent_{i}.jar",
+                        io.BytesIO(jar_content),
+                        "application/java-archive",
+                    )
+                },
             )
             assert upload_response.status_code == 200
             upload_responses_data.append(upload_response.json())
@@ -314,7 +347,7 @@ class TestV1ErrorHandlingIntegration:
             conversion_payload = {
                 "file_id": upload_data["file_id"],
                 "original_filename": upload_data["original_filename"],
-                "options": {"smartAssumptions": True, "includeDependencies": False}
+                "options": {"smartAssumptions": True, "includeDependencies": False},
             }
             response = client.post("/api/v1/convert", json=conversion_payload)
             conversion_responses.append(response)
@@ -338,7 +371,13 @@ class TestV1FullWorkflowIntegration:
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("workflow_test.jar", io.BytesIO(jar_content), "application/java-archive")}
+            files={
+                "file": (
+                    "workflow_test.jar",
+                    io.BytesIO(jar_content),
+                    "application/java-archive",
+                )
+            },
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
@@ -353,7 +392,7 @@ class TestV1FullWorkflowIntegration:
                 "smartAssumptions": True,
                 "includeDependencies": False,
             },
-            "target_version": "1.20.0"
+            "target_version": "1.20.0",
         }
         conversion_response = client.post("/api/v1/convert", json=conversion_payload)
         assert conversion_response.status_code == 200
@@ -362,17 +401,17 @@ class TestV1FullWorkflowIntegration:
         # Step 3: Monitor status (check multiple times)
         max_attempts = 10
         final_status = None
-        
+
         for attempt in range(max_attempts):
             status_response = client.get(f"/api/v1/convert/{job_id}/status")
             assert status_response.status_code == 200
 
             status_data = status_response.json()
             final_status = status_data["status"]
-            
+
             # Verify progress is reasonable
             assert 0 <= status_data["progress"] <= 100
-            
+
             if final_status in ["completed", "failed"]:
                 break
 
@@ -384,7 +423,10 @@ class TestV1FullWorkflowIntegration:
         # Step 4: If completed, try to download
         if final_status == "completed":
             download_response = client.get(f"/api/v1/convert/{job_id}/download")
-            assert download_response.status_code in [200, 404]  # File might not exist yet in mock
+            assert download_response.status_code in [
+                200,
+                404,
+            ]  # File might not exist yet in mock
 
     def test_v1_workflow_with_all_options(self, client):
         """Test v1 workflow with all conversion options."""
@@ -394,11 +436,11 @@ class TestV1FullWorkflowIntegration:
         # Step 1: Upload the file
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("full_options.jar", jar_file, "application/java-archive")}
+            files={"file": ("full_options.jar", jar_file, "application/java-archive")},
         )
         assert upload_response.status_code == 200
         upload_data = upload_response.json()
-        
+
         # Step 2: Start conversion with all options
         conversion_response = client.post(
             "/api/v1/convert",
@@ -409,17 +451,17 @@ class TestV1FullWorkflowIntegration:
                 "options": {
                     "smartAssumptions": False,
                     "includeDependencies": True,
-                    "modUrl": "https://example.com/mod-info"
-                }
-            }
+                    "modUrl": "https://example.com/mod-info",
+                },
+            },
         )
 
         assert conversion_response.status_code == 200
         data = conversion_response.json()
-        
+
         assert "job_id" in data
         assert data["status"] == "queued"
-        
+
         # Verify we can check status
         job_id = data["job_id"]
         status_response = client.get(f"/api/v1/convert/{job_id}/status")
@@ -429,40 +471,50 @@ class TestV1FullWorkflowIntegration:
 # Imports for Report API tests (ensure these are at the top if not already)
 # from fastapi.testclient import TestClient # Already imported via pytest
 # from src.main import app # Already imported via pytest
-from src.services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
-from src.services.report_models import InteractiveReport, FullConversionReport
 
 # Module-level client for report tests, if not using pytest fixtures for all tests
 # client = TestClient(app) # Pytest client fixture is generally preferred
 
+
 class TestReportAPIEndpoints:
     """Integration tests for the V1 Report API endpoints."""
 
-    def test_get_interactive_report_success(self, client): # client fixture from conftest.py or global
-        job_id = MOCK_CONVERSION_RESULT_SUCCESS["job_id"] # "job_123_success"
+    def test_get_interactive_report_success(
+        self, client
+    ):  # client fixture from conftest.py or global
+        job_id = MOCK_CONVERSION_RESULT_SUCCESS["job_id"]  # "job_123_success"
         response = client.get(f"/api/v1/jobs/{job_id}/report")
         assert response.status_code == 200
         report_data = response.json()
         assert report_data["job_id"] == job_id
-        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        assert (
+            report_data["summary"]["overall_success_rate"]
+            == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        )
         assert "feature_analysis" in report_data
         assert "smart_assumptions_report" in report_data
         assert "developer_log" in report_data
 
     def test_get_interactive_report_failure(self, client):
-        job_id = MOCK_CONVERSION_RESULT_FAILURE["job_id"] # "job_456_failure"
+        job_id = MOCK_CONVERSION_RESULT_FAILURE["job_id"]  # "job_456_failure"
         response = client.get(f"/api/v1/jobs/{job_id}/report")
         assert response.status_code == 200
         report_data = response.json()
         assert report_data["job_id"] == job_id
-        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+        assert (
+            report_data["summary"]["overall_success_rate"]
+            == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+        )
         assert len(report_data["failed_mods"]) > 0
 
     def test_get_interactive_report_generic_success(self, client):
         response = client.get("/api/v1/jobs/some-random-job-id-success/report")
         assert response.status_code == 200
         report_data = response.json()
-        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        assert (
+            report_data["summary"]["overall_success_rate"]
+            == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        )
 
     def test_get_interactive_report_not_found(self, client):
         response = client.get("/api/v1/jobs/unknown_job_id_123/report")
@@ -474,7 +526,10 @@ class TestReportAPIEndpoints:
         response = client.get(f"/api/v1/jobs/{job_id}/report/prd")
         assert response.status_code == 200
         report_data = response.json()
-        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        assert (
+            report_data["summary"]["overall_success_rate"]
+            == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        )
         assert "smart_assumptions" in report_data
         assert isinstance(report_data["smart_assumptions"], list)
 
@@ -483,7 +538,10 @@ class TestReportAPIEndpoints:
         response = client.get(f"/api/v1/jobs/{job_id}/report/prd")
         assert response.status_code == 200
         report_data = response.json()
-        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+        assert (
+            report_data["summary"]["overall_success_rate"]
+            == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+        )
 
     def test_get_prd_style_report_not_found(self, client):
         response = client.get("/api/v1/jobs/unknown_job_id_456/report/prd")

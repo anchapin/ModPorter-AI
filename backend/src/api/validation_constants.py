@@ -4,6 +4,7 @@ from enum import Enum
 
 class ValidationJobStatus(str, Enum):
     """Enumeration of validation job statuses"""
+
     PENDING = "pending"
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -14,6 +15,7 @@ class ValidationJobStatus(str, Enum):
 
 class ValidationMessages:
     """Constants for validation messages"""
+
     JOB_QUEUED = "Validation job queued successfully"
     JOB_PROCESSING = "Validation job is currently processing"
     JOB_COMPLETED = "Validation successful"

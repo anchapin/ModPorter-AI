@@ -8,7 +8,7 @@ import logging
 import json
 from typing import List, Dict, Any, Optional
 from langchain.tools import tool
-from models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 import os
