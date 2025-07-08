@@ -128,10 +128,10 @@ class TestV1ConversionIntegration:
             "/api/v1/upload", # Changed to /upload
             files={"file": ("test.txt", io.BytesIO(text_content), "text/plain")}
         )
-        assert response.status_code == 400
+        assert response.status_code == 415
         data = response.json()
         assert "detail" in data
-        assert "not supported" in data["detail"]
+        assert "invalid file type" in data["detail"]
 
     def test_v1_convert_missing_file_id(self, client): # Renamed from test_v1_convert_no_file
         """Test v1 conversion endpoint with missing file_id in JSON payload."""
@@ -148,7 +148,10 @@ class TestV1ConversionIntegration:
 
     def test_v1_upload_large_file(self, client): # Renamed from test_v1_convert_large_file
         """Test v1 upload endpoint with oversized file."""
-        large_content = b"X" * (101 * 1024 * 1024)  # 101 MB
+        # Create a large file that has proper JAR header so it passes MIME type check
+        # Use 501 MB to exceed the 500 MB limit
+        jar_header = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
+        large_content = jar_header + b"X" * (501 * 1024 * 1024 - len(jar_header))  # 501 MB
 
         response = client.post(
             "/api/v1/upload", # Changed to /upload
@@ -157,7 +160,7 @@ class TestV1ConversionIntegration:
         assert response.status_code == 413
         data = response.json()
         assert "detail" in data
-        assert "exceeds the limit" in data["detail"]
+        assert "exceeds the maximum allowed size" in data["detail"]
 
 
 class TestV1StatusIntegration:

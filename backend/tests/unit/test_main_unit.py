@@ -70,10 +70,10 @@ class TestFileUploadEndpoint:
         file_data = ("test.txt", io.BytesIO(file_content), "text/plain")
 
         response = client.post("/api/v1/upload", files={"file": file_data})
-        assert response.status_code == 400
+        assert response.status_code == 415  # Unsupported Media Type is correct for invalid file types
 
         data = response.json()
-        assert "not supported" in data["detail"]
+        assert "invalid file type" in data["detail"]
 
     def test_upload_no_file(self, client: TestClient):
         """Test uploading without providing a file."""
