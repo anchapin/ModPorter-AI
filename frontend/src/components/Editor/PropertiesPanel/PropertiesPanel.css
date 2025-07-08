@@ -1,0 +1,145 @@
+.properties-panel-container {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.properties-panel-container h3 {
+  margin: 0 0 15px 0;
+  padding: 10px 15px;
+  background-color: #e9ecef;
+  border-bottom: 1px solid #ddd;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.properties-grid {
+  padding: 0 15px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.property-section {
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.property-section h4 {
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #f7f7f7;
+  padding: 8px 10px;
+  margin: 0;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 4px 4px 0 0;
+}
+
+.property-item {
+  display: grid;
+  grid-template-columns: 150px 1fr; /* Label column and value column */
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+.property-section .property-item:last-child {
+  border-bottom: none;
+}
+
+
+.property-label {
+  font-weight: bold;
+  color: #555;
+  word-break: break-all; /* For long property names */
+}
+
+.property-value {
+  word-break: break-all; /* For long values */
+}
+
+.property-value.json-value {
+  background-color: #fdfdfd;
+  border: 1px solid #eee;
+  padding: 5px;
+  border-radius: 3px;
+  font-family: monospace;
+  white-space: pre-wrap; /* Preserve formatting of JSON.stringify */
+  max-height: 200px; /* Limit height for long JSON strings */
+  overflow-y: auto;
+}
+
+
+.properties-panel-empty {
+  padding: 20px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Styling for input fields and textareas within property items */
+.property-item input[type="text"],
+.property-item input[type="number"],
+.property-item textarea.json-textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Ensures padding and border don't add to width */
+  font-size: 0.9rem;
+}
+
+.property-item textarea.json-textarea {
+  font-family: monospace;
+  white-space: pre-wrap;
+  min-height: 80px; /* Default min height */
+  resize: vertical; /* Allow vertical resize */
+}
+
+.property-item input[readonly],
+.property-item textarea[readonly] {
+  background-color: #f8f8f8;
+  color: #555;
+  cursor: not-allowed;
+}
+
+/* Styling for JSON validation errors */
+.property-item textarea.json-error {
+  border-color: red;
+}
+
+.json-error-message {
+  color: red;
+  font-size: 0.8em;
+  margin-top: 4px;
+  display: block; /* Take full width in its grid cell */
+  grid-column: 2; /* Align with the value column if property-item is grid */
+}
+
+/* Ensure labels align with multi-line inputs/textareas */
+.property-item label.property-label {
+  align-self: start; /* Aligns label to the top if value is multi-line */
+  padding-top: 6px; /* Align with padding of input fields */
+}
+
+.property-value-checkbox {
+  justify-self: start; /* Align checkbox to the start of its grid cell */
+  margin-top: 4px; /* Align with text inputs a bit better */
+}
+
+.property-label-fullwidth {
+  grid-column: 1 / -1; /* Span both columns */
+  font-weight: bold;
+  color: #333;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e0e0e0;
+}

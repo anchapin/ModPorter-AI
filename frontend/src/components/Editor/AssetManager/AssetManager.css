@@ -1,0 +1,182 @@
+/* AssetManager.css - Shared styles for AssetList and AssetUpload */
+
+/* Asset List Styling */
+.asset-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px; /* Space for upload form if it's at the bottom */
+}
+
+.asset-list-container h4 {
+  margin: 0 0 5px 0;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.asset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px; /* Example max height, adjust as needed */
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.asset-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.asset-item:last-child {
+  border-bottom: none;
+}
+
+.asset-preview {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  overflow: hidden; /* Ensure img doesn't overflow */
+}
+
+.asset-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.asset-icon {
+  font-size: 24px;
+}
+
+.asset-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* For long names/paths */
+}
+
+.asset-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asset-type {
+  font-size: 0.8rem;
+  color: #555;
+}
+.asset-path {
+  font-size: 0.75rem;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.asset-actions {
+  display: flex;
+  gap: 5px;
+  margin-left: 10px;
+}
+
+.asset-action-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: 1px solid #ccc;
+  background-color: #f8f8f8;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.asset-action-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.asset-action-btn.delete {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.asset-action-btn.delete:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.asset-list-status {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+
+/* Asset Upload Styling */
+.asset-upload-container {
+  padding: 15px 0px; /* Add some padding above if it's part of AssetManager */
+  border-top: 1px solid #e0e0e0;
+  margin-top: 10px;
+}
+
+.asset-upload-container h4 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.upload-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-form-fields label {
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.upload-form-fields input[type="file"],
+.upload-form-fields select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.upload-form-fields button {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upload-form-fields button:hover {
+  background-color: #0056b3;
+}
+
+.upload-form-fields button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.upload-error-message {
+  color: red;
+  font-size: 0.85rem;
+  margin-top: 5px;
+}

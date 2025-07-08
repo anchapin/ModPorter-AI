@@ -14,8 +14,11 @@ from src.validation import ValidationFramework # Added import
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 from src.services.report_models import InteractiveReport, FullConversionReport
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from src.services import addon_exporter # For .mcaddon export
+from src.services import conversion_parser # For parsing converted pack output
+import shutil # For directory operations
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uvicorn
@@ -26,6 +29,8 @@ from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
 import logging
 from src.db.init_db import init_db
+from uuid import UUID as PyUUID # For addon_id path parameter
+from src.models import addon_models as pydantic_addon_models # For addon Pydantic models
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -89,6 +94,10 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
+        {
+            "name": "addons",
+            "description": "Addon data management",
+        }
     ],
     docs_url="/docs",
     redoc_url="/redoc",
@@ -267,128 +276,179 @@ async def upload_file(file: UploadFile = File(...)):
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
     logger.info(f"Starting AI simulation for job_id: {job_id}")
+
+    # Temporary directory for simulated pack output
+    # Base temp dir for all simulated packs by this job
+    base_simulated_pack_dir = os.path.join(TEMP_UPLOADS_DIR, "simulated_packs")
+    os.makedirs(base_simulated_pack_dir, exist_ok=True)
+    # Specific pack dir for this job_id
+    simulated_pack_output_path = os.path.join(base_simulated_pack_dir, job_id)
+    if os.path.exists(simulated_pack_output_path): # Clean up from previous run if any
+        shutil.rmtree(simulated_pack_output_path)
+    os.makedirs(simulated_pack_output_path)
+
     try:
         async with AsyncSessionLocal() as session:
-            job = await crud.get_job(session, job_id)
-        if not job:
-            logger.error(f"Error: Job {job_id} not found for AI simulation.")
-            return
-    except Exception as e:
-        logger.error(f"Critical database failure during AI simulation for job {job_id}: {e}", exc_info=True)
-        # For tests, skip database-dependent simulation but update in-memory status
-        if job_id in conversion_jobs_db:
-            logger.info(f"Test mode: Updating job {job_id} status to completed in in-memory storage")
-            # Update in-memory job to completed status for tests
-            job_data = conversion_jobs_db[job_id]
-            job_data.status = "completed"
-            job_data.progress = 100
-            conversion_jobs_db[job_id] = job_data
-            # Skip the rest of the database-dependent simulation
-            return
-        else:
-            logger.error(f"Job {job_id} not found in in-memory storage either.")
-            return
-
-        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-            # Compose dict for legacy mirror
-            return ConversionJob(
-                job_id=str(job.id),
-                file_id=job.input_data.get("file_id"),
-                original_filename=job.input_data.get("original_filename"),
-                status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
-                target_version=job.input_data.get("target_version"),
-                options=job.input_data.get("options"),
-                result_url=result_url if result_url is not None else None,
-                error_message=error_message,
-                created_at=job.created_at,
-                updated_at=job.updated_at
-            )
-
-        try:
-            # Stage 1: Preprocessing -> Processing
-            await asyncio.sleep(10)
-            job = await crud.update_job_status(session, job_id, "processing")
-            await crud.upsert_progress(session, job_id, 25)
-            # Mirror
-            mirror = mirror_dict_from_job(job, 25)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 25)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
-
-            # Stage 2: Processing -> Postprocessing
-            await asyncio.sleep(15)
-            # Recheck cancellation
-            job = await crud.get_job(session, job_id)
-            if job.status == "cancelled":
-                logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
-                return
-            job = await crud.update_job_status(session, job_id, "postprocessing")
-            await crud.upsert_progress(session, job_id, 75)
-            mirror = mirror_dict_from_job(job, 75)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 75)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
-
-            # Stage 3: Postprocessing -> Completed
-            await asyncio.sleep(10)
-            job = await crud.get_job(session, job_id)
-            if job.status == "cancelled":
-                logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
+            job = await crud.get_job(session, PyUUID(job_id)) # Ensure job_id is UUID
+            if not job:
+                logger.error(f"Error: Job {job_id} not found for AI simulation.")
                 return
 
-            job = await crud.update_job_status(session, job_id, "completed")
-            await crud.upsert_progress(session, job_id, 100)
-            # Create mock output file
-            os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
-            mock_output_filename_internal = f"{job.id}_converted.zip"
-            mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            result_url = f"/api/v1/convert/{job.id}/download" # Changed path
+            original_mod_name = job.input_data.get("original_filename", "ConvertedAddon").split('.')[0]
+            # Attempt to get user_id from job input_data, fall back to a default if not found
+            # This field might not exist in older job records.
+            user_id_for_addon = job.input_data.get("user_id", conversion_parser.DEFAULT_USER_ID)
+
+
+            def mirror_dict_from_job(current_job, progress_val=None, result_url=None, error_message=None):
+                return ConversionJob(
+                    job_id=str(current_job.id),
+                    file_id=current_job.input_data.get("file_id"),
+                    original_filename=current_job.input_data.get("original_filename"),
+                    status=current_job.status,
+                    progress=(progress_val if progress_val is not None else (current_job.progress.progress if current_job.progress else 0)),
+                    target_version=current_job.input_data.get("target_version"),
+                    options=current_job.input_data.get("options"),
+                    result_url=result_url,
+                    error_message=error_message,
+                    created_at=current_job.created_at,
+                    updated_at=current_job.updated_at
+                )
 
             try:
-                with open(mock_output_filepath, "w") as f:
-                    f.write(f"This is a mock converted file for job {job.id}.\n")
-                    f.write(f"Original filename: {job.input_data.get('original_filename')}\n")
-            except IOError as e:
-                logger.error(f"Error creating mock output file for job {job_id}: {e}", exc_info=True)
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
+                # Stage 1: Preprocessing -> Processing
+                await asyncio.sleep(2) # Reduced sleep for faster testing
+                job = await crud.update_job_status(session, PyUUID(job_id), "processing")
+                await crud.upsert_progress(session, PyUUID(job_id), 25)
+                mirror = mirror_dict_from_job(job, 25)
+                conversion_jobs_db[job_id] = mirror # Keep legacy mirror for now
+                await cache.set_job_status(job_id, mirror.model_dump())
+                await cache.set_progress(job_id, 25)
+                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
+
+                # Stage 2: Processing -> Postprocessing
+                await asyncio.sleep(3) # Reduced sleep
+                job = await crud.get_job(session, PyUUID(job_id))
+                if job.status == "cancelled":
+                    logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
+                    return
+                job = await crud.update_job_status(session, PyUUID(job_id), "postprocessing")
+                await crud.upsert_progress(session, PyUUID(job_id), 75)
+                mirror = mirror_dict_from_job(job, 75)
+                conversion_jobs_db[job_id] = mirror
+                await cache.set_job_status(job_id, mirror.model_dump())
+                await cache.set_progress(job_id, 75)
+                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
+
+                # Stage 3: Postprocessing -> Completed
+                await asyncio.sleep(2) # Reduced sleep
+                job = await crud.get_job(session, PyUUID(job_id))
+                if job.status == "cancelled":
+                    logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
+                    return
+
+                # --- Simulate creating pack structure ---
+                bp_name = f"{original_mod_name} BP"
+                rp_name = f"{original_mod_name} RP"
+                bp_dir = os.path.join(simulated_pack_output_path, bp_name)
+                rp_dir = os.path.join(simulated_pack_output_path, rp_name)
+                os.makedirs(os.path.join(bp_dir, "blocks"), exist_ok=True)
+                os.makedirs(os.path.join(bp_dir, "recipes"), exist_ok=True)
+                os.makedirs(os.path.join(rp_dir, "textures", "blocks"), exist_ok=True)
+                os.makedirs(os.path.join(rp_dir, "textures", "items"), exist_ok=True)
+
+                # BP Manifest
+                with open(os.path.join(bp_dir, "manifest.json"), "w") as f:
+                    json.dump({"format_version": 2, "header": {"name": bp_name, "description": "Simulated BP", "uuid": str(uuid.uuid4()), "version": [1,0,0]}, "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1,0,0]}]}, f)
+                # RP Manifest
+                with open(os.path.join(rp_dir, "manifest.json"), "w") as f:
+                    json.dump({"format_version": 2, "header": {"name": rp_name, "description": "Simulated RP", "uuid": str(uuid.uuid4()), "version": [1,0,0]}, "modules": [{"type": "resources", "uuid": str(uuid.uuid4()), "version": [1,0,0]}]}, f)
+                # Dummy block behavior
+                with open(os.path.join(bp_dir, "blocks", "simulated_block.json"), "w") as f:
+                    json.dump({"minecraft:block": {"description": {"identifier": "sim:simulated_block"}, "components": {"minecraft:loot": "loot_tables/blocks/simulated_block.json"}}}, f)
+                # Dummy recipe
+                with open(os.path.join(bp_dir, "recipes", "simulated_recipe.json"), "w") as f:
+                    json.dump({"minecraft:recipe_shaped": {"description": {"identifier": "sim:simulated_recipe"}, "tags": ["crafting_table"], "pattern": ["#"], "key": {"#": {"item": "minecraft:stick"}}, "result": {"item": "sim:simulated_block"}}}, f)
+                # Dummy texture
+                dummy_texture_path = os.path.join(rp_dir, "textures", "blocks", "simulated_block_tex.png")
+                with open(dummy_texture_path, "w") as f: f.write("dummy png content")
+                # --- End of pack simulation ---
+
+                addon_data_upload, identified_assets_info = conversion_parser.transform_pack_to_addon_data(
+                    pack_root_path=simulated_pack_output_path,
+                    addon_name_fallback=original_mod_name,
+                    addon_id_override=PyUUID(job_id), # Use job_id as addon_id
+                    user_id=user_id_for_addon
+                )
+
+                # Save Addon, Blocks, Recipes (assets list in addon_data_upload is empty)
+                await crud.update_addon_details(session, PyUUID(job_id), addon_data_upload)
+                logger.info(f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB.")
+
+                # Save Assets
+                for asset_info in identified_assets_info:
+                    await crud.create_addon_asset_from_local_path(
+                        session=session,
+                        addon_id=PyUUID(job_id),
+                        source_file_path=asset_info["source_tmp_path"],
+                        asset_type=asset_info["type"],
+                        original_filename=asset_info["original_filename"]
+                    )
+                logger.info(f"Job {job_id}: {len(identified_assets_info)} assets processed and saved.")
+
+                # Original ZIP creation (can be retained or removed)
+                os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
+                mock_output_filename_internal = f"{job.id}_converted.zip" # Original ZIP name
+                mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
+                result_url = f"/api/v1/convert/{job.id}/download"
+
+                # Create a simple zip for download endpoint if needed, or remove if export is primary
+                shutil.make_archive(os.path.splitext(mock_output_filepath)[0], 'zip', simulated_pack_output_path)
+                logger.info(f"Job {job_id}: Original ZIP archive created at {mock_output_filepath}")
+
+
+                job = await crud.update_job_status(session, PyUUID(job_id), "completed")
+                await crud.upsert_progress(session, PyUUID(job_id), 100)
+
+                mirror = mirror_dict_from_job(job, 100, result_url)
+                conversion_jobs_db[job_id] = mirror
+                await cache.set_job_status(job_id, mirror.model_dump())
+                await cache.set_progress(job_id, 100)
+                logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output processed into addon DB. Original ZIP at: {mock_output_filepath}")
+
+            except Exception as e_inner:
+                logger.error(f"Error during AI simulation processing for job {job_id}: {e_inner}", exc_info=True)
+                job = await crud.update_job_status(session, PyUUID(job_id), "failed")
+                mirror = mirror_dict_from_job(job, 0, None, str(e_inner))
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
-                return
+                logger.error(f"Job {job_id}: Status updated to FAILED due to error in processing.")
+            finally:
+                # Clean up the temporary simulated pack directory
+                if os.path.exists(simulated_pack_output_path):
+                    shutil.rmtree(simulated_pack_output_path)
+                    logger.info(f"Cleaned up simulated pack directory: {simulated_pack_output_path}")
 
-            mirror = mirror_dict_from_job(job, 100, result_url)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 100)
-            logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
-
-        except Exception as e:
-            logger.error(f"Error during AI simulation for job {job_id}: {e}", exc_info=True)
-            job = await crud.update_job_status(session, job_id, "failed")
-            mirror = mirror_dict_from_job(job, 0, None, str(e))
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 0)
-            logger.error(f"Job {job_id}: Status updated to FAILED due to error.")
-    except Exception as e:
-        # Fail fast instead of falling back to inconsistent storage
-        logger.error(f"Critical database failure during AI simulation for job {job_id}: {e}", exc_info=True)
-        
-        # Set job status to failed in cache if possible
+    except Exception as e_outer:
+        logger.error(f"Critical database or setup failure during AI simulation for job {job_id}: {e_outer}", exc_info=True)
         try:
-            if job_id in conversion_jobs_db:
-                conversion_jobs_db[job_id].status = "failed"
-                conversion_jobs_db[job_id].progress = 0
-                conversion_jobs_db[job_id].error_message = "Database service unavailable"
-                await cache.set_job_status(job_id, conversion_jobs_db[job_id].model_dump())
+            # Attempt to update in-memory and cache status to failed if possible
+            if job_id in conversion_jobs_db: # Check if job_id is string key
+                job_data = conversion_jobs_db[job_id]
+                job_data.status = "failed"
+                job_data.progress = 0
+                job_data.error_message = "Critical simulation error: " + str(e_outer)
+                await cache.set_job_status(job_id, job_data.model_dump())
+            elif PyUUID(job_id) in conversion_jobs_db: # Check if job_id is UUID key (less likely for this dict)
+                # This path might be less common depending on how conversion_jobs_db is keyed
+                job_data_uuid_key = conversion_jobs_db[PyUUID(job_id)]
+                job_data_uuid_key.status = "failed"
+                # ... update other fields ...
+                await cache.set_job_status(str(PyUUID(job_id)), job_data_uuid_key.model_dump())
+
         except Exception as cache_error:
-            logger.error(f"Failed to update cache after database error: {cache_error}", exc_info=True)
-        
-        # Do not continue processing with inconsistent state
+            logger.error(f"Failed to update cache after critical simulation error for job {job_id}: {cache_error}", exc_info=True)
         return
 
 
@@ -1125,3 +1185,176 @@ async def get_conversion_report_prd(job_id: str):
 
     report = report_generator.create_full_conversion_report_prd_style(mock_data_source)
     return report
+
+
+# Addon Data Management Endpoints
+@app.get("/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"])
+async def read_addon_details(
+    addon_id: PyUUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Retrieve an addon and its associated blocks, assets, behaviors, and recipes.
+    """
+    db_addon = await crud.get_addon_details(session=db, addon_id=addon_id)
+    if db_addon is None:
+        raise HTTPException(status_code=404, detail="Addon not found")
+    return db_addon
+
+@app.put("/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"])
+async def upsert_addon_details(
+    addon_id: PyUUID,
+    addon_data: pydantic_addon_models.AddonDataUpload,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Create or update an addon with its full details.
+    This endpoint accepts addon data (including blocks, assets, behaviors, recipes)
+    and will create the addon if it doesn't exist, or update it if it does.
+    For child collections (blocks, assets, recipes), this performs a full replacement.
+    """
+    db_addon = await crud.update_addon_details(
+        session=db,
+        addon_id=addon_id,
+        addon_data=addon_data
+    )
+    if db_addon is None: # Should not happen if crud.update_addon_details works as expected
+        raise HTTPException(status_code=500, detail="Error processing addon data")
+    return db_addon
+
+# Addon Asset Endpoints
+
+@app.post("/api/v1/addons/{addon_id}/assets", response_model=pydantic_addon_models.AddonAsset, tags=["addons"])
+async def create_addon_asset_endpoint(
+    addon_id: PyUUID,
+    asset_type: str = Form(...),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload a new asset for a given addon.
+    """
+    # First, verify the addon exists to avoid orphaned assets or errors
+    addon = await crud.get_addon_details(session=db, addon_id=addon_id) # Using get_addon_details to ensure addon exists
+    if not addon:
+        raise HTTPException(status_code=404, detail=f"Addon with id {addon_id} not found.")
+
+    try:
+        db_asset = await crud.create_addon_asset(
+            session=db, addon_id=addon_id, file=file, asset_type=asset_type
+        )
+    except ValueError as e: # Catch errors like Addon not found from CRUD (though checked above)
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to create addon asset: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to create addon asset: {str(e)}")
+    return db_asset
+
+@app.get("/api/v1/addons/{addon_id}/assets/{asset_id}", response_class=FileResponse, tags=["addons"])
+async def get_addon_asset_file(
+    addon_id: PyUUID, # Included for path consistency and ownership check
+    asset_id: PyUUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Download/serve an addon asset file.
+    """
+    db_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
+    if not db_asset or db_asset.addon_id != addon_id: # Check ownership
+        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+
+    file_full_path = os.path.join(crud.BASE_ASSET_PATH, db_asset.path)
+
+    if not os.path.exists(file_full_path):
+        logger.error(f"Asset file not found on disk: {file_full_path} for asset_id {asset_id}")
+        raise HTTPException(status_code=404, detail="Asset file not found on server.")
+
+    return FileResponse(
+        path=file_full_path,
+        filename=db_asset.original_filename or os.path.basename(db_asset.path),
+        media_type='application/octet-stream' # Generic, can be improved with mimetypes library
+    )
+
+@app.put("/api/v1/addons/{addon_id}/assets/{asset_id}", response_model=pydantic_addon_models.AddonAsset, tags=["addons"])
+async def update_addon_asset_endpoint(
+    addon_id: PyUUID, # Validate addon ownership of asset
+    asset_id: PyUUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Replace an existing asset file and its metadata.
+    """
+    # Verify asset exists and belongs to the addon
+    existing_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
+    if not existing_asset or existing_asset.addon_id != addon_id: # Check ownership
+        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+
+    try:
+        updated_asset = await crud.update_addon_asset(
+            session=db, asset_id=asset_id, file=file
+        )
+    except Exception as e:
+        logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update addon asset: {str(e)}")
+
+    if not updated_asset: # Should be caught by prior check or raise exception in CRUD
+        raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
+    return updated_asset
+
+@app.delete("/api/v1/addons/{addon_id}/assets/{asset_id}", status_code=204, tags=["addons"])
+async def delete_addon_asset_endpoint(
+    addon_id: PyUUID, # Validate addon ownership of asset
+    asset_id: PyUUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete an addon asset (file and database record).
+    """
+    # Verify asset exists and belongs to the addon
+    existing_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
+    if not existing_asset or existing_asset.addon_id != addon_id: # Check ownership
+        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+
+    deleted_asset_info = await crud.delete_addon_asset(session=db, asset_id=asset_id)
+    if not deleted_asset_info: # Should be caught by prior check
+        raise HTTPException(status_code=404, detail="Asset not found during delete operation.")
+
+    # Return 204 No Content by default for DELETE operations
+    # FastAPI will automatically handle returning no body if status_code is 204
+    return
+
+@app.get("/api/v1/addons/{addon_id}/export", response_class=StreamingResponse, tags=["addons"])
+async def export_addon_mcaddon(
+    addon_id: PyUUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Exports the addon as a .mcaddon file.
+    """
+    addon_details = await crud.get_addon_details(session=db, addon_id=addon_id)
+    if not addon_details:
+        raise HTTPException(status_code=404, detail="Addon not found")
+
+    try:
+        # asset_base_path is where actual asset files are stored
+        # This path is defined in crud.py as crud.BASE_ASSET_PATH
+        zip_bytes_io = addon_exporter.create_mcaddon_zip(
+            addon_pydantic=addon_details,
+            asset_base_path=crud.BASE_ASSET_PATH
+        )
+    except Exception as e:
+        logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to export addon: {str(e)}")
+
+    # Sanitize addon name for filename
+    safe_filename = "".join(c if c.isalnum() else "_" for c in addon_details.name)
+    if not safe_filename:
+        safe_filename = "addon"
+    download_filename = f"{safe_filename}.mcaddon"
+
+    return StreamingResponse(
+        content=zip_bytes_io,
+        media_type="application/zip", # Standard for .mcaddon which is a zip file
+        headers={"Content-Disposition": f"attachment; filename=\"{download_filename}\""}
+    )

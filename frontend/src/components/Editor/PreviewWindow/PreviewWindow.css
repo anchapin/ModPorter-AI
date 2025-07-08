@@ -1,0 +1,75 @@
+.preview-window-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+  height: 100%; /* Try to fill available space in tab content */
+}
+
+.preview-window-container h4 {
+  margin: 0 0 10px 0;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: bold;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 5px;
+}
+
+.preview-content {
+  font-size: 0.9rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.preview-content p {
+  margin: 0 0 8px 0;
+}
+
+.texture-preview-area {
+  margin-top: 15px;
+  padding: 10px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.texture-preview-area strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.texture-info p {
+  font-size: 0.85rem;
+  margin: 4px 0;
+  color: #333;
+  word-break: break-all;
+}
+
+.texture-image-placeholder {
+  width: 100%;
+  min-height: 100px; /* Placeholder height */
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem; /* Icon size */
+  color: #777;
+  margin-top: 10px;
+  text-align: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.preview-window-empty {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
