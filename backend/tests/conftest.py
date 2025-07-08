@@ -35,7 +35,7 @@ async def async_client():
     """Create an async test client for the FastAPI app."""
     from httpx import ASGITransport
 
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
