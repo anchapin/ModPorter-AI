@@ -5,6 +5,8 @@ import json # For main block dummy data
 import os # For main block dummy data file check
 from typing import List, Dict, Any, Optional
 
+logger = logging.getLogger(__name__)
+
 # Attempt relative import, assuming standard package structure
 # where 'agents' and 'testing' are sibling directories under 'src'
 try:
@@ -12,7 +14,6 @@ try:
 except ImportError:
     # Fallback for environments where the structure might be flatter or path is different
     # This might happen if the subtask runs the file directly not as part of a package
-    logger = logging.getLogger(__name__) # logger needs to be defined for this block too
     logger.warning("Relative import failed. Attempting direct import for qa_framework. This might indicate execution outside a package.")
     try:
         from testing.qa_framework import TestFramework, TestScenarioGenerator
@@ -20,9 +21,6 @@ except ImportError:
         # Last resort, assuming ai_engine.src is in python path
         logger.warning("Direct import from testing.qa_framework failed. Attempting import from ai_engine.src.testing.qa_framework.")
         from ai_engine.src.testing.qa_framework import TestFramework, TestScenarioGenerator
-
-
-logger = logging.getLogger(__name__)
 
 # --- Placeholder classes for engines not yet detailed ---
 class RiskAnalysisEngine:
