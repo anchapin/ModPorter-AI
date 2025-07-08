@@ -12,11 +12,11 @@ class FeatureMapping:
 
 @dataclass
 class ComparisonResult:
-    comparison_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     conversion_id: str # From the main conversion process
     structural_diff: Dict[str, List[str]] # e.g., {"files_added": [...], "files_removed": [...]}
     code_diff: Dict[str, Any] # Detailed code differences
     asset_diff: Dict[str, Any] # Detailed asset differences
+    comparison_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     feature_mappings: List[FeatureMapping] = field(default_factory=list)
     assumptions_applied: List[Dict[str, Any]] = field(default_factory=list) # List of assumptions and their context
     confidence_scores: Dict[str, float] = field(default_factory=dict) # Overall or per-category scores
