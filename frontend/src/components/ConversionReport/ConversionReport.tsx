@@ -58,6 +58,20 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
   jobStatus
 }) => {
+  const handleDownloadReport = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const pageHTML = document.documentElement.outerHTML;
+    const blob = new Blob([pageHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'conversion-report.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Shared styling for mod cards
   const modCardStyle: React.CSSProperties = {
     border: '1px solid #e5e7eb', 
@@ -117,24 +131,55 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
 
       {/* Download Section */}
       {summary.download_url && (
-        <div style={{ marginBottom: '2rem', backgroundColor: '#f0f9ff', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
-          <h3 style={{ marginTop: 0, color: '#1e40af' }}>Your Bedrock Add-on is Ready!</h3>
-          <a
+        <div style={{
+          marginBottom: '2rem',
+          backgroundColor: '#f0f9ff',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column', // Stack title and buttons vertically
+          alignItems: 'center',
+          gap: '1rem' // Gap for items inside this div, primarily between title and button row
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: 0, color: '#1e40af' }}>Your Bedrock Add-on is Ready!</h3>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            {/* This new inner div is for the buttons row */}
+            <a
             href={summary.download_url}
             download
             style={{
               display: 'inline-block',
-              backgroundColor: '#3b82f6',
+              backgroundColor: '#007bff',
               color: 'white',
-              padding: '0.75rem 1.5rem',
+              padding: '1rem 2rem',
               borderRadius: '6px',
               textDecoration: 'none',
               fontWeight: 'bold',
-              marginTop: '0.5rem'
+              marginTop: '0.5rem',
+              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
             }}
           >
-            📦 Download .mcaddon
+            📥 Download .mcaddon
           </a>
+          <a
+            href="#"
+            onClick={handleDownloadReport}
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#007bff',
+              color: 'white',
+              padding: '1rem 2rem',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              marginTop: '0.5rem', // This marginTop can be kept if desired, or removed if gap on parent is enough
+              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
+              // marginLeft: '1rem' // Removed
+            }}
+          >
+            📄 Download Report
+          </a>
+          </div>
         </div>
       )}
 
