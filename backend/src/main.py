@@ -871,9 +871,15 @@ async def download_converted_mod_simple(job_id: str):
 
 @app.on_event("startup")
 async def on_startup():
-    # Skip database initialization during tests
-    if os.getenv("PYTEST_CURRENT_TEST") is None:
-        await init_db()
+    # Skip database initialization during tests or if explicitly disabled
+    if os.getenv("PYTEST_CURRENT_TEST") is None and os.getenv("SKIP_DB_INIT") != "true":
+        try:
+            await init_db()
+            logger.info("Database initialization completed successfully")
+        except Exception as e:
+            logger.warning(f"Database initialization failed, continuing without it: {e}")
+            # Continue startup even if database initialization fails
+            # The application will handle database connection failures gracefully in individual endpoints
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -143,7 +143,7 @@ jobs:
         cd backend
         python -m pytest --cov=. tests/ --cov-report=xml
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
     
     - name: Upload backend coverage
@@ -264,8 +264,8 @@ jobs:
 
     - name: Run integration tests
       run: |
-        # Start backend in background
-        cd backend && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+        # Start backend in background (skip database init since migrations already ran)
+        cd backend && SKIP_DB_INIT=true python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
         BACKEND_PID=$!
         
         # Wait for backend to start
@@ -289,7 +289,7 @@ jobs:
         # Clean up
         kill $BACKEND_PID 2>/dev/null || true
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
 

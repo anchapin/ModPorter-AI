@@ -20,8 +20,8 @@ fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 
 def run_migrations_offline():
-    # Convert asyncpg URL to sync psycopg2 URL for migrations
-    url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    # Use sync database URL for migrations
+    url = settings.sync_database_url
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"}
     )
@@ -29,8 +29,8 @@ def run_migrations_offline():
         context.run_migrations()
 
 def run_migrations_online():
-    # Convert asyncpg URL to sync psycopg2 URL for migrations
-    database_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    # Use sync database URL for migrations
+    database_url = settings.sync_database_url
     connectable = engine_from_config(
         {"sqlalchemy.url": database_url},
         prefix="sqlalchemy.",
