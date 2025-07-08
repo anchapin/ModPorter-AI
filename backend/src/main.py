@@ -287,6 +287,22 @@ async def simulate_ai_conversion(job_id: str):
             updated_at=job.updated_at
         )
     
+    async def update_job_state(session, job_id, status, progress, result_url=None, error_message=None):
+        """Helper function to update job state, progress, and cache"""
+        logger.info(f"Job {job_id}: Updating to status {status}, progress {progress}%...")
+        job = await crud.update_job_status(session, job_id, status)
+        await crud.upsert_progress(session, job_id, progress)
+        logger.info(f"Job {job_id}: Progress updated, refreshing job from database...")
+        # Refresh job from database to get latest status
+        job = await crud.get_job(session, job_id)
+        logger.info(f"Job {job_id}: Creating mirror and updating cache...")
+        mirror = mirror_dict_from_job(job, progress, result_url, error_message)
+        conversion_jobs_db[job_id] = mirror
+        await cache.set_job_status(job_id, mirror.model_dump())
+        await cache.set_progress(job_id, progress)
+        logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: {progress}%")
+        return job
+    
     try:
         logger.info(f"Job {job_id}: Creating database session...")
         async with AsyncSessionLocal() as session:
@@ -300,21 +316,8 @@ async def simulate_ai_conversion(job_id: str):
             
             # Stage 1: Preprocessing -> Processing
             await asyncio.sleep(10)
-            logger.info(f"Job {job_id}: Stage 1 delay completed, updating to processing...")
-            job = await crud.update_job_status(session, job_id, "processing")
-            logger.info(f"Job {job_id}: Status updated to {job.status}, updating progress to 25%...")
-            await crud.upsert_progress(session, job_id, 25)
-            logger.info(f"Job {job_id}: Progress updated to 25%, refreshing job from database...")
-            # Refresh job from database to get latest status
-            job = await crud.get_job(session, job_id)
-            logger.info(f"Job {job_id}: Job refreshed, creating mirror...")
-            # Mirror
-            mirror = mirror_dict_from_job(job, 25)
-            conversion_jobs_db[job_id] = mirror
-            logger.info(f"Job {job_id}: Mirror created, updating cache...")
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 25)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
+            logger.info(f"Job {job_id}: Stage 1 delay completed...")
+            await update_job_state(session, job_id, "processing", 25)
 
             # Stage 2: Processing -> Postprocessing
             logger.info(f"Job {job_id}: Starting stage 2 (15s delay)...")
@@ -325,20 +328,8 @@ async def simulate_ai_conversion(job_id: str):
             if job.status == "cancelled":
                 logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
-            logger.info(f"Job {job_id}: Not cancelled, updating to postprocessing...")
-            job = await crud.update_job_status(session, job_id, "postprocessing")
-            logger.info(f"Job {job_id}: Status updated to {job.status}, updating progress to 75%...")
-            await crud.upsert_progress(session, job_id, 75)
-            logger.info(f"Job {job_id}: Progress updated to 75%, refreshing job from database...")
-            # Refresh job from database to get latest status
-            job = await crud.get_job(session, job_id)
-            logger.info(f"Job {job_id}: Job refreshed, creating mirror...")
-            mirror = mirror_dict_from_job(job, 75)
-            conversion_jobs_db[job_id] = mirror
-            logger.info(f"Job {job_id}: Mirror created, updating cache...")
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 75)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
+            logger.info(f"Job {job_id}: Not cancelled...")
+            await update_job_state(session, job_id, "postprocessing", 75)
 
             # Stage 3: Postprocessing -> Completed
             logger.info(f"Job {job_id}: Starting stage 3 (10s delay)...")
@@ -350,10 +341,7 @@ async def simulate_ai_conversion(job_id: str):
                 return
 
             logger.info(f"Job {job_id}: Not cancelled, updating to completed...")
-            job = await crud.update_job_status(session, job_id, "completed")
-            logger.info(f"Job {job_id}: Status updated to {job.status}, updating progress to 100%...")
-            await crud.upsert_progress(session, job_id, 100)
-            logger.info(f"Job {job_id}: Progress updated to 100%, refreshing job from database...")
+            await update_job_state(session, job_id, "completed", 100)
             # Refresh job from database to get latest status
             job = await crud.get_job(session, job_id)
             logger.info(f"Job {job_id}: Job refreshed, creating mock output file...")
@@ -371,16 +359,12 @@ async def simulate_ai_conversion(job_id: str):
                 logger.info(f"Job {job_id}: Mock output file created successfully")
             except IOError as e:
                 logger.error(f"Error creating mock output file for job {job_id}: {e}", exc_info=True)
-                job = await crud.update_job_status(session, job_id, "failed")
-                # Refresh job from database to get latest status
-                job = await crud.get_job(session, job_id)
-                mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
-                await cache.set_progress(job_id, 0)
+                await update_job_state(session, job_id, "failed", 0, None, f"Failed to create output file: {e}")
                 return
 
             logger.info(f"Job {job_id}: Creating final mirror and updating cache...")
+            # Get refreshed job for final mirror
+            job = await crud.get_job(session, job_id)
             mirror = mirror_dict_from_job(job, 100, result_url)
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
@@ -812,6 +796,60 @@ async def cancel_conversion_simple(job_id: str):
     conversions_db[job_id]["status"] = "cancelled"
     return {"message": f"Conversion job {job_id} has been cancelled"}
 
+# Helper function to create and queue conversion jobs
+async def _create_and_queue_job(
+    db: AsyncSession,
+    background_tasks: BackgroundTasks,
+    file_id: str,
+    original_filename: str,
+    target_version: str,
+    options: dict
+) -> ConversionResponse:
+    """
+    Common logic for creating and queuing conversion jobs.
+    """
+    # Create job in database
+    job = await crud.create_job(
+        db,
+        file_id=file_id,
+        original_filename=original_filename,
+        target_version=target_version,
+        options=options
+    )
+    job_id = str(job.id)
+    created_at = job.created_at if job.created_at else datetime.now()
+    updated_at = job.updated_at if job.updated_at else datetime.now()
+
+    # Build legacy-mirror dict for in-memory compatibility
+    mirror = ConversionJob(
+        job_id=job_id,
+        file_id=file_id,
+        original_filename=original_filename,
+        status="queued",
+        progress=0,
+        target_version=target_version,
+        options=options,
+        result_url=None,
+        error_message=None,
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+    conversion_jobs_db[job_id] = mirror
+
+    # Write to Redis
+    await cache.set_job_status(job_id, mirror.model_dump())
+    await cache.set_progress(job_id, 0)
+
+    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    background_tasks.add_task(simulate_ai_conversion, job_id)
+
+    return ConversionResponse(
+        job_id=job_id,
+        status="queued",
+        message="Conversion job started and is now queued.",
+        estimated_time=35
+    )
+
 # V1 API endpoints that handle file uploads in the convert request
 @app.post("/api/v1/convert/upload", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion_v1(
@@ -886,54 +924,14 @@ async def start_conversion_v1(
         "mod_url": mod_url
     }
 
-    # Try to persist job to DB, fall back to in-memory storage for tests
-    try:
-        job = await crud.create_job(
-            db,
-            file_id=file_id,
-            original_filename=mod_file.filename,
-            target_version=target_version,
-            options=options
-        )
-        job_id = str(job.id)
-        created_at = job.created_at if job.created_at else datetime.now()
-        updated_at = job.updated_at if job.updated_at else datetime.now()
-    except Exception as e:
-        # Log DB failure and fallback to in-memory storage for tests
-        logger.error(f"Database operation failed during v1 job creation: {e}", exc_info=True)
-        # Fallback to in-memory: generate job ID and timestamps
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-
-    # Build legacy-mirror dict for in-memory compatibility (v1)
-    mirror = ConversionJob(
-        job_id=job_id,
+    # Use helper function to create and queue the job
+    return await _create_and_queue_job(
+        db=db,
+        background_tasks=background_tasks,
         file_id=file_id,
         original_filename=mod_file.filename,
-        status="queued",
-        progress=0,
         target_version=target_version,
-        options=options,
-        result_url=None,
-        error_message=None,
-        created_at=created_at,
-        updated_at=updated_at,
-    )
-    conversion_jobs_db[job_id] = mirror
-
-    # Write to Redis
-    await cache.set_job_status(job_id, mirror.model_dump())
-    await cache.set_progress(job_id, 0)
-
-    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
-    background_tasks.add_task(simulate_ai_conversion, job_id)
-
-    return ConversionResponse(
-        job_id=job_id,
-        status="queued",
-        message="Conversion job started and is now queued.",
-        estimated_time=35
+        options=options
     )
 
 # JSON-based conversion endpoint (works with file_id from upload)
@@ -947,54 +945,14 @@ async def start_conversion_json(request: ConversionRequest, background_tasks: Ba
     if not request.file_id or not request.original_filename:
         raise HTTPException(status_code=422, detail="file_id and original_filename are required")
 
-    # Try to persist job to DB, fall back to in-memory storage for tests
-    try:
-        job = await crud.create_job(
-            db,
-            file_id=request.file_id,
-            original_filename=request.original_filename,
-            target_version=request.target_version,
-            options=request.options
-        )
-        job_id = str(job.id)
-        created_at = job.created_at if job.created_at else datetime.now()
-        updated_at = job.updated_at if job.updated_at else datetime.now()
-    except Exception as e:
-        # Database operation failed - fallback to in-memory storage
-        logger.error(f"Database operation failed during JSON job creation: {e}", exc_info=True)
-        # In-memory fallback for job creation
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-
-    # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
-    mirror = ConversionJob(
-        job_id=job_id,
+    # Use helper function to create and queue the job
+    return await _create_and_queue_job(
+        db=db,
+        background_tasks=background_tasks,
         file_id=request.file_id,
         original_filename=request.original_filename,
-        status="queued",
-        progress=0,
         target_version=request.target_version,
-        options=request.options,
-        result_url=None,
-        error_message=None,
-        created_at=created_at,
-        updated_at=updated_at,
-    )
-    conversion_jobs_db[job_id] = mirror
-
-    # Write to Redis
-    await cache.set_job_status(job_id, mirror.model_dump())
-    await cache.set_progress(job_id, 0)
-
-    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
-    background_tasks.add_task(simulate_ai_conversion, job_id)
-
-    return ConversionResponse(
-        job_id=job_id,
-        status="queued",
-        message="Conversion job started and is now queued.",
-        estimated_time=35
+        options=request.options
     )
 
 @app.get("/api/v1/download/simple/{job_id}")

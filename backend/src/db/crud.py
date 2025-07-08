@@ -33,7 +33,10 @@ async def create_job(
 
 async def get_job(session: AsyncSession, job_id: str) -> Optional[models.ConversionJob]:
     # Convert string job_id to UUID for database query
-    job_uuid = uuid.UUID(job_id)
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        return None
     stmt = select(models.ConversionJob).where(models.ConversionJob.id == job_uuid).options(selectinload(models.ConversionJob.progress))
     result = await session.execute(stmt)
     job = result.scalar_one_or_none()
@@ -47,7 +50,10 @@ async def list_jobs(session: AsyncSession) -> List[models.ConversionJob]:
 async def update_job_status(session: AsyncSession, job_id: str, status: str) -> Optional[models.ConversionJob]:
     # Update status on ConversionJob
     # Convert string job_id to UUID for database query
-    job_uuid = uuid.UUID(job_id)
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        return None
     stmt = update(models.ConversionJob).where(models.ConversionJob.id == job_uuid).values(status=status)
     await session.execute(stmt)
     await session.commit()
@@ -58,7 +64,10 @@ async def upsert_progress(session: AsyncSession, job_id: str, progress: int) -> 
     # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
     from sqlalchemy import func
     # Convert string job_id to UUID for database query
-    job_uuid = uuid.UUID(job_id)
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        raise ValueError(f"Invalid job_id format: {job_id}")
     stmt = pg_insert(models.JobProgress).values(
         job_id=job_uuid,
         progress=progress
