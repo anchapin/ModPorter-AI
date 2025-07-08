@@ -4,11 +4,15 @@ Modern FastAPI implementation with database integration
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends, WebSocket, WebSocketDisconnect
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
 from src.services.cache import CacheService
 from src.validation import ValidationFramework # Added import
+# report_generator imports
+from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+from src.services.report_models import InteractiveReport, FullConversionReport
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -44,8 +48,22 @@ cache = CacheService()
 
 # Note: For production environments, rate limiting should be implemented to protect against abuse.
 # This can be done at the API gateway, reverse proxy (e.g., Nginx), or using FastAPI middleware like 'slowapi'.
+@asynccontextmanager
+async def lifespan(app):
+    # Skip database initialization during tests or if explicitly disabled
+    if os.getenv("PYTEST_CURRENT_TEST") is None and os.getenv("SKIP_DB_INIT") != "true":
+        try:
+            await init_db()
+            logger.info("Database initialization completed successfully")
+        except Exception as e:
+            logger.warning(f"Database initialization failed, continuing without it: {e}")
+            # Continue startup even if database initialization fails
+            # The application will handle database connection failures gracefully in individual endpoints
+    yield
+
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
+    lifespan=lifespan,
     title="ModPorter AI Backend",
     description="AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
     version="1.0.0",
@@ -75,6 +93,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+report_generator = ConversionReportGenerator()
 
 # CORS middleware - Security hardened
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
@@ -156,7 +176,7 @@ class HealthResponse(BaseModel):
     timestamp: str
 
 # Health check endpoints
-@app.get("/health", response_model=HealthResponse, tags=["health"])
+@app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the API"""
     return HealthResponse(
@@ -165,17 +185,8 @@ async def health_check():
         timestamp=datetime.utcnow().isoformat()
     )
 
-@app.get("/api/v1/health")
-async def health_check_v1():
-    """Health check endpoint (v1 API)"""
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "message": "ModPorter AI Backend is running",
-    }
-
 # File upload endpoint
-@app.post("/api/upload", response_model=UploadResponse, tags=["files"])
+@app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
 async def upload_file(file: UploadFile = File(...)):
     """
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
@@ -334,7 +345,7 @@ async def simulate_ai_conversion(job_id: str):
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.zip"
             mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            result_url = f"/api/download/{job.id}"
+            result_url = f"/api/v1/convert/{job.id}/download" # Changed path
 
             try:
                 with open(mock_output_filepath, "w") as f:
@@ -382,7 +393,7 @@ async def simulate_ai_conversion(job_id: str):
 
 
 # Conversion endpoints
-@app.post("/api/convert", response_model=ConversionResponse, tags=["conversion"])
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Start a new mod conversion job.
@@ -458,7 +469,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     )
 
 # Keep simple version for compatibility 
-@app.post("/api/convert/simple")
+@app.post("/api/v1/convert/simple")
 async def start_conversion_simple(request: ConversionRequest):
     """Start a conversion job (simple version for compatibility)"""
     if not request.file_name:
@@ -486,14 +497,6 @@ async def get_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0
     """
     Get the current status of a specific conversion job.
     Alias for /status endpoint for backward compatibility.
-    """
-    return await get_conversion_status(job_id, db)
-
-@app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status_v0(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
-    """
-    Get the current status of a specific conversion job.
-    Legacy endpoint for backward compatibility.
     """
     return await get_conversion_status(job_id, db)
 
@@ -606,7 +609,7 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
     elif status == "completed":
         descriptive_message = "Conversion completed successfully."
         # Only set result_url if job is completed
-        result_url = f"/api/download/{job_id}"
+        result_url = f"/api/v1/convert/{job_id}/download" # Changed path
     elif status == "failed":
         error_message = "Conversion failed."
         descriptive_message = error_message
@@ -666,7 +669,7 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         estimated_time_remaining=estimated_time_remaining
     )
 
-@app.get("/api/convert", response_model=List[ConversionStatus], tags=["conversion"])
+@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -684,7 +687,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
                 error_message = "Conversion failed."
                 message = error_message
             elif status == "completed":
-                result_url = f"/api/download/{job.id}"
+                result_url = f"/api/v1/convert/{job.id}/download" # Changed path
             # Mirror for legacy tests
             mirror = ConversionJob(
                 job_id=str(job.id),
@@ -754,7 +757,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             ))
         return statuses
 
-@app.delete("/api/convert/{job_id}", tags=["conversion"])
+@app.delete("/api/v1/convert/{job_id}", tags=["conversion"])
 async def cancel_conversion(job_id: str = FastAPIPath(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Cancel an ongoing conversion job.
@@ -853,19 +856,19 @@ async def download_converted_mod(job_id: str = FastAPIPath(..., pattern="^[0-9a-
     )
 
 # Simple compatibility endpoints
-@app.get("/api/convert/simple")
+@app.get("/api/v1/list/simple")
 async def list_conversions_simple():
     """List all conversion jobs (simple version for compatibility)"""
     return list(conversions_db.values())
 
-@app.get("/api/convert/simple/{job_id}")
+@app.get("/api/v1/convert/simple/{job_id}/status")
 async def get_conversion_status_simple(job_id: str):
     """Get conversion job status (simple version for compatibility)"""
     if job_id not in conversions_db:
         raise HTTPException(status_code=404, detail="Conversion job not found")
     return conversions_db[job_id]
 
-@app.delete("/api/convert/simple/{job_id}")
+@app.delete("/api/v1/convert/simple/{job_id}")
 async def cancel_conversion_simple(job_id: str):
     """Cancel a conversion job (simple version for compatibility)"""
     if job_id not in conversions_db:
@@ -997,7 +1000,7 @@ async def start_conversion_v1(
         estimated_time=35
     )
 
-@app.get("/api/download/simple/{job_id}")
+@app.get("/api/v1/download/simple/{job_id}")
 async def download_converted_mod_simple(job_id: str):
     """Download converted mod (simple version for compatibility)"""
     if job_id not in conversions_db:
@@ -1008,11 +1011,6 @@ async def download_converted_mod_simple(job_id: str):
     # In real implementation, would return file download
     return {"download_url": f"/files/{job_id}.mcaddon"}
 
-@app.on_event("startup")
-async def on_startup():
-    # Skip database initialization during tests
-    if os.getenv("PYTEST_CURRENT_TEST") is None:
-        await init_db()
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -1092,3 +1090,38 @@ async def websocket_conversion_progress(
             logger.warning(f"Error closing WebSocket for {conversion_id} (possibly already closed): {str(e)}")
         except Exception as e:
             logger.error(f"Unexpected error during WebSocket close for {conversion_id}: {str(e)}")
+
+
+@app.get("/api/v1/jobs/{job_id}/report", response_model=InteractiveReport, tags=["conversion"])
+async def get_conversion_report(job_id: str):
+    mock_data_source = None
+    if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    elif "success" in job_id: # Generic fallback for testing
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif "failure" in job_id: # Generic fallback for testing
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    else:
+        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+
+    report = report_generator.create_interactive_report(mock_data_source, job_id)
+    return report
+
+@app.get("/api/v1/jobs/{job_id}/report/prd", response_model=FullConversionReport, tags=["conversion"])
+async def get_conversion_report_prd(job_id: str):
+    mock_data_source = None
+    if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    elif "success" in job_id: # Generic fallback
+        mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
+    elif "failure" in job_id: # Generic fallback
+        mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
+    else:
+        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+
+    report = report_generator.create_full_conversion_report_prd_style(mock_data_source)
+    return report
