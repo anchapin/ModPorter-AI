@@ -3,7 +3,7 @@ from io import BytesIO
 from unittest.mock import patch, MagicMock
 
 # Adjust the import path based on your project structure
-from backend.src.validation import ValidationFramework, ValidationResult
+from src.validation import ValidationFramework, ValidationResult
 
 class TestValidationFramework(unittest.TestCase):
 
