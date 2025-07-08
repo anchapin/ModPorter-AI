@@ -156,15 +156,20 @@ async def get_validation_job_status(job_id: str):
 
 @router.get("/{job_id}/report", response_model=ValidationReportResponse)
 async def get_validation_report(job_id: str):
-    job = validation_jobs.get(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Validation job not found.")
-    if job.status != "completed":
-        raise HTTPException(status_code=400, detail="Validation job status is '%s'. Report not yet available." % job.status)
+    with _validation_jobs_lock:
+        job = validation_jobs.get(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
+        if job.status != ValidationJobStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400, 
+                detail="Validation job status is '%s'. %s" % (job.status, ValidationMessages.REPORT_NOT_AVAILABLE)
+            )
 
-    report_data = validation_reports.get(job_id)
-    if not report_data:
-        raise HTTPException(status_code=404, detail="Validation report data not found, though job completed.")
+    with _validation_reports_lock:
+        report_data = validation_reports.get(job_id)
+        if not report_data:
+            raise HTTPException(status_code=404, detail="Validation report data not found, though job completed.")
 
     response_payload = report_data.model_dump()
     response_payload["validation_job_id"] = job_id
