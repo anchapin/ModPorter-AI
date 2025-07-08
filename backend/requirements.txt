@@ -12,15 +12,15 @@ psycopg2-binary>=2.9.7
 alembic==1.16.2
 
 # Caching
-redis==5.0.1
+redis==6.2.0
 
 # File handling
-python-multipart==0.0.6
+python-multipart==0.0.20
 tomli==2.2.1  # TOML parsing for Python <3.11
 python-magic==0.4.27
 
 # HTTP Client for file downloads
-httpx==0.27.2
+httpx==0.28.1
 
 # Testing
 pytest>=8.2
@@ -29,7 +29,7 @@ pytest-cov==6.2.1
 
 # Code Quality
 ruff==0.12.2
-black==23.11.0
+black==25.1.0
 
 # Utilities
-python-dotenv==1.0.0
+python-dotenv==1.1.1
