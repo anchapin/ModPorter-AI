@@ -121,6 +121,7 @@ jobs:
         pip install -e .
         pip install -r requirements.txt
         pip install ruff  # Ensure ruff is installed for linting
+        pip install alembic  # Ensure alembic is installed for migrations
     
     - name: Run backend linting
       run: |
@@ -131,6 +132,11 @@ jobs:
           echo "Ruff not found, skipping linting"
         fi
 
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+    
     - name: Wait for PostgreSQL to be ready
       run: |
         echo "Waiting for PostgreSQL to be ready..."
@@ -158,10 +164,12 @@ jobs:
       if: always()
       run: |
         cd backend
-        python -m pytest --cov=. tests/ --cov-report=xml
+        python -m pytest --cov=. tests/ --cov-report=xml -v
       env:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
+        TESTING: true
+        ENVIRONMENT: test
     
     - name: Upload backend coverage
       if: always()
@@ -263,7 +271,7 @@ jobs:
         cd frontend && pnpm install
         
         # Install backend dependencies
-        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
+        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt && pip install alembic
         
         # Install ai-engine dependencies  
         cd ../ai-engine && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
@@ -272,6 +280,11 @@ jobs:
       run: |
         cd frontend
         pnpm run build
+    
+    - name: Install PostgreSQL client (integration)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
     
     - name: Wait for PostgreSQL to be ready (integration)
       run: |
@@ -299,7 +312,7 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background (skip database init since migrations already ran)
-        cd backend && SKIP_DB_INIT=true python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+        cd backend && SKIP_DB_INIT=true DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter REDIS_URL=redis://localhost:6379 python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
         BACKEND_PID=$!
         
         # Wait for backend to start
@@ -326,6 +339,8 @@ jobs:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
+        TESTING: true
+        ENVIRONMENT: test
 
   # Security Scanning
   security-scan:
