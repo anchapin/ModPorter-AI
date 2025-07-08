@@ -8,9 +8,9 @@ updates:
     labels:
       - "dependencies"
       - "frontend"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      npm-frontend-updates: # Added group
+      npm-frontend-updates:
         patterns:
           - "*"
 
@@ -22,9 +22,9 @@ updates:
     labels:
       - "dependencies"
       - "workspace"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      npm-root-updates: # Added group
+      npm-root-updates:
         patterns:
           - "*"
 
@@ -37,9 +37,9 @@ updates:
       - "dependencies"
       - "backend"
       - "python"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      pip-backend-updates: # Added group
+      pip-backend-updates:
         patterns:
           - "*"
 
@@ -52,9 +52,9 @@ updates:
       - "dependencies"
       - "ai-engine"
       - "python"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      pip-ai-engine-updates: # Added group
+      pip-ai-engine-updates:
         patterns:
           - "*"
 
@@ -66,9 +66,9 @@ updates:
     labels:
       - "dependencies"
       - "docker"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      docker-root-updates: # Added group
+      docker-root-updates:
         patterns:
           - "*"
 
@@ -80,8 +80,8 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-    open-pull-requests-limit: 1 # Changed from 10
+    open-pull-requests-limit: 1
     groups:
-      github-actions-root-updates: # Added group
+      github-actions-root-updates:
         patterns:
           - "*"
