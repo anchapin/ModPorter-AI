@@ -12,7 +12,7 @@ psycopg2-binary>=2.9.7
 alembic==1.16.2
 
 # Caching
-redis==6.2.0
+redis[asyncio]==6.2.0
 
 # File handling
 python-multipart==0.0.20
