@@ -7,10 +7,7 @@ conversion processing, status tracking, and error handling.
 
 import io
 import time
-from src.services.report_generator import (
-    MOCK_CONVERSION_RESULT_SUCCESS,
-    MOCK_CONVERSION_RESULT_FAILURE,
-)
+from src.services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 
 # Test client will be provided by fixture
 

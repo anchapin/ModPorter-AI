@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
-from langchain.tools import tool
+from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
 )

@@ -5,7 +5,6 @@ from unittest.mock import patch
 # Adjust the import path based on your project structure
 from src.validation import ValidationFramework
 
-
 class TestValidationFramework(unittest.TestCase):
 
     def setUp(self):

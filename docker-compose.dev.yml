@@ -32,3 +32,4 @@ services:
     environment:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
+      - REDIS_URL=redis://redis:6379

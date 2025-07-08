@@ -2,12 +2,10 @@ import unittest
 from typing import cast
 
 # Assuming execution from backend/ directory or PYTHONPATH includes backend/
-from src.services.report_generator import (
-    ConversionReportGenerator,
-    MOCK_CONVERSION_RESULT_SUCCESS,
-    MOCK_CONVERSION_RESULT_FAILURE,
+from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+from src.services.report_models import (
+    FeatureConversionDetail, AssumptionDetail
 )
-from src.services.report_models import FeatureConversionDetail, AssumptionDetail
 
 
 class TestConversionReportGenerator(unittest.TestCase):

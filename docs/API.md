@@ -11,7 +11,7 @@ Currently, the API is open for public use. Authentication will be added in futur
 
 ### Health Check
 ```http
-GET /health
+GET /api/v1/health
 ```
 
 **Response**
@@ -37,6 +37,8 @@ mod_url: string (optional) - CurseForge or Modrinth URL
 smart_assumptions: boolean (default: true)
 include_dependencies: boolean (default: true)
 ```
+
+**Timeout**: Conversions have a maximum timeout of 10 minutes. If a conversion takes longer than this, it will be marked as failed.
 
 **Response**
 ```json
