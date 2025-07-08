@@ -71,18 +71,21 @@ async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str
             if response.status_code != 200:
                 return {"status": "failed", "error": f"AI engine returned {response.status_code}: {response.text}"}
             
-            # Poll for completion
-            while True:
+            # Poll for completion with a timeout
+            max_polls = 120  # 10 minutes timeout (120 polls * 5s sleep)
+            for _ in range(max_polls):
                 status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
                 if status_response.status_code != 200:
                     return {"status": "failed", "error": f"Failed to get job status: {status_response.text}"}
-                
+
                 status_data = status_response.json()
                 if status_data["status"] in ["completed", "failed"]:
                     return status_data
-                
+
                 # Wait before checking again
                 await asyncio.sleep(5)
+
+            return {"status": "failed", "error": "Polling for job status timed out."}
                 
     except Exception as e:
         logger.error(f"AI engine HTTP call failed: {e}")
@@ -330,31 +333,38 @@ async def ai_conversion(job_id: str):
     Perform AI conversion using the ModPorter AI engine via HTTP API
     """
     logger.info(f"Starting AI conversion for job_id: {job_id}")
-    
+
+    # Helper function to mirror job data
+    def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
+        return ConversionJob(
+            job_id=str(job.id),
+            file_id=job.input_data.get("file_id"),
+            original_filename=job.input_data.get("original_filename"),
+            status=job.status,
+            progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
+            target_version=job.input_data.get("target_version"),
+            options=job.input_data.get("options"),
+            result_url=result_url if result_url is not None else None,
+            error_message=error_message,
+            created_at=job.created_at,
+            updated_at=job.updated_at
+        )
+
+    # Helper function to fail a job
+    async def _fail_job(session, job_id, error_message):
+        job = await crud.update_job_status(session, job_id, "failed")
+        mirror = mirror_dict_from_job(job, 0, None, error_message)
+        conversion_jobs_db[job_id] = mirror
+        await cache.set_job_status(job_id, mirror.model_dump())
+        await cache.set_progress(job_id, 0)
+        return job
+
     # Check if AI engine is available
     if not await check_ai_engine_health():
         logger.error("AI engine not available, failing job")
         try:
             async with AsyncSessionLocal() as session:
-                job = await crud.update_job_status(session, job_id, "failed")
-                def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-                    return ConversionJob(
-                        job_id=str(job.id),
-                        file_id=job.input_data.get("file_id"),
-                        original_filename=job.input_data.get("original_filename"),
-                        status=job.status,
-                        progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
-                        target_version=job.input_data.get("target_version"),
-                        options=job.input_data.get("options"),
-                        result_url=result_url if result_url is not None else None,
-                        error_message=error_message,
-                        created_at=job.created_at,
-                        updated_at=job.updated_at
-                    )
-                mirror = mirror_dict_from_job(job, 0, None, "AI engine not available")
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
-                await cache.set_progress(job_id, 0)
+                await _fail_job(session, job_id, "AI engine not available")
         except Exception as e:
             logger.error(f"Failed to update job status: {e}")
         return
@@ -366,22 +376,7 @@ async def ai_conversion(job_id: str):
                 logger.error(f"Error: Job {job_id} not found for AI conversion.")
                 return
             
-            # Helper function to mirror job data
-            def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-                return ConversionJob(
-                    job_id=str(job.id),
-                    file_id=job.input_data.get("file_id"),
-                    original_filename=job.input_data.get("original_filename"),
-                    status=job.status,
-                    progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
-                    target_version=job.input_data.get("target_version"),
-                    options=job.input_data.get("options"),
-                    result_url=result_url if result_url is not None else None,
-                    error_message=error_message,
-                    created_at=job.created_at,
-                    updated_at=job.updated_at
-                )
-            
+
             # Update status to processing
             job = await crud.update_job_status(session, job_id, "processing")
             await crud.upsert_progress(session, job_id, 10)
@@ -395,20 +390,15 @@ async def ai_conversion(job_id: str):
             file_id = job.input_data.get("file_id")
             original_filename = job.input_data.get("original_filename")
             
-            # Find the uploaded file
-            input_file_path = None
-            for filename in os.listdir(TEMP_UPLOADS_DIR):
-                if filename.startswith(file_id):
-                    input_file_path = Path(TEMP_UPLOADS_DIR) / filename
-                    break
+            # Find the uploaded file using direct filename construction
+            _, file_ext = os.path.splitext(original_filename)
+            saved_filename = f"{file_id}{file_ext}"
+            input_file_path = Path(TEMP_UPLOADS_DIR) / saved_filename
             
             if not input_file_path or not input_file_path.exists():
                 error_msg = f"Input file not found for job {job_id}"
                 logger.error(error_msg)
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, error_msg)
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
+                await _fail_job(session, job_id, error_msg)
                 return
             
             # Prepare output path
@@ -452,20 +442,14 @@ async def ai_conversion(job_id: str):
             if conversion_result.get('status') == 'failed':
                 error_msg = conversion_result.get('error', 'Unknown conversion error')
                 logger.error(f"AI conversion failed for job {job_id}: {error_msg}")
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, error_msg)
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
+                await _fail_job(session, job_id, error_msg)
                 return
             
             # Verify output file exists
             if not output_path.exists():
                 error_msg = f"Output file not generated: {output_path}"
                 logger.error(error_msg)
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, error_msg)
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
+                await _fail_job(session, job_id, error_msg)
                 return
             
             # Final completion
@@ -484,11 +468,7 @@ async def ai_conversion(job_id: str):
         logger.error(f"AI conversion failed for job {job_id}: {str(e)}", exc_info=True)
         try:
             async with AsyncSessionLocal() as session:
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, str(e))
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
-                await cache.set_progress(job_id, 0)
+                await _fail_job(session, job_id, str(e))
         except Exception as db_error:
             logger.error(f"Failed to update job status after conversion error: {db_error}")
 
