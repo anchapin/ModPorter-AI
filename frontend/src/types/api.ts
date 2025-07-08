@@ -198,3 +198,93 @@ export interface ExtendedConversionResponse extends ConversionResponse {
   downloadUrl?: string;
   detailedReport?: DetailedReport;
 }
+
+// --- Addon Editor Specific Types ---
+
+export interface AddonBehavior {
+  id: string; // UUID
+  block_id: string; // UUID
+  data: Record<string, any>;
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+}
+
+export interface AddonRecipe {
+  id: string; // UUID
+  addon_id: string; // UUID
+  data: Record<string, any>; // Recipe definition
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+}
+
+export interface AddonAsset {
+  id: string; // UUID
+  addon_id: string; // UUID
+  type: string; // e.g., "texture", "sound", "script"
+  path: string; // Relative path within the addon structure or to the asset file
+  original_filename?: string | null;
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+}
+
+export interface AddonBlock {
+  id: string; // UUID
+  addon_id: string; // UUID
+  identifier: string;
+  properties?: Record<string, any> | null;
+  behavior?: AddonBehavior | null;
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+}
+
+export interface AddonBase {
+  name: string;
+  description?: string | null;
+  user_id: string;
+}
+
+export interface AddonDetails extends AddonBase {
+  id: string; // UUID
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+  blocks: AddonBlock[];
+  assets: AddonAsset[];
+  recipes: AddonRecipe[];
+}
+
+// --- Types for Addon Data Upload (PUT request) ---
+
+export interface AddonBehaviorCreate { // Matches backend Pydantic AddonBehaviorCreate
+  data: Record<string, any>;
+}
+
+export interface AddonBlockCreate { // Matches backend Pydantic AddonBlockCreate
+  identifier: string;
+  properties?: Record<string, any> | null;
+  behavior?: AddonBehaviorCreate | null;
+}
+
+export interface AddonAssetCreate { // Matches backend Pydantic AddonAssetCreate
+  type: string;
+  // For direct asset uploads (POST to /assets), path & original_filename are from the file.
+  // For AddonDataUpload (PUT to /addons/{id}), client might specify a conceptual path
+  // or this might be a reference to an already uploaded asset if API evolves.
+  // For now, matching backend AddonAssetCreate which includes path and original_filename.
+  path: string;
+  original_filename?: string | null;
+}
+
+export interface AddonRecipeCreate { // Matches backend Pydantic AddonRecipeCreate
+  data: Record<string, any>;
+}
+
+// AddonDataUpload is based on AddonBase but requires name and user_id,
+// and uses "Create" types for child lists.
+export interface AddonDataUpload { // Matches backend Pydantic AddonDataUpload
+  name: string; // Required
+  description?: string | null;
+  user_id: string; // Required
+  blocks: AddonBlockCreate[];
+  assets: AddonAssetCreate[];
+  recipes: AddonRecipeCreate[];
+}

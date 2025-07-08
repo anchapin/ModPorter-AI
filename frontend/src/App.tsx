@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { ConversionUpload } from './components/ConversionUpload/ConversionUpload';
 import { Documentation } from './pages/Documentation';
+import EditorPage from './pages/EditorPage'; // Added for Editor Route
 import './App.css';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
               } 
             />
             <Route path="/docs" element={<Documentation />} />
+            <Route path="/editor/:addonId" element={<EditorPage />} /> {/* Added Editor Route */}
           </Routes>
         </main>
       </div>
