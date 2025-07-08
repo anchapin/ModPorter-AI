@@ -1,0 +1,32 @@
+{
+  "scenarios": [
+    {
+      "name": "Basic Block Placement",
+      "category": "functional",
+      "description": "Test placing and breaking custom blocks",
+      "steps": ["Place block", "Interact with block", "Break block"],
+      "expected_outcome": "Block behaves as intended"
+    },
+    {
+      "name": "Performance Under Load",
+      "category": "performance",
+      "description": "Test add-on performance with many instances",
+      "steps": ["Spawn 1000 entities", "Monitor performance", "Clean up"],
+      "expected_outcome": "Performance remains acceptable (FPS > 30)"
+    },
+    {
+      "name": "Item Usage Test",
+      "category": "functional",
+      "description": "Test using a custom item and its effects.",
+      "steps": ["Obtain custom item", "Use custom item", "Verify effect"],
+      "expected_outcome": "Custom item behaves as per design and effects are applied correctly."
+    },
+    {
+      "name": "Compatibility Check - Old Version",
+      "category": "compatibility",
+      "description": "Test add-on behavior on a simulated older Bedrock version.",
+      "steps": ["Load add-on in simulated old environment", "Perform core function 1", "Perform core function 2"],
+      "expected_outcome": "Add-on loads and core functions operate without errors specific to versioning issues."
+    }
+  ]
+}

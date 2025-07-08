@@ -41,7 +41,9 @@ class TestFileUploadEndpoint:
         assert response.status_code == 200
 
         data = response.json()
-        assert data["original_filename"] == "test-mod.jar" # Changed from filename to original_filename
+        assert (
+            data["original_filename"] == "test-mod.jar"
+        )  # Changed from filename to original_filename
         assert "message" in data
 
     def test_upload_valid_zip_file(self, client: TestClient):
@@ -70,7 +72,9 @@ class TestFileUploadEndpoint:
         file_data = ("test.txt", io.BytesIO(file_content), "text/plain")
 
         response = client.post("/api/v1/upload", files={"file": file_data})
-        assert response.status_code == 415  # Unsupported Media Type is correct for invalid file types
+        assert (
+            response.status_code == 415
+        )  # Unsupported Media Type is correct for invalid file types
 
         data = response.json()
         assert "invalid file type" in data["detail"]
@@ -107,7 +111,7 @@ class TestConversionEndpoints:
         request_data = {
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
-            "target_version": "1.20.0"
+            "target_version": "1.20.0",
         }
 
         create_response = client.post("/api/v1/convert", json=request_data)
@@ -115,7 +119,7 @@ class TestConversionEndpoints:
         job_id = create_response.json()["job_id"]
 
         # Now test getting its status
-        response = client.get(f"/api/v1/convert/{job_id}/status") # Changed path
+        response = client.get(f"/api/v1/convert/{job_id}/status")  # Changed path
         assert response.status_code == 200
 
         data = response.json()
@@ -126,7 +130,7 @@ class TestConversionEndpoints:
 
     def test_list_conversions(self, client: TestClient):
         """Test listing all conversion jobs."""
-        response = client.get("/api/v1/conversions") # Changed path
+        response = client.get("/api/v1/conversions")  # Changed path
         assert response.status_code == 200
 
         data = response.json()
@@ -138,7 +142,7 @@ class TestConversionEndpoints:
         request_data = {
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
-            "target_version": "1.20.0"
+            "target_version": "1.20.0",
         }
 
         create_response = client.post("/api/v1/convert", json=request_data)
@@ -146,7 +150,7 @@ class TestConversionEndpoints:
         job_id = create_response.json()["job_id"]
 
         # Now test cancelling it
-        response = client.delete(f"/api/v1/convert/{job_id}") # Changed path
+        response = client.delete(f"/api/v1/convert/{job_id}")  # Changed path
         assert response.status_code == 200
 
         data = response.json()
@@ -156,7 +160,7 @@ class TestConversionEndpoints:
         """Test downloading a non-existent converted mod."""
         job_id = "12345678-1234-1234-1234-123456789012"
 
-        response = client.get(f"/api/v1/convert/{job_id}/download") # Changed path
+        response = client.get(f"/api/v1/convert/{job_id}/download")  # Changed path
         assert response.status_code == 404
 
 
@@ -168,18 +172,17 @@ class TestConversionRequestValidation:
         request_data = {
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
-            "target_version": "1.20.0"
+            "target_version": "1.20.0",
         }
 
         response = client.post("/api/v1/convert", json=request_data)
         assert response.status_code == 200
 
-    def test_conversion_request_missing_file_id(self, client: TestClient): # Renamed test
+    def test_conversion_request_missing_file_id(
+        self, client: TestClient
+    ):  # Renamed test
         """Test conversion request with missing file_id."""
-        request_data = {
-            "original_filename": "test-mod.jar",
-            "target_version": "1.20.0"
-        }
+        request_data = {"original_filename": "test-mod.jar", "target_version": "1.20.0"}
         # This will likely fail due to Pydantic model validation on backend if file_id is mandatory
         # However, the current ConversionRequest model has file_id as Optional.
         # Let's assume for this unit test, we are testing the endpoint with a payload
@@ -187,14 +190,11 @@ class TestConversionRequestValidation:
         # or that the model itself makes it non-optional.
         # The backend main.py's start_conversion has logic to raise HTTPException if file_id is not resolved.
         response = client.post("/api/v1/convert", json=request_data)
-        assert response.status_code == 422 # Expecting 422 due to missing file_id
+        assert response.status_code == 422  # Expecting 422 due to missing file_id
 
     def test_conversion_request_default_target_version(self, client: TestClient):
         """Test conversion request uses default target version."""
-        request_data = {
-            "file_id": "mock-file-id",
-            "original_filename": "test-mod.jar"
-        }
+        request_data = {"file_id": "mock-file-id", "original_filename": "test-mod.jar"}
 
         response = client.post("/api/v1/convert", json=request_data)
         assert response.status_code == 200

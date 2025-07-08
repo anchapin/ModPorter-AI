@@ -121,6 +121,7 @@ jobs:
         pip install -e .
         pip install -r requirements.txt
         pip install ruff  # Ensure ruff is installed for linting
+        pip install alembic  # Ensure alembic is installed for migrations
     
     - name: Run backend linting
       run: |
@@ -131,6 +132,11 @@ jobs:
           echo "Ruff not found, skipping linting"
         fi
 
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+    
     - name: Wait for PostgreSQL to be ready
       run: |
         echo "Waiting for PostgreSQL to be ready..."
@@ -149,6 +155,7 @@ jobs:
     - name: Run database migrations
       run: |
         cd backend
+        # Use sync URL for alembic migrations
         export DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter
         python -m alembic upgrade head
       env:
@@ -156,12 +163,31 @@ jobs:
 
     - name: Run backend tests
       if: always()
+      timeout-minutes: 10
       run: |
         cd backend
-        python -m pytest --cov=. tests/ --cov-report=xml
+        # Set test environment variables
+        export TESTING=true
+        export ENVIRONMENT=test
+        export PYTEST_CURRENT_TEST=true
+        export DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        export REDIS_URL=redis://localhost:6379
+
+        # Debug: Check if services are accessible
+        echo "Testing database connection..."
+        python -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect('postgresql://postgres:password@localhost:5432/modporter').close())" || echo "Database connection failed"
+
+        echo "Testing Redis connection..."
+        python -c "import redis; r = redis.Redis(host='localhost', port=6379); r.ping()" || echo "Redis connection failed"
+
+        # Run tests with timeout and optimizations for CI
+        python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
       env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
+        TESTING: true
+        ENVIRONMENT: test
+        PYTEST_CURRENT_TEST: true
     
     - name: Upload backend coverage
       if: always()
@@ -263,7 +289,7 @@ jobs:
         cd frontend && pnpm install
         
         # Install backend dependencies
-        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
+        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt && pip install alembic
         
         # Install ai-engine dependencies  
         cd ../ai-engine && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
@@ -272,6 +298,11 @@ jobs:
       run: |
         cd frontend
         pnpm run build
+    
+    - name: Install PostgreSQL client (integration)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
     
     - name: Wait for PostgreSQL to be ready (integration)
       run: |
@@ -299,7 +330,7 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background (skip database init since migrations already ran)
-        cd backend && SKIP_DB_INIT=true python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+        cd backend && SKIP_DB_INIT=true DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter REDIS_URL=redis://localhost:6379 python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
         BACKEND_PID=$!
         
         # Wait for backend to start
@@ -323,9 +354,11 @@ jobs:
         # Clean up
         kill $BACKEND_PID 2>/dev/null || true
       env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
+        TESTING: true
+        ENVIRONMENT: test
 
   # Security Scanning
   security-scan:
@@ -336,7 +369,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.32.0
       with:
         scan-type: 'fs'
         scan-ref: '.'

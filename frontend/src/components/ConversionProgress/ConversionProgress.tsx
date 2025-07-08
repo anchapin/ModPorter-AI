@@ -57,7 +57,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const pollingIntervalRef = useRef<number | null>(null);
   const currentStatusRef = useRef<string>('queued');
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
   const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
   const stopPolling = () => {

@@ -8,7 +8,7 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
-from langchain.tools import tool
+from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, FeatureContext, ConversionPlanComponent, AssumptionReport
 )

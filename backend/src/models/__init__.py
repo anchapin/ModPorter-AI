@@ -1,4 +1,4 @@
-from .cache_models import CacheStats
+from .cache_models import CacheStats as CacheStats
 from .performance_models import (
     PerformanceBenchmark,
     PerformanceMetric,

@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 
 # Assuming the models are in src.models relative to ai-engine directory
 # Adjust this import path if your project structure is different.
-from models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine,
     SmartAssumption,
     AssumptionImpact,

@@ -6,7 +6,7 @@ import json
 import pytest
 import javalang
 from unittest.mock import Mock, patch
-from agents.logic_translator import LogicTranslatorAgent
+from src.agents.logic_translator import LogicTranslatorAgent
 
 
 class TestLogicTranslatorAST:
@@ -328,7 +328,7 @@ class TestLogicTranslatorAST:
         assert result["success"] is False
         assert "Unsupported recipe type" in result["error"]
 
-    @patch('agents.logic_translator.logger')
+    @patch('src.agents.logic_translator.logger')
     def test_ast_parsing_error_logging(self, mock_logger):
         """Test that AST parsing errors are properly logged"""
         invalid_java = "public class { invalid syntax"
@@ -398,7 +398,7 @@ class TestLogicTranslatorAST:
         assert result["success"] is True
         assert "function TestClass()" in result["javascript_method"]
 
-    @patch('agents.logic_translator.logger')
+    @patch('src.agents.logic_translator.logger')
     def test_empty_method_body_warning(self, mock_logger):
         """Test warning when AST method has body but reconstruction is empty"""
         java_code = """

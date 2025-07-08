@@ -17,6 +17,14 @@ from src.agents.logic_translator import LogicTranslatorAgent
 from src.agents.asset_converter import AssetConverterAgent
 from src.agents.packaging_agent import PackagingAgent
 from src.agents.qa_validator import QAValidatorAgent
+# --- INTEGRATION PLAN FOR QAAgent ---
+# The following comments outline where and how the new QAAgent
+# (for comprehensive QA testing) would be integrated into this crew.
+# Actual implementation would occur in a subsequent step.
+#
+# 1. Import QAAgent:
+#    from src.agents.qa_agent import QAAgent # Add this near other agent imports
+# --- END INTEGRATION PLAN ---
 from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
 
 logger = logging.getLogger(__name__)
@@ -44,7 +52,8 @@ class ModPorterConversionCrew:
                     "Mock translation complete",
                     "Mock assets converted",
                     "Mock package built",
-                    "Mock validation passed"
+                    "Mock validation passed",
+                    "Mock comprehensive QA complete" # Added for new QAAgent
                 ])
             except ImportError:
                 # Fallback if mock not available
@@ -78,6 +87,10 @@ class ModPorterConversionCrew:
         self.asset_converter_agent = AssetConverterAgent()
         self.packaging_agent_instance = PackagingAgent()
         self.qa_validator_agent = QAValidatorAgent()
+        # --- INTEGRATION PLAN FOR QAAgent ---
+        # 2. Initialize QAAgent instance:
+        #    self.actual_qa_agent = QAAgent() # Initialize the actual QAAgent
+        # --- END INTEGRATION PLAN ---
         
         # PRD Feature 2: Analyzer Agent
         agent_kwargs = {
@@ -171,7 +184,7 @@ class ModPorterConversionCrew:
             
         self.packaging_agent = Agent(**packaging_kwargs)
         
-        # PRD Feature 2: QA Agent
+        # PRD Feature 2: QA Agent (This is the existing QAValidatorAgent)
         qa_kwargs = {
             "role": "Quality Assurance Validator",
             "goal": "Validate conversion quality and generate comprehensive reports",
@@ -188,6 +201,26 @@ class ModPorterConversionCrew:
             qa_kwargs["memory"] = False
             
         self.qa_validator = Agent(**qa_kwargs)
+
+        # --- INTEGRATION PLAN FOR QAAgent ---
+        # 2. Initialize crewai.Agent wrapper for QAAgent:
+        #    comprehensive_qa_kwargs = {
+        #        "role": "Comprehensive QA Tester",
+        #        "goal": "Perform in-depth QA testing using a predefined framework and scenarios",
+        #        "backstory": """You are an advanced QA agent that uses a structured testing
+        #        framework (TestFramework) and a scenario generator (TestScenarioGenerator)
+        #        to execute a variety of tests (functional, performance, compatibility)
+        #        on the converted add-on package.""",
+        #        "verbose": True,
+        #        "allow_delegation": False, # Or True if it needs to delegate sub-tasks
+        #        "llm": self.llm,
+        #        # "tools": [tool_to_run_qa_pipeline] # A tool would be needed to trigger QAAgent.run_qa_pipeline()
+        #                                          # This tool would take scenario_file_path as input.
+        #    }
+        #    if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        #        comprehensive_qa_kwargs["memory"] = False
+        #    self.comprehensive_qa_tester_agent = Agent(**comprehensive_qa_kwargs)
+        # --- END INTEGRATION PLAN ---
     
     def _setup_crew(self):
         """Setup the crew workflow following PRD conversion process"""
@@ -278,7 +311,7 @@ class ModPorterConversionCrew:
             context=[self.translate_task, self.convert_assets_task]
         )
         
-        self.validate_task = Task(
+        self.validate_task = Task( # This is the existing QAValidatorAgent's task
             description="""Validate the conversion and generate the final report:
             1. Use validate_conversion_quality to check package validity and completeness
             2. Run run_functionality_tests to verify converted features work as expected
@@ -294,6 +327,33 @@ class ModPorterConversionCrew:
             expected_output="Complete conversion report with success metrics, validation results, and quality analysis",
             context=[self.package_task]
         )
+
+        # --- INTEGRATION PLAN FOR QAAgent ---
+        # 3. Define the new crewai.Task for comprehensive QA:
+        #    self.comprehensive_testing_task = Task(
+        #        description="""Execute a comprehensive QA test suite on the packaged .mcaddon file.
+        #        This involves:
+        #        1. Loading test scenarios from a predefined path (e.g., 'ai-engine/src/testing/scenarios/example_scenarios.json').
+        #        2. Running functional tests based on these scenarios.
+        #        3. Running performance tests based on these scenarios.
+        #        4. Running compatibility tests based on these scenarios.
+        #        5. Collecting all results and generating a structured QA pipeline output.
+        #
+        #        The task should use a tool that invokes the QAAgent's `run_qa_pipeline` method,
+        #        passing the path to the scenario file. The output of this pipeline
+        #        (a dictionary of results) will be the output of this task.""",
+        #        agent=self.comprehensive_qa_tester_agent, # The new crewAI agent wrapper for QAAgent
+        #        expected_output="A JSON string or dictionary containing the full results from the QAAgent's pipeline, including functional, performance, and compatibility test outcomes.",
+        #        context=[self.validate_task] # This task runs AFTER the initial validation.
+        #    )
+        #
+        # 5. Invoking QAAgent.run_qa_pipeline():
+        #    The `comprehensive_qa_tester_agent` would need a tool. Let's call it `RunQAPipelineTool`.
+        #    This tool's `run` method would essentially do:
+        #    `return self.actual_qa_agent.run_qa_pipeline(scenario_file_path="ai-engine/src/testing/scenarios/example_scenarios.json")`
+        #    The task's description would instruct the agent to use this tool.
+        #    The output of this tool (the dictionary from `run_qa_pipeline`) would become the task's output.
+        # --- END INTEGRATION PLAN ---
         
         # Create the crew
         self.crew = Crew(
@@ -304,6 +364,10 @@ class ModPorterConversionCrew:
                 self.asset_converter,
                 self.packaging_agent,
                 self.qa_validator
+                # --- INTEGRATION PLAN FOR QAAgent ---
+                # 4. Add the new agent to the Crew's agent list:
+                #    self.comprehensive_qa_tester_agent,
+                # --- END INTEGRATION PLAN ---
             ],
             tasks=[
                 self.analyze_task,
@@ -312,6 +376,10 @@ class ModPorterConversionCrew:
                 self.convert_assets_task,
                 self.package_task,
                 self.validate_task
+                # --- INTEGRATION PLAN FOR QAAgent ---
+                # 4. Add the new task to the Crew's task list:
+                #    self.comprehensive_testing_task,
+                # --- END INTEGRATION PLAN ---
             ],
             process=Process.sequential,
             verbose=True
@@ -346,6 +414,13 @@ class ModPorterConversionCrew:
                 'smart_assumptions_enabled': smart_assumptions,
                 'include_dependencies': include_dependencies,
                 'smart_assumption_engine': self.smart_assumption_engine
+                # --- INTEGRATION PLAN FOR QAAgent ---
+                # The 'inputs' dictionary might need to include the path to the .mcaddon file
+                # produced by self.package_task, so the comprehensive_testing_task knows what to test.
+                # Alternatively, the path could be passed through context from package_task's output.
+                # Also, the path to the scenario file for QAAgent could be an input here if it's dynamic.
+                # For now, assuming 'ai-engine/src/testing/scenarios/example_scenarios.json' is hardcoded in the tool/task.
+                # --- END INTEGRATION PLAN ---
             }
             
             # Execute the crew workflow
@@ -490,13 +565,31 @@ class ModPorterConversionCrew:
             'logs': [],
             'technical_details': {},
             'assumption_conflicts': conflict_analysis
+            # --- INTEGRATION PLAN FOR QAAgent ---
+            # 6. Incorporate QAAgent results into the final report:
+            #    The output from `self.comprehensive_testing_task` (which is the dictionary from
+            #    QAAgent.run_qa_pipeline()) should be added here.
+            #    For example:
+            #    `detailed_report['comprehensive_qa_results'] = comprehensive_testing_task_output`
+            #    The `comprehensive_testing_task_output` would be retrieved from `crew_result.tasks_output`
+            #    based on the task's position in the sequence.
+            #
+            #    The `overall_success_rate` and other summary metrics could also be updated
+            #    based on the `comprehensive_qa_results`. For example, if the QA pipeline
+            #    reports a low pass rate, the `overall_success_rate` might be adjusted downwards.
+            # --- END INTEGRATION PLAN ---
         }
         
         # Extract logs from crew result if available
         try:
             if hasattr(crew_result, 'tasks_output'):
                 for i, task_output in enumerate(crew_result.tasks_output):
-                    task_name = ['analyze', 'plan', 'translate', 'convert_assets', 'package', 'validate'][i] if i < 6 else f'task_{i}'
+                    task_names = ['analyze', 'plan', 'translate', 'convert_assets', 'package', 'validate']
+                    # --- INTEGRATION PLAN FOR QAAgent ---
+                    # Add 'comprehensive_qa' to task_names if the new task is added
+                    # task_names.append('comprehensive_qa')
+                    # --- END INTEGRATION PLAN ---
+                    task_name = task_names[i] if i < len(task_names) else f'task_{i}'
                     if hasattr(task_output, 'raw'):
                         detailed_report['logs'].append({
                             'task': task_name,
@@ -580,6 +673,10 @@ class ModPorterConversionCrew:
                 'asset_converter': hasattr(self, 'asset_converter_agent'),
                 'packaging_agent': hasattr(self, 'packaging_agent_instance'),
                 'qa_validator': hasattr(self, 'qa_validator_agent')
+                # --- INTEGRATION PLAN FOR QAAgent ---
+                # Add comprehensive_qa_tester_agent status:
+                # 'comprehensive_qa_tester': hasattr(self, 'comprehensive_qa_tester_agent')
+                # --- END INTEGRATION PLAN ---
             },
             'smart_assumption_engine': {
                 'initialized': self.smart_assumption_engine is not None,

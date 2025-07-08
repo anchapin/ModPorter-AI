@@ -1,0 +1,169 @@
+{
+  "scenario_group": "Block Interactions",
+  "description": "Test scenarios for block placement, interaction, and breaking behaviors",
+  "scenarios": [
+    {
+      "scenario": "Custom Block Right-Click",
+      "description": "Test custom block GUI opening on right-click interaction",
+      "steps": [
+        {
+          "action": "place_block",
+          "position": [0, 60, 0],
+          "block_type": "custom_block",
+          "metadata": {
+            "block_id": "modid:custom_machine",
+            "expected_placement": "successful"
+          }
+        },
+        {
+          "action": "right_click",
+          "target": "custom_block",
+          "position": [0, 60, 0],
+          "metadata": {
+            "interaction_type": "gui_open",
+            "expected_response": "gui_interface"
+          }
+        },
+        {
+          "action": "verify_state",
+          "key": "gui_opened_for_custom_block_A",
+          "expected": "main_menu_mock_value",
+          "metadata": {
+            "verification_type": "state_check",
+            "timeout_ms": 5000
+          }
+        }
+      ],
+      "expected_outcome": "Block GUI opens correctly",
+      "java_behavior": "Custom GUI displays with inventory management",
+      "bedrock_behavior": "Sign interface appears with equivalent functionality",
+      "smart_assumptions": [
+        {
+          "type": "gui_replacement",
+          "original": "custom_gui_inventory",
+          "bedrock_equivalent": "sign_interface",
+          "reasoning": "Bedrock lacks custom GUI support, using sign-based interface"
+        }
+      ],
+      "metadata": {
+        "category": "block_interaction",
+        "difficulty": "medium",
+        "timeout_ms": 30000,
+        "fail_fast": false
+      }
+    },
+    {
+      "scenario": "Block Breaking with Custom Drops",
+      "description": "Test custom block breaking and item drop behavior",
+      "steps": [
+        {
+          "action": "place_block",
+          "position": [5, 60, 5],
+          "block_type": "custom_ore_block",
+          "metadata": {
+            "hardness": 3.0,
+            "tool_required": "pickaxe"
+          }
+        },
+        {
+          "action": "break_block",
+          "position": [5, 60, 5],
+          "tool": "diamond_pickaxe",
+          "metadata": {
+            "expected_drops": ["custom_gem", "stone"],
+            "drop_count_range": [1, 3]
+          }
+        },
+        {
+          "action": "verify_drops",
+          "expected_items": ["custom_gem"],
+          "position_radius": 2,
+          "metadata": {
+            "verification_type": "item_entity_check",
+            "timeout_ms": 3000
+          }
+        }
+      ],
+      "expected_outcome": "Custom items drop when block is broken",
+      "java_behavior": "Ore drops 1-3 custom gems based on fortune level",
+      "bedrock_behavior": "Equivalent drops using Bedrock loot tables",
+      "smart_assumptions": [
+        {
+          "type": "loot_table_conversion",
+          "original": "java_loot_table",
+          "bedrock_equivalent": "behavior_pack_loot_table",
+          "reasoning": "Java loot tables converted to Bedrock format"
+        }
+      ],
+      "metadata": {
+        "category": "block_breaking",
+        "difficulty": "high",
+        "timeout_ms": 45000
+      }
+    },
+    {
+      "scenario": "Redstone Powered Block Behavior",
+      "description": "Test block behavior changes when powered by redstone",
+      "steps": [
+        {
+          "action": "place_block",
+          "position": [10, 60, 10],
+          "block_type": "custom_powered_machine"
+        },
+        {
+          "action": "place_block",
+          "position": [11, 60, 10],
+          "block_type": "redstone_block"
+        },
+        {
+          "action": "verify_state",
+          "key": "machine_powered",
+          "expected": true,
+          "metadata": {
+            "state_source": "block_entity_data",
+            "verification_delay_ms": 1000
+          }
+        },
+        {
+          "action": "remove_block",
+          "position": [11, 60, 10]
+        },
+        {
+          "action": "verify_state",
+          "key": "machine_powered", 
+          "expected": false,
+          "metadata": {
+            "verification_delay_ms": 1000
+          }
+        }
+      ],
+      "expected_outcome": "Machine activates/deactivates with redstone power",
+      "java_behavior": "Block entity updates power state and changes behavior",
+      "bedrock_behavior": "Command block simulation of power state changes",
+      "smart_assumptions": [
+        {
+          "type": "redstone_simulation",
+          "original": "redstone_powered_block_entity",
+          "bedrock_equivalent": "command_block_detection",
+          "reasoning": "Bedrock redstone limitations require command block workarounds"
+        }
+      ],
+      "metadata": {
+        "category": "redstone_interaction",
+        "difficulty": "high",
+        "timeout_ms": 60000
+      }
+    }
+  ],
+  "test_environment": {
+    "minecraft_version": "1.20.0",
+    "world_type": "flat",
+    "game_mode": "creative",
+    "required_features": ["custom_blocks", "redstone", "command_blocks"]
+  },
+  "validation_criteria": {
+    "success_threshold": 0.8,
+    "critical_scenarios": ["Custom Block Right-Click"],
+    "optional_scenarios": ["Redstone Powered Block Behavior"]
+  }
+}
