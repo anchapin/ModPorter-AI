@@ -59,6 +59,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+# Thread-safe storage for validation jobs and reports
+_validation_jobs_lock = threading.Lock()
+_validation_reports_lock = threading.Lock()
 validation_jobs: Dict[str, ValidationJob] = {}
 validation_reports: Dict[str, MockAgentValidationReportModel] = {}
 
