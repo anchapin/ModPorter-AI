@@ -4,24 +4,24 @@
   "description": "AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
   "type": "module",
   "scripts": {
-    "install-all": "npm install && cd frontend && npm install",
+    "install-all": "pnpm install && cd frontend && pnpm install",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev:frontend": "cd frontend && pnpm run dev",
     "dev:backend": "cd backend && source .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
     "build": "npm run build:frontend",
-    "build:frontend": "cd frontend && npm run build",
+    "build:frontend": "cd frontend && pnpm run build",
     "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm run test",
+    "test:frontend": "cd frontend && pnpm run test",
     "test:backend": "cd backend && source .venv/bin/activate && python -m pytest",
     "test:watch": "concurrently \"npm run test:frontend -- --watch\" \"npm run test:backend -- --watch\"",
     "lint": "npm run lint:frontend && npm run lint:backend",
-    "lint:frontend": "cd frontend && npm run lint",
+    "lint:frontend": "cd frontend && pnpm run lint",
     "lint:backend": "cd backend && source .venv/bin/activate && python -m ruff check src/ tests/",
     "format": "npm run format:frontend && npm run format:backend",
-    "format:frontend": "cd frontend && npm run lint -- --fix",
+    "format:frontend": "cd frontend && pnpm run lint -- --fix",
     "format:backend": "cd backend && source .venv/bin/activate && python -m black src/ tests/ && python -m ruff check --fix src/ tests/",
-    "storybook": "cd frontend && npm run storybook",
-    "build-storybook": "cd frontend && npm run build-storybook"
+    "storybook": "cd frontend && pnpm run storybook",
+    "build-storybook": "cd frontend && pnpm run build-storybook"
   },
   "keywords": [
     "minecraft",
@@ -39,7 +39,7 @@
     "concurrently": "^8.2.2"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "npm": ">=9.0.0"
   }
 }
