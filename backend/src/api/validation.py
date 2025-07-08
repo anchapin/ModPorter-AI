@@ -122,10 +122,17 @@ async def start_validation_job(
     job_id = str(uuid.uuid4())
     conversion_id = request.conversion_id
     if not conversion_id:
-        raise HTTPException(status_code=400, detail="conversion_id is required.")
+        raise HTTPException(status_code=400, detail=ValidationMessages.CONVERSION_ID_REQUIRED)
 
-    job = ValidationJob(job_id=job_id, conversion_id=conversion_id, status="queued")
-    validation_jobs[job_id] = job
+    job = ValidationJob(
+        job_id=job_id, 
+        conversion_id=conversion_id, 
+        status=ValidationJobStatus.QUEUED,
+        message=ValidationMessages.JOB_QUEUED
+    )
+    
+    with _validation_jobs_lock:
+        validation_jobs[job_id] = job
 
     artifacts_for_agent = {
         "java_code_snippet": request.java_code_snippet,
@@ -133,6 +140,8 @@ async def start_validation_job(
         "asset_file_paths": request.asset_file_paths,
         "manifest_content": request.manifest_content,
     }
+    
+    # Use asyncio task for background processing
     background_tasks.add_task(process_validation_task, job_id, conversion_id, artifacts_for_agent, agent)
     print("Validation job %s for conversion %s queued." % (job_id, conversion_id))
     return job
