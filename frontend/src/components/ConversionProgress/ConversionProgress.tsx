@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConversionStatus } from '../../types/api';
 import { getConversionStatus } from '../../services/api'; // Import the API service
 import './ConversionProgress.css';
+import { ReactComponent as CheckmarkIcon } from '../../assets/icons/checkmark-icon.svg';
+import { ReactComponent as PendingIcon } from '../../assets/icons/pending-icon.svg';
 
 // Define the props for the component
 export interface ConversionProgressProps {
@@ -37,13 +39,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   message,
   stage
 }) => {
+  // Define the steps for the conversion process
+  const conversionSteps = ["Queued", "Processing", "Completed"];
+
   // Initialize all hooks first before any early returns
   const [progressData, setProgressData] = useState<ConversionStatus>({
     job_id: jobId || '',
     status: status || 'queued',
     progress: progress || 0,
     message: message || 'Processing...',
-    stage: stage || 'Queued',
+    stage: stage || 'Queued', // Default to 'Queued'
     estimated_time_remaining: null,
     result_url: null,
     error: null,
@@ -195,15 +200,37 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     }
   };
 
-  const progressBarFillerClass = progressData.progress === 100
-    ? "progress-bar-filler completed"
-    : "progress-bar-filler";
-
   let statusMessage = progressData.message;
   if (connectionError && !usingWebSocket) {
     statusMessage = connectionError;
-  } else if (usingWebSocket) {
+  } else if (usingWebSocket && progressData.message) {
     statusMessage = `Connected via WebSocket. ${progressData.message}`;
+  } else if (usingWebSocket) {
+    statusMessage = "Connected via WebSocket. Processing..."
+  }
+
+
+  // Determine the current step index
+  // This is a simplified mapping. A more robust solution might be needed.
+  let currentStepIndex = conversionSteps.indexOf(progressData.stage || "Queued");
+  if (currentStepIndex === -1) {
+    if (progressData.status === 'completed') {
+      currentStepIndex = conversionSteps.length -1;
+    } else if (progressData.status === 'failed' || progressData.status === 'cancelled') {
+      // Handle error/cancelled state - perhaps show all steps as pending or a specific error step
+      // For now, let's assume it stays at the last known stage or resets.
+      // Or find the last non-completed step if stages are dynamic from backend.
+      // Setting to 0 for now if stage is unknown and not completed/failed.
+      currentStepIndex = 0; // Default to first step if stage is unrecognized
+    } else {
+      currentStepIndex = 0; // Default for unknown stages if not terminal
+    }
+  }
+  // If status is 'completed', all steps up to "Completed" are done.
+  // If status is 'failed', we might want to show the step it failed on.
+  // For this implementation, 'Completed' stage implies all steps are done.
+  if (progressData.status === 'completed') {
+    currentStepIndex = conversionSteps.indexOf("Completed");
   }
 
 
@@ -211,27 +238,41 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     <div className="conversion-progress-container">
       <h4>Conversion Progress (ID: {jobId})</h4>
       <p><i>{usingWebSocket ? 'Real-time updates active' : 'Using fallback polling'}</i></p>
-      {connectionError && <p className="error-message">Connection issue: {connectionError}</p>}
+      {connectionError && <p className="error-message connection-error-message">Connection issue: {connectionError}</p>}
 
-      <div className="progress-info">
-        <p><strong>Status:</strong> {progressData.status}</p>
-        <p><strong>Stage:</strong> {progressData.stage || 'N/A'}</p>
-        <p><strong>Message:</strong> {statusMessage}</p>
-        <p><strong>Estimated Time Remaining:</strong> {formatTime(progressData.estimated_time_remaining)}</p>
-      </div>
+      <ul className="conversion-steps-list">
+        {conversionSteps.map((step, index) => {
+          const isCompleted = progressData.status === 'completed' || index < currentStepIndex;
+          // If the overall status is 'failed', only steps before the current one might be 'completed'.
+          // The current step where it failed should not show as 'completed'.
+          // However, the requirement is to show checkmark if step is completed.
+          // If status is 'failed', currentStepIndex might be the failing step.
+          // Let's refine: a step is completed if its index is less than current step index,
+          // OR if the overall status is 'completed' and this is the 'Completed' step.
+          let stepCompleted = index < currentStepIndex;
+          if (progressData.status === 'completed' && step === "Completed") {
+            stepCompleted = true;
+          }
+          // If the job failed, no step should be marked as 'current' in the same way,
+          // but the list should still display the state at failure.
+          // The "current" step highlight might mean "active" or "failed at".
+          // For now, "current" means the active processing stage.
+          const isCurrent = index === currentStepIndex && progressData.status !== 'completed' && progressData.status !== 'failed';
 
-      <div className="progress-bar-container">
-        <div
-          className={progressBarFillerClass}
-          style={{ width: `${progressData.progress}%` }}
-          role="progressbar"
-          aria-valuenow={progressData.progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          {progressData.progress}%
-        </div>
-      </div>
+          return (
+            <li key={step} className={`conversion-step ${isCurrent ? 'current' : ''} ${stepCompleted ? 'completed' : 'pending'}`}>
+              <span className="step-icon">
+                {stepCompleted ? <CheckmarkIcon /> : <PendingIcon />}
+              </span>
+              <span className="step-name">{step}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Display overall status message or specific stage message if available */}
+      {statusMessage && <p className="status-message">Status: {statusMessage}</p>}
+
 
       {progressData.status === 'completed' && progressData.result_url && (
         <button onClick={handleDownload} className="download-button">
@@ -242,7 +283,8 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       {progressData.status === 'failed' && (
         <div className="error-message">
           <p><strong>Error:</strong> {progressData.error || 'An unknown error occurred.'}</p>
-          <p>Details: {progressData.message}</p>
+          {/* Displaying the general statusMessage which might contain more context if error message is brief */}
+          {progressData.message && progressData.message !== progressData.error && <p>Details: {progressData.message}</p>}
         </div>
       )}
     </div>
