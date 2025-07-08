@@ -15,7 +15,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.db.declarative_base import Base
-import uuid # For default factories in new models
+import uuid  # For default factories in new models
+
 
 class ConversionJob(Base):
     __tablename__ = "conversion_jobs"
@@ -30,9 +31,7 @@ class ConversionJob(Base):
         nullable=False,
         server_default=text("'queued'"),
     )
-    input_data: Mapped[dict] = mapped_column(
-        JSONB, nullable=False
-    )
+    input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[Optional[DateTime]] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -46,10 +45,17 @@ class ConversionJob(Base):
     )
 
     # Relationship: one job -> many results and progress
-    results = relationship("ConversionResult", back_populates="job", cascade="all, delete-orphan")
-    progress = relationship("JobProgress", back_populates="job", cascade="all, delete-orphan", uselist=False)
+    results = relationship(
+        "ConversionResult", back_populates="job", cascade="all, delete-orphan"
+    )
+    progress = relationship(
+        "JobProgress", back_populates="job", cascade="all, delete-orphan", uselist=False
+    )
     # Relationship to comparison_results
-    comparison_results = relationship("ComparisonResultDb", back_populates="conversion_job")
+    comparison_results = relationship(
+        "ComparisonResultDb", back_populates="conversion_job"
+    )
+
 
 class ConversionResult(Base):
     __tablename__ = "conversion_results"
@@ -64,9 +70,7 @@ class ConversionResult(Base):
         ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    output_data: Mapped[dict] = mapped_column(
-        JSONB, nullable=False
-    )
+    output_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[Optional[DateTime]] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -74,6 +78,7 @@ class ConversionResult(Base):
     )
 
     job = relationship("ConversionJob", back_populates="results")
+
 
 class JobProgress(Base):
     __tablename__ = "job_progress"
@@ -106,7 +111,9 @@ class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversion_id = Column(UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False)
+    conversion_id = Column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
+    )
     structural_diff = Column(JSONB)
     code_diff = Column(JSONB)
     asset_diff = Column(JSONB)
@@ -114,7 +121,11 @@ class ComparisonResultDb(Base):
     confidence_scores = Column(JSONB)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    feature_mappings = relationship("FeatureMappingDb", back_populates="comparison_result", cascade="all, delete-orphan")
+    feature_mappings = relationship(
+        "FeatureMappingDb",
+        back_populates="comparison_result",
+        cascade="all, delete-orphan",
+    )
     conversion_job = relationship("ConversionJob", back_populates="comparison_results")
 
 
@@ -122,10 +133,14 @@ class FeatureMappingDb(Base):
     __tablename__ = "feature_mappings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    comparison_id = Column(UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False)
+    comparison_id = Column(
+        UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False
+    )
     java_feature = Column(Text)
     bedrock_equivalent = Column(Text)
     mapping_type = Column(VARCHAR(50))
-    confidence_score = Column(DECIMAL(3,2))
+    confidence_score = Column(DECIMAL(3, 2))
 
-    comparison_result = relationship("ComparisonResultDb", back_populates="feature_mappings")
+    comparison_result = relationship(
+        "ComparisonResultDb", back_populates="feature_mappings"
+    )

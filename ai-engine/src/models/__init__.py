@@ -1,4 +1,4 @@
-# This file can be empty or used to control imports
+# ai-engine/src/models/__init__.py
 from .smart_assumptions import (
     SmartAssumption, 
     SmartAssumptionEngine, 
@@ -9,6 +9,13 @@ from .smart_assumptions import (
     AssumptionImpact
 )
 from .comparison import ComparisonResult, FeatureMapping
+from .validation import (
+    SemanticAnalysisResult,
+    BehaviorPredictionResult,
+    AssetValidationResult,
+    ManifestValidationResult,
+    ValidationReport
+)
 
 __all__ = [
     "SmartAssumption",
@@ -20,4 +27,9 @@ __all__ = [
     "AssumptionImpact",
     "ComparisonResult",
     "FeatureMapping",
+    "SemanticAnalysisResult",
+    "BehaviorPredictionResult",
+    "AssetValidationResult",
+    "ManifestValidationResult",
+    "ValidationReport"
 ]

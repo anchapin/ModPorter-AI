@@ -2,7 +2,7 @@ import sys
 import os
 
 # Add project root to sys.path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
 import asyncio
@@ -18,7 +18,10 @@ from src.db.declarative_base import Base
 # Test database configuration - use SQLite in-memory for tests by default
 # This ensures tests are isolated and don't require external database setup
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-POSTGRES_TEST_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/modporter")
+POSTGRES_TEST_URL = os.getenv(
+    "DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5432/modporter"
+)
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -69,9 +72,7 @@ async def test_engine():
 async def test_db_session(test_engine):
     """Create a test database session with proper transaction handling."""
     async_session = async_sessionmaker(
-        bind=test_engine,
-        class_=AsyncSession,
-        expire_on_commit=False
+        bind=test_engine, class_=AsyncSession, expire_on_commit=False
     )
 
     async with async_session() as session:
@@ -101,9 +102,13 @@ def mock_db_session():
 
     # Mock execute to return proper results for different queries
     mock_result = AsyncMock()
-    mock_result.scalar_one_or_none = AsyncMock(return_value=None)  # Return None for non-existent jobs
+    mock_result.scalar_one_or_none = AsyncMock(
+        return_value=None
+    )  # Return None for non-existent jobs
     mock_result.scalars = AsyncMock()
-    mock_result.scalars.return_value.all = AsyncMock(return_value=[])  # Return empty list for job listings
+    mock_result.scalars.return_value.all = AsyncMock(
+        return_value=[]
+    )  # Return empty list for job listings
     mock_session.execute = AsyncMock(return_value=mock_result)
 
     return mock_session
@@ -124,7 +129,7 @@ def mock_conversion_job():
         "file_id": "mock-file-id",
         "original_filename": "test-mod.jar",
         "target_version": "1.20.0",
-        "options": {}
+        "options": {},
     }
     mock_job.created_at = datetime.utcnow()
     mock_job.updated_at = datetime.utcnow()
@@ -177,6 +182,7 @@ def client(mock_db_session):
                 self.updated_at = datetime.now()
                 self.input_data = kwargs
                 self.progress = None  # Will be set separately
+
         return MockJob()
 
     async def mock_list_jobs(session):
@@ -191,6 +197,7 @@ def client(mock_db_session):
                 self.updated_at = datetime.now()
                 self.input_data = {}
                 self.progress = None
+
         return MockJob()
 
     async def override_get_db():
@@ -198,18 +205,17 @@ def client(mock_db_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    with patch.object(crud, 'get_job', mock_get_job), \
-         patch.object(crud, 'create_job', mock_create_job), \
-         patch.object(crud, 'list_jobs', mock_list_jobs), \
-         patch.object(crud, 'update_job_status', mock_update_job_status):
+    with patch.object(crud, "get_job", mock_get_job), patch.object(
+        crud, "create_job", mock_create_job
+    ), patch.object(crud, "list_jobs", mock_list_jobs), patch.object(
+        crud, "update_job_status", mock_update_job_status
+    ):
 
         with TestClient(app) as test_client:
             yield test_client
 
     # Clean up
     app.dependency_overrides.clear()
-
-
 
 
 @pytest.fixture

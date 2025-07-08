@@ -669,7 +669,7 @@ class TestFileProcessor:
         with zipfile.ZipFile(safe_jar_path, "w") as zip_file:
             zip_file.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
             zip_file.writestr(
-                "com/example/Main.class", b"\xCA\xFE\xBA\xBE"
+                "com/example/Main.class", b"\xca\xfe\xba\xbe"
             )  # Mock class file
 
         result = await file_processor.scan_for_malware(safe_jar_path, "jar")

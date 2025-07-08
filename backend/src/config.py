@@ -3,15 +3,12 @@ from pydantic import Field, ConfigDict
 
 class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env")
-    
+
     database_url_raw: str = Field(
-        default="postgresql+asyncpg://postgres:password@localhost:5432/modporter", 
-        alias="DATABASE_URL"
+        default="postgresql+asyncpg://postgres:password@localhost:5432/modporter",
+        alias="DATABASE_URL",
     )
-    redis_url: str = Field(
-        default="redis://localhost:6379", 
-        alias="REDIS_URL"
-    )
+    redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
 
     @property
     def database_url(self) -> str:
@@ -22,7 +19,7 @@ class Settings(BaseSettings):
             return url.replace("postgresql://", "postgresql+asyncpg://")
         return url
 
-    @property 
+    @property
     def sync_database_url(self) -> str:
         """Get sync database URL for migrations"""
         url = self.database_url_raw
@@ -30,5 +27,6 @@ class Settings(BaseSettings):
             # Convert async URL to sync for migrations
             return url.replace("postgresql+asyncpg://", "postgresql://")
         return url
+
 
 settings = Settings()

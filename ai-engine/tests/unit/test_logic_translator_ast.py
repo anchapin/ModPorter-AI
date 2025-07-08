@@ -398,7 +398,7 @@ class TestLogicTranslatorAST:
         assert result["success"] is True
         assert "function TestClass()" in result["javascript_method"]
 
-    @patch('agents.logic_translator.logger')
+    @patch('src.agents.logic_translator.logger')
     def test_empty_method_body_warning(self, mock_logger):
         """Test warning when AST method has body but reconstruction is empty"""
         java_code = """
