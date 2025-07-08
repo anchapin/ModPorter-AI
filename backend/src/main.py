@@ -4,6 +4,7 @@ Modern FastAPI implementation with database integration
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends, WebSocket, WebSocketDisconnect
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
@@ -46,8 +47,22 @@ cache = CacheService()
 
 # Note: For production environments, rate limiting should be implemented to protect against abuse.
 # This can be done at the API gateway, reverse proxy (e.g., Nginx), or using FastAPI middleware like 'slowapi'.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Skip database initialization during tests or if explicitly disabled
+    if os.getenv("PYTEST_CURRENT_TEST") is None and os.getenv("SKIP_DB_INIT") != "true":
+        try:
+            await init_db()
+            logger.info("Database initialization completed successfully")
+        except Exception as e:
+            logger.warning(f"Database initialization failed, continuing without it: {e}")
+            # Continue startup even if database initialization fails
+            # The application will handle database connection failures gracefully in individual endpoints
+    yield
+
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
+    lifespan=lifespan,
     title="ModPorter AI Backend",
     description="AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
     version="1.0.0",
@@ -869,17 +884,6 @@ async def download_converted_mod_simple(job_id: str):
     # In real implementation, would return file download
     return {"download_url": f"/files/{job_id}.mcaddon"}
 
-@app.on_event("startup")
-async def on_startup():
-    # Skip database initialization during tests or if explicitly disabled
-    if os.getenv("PYTEST_CURRENT_TEST") is None and os.getenv("SKIP_DB_INIT") != "true":
-        try:
-            await init_db()
-            logger.info("Database initialization completed successfully")
-        except Exception as e:
-            logger.warning(f"Database initialization failed, continuing without it: {e}")
-            # Continue startup even if database initialization fails
-            # The application will handle database connection failures gracefully in individual endpoints
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -1,13 +1,17 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, ConfigDict
 import os
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(env_file=".env")
+    
     database_url_raw: str = Field(
-        "postgresql+asyncpg://postgres:password@localhost:5432/modporter", env="DATABASE_URL"
+        default="postgresql+asyncpg://postgres:password@localhost:5432/modporter", 
+        alias="DATABASE_URL"
     )
     redis_url: str = Field(
-        "redis://localhost:6379", env="REDIS_URL"
+        default="redis://localhost:6379", 
+        alias="REDIS_URL"
     )
 
     @property
