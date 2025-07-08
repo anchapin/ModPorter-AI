@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import uuid
 import uvicorn
 import os
 import uuid
@@ -513,7 +514,17 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         else:
             # No record in-memory, job truly not found
             raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
-    progress = job.progress.progress if job.progress else 0
+    # Safely access progress relationship
+    progress = 0
+    try:
+        if job.progress and hasattr(job.progress, 'progress'):
+            progress = job.progress.progress
+        elif hasattr(job, 'progress') and isinstance(job.progress, int):
+            # Handle case where progress is directly an integer
+            progress = job.progress
+    except (AttributeError, TypeError) as e:
+        logger.warning(f"Could not access job progress for job {job_id}: {e}")
+        progress = 0
     error_message = None
     result_url = None
     status = job.status
@@ -598,7 +609,17 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
         jobs = await crud.list_jobs(db)
         statuses = []
         for job in jobs:
-            progress = job.progress.progress if job.progress else 0
+            # Safely access progress relationship
+            progress = 0
+            try:
+                if job.progress and hasattr(job.progress, 'progress'):
+                    progress = job.progress.progress
+                elif hasattr(job, 'progress') and isinstance(job.progress, int):
+                    # Handle case where progress is directly an integer
+                    progress = job.progress
+            except (AttributeError, TypeError) as e:
+                logger.warning(f"Could not access job progress for job {job.id}: {e}")
+                progress = 0
             error_message = None
             result_url = None
             status = job.status
@@ -809,16 +830,30 @@ async def _create_and_queue_job(
     Common logic for creating and queuing conversion jobs.
     """
     # Create job in database
-    job = await crud.create_job(
-        db,
-        file_id=file_id,
-        original_filename=original_filename,
-        target_version=target_version,
-        options=options
-    )
-    job_id = str(job.id)
-    created_at = job.created_at if job.created_at else datetime.now()
-    updated_at = job.updated_at if job.updated_at else datetime.now()
+    try:
+        job = await crud.create_job(
+            db,
+            file_id=file_id,
+            original_filename=original_filename,
+            target_version=target_version,
+            options=options
+        )
+        if not job or not job.id:
+            # Fallback to generating a UUID if database creation fails
+            logger.warning("Database job creation failed, using fallback UUID")
+            job_id = str(uuid.uuid4())
+            created_at = datetime.now()
+            updated_at = datetime.now()
+        else:
+            job_id = str(job.id)
+            created_at = job.created_at if job.created_at else datetime.now()
+            updated_at = job.updated_at if job.updated_at else datetime.now()
+    except Exception as e:
+        logger.error(f"Failed to create job in database: {e}")
+        # Fallback to generating a UUID if database creation fails
+        job_id = str(uuid.uuid4())
+        created_at = datetime.now()
+        updated_at = datetime.now()
 
     # Build legacy-mirror dict for in-memory compatibility
     mirror = ConversionJob(
