@@ -66,6 +66,8 @@ jobs:
       with:
         directory: ./frontend/coverage
         flags: frontend
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
 
   # Backend Tests
   backend-tests:
@@ -150,6 +152,8 @@ jobs:
       with:
         directory: ./backend
         flags: backend
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
 
   # AI Engine Tests
   ai-engine-tests:
@@ -187,6 +191,8 @@ jobs:
       with:
         directory: ./ai-engine
         flags: ai-engine
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
 
   # Integration Tests
   integration-tests:
@@ -265,7 +271,7 @@ jobs:
         # Wait for backend to start
         echo "Waiting for backend to start..."
         for i in {1..30}; do
-          if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+          if curl -f http://localhost:8000/api/v1/health > /dev/null 2>&1; then
             echo "Backend is ready"
             break
           fi

@@ -40,10 +40,37 @@ const getImpactColor = (impact: string | undefined) => {
   return '#6b7280';
 };
 
+const getStatusIcon = (status: string | undefined) => {
+  if (!status) return '⚪';
+  status = status.toLowerCase();
+  if (status.includes('success') || status.includes('converted')) return '✅';
+  if (status.includes('partial')) return '⚠️';
+  if (status.includes('failed')) return '❌';
+  return '⚪';
+};
+
+const getImpactIcon = (impact: string | undefined) => {
+  if (!impact) return '⚪';
+  impact = impact.toLowerCase();
+  if (impact === 'high') return '🔴';
+  if (impact === 'medium') return '🟡';
+  if (impact === 'low') return '🟢';
+  return '⚪';
+};
+
 export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
   jobStatus
 }) => {
+  // Shared styling for mod cards
+  const modCardStyle: React.CSSProperties = {
+    border: '1px solid #e5e7eb', 
+    borderRadius: '6px', 
+    padding: '1rem', 
+    marginBottom: '1rem', 
+    backgroundColor: 'white'
+  };
+
   if (!conversionResult) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
@@ -92,10 +119,28 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
         </div>
       </details>
 
-      {/* Converted/Failed Mods Shared Styling */}
-      const modCardStyle: React.CSSProperties = {
-        border: '1px solid #e5e7eb', borderRadius: '6px', padding: '1rem', marginBottom: '1rem', backgroundColor: 'white'
-      };
+      {/* Download Section */}
+      {summary.download_url && (
+        <div style={{ marginBottom: '2rem', backgroundColor: '#f0f9ff', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
+          <h3 style={{ marginTop: 0, color: '#1e40af' }}>Your Bedrock Add-on is Ready!</h3>
+          <a
+            href={summary.download_url}
+            download
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              marginTop: '0.5rem'
+            }}
+          >
+            📦 Download .mcaddon
+          </a>
+        </div>
+      )}
 
       {/* Converted Mods */}
       {converted_mods && converted_mods.length > 0 && (

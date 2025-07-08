@@ -79,7 +79,7 @@ export interface SummaryReport {
   failed_features: number;
   assumptions_applied_count: number;
   processing_time_seconds: number;
-  download_url: string;
+  download_url: string | null;
   quick_statistics: Record<string, any>;
 }
 

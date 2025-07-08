@@ -24,7 +24,7 @@ class SummaryReport(TypedDict):
     failed_features: int
     assumptions_applied_count: int
     processing_time_seconds: float
-    download_url: str
+    download_url: Optional[str]
     quick_statistics: Dict[str, Any] # e.g., features_converted, time_taken, file_size
 
 class FeatureConversionDetail(TypedDict):

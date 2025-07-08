@@ -25,12 +25,7 @@ class TestConversionReportGenerator(unittest.TestCase):
         summary = self.generator.generate_summary_report(self.failure_data)
         self.assertEqual(summary['overall_success_rate'], self.failure_data['overall_success_rate'])
         # Current generator behavior: if input 'download_url' is None, output is None.
-        # This is inconsistent with SummaryReport's 'download_url: str' type hint.
-        # A possible fix in generator: download_url=conversion_result.get("download_url") or ""
-        # For now, testing current behavior. If None is a valid value, the TypedDict should be Optional[str].
-        # Given the current TypedDict (download_url: str), this test *should* ideally fail if None is returned,
-        # or the generator should ensure an empty string.
-        # For this exercise, we test the actual output.
+        # This is now consistent with SummaryReport's 'download_url: Optional[str]' type hint.
         self.assertEqual(summary['download_url'], self.failure_data.get('download_url')) # Expecting None here based on mock
 
     def test_generate_feature_analysis(self):

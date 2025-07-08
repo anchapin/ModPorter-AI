@@ -120,7 +120,7 @@ class ConversionReportGenerator:
             failed_features=conversion_result.get("failed_features", 0),
             assumptions_applied_count=conversion_result.get("assumptions_applied_count", 0),
             processing_time_seconds=conversion_result.get("processing_time_seconds", 0.0),
-            download_url=conversion_result.get("download_url", ""),
+            download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {})
         )
 
