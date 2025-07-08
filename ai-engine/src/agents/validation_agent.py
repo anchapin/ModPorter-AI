@@ -123,23 +123,23 @@ class AssetIntegrityChecker:
         print("Validating %d asset files. Base path: '%s'" % (len(asset_files), base_path))
         corrupted_files, asset_specific_issues = [], {}
         if not asset_files: return {"all_assets_valid": True, "corrupted_files": [], "asset_specific_issues": {"general": ["No asset files provided."] }}
-        for p in asset_files:
-            fp = os.path.join(base_path, p) if base_path and base_path != "." else p
-            if "missing" in p.lower():
-                corrupted_files.append(p); asset_specific_issues.setdefault(p, []).append("File missing: '%s'." % fp)
+        for asset_path in asset_files:
+            full_path = os.path.join(base_path, asset_path) if base_path and base_path != "." else asset_path
+            if "missing" in asset_path.lower():
+                corrupted_files.append(asset_path); asset_specific_issues.setdefault(asset_path, []).append("File missing: '%s'." % full_path)
                 continue
-            _, ext = os.path.splitext(p); ext = ext.lower(); issues = []
+            _, ext = os.path.splitext(asset_path); ext = ext.lower(); issues = []
             if ext in self.supported_image_extensions:
-                if "corrupt_texture" in p: issues.append("Mock: Texture corrupt.")
-                if "oversized_texture" in p: issues.append("Mock: Texture oversized.")
+                if "corrupt_texture" in asset_path: issues.append("Mock: Texture corrupt.")
+                if "oversized_texture" in asset_path: issues.append("Mock: Texture oversized.")
             elif ext in self.supported_sound_extensions:
-                if ext != ".ogg" and "allow_non_ogg" not in p: issues.append("Mock: Non-preferred sound format '%s'." % ext)
-                if "corrupt_sound" in p: issues.append("Mock: Sound corrupt.")
+                if ext != ".ogg" and "allow_non_ogg" not in asset_path: issues.append("Mock: Non-preferred sound format '%s'." % ext)
+                if "corrupt_sound" in asset_path: issues.append("Mock: Sound corrupt.")
             elif ext in self.supported_model_extensions:
-                if "invalid_geo" in p: issues.append("Mock: Model geo invalid.")
-            elif not ext: issues.append("Warning: File '%s' no extension." % p)
-            else: issues.append("Warning: Unrecognized extension '%s' for '%s'." % (ext,p))
-            if issues: corrupted_files.append(p); asset_specific_issues.setdefault(p, []).extend(issues)
+                if "invalid_geo" in asset_path: issues.append("Mock: Model geo invalid.")
+            elif not ext: issues.append("Warning: File '%s' no extension." % asset_path)
+            else: issues.append("Warning: Unrecognized extension '%s' for '%s'." % (ext, asset_path))
+            if issues: corrupted_files.append(asset_path); asset_specific_issues.setdefault(asset_path, []).extend(issues)
         return {"all_assets_valid": not corrupted_files, "corrupted_files": list(set(corrupted_files)), "asset_specific_issues": asset_specific_issues}
 
 class ManifestValidator:
