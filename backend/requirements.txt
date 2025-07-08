@@ -22,7 +22,7 @@ tomli==2.2.1  # TOML parsing for Python <3.11
 httpx==0.25.2
 
 # Testing
-pytest==7.4.3
+pytest>=8.2
 pytest-asyncio==1.0.0
 pytest-cov==6.2.1
 

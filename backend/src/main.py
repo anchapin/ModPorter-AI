@@ -3,7 +3,7 @@ ModPorter AI Backend API
 Modern FastAPI implementation with database integration
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks, Path as FastAPIPath, Depends, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path as FastAPIPath, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud

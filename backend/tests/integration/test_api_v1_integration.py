@@ -7,9 +7,6 @@ conversion processing, status tracking, and error handling.
 
 import io
 import time
-import pytest
-from fastapi.testclient import TestClient
-from src.main import app
 
 # Test client will be provided by fixture
 

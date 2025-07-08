@@ -226,7 +226,7 @@ class TestFileProcessor:
         error_message_expected_part,
         temp_job_dirs,
     ):
-        if exception_type == IOError:
+        if exception_type is IOError:
             # For IOError, the client.get call succeeds, but writing the file fails
             mock_response = mock.AsyncMock(spec=httpx.Response)
             mock_response.status_code = 200
