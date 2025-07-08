@@ -5,6 +5,7 @@ from typing import Optional
 from datetime import datetime
 import logging
 import base64
+import os
 from src.models.cache_models import CacheStats
 
 logger = logging.getLogger(__name__)
@@ -15,8 +16,22 @@ class CacheService:
     CACHE_ASSET_CONVERSION_PREFIX = "cache:asset_conversion:"
 
     def __init__(self) -> None:
-        self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
-        self._redis_available = True
+        # Check if Redis is disabled for tests
+        self._redis_disabled = os.getenv("DISABLE_REDIS", "false").lower() == "true"
+
+        if self._redis_disabled:
+            self._client = None
+            self._redis_available = False
+            logger.info("Redis disabled for tests")
+        else:
+            try:
+                self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
+                self._redis_available = True
+            except Exception as e:
+                logger.warning(f"Failed to initialize Redis client: {e}")
+                self._client = None
+                self._redis_available = False
+
         self._cache_hits = 0
         self._cache_misses = 0
 
@@ -34,6 +49,8 @@ class CacheService:
             return obj
 
     async def set_job_status(self, job_id: str, status: dict) -> None:
+        if not self._redis_available or self._redis_disabled:
+            return
         try:
             await self._client.set(f"conversion_jobs:{job_id}:status", json.dumps(self._make_json_serializable(status)))
         except Exception as e:
@@ -41,6 +58,8 @@ class CacheService:
             self._redis_available = False
 
     async def get_job_status(self, job_id: str) -> Optional[dict]:
+        if not self._redis_available or self._redis_disabled:
+            return None
         try:
             raw = await self._client.get(f"conversion_jobs:{job_id}:status")
             return json.loads(raw) if raw else None
@@ -60,6 +79,8 @@ class CacheService:
         """
         Set the progress for a job and add job_id to the active set.
         """
+        if not self._redis_available or self._redis_disabled:
+            return
         try:
             await self._client.set(f"conversion_jobs:{job_id}:progress", progress)
             await self._client.sadd("conversion_jobs:active", job_id)

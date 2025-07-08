@@ -201,45 +201,61 @@ async def test_cache_mod_analysis_redis_error(cache_service: CacheService):
     global ANALYSIS_DATA
     ANALYSIS_DATA = {"some_key": "some_value", "nested": {"num": 1}, "date_obj": datetime.now()}
 
+    # Skip test if Redis is disabled for tests
+    if cache_service._redis_disabled:
+        pytest.skip("Redis is disabled for tests")
+
     cache_service._client.set.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
     with patch('src.services.cache.logger') as mock_logger:
         await cache_service.cache_mod_analysis(MOD_HASH, ANALYSIS_DATA)
         mock_logger.warning.assert_called_once()
-        assert getattr(cache_service, '_redis_available', True)
+        assert cache_service._redis_available is False  # Should be False after error
 
 @pytest.mark.asyncio
 async def test_get_mod_analysis_redis_error(cache_service: CacheService):
+    # Skip test if Redis is disabled for tests
+    if cache_service._redis_disabled:
+        pytest.skip("Redis is disabled for tests")
+
     cache_service._client.get.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
     with patch('src.services.cache.logger') as mock_logger:
         result = await cache_service.get_mod_analysis(MOD_HASH)
         assert result is None
         mock_logger.warning.assert_called_once()
-        assert getattr(cache_service, '_redis_available', True)
+        assert cache_service._redis_available is False  # Should be False after error
 
 # Tests for set_progress method
 @pytest.mark.asyncio
 async def test_set_progress_success(cache_service: CacheService):
+    # Skip test if Redis is disabled for tests
+    if cache_service._redis_disabled:
+        pytest.skip("Redis is disabled for tests")
+
     job_id = "test_job_123"
     progress = 75
-    
+
     await cache_service.set_progress(job_id, progress)
-    
+
     expected_key = f"conversion_jobs:{job_id}:progress"
     cache_service._client.set.assert_called_once_with(expected_key, progress)
     cache_service._client.sadd.assert_called_once_with("conversion_jobs:active", job_id)
 
 @pytest.mark.asyncio
 async def test_set_progress_redis_error(cache_service: CacheService):
+    # Skip test if Redis is disabled for tests
+    if cache_service._redis_disabled:
+        pytest.skip("Redis is disabled for tests")
+
     job_id = "test_job_123"
     progress = 75
-    
+
     cache_service._client.set.side_effect = Exception("Redis connection failed")
-    
+
     with patch('src.services.cache.logger') as mock_logger:
         await cache_service.set_progress(job_id, progress)
-        
+
         mock_logger.warning.assert_called_once()
         assert cache_service._redis_available is False
 

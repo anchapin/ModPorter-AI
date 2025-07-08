@@ -57,11 +57,11 @@ docker-compose ps
 
 **Service URLs:**
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000 (or `/api/` when using frontend proxy)
-- **PostgreSQL**: localhost:5432
+- **Backend API**: http://localhost:8080 (or `/api/` when using frontend proxy)
+- **PostgreSQL**: localhost:5433
 - **Redis**: localhost:6379
 
-**Note**: The frontend uses Nginx to proxy API requests to the backend, so you can access the API through either `http://localhost:3000/api/` or directly at `http://localhost:8000/api/`.
+**Note**: The frontend uses Nginx to proxy API requests to the backend, so you can access the API through either `http://localhost:3000/api/` or directly at `http://localhost:8080/api/`.
 
 ### Option 2: Local Development Setup (Docker)
 
@@ -154,17 +154,22 @@ REDIS_URL=redis://redis:6379
 # Application
 LOG_LEVEL=INFO
 DEBUG=false
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8080/api/v1
 ```
+
+**Note**: Frontend environment variables (`VITE_API_URL`, `VITE_API_BASE_URL`) are set as build arguments in Docker Compose and are embedded into the built JavaScript bundle at build time.
 
 ### Health Checks
 All services include health checks for monitoring:
 ```bash
+# Check frontend health
+curl http://localhost:3000/health
+
 # Check backend health
-curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/health
 
 # Check AI engine health
-curl http://localhost:8001/health
+curl http://localhost:8001/api/v1/health
 
 # Check all service status
 docker-compose ps
@@ -176,6 +181,8 @@ docker-compose ps
 1. **Port conflicts**: If ports 3000, 8080, 8001, 5433, or 6379 are in use, modify `docker-compose.yml`
 2. **Missing API keys**: Ensure `.env` file contains valid `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
 3. **Database connection**: Check PostgreSQL container logs if backend fails to start
+4. **WebSocket connection errors**: Ensure frontend environment variables are correctly set during Docker build
+5. **CSP font errors**: Updated nginx configuration allows embedded fonts via `font-src 'self' data:`
 
 #### Debugging Commands
 ```bash
