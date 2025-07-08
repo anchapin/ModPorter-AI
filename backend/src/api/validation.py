@@ -68,17 +68,21 @@ validation_reports: Dict[str, MockAgentValidationReportModel] = {}
 def get_validation_agent():
     return MockValidationAgent()
 
-def process_validation_task(
+async def process_validation_task(
     job_id: str,
     conversion_id: str,
     artifacts: Dict[str, Any],
     agent: MockValidationAgent
 ):
     print("Background task started for job_id: %s" % job_id)
-    if job_id not in validation_jobs:
-        print("Error: Job ID %s not found in process_validation_task." % job_id)
-        return
-    validation_jobs[job_id].status = "processing"
+    
+    with _validation_jobs_lock:
+        if job_id not in validation_jobs:
+            print("Error: Job ID %s not found in process_validation_task." % job_id)
+            return
+        validation_jobs[job_id].status = ValidationJobStatus.PROCESSING
+        validation_jobs[job_id].message = ValidationMessages.JOB_PROCESSING
+    
     try:
         agent_input_artifacts = {
             "conversion_id": conversion_id,
@@ -87,15 +91,27 @@ def process_validation_task(
             "asset_files": artifacts.get("asset_file_paths"),
             "manifest_data": artifacts.get("manifest_content"),
         }
+        
+        # Use asyncio.sleep instead of time.sleep for non-blocking operation
+        await asyncio.sleep(0.5)  # Simulate processing time
+        
         report = agent.validate_conversion(agent_input_artifacts)
-        validation_reports[job_id] = report
-        validation_jobs[job_id].status = "completed"
-        validation_jobs[job_id].message = "Validation successful."
+        
+        with _validation_reports_lock:
+            validation_reports[job_id] = report
+            
+        with _validation_jobs_lock:
+            validation_jobs[job_id].status = ValidationJobStatus.COMPLETED
+            validation_jobs[job_id].message = ValidationMessages.JOB_COMPLETED
+            
         print("Background task completed for job_id: %s" % job_id)
+        
     except Exception as e:
         print("Error during validation for job_id %s: %s" % (job_id, str(e)))
-        validation_jobs[job_id].status = "failed"
-        validation_jobs[job_id].message = "Validation failed: %s" % str(e)
+        
+        with _validation_jobs_lock:
+            validation_jobs[job_id].status = ValidationJobStatus.FAILED
+            validation_jobs[job_id].message = "%s: %s" % (ValidationMessages.JOB_FAILED, str(e))
 
 @router.post("/", response_model=ValidationJob, status_code=202)
 async def start_validation_job(
