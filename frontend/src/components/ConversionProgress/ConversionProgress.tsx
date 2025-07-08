@@ -5,7 +5,11 @@ import './ConversionProgress.css';
 
 // Define the props for the component
 export interface ConversionProgressProps {
-  conversionId: string;
+  jobId: string | null;
+  status?: string;
+  progress?: number;
+  message?: string;
+  stage?: string | null;
 }
 
 // Helper function to format seconds into minutes and seconds
@@ -26,14 +30,21 @@ const formatTime = (totalSeconds: number | undefined | null): string => {
   return formattedTime.trim();
 };
 
-const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId }) => {
+const ConversionProgress: React.FC<ConversionProgressProps> = ({
+  jobId,
+  status,
+  progress,
+  message,
+  stage
+}) => {
+  // Initialize all hooks first before any early returns
   const [progressData, setProgressData] = useState<ConversionStatus>({
-    job_id: conversionId,
-    status: 'queued',
-    progress: 0,
-    message: 'Attempting to connect for real-time updates...',
-    stage: 'Queued',
-    estimated_time_remaining: 35,
+    job_id: jobId || '',
+    status: status || 'queued',
+    progress: progress || 0,
+    message: message || 'Processing...',
+    stage: stage || 'Queued',
+    estimated_time_remaining: null,
     result_url: null,
     error: null,
     created_at: new Date().toISOString(),
@@ -76,12 +87,12 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
   const startPolling = useCallback(() => {
     // Prevent multiple polling intervals
     stopPolling();
-    console.log(`WebSocket failed or not supported. Falling back to polling for ${conversionId}.`);
+    console.log(`WebSocket failed or not supported. Falling back to polling for ${jobId}.`);
     setUsingWebSocket(false);
 
     pollingIntervalRef.current = window.setInterval(async () => {
       try {
-        const status = await getConversionStatus(conversionId);
+        const status = await getConversionStatus(jobId);
         console.log('Polling: Fetched status:', status);
         updateProgressData(status);
         setConnectionError(null); // Clear previous errors if polling succeeds
@@ -91,13 +102,12 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
         // Optional: Implement max retries for polling or different error handling
       }
     }, 3000); // Poll every 3 seconds
-  }, [conversionId, updateProgressData]);
-
+  }, [jobId, updateProgressData]);
 
   useEffect(() => {
     // Cleanup function to be called when component unmounts or conversionId changes
     const cleanup = () => {
-      console.log(`Cleaning up resources for conversion ID: ${conversionId}`);
+      console.log(`Cleaning up resources for conversion ID: ${jobId}`);
       if (webSocketRef.current) {
         webSocketRef.current.onclose = null; // Avoid triggering onclose logic during cleanup
         webSocketRef.current.onerror = null;
@@ -106,8 +116,8 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
       }
       stopPolling();
       setProgressData({ // Reset state
-        job_id: conversionId, status: 'queued', progress: 0, message: 'Initializing...',
-        stage: 'Queued', estimated_time_remaining: 35, result_url: null, error: null,
+        job_id: jobId, status: status || 'queued', progress: progress || 0, message: message || 'Initializing...',
+        stage: stage || 'Queued', estimated_time_remaining: null, result_url: null, error: null,
         created_at: new Date().toISOString(),
       });
       setUsingWebSocket(false);
@@ -117,18 +127,18 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
     cleanup(); // Clean up previous connection/polling before starting new one
 
     const connectWebSocket = () => {
-      const wsUrl = `${WS_BASE_URL}/ws/v1/convert/${conversionId}/progress`;
+      const wsUrl = `${WS_BASE_URL}/ws/v1/convert/${jobId}/progress`;
       console.log(`Attempting to connect WebSocket: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       webSocketRef.current = ws;
 
       ws.onopen = () => {
-        console.log(`WebSocket connected for ${conversionId}`);
+        console.log(`WebSocket connected for ${jobId}`);
         setUsingWebSocket(true);
         setConnectionError(null); // Clear any previous errors
         stopPolling(); // Stop polling if WebSocket connects successfully
         // Optionally, fetch initial status once via HTTP to ensure no missed updates
-        getConversionStatus(conversionId).then(updateProgressData).catch(console.error);
+        getConversionStatus(jobId).then(updateProgressData).catch(console.error);
       };
 
       ws.onmessage = (event) => {
@@ -143,13 +153,13 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
       };
 
       ws.onerror = (error) => {
-        console.error(`WebSocket error for ${conversionId}:`, error);
+        console.error(`WebSocket error for ${jobId}:`, error);
         // Don't setConnectionError here, as onclose will handle fallback
         // ws.close(); // Ensure it's closed if not already
       };
 
       ws.onclose = (event) => {
-        console.log(`WebSocket closed for ${conversionId}. Code: ${event.code}, Reason: ${event.reason}`);
+        console.log(`WebSocket closed for ${jobId}. Code: ${event.code}, Reason: ${event.reason}`);
         webSocketRef.current = null; // Clear the ref
         // Only start polling if the closure was unexpected and not a terminal state
         if (currentStatusRef.current !== 'completed' && currentStatusRef.current !== 'failed' && currentStatusRef.current !== 'cancelled') {
@@ -166,7 +176,15 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
 
     return cleanup; // Return the cleanup function
 
-  }, [conversionId, WS_BASE_URL, updateProgressData, startPolling]); // Re-run effect if conversionId or WS_BASE_URL changes
+  }, [jobId, WS_BASE_URL, updateProgressData, startPolling, message, progress, stage, status]); // Re-run effect if dependencies change
+
+  if (!jobId) {
+    return (
+      <div className="conversion-progress-container">
+        <p>No conversion in progress</p>
+      </div>
+    );
+  }
 
   const handleDownload = () => {
     if (progressData.result_url) {
@@ -191,7 +209,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({ conversionId })
 
   return (
     <div className="conversion-progress-container">
-      <h4>Conversion Progress (ID: {conversionId})</h4>
+      <h4>Conversion Progress (ID: {jobId})</h4>
       <p><i>{usingWebSocket ? 'Real-time updates active' : 'Using fallback polling'}</i></p>
       {connectionError && <p className="error-message">Connection issue: {connectionError}</p>}
 

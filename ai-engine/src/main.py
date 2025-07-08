@@ -195,7 +195,7 @@ async def startup_event():
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Service initialization failed")
 
-@app.get("/health", response_model=HealthResponse, tags=["health"])
+@app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the AI Engine"""
     services = {

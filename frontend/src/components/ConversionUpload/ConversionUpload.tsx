@@ -3,28 +3,44 @@
  * Designed for visual learners with clear feedback and intuitive UI
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { convertMod } from '../../services/api';
-import { ConversionRequest, ConversionResponse } from '../../types/api';
-import ConversionProgress from '../ConversionProgress/ConversionProgress'; // Import new component
+import { convertMod, getConversionStatus, cancelJob, downloadResult } from '../../services/api';
+import {
+  ConversionRequest,
+  ConversionResponse,
+  ConversionStatus,
+  ConversionStatusEnum
+} from '../../types/api';
+import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import './ConversionUpload.css';
 
+// Move constant outside component as suggested by Copilot
+const MAX_POLLING_ATTEMPTS = 30; // Poll for 30 * 2s = 1 minute
+
 interface ConversionUploadProps {
-  onConversionStart?: (conversionId: string) => void;
+  onConversionStart?: (jobId: string) => void;
+  onConversionComplete?: (jobId: string) => void;
 }
 
 export const ConversionUpload: React.FC<ConversionUploadProps> = ({ 
-  onConversionStart 
+  onConversionStart,
+  onConversionComplete
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [modUrl, setModUrl] = useState('');
   const [smartAssumptions, setSmartAssumptions] = useState(true);
   const [includeDependencies, setIncludeDependencies] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
-  const [currentConversionId, setCurrentConversionId] = useState<string | null>(null); // New state
+  const [currentConversionId, setCurrentConversionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
+
+  // Extended state for polling functionality
+  const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
+  const [isPolling, setIsPolling] = useState<boolean>(false);
+  const [pollingAttempts, setPollingAttempts] = useState<number>(0);
 
   // PRD Feature 1: File validation
   const validateFile = (file: File): boolean => {
@@ -54,6 +70,45 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
   };
 
+  const resetConversionState = () => {
+    setSelectedFile(null);
+    setModUrl('');
+    setCurrentConversionId(null);
+    setCurrentStatus(null);
+    setProgressPercentage(0);
+    setIsPolling(false);
+    setPollingAttempts(0);
+    setIsConverting(false);
+    setError(null);
+  };
+
+  const getStatusMessage = () => {
+    if (!currentStatus) return 'Ready to convert';
+    
+    switch (currentStatus.status) {
+      case ConversionStatusEnum.PENDING:
+        return 'Queued for processing...';
+      case ConversionStatusEnum.UPLOADING:
+        return 'Uploading file...';
+      case ConversionStatusEnum.IN_PROGRESS:
+        return 'Processing...';
+      case ConversionStatusEnum.ANALYZING:
+        return 'Analyzing mod structure...';
+      case ConversionStatusEnum.CONVERTING:
+        return 'Converting to Bedrock...';
+      case ConversionStatusEnum.PACKAGING:
+        return 'Packaging add-on...';
+      case ConversionStatusEnum.COMPLETED:
+        return 'Conversion completed!';
+      case ConversionStatusEnum.FAILED:
+        return 'Conversion failed';
+      case ConversionStatusEnum.CANCELLED:
+        return 'Conversion cancelled';
+      default:
+        return currentStatus.message || 'Processing...';
+    }
+  };
+
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files first
     if (rejectedFiles.length > 0) {
@@ -73,242 +128,354 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     setSelectedFile(file);
     setModUrl(''); // Clear URL if file is selected
     setError(null);
-    // Reset conversion if a new file is selected
-    setIsConverting(false);
-    setCurrentConversionId(null);
-  }, []);
+    // Reset conversion state when new file is selected
+    if (currentConversionId) {
+      resetConversionState();
+    }
+  }, [currentConversionId]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
     accept: {
       'application/java-archive': ['.jar'],
-      'application/zip': ['.zip']
-    }
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip']
+    },
+    maxFiles: 1,
+    multiple: false
   });
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
     setModUrl(url);
     
+    if (url) {
+      setSelectedFile(null); // Clear file if URL is entered
+      if (currentConversionId) {
+        resetConversionState();
+      }
+    }
+    
+    // Validate URL on input
     if (url && !validateUrl(url)) {
-      setError('Invalid URL. Please use CurseForge or Modrinth links only.');
+      setError('Please enter a valid CurseForge or Modrinth URL.');
     } else {
       setError(null);
-      if (url) { // Only clear file and reset conversion if URL is actively being entered
-        setSelectedFile(null);
-        setIsConverting(false);
-        setCurrentConversionId(null);
-      }
     }
   };
 
-  const handleConvert = async () => {
+  const handleCancel = async () => {
+    if (!currentConversionId) return;
+    
+    try {
+      await cancelJob(currentConversionId);
+      setCurrentStatus(prev => prev ? { ...prev, status: ConversionStatusEnum.CANCELLED } : null);
+      setIsPolling(false);
+      setIsConverting(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel conversion');
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!currentConversionId) return;
+    
+    try {
+      const blob = await downloadResult(currentConversionId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `converted-mod-${currentConversionId}.mcaddon`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      setError(err.message || 'Failed to download conversion result');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!selectedFile && !modUrl) {
-      setError('Please upload a file or enter a URL');
+      setError('Please select a file or enter a URL.');
       return;
     }
-
+    
     if (modUrl && !validateUrl(modUrl)) {
-      setError('Please enter a valid CurseForge or Modrinth URL');
+      setError('Please enter a valid CurseForge or Modrinth URL.');
       return;
     }
-
-    setIsConverting(true); // Keep this to manage UI state for button, etc.
-    setCurrentConversionId(null); // Reset previous ID if any
+    
+    setIsConverting(true);
     setError(null);
-
+    
     try {
       const request: ConversionRequest = {
-        file: selectedFile,
+        file: selectedFile || undefined,
         modUrl: modUrl || undefined,
         smartAssumptions,
-        includeDependencies
+        includeDependencies,
       };
 
-      const response: ConversionResponse = await convertMod(request); // Assuming convertMod returns { conversionId: string; ... }
-
-      // The API response model from backend `ConversionResponse` has `job_id`
-      // Let's assume the `convertMod` service maps `job_id` to `conversionId` for frontend consistency
-      // or we use `response.job_id` directly if that's what `ConversionProgress` expects.
-      // Based on previous steps, ConversionProgress expects `conversionId`.
-      // The backend `ConversionResponse` has `job_id`. Let's assume `convertMod` returns it as `conversionId` or we adapt.
-      // For now, let's assume `response.conversionId` is correct based on `types/api.ts` potentially adapting this.
-      // If `convertMod` returns `job_id`, then it should be `response.job_id`.
-      // Let's use `response.job_id` as that's what the backend returns.
-      // And ensure `ConversionProgress` prop is also `job_id` or adapt here.
-      // For now, assuming `ConversionProgress` prop `conversionId` matches `job_id`.
-
-      setCurrentConversionId(response.job_id); // Set the new conversion ID
-      // isConverting remains true to show the ConversionProgress component
+      const response: ConversionResponse = await convertMod(request);
       
+      setCurrentConversionId(response.job_id);
+      setIsPolling(true);
+      setProgressPercentage(0);
+
       if (onConversionStart) {
         onConversionStart(response.job_id);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Conversion failed');
-      setIsConverting(false); // Stop conversion display on error
-      setCurrentConversionId(null);
+      setPollingAttempts(0);
+    } catch (err: any) {
+      setError(err.message ? `Conversion request failed: ${err.message}. Please try again.` : 'Conversion request failed. Please check your connection and try again.');
+      setIsConverting(false);
     }
-    // We don't set setIsConverting(false) in `finally` anymore if successful,
-    // as `ConversionProgress` will take over managing its display based on its internal state.
-    // `isConverting` will be set to false when a new file/URL is selected or cleared.
   };
 
-  const canConvert = (selectedFile || (modUrl && validateUrl(modUrl))) && !isConverting;
+  // Polling effect with proper dependency array as suggested by Copilot
+  useEffect(() => {
+    let intervalId: number | null = null;
+
+    if (currentConversionId && isPolling) {
+      if (pollingAttempts >= MAX_POLLING_ATTEMPTS) {
+        setError('Conversion is taking longer than expected. Please try cancelling and starting again, or check back later.');
+        setIsPolling(false);
+        setIsConverting(false);
+        return;
+      }
+
+      intervalId = setInterval(async () => {
+        try {
+          const status = await getConversionStatus(currentConversionId);
+          setCurrentStatus(status);
+          setProgressPercentage(status.progress);
+          setPollingAttempts(prev => prev + 1);
+
+          // Check if conversion is complete
+          if (status.status === ConversionStatusEnum.COMPLETED) {
+            setIsPolling(false);
+            setIsConverting(false);
+            if (onConversionComplete) {
+              onConversionComplete(currentConversionId);
+            }
+          } else if (status.status === ConversionStatusEnum.FAILED || status.status === ConversionStatusEnum.CANCELLED) {
+            setIsPolling(false);
+            setIsConverting(false);
+            if (status.error) {
+              setError(status.error);
+            }
+          }
+        } catch (error: any) {
+          setPollingAttempts(prev => prev + 1);
+          if (pollingAttempts >= MAX_POLLING_ATTEMPTS - 1) {
+            setError(`Unable to check conversion status: ${error.message || 'Unknown error'}. Please try again later.`);
+            setIsPolling(false);
+            setIsConverting(false);
+          }
+        }
+      }, 2000); // Poll every 2 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentConversionId, isPolling, pollingAttempts, onConversionComplete]); // Fixed dependency array
+
+  const isProcessing = isConverting || isPolling;
+  const isCompleted = currentStatus?.status === ConversionStatusEnum.COMPLETED;
+  const isFailed = currentStatus?.status === ConversionStatusEnum.FAILED;
+  const isCancelled = currentStatus?.status === ConversionStatusEnum.CANCELLED;
+  const isFinished = isCompleted || isFailed || isCancelled;
 
   return (
     <div className="conversion-upload">
-      <div className="upload-header">
-        <h2>Convert Java Mods to Bedrock</h2>
-        <p>Upload your mod or paste a repository URL to get started</p>
-      </div>
+      <h2>Convert Your Modpack</h2>
+      <p className="description">
+        Upload your Java Edition modpack and we'll convert it to Bedrock Edition using smart assumptions.
+      </p>
 
-      {/* File Upload Area */}
-      <div 
-        {...getRootProps()} 
-        className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''}`}
-      >
-        <input {...getInputProps()} aria-label="File upload" />
-        
-        {selectedFile ? (
-          <div className="file-preview">
-            <div className="file-icon">📦</div>
-            <div className="file-info">
-              <div className="file-name">{selectedFile.name}</div>
-              <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
-              <div className="status">Ready to convert</div>
-            </div>
-            <button 
-              className="remove-file"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedFile(null);
-                setIsConverting(false); // Reset conversion state
-                setCurrentConversionId(null);
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <div className="upload-prompt">
-            <div className="upload-icon">📁</div>
-            <h3>Drag & drop your modpack here</h3>
-            <p>Supports .jar files and .zip modpack archives</p>
-            <button type="button" className="browse-button">
-              Browse Files
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* URL Input */}
-      <div className="url-input-section">
-        <div className="divider">
-          <span>or paste URL</span>
-        </div>
-        
-        <input
-          type="url"
-          value={modUrl}
-          onChange={handleUrlChange}
-          placeholder="https://www.curseforge.com/minecraft/mc-mods/your-mod or https://modrinth.com/mod/your-mod"
-          className="url-input"
-          disabled={!!selectedFile}
-        />
-        
-        <div className="supported-sites">
-          <span>Supported: CurseForge • Modrinth</span>
-        </div>
-      </div>
-
-      {/* Configuration Options */}
-      <div className="conversion-options">
-        <div className="option-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={smartAssumptions}
-              onChange={(e) => setSmartAssumptions(e.target.checked)}
-            />
-            <span className="checkmark"></span>
-            Enable Smart Assumptions
-            <button 
-              className="info-button"
-              onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
-              aria-label="Learn more about smart assumptions"
-            >
-              ℹ️
-            </button>
-          </label>
-          
-          <p className="option-description">
-            AI will make intelligent compromises for incompatible features
-          </p>
-          
-          {showSmartAssumptionsInfo && (
-            <div className="smart-assumptions-info">
-              <h4>Smart Assumptions Examples:</h4>
-              <ul>
-                <li><strong>Custom Dimensions:</strong> Converted to large structures in existing dimensions</li>
-                <li><strong>Complex Machinery:</strong> Simplified to decorative blocks or containers</li>
-                <li><strong>Custom GUI:</strong> Recreated using books or signs for information display</li>
-                <li><strong>Client-Side Rendering:</strong> Excluded with clear notification</li>
-              </ul>
-            </div>
-          )}
-        </div>
-
-        <div className="option-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={includeDependencies}
-              onChange={(e) => setIncludeDependencies(e.target.checked)}
-            />
-            <span className="checkmark"></span>
-            Include Dependencies
-          </label>
-          
-          <p className="option-description">
-            Automatically bundle required libraries and dependencies
-          </p>
-        </div>
-      </div>
-
-      {/* Error Display */}
       {error && (
         <div className="error-message">
-          <span className="error-icon">⚠️</span>
           {error}
         </div>
       )}
 
-      {/* Convert Button */}
-      {!currentConversionId && ( // Only show convert button if no active conversion for this component instance
-        <button
-          className={`convert-button ${!canConvert ? 'disabled' : ''}`}
-          onClick={handleConvert}
-          disabled={!canConvert || isConverting} // Disable if already attempting to convert (before ID is set)
+      <form onSubmit={handleSubmit}>
+        {/* File Upload Area */}
+        <div 
+          {...getRootProps()} 
+          className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
         >
-          {isConverting && !currentConversionId ? ( // Show spinner only during the very initial phase
-            <>
-              <div className="spinner"></div>
-              Initiating...
-            </>
+          <input {...getInputProps()} aria-label="File upload" disabled={isProcessing || isCompleted} />
+          
+          {selectedFile ? (
+            <div className="file-preview">
+              <div className="file-icon">📦</div>
+              <div className="file-info">
+                <div className="file-name">{selectedFile.name}</div>
+                <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                <div className="status">{getStatusMessage()}</div>
+              </div>
+              <button 
+                type="button"
+                className="remove-file"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isProcessing && !isCompleted) setSelectedFile(null);
+                }}
+                disabled={isProcessing || isCompleted}
+              >
+                ✕
+              </button>
+            </div>
+          ) : isFinished ? (
+            <div className="upload-prompt">
+              <div className="upload-icon">🎉</div>
+              <h3>{getStatusMessage()}</h3>
+              <button type="button" className="browse-button" onClick={resetConversionState}>
+                Start New Conversion
+              </button>
+            </div>
           ) : (
+            <div className="upload-prompt">
+              <div className="upload-icon">📁</div>
+              <h3>Drag & drop your modpack here</h3>
+              <p>Supports .jar files and .zip modpack archives</p>
+              <button type="button" className="browse-button" disabled={isProcessing || isCompleted}>
+                Browse Files
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* URL Input - Hide if file selected or in finished states */}
+        {!selectedFile && !isFinished && (
+          <div className="url-input-section">
+            <div className="divider">
+              <span>or paste URL</span>
+            </div>
+
+            <input
+              type="url"
+              value={modUrl}
+              onChange={handleUrlChange}
+              placeholder="https://www.curseforge.com/minecraft/mc-mods/your-mod or https://modrinth.com/mod/your-mod"
+              className="url-input"
+              disabled={!!selectedFile || isProcessing || isCompleted}
+            />
+
+            <div className="supported-sites">
+              <span>Supported: CurseForge • Modrinth</span>
+            </div>
+          </div>
+        )}
+
+        {/* Configuration Options - Hide on final states */}
+        {!isFinished && (
+          <div className={`conversion-options ${isProcessing || isCompleted ? 'disabled-options' : ''}`}>
+            <div className="option-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={smartAssumptions}
+                  onChange={(e) => setSmartAssumptions(e.target.checked)}
+                  disabled={isProcessing || isCompleted}
+                />
+                <span className="checkmark"></span>
+                Enable Smart Assumptions
+                <button 
+                  type="button"
+                  className="info-button"
+                  onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
+                  aria-label="Learn more about smart assumptions"
+                  disabled={isProcessing || isCompleted}
+                >
+                  ?
+                </button>
+              </label>
+
+              {showSmartAssumptionsInfo && (
+                <div className="info-panel">
+                  <h4>Smart Assumptions</h4>
+                  <p>
+                    When enabled, our AI will make intelligent assumptions to convert incompatible features:
+                  </p>
+                  <ul>
+                    <li>Custom dimensions → Large structures in existing dimensions</li>
+                    <li>Complex machinery → Simplified blocks with similar functionality</li>
+                    <li>Custom GUIs → Book or sign-based interfaces</li>
+                  </ul>
+                  <p>This increases conversion success rate but may alter some mod features.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="option-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={includeDependencies}
+                  onChange={(e) => setIncludeDependencies(e.target.checked)}
+                  disabled={isProcessing || isCompleted}
+                />
+                <span className="checkmark"></span>
+                Include Dependencies
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Progress Display */}
+        {isProcessing && currentStatus && (
+          <ConversionProgress 
+            jobId={currentConversionId}
+            status={currentStatus.status}
+            progress={progressPercentage}
+            message={currentStatus.message}
+            stage={currentStatus.stage}
+          />
+        )}
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          {!isFinished && (
             <>
-              🚀 Convert to Bedrock
+              <button
+                type="submit"
+                className="convert-button"
+                disabled={isProcessing || (!selectedFile && !modUrl)}
+              >
+                {isProcessing ? 'Converting...' : 'Convert to Bedrock'}
+              </button>
+              
+              {isProcessing && (
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </button>
+              )}
             </>
           )}
-        </button>
-      )}
-
-      {/* New ConversionProgress component rendering */}
-      {currentConversionId && ( // Render ConversionProgress if an ID is set
-        <ConversionProgress conversionId={currentConversionId} />
-      )}
+          
+          {isCompleted && (
+            <button
+              type="button"
+              className="download-button"
+              onClick={handleDownload}
+            >
+              Download Converted Mod
+            </button>
+          )}
+        </div>
+      </form>
     </div>
   );
 };

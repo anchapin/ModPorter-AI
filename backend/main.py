@@ -134,7 +134,7 @@ class HealthResponse(BaseModel):
     timestamp: str
 
 # Health check endpoint
-@app.get("/health", response_model=HealthResponse, tags=["health"])
+@app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the API"""
     return HealthResponse(
@@ -144,7 +144,7 @@ async def health_check():
     )
 
 # File upload endpoint
-@app.post("/api/upload", response_model=UploadResponse, tags=["files"])
+@app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
 async def upload_file(file: UploadFile = File(...)):
     """
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
@@ -239,7 +239,7 @@ async def simulate_ai_conversion(job_id: str):
             # Mirror
             mirror = mirror_dict_from_job(job, 25)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 25)
             print(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
@@ -254,7 +254,7 @@ async def simulate_ai_conversion(job_id: str):
             await crud.upsert_progress(session, job_id, 75)
             mirror = mirror_dict_from_job(job, 75)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 75)
             print(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
 
@@ -271,7 +271,7 @@ async def simulate_ai_conversion(job_id: str):
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.zip"
             mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            result_url = f"/api/download/{job.id}"
+            result_url = f"/api/v1/convert/{job.id}/download" # Updated result_url
 
             try:
                 with open(mock_output_filepath, "w") as f:
@@ -282,13 +282,13 @@ async def simulate_ai_conversion(job_id: str):
                 job = await crud.update_job_status(session, job_id, "failed")
                 mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
                 conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.dict())
+                await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
                 return
 
             mirror = mirror_dict_from_job(job, 100, result_url)
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 100)
             print(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
 
@@ -297,13 +297,13 @@ async def simulate_ai_conversion(job_id: str):
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
             conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.dict())
+            await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
             print(f"Job {job_id}: Status updated to FAILED due to error.")
 
 
 # Conversion endpoints
-@app.post("/api/convert", response_model=ConversionResponse, tags=["conversion"])
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     """
     Start a new mod conversion job.
@@ -357,7 +357,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     conversion_jobs_db[str(job.id)] = mirror
 
     # Write to Redis
-    await cache.set_job_status(str(job.id), mirror.dict())
+    await cache.set_job_status(str(job.id), mirror.model_dump())
     await cache.set_progress(str(job.id), 0)
 
     print(f"Job {job.id}: Queued. Starting simulated AI conversion in background.")
@@ -370,7 +370,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         estimated_time=35
     )
 
-@app.get("/api/convert/{job_id}", response_model=ConversionStatus, tags=["conversion"])
+@app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Get the current status of a specific conversion job.
@@ -429,7 +429,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
     elif status == "completed":
         descriptive_message = "Conversion completed successfully."
         # Only set result_url if job is completed
-        result_url = f"/api/download/{job_id}"
+        result_url = f"/api/v1/convert/{job_id}/download" # Updated result_url
     elif status == "failed":
         error_message = "Conversion failed."
         descriptive_message = error_message
@@ -463,7 +463,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
         created_at=job.created_at
     )
 
-@app.get("/api/convert", response_model=List[ConversionStatus], tags=["conversion"])
+@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -507,7 +507,7 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
         ))
     return statuses
 
-@app.delete("/api/convert/{job_id}", tags=["conversion"])
+@app.delete("/api/v1/convert/{job_id}", tags=["conversion"])
 async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
     """
     Cancel an ongoing conversion job.
@@ -533,12 +533,12 @@ async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-
         updated_at=job.updated_at,
     )
     conversion_jobs_db[job_id] = mirror
-    await cache.set_job_status(job_id, mirror.dict())
+    await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
     return {"message": f"Conversion job {job_id} has been cancelled."}
 
 # Download endpoint
-@app.get("/api/download/{job_id}", tags=["files"])
+@app.get("/api/v1/convert/{job_id}/download", tags=["files"])
 async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
     """
     Download the converted mod file.

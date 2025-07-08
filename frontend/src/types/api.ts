@@ -5,10 +5,33 @@
 // --- Existing API types (mostly unchanged) ---
 
 export interface ConversionRequest {
-  file?: File;
-  modUrl?: string;
+  file_id: string; // Made mandatory for the actual call to /api/v1/convert
+  original_filename: string; // Made mandatory for the actual call to /api/v1/convert
+  target_version?: string;
+  options?: {
+    smartAssumptions: boolean;
+    includeDependencies: boolean;
+    modUrl?: string; // modUrl can be part of options
+    // any other relevant options
+  };
+}
+
+export interface UploadResponse {
+  file_id: string;
+  original_filename: string;
+  saved_filename: string;
+  size: number;
+  content_type?: string;
+  message: string;
+  filename: string; // This seems to be the same as original_filename
+}
+
+export interface InitiateConversionParams {
+  file?: File; // User provides a file
+  modUrl?: string; // Or a URL
   smartAssumptions: boolean;
   includeDependencies: boolean;
+  target_version?: string; // Added
 }
 
 export interface ConversionResponse {
@@ -18,7 +41,8 @@ export interface ConversionResponse {
   estimated_time?: number; // Initial estimated time for completion
 }
 
-export interface ConversionStatus { // For polling job progress
+// This interface will match the backend's ConversionStatus model
+export interface ConversionStatus {
   job_id: string;
   status: string; // e.g., "queued", "preprocessing", "ai_conversion", "postprocessing", "completed", "failed", "cancelled"
   progress: number; // Percentage 0-100
@@ -30,9 +54,6 @@ export interface ConversionStatus { // For polling job progress
   created_at: string; // ISO date string
 }
 
-
-// --- Types for the new Interactive Conversion Report ---
-
 export interface ModConversionStatus {
   name: string;
   version: string;
@@ -41,13 +62,13 @@ export interface ModConversionStatus {
   errors?: string[] | null;
 }
 
-export interface SmartAssumption { // This is the simpler PRD top-level version, kept for potential use with FullConversionReport
+export interface SmartAssumption {
   originalFeature: string;
   assumptionApplied: string;
-  impact: 'low' | 'medium' | 'high'; // Matches backend "Low", "Medium", "High"
+  impact: 'low' | 'medium' | 'high';
   description: string;
-  userExplanation?: string; // Added from backend model
-  visualExamples?: string[] | null; // Added from backend model
+  userExplanation?: string;
+  visualExamples?: string[] | null;
 }
 
 export interface SummaryReport {
@@ -58,13 +79,13 @@ export interface SummaryReport {
   failed_features: number;
   assumptions_applied_count: number;
   processing_time_seconds: number;
-  download_url: string; // was result_url in ConversionStatus, now part of summary
-  quick_statistics: Record<string, any>; // e.g., features_converted, time_taken, file_size
+  download_url: string;
+  quick_statistics: Record<string, any>;
 }
 
 export interface FeatureConversionDetail {
   feature_name: string;
-  status: string; // "Success", "Partial Success", "Failed"
+  status: string;
   compatibility_notes: string;
   visual_comparison_before?: string | null;
   visual_comparison_after?: string | null;
@@ -81,7 +102,7 @@ export interface FeatureAnalysis {
 export interface AssumptionDetail { // Detailed version for AssumptionsReport
   assumption_id: string;
   feature_affected: string;
-  description:str;
+  description: string;
   reasoning: string;
   impact_level: string; // "Low", "Medium", "High"
   user_explanation: string;
@@ -151,4 +172,24 @@ export interface DetailedReport { // This is likely superseded by InteractiveRep
   progress: number;
   logs: string[];
   technicalDetails: any;
+}
+
+// Status enum for frontend type checking
+export type ConversionStatusEnum =
+  | 'queued'
+  | 'preprocessing'
+  | 'ai_conversion'
+  | 'postprocessing'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+// Extended interfaces for rich reporting (maintaining backward compatibility)
+export interface ExtendedConversionResponse extends ConversionResponse {
+  overallSuccessRate?: number;
+  convertedMods?: ConvertedMod[];
+  failedMods?: FailedMod[];
+  smartAssumptionsApplied?: SmartAssumption[];
+  downloadUrl?: string;
+  detailedReport?: DetailedReport;
 }

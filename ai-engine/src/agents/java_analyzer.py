@@ -2,16 +2,18 @@
 Java Analyzer Agent for analyzing Java mod structure and extracting features
 """
 
-from typing import Dict, List, Any, Optional
+import javalang
+import re
 import logging
 import json
-import zipfile
-import os
-from pathlib import Path
+from typing import List, Dict, Any, Optional
 from langchain.tools import tool
-from src.models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext
+from models.smart_assumptions import (
+    SmartAssumptionEngine,
 )
+import os
+import zipfile
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

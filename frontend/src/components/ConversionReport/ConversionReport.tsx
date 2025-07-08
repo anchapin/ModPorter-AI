@@ -2,8 +2,9 @@
  * ConversionReport Component - PRD Feature 3: Interactive Conversion Report
  * Visual, comprehensive reporting of conversion results
  */
-import React from 'react';
-import {
+
+import React, { useState } from 'react';
+import type {
   InteractiveReport,
   SummaryReport,
   ModConversionStatus,
@@ -17,19 +18,17 @@ import {
 
 interface ConversionReportProps {
   conversionResult: InteractiveReport;
-  // Optional: jobStatus can be 'completed' | 'failed' if passed from parent
-  // to determine the main title, otherwise we infer from summary.
-  jobStatus?: 'completed' | 'failed' | 'processing'; // 'processing' would mean this component shouldn't render fully.
+  jobStatus?: 'completed' | 'failed' | 'processing';
 }
 
 // Helper function for styling status strings
 const getStatusColor = (status: string | undefined) => {
-  if (!status) return '#6b7280'; // gray for undefined
+  if (!status) return '#6b7280';
   status = status.toLowerCase();
-  if (status.includes('success') || status.includes('converted')) return '#10b981'; // green
-  if (status.includes('partial')) return '#f59e0b'; // yellow
-  if (status.includes('failed')) return '#ef4444'; // red
-  return '#6b7280'; // gray
+  if (status.includes('success') || status.includes('converted')) return '#10b981';
+  if (status.includes('partial')) return '#f59e0b';
+  if (status.includes('failed')) return '#ef4444';
+  return '#6b7280';
 };
 
 const getImpactColor = (impact: string | undefined) => {
@@ -41,11 +40,19 @@ const getImpactColor = (impact: string | undefined) => {
   return '#6b7280';
 };
 
-
 export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
-  jobStatus // if passed from parent
+  jobStatus
 }) => {
+  if (!conversionResult) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+        <h2>Conversion Report Not Available</h2>
+        <p>There was an issue loading the conversion details. Please try again later.</p>
+      </div>
+    );
+  }
+
   const {
     summary,
     converted_mods,
@@ -57,144 +64,31 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
     report_generation_date,
   } = conversionResult;
 
-  // Determine overall status for display - parent might pass this, or we infer
   const displayStatus = jobStatus || (summary.overall_success_rate > 10 ? 'completed' : 'failed');
-
-  const getSuccessRateColor = (rate: number) => {
-    if (rate >= 80) return '#10b981';
-    if (rate >= 60) return '#f59e0b';
-    if (rate >= 40) return '#f97316';
-    return '#ef4444';
-  };
-
-  // This component should ideally not render if status is 'processing'.
-  // That should be handled by a parent component showing a progress bar.
-  // If by mistake it's called with processing, show a minimal message.
-  if (jobStatus === 'processing') {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Report is being generated...</div>;
-  }
-
-  // Icon helper functions and constants
-  const STATUS_ICONS = {
-    success: '✅',
-    completed: '✅',
-    converted: '✅',
-    partial: '⚠️',
-    warning: '⚠️',
-    failed: '❌',
-    error: '❌',
-    unknown: '❓',
-  };
-
-  const getStatusIcon = (status: string | undefined): string => {
-    if (!status) return STATUS_ICONS.unknown;
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes('success') || lowerStatus.includes('completed') || lowerStatus.includes('converted')) return STATUS_ICONS.success;
-    if (lowerStatus.includes('partial')) return STATUS_ICONS.partial;
-    if (lowerStatus.includes('fail') || lowerStatus.includes('error')) return STATUS_ICONS.failed;
-    if (lowerStatus.includes('warning')) return STATUS_ICONS.warning;
-    return STATUS_ICONS.unknown;
-  };
-
-  const IMPACT_ICONS = { low: '🟢', medium: '🟡', high: '🔴', unknown: '⚪️' };
-
-  const getImpactIcon = (impact: string | undefined): string => {
-    if (!impact) return IMPACT_ICONS.unknown;
-    const lowerImpact = impact.toLowerCase();
-    if (lowerImpact === 'low') return IMPACT_ICONS.low;
-    if (lowerImpact === 'medium') return IMPACT_ICONS.medium;
-    if (lowerImpact === 'high') return IMPACT_ICONS.high;
-    return IMPACT_ICONS.unknown;
-  };
-
-  const derivedOverallStatus = summary.overall_success_rate >= 80 ? 'completed' :
-                             summary.overall_success_rate >= 40 ? 'partial success' : 'failed';
-
-
-  const handleDownloadJson = () => {
-    if (!conversionResult) return;
-
-    const jsonString = JSON.stringify(conversionResult, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    // Use job_id from conversionResult for the filename
-    const fileName = `conversion_report_${conversionResult.job_id || 'details'}.json`;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Clean up
-  };
 
   return (
     <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
       {/* Header */}
       <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb', textAlign: 'center' }}>
-        <h1 style={{
-          color: getStatusColor(displayStatus), // displayStatus already considers overall success
-          fontSize: '2.25rem',
-          marginBottom: '0.25rem',
-        }}>
-          {getStatusIcon(derivedOverallStatus)} Conversion {displayStatus === 'completed' ? 'Report' : 'Failed'}
+        <h1 style={{ color: getStatusColor(displayStatus), fontSize: '2.25rem', marginBottom: '0.25rem' }}>
+          Conversion {displayStatus === 'completed' ? 'Report' : 'Failed'}
         </h1>
         <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '0', marginBottom: '0.75rem' }}>
           Job ID: {job_id} | Generated: {new Date(report_generation_date).toLocaleString()}
         </p>
-        <button
-          onClick={handleDownloadJson}
-          style={{
-            display: 'inline-block',
-            backgroundColor: '#4A5568', // Neutral dark gray
-            color: 'white',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#2D3748')}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4A5568')}
-        >
-          Download Report (JSON)
-        </button>
       </div>
 
       {/* Summary Section */}
       <details open style={{ marginBottom: '2rem', backgroundColor: '#f9fafb', padding: '1.5rem', borderRadius: '8px' }}>
-        <summary style={{ fontWeight: 'bold', fontSize: '1.25rem', cursor: 'pointer', color: '#374151' }}>📋 Overall Summary</summary>
+        <summary style={{ fontWeight: 'bold', fontSize: '1.25rem', cursor: 'pointer', color: '#374151' }}>Overall Summary</summary>
         <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div><strong>Overall Success Rate:</strong> <span style={{ color: getSuccessRateColor(summary.overall_success_rate), fontWeight: 'bold' }}>{summary.overall_success_rate.toFixed(1)}%</span></div>
+          <div><strong>Overall Success Rate:</strong> <span style={{ color: getStatusColor(summary.overall_success_rate.toString()), fontWeight: 'bold' }}>{summary.overall_success_rate.toFixed(1)}%</span></div>
           <div><strong>Total Features:</strong> {summary.total_features}</div>
           <div><strong>Converted:</strong> {summary.converted_features}</div>
           <div><strong>Partially Converted:</strong> {summary.partially_converted_features}</div>
           <div><strong>Failed:</strong> {summary.failed_features}</div>
           <div><strong>Assumptions Applied:</strong> {summary.assumptions_applied_count}</div>
           <div><strong>Processing Time:</strong> {summary.processing_time_seconds.toFixed(2)}s</div>
-        </div>
-        {summary.download_url && (
-          <div style={{ marginTop: '1.5rem', textAlign: 'center', backgroundColor: '#e0f2fe', padding: '1rem', borderRadius: '6px' }}>
-            <h3 style={{marginTop: 0, marginBottom: '0.75rem', color: '#0c4a6e'}}>Your Bedrock Add-on is Ready!</h3>
-            <a
-              href={summary.download_url}
-              download
-              style={{
-                display: 'inline-block', backgroundColor: '#2563eb', color: 'white',
-                padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold',
-              }}
-            >
-              Download .mcaddon
-            </a>
-          </div>
-        )}
-         <div style={{marginTop: '1rem'}}>
-            <strong>Quick Statistics:</strong>
-            <pre style={{fontSize: '0.8rem', backgroundColor: '#fff', padding: '0.5rem', borderRadius: '4px', overflowX: 'auto'}}>
-              {JSON.stringify(summary.quick_statistics, null, 2)}
-            </pre>
         </div>
       </details>
 
@@ -223,6 +117,7 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
                   </ul>
                 </div>
               )}
+              {/* Optionally display mod.features here */}
             </div>
           ))}
         </details>
