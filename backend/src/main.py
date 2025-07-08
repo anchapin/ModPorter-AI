@@ -21,15 +21,13 @@ from datetime import datetime
 import uuid
 import uvicorn
 import os
-import uuid
 import asyncio # Added for simulated AI conversion
 from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
 import logging
+import httpx
 from src.db.init_db import init_db
 from src.api import comparison as comparison_api # New import for comparison routes
-import sys
-import importlib.util
 from pathlib import Path
 
 # Configure logging first
@@ -37,7 +35,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # AI Engine HTTP Configuration
-import httpx
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://ai-engine:8001")
 AI_ENGINE_TIMEOUT = httpx.Timeout(300.0)  # 5 minutes timeout for long conversions
 

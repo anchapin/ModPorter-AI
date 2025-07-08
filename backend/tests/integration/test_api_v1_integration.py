@@ -7,6 +7,7 @@ conversion processing, status tracking, and error handling.
 
 import io
 import time
+from src.services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 
 # Test client will be provided by fixture
 
@@ -429,8 +430,6 @@ class TestV1FullWorkflowIntegration:
 # Imports for Report API tests (ensure these are at the top if not already)
 # from fastapi.testclient import TestClient # Already imported via pytest
 # from src.main import app # Already imported via pytest
-from src.services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
-from src.services.report_models import InteractiveReport, FullConversionReport
 
 # Module-level client for report tests, if not using pytest fixtures for all tests
 # client = TestClient(app) # Pytest client fixture is generally preferred
