@@ -1,0 +1,22 @@
+{
+  "scenario_id": "stress_entity_001",
+  "scenario_name": "High Entity Count Stress Test",
+  "description": "Test performance with a high number of custom entities.",
+  "type": "stress_test",
+  "target_platform": "any",
+  "duration_seconds": 600,
+  "metrics_to_collect": ["cpu_usage_percent", "memory_used_mb", "frame_rate_average", "entity_processing_time_ms"],
+  "parameters": {
+    "load_level": "high",
+    "entity_count": 1000,
+    "entity_type": "custom_mob_alpha",
+    "enable_ai": true,
+    "start_interactions": true
+  },
+  "thresholds": {
+    "min_fps_average": 30,
+    "max_cpu_percent_process": 80,
+    "max_memory_mb_process": 500,
+    "max_entity_processing_time_ms": 50
+  }
+}
