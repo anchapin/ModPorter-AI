@@ -424,3 +424,67 @@ class TestV1FullWorkflowIntegration:
         job_id = data["job_id"]
         status_response = client.get(f"/api/v1/convert/{job_id}/status")
         assert status_response.status_code == 200
+
+
+# Imports for Report API tests (ensure these are at the top if not already)
+# from fastapi.testclient import TestClient # Already imported via pytest
+# from src.main import app # Already imported via pytest
+from src.services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+from src.services.report_models import InteractiveReport, FullConversionReport
+
+# Module-level client for report tests, if not using pytest fixtures for all tests
+# client = TestClient(app) # Pytest client fixture is generally preferred
+
+class TestReportAPIEndpoints:
+    """Integration tests for the V1 Report API endpoints."""
+
+    def test_get_interactive_report_success(self, client): # client fixture from conftest.py or global
+        job_id = MOCK_CONVERSION_RESULT_SUCCESS["job_id"] # "job_123_success"
+        response = client.get(f"/api/v1/jobs/{job_id}/report")
+        assert response.status_code == 200
+        report_data = response.json()
+        assert report_data["job_id"] == job_id
+        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        assert "feature_analysis" in report_data
+        assert "smart_assumptions_report" in report_data
+        assert "developer_log" in report_data
+
+    def test_get_interactive_report_failure(self, client):
+        job_id = MOCK_CONVERSION_RESULT_FAILURE["job_id"] # "job_456_failure"
+        response = client.get(f"/api/v1/jobs/{job_id}/report")
+        assert response.status_code == 200
+        report_data = response.json()
+        assert report_data["job_id"] == job_id
+        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+        assert len(report_data["failed_mods"]) > 0
+
+    def test_get_interactive_report_generic_success(self, client):
+        response = client.get("/api/v1/jobs/some-random-job-id-success/report")
+        assert response.status_code == 200
+        report_data = response.json()
+        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+
+    def test_get_interactive_report_not_found(self, client):
+        response = client.get("/api/v1/jobs/unknown_job_id_123/report")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    def test_get_prd_style_report_success(self, client):
+        job_id = MOCK_CONVERSION_RESULT_SUCCESS["job_id"]
+        response = client.get(f"/api/v1/jobs/{job_id}/report/prd")
+        assert response.status_code == 200
+        report_data = response.json()
+        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_SUCCESS["overall_success_rate"]
+        assert "smart_assumptions" in report_data
+        assert isinstance(report_data["smart_assumptions"], list)
+
+    def test_get_prd_style_report_failure(self, client):
+        job_id = MOCK_CONVERSION_RESULT_FAILURE["job_id"]
+        response = client.get(f"/api/v1/jobs/{job_id}/report/prd")
+        assert response.status_code == 200
+        report_data = response.json()
+        assert report_data["summary"]["overall_success_rate"] == MOCK_CONVERSION_RESULT_FAILURE["overall_success_rate"]
+
+    def test_get_prd_style_report_not_found(self, client):
+        response = client.get("/api/v1/jobs/unknown_job_id_456/report/prd")
+        assert response.status_code == 404

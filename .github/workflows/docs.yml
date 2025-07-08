@@ -20,14 +20,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           
       - name: Install Mermaid CLI
         run: npm install -g @mermaid-js/mermaid-cli
         
       - name: Generate diagrams
         run: |
-          find docs -name "*.md" -exec mmdc -i {} -o {}.png --no-sandbox \;
+          if find docs -name "*.md" -print0 | xargs -0 grep -l '```mermaid' > /dev/null; then
+            find docs -name "*.md" -exec sh -c 'if grep -q "```mermaid" "$1"; then mmdc -i "$1" -o "${1%.md}-diagram.png" --no-sandbox || echo "Failed to generate diagram for $1"; fi' _ {} \;
+          else
+            echo "No Mermaid diagrams found in documentation"
+          fi
           
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

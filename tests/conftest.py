@@ -1,3 +1,4 @@
+import sys
 import pytest
 import requests
 import time
@@ -5,6 +6,8 @@ import os
 from requests.exceptions import ConnectionError
 from docker.models.services import Service as DockerService # To prevent pydantic clash if any
 from docker.errors import NotFound
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'ai-engine', 'src')))
 
 # Define service names and their health check endpoints/ports if applicable
 SERVICE_HEALTH_CHECKS = {
