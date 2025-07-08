@@ -3,7 +3,7 @@
  * Provides interface for running performance benchmarks and viewing results
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { performanceBenchmarkAPI } from '../../services/api';
 import './PerformanceBenchmark.css';
 
@@ -93,7 +93,7 @@ export const PerformanceBenchmark: React.FC = () => {
 
       return () => clearInterval(interval);
     }
-  }, [isRunning, currentRun]);
+  }, [isRunning, currentRun, pollBenchmarkStatus]);
 
   const loadScenarios = async () => {
     try {
@@ -138,7 +138,7 @@ export const PerformanceBenchmark: React.FC = () => {
     }
   };
 
-  const pollBenchmarkStatus = async () => {
+  const pollBenchmarkStatus = useCallback(async () => {
     if (!currentRun) return;
 
     try {
@@ -157,9 +157,9 @@ export const PerformanceBenchmark: React.FC = () => {
     } catch (err) {
       console.error('Error polling benchmark status:', err);
     }
-  };
+  }, [currentRun, loadBenchmarkReport]);
 
-  const loadBenchmarkReport = async (runId: string) => {
+  const loadBenchmarkReport = useCallback(async (runId: string) => {
     try {
       const response = await performanceBenchmarkAPI.getBenchmarkReport(runId);
       setCurrentReport(response.data);
@@ -167,7 +167,7 @@ export const PerformanceBenchmark: React.FC = () => {
       setError('Failed to load benchmark report');
       console.error('Error loading report:', err);
     }
-  };
+  }, []);
 
   const createCustomScenario = async () => {
     if (!customScenario.scenario_name || !customScenario.description) {
