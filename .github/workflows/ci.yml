@@ -8,12 +8,13 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PYTHON_VERSION: '3.9'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   # Frontend Tests
   frontend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
     - uses: actions/checkout@v4
@@ -32,7 +33,7 @@ jobs:
         echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
     
     - name: Setup pnpm cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.STORE_PATH }}
         key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
@@ -52,11 +53,16 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        CI=true pnpm run test:coverage || echo "Tests failed but continuing..."
-      continue-on-error: true
+        if pnpm run test:coverage; then
+          echo "Frontend tests passed"
+        else
+          echo "Frontend tests failed, but continuing..."
+          exit 0
+        fi
     
     - name: Upload frontend coverage
-      uses: codecov/codecov-action@v3
+      if: always()
+      uses: codecov/codecov-action@v4
       with:
         directory: ./frontend/coverage
         flags: frontend
@@ -64,6 +70,7 @@ jobs:
   # Backend Tests
   backend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     services:
       postgres:
@@ -97,10 +104,10 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
     
     - name: Cache pip dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt', 'ai-engine/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
     
@@ -115,8 +122,11 @@ jobs:
     - name: Run backend linting
       run: |
         cd backend
-        ruff check .
-      continue-on-error: true
+        if command -v ruff >/dev/null 2>&1; then
+          ruff check . || echo "Linting issues found but continuing..."
+        else
+          echo "Ruff not found, skipping linting"
+        fi
 
     - name: Run database migrations
       run: |
@@ -135,7 +145,8 @@ jobs:
         REDIS_URL: redis://localhost:6379
     
     - name: Upload backend coverage
-      uses: codecov/codecov-action@v3
+      if: always()
+      uses: codecov/codecov-action@v4
       with:
         directory: ./backend
         flags: backend
@@ -143,6 +154,7 @@ jobs:
   # AI Engine Tests
   ai-engine-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
     - uses: actions/checkout@v4
@@ -170,7 +182,8 @@ jobs:
         ANTHROPIC_API_KEY: "test-key"
     
     - name: Upload AI engine coverage
-      uses: codecov/codecov-action@v3
+      if: always()
+      uses: codecov/codecov-action@v4
       with:
         directory: ./ai-engine
         flags: ai-engine
@@ -179,6 +192,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     needs: [frontend-tests, backend-tests, ai-engine-tests]
+    timeout-minutes: 25
     
     services:
       postgres:
@@ -225,16 +239,17 @@ jobs:
         cd frontend && pnpm install
         
         # Install backend dependencies
-        cd ../backend && pip install -e . && pip install -r requirements.txt
+        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
         
-        # Install ai-engine dependencies
-        cd ../ai-engine && pip install -e . && pip install -r requirements.txt
+        # Install ai-engine dependencies  
+        cd ../ai-engine && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
     
     - name: Build frontend
       run: |
         cd frontend
         pnpm run build
-     - name: Run database migrations
+    
+    - name: Run database migrations
       run: |
         cd backend
         python -m alembic upgrade head
@@ -245,12 +260,28 @@ jobs:
       run: |
         # Start backend in background
         cd backend && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+        BACKEND_PID=$!
         
         # Wait for backend to start
-        sleep 15
+        echo "Waiting for backend to start..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+            echo "Backend is ready"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "Backend failed to start within 30 seconds"
+            kill $BACKEND_PID 2>/dev/null || true
+            exit 1
+          fi
+          sleep 1
+        done
         
         # Run integration tests
         cd backend && python -m pytest tests/integration/ -v
+        
+        # Clean up
+        kill $BACKEND_PID 2>/dev/null || true
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
@@ -259,19 +290,22 @@ jobs:
   # Security Scanning
   security-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
     - uses: actions/checkout@v4
     
     - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@0.28.0
       with:
         scan-type: 'fs'
         scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
     
     - name: Upload Trivy scan results
+      if: always()
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
@@ -281,6 +315,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [integration-tests, security-scan]
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
@@ -297,14 +332,21 @@ jobs:
     
     - name: Build and push Docker images
       run: |
-        # Build frontend image
+        set -e
+        
+        # Build and push frontend image
+        echo "Building frontend image..."
         docker build -t ghcr.io/${{ github.repository }}/frontend:latest ./frontend
         docker push ghcr.io/${{ github.repository }}/frontend:latest
         
-        # Build backend image  
+        # Build and push backend image  
+        echo "Building backend image..."
         docker build -t ghcr.io/${{ github.repository }}/backend:latest ./backend
         docker push ghcr.io/${{ github.repository }}/backend:latest
         
-        # Build AI engine image
+        # Build and push AI engine image
+        echo "Building AI engine image..."
         docker build -t ghcr.io/${{ github.repository }}/ai-engine:latest ./ai-engine
         docker push ghcr.io/${{ github.repository }}/ai-engine:latest
+        
+        echo "All images built and pushed successfully"

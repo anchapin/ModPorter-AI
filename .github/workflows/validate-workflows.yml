@@ -1,0 +1,53 @@
+name: Validate Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Validate YAML syntax
+        run: |
+          echo "Validating YAML syntax for all workflow files..."
+          find .github/workflows -name "*.yml" -o -name "*.yaml" | while read file; do
+            echo "Validating $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))" || {
+              echo "❌ YAML syntax error in $file"
+              exit 1
+            }
+          done
+          echo "✅ All workflow files have valid YAML syntax"
+      
+      - name: Check for common issues
+        run: |
+          echo "Checking for common workflow issues..."
+          
+          # Check for deprecated actions
+          if grep -r "actions/create-release@v1" .github/workflows/; then
+            echo "❌ Found deprecated action: actions/create-release@v1"
+            echo "Consider using softprops/action-gh-release instead"
+            exit 1
+          fi
+          
+          # Check for consistent Node.js versions
+          node_versions=$(grep -r "node-version:" .github/workflows/ | grep -o "'[0-9]*'" | sort -u)
+          if [ $(echo "$node_versions" | wc -l) -gt 1 ]; then
+            echo "⚠️  Multiple Node.js versions found: $node_versions"
+            echo "Consider standardizing on a single version"
+          fi
+          
+          # Check for proper timeout settings
+          if grep -L "timeout-minutes:" .github/workflows/*.yml; then
+            echo "⚠️  Some workflows missing timeout-minutes"
+          fi
+          
+          echo "✅ Workflow validation completed"
