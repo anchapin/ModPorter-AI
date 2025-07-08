@@ -45,3 +45,4 @@ isort
 
 # Monitoring
 prometheus-client
+psutil

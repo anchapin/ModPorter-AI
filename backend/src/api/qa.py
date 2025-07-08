@@ -256,7 +256,8 @@ if __name__ == "__main__":
 
     list_completed_response = list_qa_tasks(status="completed")
     print(f"List QA Tasks (Completed) Response: Found {list_completed_response.get('count')} tasks.")
-    for t in list_completed_response.get('tasks', []): print(f"  - Task {t['task_id'][-12:]}, Status: {t['status']}")
+    for t in list_completed_response.get('tasks', []):
+        print(f"  - Task {t['task_id'][-12:]}, Status: {t['status']}")
 
     # Test with invalid conversion ID
     invalid_conv_id_response = start_qa_task("invalid-id-format")

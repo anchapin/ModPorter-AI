@@ -1,0 +1,386 @@
+.performance-benchmark {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.performance-benchmark h2 {
+  color: #333;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 10px;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
+
+.error-icon {
+  margin-right: 8px;
+}
+
+.benchmark-controls {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.control-group {
+  margin-bottom: 15px;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.control-group select,
+.control-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.control-group select:disabled,
+.control-group input:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.scenario-details {
+  background-color: #e9ecef;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+}
+
+.scenario-details h3 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.scenario-details p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.run-benchmark-btn,
+.create-scenario-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.run-benchmark-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.run-benchmark-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.run-benchmark-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.create-scenario-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.create-scenario-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.create-scenario-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Custom Scenario Modal */
+.custom-scenario-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  max-height: 80%;
+  overflow-y: auto;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-buttons button:first-child {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal-buttons button:last-child {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Benchmark Progress */
+.benchmark-progress {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.benchmark-progress h3 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #007bff;
+  transition: width 0.3s ease;
+}
+
+.benchmark-progress p {
+  margin: 5px 0;
+  color: #555;
+}
+
+/* Benchmark Report */
+.benchmark-report {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.benchmark-report h3 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.score-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.score-item {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.score-label {
+  display: block;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.metrics-table {
+  margin-bottom: 20px;
+}
+
+.metrics-table h4 {
+  margin-bottom: 10px;
+  color: #495057;
+}
+
+.metrics-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.metrics-table th,
+.metrics-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.metrics-table th {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+}
+
+.metrics-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.improvement {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.regression {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.analysis-section {
+  margin-bottom: 20px;
+}
+
+.analysis-section h4 {
+  color: #495057;
+  margin-bottom: 15px;
+}
+
+.analysis-section h5 {
+  color: #6c757d;
+  margin-bottom: 10px;
+}
+
+.analysis-section ul {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.analysis-section li {
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.report-text {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.report-text h4 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.report-text pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .performance-benchmark {
+    padding: 10px;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .score-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .metrics-table {
+    overflow-x: auto;
+  }
+}

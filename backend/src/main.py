@@ -29,6 +29,7 @@ from src.services.report_generator import (
     MOCK_CONVERSION_RESULT_FAILURE,
 )
 from src.services.report_models import InteractiveReport, FullConversionReport
+from src.api.performance import router as performance_router
 
 # validation API imports
 from src.api.validation import router as validation_router
@@ -172,6 +173,10 @@ app = FastAPI(
             "description": "Health check endpoints",
         },
         {
+            "name": "performance",
+            "description": "Performance benchmarking operations",
+        },
+        {
             "name": "validation",
             "description": "AI-powered validation operations",
         },
@@ -200,6 +205,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
+# Include performance benchmarking router
+app.include_router(performance_router, prefix="/performance", tags=["performance"])
 
 # Pydantic models for API documentation
 # Request models

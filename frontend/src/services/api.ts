@@ -103,3 +103,112 @@ export const cancelJob = async (jobId: string): Promise<void> => {
     throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
   }
 };
+
+// Performance Benchmarking API
+export const performanceBenchmarkAPI = {
+  // Get all available scenarios
+  getScenarios: async () => {
+    const response = await fetch(`${API_BASE_URL}/performance/scenarios`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to fetch scenarios', response.status);
+    }
+    
+    return { data: await response.json() };
+  },
+
+  // Run a benchmark
+  runBenchmark: async (request: {
+    scenario_id: string;
+    device_type?: string;
+    conversion_id?: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/performance/run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        scenario_id: request.scenario_id,
+        device_type: request.device_type || 'desktop',
+        conversion_id: request.conversion_id,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to start benchmark', response.status);
+    }
+
+    return { data: await response.json() };
+  },
+
+  // Get benchmark status
+  getBenchmarkStatus: async (runId: string) => {
+    const response = await fetch(`${API_BASE_URL}/performance/status/${runId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to get benchmark status', response.status);
+    }
+    
+    return { data: await response.json() };
+  },
+
+  // Get benchmark report
+  getBenchmarkReport: async (runId: string) => {
+    const response = await fetch(`${API_BASE_URL}/performance/report/${runId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to get benchmark report', response.status);
+    }
+    
+    return { data: await response.json() };
+  },
+
+  // Create custom scenario
+  createCustomScenario: async (scenario: {
+    scenario_name: string;
+    description: string;
+    type: string;
+    duration_seconds?: number;
+    parameters?: Record<string, any>;
+    thresholds?: Record<string, number>;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/performance/scenarios`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        scenario_name: scenario.scenario_name,
+        description: scenario.description,
+        type: scenario.type,
+        duration_seconds: scenario.duration_seconds || 300,
+        parameters: scenario.parameters || {},
+        thresholds: scenario.thresholds || {},
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to create custom scenario', response.status);
+    }
+
+    return { data: await response.json() };
+  },
+
+  // Get benchmark history
+  getBenchmarkHistory: async (limit: number = 50, offset: number = 0) => {
+    const response = await fetch(`${API_BASE_URL}/performance/history?limit=${limit}&offset=${offset}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to get benchmark history', response.status);
+    }
+    
+    return { data: await response.json() };
+  },
+};
