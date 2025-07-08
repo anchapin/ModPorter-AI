@@ -1,4 +1,5 @@
-from typing import List, Dict, Any, TypedDict, Optional
+from typing import List, Dict, Any, Optional
+from typing_extensions import TypedDict
 
 class ModConversionStatus(TypedDict):
     name: str
