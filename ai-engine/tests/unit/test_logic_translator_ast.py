@@ -328,7 +328,7 @@ class TestLogicTranslatorAST:
         assert result["success"] is False
         assert "Unsupported recipe type" in result["error"]
 
-    @patch('agents.logic_translator.logger')
+    @patch('src.agents.logic_translator.logger')
     def test_ast_parsing_error_logging(self, mock_logger):
         """Test that AST parsing errors are properly logged"""
         invalid_java = "public class { invalid syntax"
