@@ -155,6 +155,7 @@ jobs:
     - name: Run database migrations
       run: |
         cd backend
+        # Use sync URL for alembic migrations
         export DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter
         python -m alembic upgrade head
       env:
@@ -162,14 +163,31 @@ jobs:
 
     - name: Run backend tests
       if: always()
+      timeout-minutes: 10
       run: |
         cd backend
-        python -m pytest --cov=. tests/ --cov-report=xml -v
+        # Set test environment variables
+        export TESTING=true
+        export ENVIRONMENT=test
+        export PYTEST_CURRENT_TEST=true
+        export DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter
+        export REDIS_URL=redis://localhost:6379
+
+        # Debug: Check if services are accessible
+        echo "Testing database connection..."
+        python -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect('postgresql://postgres:password@localhost:5432/modporter').close())" || echo "Database connection failed"
+
+        echo "Testing Redis connection..."
+        python -c "import redis; r = redis.Redis(host='localhost', port=6379); r.ping()" || echo "Redis connection failed"
+
+        # Run tests with timeout and optimizations for CI
+        python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
       env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         TESTING: true
         ENVIRONMENT: test
+        PYTEST_CURRENT_TEST: true
     
     - name: Upload backend coverage
       if: always()
@@ -312,7 +330,7 @@ jobs:
     - name: Run integration tests
       run: |
         # Start backend in background (skip database init since migrations already ran)
-        cd backend && SKIP_DB_INIT=true DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter REDIS_URL=redis://localhost:6379 python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+        cd backend && SKIP_DB_INIT=true DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter REDIS_URL=redis://localhost:6379 python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 &
         BACKEND_PID=$!
         
         # Wait for backend to start
@@ -336,7 +354,7 @@ jobs:
         # Clean up
         kill $BACKEND_PID 2>/dev/null || true
       env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         REDIS_URL: redis://localhost:6379
         API_URL: http://localhost:8000
         TESTING: true
