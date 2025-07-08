@@ -45,7 +45,7 @@ class ValidationRequest(BaseModel):
 
 class ValidationJob(BaseModel):
     job_id: str = Field(..., description="The ID for this validation job.")
-    status: str = Field("pending", description="Status of the validation job.")
+    status: ValidationJobStatus = Field(ValidationJobStatus.PENDING, description="Status of the validation job.")
     message: Optional[str] = None
     conversion_id: str
 
