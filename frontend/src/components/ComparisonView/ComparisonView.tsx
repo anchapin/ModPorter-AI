@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import DiffViewer from './DiffViewer'; // Uncommented
-import FeatureMapper from './FeatureMapper'; // Uncommented
-import AssumptionTracker from './AssumptionTracker'; // Uncommented
-import ComparisonReportPage from './ComparisonReportPage'; // Uncommented
+import DiffViewer from './DiffViewer';
+import FeatureMapper from './FeatureMapper';
+import AssumptionTracker from './AssumptionTracker';
 
 // Interface matching the backend response structure for a single comparison result
 interface FeatureMappingData {
@@ -43,7 +42,9 @@ const ComparisonView: React.FC = () => {
               try {
                 const errJson = JSON.parse(text);
                 detail = errJson.detail || text;
-              } catch (e) { /* ignore parsing error, use text */ }
+              } catch {
+                /* ignore parsing error, use text */
+              }
               throw new Error(`Failed to fetch comparison data: ${res.status} ${res.statusText} - ${detail}`);
             });
           }

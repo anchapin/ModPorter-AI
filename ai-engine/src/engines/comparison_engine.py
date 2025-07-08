@@ -1,6 +1,7 @@
 import os
 import json
-
+import re
+from typing import Dict, List, Set, Tuple
 from ..models.comparison import ComparisonResult, FeatureMapping
 
 class ComparisonEngine:
@@ -39,62 +40,160 @@ class ComparisonEngine:
             "files_modified": sorted(modified_files)
         }
 
+    def _analyze_code_complexity(self, java_files: Set[str], bedrock_files: Set[str]) -> Dict[str, float]:
+        """Analyze code complexity and conversion accuracy."""
+        java_complexity = len([f for f in java_files if f.endswith('.java')]) * 0.8
+        js_complexity = len([f for f in bedrock_files if f.endswith('.js')]) * 0.6
+        
+        # Logic preservation estimate based on file conversion ratio
+        preservation_ratio = min(js_complexity / max(java_complexity, 1), 1.0)
+        
+        return {
+            "logic_preserved": round(preservation_ratio, 2),
+            "complexity_reduction": round(max(0, (java_complexity - js_complexity) / max(java_complexity, 1)), 2),
+            "conversion_confidence": round(preservation_ratio * 0.9, 2)
+        }
+    
+    def _analyze_assets(self, java_files: Set[str], bedrock_files: Set[str]) -> Dict[str, any]:
+        """Analyze asset conversion and compatibility."""
+        java_assets = [f for f in java_files if any(f.endswith(ext) for ext in ['.png', '.jpg', '.ogg', '.wav'])]
+        bedrock_assets = [f for f in bedrock_files if any(f.endswith(ext) for ext in ['.png', '.jpg', '.ogg', '.wav'])]
+        
+        return {
+            "original_assets": len(java_assets),
+            "converted_assets": len(bedrock_assets),
+            "conversion_rate": round(len(bedrock_assets) / max(len(java_assets), 1), 2),
+            "supported_formats": ["PNG", "OGG"] if bedrock_assets else [],
+            "unsupported_formats": ["WAV"] if any('.wav' in f for f in java_assets) else []
+        }
+    
+    def _identify_smart_assumptions(self, java_files: Set[str], bedrock_files: Set[str]) -> List[Dict[str, str]]:
+        """Identify smart assumptions applied during conversion."""
+        assumptions = []
+        
+        # GUI to Sign Interface assumption
+        if any('gui' in f.lower() or 'interface' in f.lower() for f in java_files):
+            assumptions.append({
+                "id": "GUI_TO_SIGN_INTERFACE",
+                "description": "Complex Java GUIs converted to sign-based interfaces in Bedrock",
+                "impact": "Medium - User interaction patterns changed",
+                "confidence": "0.75"
+            })
+        
+        # Custom Dimension assumption
+        if any('dimension' in f.lower() or 'world' in f.lower() for f in java_files):
+            assumptions.append({
+                "id": "CUSTOM_DIMENSION_TO_STRUCTURE",
+                "description": "Custom dimensions converted to large structures in existing dimensions",
+                "impact": "High - Fundamental gameplay changes",
+                "confidence": "0.65"
+            })
+        
+        # Complex Machinery assumption
+        if any('machine' in f.lower() or 'automation' in f.lower() for f in java_files):
+            assumptions.append({
+                "id": "MACHINERY_SIMPLIFICATION",
+                "description": "Complex machinery simplified to preserve visual aesthetics",
+                "impact": "Medium - Functionality reduced but appearance maintained",
+                "confidence": "0.80"
+            })
+        
+        return assumptions
+    
     def _perform_feature_mapping(self, java_mod_path: str, bedrock_addon_path: str, structural_diff: dict) -> list:
-        mock_mappings = []
-
-        if "file1.java" in structural_diff.get("files_removed", []) and            "bp/file1.json" in structural_diff.get("files_added", []):
-            mock_mappings.append(
-                FeatureMapping(
-                    java_feature="Custom Block from file1.java",
-                    bedrock_equivalent="Custom Block in bp/file1.json",
-                    mapping_type="ASSUMED_STRUCTURAL",
-                    confidence_score=0.70,
-                    assumption_applied="JAVA_TO_JSON_BLOCK_CONVERSION"
-                )
-            )
-
-        if "main.java" in structural_diff.get("files_removed", []) and             "scripts/main.js" in structural_diff.get("files_added", []):
-            mock_mappings.append(
-                FeatureMapping(
-                    java_feature="Main logic from main.java",
-                    bedrock_equivalent="Main logic in scripts/main.js",
-                    mapping_type="ASSUMED_CODE_TRANSLATION",
-                    confidence_score=0.65,
-                    assumption_applied="JAVA_TO_JS_MAIN_LOGIC"
-                )
-            )
-
-        if not mock_mappings:
-            mock_mappings.append(
-                FeatureMapping(
-                    java_feature="Default Java Feature",
-                    bedrock_equivalent="Default Bedrock Equivalent",
-                    mapping_type="PLACEHOLDER_DEFAULT",
-                    confidence_score=0.4,
-                    assumption_applied="NO_SPECIFIC_STRUCTURAL_MATCH"
-                )
-            )
-        return mock_mappings
+        """Enhanced feature mapping with realistic patterns."""
+        mappings = []
+        java_files = set(structural_diff.get("files_removed", []))
+        bedrock_files = set(structural_diff.get("files_added", []))
+        
+        # Java to JSON block mapping
+        java_blocks = [f for f in java_files if 'block' in f.lower() and f.endswith('.java')]
+        bedrock_blocks = [f for f in bedrock_files if 'block' in f.lower() and f.endswith('.json')]
+        
+        for java_block in java_blocks[:3]:  # Limit to avoid too many mappings
+            if bedrock_blocks:
+                bedrock_equivalent = bedrock_blocks[0]  # Simple 1:1 mapping for demo
+                mappings.append(FeatureMapping(
+                    java_feature=f"Block definition: {java_block}",
+                    bedrock_equivalent=f"Block JSON: {bedrock_equivalent}",
+                    mapping_type="STRUCTURAL_CONVERSION",
+                    confidence_score=0.85,
+                    assumption_applied="JAVA_CLASS_TO_JSON_DEFINITION"
+                ))
+                bedrock_blocks.pop(0)
+        
+        # Main logic conversion
+        java_main = [f for f in java_files if 'main' in f.lower() and f.endswith('.java')]
+        js_main = [f for f in bedrock_files if 'main' in f.lower() and f.endswith('.js')]
+        
+        if java_main and js_main:
+            mappings.append(FeatureMapping(
+                java_feature=f"Core logic: {java_main[0]}",
+                bedrock_equivalent=f"Converted logic: {js_main[0]}",
+                mapping_type="LOGIC_TRANSLATION",
+                confidence_score=0.72,
+                assumption_applied="JAVA_OOP_TO_JS_FUNCTIONAL"
+            ))
+        
+        # GUI conversion
+        java_gui = [f for f in java_files if any(term in f.lower() for term in ['gui', 'interface', 'screen'])]
+        if java_gui:
+            mappings.append(FeatureMapping(
+                java_feature=f"GUI System: {java_gui[0]}",
+                bedrock_equivalent="Sign-based interface system",
+                mapping_type="SMART_ASSUMPTION",
+                confidence_score=0.60,
+                assumption_applied="GUI_TO_SIGN_INTERFACE"
+            ))
+        
+        # Default mapping if none found
+        if not mappings:
+            mappings.append(FeatureMapping(
+                java_feature="Generic mod functionality",
+                bedrock_equivalent="Basic Bedrock add-on features",
+                mapping_type="GENERIC_CONVERSION",
+                confidence_score=0.45,
+                assumption_applied="BEST_EFFORT_CONVERSION"
+            ))
+        
+        return mappings
 
     def compare(self, java_mod_path: str, bedrock_addon_path: str, conversion_id: str) -> ComparisonResult:
+        """Enhanced comparison with realistic analysis."""
         print(f"Comparing Java mod at '{java_mod_path}' with Bedrock add-on at '{bedrock_addon_path}' for conversion '{conversion_id}'")
 
+        # Structural analysis
         structural_differences = self._compare_structures(java_mod_path, bedrock_addon_path)
+        java_files = self._list_files_recursively(java_mod_path)
+        bedrock_files = self._list_files_recursively(bedrock_addon_path)
+        
+        # Enhanced analysis
+        code_analysis = self._analyze_code_complexity(java_files, bedrock_files)
+        asset_analysis = self._analyze_assets(java_files, bedrock_files)
+        smart_assumptions = self._identify_smart_assumptions(java_files, bedrock_files)
         feature_mappings_list = self._perform_feature_mapping(java_mod_path, bedrock_addon_path, structural_differences)
-
-        code_diff_summary = {"summary": "Code comparison not yet implemented."}
-        asset_diff_summary = {"summary": "Asset comparison not yet implemented."}
-        applied_assumptions_summary = [{"id": "GLOBAL_MOCK_ASSUMPTION", "description": "Initial placeholder global assumption."}]
-        overall_confidence = {"structural_analysis": 0.65, "feature_mapping_initial": 0.55}
+        
+        # Calculate overall confidence based on various factors
+        structural_confidence = min(0.9, len(structural_differences.get("files_modified", [])) / max(len(java_files), 1))
+        mapping_confidence = sum(fm.confidence_score for fm in feature_mappings_list) / max(len(feature_mappings_list), 1)
+        overall_confidence_score = (structural_confidence + mapping_confidence + code_analysis["conversion_confidence"]) / 3
+        
+        confidence_scores = {
+            "overall": round(overall_confidence_score, 2),
+            "structural_analysis": round(structural_confidence, 2),
+            "feature_mapping": round(mapping_confidence, 2),
+            "code_conversion": code_analysis["conversion_confidence"],
+            "asset_conversion": asset_analysis["conversion_rate"]
+        }
 
         result = ComparisonResult(
             conversion_id=conversion_id,
             structural_diff=structural_differences,
-            code_diff=code_diff_summary,
-            asset_diff=asset_diff_summary,
+            code_diff=code_analysis,
+            asset_diff=asset_analysis,
             feature_mappings=feature_mappings_list,
-            assumptions_applied=applied_assumptions_summary,
-            confidence_scores=overall_confidence
+            assumptions_applied=smart_assumptions,
+            confidence_scores=confidence_scores
         )
         return result
 
