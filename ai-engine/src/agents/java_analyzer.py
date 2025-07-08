@@ -7,8 +7,8 @@ import re
 import logging
 import json
 from typing import List, Dict, Any, Optional
-from langchain.tools import tool
-from models.smart_assumptions import (
+from crewai.tools import tool
+from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 import os
@@ -61,7 +61,7 @@ class JavaAnalyzerAgent:
     
     def get_tools(self) -> List:
         """Get tools available to this agent"""
-        # Return actual tool functions for proper agent functionality
+        # Return the actual decorated tool instances created by @tool decorator
         return [
             self.analyze_mod_structure_tool,
             self.extract_mod_metadata_tool,

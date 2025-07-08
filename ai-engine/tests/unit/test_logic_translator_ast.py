@@ -6,7 +6,7 @@ import json
 import pytest
 import javalang
 from unittest.mock import Mock, patch
-from agents.logic_translator import LogicTranslatorAgent
+from src.agents.logic_translator import LogicTranslatorAgent
 
 
 class TestLogicTranslatorAST:
