@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import uuid
 import uvicorn
 import os
 import uuid
@@ -270,80 +271,81 @@ async def upload_file(file: UploadFile = File(...)):
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
     logger.info(f"Starting AI simulation for job_id: {job_id}")
+    
+    def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
+        # Compose dict for legacy mirror
+        return ConversionJob(
+            job_id=str(job.id),
+            file_id=job.input_data.get("file_id"),
+            original_filename=job.input_data.get("original_filename"),
+            status=job.status,
+            progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
+            target_version=job.input_data.get("target_version"),
+            options=job.input_data.get("options"),
+            result_url=result_url if result_url is not None else None,
+            error_message=error_message,
+            created_at=job.created_at,
+            updated_at=job.updated_at
+        )
+    
+    async def update_job_state(session, job_id, status, progress, result_url=None, error_message=None):
+        """Helper function to update job state, progress, and cache"""
+        logger.info(f"Job {job_id}: Updating to status {status}, progress {progress}%...")
+        job = await crud.update_job_status(session, job_id, status)
+        await crud.upsert_progress(session, job_id, progress)
+        logger.info(f"Job {job_id}: Progress updated, refreshing job from database...")
+        # Refresh job from database to get latest status
+        job = await crud.get_job(session, job_id)
+        logger.info(f"Job {job_id}: Creating mirror and updating cache...")
+        mirror = mirror_dict_from_job(job, progress, result_url, error_message)
+        conversion_jobs_db[job_id] = mirror
+        await cache.set_job_status(job_id, mirror.model_dump())
+        await cache.set_progress(job_id, progress)
+        logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: {progress}%")
+        return job
+    
     try:
+        logger.info(f"Job {job_id}: Creating database session...")
         async with AsyncSessionLocal() as session:
+            logger.info(f"Job {job_id}: Session created, fetching job...")
             job = await crud.get_job(session, job_id)
-        if not job:
-            logger.error(f"Error: Job {job_id} not found for AI simulation.")
-            return
-    except Exception as e:
-        logger.error(f"Critical database failure during AI simulation for job {job_id}: {e}", exc_info=True)
-        # For tests, skip database-dependent simulation but update in-memory status
-        if job_id in conversion_jobs_db:
-            logger.info(f"Test mode: Updating job {job_id} status to completed in in-memory storage")
-            # Update in-memory job to completed status for tests
-            job_data = conversion_jobs_db[job_id]
-            job_data.status = "completed"
-            job_data.progress = 100
-            conversion_jobs_db[job_id] = job_data
-            # Skip the rest of the database-dependent simulation
-            return
-        else:
-            logger.error(f"Job {job_id} not found in in-memory storage either.")
-            return
-
-        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-            # Compose dict for legacy mirror
-            return ConversionJob(
-                job_id=str(job.id),
-                file_id=job.input_data.get("file_id"),
-                original_filename=job.input_data.get("original_filename"),
-                status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
-                target_version=job.input_data.get("target_version"),
-                options=job.input_data.get("options"),
-                result_url=result_url if result_url is not None else None,
-                error_message=error_message,
-                created_at=job.created_at,
-                updated_at=job.updated_at
-            )
-
-        try:
+            if not job:
+                logger.error(f"Error: Job {job_id} not found for AI simulation.")
+                return
+            
+            logger.info(f"Job {job_id}: Found job with status {job.status}, starting stage 1 (10s delay)...")
+            
             # Stage 1: Preprocessing -> Processing
             await asyncio.sleep(10)
-            job = await crud.update_job_status(session, job_id, "processing")
-            await crud.upsert_progress(session, job_id, 25)
-            # Mirror
-            mirror = mirror_dict_from_job(job, 25)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 25)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
+            logger.info(f"Job {job_id}: Stage 1 delay completed...")
+            await update_job_state(session, job_id, "processing", 25)
 
             # Stage 2: Processing -> Postprocessing
+            logger.info(f"Job {job_id}: Starting stage 2 (15s delay)...")
             await asyncio.sleep(15)
+            logger.info(f"Job {job_id}: Stage 2 delay completed, checking for cancellation...")
             # Recheck cancellation
             job = await crud.get_job(session, job_id)
             if job.status == "cancelled":
                 logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
-            job = await crud.update_job_status(session, job_id, "postprocessing")
-            await crud.upsert_progress(session, job_id, 75)
-            mirror = mirror_dict_from_job(job, 75)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 75)
-            logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
+            logger.info(f"Job {job_id}: Not cancelled...")
+            await update_job_state(session, job_id, "postprocessing", 75)
 
             # Stage 3: Postprocessing -> Completed
+            logger.info(f"Job {job_id}: Starting stage 3 (10s delay)...")
             await asyncio.sleep(10)
+            logger.info(f"Job {job_id}: Stage 3 delay completed, checking for cancellation...")
             job = await crud.get_job(session, job_id)
             if job.status == "cancelled":
                 logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                 return
 
-            job = await crud.update_job_status(session, job_id, "completed")
-            await crud.upsert_progress(session, job_id, 100)
+            logger.info(f"Job {job_id}: Not cancelled, updating to completed...")
+            await update_job_state(session, job_id, "completed", 100)
+            # Refresh job from database to get latest status
+            job = await crud.get_job(session, job_id)
+            logger.info(f"Job {job_id}: Job refreshed, creating mock output file...")
             # Create mock output file
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.zip"
@@ -351,34 +353,26 @@ async def simulate_ai_conversion(job_id: str):
             result_url = f"/api/v1/convert/{job.id}/download" # Changed path
 
             try:
+                logger.info(f"Job {job_id}: Creating mock output file at {mock_output_filepath}...")
                 with open(mock_output_filepath, "w") as f:
                     f.write(f"This is a mock converted file for job {job.id}.\n")
                     f.write(f"Original filename: {job.input_data.get('original_filename')}\n")
+                logger.info(f"Job {job_id}: Mock output file created successfully")
             except IOError as e:
                 logger.error(f"Error creating mock output file for job {job_id}: {e}", exc_info=True)
-                job = await crud.update_job_status(session, job_id, "failed")
-                mirror = mirror_dict_from_job(job, 0, None, f"Failed to create output file: {e}")
-                conversion_jobs_db[job_id] = mirror
-                await cache.set_job_status(job_id, mirror.model_dump())
-                await cache.set_progress(job_id, 0)
+                await update_job_state(session, job_id, "failed", 0, None, f"Failed to create output file: {e}")
                 return
 
+            logger.info(f"Job {job_id}: Creating final mirror and updating cache...")
+            # Get refreshed job for final mirror
+            job = await crud.get_job(session, job_id)
             mirror = mirror_dict_from_job(job, 100, result_url)
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 100)
             logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output file: {mock_output_filepath}, Result URL: {result_url}")
 
-        except Exception as e:
-            logger.error(f"Error during AI simulation for job {job_id}: {e}", exc_info=True)
-            job = await crud.update_job_status(session, job_id, "failed")
-            mirror = mirror_dict_from_job(job, 0, None, str(e))
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 0)
-            logger.error(f"Job {job_id}: Status updated to FAILED due to error.")
     except Exception as e:
-        # Fail fast instead of falling back to inconsistent storage
         logger.error(f"Critical database failure during AI simulation for job {job_id}: {e}", exc_info=True)
         
         # Set job status to failed in cache if possible
@@ -394,82 +388,6 @@ async def simulate_ai_conversion(job_id: str):
         # Do not continue processing with inconsistent state
         return
 
-
-# Conversion endpoints
-@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """
-    Start a new mod conversion job.
-    Handles both legacy (file_name) and new (file_id+original_filename) fields.
-    Validates that a file_id and original_filename are resolved.
-    """
-    # Legacy support: if file_id or original_filename missing, try to resolve from file_name
-    file_id = request.file_id
-    original_filename = request.original_filename
-
-    if not file_id or not original_filename:
-        # Try to resolve from legacy 'file_name'
-        if request.file_name:
-            # Try to extract file_id from a file_name pattern like "{file_id}.{ext}"
-            parts = os.path.splitext(request.file_name)
-            maybe_file_id = parts[0]
-            # maybe_ext = parts[1]  # unused
-            if not file_id:
-                file_id = maybe_file_id
-            if not original_filename:
-                original_filename = request.file_name
-        else:
-            raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
-
-    # Try to persist job to DB, fall back to in-memory storage for tests
-    try:
-        job = await crud.create_job(
-            db,
-            file_id=file_id,
-            original_filename=original_filename,
-            target_version=request.target_version,
-            options=request.options
-        )
-        job_id = str(job.id)
-        created_at = job.created_at if job.created_at else datetime.now()
-        updated_at = job.updated_at if job.updated_at else datetime.now()
-    except Exception as e:
-        # Database operation failed - fallback to in-memory storage
-        logger.error(f"Database operation failed during job creation: {e}", exc_info=True)
-        # In-memory fallback for job creation
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-
-    # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
-    mirror = ConversionJob(
-        job_id=job_id,
-        file_id=file_id,
-        original_filename=original_filename,
-        status="queued",
-        progress=0,
-        target_version=request.target_version,
-        options=request.options,
-        result_url=None,
-        error_message=None,
-        created_at=created_at,
-        updated_at=updated_at,
-    )
-    conversion_jobs_db[job_id] = mirror
-
-    # Write to Redis
-    await cache.set_job_status(job_id, mirror.model_dump())
-    await cache.set_progress(job_id, 0)
-
-    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
-    background_tasks.add_task(simulate_ai_conversion, job_id)
-
-    return ConversionResponse(
-        job_id=job_id,
-        status="queued",
-        message="Conversion job started and is now queued.",
-        estimated_time=35
-    )
 
 # Keep simple version for compatibility 
 @app.post("/api/v1/convert/simple")
@@ -596,7 +514,17 @@ async def get_conversion_status(job_id: str = FastAPIPath(..., pattern="^[0-9a-f
         else:
             # No record in-memory, job truly not found
             raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
-    progress = job.progress.progress if job.progress else 0
+    # Safely access progress relationship
+    progress = 0
+    try:
+        if job.progress and hasattr(job.progress, 'progress'):
+            progress = job.progress.progress
+        elif hasattr(job, 'progress') and isinstance(job.progress, int):
+            # Handle case where progress is directly an integer
+            progress = job.progress
+    except (AttributeError, TypeError) as e:
+        logger.warning(f"Could not access job progress for job {job_id}: {e}")
+        progress = 0
     error_message = None
     result_url = None
     status = job.status
@@ -681,7 +609,17 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
         jobs = await crud.list_jobs(db)
         statuses = []
         for job in jobs:
-            progress = job.progress.progress if job.progress else 0
+            # Safely access progress relationship
+            progress = 0
+            try:
+                if job.progress and hasattr(job.progress, 'progress'):
+                    progress = job.progress.progress
+                elif hasattr(job, 'progress') and isinstance(job.progress, int):
+                    # Handle case where progress is directly an integer
+                    progress = job.progress
+            except (AttributeError, TypeError) as e:
+                logger.warning(f"Could not access job progress for job {job.id}: {e}")
+                progress = 0
             error_message = None
             result_url = None
             status = job.status
@@ -879,8 +817,76 @@ async def cancel_conversion_simple(job_id: str):
     conversions_db[job_id]["status"] = "cancelled"
     return {"message": f"Conversion job {job_id} has been cancelled"}
 
+# Helper function to create and queue conversion jobs
+async def _create_and_queue_job(
+    db: AsyncSession,
+    background_tasks: BackgroundTasks,
+    file_id: str,
+    original_filename: str,
+    target_version: str,
+    options: dict
+) -> ConversionResponse:
+    """
+    Common logic for creating and queuing conversion jobs.
+    """
+    # Create job in database
+    try:
+        job = await crud.create_job(
+            db,
+            file_id=file_id,
+            original_filename=original_filename,
+            target_version=target_version,
+            options=options
+        )
+        if not job or not job.id:
+            # Fallback to generating a UUID if database creation fails
+            logger.warning("Database job creation failed, using fallback UUID")
+            job_id = str(uuid.uuid4())
+            created_at = datetime.now()
+            updated_at = datetime.now()
+        else:
+            job_id = str(job.id)
+            created_at = job.created_at if job.created_at else datetime.now()
+            updated_at = job.updated_at if job.updated_at else datetime.now()
+    except Exception as e:
+        logger.error(f"Failed to create job in database: {e}")
+        # Fallback to generating a UUID if database creation fails
+        job_id = str(uuid.uuid4())
+        created_at = datetime.now()
+        updated_at = datetime.now()
+
+    # Build legacy-mirror dict for in-memory compatibility
+    mirror = ConversionJob(
+        job_id=job_id,
+        file_id=file_id,
+        original_filename=original_filename,
+        status="queued",
+        progress=0,
+        target_version=target_version,
+        options=options,
+        result_url=None,
+        error_message=None,
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+    conversion_jobs_db[job_id] = mirror
+
+    # Write to Redis
+    await cache.set_job_status(job_id, mirror.model_dump())
+    await cache.set_progress(job_id, 0)
+
+    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
+    background_tasks.add_task(simulate_ai_conversion, job_id)
+
+    return ConversionResponse(
+        job_id=job_id,
+        status="queued",
+        message="Conversion job started and is now queued.",
+        estimated_time=35
+    )
+
 # V1 API endpoints that handle file uploads in the convert request
-@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
+@app.post("/api/v1/convert/upload", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion_v1(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -953,54 +959,35 @@ async def start_conversion_v1(
         "mod_url": mod_url
     }
 
-    # Try to persist job to DB, fall back to in-memory storage for tests
-    try:
-        job = await crud.create_job(
-            db,
-            file_id=file_id,
-            original_filename=mod_file.filename,
-            target_version=target_version,
-            options=options
-        )
-        job_id = str(job.id)
-        created_at = job.created_at if job.created_at else datetime.now()
-        updated_at = job.updated_at if job.updated_at else datetime.now()
-    except Exception as e:
-        # Log DB failure and fallback to in-memory storage for tests
-        logger.error(f"Database operation failed during v1 job creation: {e}", exc_info=True)
-        # Fallback to in-memory: generate job ID and timestamps
-        job_id = str(uuid.uuid4())
-        created_at = datetime.now()
-        updated_at = datetime.now()
-
-    # Build legacy-mirror dict for in-memory compatibility (v1)
-    mirror = ConversionJob(
-        job_id=job_id,
+    # Use helper function to create and queue the job
+    return await _create_and_queue_job(
+        db=db,
+        background_tasks=background_tasks,
         file_id=file_id,
         original_filename=mod_file.filename,
-        status="queued",
-        progress=0,
         target_version=target_version,
-        options=options,
-        result_url=None,
-        error_message=None,
-        created_at=created_at,
-        updated_at=updated_at,
+        options=options
     )
-    conversion_jobs_db[job_id] = mirror
 
-    # Write to Redis
-    await cache.set_job_status(job_id, mirror.model_dump())
-    await cache.set_progress(job_id, 0)
+# JSON-based conversion endpoint (works with file_id from upload)
+@app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
+async def start_conversion_json(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    """
+    Start a new mod conversion job using file_id from upload.
+    This endpoint works with the frontend's two-step process: upload then convert.
+    """
+    # Validate that file_id and original_filename are provided
+    if not request.file_id or not request.original_filename:
+        raise HTTPException(status_code=422, detail="file_id and original_filename are required")
 
-    logger.info(f"Job {job_id}: Queued. Starting simulated AI conversion in background.")
-    background_tasks.add_task(simulate_ai_conversion, job_id)
-
-    return ConversionResponse(
-        job_id=job_id,
-        status="queued",
-        message="Conversion job started and is now queued.",
-        estimated_time=35
+    # Use helper function to create and queue the job
+    return await _create_and_queue_job(
+        db=db,
+        background_tasks=background_tasks,
+        file_id=request.file_id,
+        original_filename=request.original_filename,
+        target_version=request.target_version,
+        options=request.options
     )
 
 @app.get("/api/v1/download/simple/{job_id}")

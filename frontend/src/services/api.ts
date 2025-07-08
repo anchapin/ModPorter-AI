@@ -6,8 +6,8 @@
 import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
-const API_BASE_URL = process.env.VITE_API_URL || 
-  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {

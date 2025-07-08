@@ -9,10 +9,10 @@ import json
 import re
 from langchain.tools import tool
 import javalang  # Added javalang
-from models.smart_assumptions import (
+from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from agents.java_analyzer import JavaAnalyzerAgent  # Added JavaAnalyzerAgent
+from src.agents.java_analyzer import JavaAnalyzerAgent  # Added JavaAnalyzerAgent
 
 logger = logging.getLogger(__name__)
 
