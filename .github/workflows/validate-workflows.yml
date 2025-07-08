@@ -32,7 +32,7 @@ jobs:
           echo "Checking for common workflow issues..."
           
           # Check for deprecated actions
-          if grep -r "actions/create-release@v1" .github/workflows/; then
+          if grep -r "actions/create-release@v1" .github/workflows/ --exclude="validate-workflows.yml"; then
             echo "❌ Found deprecated action: actions/create-release@v1"
             echo "Consider using softprops/action-gh-release instead"
             exit 1

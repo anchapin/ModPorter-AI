@@ -3,14 +3,10 @@
  * Visual, comprehensive reporting of conversion results
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import type {
   InteractiveReport,
-  SummaryReport,
   ModConversionStatus,
-  FeatureAnalysis,
-  AssumptionsReport,
-  DeveloperLog,
   AssumptionDetail,
   FeatureConversionDetail,
   LogEntry,

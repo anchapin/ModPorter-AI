@@ -68,9 +68,9 @@ MOCK_CONVERSION_RESULT_SUCCESS = {
         }
     ],
     "developer_logs_data": {
-        "code_translation": [{"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "Translated AwesomeMod/AwesomeClass.java to AwesomeMod/AwesomeClass.js"}],
-        "api_mapping": [{"timestamp": datetime.datetime.now().isoformat(), "level": "WARNING", "message": "Java API 'java.awt.Color' has no direct Bedrock equivalent for server-side logic. Used placeholder."}],
-        "file_processing": [{"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "Converted texture 'textures/block_awesome.png' to Bedrock format."}],
+        "code_translation": [{"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "Translated AwesomeMod/AwesomeClass.java to AwesomeMod/AwesomeClass.js", "details": {"source_file": "AwesomeMod/AwesomeClass.java", "target_file": "AwesomeMod/AwesomeClass.js"}}],
+        "api_mapping": [{"timestamp": datetime.datetime.now().isoformat(), "level": "WARNING", "message": "Java API 'java.awt.Color' has no direct Bedrock equivalent for server-side logic. Used placeholder.", "details": {"java_api": "java.awt.Color", "bedrock_equivalent": "placeholder"}}],
+        "file_processing": [{"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "Converted texture 'textures/block_awesome.png' to Bedrock format.", "details": {"source_path": "textures/block_awesome.png", "target_format": "bedrock"}}],
         "performance": {"total_time_seconds": 45.2, "memory_peak_mb": 128, "cpu_usage_avg_percentage": 30.5},
         "errors": []
     }
