@@ -157,8 +157,8 @@ class ManifestValidator:
         if hd is None: err.append("Missing 'header'.")
         elif not isinstance(hd, dict): err.append("'header' not dict.")
         else:
-            for f in ["name","description","uuid","version"]:
-                if f not in hd: err.append("Header missing '%s'." % f)
+            for field in ["name","description","uuid","version"]:
+                if field not in hd: err.append("Header missing '%s'." % field)
             if hd.get("uuid"):
                 try: uuid.UUID(str(hd.get("uuid")))
                 except ValueError: err.append("Header uuid (%s) invalid." % str(hd.get("uuid")))
@@ -173,8 +173,8 @@ class ManifestValidator:
             if not mods: warn.append("'modules' empty.")
             for i,m in enumerate(mods):
                 if not isinstance(m,dict): err.append("Module %d not dict." % i); continue
-                for f in ["type","uuid","version"]:
-                    if f not in m: err.append("Module %d missing '%s'." % (i,f))
+                for field in ["type","uuid","version"]:
+                    if field not in m: err.append("Module %d missing '%s'." % (i,field))
                 if m.get("uuid"):
                     try: uuid.UUID(str(m.get("uuid")))
                     except ValueError: err.append("Module %d uuid (%s) invalid." % (i,str(m.get("uuid"))))
