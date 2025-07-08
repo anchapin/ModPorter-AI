@@ -148,10 +148,11 @@ async def start_validation_job(
 
 @router.get("/{job_id}/status", response_model=ValidationJob)
 async def get_validation_job_status(job_id: str):
-    job = validation_jobs.get(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Validation job not found.")
-    return job
+    with _validation_jobs_lock:
+        job = validation_jobs.get(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
+        return job
 
 @router.get("/{job_id}/report", response_model=ValidationReportResponse)
 async def get_validation_report(job_id: str):
