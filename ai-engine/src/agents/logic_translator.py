@@ -1252,10 +1252,9 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {{
             result_item_java = java_recipe.get("result", {}).get("item", "unknown_item")
             result_count_java = java_recipe.get("result", {}).get("count", 1)
 
-            bedrock_item_id = result_item_java.replace("minecraft:", "")
-            recipe_key_str = "unknown_recipe_key"  # Default
-
             # Generate a unique recipe key for Bedrock (commonly based on result item)
+            # Strip 'minecraft:' namespace from result item for Bedrock
+            bedrock_item_id = result_item_java.replace("minecraft:", "")
             recipe_key_str = f"{bedrock_item_id}_from_java_recipe"
 
             if recipe_type == "minecraft:crafting_shaped":
@@ -1267,23 +1266,33 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {{
                     "pattern": java_recipe.get("pattern", []),
                     "key": {},
                     "result": {
-                        "item": result_item_java,
+                        "item": bedrock_item_id,
                         "count": result_count_java,
                     },
                 }
-                # Convert key mapping
+                # Convert key mapping, strip namespace from each key item
                 for k, v in java_recipe.get("key", {}).items():
-                    bedrock_recipe["minecraft:recipe_shaped"]["key"][k] = [v]
+                    key_item = v.copy()
+                    if "item" in key_item and key_item["item"].startswith("minecraft:"):
+                        key_item["item"] = key_item["item"].split(":", 1)[1]
+                    bedrock_recipe["minecraft:recipe_shaped"]["key"][k] = [key_item]
 
             elif recipe_type == "minecraft:crafting_shapeless":
+                # Strip namespace from each ingredient item
+                bedrock_ingredients = []
+                for ing in java_recipe.get("ingredients", []):
+                    ing_copy = ing.copy()
+                    if "item" in ing_copy and ing_copy["item"].startswith("minecraft:"):
+                        ing_copy["item"] = ing_copy["item"].split(":", 1)[1]
+                    bedrock_ingredients.append(ing_copy)
                 bedrock_recipe["minecraft:recipe_shapeless"] = {
                     "description": {
                         "identifier": f"minecraft:{recipe_key_str}"
                     },
                     "tags": ["crafting_table"],
-                    "ingredients": java_recipe.get("ingredients", []),
+                    "ingredients": bedrock_ingredients,
                     "result": {
-                        "item": result_item_java,
+                        "item": bedrock_item_id,
                         "count": result_count_java,
                     },
                 }
