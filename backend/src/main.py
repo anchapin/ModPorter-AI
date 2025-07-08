@@ -13,6 +13,7 @@ from src.validation import ValidationFramework # Added import
 # report_generator imports
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 from src.services.report_models import InteractiveReport, FullConversionReport
+from src.api.performance import router as performance_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -89,6 +90,10 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
+        {
+            "name": "performance",
+            "description": "Performance benchmarking operations",
+        },
     ],
     docs_url="/docs",
     redoc_url="/redoc",
@@ -105,6 +110,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
+
+# Include performance benchmarking router
+app.include_router(performance_router, prefix="/performance", tags=["performance"])
 
 # Pydantic models for API documentation
 # Request models
