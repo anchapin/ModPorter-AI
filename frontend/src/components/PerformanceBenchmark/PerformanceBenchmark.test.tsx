@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, beforeEach, test, expect } from 'vitest';
 import { PerformanceBenchmark } from './PerformanceBenchmark';
 
 // Mock the API service
@@ -18,43 +18,43 @@ describe('PerformanceBenchmark', () => {
     vi.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
+  test('renders without crashing', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByText('Performance Benchmarking')).toBeInTheDocument();
   });
 
-  it('displays scenario selection dropdown', () => {
+  test('displays scenario selection dropdown', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByLabelText('Select Scenario:')).toBeInTheDocument();
   });
 
-  it('displays device type selection', () => {
+  test('displays device type selection', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByLabelText('Device Type:')).toBeInTheDocument();
   });
 
-  it('displays conversion ID input', () => {
+  test('displays conversion ID input', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByLabelText('Conversion ID (optional):')).toBeInTheDocument();
   });
 
-  it('displays run benchmark button', () => {
+  test('displays run benchmark button', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByRole('button', { name: 'Run Benchmark' })).toBeInTheDocument();
   });
 
-  it('displays create custom scenario button', () => {
+  test('displays create custom scenario button', () => {
     render(<PerformanceBenchmark />);
     expect(screen.getByRole('button', { name: 'Create Custom Scenario' })).toBeInTheDocument();
   });
 
-  it('run benchmark button is disabled when no scenario is selected', () => {
+  test('run benchmark button is disabled when no scenario is selected', () => {
     render(<PerformanceBenchmark />);
     const runButton = screen.getByRole('button', { name: 'Run Benchmark' });
     expect(runButton).toBeDisabled();
   });
 
-  it('loads scenarios on mount', async () => {
+  test('loads scenarios on mount', async () => {
     const mockGetScenarios = vi.fn().mockResolvedValue({
       data: [
         {
@@ -79,7 +79,7 @@ describe('PerformanceBenchmark', () => {
     });
   });
 
-  it('displays error message when scenarios fail to load', async () => {
+  test('displays error message when scenarios fail to load', async () => {
     const mockGetScenarios = vi.fn().mockRejectedValue(new Error('Failed to load'));
 
     const { performanceBenchmarkAPI } = await import('../../services/api');

@@ -79,6 +79,47 @@ export const PerformanceBenchmark: React.FC = () => {
     thresholds: {}
   });
 
+  const loadScenarios = async () => {
+    try {
+      const response = await performanceBenchmarkAPI.getScenarios();
+      setScenarios(response.data);
+    } catch (err) {
+      setError('Failed to load scenarios');
+      console.error('Error loading scenarios:', err);
+    }
+  };
+
+  const loadBenchmarkReport = useCallback(async (runId: string) => {
+    try {
+      const response = await performanceBenchmarkAPI.getBenchmarkReport(runId);
+      setCurrentReport(response.data);
+    } catch (err) {
+      setError('Failed to load benchmark report');
+      console.error('Error loading report:', err);
+    }
+  }, []);
+
+  const pollBenchmarkStatus = useCallback(async () => {
+    if (!currentRun) return;
+
+    try {
+      const response = await performanceBenchmarkAPI.getBenchmarkStatus(currentRun.run_id);
+      const status = response.data;
+
+      setCurrentRun(status);
+
+      if (status.status === 'completed') {
+        setIsRunning(false);
+        await loadBenchmarkReport(currentRun.run_id);
+      } else if (status.status === 'failed') {
+        setIsRunning(false);
+        setError('Benchmark failed');
+      }
+    } catch (err) {
+      console.error('Error polling benchmark status:', err);
+    }
+  }, [currentRun, loadBenchmarkReport]);
+
   // Load scenarios on component mount
   useEffect(() => {
     loadScenarios();
@@ -94,16 +135,6 @@ export const PerformanceBenchmark: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isRunning, currentRun, pollBenchmarkStatus]);
-
-  const loadScenarios = async () => {
-    try {
-      const response = await performanceBenchmarkAPI.getScenarios();
-      setScenarios(response.data);
-    } catch (err) {
-      setError('Failed to load scenarios');
-      console.error('Error loading scenarios:', err);
-    }
-  };
 
   const runBenchmark = async () => {
     if (!selectedScenario) {
@@ -138,36 +169,6 @@ export const PerformanceBenchmark: React.FC = () => {
     }
   };
 
-  const pollBenchmarkStatus = useCallback(async () => {
-    if (!currentRun) return;
-
-    try {
-      const response = await performanceBenchmarkAPI.getBenchmarkStatus(currentRun.run_id);
-      const status = response.data;
-
-      setCurrentRun(status);
-
-      if (status.status === 'completed') {
-        setIsRunning(false);
-        await loadBenchmarkReport(currentRun.run_id);
-      } else if (status.status === 'failed') {
-        setIsRunning(false);
-        setError('Benchmark failed');
-      }
-    } catch (err) {
-      console.error('Error polling benchmark status:', err);
-    }
-  }, [currentRun, loadBenchmarkReport]);
-
-  const loadBenchmarkReport = useCallback(async (runId: string) => {
-    try {
-      const response = await performanceBenchmarkAPI.getBenchmarkReport(runId);
-      setCurrentReport(response.data);
-    } catch (err) {
-      setError('Failed to load benchmark report');
-      console.error('Error loading report:', err);
-    }
-  }, []);
 
   const createCustomScenario = async () => {
     if (!customScenario.scenario_name || !customScenario.description) {
