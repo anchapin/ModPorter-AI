@@ -1,3 +1,6 @@
+# HTTP Client
+httpx>=0.25.0
+
 # Core Framework
 fastapi==0.116.0
 uvicorn[standard]==0.35.0

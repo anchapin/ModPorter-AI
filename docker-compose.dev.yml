@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   frontend:
+    extends:
+      file: docker-compose.yml
+      service: frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
@@ -13,23 +16,74 @@ services:
       - VITE_API_URL=http://localhost:8000
       - VITE_HMR_PORT=3001
     ports:
-      - "3000:3000"
+      - "3002:3000" # Map host port 3002 to container port 3000
       - "3001:3001"  # Vite HMR port
+    networks:
+      - modporter-network
 
   backend:
+    extends:
+      file: docker-compose.yml
+      service: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
+      - shared_data:/shared_data
     environment:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
       - PYTHONDONTWRITEBYTECODE=1
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - modporter-network
 
   ai-engine:
+    extends:
+      file: docker-compose.yml
+      service: ai-engine
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
     command: python -m src.main --debug
     volumes:
       - ./ai-engine:/app
+      - shared_data:/shared_data
     environment:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
       - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - modporter-network
+
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+    networks:
+      - modporter-network
+
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    networks:
+      - modporter-network
+
+volumes:
+  shared_data:
+  redis-data:
+  postgres-data:
+  conversion-cache:
+  model-cache:
+  temp-uploads:
+  conversion-outputs:
+
+networks:
+  modporter-network:
+    external: true
