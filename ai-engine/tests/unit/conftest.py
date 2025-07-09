@@ -195,6 +195,8 @@ def mock_sentence_transformer_fixture(monkeypatch):
     # If EmbeddingGenerator imports it as `from sentence_transformers import SentenceTransformer`,
     # then we need to patch `src.utils.embedding_generator.SentenceTransformer`.
     monkeypatch.setattr("src.utils.embedding_generator.SentenceTransformer", MockSentenceTransformer)
+    # Also patch the availability flag to True so the tests can run
+    monkeypatch.setattr("src.utils.embedding_generator.SENTENCE_TRANSFORMERS_AVAILABLE", True)
 
 # You might need to add project root to sys.path here if not handled by pytest/IDE,
 # e.g., by uncommenting and adjusting the sys.path modification lines from the prompt.

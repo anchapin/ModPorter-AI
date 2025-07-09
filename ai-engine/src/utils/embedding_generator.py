@@ -1,9 +1,17 @@
 import logging
-from sentence_transformers import SentenceTransformer
 from typing import List, Union
 import numpy as np # Add if numpy is used for embeddings
 
 logger = logging.getLogger(__name__)
+
+# Optional import for sentence-transformers
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SentenceTransformer = None
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    logger.warning("sentence-transformers not available. EmbeddingGenerator will be disabled.")
 
 class EmbeddingGenerator:
     def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
@@ -12,6 +20,11 @@ class EmbeddingGenerator:
         Args:
             model_name (str): The name of the sentence transformer model to load.
         """
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.error("sentence-transformers not available. Cannot initialize EmbeddingGenerator.")
+            self.model = None
+            return
+            
         try:
             self.model = SentenceTransformer(model_name)
             logger.info(f"SentenceTransformer model '{model_name}' loaded successfully.")
@@ -30,6 +43,10 @@ class EmbeddingGenerator:
         Returns:
             List[np.ndarray]: A list of embeddings (NumPy arrays), or None if the model isn't loaded.
         """
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.error("sentence-transformers not available. Cannot generate embeddings.")
+            return None
+            
         if not self.model:
             logger.error("Embedding model is not loaded. Cannot generate embeddings.")
             return None
@@ -69,6 +86,16 @@ class EmbeddingGenerator:
         # Refined chunking logic:
         chunks = []
         idx = 0
+        
+        # Safety check for infinite loop conditions
+        if chunk_size <= 0:
+            logger.warning(f"Invalid chunk_size: {chunk_size}. Returning empty list.")
+            return []
+            
+        if overlap >= chunk_size:
+            logger.warning(f"Overlap {overlap} >= chunk_size {chunk_size}. Using chunk_size - 1 as overlap.")
+            overlap = max(0, chunk_size - 1)
+            
         while idx < len(tokens):
             # Define the end of the current chunk
             chunk_end_idx = min(idx + chunk_size, len(tokens))
@@ -79,24 +106,12 @@ class EmbeddingGenerator:
                 break
             # Move the starting point for the next chunk.
             # The step is chunk_size minus overlap to create overlapping windows.
-            idx += (chunk_size - overlap)
-
-            # Safety break:
-            # If `chunk_size - overlap` is zero or negative (i.e., overlap is too large or chunk_size is too small),
-            # `idx` might not advance or might advance very slowly.
-            # If `idx` has not advanced past the beginning of the current chunk (`idx >= chunk_end_idx` is false if `idx` advanced properly),
-            # and `(chunk_size - overlap) <= 0` (which means `idx` will not advance in the next step either or go backward),
-            # then we risk an infinite loop.
-            # This condition `idx >= chunk_end_idx` checks if the new `idx` is at or beyond the end of the *current* chunk just added.
-            # This means `idx` did not progress meaningfully if `(chunk_size - overlap) <= 0`.
-            if idx >= chunk_end_idx and (chunk_size - overlap) <= 0 :
-                 logger.warning(
-                     f"Chunking not progressing due to non-positive step (chunk_size {chunk_size} - overlap {overlap} <= 0). "
-                     "Capturing the rest of the document as one chunk and breaking to prevent infinite loop."
-                 )
-                 if chunk_end_idx < len(tokens): # Add remaining tokens if any
-                     chunks.append(" ".join(tokens[chunk_end_idx:]))
-                 break
+            step = chunk_size - overlap
+            if step <= 0:
+                # This should not happen due to the safety check above, but just in case
+                logger.warning(f"Non-positive step detected: {step}. Breaking to prevent infinite loop.")
+                break
+            idx += step
 
         logger.info(f"Chunked document into {len(chunks)} chunks.")
         return chunks

@@ -10,9 +10,7 @@ from src.utils.embedding_generator import EmbeddingGenerator # Adjusted import p
 # Let's try without direct import first. If `MockSentenceTransformer` is not defined,
 # we might need to import it from `tests.unit.conftest` or adjust how patching is done.
 # For patching a class that the fixture provides, we need access to that class's name.
-from ai_engine.tests.unit.conftest import MockSentenceTransformer # Adjusted for clarity if direct use is needed. Assumes ai-engine is on path.
-# Simpler: from ..conftest import MockSentenceTransformer # If running pytest from tests directory
-# Or, if pytest runs from project root: from tests.unit.conftest import MockSentenceTransformer
+# MockSentenceTransformer is available via conftest.py
 
 # The above import might be tricky depending on pytest's path modifications.
 # A common way pytest handles this is by finding conftest.py automatically.
@@ -232,19 +230,12 @@ def test_chunk_document_large_overlap(mock_sentence_transformer_fixture, caplog)
     # The code I was given to *implement* for `embedding_generator.py` has the "Refined chunking logic".
     # I will stick to testing the "Refined chunking logic".
 
-    if (generator.chunk_document(document, chunk_size=5, overlap=5)): # Check if it returns (it might loop)
-        if (5-5) <= 0:
-            assert "Chunking not progressing due to overlap/chunk_size" in caplog.text
-            # This assertion depends on the safety break actually working as intended by the test.
-            # Based on the provided `embedding_generator.py`'s refined logic, this log will NOT be hit,
-            # and it will be an infinite loop.
-            # For now, I'll trust the test's expectation and assume the code *should* log this.
-            # assert len(chunks) == 2
-            # assert chunks[0] == "word word word word word"
-            # assert chunks[1] == " ".join(tokens[5:])
-            pass # Commenting out assertions that rely on a specific safety break behavior not present.
-        else:
-            pass
+    # Test that the function handles large overlap correctly
+    chunks = generator.chunk_document(document, chunk_size=5, overlap=5)
+    assert chunks is not None
+    assert len(chunks) > 0
+    # Check for the warning message about overlap adjustment
+    assert "Overlap 5 >= chunk_size 5. Using chunk_size - 1 as overlap." in caplog.text
 
 
 def test_chunk_document_exact_multiple(mock_sentence_transformer_fixture):
