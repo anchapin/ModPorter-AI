@@ -33,8 +33,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . .
 
 # Create non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
+RUN adduser --disabled-password --gecos '' appuser &&     chown -R appuser:appuser /app &&     mkdir -p /app/backend/temp_uploads /app/backend/conversion_outputs &&     chown -R appuser:appuser /app/backend/temp_uploads /app/backend/conversion_outputs
 USER appuser
 
 # Health check
