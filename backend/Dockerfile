@@ -32,6 +32,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 RUN adduser --disabled-password --gecos '' appuser
 # Copy source code after user creation with correct permissions
 COPY --chown=appuser:appuser . .
+
+# Ensure correct permissions for temp_uploads and conversion_outputs
+RUN mkdir -p /app/backend/temp_uploads /app/backend/conversion_outputs && \
+    chown -R appuser:appuser /app/backend/temp_uploads /app/backend/conversion_outputs
 USER appuser
 
 # Health check

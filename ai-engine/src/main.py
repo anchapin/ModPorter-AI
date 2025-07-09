@@ -14,6 +14,7 @@ import os
 import uuid
 import logging
 import json
+import zipfile
 from dotenv import load_dotenv
 import redis.asyncio as aioredis
 
@@ -296,35 +297,92 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         
         logger.info(f"Processing conversion for job {job_id}")
         
-        # TODO: Implement actual conversion logic using conversion_crew
-        # This is a placeholder for the actual AI conversion process
+        # Prepare output path
+        output_path = options.get("output_path")
+        if not output_path:
+            # Default output path using job_id pattern that backend expects
+            # Use the mounted volume path inside the container
+            backend_output_dir = "/shared_data/conversion_outputs"
+            output_path = os.path.join(backend_output_dir, f"{job_id}_converted.mcaddon")
         
-        # Simulate conversion stages
-        stages = [
-            ("analysis", "Analyzing Java mod structure", 20),
-            ("planning", "Creating conversion plan", 40),
-            ("translation", "Translating logic to Bedrock", 60),
-            ("assets", "Converting assets", 80),
-            ("packaging", "Packaging Bedrock addon", 90),
-            ("validation", "Validating conversion", 100),
-        ]
+        # Ensure the output directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        for stage, message, progress in stages:
-            # Get and update job status
+        try:
+            # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)
-            if not job_status:
-                logger.error(f"Job {job_id} not found during stage {stage}")
-                return
-                
-            job_status.current_stage = stage
-            job_status.message = message
-            job_status.progress = progress
-            await job_manager.set_job_status(job_id, job_status)
+            if job_status:
+                job_status.current_stage = "analysis"
+                job_status.message = "Analyzing Java mod structure"
+                job_status.progress = 20
+                await job_manager.set_job_status(job_id, job_status)
             
-            # Simulate processing time
-            import asyncio
-            await asyncio.sleep(2)
-        
+            # Execute the actual AI conversion using the conversion crew
+            from pathlib import Path
+            conversion_result = conversion_crew.convert_mod(
+                mod_path=Path(mod_file_path),
+                output_path=Path(output_path),
+                smart_assumptions=options.get("smart_assumptions", True),
+                include_dependencies=options.get("include_dependencies", True)
+            )
+            
+            # Update progress based on conversion result
+            if conversion_result.get("status") == "failed":
+                # Mark job as failed
+                job_status = await job_manager.get_job_status(job_id)
+                if job_status:
+                    job_status.status = "failed"
+                    job_status.message = f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                    await job_manager.set_job_status(job_id, job_status)
+                logger.error(f"Conversion failed for job {job_id}: {conversion_result.get('error')}")
+                return
+            
+            # Update progress through conversion stages
+            stages = [
+                ("planning", "Creating conversion plan", 40),
+                ("translation", "Translating logic to Bedrock", 60),
+                ("assets", "Converting assets", 80),
+                ("packaging", "Packaging Bedrock addon", 90),
+                ("validation", "Validating conversion", 95),
+            ]
+            
+            for stage, message, progress in stages:
+                job_status = await job_manager.get_job_status(job_id)
+                if job_status:
+                    job_status.current_stage = stage
+                    job_status.message = message
+                    job_status.progress = progress
+                    await job_manager.set_job_status(job_id, job_status)
+                
+                # Short delay to show progress
+                import asyncio
+                await asyncio.sleep(0.5)
+            
+            # Verify output file was created
+            if not os.path.exists(output_path):
+                logger.error(f"Output file not created by conversion crew: {output_path}")
+                logger.error("This indicates a serious conversion failure that should not be masked")
+                
+                # Mark job as failed explicitly instead of creating a fake successful output
+                job_status = await job_manager.get_job_status(job_id)
+                if job_status:
+                    job_status.status = "failed"
+                    job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
+                    await job_manager.set_job_status(job_id, job_status)
+                return
+            
+            logger.info(f"Conversion completed successfully: {output_path}")
+            
+        except Exception as conversion_error:
+            logger.error(f"Failed to convert mod {mod_file_path}: {conversion_error}")
+            # Mark job as failed if conversion fails
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.status = "failed"
+                job_status.message = f"Conversion failed: {str(conversion_error)}"
+                await job_manager.set_job_status(job_id, job_status)
+            return
+
         # Mark as completed
         job_status = await job_manager.get_job_status(job_id)
         if job_status:
