@@ -1,11 +1,26 @@
 import pytest
 from pathlib import Path
 import json
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from src.agents.asset_converter import AssetConverterAgent
 
 from pydub.exceptions import CouldntDecodeError
+
+class MockAudioSegment:
+    def __init__(self, duration=1.0):
+        self.duration_seconds = duration
+
+    @classmethod
+    def from_wav(cls, file):
+        return cls(1.0) # Default duration for WAV mock
+
+    @classmethod
+    def from_ogg(cls, file):
+        return cls(2.0) # Default duration for OGG mock
+
+    def export(self, out_f, format):
+        pass # Mock export, do nothing
 
 # Uses agent fixture from conftest.py
 
