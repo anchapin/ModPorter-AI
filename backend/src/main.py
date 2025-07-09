@@ -1024,7 +1024,7 @@ async def download_converted_mod(
     download_filename = f"{original_filename_base}_converted.mcaddon"
 
     return FileResponse(
-        path=file_path, media_type="application/zip", filename=download_filename
+        path=file_path, media_type="application/octet-stream", filename=download_filename
     )
 
 

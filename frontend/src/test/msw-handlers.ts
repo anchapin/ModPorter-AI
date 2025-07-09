@@ -48,7 +48,6 @@ export const handlers = [
       size: file.size,
       content_type: file.type,
       message: `File '${file.name}' saved successfully`,
-      filename: file.name,
     });
   }),
 

@@ -91,7 +91,7 @@ export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filen
   }
 
   // Extract filename from Content-Disposition header
-  const contentDisposition = response.headers.get('Content-Disposition');
+  const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
   let filename = `converted-mod-${jobId}.mcaddon`; // fallback to UUID-based name
   
   if (contentDisposition) {
