@@ -1,4 +1,5 @@
 import unittest
+import json
 from src.tools.search_tool import SearchTool
 from src.utils.config import Config
 
@@ -19,19 +20,24 @@ class TestSearchTool(unittest.TestCase):
         # Test the current SearchTool implementation with hardcoded results
         results = self.search_tool._run(query="AI advancements")
 
-        self.assertIn("Found 2 results for query 'AI advancements':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
-
+        # Parse JSON output
+        search_results = json.loads(results)
+        self.assertIsInstance(search_results, list)
+        self.assertEqual(len(search_results), 3)  # AI advancements returns 3 results
+        self.assertIn("text", search_results[0])
+        self.assertIn("score", search_results[0])
+        self.assertIn("source", search_results[0])
 
     def test_search_tool_run_no_results(self):
         """Test the _run method when no search results are found."""
-        # Test with a query that would return the same hardcoded results
+        # Test with a query that would return the generic mock response
         results = self.search_tool._run(query="obscure query")
 
-        # The current implementation always returns 2 hardcoded results
-        self.assertIn("Found 2 results for query 'obscure query':", results)
-
+        # Parse JSON output
+        search_results = json.loads(results)
+        self.assertIsInstance(search_results, list)
+        self.assertEqual(len(search_results), 1)  # Generic response returns 1 result
+        self.assertIn("No specific documents found", search_results[0]["text"])
 
     def test_search_tool_collection_not_found(self):
         """Test the _run method when collection is not found."""
@@ -39,10 +45,13 @@ class TestSearchTool(unittest.TestCase):
         # validates the current behavior (hardcoded results)
         results = self.search_tool._run(query="test query")
         
-        # Current implementation always returns the hardcoded results
-        self.assertIn("Found 2 results for query 'test query':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
+        # Parse JSON output
+        search_results = json.loads(results)
+        self.assertIsInstance(search_results, list)
+        self.assertEqual(len(search_results), 1)  # Generic response returns 1 result
+        self.assertIn("text", search_results[0])
+        self.assertIn("score", search_results[0])
+        self.assertIn("source", search_results[0])
 
     def test_search_tool_connection_error(self):
         """Test the _run method - currently returns hardcoded results regardless of connection."""
@@ -52,10 +61,13 @@ class TestSearchTool(unittest.TestCase):
         
         results = self.search_tool._run(query="any query")
         
-        # Current implementation always returns the hardcoded results
-        self.assertIn("Found 2 results for query 'any query':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
+        # Parse JSON output
+        search_results = json.loads(results)
+        self.assertIsInstance(search_results, list)
+        self.assertTrue(len(search_results) >= 1)  # Should have at least 1 result
+        self.assertIn("text", search_results[0])
+        self.assertIn("score", search_results[0])
+        self.assertIn("source", search_results[0])
 
 
 if __name__ == '__main__':

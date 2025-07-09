@@ -13,10 +13,20 @@ def get_llm():
             # Assuming this file is in ai-engine/src/agents/
             # Adjust path to reach ai-engine/tests/mocks/
             mock_llm_path = Path(__file__).parent.parent.parent / "tests" / "mocks"
+            
+            # Verify the mock_llm_path exists and contains the expected file
+            if not mock_llm_path.exists():
+                raise ImportError(f"Mock LLM path does not exist: {mock_llm_path}")
+            
+            mock_llm_file = mock_llm_path / "mock_llm.py"
+            if not mock_llm_file.exists():
+                raise ImportError(f"Mock LLM file does not exist: {mock_llm_file}")
+            
             sys.path.insert(0, str(mock_llm_path))
             from mock_llm import MockLLM
             return MockLLM(responses=["Mock search agent response", "Mock summarization agent response"])
-        except ImportError:
+        except (ImportError, OSError, FileNotFoundError) as e:
+            # Fallback to MagicMock if mock_llm import fails for any reason
             from unittest.mock import MagicMock
             llm = MagicMock()
             llm.invoke.return_value = "Mock LLM response due to import error"
