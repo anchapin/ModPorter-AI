@@ -3,23 +3,12 @@ from langchain_openai import ChatOpenAI
 import os
 import yaml
 
-# Placeholder for SearchTool - assuming it will be defined elsewhere
-# from src.tools.search_tool import SearchTool
-
-# Example: If SearchTool is a class you'd instantiate
-class SearchToolPlaceholder:
-    def __init__(self, name="SearchTool"):
-        self.name = name
-        print(f"{self.name} initialized (placeholder).")
-
-    def run(self, query: str):
-        print(f"SearchToolPlaceholder: Simulating search for '{query}'")
-        return f"Simulated search results for '{query}'"
+# Import the actual SearchTool
+from ..tools.search_tool import SearchTool
 
 # Mapping tool names from YAML to actual tool classes/functions
-# This would be more robust in a real application, possibly using a registry
 AVAILABLE_TOOLS = {
-    "SearchTool": SearchToolPlaceholder # Replace with actual SearchTool when available
+    "SearchTool": SearchTool
 }
 
 class RAGCrew:
@@ -77,8 +66,15 @@ class RAGCrew:
         tools_instances = []
         for tool_name in tool_names:
             if tool_name in AVAILABLE_TOOLS:
-                # Here you might pass specific configuration to the tool if needed
-                tools_instances.append(AVAILABLE_TOOLS[tool_name]())
+                # Get the SearchTool instance and its available tools
+                tool_class = AVAILABLE_TOOLS[tool_name]
+                if tool_name == "SearchTool":
+                    # For SearchTool, get the instance and its available tools
+                    search_tool_instance = tool_class.get_instance()
+                    tools_instances.extend(search_tool_instance.get_tools())
+                else:
+                    # For other tools, instantiate normally
+                    tools_instances.append(tool_class())
             else:
                 print(f"Warning: Tool '{tool_name}' not found in AVAILABLE_TOOLS.")
         return tools_instances
@@ -152,5 +148,5 @@ if __name__ == '__main__':
         print(f"An error occurred during RAG crew execution: {e}")
         print("This might be expected if SearchTool is a placeholder or has issues.")
 
-    print(f"Loaded Researcher tools: {[tool.name for tool in rag_crew.researcher.tools if hasattr(tool, 'name')]}")
-    print(f"Loaded Writer tools: {[tool.name for tool in rag_crew.writer.tools if hasattr(tool, 'name')]}")
+    print(f"Loaded Researcher tools: {[tool.__name__ if hasattr(tool, '__name__') else str(tool) for tool in rag_crew.researcher.tools]}")
+    print(f"Loaded Writer tools: {[tool.__name__ if hasattr(tool, '__name__') else str(tool) for tool in rag_crew.writer.tools]}")
