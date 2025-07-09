@@ -78,6 +78,57 @@ class JavaAnalyzerAgent:
             JavaAnalyzerAgent.analyze_dependencies_tool,
             JavaAnalyzerAgent.extract_assets_tool
         ]
+    
+    def analyze_mod_file(self, mod_path: str) -> str:
+        """
+        Analyze a mod file and return comprehensive results.
+        
+        Args:
+            mod_path: Path to the mod file
+            
+        Returns:
+            JSON string with analysis results
+        """
+        try:
+            # Use the existing tools to analyze the mod
+            structure_result = self.analyze_mod_structure_tool(mod_path)
+            structure = json.loads(structure_result)
+            
+            metadata_result = self.extract_mod_metadata_tool(mod_path)
+            metadata = json.loads(metadata_result)
+            
+            features_result = self.identify_features_tool(mod_path)
+            features = json.loads(features_result)
+            
+            assets_result = self.extract_assets_tool(mod_path)
+            assets = json.loads(assets_result)
+            
+            # Combine results
+            combined_result = {
+                "mod_info": {
+                    "name": Path(mod_path).stem.lower(),
+                    "framework": structure.get("analysis_results", {}).get("framework", "unknown"),
+                    "version": metadata.get("metadata", {}).get("version", "1.0.0")
+                },
+                "assets": assets.get("assets", {}),
+                "features": features.get("feature_results", {}).get("feature_categories", {}),
+                "structure": structure.get("analysis_results", {}),
+                "metadata": metadata.get("metadata", {}),
+                "errors": []
+            }
+            
+            return json.dumps(combined_result)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing mod file {mod_path}: {e}")
+            return json.dumps({
+                "mod_info": {"name": "unknown", "framework": "unknown", "version": "1.0.0"},
+                "assets": {},
+                "features": {},
+                "structure": {},
+                "metadata": {},
+                "errors": [str(e)]
+            })
 
     @tool
     @staticmethod

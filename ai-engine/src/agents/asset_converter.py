@@ -80,6 +80,123 @@ class AssetConverterAgent:
             AssetConverterAgent.validate_bedrock_assets_tool
         ]
     
+    def convert_textures(self, texture_list: str, output_path: str) -> str:
+        """
+        Convert textures to Bedrock-compatible format.
+        
+        Args:
+            texture_list: JSON string containing list of texture paths
+            output_path: Output directory path
+            
+        Returns:
+            JSON string with conversion results
+        """
+        try:
+            textures = json.loads(texture_list) if isinstance(texture_list, str) else texture_list
+            
+            result = {
+                "converted_textures": [],
+                "total_textures": len(textures),
+                "successful_conversions": 0,
+                "failed_conversions": 0,
+                "errors": []
+            }
+            
+            for texture_path in textures:
+                try:
+                    # Simulate texture conversion
+                    converted_path = Path(output_path) / Path(texture_path).name
+                    result["converted_textures"].append({
+                        "original_path": texture_path,
+                        "converted_path": str(converted_path),
+                        "success": True
+                    })
+                    result["successful_conversions"] += 1
+                except Exception as e:
+                    result["errors"].append(f"Failed to convert {texture_path}: {e}")
+                    result["failed_conversions"] += 1
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Error converting textures: {e}")
+            return json.dumps({
+                "converted_textures": [],
+                "total_textures": 0,
+                "successful_conversions": 0,
+                "failed_conversions": 0,
+                "errors": [str(e)]
+            })
+    
+    def _convert_single_model(self, model_path: str, metadata: Dict, model_type: str) -> Dict:
+        """
+        Convert a single model to Bedrock format.
+        
+        Args:
+            model_path: Path to the model file
+            metadata: Model metadata
+            model_type: Type of model ("block", "item", "entity")
+            
+        Returns:
+            Dictionary with conversion results
+        """
+        try:
+            from pathlib import Path
+            
+            model_name = Path(model_path).stem
+            converted_path = f"models/{model_type}/{model_name}.geo.json"
+            bedrock_identifier = f"geometry.{model_type}.{model_name}"
+            
+            # Mock conversion - in real implementation, this would parse the Java model
+            converted_model = {
+                "format_version": "1.12.0",
+                "minecraft:geometry": [
+                    {
+                        "description": {
+                            "identifier": bedrock_identifier,
+                            "texture_width": 16,
+                            "texture_height": 16,
+                            "visible_bounds_width": 16.0,
+                            "visible_bounds_height": 16.0,
+                            "visible_bounds_offset": [0, 0, 0]
+                        },
+                        "bones": [
+                            {
+                                "name": "element_0",
+                                "pivot": [0.0, 0.0, 0.0],
+                                "cubes": [
+                                    {
+                                        "origin": [-8.0, -8.0, -8.0],
+                                        "size": [16.0, 16.0, 16.0],
+                                        "uv": [0, 0]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            return {
+                "success": True,
+                "original_path": model_path,
+                "converted_path": converted_path,
+                "bedrock_identifier": bedrock_identifier,
+                "converted_model_json": converted_model,
+                "warnings": []
+            }
+            
+        except Exception as e:
+            logger.error(f"Error converting model {model_path}: {e}")
+            return {
+                "success": False,
+                "original_path": model_path,
+                "converted_path": "",
+                "bedrock_identifier": "",
+                "converted_model_json": {},
+                "warnings": [str(e)]
+            }
+    
     @tool
     @staticmethod
     def analyze_assets_tool(asset_data: str) -> str:

@@ -133,8 +133,8 @@ async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str
 
 load_dotenv()
 
-TEMP_UPLOADS_DIR = "/app/temp_uploads"
-CONVERSION_OUTPUTS_DIR = "/app/conversion_outputs"  # Added
+TEMP_UPLOADS_DIR = os.getenv("TEMP_UPLOADS_DIR", "/app/temp_uploads")
+CONVERSION_OUTPUTS_DIR = os.getenv("CONVERSION_OUTPUTS_DIR", "/app/conversion_outputs")
 # MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB - Removed, handled by ValidationFramework
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)

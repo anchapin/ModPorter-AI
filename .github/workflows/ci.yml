@@ -172,6 +172,8 @@ jobs:
         export PYTEST_CURRENT_TEST=true
         export DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter
         export REDIS_URL=redis://localhost:6379
+        export TEMP_UPLOADS_DIR=/tmp/test_uploads
+        export CONVERSION_OUTPUTS_DIR=/tmp/test_outputs
 
         # Debug: Check if services are accessible
         echo "Testing database connection..."
@@ -188,6 +190,8 @@ jobs:
         TESTING: true
         ENVIRONMENT: test
         PYTEST_CURRENT_TEST: true
+        TEMP_UPLOADS_DIR: /tmp/test_uploads
+        CONVERSION_OUTPUTS_DIR: /tmp/test_outputs
     
     - name: Upload backend coverage
       if: always()

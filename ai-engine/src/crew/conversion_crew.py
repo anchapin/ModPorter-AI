@@ -418,6 +418,20 @@ class ModPorterConversionCrew:
         try:
             logger.info(f"Starting conversion of {mod_path}")
             
+            # Check if mod file exists
+            if not mod_path.exists():
+                logger.error(f"Mod file not found: {mod_path}")
+                return {
+                    'status': 'failed',
+                    'error': f"Mod file not found: {mod_path}",
+                    'overall_success_rate': 0.0,
+                    'converted_mods': [],
+                    'failed_mods': [{'name': str(mod_path), 'reason': 'File not found', 'suggestions': ['Check file path']}],
+                    'smart_assumptions_applied': [],
+                    'download_url': None,
+                    'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [f'Mod file not found: {mod_path}']}
+                }
+            
             # Check if we should use test mode (when OpenAI is not available)
             if hasattr(self.llm, 'model_name') and self.llm.model_name == 'mock-llm':
                 logger.info("Using test mode - returning mock conversion results")

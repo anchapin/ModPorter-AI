@@ -108,6 +108,153 @@ class PackagingAgent:
             PackagingAgent.validate_package_tool,
             PackagingAgent.build_mcaddon_tool
         ]
+    
+    def generate_manifest(self, mod_info: str, pack_type: str) -> str:
+        """
+        Generate manifest for a pack.
+        
+        Args:
+            mod_info: JSON string containing mod information
+            pack_type: Type of pack ("behavior", "resource", "both")
+            
+        Returns:
+            JSON string with manifest data
+        """
+        try:
+            info = json.loads(mod_info) if isinstance(mod_info, str) else mod_info
+            
+            # Create base manifest
+            manifest = copy.deepcopy(self.manifest_template)
+            manifest["header"]["name"] = info.get("name", "Converted Mod")
+            manifest["header"]["description"] = f"Converted from {info.get('framework', 'Java')} mod"
+            manifest["header"]["uuid"] = str(uuid.uuid4())
+            manifest["header"]["version"] = info.get("version", [1, 0, 0])
+            
+            # Add modules based on pack type
+            if pack_type in ["behavior", "both"]:
+                manifest["modules"].append({
+                    "type": "data",
+                    "uuid": str(uuid.uuid4()),
+                    "version": [1, 0, 0]
+                })
+            
+            if pack_type in ["resource", "both"]:
+                manifest["modules"].append({
+                    "type": "resources",
+                    "uuid": str(uuid.uuid4()),
+                    "version": [1, 0, 0]
+                })
+            
+            return json.dumps(manifest)
+            
+        except Exception as e:
+            logger.error(f"Error generating manifest: {e}")
+            return json.dumps({
+                "error": str(e),
+                "success": False
+            })
+    
+    def generate_manifests(self, manifest_data: str) -> str:
+        """
+        Generate manifests for packaging.
+        
+        Args:
+            manifest_data: JSON string or dict containing manifest information
+            
+        Returns:
+            JSON string with generation results
+        """
+        try:
+            # Handle both JSON string and direct input
+            if isinstance(manifest_data, str):
+                try:
+                    data = json.loads(manifest_data)
+                except json.JSONDecodeError:
+                    return json.dumps({"success": False, "error": "Invalid JSON input"})
+            else:
+                data = manifest_data if isinstance(manifest_data, dict) else {"error": "Invalid input format"}
+            
+            # Extract package info
+            package_info = data.get("package_info", {})
+            capabilities = data.get("capabilities", [])
+            
+            # Generate manifest
+            manifest = {
+                "format_version": 2,
+                "header": {
+                    "name": package_info.get("name", "Converted Mod"),
+                    "description": package_info.get("description", "Converted from Java mod"),
+                    "uuid": str(uuid.uuid4()),
+                    "version": package_info.get("version", [1, 0, 0]),
+                    "min_engine_version": [1, 19, 0]
+                },
+                "modules": []
+            }
+            
+            # Add behavior pack module if needed
+            if package_info.get("has_behavior_pack", False):
+                manifest["modules"].append({
+                    "type": "data",
+                    "uuid": str(uuid.uuid4()),
+                    "version": [1, 0, 0]
+                })
+            
+            # Add resource pack module if needed
+            if package_info.get("has_resource_pack", False):
+                manifest["modules"].append({
+                    "type": "resources",
+                    "uuid": str(uuid.uuid4()),
+                    "version": [1, 0, 0]
+                })
+            
+            # Add capabilities
+            if capabilities:
+                manifest["capabilities"] = capabilities
+            
+            # Create output directory structure
+            output_dir = package_info.get("output_directory", "")
+            if output_dir:
+                output_path = Path(output_dir)
+                
+                # Create behavior pack directory if needed
+                if package_info.get("has_behavior_pack", False):
+                    bp_dir = output_path / "behavior_pack"
+                    bp_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Write behavior pack manifest
+                    bp_manifest = copy.deepcopy(manifest)
+                    bp_manifest["modules"] = [m for m in bp_manifest["modules"] if m["type"] == "data"]
+                    
+                    with open(bp_dir / "manifest.json", "w") as f:
+                        json.dump(bp_manifest, f, indent=2)
+                
+                # Create resource pack directory if needed
+                if package_info.get("has_resource_pack", False):
+                    rp_dir = output_path / "resource_pack"
+                    rp_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Write resource pack manifest
+                    rp_manifest = copy.deepcopy(manifest)
+                    rp_manifest["modules"] = [m for m in rp_manifest["modules"] if m["type"] == "resources"]
+                    
+                    with open(rp_dir / "manifest.json", "w") as f:
+                        json.dump(rp_manifest, f, indent=2)
+            
+            return json.dumps({
+                "success": True,
+                "manifest": manifest,
+                "files_created": [
+                    f"{output_dir}/behavior_pack/manifest.json" if package_info.get("has_behavior_pack") else None,
+                    f"{output_dir}/resource_pack/manifest.json" if package_info.get("has_resource_pack") else None
+                ]
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generating manifests: {e}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
         
     
     def analyze_conversion_components(self, component_data: str) -> str:
