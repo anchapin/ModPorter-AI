@@ -1,5 +1,6 @@
 -- Create extension for UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS conversion_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

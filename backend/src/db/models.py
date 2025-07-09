@@ -144,3 +144,20 @@ class FeatureMappingDb(Base):
     comparison_result = relationship(
         "ComparisonResultDb", back_populates="feature_mappings"
     )
+
+
+# New model for document embeddings
+from pgvector.sqlalchemy import VECTOR
+import uuid # Already imported, but good to note for the new model
+# sqlalchemy.dialects.postgresql.UUID is already imported
+# sqlalchemy.Column, String, DateTime, func are already imported
+
+class DocumentEmbedding(Base):
+    __tablename__ = "document_embeddings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding
+    document_source = Column(String, nullable=False, index=True)
+    content_hash = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
