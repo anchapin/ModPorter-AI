@@ -365,7 +365,8 @@ class PackagingAgent:
                     'folder_structure': {'passed': True, 'message': 'Folder structure is correct'},
                     'file_integrity': {'passed': True, 'message': 'All files are intact'},
                     'uuid_uniqueness': {'passed': True, 'message': 'UUIDs are unique'},
-                    'version_compatibility': {'passed': True, 'message': 'Version compatibility verified'}
+                    'version_compatibility': {'passed': True, 'message': 'Version compatibility verified'},
+                    'bedrock_compatibility': 'fully_compatible'
                 },
                 'checks_performed': {
                     'manifest_validity': {'passed': True, 'message': 'Manifests are valid'},

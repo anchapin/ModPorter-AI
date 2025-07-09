@@ -90,25 +90,26 @@ class JavaAnalyzerAgent:
             JSON string with analysis results
         """
         try:
-            # Use the existing tools to analyze the mod
-            structure_result = self.analyze_mod_structure_tool(mod_path)
+            # Use the underlying functions directly, not the tool decorators
+            structure_result = JavaAnalyzerAgent.analyze_mod_structure_tool.func(mod_path)
             structure = json.loads(structure_result)
             
-            metadata_result = self.extract_mod_metadata_tool(mod_path)
+            metadata_result = JavaAnalyzerAgent.extract_mod_metadata_tool.func(mod_path)
             metadata = json.loads(metadata_result)
             
-            features_result = self.identify_features_tool(mod_path)
+            features_result = JavaAnalyzerAgent.identify_features_tool.func(mod_path)
             features = json.loads(features_result)
             
-            assets_result = self.extract_assets_tool(mod_path)
+            assets_result = JavaAnalyzerAgent.extract_assets_tool.func(mod_path)
             assets = json.loads(assets_result)
             
             # Combine results
+            metadata_info = metadata.get("metadata", {})
             combined_result = {
                 "mod_info": {
-                    "name": Path(mod_path).stem.lower(),
+                    "name": metadata_info.get("id", Path(mod_path).stem.lower()),
                     "framework": structure.get("analysis_results", {}).get("framework", "unknown"),
-                    "version": metadata.get("metadata", {}).get("version", "1.0.0")
+                    "version": metadata_info.get("version", "1.0.0")
                 },
                 "assets": assets.get("assets", {}),
                 "features": features.get("feature_results", {}).get("feature_categories", {}),
