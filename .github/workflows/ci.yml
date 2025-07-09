@@ -60,14 +60,7 @@ jobs:
           exit 0
         fi
     
-    - name: Upload frontend coverage
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        directory: ./frontend/coverage
-        flags: frontend
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
+    
 
   # Backend Tests
   backend-tests:
@@ -193,14 +186,7 @@ jobs:
         # Run tests with timeout and optimizations for CI
         python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
     
-    - name: Upload backend coverage
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        directory: ./backend
-        flags: backend
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
+    
 
   # AI Engine Tests
   ai-engine-tests:
@@ -232,14 +218,7 @@ jobs:
         OPENAI_API_KEY: "test-key"
         ANTHROPIC_API_KEY: "test-key"
     
-    - name: Upload AI engine coverage
-      if: always()
-      uses: codecov/codecov-action@v5
-      with:
-        directory: ./ai-engine
-        flags: ai-engine
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
+    
 
   # Integration Tests
   integration-tests:
