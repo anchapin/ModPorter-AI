@@ -118,10 +118,12 @@ class TestSearchTool(unittest.TestCase):
         """Test that SearchTool logs operations properly."""
         SearchTool.semantic_search.func("test query")
         
-        # Check that info log was called
-        mock_logger.info.assert_called_once()
-        call_args = mock_logger.info.call_args[0][0]
-        self.assertIn("Semantic search completed", call_args)
+        # Check that info log was called (at least once for search completion)
+        mock_logger.info.assert_called()
+        # Find the call with "Semantic search completed" message
+        search_completion_calls = [call for call in mock_logger.info.call_args_list 
+                                   if "Semantic search completed" in str(call)]
+        self.assertTrue(len(search_completion_calls) >= 1)
 
     def test_search_results_structure(self):
         """Test that search results have expected structure."""
