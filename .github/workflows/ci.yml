@@ -315,9 +315,31 @@ jobs:
       run: |
         cd backend
         export DATABASE_URL=postgresql://postgres:password@localhost:5432/modporter
+        export REDIS_URL=redis://localhost:6379
+        export OPENAI_API_KEY='test'
+        export ANTHROPIC_API_KEY='test'
+        export DEBUG=False
+        export LOG_LEVEL='INFO'
+        export ALLOWED_ORIGINS='http://localhost:3000'
+        export VITE_API_URL='http://localhost:8000'
+        export MAX_FILE_SIZE='100MB'
+        export MAX_CONVERSION_TIME='600'
+        export RATE_LIMIT_PER_MINUTE='10'
+        export RATE_LIMIT_PER_HOUR='100'
         python -m alembic upgrade head
       env:
         DATABASE_URL: postgresql://postgres:password@localhost:5432/modporter
+        REDIS_URL: redis://localhost:6379
+        OPENAI_API_KEY: 'test'
+        ANTHROPIC_API_KEY: 'test'
+        DEBUG: False
+        LOG_LEVEL: 'INFO'
+        ALLOWED_ORIGINS: 'http://localhost:3000'
+        VITE_API_URL: 'http://localhost:8000'
+        MAX_FILE_SIZE: '100MB'
+        MAX_CONVERSION_TIME: '600'
+        RATE_LIMIT_PER_MINUTE: '10'
+        RATE_LIMIT_PER_HOUR: '100'
 
     - name: Run integration tests
       run: |
