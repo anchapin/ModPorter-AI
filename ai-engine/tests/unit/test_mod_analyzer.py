@@ -10,7 +10,7 @@ from src.agents.java_analyzer import JavaAnalyzerAgent
 @pytest.fixture
 def java_analyzer_agent_instance(mock_sentence_transformer_fixture): # Ensure mock is active
     # Reset singleton instance for test isolation if needed, or manage state.
-    # JavaAnalyzerAgent._instance = None # This might be needed if tests interfere
+    JavaAnalyzerAgent._instance = None # This might be needed if tests interfere
     agent = JavaAnalyzerAgent.get_instance()
     # The agent's __init__ would have created an EmbeddingGenerator,
     # which should have used the MockSentenceTransformer due to the fixture.
