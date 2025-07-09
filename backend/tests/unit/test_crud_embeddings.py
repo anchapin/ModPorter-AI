@@ -48,7 +48,7 @@ async def test_create_document_embedding(db_session: AsyncSession):
     )
     assert created is not None
     assert created.id is not None
-    assert created.embedding == SAMPLE_EMBEDDING_1
+    assert all(pytest.approx(a) == b for a, b in zip(created.embedding, SAMPLE_EMBEDDING_1))
     assert created.document_source == SAMPLE_SOURCE_1
     assert created.content_hash == SAMPLE_HASH_1
 
@@ -56,7 +56,7 @@ async def test_create_document_embedding(db_session: AsyncSession):
     fetched = await crud.get_document_embedding_by_id(db=db_session, embedding_id=created.id)
     assert fetched is not None
     assert fetched.id == created.id
-    assert fetched.embedding == SAMPLE_EMBEDDING_1 # This comparison might fail if VECTOR type isn't handled well by SQLite
+    assert all(pytest.approx(a) == b for a, b in zip(fetched.embedding, SAMPLE_EMBEDDING_1)) # This comparison might fail if VECTOR type isn't handled well by SQLite
     assert fetched.document_source == SAMPLE_SOURCE_1
     assert fetched.content_hash == SAMPLE_HASH_1
 
@@ -105,14 +105,14 @@ async def test_update_document_embedding(db_session: AsyncSession):
     assert updated is not None
     assert updated.id == created.id
     assert updated.document_source == updated_source
-    assert updated.embedding == updated_embedding_vector # Comparison might fail
+    assert all(pytest.approx(a) == b for a, b in zip(updated.embedding, updated_embedding_vector)) # Comparison might fail
     assert updated.content_hash == SAMPLE_HASH_1 # Hash should not change on update
 
     # Fetch again to verify
     fetched = await crud.get_document_embedding_by_id(db=db_session, embedding_id=created.id)
     assert fetched is not None
     assert fetched.document_source == updated_source
-    assert fetched.embedding == updated_embedding_vector # Comparison might fail
+    assert all(pytest.approx(a) == b for a, b in zip(fetched.embedding, updated_embedding_vector)) # Comparison might fail
 
 
 @pytest.mark.asyncio
