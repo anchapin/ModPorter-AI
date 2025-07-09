@@ -172,22 +172,26 @@ jobs:
         export PYTEST_CURRENT_TEST=true
         export DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter
         export REDIS_URL=redis://localhost:6379
+        export OPENAI_API_KEY='test'
+        export ANTHROPIC_API_KEY='test'
+        export DEBUG=False
+        export LOG_LEVEL='INFO'
+        export ALLOWED_ORIGINS='http://localhost:3000'
+        export VITE_API_URL='http://localhost:8000'
+        export MAX_FILE_SIZE='100MB'
+        export MAX_CONVERSION_TIME='600'
+        export RATE_LIMIT_PER_MINUTE='10'
+        export RATE_LIMIT_PER_HOUR='100'
 
         # Debug: Check if services are accessible
         echo "Testing database connection..."
-        python -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect('postgresql://postgres:password@localhost:5432/modporter').close())" || echo "Database connection failed"
+        python -c "import asyncpg; import asyncio; async def check_db(): conn = await asyncpg.connect('postgresql://postgres:password@localhost:5432/modporter'); await conn.close(); asyncio.run(check_db())" || echo "Database connection failed"
 
         echo "Testing Redis connection..."
         python -c "import redis; r = redis.Redis(host='localhost', port=6379); r.ping()" || echo "Redis connection failed"
 
         # Run tests with timeout and optimizations for CI
         python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
-        REDIS_URL: redis://localhost:6379
-        TESTING: true
-        ENVIRONMENT: test
-        PYTEST_CURRENT_TEST: true
     
     - name: Upload backend coverage
       if: always()
