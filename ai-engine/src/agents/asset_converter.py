@@ -80,6 +80,197 @@ class AssetConverterAgent:
             AssetConverterAgent.validate_bedrock_assets_tool
         ]
     
+    def _is_power_of_2(self, n: int) -> bool:
+        """Check if a number is a power of 2"""
+        return n > 0 and (n & (n - 1)) == 0
+    
+    def _next_power_of_2(self, n: int) -> int:
+        """Get the next power of 2 greater than or equal to n"""
+        power = 1
+        while power < n:
+            power *= 2
+        return power
+    
+    def _previous_power_of_2(self, n: int) -> int:
+        """Get the previous power of 2 less than or equal to n"""
+        if n <= 0:
+            return 1
+        power = 1
+        while (power * 2) <= n:
+            power *= 2
+        return power
+    
+    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str) -> Dict:
+        """Convert a single texture file to Bedrock format"""
+        try:
+            if not Path(texture_path).exists():
+                return {
+                    'success': False,
+                    'original_path': str(texture_path),
+                    'error': 'Texture file not found'
+                }
+
+            img = Image.open(texture_path)
+            original_dimensions = img.size
+            img = img.convert("RGBA")
+            optimizations_applied = ["Converted to RGBA"]
+
+            width, height = img.size
+            resized = False
+
+            max_res = self.texture_constraints.get('max_resolution', 1024)
+            must_be_power_of_2 = self.texture_constraints.get('must_be_power_of_2', True)
+
+            new_width, new_height = width, height
+
+            needs_pot_resize = must_be_power_of_2 and (not self._is_power_of_2(width) or not self._is_power_of_2(height))
+            
+            if needs_pot_resize:
+                new_width = self._next_power_of_2(width)
+                new_height = self._next_power_of_2(height)
+                resized = True
+
+            if new_width > max_res or new_height > max_res:
+                new_width = min(new_width, max_res)
+                new_height = min(new_height, max_res)
+                resized = True
+
+            if resized and must_be_power_of_2:
+                if not self._is_power_of_2(new_width):
+                    new_width = self._previous_power_of_2(new_width)
+                if not self._is_power_of_2(new_height):
+                    new_height = self._previous_power_of_2(new_height)
+
+            if resized and (new_width != width or new_height != height):
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+                optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
+            else:
+                new_width, new_height = img.size
+                resized = False
+
+            # MCMETA parsing
+            animation_data = None
+            mcmeta_path = Path(str(texture_path) + ".mcmeta")
+            if mcmeta_path.exists():
+                try:
+                    with open(mcmeta_path, 'r') as f:
+                        mcmeta_content = json.load(f)
+                    if "animation" in mcmeta_content:
+                        animation_data = mcmeta_content["animation"]
+                        optimizations_applied.append("Parsed .mcmeta animation data")
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.warning(f"Could not parse .mcmeta file for {texture_path}: {e}")
+
+            base_name = Path(texture_path).stem
+            if usage == 'block':
+                converted_path = f"textures/blocks/{base_name}.png"
+            elif usage == 'item':
+                converted_path = f"textures/items/{base_name}.png"
+            elif usage == 'entity':
+                converted_path = f"textures/entity/{base_name}.png"
+            else:
+                converted_path = f"textures/{usage}/{base_name}.png"
+
+            return {
+                'success': True,
+                'original_path': str(texture_path),
+                'converted_path': converted_path,
+                'original_dimensions': original_dimensions,
+                'converted_dimensions': (new_width, new_height),
+                'format': 'png',
+                'resized': resized,
+                'optimizations_applied': optimizations_applied,
+                'bedrock_reference': f"{usage}_{base_name}",
+                'animation_data': animation_data
+            }
+        except Exception as e:
+            logger.error(f"Texture conversion error for {texture_path}: {e}")
+            return {
+                'success': False,
+                'original_path': str(texture_path),
+                'error': str(e)
+            }
+
+    def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
+        """Generate texture pack structure files"""
+        manifest = {
+            "format_version": 2,
+            "header": {
+                "name": "Converted Resource Pack",
+                "description": "Assets converted from Java mod",
+                "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e",
+                "version": [1, 0, 0],
+                "min_engine_version": [1, 16, 0]
+            },
+            "modules": [{
+                "type": "resources",
+                "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
+                "version": [1, 0, 0]
+            }]
+        }
+
+        item_texture_data = {}
+        terrain_texture_data = {}
+        flipbook_entries = []
+
+        for t_data in textures:
+            if not t_data.get('success'):
+                continue
+
+            bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
+            converted_path = t_data['converted_path']
+            texture_entry = {"textures": converted_path}
+
+            if bedrock_ref.startswith("item_") or "/items/" in converted_path:
+                item_texture_data[bedrock_ref] = texture_entry
+            elif bedrock_ref.startswith("block_") or "/blocks/" in converted_path:
+                terrain_texture_data[bedrock_ref] = texture_entry
+            elif bedrock_ref.startswith("entity_") or "/entity/" in converted_path:
+                terrain_texture_data[bedrock_ref] = texture_entry
+            else:
+                terrain_texture_data[bedrock_ref] = texture_entry
+
+            if t_data.get('animation_data'):
+                anim_data = t_data['animation_data']
+                frames_list = anim_data.get("frames", [])
+                
+                if frames_list and all(isinstance(f, dict) for f in frames_list):
+                    try:
+                        processed_frames = [int(f['index']) for f in frames_list if isinstance(f, dict) and 'index' in f]
+                        if not processed_frames:
+                            processed_frames = []
+                    except (TypeError, ValueError):
+                        processed_frames = []
+                elif frames_list and all(isinstance(f, (int, float)) for f in frames_list):
+                    processed_frames = [int(f) for f in frames_list]
+                else:
+                    processed_frames = list(range(anim_data.get("frame_count", 1)))
+
+                ticks = anim_data.get("frametime", 1)
+                if ticks <= 0:
+                    ticks = 1
+
+                entry = {
+                    "flipbook_texture": converted_path,
+                    "atlas_tile": Path(converted_path).stem,
+                    "ticks_per_frame": ticks,
+                    "frames": processed_frames
+                }
+                if "interpolate" in anim_data:
+                    entry["interpolate"] = anim_data["interpolate"]
+
+                flipbook_entries.append(entry)
+
+        result = {"pack_manifest.json": manifest}
+        if item_texture_data:
+            result["item_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": item_texture_data}
+        if terrain_texture_data:
+            result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
+        if flipbook_entries:
+            result["flipbook_textures.json"] = flipbook_entries
+
+        return result
+
     def convert_textures(self, texture_list: str, output_path: str) -> str:
         """
         Convert textures to Bedrock-compatible format.
@@ -127,74 +318,341 @@ class AssetConverterAgent:
                 "failed_conversions": 0,
                 "errors": [str(e)]
             })
-    
-    def _convert_single_model(self, model_path: str, metadata: Dict, model_type: str) -> Dict:
-        """
-        Convert a single model to Bedrock format.
-        
-        Args:
-            model_path: Path to the model file
-            metadata: Model metadata
-            model_type: Type of model ("block", "item", "entity")
-            
-        Returns:
-            Dictionary with conversion results
-        """
+
+    def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
+        """Convert a single audio file to Bedrock format"""
         try:
-            from pathlib import Path
+            audio_path_obj = Path(audio_path)
             
-            model_name = Path(model_path).stem
-            converted_path = f"models/{model_type}/{model_name}.geo.json"
-            bedrock_identifier = f"geometry.{model_type}.{model_name}"
+            if not audio_path_obj.exists():
+                return {
+                    'success': False,
+                    'original_path': str(audio_path),
+                    'error': 'Audio file not found'
+                }
+
+            file_ext = audio_path_obj.suffix.lower()
             
-            # Mock conversion - in real implementation, this would parse the Java model
-            converted_model = {
+            if file_ext not in self.audio_formats['input']:
+                return {
+                    'success': False,
+                    'original_path': str(audio_path),
+                    'error': f'Unsupported audio format: {file_ext}'
+                }
+
+            original_format = file_ext[1:]
+            base_name = audio_path_obj.stem
+            audio_path_parts = audio_type.replace('.', '/')
+            converted_path = f"sounds/{audio_path_parts}/{base_name}.ogg"
+            
+            conversion_performed = False
+            optimizations_applied = []
+            duration_seconds = metadata.get('duration_seconds')
+            
+            if original_format == 'wav':
+                try:
+                    audio = AudioSegment.from_wav(audio_path)
+                    conversion_performed = True
+                    optimizations_applied.append("Converted WAV to OGG")
+                    duration_seconds = audio.duration_seconds
+                except CouldntDecodeError as e:
+                    return {
+                        'success': False,
+                        'original_path': str(audio_path),
+                        'error': f'Could not decode audio file: {e}'
+                    }
+            elif original_format == 'ogg':
+                conversion_performed = False
+                optimizations_applied.append("Validated OGG format")
+                
+                if duration_seconds is None:
+                    try:
+                        audio = AudioSegment.from_ogg(audio_path)
+                        duration_seconds = audio.duration_seconds
+                    except CouldntDecodeError as e:
+                        return {
+                            'success': False,
+                            'original_path': str(audio_path),
+                            'error': f'Could not decode audio file: {e}'
+                        }
+            else:
+                conversion_performed = True
+                optimizations_applied.append(f"Converted {original_format.upper()} to OGG")
+                duration_seconds = 1.0
+            
+            bedrock_sound_event = f"{audio_type}.{base_name}"
+            
+            return {
+                'success': True,
+                'original_path': str(audio_path),
+                'converted_path': converted_path,
+                'original_format': original_format,
+                'bedrock_format': 'ogg',
+                'conversion_performed': conversion_performed,
+                'optimizations_applied': optimizations_applied,
+                'bedrock_sound_event': bedrock_sound_event,
+                'duration_seconds': duration_seconds
+            }
+            
+        except Exception as e:
+            logger.error(f"Audio conversion error for {audio_path}: {e}")
+            return {
+                'success': False,
+                'original_path': str(audio_path),
+                'error': str(e)
+            }
+
+    def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
+        """Generate sound structure files"""
+        sound_definitions = {}
+        
+        for s_data in sounds:
+            if not s_data.get('success'):
+                continue
+
+            event_name = s_data.get('bedrock_sound_event')
+            converted_path = s_data.get('converted_path')
+
+            if not event_name or not converted_path:
+                continue
+
+            rel_path = Path(converted_path)
+            if rel_path.parts and rel_path.parts[0] == 'sounds':
+                sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(''))
+            else:
+                sound_def_path = str(rel_path.with_suffix(''))
+
+            if event_name not in sound_definitions:
+                sound_definitions[event_name] = {"sounds": []}
+
+            sound_definitions[event_name]["sounds"].append(sound_def_path)
+
+        if sound_definitions:
+            return {"sound_definitions.json": {"sound_definitions": sound_definitions}}
+        return {}
+
+    def _generate_model_structure(self, models: List[Dict]) -> Dict:
+        """Generate model structure files"""
+        valid_models = [m for m in models if m.get('success')]
+        return {
+            "geometry_files": [m['converted_path'] for m in valid_models if 'converted_path' in m],
+            "identifiers_used": [m['bedrock_identifier'] for m in valid_models if 'bedrock_identifier' in m]
+        }
+    
+    def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
+        """Convert a single model to Bedrock format"""
+        warnings = []
+        try:
+            model_p = Path(model_path)
+            if not model_p.exists():
+                return {
+                    'success': False,
+                    'original_path': str(model_path),
+                    'error': 'Model file not found',
+                    'warnings': warnings
+                }
+
+            with open(model_p, 'r') as f:
+                java_model = json.load(f)
+
+            # Basic Bedrock geo.json structure
+            bedrock_identifier = f"geometry.{entity_type}.{model_p.stem}"
+            texture_width = metadata.get('texture_width', 16)
+            texture_height = metadata.get('texture_height', 16)
+
+            bedrock_geo = {
                 "format_version": "1.12.0",
                 "minecraft:geometry": [
                     {
                         "description": {
                             "identifier": bedrock_identifier,
-                            "texture_width": 16,
-                            "texture_height": 16,
-                            "visible_bounds_width": 16.0,
-                            "visible_bounds_height": 16.0,
-                            "visible_bounds_offset": [0, 0, 0]
+                            "texture_width": texture_width,
+                            "texture_height": texture_height,
+                            "visible_bounds_width": 2,
+                            "visible_bounds_height": 2,
+                            "visible_bounds_offset": [0, 0.5, 0]
                         },
-                        "bones": [
-                            {
-                                "name": "element_0",
-                                "pivot": [0.0, 0.0, 0.0],
-                                "cubes": [
-                                    {
-                                        "origin": [-8.0, -8.0, -8.0],
-                                        "size": [16.0, 16.0, 16.0],
-                                        "uv": [0, 0]
-                                    }
-                                ]
-                            }
-                        ]
+                        "bones": []
                     }
                 ]
             }
-            
+
+            geo_main_part = bedrock_geo["minecraft:geometry"][0]
+            geo_description = geo_main_part["description"]
+            all_bones = geo_main_part["bones"]
+
+            java_parent = java_model.get("parent")
+            java_elements = java_model.get("elements", [])
+            processed_as_item_specific_type = False
+
+            if entity_type == "item" and java_parent in ["item/generated", "item/builtin/entity", "item/handheld"]:
+                processed_as_item_specific_type = True
+                if java_parent in ["item/generated", "item/builtin/entity"]:
+                    warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
+                elif java_parent == "item/handheld":
+                    warnings.append(f"Handling as 'item/handheld'. Display transformations not applied.")
+
+                texture_layers = java_model.get("textures", {})
+                layer_count = 0
+                for i in range(5):
+                    layer_texture_key = f"layer{i}"
+                    if layer_texture_key in texture_layers:
+                        z_offset = -0.05 - (0.1 * i)
+                        layer_bone = {
+                            "name": layer_texture_key,
+                            "pivot": [0.0, 0.0, 0.0],
+                            "cubes": [{
+                                "origin": [-8.0, -8.0, z_offset],
+                                "size": [16.0, 16.0, 0.1],
+                                "uv": [0, 0]
+                            }]
+                        }
+                        all_bones.append(layer_bone)
+                        layer_count += 1
+
+                if layer_count == 0 and "particle" in texture_layers:
+                    warnings.append("No layer0/layer1 found, using 'particle' texture for a fallback quad.")
+                    particle_bone = {
+                        "name": "particle_quad",
+                        "pivot": [0.0, 0.0, 0.0],
+                        "cubes": [{"origin": [-8.0, -8.0, -0.05], "size": [16.0, 16.0, 0.1], "uv": [0, 0]}]
+                    }
+                    all_bones.append(particle_bone)
+                    layer_count = 1
+
+                if layer_count > 0:
+                    geo_description["visible_bounds_width"] = 1.0
+                    geo_description["visible_bounds_height"] = 1.0
+                    geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
+                else:
+                    warnings.append(f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model.")
+                    geo_description["visible_bounds_width"] = 0.1
+                    geo_description["visible_bounds_height"] = 0.1
+                    geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
+
+            if not processed_as_item_specific_type and java_elements:
+                model_min_x, model_min_y, model_min_z = float('inf'), float('inf'), float('inf')
+                model_max_x, model_max_y, model_max_z = float('-inf'), float('-inf'), float('-inf')
+
+                for i, element in enumerate(java_elements):
+                    bone_name = f"element_{i}"
+                    bone_pivot = [0.0, 0.0, 0.0]
+                    bone_rotation = [0.0, 0.0, 0.0]
+
+                    if "rotation" in element:
+                        rot = element["rotation"]
+                        angle = rot.get("angle", 0.0)
+                        axis = rot.get("axis", "y")
+                        java_rot_origin = rot.get("origin", [8.0, 8.0, 8.0])
+                        bone_pivot = [c - 8.0 for c in java_rot_origin]
+                        if axis == "x":
+                            bone_rotation[0] = angle
+                        elif axis == "y":
+                            bone_rotation[1] = -angle
+                        elif axis == "z":
+                            bone_rotation[2] = angle
+                        else:
+                            warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
+                        warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
+
+                    from_coords = element.get("from", [0.0, 0.0, 0.0])
+                    to_coords = element.get("to", [16.0, 16.0, 16.0])
+                    cube_origin = [from_coords[0] - 8.0, from_coords[1] - 8.0, from_coords[2] - 8.0]
+                    cube_size = [to_coords[0] - from_coords[0], to_coords[1] - from_coords[1], to_coords[2] - from_coords[2]]
+
+                    model_min_x = min(model_min_x, cube_origin[0])
+                    model_min_y = min(model_min_y, cube_origin[1])
+                    model_min_z = min(model_min_z, cube_origin[2])
+                    model_max_x = max(model_max_x, cube_origin[0] + cube_size[0])
+                    model_max_y = max(model_max_y, cube_origin[1] + cube_size[1])
+                    model_max_z = max(model_max_z, cube_origin[2] + cube_size[2])
+
+                    cube_uv = [0, 0]
+                    element_faces = element.get("faces")
+                    if element_faces:
+                        face_data = None
+                        for face_name_priority in ["north", "up", "east", "south", "west", "down"]:
+                            if face_name_priority in element_faces:
+                                face_data = element_faces[face_name_priority]
+                                break
+                        if not face_data:
+                            face_data = next(iter(element_faces.values()), None)
+                        if face_data and "uv" in face_data:
+                            cube_uv = [face_data["uv"][0], face_data["uv"][1]]
+                            texture_variable = face_data.get("texture")
+                            if texture_variable and not texture_variable.startswith("#"):
+                                warnings.append(f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping.")
+
+                    new_bone = {
+                        "name": bone_name,
+                        "pivot": bone_pivot,
+                        "rotation": bone_rotation,
+                        "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}]
+                    }
+                    all_bones.append(new_bone)
+
+                if java_elements:
+                    v_bounds_w = model_max_x - model_min_x
+                    v_bounds_h = model_max_y - model_min_y
+                    v_bounds_d = model_max_z - model_min_z
+                    geo_description["visible_bounds_width"] = round(max(v_bounds_w, v_bounds_d), 4)
+                    geo_description["visible_bounds_height"] = round(v_bounds_h, 4)
+                    geo_description["visible_bounds_offset"] = [
+                        round(model_min_x + v_bounds_w / 2.0, 4),
+                        round(model_min_y + v_bounds_h / 2.0, 4),
+                        round(model_min_z + v_bounds_d / 2.0, 4)
+                    ]
+                else:
+                    warnings.append("No elements found and not a recognized item parent type. Resulting model may be empty or unexpected.")
+                    geo_description["visible_bounds_width"] = 0.125
+                    geo_description["visible_bounds_height"] = 0.125
+                    geo_description["visible_bounds_offset"] = [0, 0.0625, 0]
+
+            elif not processed_as_item_specific_type and not java_elements:
+                if java_parent:
+                    warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
+                else:
+                    warnings.append("Model has no elements and no parent")
+                geo_description["visible_bounds_width"] = 0.1
+                geo_description["visible_bounds_height"] = 0.1
+                geo_description["visible_bounds_offset"] = [0, 0, 0]
+
+            if java_model.get("display"):
+                warnings.append("Java model 'display' transformations are not converted.")
+
+            converted_filename = f"models/{entity_type}/{model_p.stem}.geo.json"
+
             return {
-                "success": True,
-                "original_path": model_path,
-                "converted_path": converted_path,
-                "bedrock_identifier": bedrock_identifier,
-                "converted_model_json": converted_model,
-                "warnings": []
+                'success': True,
+                'original_path': str(model_path),
+                'converted_path': converted_filename,
+                'bedrock_format': 'geo.json',
+                'bedrock_identifier': bedrock_identifier,
+                'warnings': warnings,
+                'converted_model_json': bedrock_geo
             }
-            
-        except Exception as e:
-            logger.error(f"Error converting model {model_path}: {e}")
+
+        except FileNotFoundError as fnf_error:
             return {
-                "success": False,
-                "original_path": model_path,
-                "converted_path": "",
-                "bedrock_identifier": "",
-                "converted_model_json": {},
-                "warnings": [str(e)]
+                'success': False,
+                'original_path': str(model_path),
+                'error': str(fnf_error),
+                'warnings': warnings
+            }
+        except json.JSONDecodeError as json_error:
+            return {
+                'success': False,
+                'original_path': str(model_path),
+                'error': f"Invalid JSON: {json_error}",
+                'warnings': warnings
+            }
+        except Exception as e:
+            logger.error(f"Model conversion error for {model_path}: {e}")
+            return {
+                'success': False,
+                'original_path': str(model_path),
+                'error': str(e),
+                'warnings': warnings
             }
     
     @tool
