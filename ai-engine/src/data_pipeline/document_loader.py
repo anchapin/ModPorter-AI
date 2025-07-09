@@ -21,7 +21,7 @@ class PdfLoader(DocumentLoader):
         # Actual implementation will use a PDF parsing library (e.g., PyPDF2 or pdfminer.six)
         # For now, it returns a Document with the file path as content
         # and relevant metadata.
-        # Ensure to handle potential FileNotFoundError if the pdf library is not installed
-        # or if the file doesn't exist, though the file existence check should ideally be
-        # done before calling this loader.
+        # Ensure to handle potential ImportError if the PDF parsing library is not installed,
+        # or FileNotFoundError if the file doesn't exist. File existence checks should ideally
+        # be done before calling this loader.
         return [Document(content=f"PDF content from {file_path}", metadata={"source": file_path, "type": "pdf"})]

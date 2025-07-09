@@ -4,7 +4,7 @@ import json
 from unittest.mock import patch
 
 from src.agents.asset_converter import AssetConverterAgent
-from conftest import MockAudioSegment # Import the mock
+
 from pydub.exceptions import CouldntDecodeError
 
 # Uses agent fixture from conftest.py
