@@ -59,6 +59,13 @@ jobs:
           echo "Frontend tests failed, but continuing..."
           exit 0
         fi
+    - name: Upload frontend coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: frontend/coverage
+        files: ./cobertura-coverage.xml
+        fail_ci_if_error: true
+        verbose: true
     
     
 
@@ -194,6 +201,13 @@ jobs:
 
         # Run tests with timeout and optimizations for CI
         python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
+    - name: Upload backend coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: backend
+        files: ./coverage.xml
+        fail_ci_if_error: true
+        verbose: true
     
     
 
@@ -226,6 +240,13 @@ jobs:
         # Mock API keys for testing
         OPENAI_API_KEY: "test-key"
         ANTHROPIC_API_KEY: "test-key"
+    - name: Upload AI engine coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: ai-engine
+        files: ./coverage.xml
+        fail_ci_if_error: true
+        verbose: true
     
     
 
