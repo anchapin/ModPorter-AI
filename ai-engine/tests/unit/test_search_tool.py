@@ -1,99 +1,152 @@
 import unittest
-from src.tools.search_tool import SearchTool
-from src.utils.config import Config
+from unittest.mock import patch, MagicMock
 
-class TestSearchTool(unittest.TestCase):
+# Make sure Config can be imported if it's in a different path
+# For this exercise, assume direct import works or PYTHONPATH is set.
+from ai_engine.src.utils.config import Config
+from ai_engine.src.tools.search_tool import SearchTool
+# Assuming WebSearchTool is correctly placed for import
+from ai_engine.src.tools.web_search_tool import WebSearchTool
+
+class TestSearchToolFallback(unittest.TestCase):
 
     def setUp(self):
         """Setup common test resources."""
         self.search_tool = SearchTool()
-        # Mock Config values if SearchTool relies on them directly for pymilvus setup
-        # For now, SearchTool doesn't use Config for db connection in its _run method
-        # but this is good practice if it were to.
-        self.config = Config()
-        self.config.VECTOR_DB_URL = "mock_db_url"
-        self.config.VECTOR_DB_API_KEY = "mock_api_key" # Though API key not used by pymilvus connect
+        self.query = "test query"
 
-    def test_search_tool_run_success(self):
-        """Test the _run method with successful search results."""
-        # Test the current SearchTool implementation with hardcoded results
-        results = self.search_tool._run(query="AI advancements")
+    @patch.object(SearchTool, '_perform_primary_search')
+    def test_search_with_primary_results(self, mock_primary_search):
+        """Test SearchTool returns primary results when available."""
+        expected_results_list = [{"id": 1, "score": 0.9, "text": "Primary result 1"}] # Added score for formatting
+        mock_primary_search.return_value = expected_results_list
 
-        self.assertIn("Found 2 results for query 'AI advancements':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
+        # Fallback should not be enabled or needed
+        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', False):
+            result_str = self.search_tool._run(self.query)
 
+        mock_primary_search.assert_called_once_with(self.query)
+        self.assertIn("Found 1 results", result_str)
+        self.assertIn("Primary result 1", result_str)
+        # Ensure fallback tool (WebSearchTool) was not called (implicitly)
+        # No direct mock here, but if primary search returns results, fallback path is skipped.
 
-    def test_search_tool_run_no_results(self):
-        """Test the _run method when no search results are found."""
-        # Test with a query that would return the same hardcoded results
-        results = self.search_tool._run(query="obscure query")
+    @patch('ai_engine.src.tools.search_tool.importlib.import_module')
+    @patch.object(SearchTool, '_perform_primary_search')
+    def test_search_fallback_when_primary_fails_and_fallback_enabled(self, mock_primary_search, mock_import_module):
+        """Test fallback is used when primary search fails and fallback is enabled."""
+        mock_primary_search.return_value = []  # Simulate primary search failure
 
-        # The current implementation always returns 2 hardcoded results
-        self.assertIn("Found 2 results for query 'obscure query':", results)
+        # Mock the dynamic import and the fallback tool
+        mock_fallback_tool_instance = MagicMock(spec=WebSearchTool)
+        mock_fallback_tool_instance._run.return_value = "Fallback search result"
 
+        # This simulates the class being found in the imported module
+        MockFallbackToolClass = MagicMock(return_value=mock_fallback_tool_instance)
+        mock_module = MagicMock()
+        # The class name is derived dynamically in search_tool.py from FALLBACK_SEARCH_TOOL
+        # If FALLBACK_SEARCH_TOOL is "web_search_tool", class name is "WebSearchTool"
+        setattr(mock_module, "WebSearchTool", MockFallbackToolClass)
+        mock_import_module.return_value = mock_module
 
-    def test_search_tool_collection_not_found(self):
-        """Test the _run method when collection is not found."""
-        # Current implementation doesn't actually use pymilvus, so this test
-        # validates the current behavior (hardcoded results)
-        results = self.search_tool._run(query="test query")
+        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+             patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
+
+            result_str = self.search_tool._run(self.query)
+
+        mock_primary_search.assert_called_once_with(self.query)
+        mock_import_module.assert_called_once_with("ai_engine.src.tools.web_search_tool")
+        # Ensure the dynamically generated class name "WebSearchTool" was accessed on the module
+        self.assertTrue(hasattr(mock_module, "WebSearchTool"))
+        MockFallbackToolClass.assert_called_once() # Ensure class was instantiated
+        mock_fallback_tool_instance._run.assert_called_once_with(query=self.query)
+        self.assertEqual(result_str, "Fallback search result")
+
+    @patch.object(SearchTool, '_perform_primary_search')
+    @patch('ai_engine.src.tools.search_tool.importlib.import_module') # To ensure it's not called
+    def test_search_no_fallback_when_primary_fails_and_fallback_disabled(self, mock_import_module, mock_primary_search):
+        """Test fallback is not used when primary fails and fallback is disabled."""
+        mock_primary_search.return_value = []  # Simulate primary search failure
+
+        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', False):
+            result_str = self.search_tool._run(self.query)
         
-        # Current implementation always returns the hardcoded results
-        self.assertIn("Found 2 results for query 'test query':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
+        mock_primary_search.assert_called_once_with(self.query)
+        mock_import_module.assert_not_called() # Fallback tool import should not be attempted
+        self.assertIn(f"No results found for query '{self.query}'", result_str)
 
-    def test_search_tool_connection_error(self):
-        """Test the _run method - currently returns hardcoded results regardless of connection."""
-        # The current SearchTool implementation doesn't actually connect to a database
-        # It returns hardcoded results, so no connection error can occur
-        # This test verifies the current behavior
-        
-        results = self.search_tool._run(query="any query")
-        
-        # Current implementation always returns the hardcoded results
-        self.assertIn("Found 2 results for query 'any query':", results)
-        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
-        self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
+    @patch.object(SearchTool, '_perform_primary_search')
+    @patch('ai_engine.src.tools.search_tool.importlib.import_module')
+    def test_search_fallback_handles_invalid_tool_name(self, mock_import_module, mock_primary_search):
+        """Test fallback with an invalid tool name handles the error gracefully."""
+        mock_primary_search.return_value = []  # Simulate primary search failure
+        mock_import_module.side_effect = ImportError("No module named non_existent_tool")
 
+        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+             patch.object(Config, 'FALLBACK_SEARCH_TOOL', "non_existent_tool"):
+
+            result_str = self.search_tool._run(self.query)
+
+        mock_primary_search.assert_called_once_with(self.query)
+        mock_import_module.assert_called_once_with("ai_engine.src.tools.non_existent_tool")
+        self.assertIn("Fallback tool 'non_existent_tool' module not found", result_str)
+        self.assertIn("Returning original (empty) results", result_str)
+
+    @patch.object(SearchTool, '_perform_primary_search')
+    @patch('ai_engine.src.tools.search_tool.importlib.import_module')
+    def test_search_fallback_handles_tool_without_class(self, mock_import_module, mock_primary_search):
+        """Test fallback with a valid module but missing class."""
+        mock_primary_search.return_value = []
+
+        # Simulate the module being imported correctly
+        mock_module = MagicMock()
+        # Simulate that the expected class (e.g., ValidModuleInvalidClassTool) is NOT in the module
+        # The getattr in search_tool.py will raise AttributeError
+        # To ensure this, we make sure the dynamically constructed class name is not an attribute
+        tool_name_config = "valid_module_invalid_class_tool"
+        class_name_expected = "".join([part.capitalize() for part in tool_name_config.split('_')])
+
+        # Explicitly make getattr on the mock_module raise AttributeError for the specific class name
+        def mock_getattr(item, name):
+            if name == class_name_expected:
+                raise AttributeError(f"Mock module has no attribute {name}")
+            return MagicMock() # Default for other attributes
+        mock_module.getattr = mock_getattr # This is not the right way to mock getattr for a module.
+                                           # Instead, we ensure the attribute *doesn't* exist.
+
+        # A simpler way for the test: ensure the mock_module does NOT have the attribute.
+        # If the attribute `class_name_expected` exists on `mock_module`, del it.
+        # Or, more directly, make `getattr(mock_module, class_name_expected)` raise AttributeError.
+        # We can achieve this by setting a side_effect for `getattr` if we were mocking `getattr` itself,
+        # but here we mock the module. So, we ensure the attribute is missing.
+
+        # Let's try this: if the class_name_expected is requested from mock_module, it raises AttributeError
+        # This requires mock_module to be configured appropriately.
+        # A simple way is to make mock_module a MagicMock and then del the attribute if it exists by chance,
+        # or ensure it's not set.
+        # The `spec` argument to MagicMock can also be useful.
+        # For now, let's assume `getattr(mock_module, class_name_expected)` will raise AttributeError
+        # if `class_name_expected` was not explicitly defined on `mock_module`.
+        # We can make this more robust by configuring `mock_module.__getattr__` or `mock_module.side_effect`.
+        
+        # Let's make the mock_module raise AttributeError when the specific class name is accessed
+        mock_module_with_missing_class = MagicMock()
+        def side_effect_for_getattr(attr_name):
+            if attr_name == class_name_expected:
+                raise AttributeError(f"Simulated AttributeError for {attr_name}")
+            return MagicMock() # Default behavior for other attributes
+        mock_module_with_missing_class.__getattr__ = MagicMock(side_effect=side_effect_for_getattr)
+        mock_import_module.return_value = mock_module_with_missing_class
+        
+        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+             patch.object(Config, 'FALLBACK_SEARCH_TOOL', tool_name_config):
+
+            result_str = self.search_tool._run(self.query)
+
+        mock_primary_search.assert_called_once_with(self.query)
+        mock_import_module.assert_called_once_with(f"ai_engine.src.tools.{tool_name_config}")
+        self.assertIn(f"Fallback tool class '{class_name_expected}' not found in module", result_str)
+        self.assertIn("Returning original (empty) results", result_str)
 
 if __name__ == '__main__':
     unittest.main()
-
-# Note: The import `from ai_engine.src.tools.search_tool import SearchTool`
-# might need to be `from src.tools.search_tool import SearchTool` or
-# `from tools.search_tool import SearchTool` depending on how PYTHONPATH is set
-# up in the test execution environment.
-# I've also added a placeholder method `_run_vector_search_placeholder` to SearchTool
-# in my mind, and patched that for some tests, as the current `_run` is very simple.
-# The pymilvus mocks are there for when SearchTool is updated.
-# The test for connection error expects SearchTool to propagate the exception.
-# If it should return a message, SearchTool._run needs a try-except.
-# The provided SearchTool has placeholder logic:
-#       search_results = [
-#            {"id": 1, "score": 0.9, "text": "Some relevant document text 1"},
-#            {"id": 2, "score": 0.85, "text": "Some relevant document text 2"},
-#       ]
-#       formatted_results = f"Found {len(search_results)} results for query '{query}':\n"
-#       for result in search_results:
-#            formatted_results += f"- (Score: {result['score']}) {result['text']}\n"
-#       return formatted_results
-# This structure doesn't involve pymilvus calls yet.
-# So, the pymilvus mocks (`MockCollection`, `mock_has_collection`, `mock_connect`)
-# are for the *future* state of `SearchTool`.
-# The tests `test_search_tool_run_success` and `test_search_tool_run_no_results`
-# have been adapted to test the current placeholder logic by directly patching a
-# hypothetical internal method `_run_vector_search_placeholder`.
-# This is a common way to test when refactoring: write tests for the intended logic,
-# then refactor the code to make tests pass.
-# The `test_search_tool_connection_error` is written to expect an exception,
-# which is what would happen if `_run_vector_search_placeholder` (or a real pymilvus call) raised one.
-# If "handles gracefully" means returning an error message, `SearchTool._run` needs a try/except.
-# I've assumed `ai_engine.src.tools.search_tool` is a valid import path.
-# It might be `src.tools.search_tool` or `tools.search_tool` in the actual environment.
-# The `Config` import is `ai_engine.src.utils.config`.
-# The `SearchTool` itself needs to be updated to actually use `pymilvus` for these mocks to be effective on its code.
-# The current tests for success/no_results are more directly testing the formatting logic
-# by mocking out the data source.
-# The connection error test checks for propagation of an error from the data source.

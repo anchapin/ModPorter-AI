@@ -26,6 +26,8 @@ class Config:
     
     # AI Engine Configuration
     MOCK_AI_RESPONSES: bool = os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true"
+    SEARCH_FALLBACK_ENABLED: bool = os.getenv("SEARCH_FALLBACK_ENABLED", "false").lower() == "true"
+    FALLBACK_SEARCH_TOOL: str = os.getenv("FALLBACK_SEARCH_TOOL", "web_search_tool")
     
     # Redis Configuration
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
