@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio # For async fixtures
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID, uuid4
+import os
 
 # Assuming pgvector.sqlalchemy might not be available or usable in SQLite context
 # For model definition, it's imported, but for creating test data, it's just a list[float]
@@ -9,6 +10,13 @@ from uuid import UUID, uuid4
 
 from src.db.models import DocumentEmbedding
 from src.db import crud
+
+# Skip all tests if using SQLite (these tests require PostgreSQL with pgvector)
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+pytestmark = pytest.mark.skipif(
+    TEST_DATABASE_URL.startswith("sqlite"),
+    reason="DocumentEmbedding tests require PostgreSQL with pgvector extension"
+)
 
 # Sample data
 SAMPLE_EMBEDDING_1 = [0.1] * 1536
@@ -21,27 +29,10 @@ SAMPLE_HASH_2 = "hash2"
 SAMPLE_HASH_3 = "hash3"
 
 
-@pytest_asyncio.fixture(scope="function")
-async def db_session(test_db_session: AsyncSession):
-    """
-    Fixture to get a clean database session for each test function.
-    It also cleans up DocumentEmbedding table before and after each test.
-    """
-    # Clean up table before test
-    await test_db_session.execute(DocumentEmbedding.__table__.delete())
-    await test_db_session.commit()
-
-    yield test_db_session
-
-    # Clean up table after test (optional, as in-memory DB is fresh, but good practice)
-    await test_db_session.execute(DocumentEmbedding.__table__.delete())
-    await test_db_session.commit()
-
-
 @pytest.mark.asyncio
-async def test_create_document_embedding(db_session: AsyncSession):
+async def test_create_document_embedding(test_db_session: AsyncSession):
     created = await crud.create_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding=SAMPLE_EMBEDDING_1,
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
@@ -53,7 +44,7 @@ async def test_create_document_embedding(db_session: AsyncSession):
     assert created.content_hash == SAMPLE_HASH_1
 
     # Fetch it back
-    fetched = await crud.get_document_embedding_by_id(db=db_session, embedding_id=created.id)
+    fetched = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
     assert fetched is not None
     assert fetched.id == created.id
     assert all(pytest.approx(a) == b for a, b in zip(fetched.embedding, SAMPLE_EMBEDDING_1)) # This comparison might fail if VECTOR type isn't handled well by SQLite
@@ -62,32 +53,32 @@ async def test_create_document_embedding(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_document_embedding_by_hash(db_session: AsyncSession):
+async def test_get_document_embedding_by_hash(test_db_session: AsyncSession):
     await crud.create_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding=SAMPLE_EMBEDDING_1,
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
     )
 
-    fetched = await crud.get_document_embedding_by_hash(db=db_session, content_hash=SAMPLE_HASH_1)
+    fetched = await crud.get_document_embedding_by_hash(db=test_db_session, content_hash=SAMPLE_HASH_1)
     assert fetched is not None
     assert fetched.content_hash == SAMPLE_HASH_1
 
-    not_found = await crud.get_document_embedding_by_hash(db=db_session, content_hash="non_existent_hash")
+    not_found = await crud.get_document_embedding_by_hash(db=test_db_session, content_hash="non_existent_hash")
     assert not_found is None
 
 
 @pytest.mark.asyncio
-async def test_get_document_embedding_by_id_not_found(db_session: AsyncSession):
-    not_found = await crud.get_document_embedding_by_id(db=db_session, embedding_id=uuid4())
+async def test_get_document_embedding_by_id_not_found(test_db_session: AsyncSession):
+    not_found = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=uuid4())
     assert not_found is None
 
 
 @pytest.mark.asyncio
-async def test_update_document_embedding(db_session: AsyncSession):
+async def test_update_document_embedding(test_db_session: AsyncSession):
     created = await crud.create_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding=SAMPLE_EMBEDDING_1,
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
@@ -97,7 +88,7 @@ async def test_update_document_embedding(db_session: AsyncSession):
     updated_embedding_vector = [0.15] * 1536
 
     updated = await crud.update_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding_id=created.id,
         embedding=updated_embedding_vector,
         document_source=updated_source,
@@ -109,31 +100,31 @@ async def test_update_document_embedding(db_session: AsyncSession):
     assert updated.content_hash == SAMPLE_HASH_1 # Hash should not change on update
 
     # Fetch again to verify
-    fetched = await crud.get_document_embedding_by_id(db=db_session, embedding_id=created.id)
+    fetched = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
     assert fetched is not None
     assert fetched.document_source == updated_source
     assert all(pytest.approx(a) == b for a, b in zip(fetched.embedding, updated_embedding_vector)) # Comparison might fail
 
 
 @pytest.mark.asyncio
-async def test_update_document_embedding_not_found(db_session: AsyncSession):
+async def test_update_document_embedding_not_found(test_db_session: AsyncSession):
     updated = await crud.update_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding_id=uuid4(), # Non-existent ID
         document_source="new_source",
     )
     assert updated is None
 
 @pytest.mark.asyncio
-async def test_update_document_embedding_no_changes(db_session: AsyncSession):
+async def test_update_document_embedding_no_changes(test_db_session: AsyncSession):
     created = await crud.create_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding=SAMPLE_EMBEDDING_1,
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
     )
     # Call update with no actual change parameters (both None)
-    updated = await crud.update_document_embedding(db=db_session, embedding_id=created.id)
+    updated = await crud.update_document_embedding(db=test_db_session, embedding_id=created.id)
     assert updated is not None
     assert updated.id == created.id
     assert updated.embedding == SAMPLE_EMBEDDING_1
@@ -141,42 +132,42 @@ async def test_update_document_embedding_no_changes(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_delete_document_embedding(db_session: AsyncSession):
+async def test_delete_document_embedding(test_db_session: AsyncSession):
     created = await crud.create_document_embedding(
-        db=db_session,
+        db=test_db_session,
         embedding=SAMPLE_EMBEDDING_1,
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
     )
 
-    deleted = await crud.delete_document_embedding(db=db_session, embedding_id=created.id)
+    deleted = await crud.delete_document_embedding(db=test_db_session, embedding_id=created.id)
     assert deleted is True
 
-    not_found = await crud.get_document_embedding_by_id(db=db_session, embedding_id=created.id)
+    not_found = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
     assert not_found is None
 
 
 @pytest.mark.asyncio
-async def test_delete_document_embedding_not_found(db_session: AsyncSession):
-    deleted = await crud.delete_document_embedding(db=db_session, embedding_id=uuid4())
+async def test_delete_document_embedding_not_found(test_db_session: AsyncSession):
+    deleted = await crud.delete_document_embedding(db=test_db_session, embedding_id=uuid4())
     assert deleted is False
 
 
 @pytest.mark.skip(reason="VECTOR type and l2_distance operator not supported on SQLite. Requires PostgreSQL for full test.")
 @pytest.mark.asyncio
-async def test_find_similar_embeddings_sqlite_placeholder(db_session: AsyncSession):
+async def test_find_similar_embeddings_sqlite_placeholder(test_db_session: AsyncSession):
     # This test will be skipped when run against SQLite.
     # Its purpose here is to outline the structure.
     # A real test would require a PostgreSQL test database with pgvector.
 
     await crud.create_document_embedding(
-        db=db_session, embedding=[0.1, 0.1], document_source="doc1", content_hash="h1"
+        db=test_db_session, embedding=[0.1, 0.1], document_source="doc1", content_hash="h1"
     ) # Simplified dimension for placeholder
     await crud.create_document_embedding(
-        db=db_session, embedding=[0.2, 0.2], document_source="doc2", content_hash="h2"
+        db=test_db_session, embedding=[0.2, 0.2], document_source="doc2", content_hash="h2"
     )
     await crud.create_document_embedding(
-        db=db_session, embedding=[0.9, 0.9], document_source="doc3", content_hash="h3"
+        db=test_db_session, embedding=[0.9, 0.9], document_source="doc3", content_hash="h3"
     )
 
     query_embedding = [0.15, 0.15]
@@ -184,7 +175,7 @@ async def test_find_similar_embeddings_sqlite_placeholder(db_session: AsyncSessi
     # We expect this call to fail on SQLite if l2_distance is used in the query
     try:
         results = await crud.find_similar_embeddings(
-            db=db_session, query_embedding=query_embedding, limit=2
+            db=test_db_session, query_embedding=query_embedding, limit=2
         )
         # If it somehow runs on SQLite (e.g. if VECTOR is emulated as TEXT/JSON and l2_distance is a mock),
         # we can't reliably check order but can check count.
