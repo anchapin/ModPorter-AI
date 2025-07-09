@@ -2,7 +2,7 @@
 Packaging Agent for assembling converted components into .mcaddon packages
 """
 
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Optional
 
 import logging
 import json
@@ -11,11 +11,10 @@ import tempfile
 import os
 import copy
 from pathlib import Path
-from datetime import datetime
 import uuid
 from crewai.tools import tool
 from src.models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext, ConversionPlanComponent
+    SmartAssumptionEngine
 )
 
 logger = logging.getLogger(__name__)

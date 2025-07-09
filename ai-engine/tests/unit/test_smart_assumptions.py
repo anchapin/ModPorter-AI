@@ -1,7 +1,7 @@
 # ai-engine/tests/unit/test_smart_assumptions.py
 
 import pytest
-from typing import List, Dict, Any, Optional
+from typing import List
 
 # Assuming the models are in src.models relative to ai-engine directory
 # Adjust this import path if your project structure is different.
@@ -11,9 +11,7 @@ from src.models.smart_assumptions import (
     AssumptionImpact,
     FeatureContext,
     AssumptionResult,
-    ConversionPlanComponent,
-    AppliedAssumptionReportItem,
-    AssumptionReport
+    ConversionPlanComponent
 )
 
 @pytest.fixture

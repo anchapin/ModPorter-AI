@@ -1,9 +1,8 @@
 # ai-engine/tests/unit/test_qa_agent.py
-import pytest
 import json
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from src.agents.qa_agent import QAAgent, BehavioralTestEngine, PerformanceAnalyzer, CompatibilityTester
 from src.testing.qa_framework import TestFramework, TestScenarioGenerator
 

@@ -3,7 +3,7 @@ import os
 from unittest.mock import MagicMock
 from httpx import AsyncClient
 # Add src directory to sys.path for imports
-import sys, os
+import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 # Set test environment variables

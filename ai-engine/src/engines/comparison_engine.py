@@ -1,7 +1,5 @@
-import os
 import json
-import re
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
 from ..models.comparison import ComparisonResult, FeatureMapping
 
 class ComparisonEngine:

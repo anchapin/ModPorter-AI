@@ -3,18 +3,13 @@ End-to-End Integration Tests for ModPorter AI System
 Tests the complete workflow with enhanced SmartAssumptionEngine and all agent classes
 """
 
-import pytest
 import json
-import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, 
     FeatureContext, 
-    AssumptionResult,
     ConversionPlanComponent,
-    AssumptionReport,
     AssumptionImpact
 )
 from src.crew.conversion_crew import ModPorterConversionCrew
@@ -299,12 +294,12 @@ class TestEndToEndIntegration:
             assert item.user_explanation is not None
     
     @patch('crewai.Crew')
-    def test_conversion_crew_integration(self, mock_crew_class):
+    def test_conversion_crew_integration(self, mock_crew_class, mocker):
         """Test ModPorterConversionCrew integration with enhanced features"""
         # Mock crew behavior
         mock_crew_instance = Mock()
         mock_crew_class.return_value = mock_crew_instance
-        
+
         # Mock task outputs with realistic structure
         mock_task_output = Mock()
         mock_task_output.raw = json.dumps({
@@ -319,12 +314,11 @@ class TestEndToEndIntegration:
                 }
             ]
         })
-        mock_crew_instance.kickoff.return_value.tasks_output = [Mock(), mock_task_output]
-        
+        mock_crew_instance.kickoff.return_value = MagicMock(tasks_output=[Mock(), mock_task_output])
+
         # Test crew initialization
-        with patch('src.crew.conversion_crew.ChatOpenAI'):
-            crew = ModPorterConversionCrew()
-            
+        crew = ModPorterConversionCrew()
+
         # Verify crew status
         status = crew.get_conversion_crew_status()
         assert status["agents_initialized"]["java_analyzer"] == True
@@ -365,8 +359,7 @@ class TestEndToEndIntegration:
         )
         
         # Test using conversion crew's enhanced analysis method
-        with patch('src.crew.conversion_crew.ChatOpenAI'):
-            crew = ModPorterConversionCrew()
+        crew = ModPorterConversionCrew()
         
         analysis_result = crew.analyze_feature_with_assumptions(
             "complex_gui_machinery", 

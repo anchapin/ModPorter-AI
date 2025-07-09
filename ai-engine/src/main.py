@@ -11,7 +11,6 @@ from datetime import datetime
 from enum import Enum
 import uvicorn
 import os
-import uuid
 import logging
 import json
 import zipfile

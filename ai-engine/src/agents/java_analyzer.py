@@ -2,11 +2,9 @@
 Java Analyzer Agent for analyzing Java mod structure and extracting features
 """
 
-import javalang
-import re
 import logging
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,

@@ -2,15 +2,13 @@
 QA Validator Agent for validating conversion quality and generating comprehensive reports
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List
 
 import logging
 import json
-from datetime import datetime
-from pathlib import Path
 from crewai.tools import tool
 from src.models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext, ConversionPlanComponent, AssumptionReport
+    SmartAssumptionEngine
 )
 
 logger = logging.getLogger(__name__)
