@@ -86,6 +86,7 @@ Building 'modporter-ai' with RAG would involve several key considerations:
 *   **Agent Communication Workflow:** Defining how the specialized agents in the Crew AI setup will pass information (including RAG-retrieved insights) to each other in a structured manner.
 *   **Continuous Evaluation and Iteration:** Implementing mechanisms to evaluate the quality of the RAG system's outputs and the overall effectiveness of 'modporter-ai', allowing for ongoing refinement of the knowledge bases and agent logic.
 *   **Handling Ambiguity:** Developing strategies for how agents should proceed when retrieved information is incomplete or when direct translations between platforms are not possible.
+*   **Embedding Generation for Knowledge Sources:** As a foundational step, a utility for generating text embeddings (e.g., using sentence-transformers) has been implemented. This allows for the vectorization of document chunks derived from mod information (like code comments, descriptions, or analyzed features), which is crucial for enabling semantic search and retrieval components of the RAG pipeline. This component is integrated into the `JavaAnalyzerAgent` to initially process and embed textual data from mods.
 
 ### 6. Conclusion
 
