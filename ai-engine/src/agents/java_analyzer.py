@@ -24,6 +24,8 @@ class JavaAnalyzerAgent:
     dependencies, and features as specified in PRD Feature 2.
     """
     
+    _instance = None
+    
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
         
@@ -59,6 +61,13 @@ class JavaAnalyzerAgent:
             'events': ['Event', 'SubscribeEvent', 'EventHandler', 'Listener']
         }
     
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of JavaAnalyzerAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+    
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         # Return the actual decorated tool instances created by @tool decorator
@@ -82,7 +91,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with structural analysis results
         """
-        agent = JavaAnalyzerAgent()
+        agent = JavaAnalyzerAgent.get_instance()
 
         def _determine_mod_type_and_framework(mod_path: str) -> Dict[str, str]:
             """Determine mod type (jar, source, etc.) and framework (forge, fabric, etc.)"""
@@ -439,7 +448,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with metadata
         """
-        agent = JavaAnalyzerAgent()
+        agent = JavaAnalyzerAgent.get_instance()
 
         def _extract_jar_metadata(jar_path: str) -> Dict:
             """Extract metadata from JAR file"""
@@ -551,7 +560,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with identified features
         """
-        agent = JavaAnalyzerAgent()
+        agent = JavaAnalyzerAgent.get_instance()
 
         def _extract_features_from_jar(jar_path: str, extraction_mode: str) -> List[Dict]:
             """Extract features from JAR file"""
@@ -741,7 +750,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with dependency analysis
         """
-        agent = JavaAnalyzerAgent()
+        agent = JavaAnalyzerAgent.get_instance()
 
         def _analyze_direct_dependencies(metadata: Dict) -> List[Dict]:
             """Analyze direct dependencies"""
@@ -831,7 +840,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with asset information
         """
-        agent = JavaAnalyzerAgent()
+        agent = JavaAnalyzerAgent.get_instance()
 
         def _extract_assets_from_jar(jar_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from JAR"""

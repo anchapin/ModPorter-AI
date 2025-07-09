@@ -360,65 +360,16 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
             
             # Verify output file was created
             if not os.path.exists(output_path):
-                logger.warning(f"Output file not created by conversion crew: {output_path}")
-                logger.info("Creating fallback .mcaddon file...")
+                logger.error(f"Output file not created by conversion crew: {output_path}")
+                logger.error("This indicates a serious conversion failure that should not be masked")
                 
-                # Create a fallback .mcaddon file with proper structure
-                try:
-                    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                        # Add a proper manifest.json file
-                        manifest = {
-                            "format_version": 2,
-                            "header": {
-                                "description": f"Converted from Java mod - Job {job_id}",
-                                "name": "Converted Mod",
-                                "uuid": str(uuid.uuid4()),
-                                "version": [1, 0, 0],
-                                "min_engine_version": [1, 16, 0]
-                            },
-                            "modules": [
-                                {
-                                    "description": "Data module",
-                                    "type": "data",
-                                    "uuid": str(uuid.uuid4()),
-                                    "version": [1, 0, 0]
-                                }
-                            ]
-                        }
-                        zipf.writestr("manifest.json", json.dumps(manifest, indent=2))
-                        
-                        # Add a basic pack structure
-                        zipf.writestr("pack_icon.png", b"")  # Empty file for pack icon
-                        
-                        # Add some example files that would be typical in a converted mod
-                        zipf.writestr("texts/en_US.lang", "# Language file\n")
-                        zipf.writestr("README.md", f"""# Converted Minecraft Bedrock Addon
-
-This addon was converted from a Java mod using ModPorter AI.
-
-Job ID: {job_id}
-Original mod: {mod_file_path}
-Conversion completed: {datetime.utcnow().isoformat()}
-
-## Installation
-1. Download this .mcaddon file
-2. Double-click to import into Minecraft Bedrock
-3. Enable in world settings
-
-## Notes
-This is a converted addon that may require additional configuration.
-""")
-                    
-                    logger.info(f"Created fallback .mcaddon file: {output_path}")
-                
-                except Exception as fallback_error:
-                    logger.error(f"Failed to create fallback output file {output_path}: {fallback_error}")
-                    job_status = await job_manager.get_job_status(job_id)
-                    if job_status:
-                        job_status.status = "failed"
-                        job_status.message = f"Conversion completed but failed to create output file: {str(fallback_error)}"
-                        await job_manager.set_job_status(job_id, job_status)
-                    return
+                # Mark job as failed explicitly instead of creating a fake successful output
+                job_status = await job_manager.get_job_status(job_id)
+                if job_status:
+                    job_status.status = "failed"
+                    job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
+                    await job_manager.set_job_status(job_id, job_status)
+                return
             
             logger.info(f"Conversion completed successfully: {output_path}")
             

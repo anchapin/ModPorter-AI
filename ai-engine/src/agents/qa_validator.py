@@ -22,6 +22,8 @@ class QAValidatorAgent:
     generating comprehensive reports as specified in PRD Feature 2.
     """
     
+    _instance = None
+    
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
         
@@ -61,6 +63,13 @@ class QAValidatorAgent:
             'minor': {'weight': 2, 'description': 'Minor functionality impact'},
             'cosmetic': {'weight': 1, 'description': 'Visual or aesthetic issues only'}
         }
+    
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of QAValidatorAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
     
     def get_tools(self) -> List:
         """Get tools available to this agent"""
@@ -318,33 +327,33 @@ class QAValidatorAgent:
     @staticmethod
     def validate_conversion_quality_tool(quality_data: str) -> str:
         """Validate overall conversion quality."""
-        agent = QAValidatorAgent()
+        agent = QAValidatorAgent.get_instance()
         return agent.validate_conversion_quality(quality_data)
     
     @tool
     @staticmethod
     def run_functional_tests_tool(test_data: str) -> str:
         """Run functional tests on the converted addon."""
-        agent = QAValidatorAgent()
+        agent = QAValidatorAgent.get_instance()
         return agent.run_functional_tests(test_data)
     
     @tool
     @staticmethod
     def analyze_bedrock_compatibility_tool(compatibility_data: str) -> str:
         """Analyze Bedrock compatibility of the conversion."""
-        agent = QAValidatorAgent()
+        agent = QAValidatorAgent.get_instance()
         return agent.analyze_bedrock_compatibility(compatibility_data)
     
     @tool
     @staticmethod
     def assess_performance_metrics_tool(performance_data: str) -> str:
         """Assess performance metrics of the converted addon."""
-        agent = QAValidatorAgent()
+        agent = QAValidatorAgent.get_instance()
         return agent.assess_performance_metrics(performance_data)
     
     @tool
     @staticmethod
     def generate_qa_report_tool(report_data: str) -> str:
         """Generate comprehensive QA report."""
-        agent = QAValidatorAgent()
+        agent = QAValidatorAgent.get_instance()
         return agent.generate_qa_report(report_data)

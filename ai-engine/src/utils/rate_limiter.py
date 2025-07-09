@@ -96,7 +96,7 @@ def with_rate_limiting(rate_config: RateLimitConfig = None):
         
         @wraps(func)
         def wrapper(*args, **kwargs):
-            return rate_limiter._execute_with_retry(func, *args, **kwargs)
+            return _execute_with_retry(func, rate_limiter, rate_config or RateLimitConfig(), *args, **kwargs)
         
         return wrapper
     return decorator

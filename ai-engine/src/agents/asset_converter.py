@@ -23,6 +23,8 @@ class AssetConverterAgent:
     to Bedrock-compatible formats as specified in PRD Feature 2.
     """
     
+    _instance = None
+    
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
         
@@ -61,6 +63,13 @@ class AssetConverterAgent:
             'max_duration_seconds': 300
         }
     
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of AssetConverterAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+    
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
@@ -75,7 +84,7 @@ class AssetConverterAgent:
     @staticmethod
     def analyze_assets_tool(asset_data: str) -> str:
         """Analyze assets for conversion."""
-        agent = AssetConverterAgent()
+        agent = AssetConverterAgent.get_instance()
         def _analyze_texture(texture_path: str, metadata: Dict) -> Dict:
             """Analyze a single texture for conversion needs"""
             width = metadata.get('width', 16)
@@ -328,7 +337,7 @@ class AssetConverterAgent:
     @staticmethod
     def convert_textures_tool(texture_data: str) -> str:
         """Convert textures to Bedrock format."""
-        agent = AssetConverterAgent()
+        agent = AssetConverterAgent.get_instance()
         def _is_power_of_2(n: int) -> bool:
             """Check if a number is a power of 2"""
             return n > 0 and (n & (n - 1)) == 0
@@ -605,7 +614,7 @@ class AssetConverterAgent:
     @staticmethod
     def convert_models_tool(model_data: str) -> str:
         """Convert models to Bedrock format."""
-        agent = AssetConverterAgent()
+        agent = AssetConverterAgent.get_instance()
         def _convert_single_model(model_path: str, metadata: Dict, entity_type: str) -> Dict:
             warnings = []
             try:
@@ -870,7 +879,7 @@ class AssetConverterAgent:
     @staticmethod
     def convert_audio_tool(audio_data: str) -> str:
         """Convert audio files to Bedrock format."""
-        agent = AssetConverterAgent()
+        agent = AssetConverterAgent.get_instance()
         def _convert_single_audio(audio_path: str, metadata: Dict, audio_type: str) -> Dict:
             """Convert a single audio file to Bedrock-compatible format"""
             try:
@@ -1051,7 +1060,7 @@ class AssetConverterAgent:
     @staticmethod
     def validate_bedrock_assets_tool(validation_data: str) -> str:
         """Validate assets for Bedrock compatibility."""
-        agent = AssetConverterAgent()
+        agent = AssetConverterAgent.get_instance()
         def _validate_single_asset(asset_path: str, asset_type: str, metadata: Dict) -> Dict:
             """Validate a single asset for Bedrock compatibility"""
             is_valid = True

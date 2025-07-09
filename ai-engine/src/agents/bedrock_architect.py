@@ -21,8 +21,17 @@ class BedrockArchitectAgent:
     using smart assumptions as specified in PRD Feature 2.
     """
     
+    _instance = None
+    
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
+    
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of BedrockArchitectAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
         
     def get_tools(self) -> List:
         """Get tools available to this agent"""
@@ -42,7 +51,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def analyze_java_feature_tool(feature_data: str) -> str:
         """Analyze a Java mod feature to determine applicable smart assumptions."""
-        agent = BedrockArchitectAgent()
+        agent = BedrockArchitectAgent.get_instance()
         def _get_conversion_recommendation(analysis_result: AssumptionResult) -> str:
             """Get conversion recommendation based on analysis result"""
             if not analysis_result.applied_assumption:
@@ -92,7 +101,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def apply_smart_assumption_tool(assumption_data: str) -> str:
         """Apply smart assumption to a feature."""
-        agent = BedrockArchitectAgent()
+        agent = BedrockArchitectAgent.get_instance()
         try:
             data = json.loads(assumption_data)
             
@@ -141,7 +150,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def create_conversion_plan_tool(plan_data: Any) -> str:
         """Create a conversion plan for features."""
-        agent = BedrockArchitectAgent()
+        agent = BedrockArchitectAgent.get_instance()
         try:
             # Ensure plan_data is a string before loading as JSON
             if not isinstance(plan_data, str):
@@ -215,7 +224,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def get_assumption_conflicts_tool(conflict_data: str) -> str:
         """Get assumption conflicts for features."""
-        agent = BedrockArchitectAgent()
+        agent = BedrockArchitectAgent.get_instance()
         try:
             data = json.loads(conflict_data)
             feature_type = data.get("feature_type")
@@ -232,7 +241,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def validate_bedrock_compatibility_tool(compatibility_data: str) -> str:
         """Validate Bedrock compatibility of features."""
-        agent = BedrockArchitectAgent()
+        agent = BedrockArchitectAgent.get_instance()
         def _validate_component_compatibility(component: Dict[str, Any]) -> Dict[str, Any]:
             """Validate individual component compatibility with Bedrock"""
             validation = {

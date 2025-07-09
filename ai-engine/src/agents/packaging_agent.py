@@ -27,6 +27,8 @@ class PackagingAgent:
     .mcaddon packages as specified in PRD Feature 2.
     """
     
+    _instance = None
+    
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
         
@@ -89,6 +91,13 @@ class PackagingAgent:
             "forbidden_extensions": [".exe", ".dll", ".bat", ".sh"],
             "max_manifest_size_kb": 10
         }
+    
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of PackagingAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
     
     def get_tools(self) -> List:
         """Get tools available to this agent"""
@@ -284,33 +293,33 @@ class PackagingAgent:
     @staticmethod
     def analyze_conversion_components_tool(component_data: str) -> str:
         """Analyze conversion components for packaging."""
-        agent = PackagingAgent()
+        agent = PackagingAgent.get_instance()
         return agent.analyze_conversion_components(component_data)
     
     @tool
     @staticmethod
     def create_package_structure_tool(structure_data: str) -> str:
         """Create package structure for Bedrock addon."""
-        agent = PackagingAgent()
+        agent = PackagingAgent.get_instance()
         return agent.create_package_structure(structure_data)
     
     @tool
     @staticmethod
     def generate_manifests_tool(manifest_data: str) -> str:
         """Generate manifest files for the addon."""
-        agent = PackagingAgent()
+        agent = PackagingAgent.get_instance()
         return agent.generate_manifests(manifest_data)
     
     @tool
     @staticmethod
     def validate_package_tool(validation_data: str) -> str:
         """Validate the package structure."""
-        agent = PackagingAgent()
+        agent = PackagingAgent.get_instance()
         return agent.validate_package(validation_data)
     
     @tool
     @staticmethod
     def build_mcaddon_tool(build_data: str) -> str:
         """Build the final mcaddon package."""
-        agent = PackagingAgent()
+        agent = PackagingAgent.get_instance()
         return agent.build_mcaddon(build_data)
