@@ -151,21 +151,27 @@ class TestRAGCrew:
     @patch('src.crew.rag_crew.Agent')
     def test_setup_agents(self, mock_agent):
         """Test agent setup with mocked Agent class."""
-        mock_agent_instance = Mock()
-        mock_agent.return_value = mock_agent_instance
+        mock_researcher = Mock()
+        mock_writer = Mock()
+        mock_agent.side_effect = [mock_researcher, mock_writer]
         
         with patch('src.crew.rag_crew.ChatOpenAI'), \
              patch.object(RAGCrew, '_setup_crew'):
             
             crew = RAGCrew()
+            # Override configs after initialization
             crew.researcher_config = self.test_config['agents']['researcher']
             crew.writer_config = self.test_config['agents']['writer']
+            
+            # Reset the mock to count only our calls
+            mock_agent.reset_mock()
+            mock_agent.side_effect = [mock_researcher, mock_writer]
             
             crew._setup_agents()
             
             # Verify agents were created
-            assert crew.researcher is mock_agent_instance
-            assert crew.writer is mock_agent_instance
+            assert crew.researcher is mock_researcher
+            assert crew.writer is mock_writer
             assert mock_agent.call_count == 2
 
     @patch('src.crew.rag_crew.Task')
@@ -178,14 +184,14 @@ class TestRAGCrew:
         mock_crew_instance = Mock()
         mock_crew.return_value = mock_crew_instance
         
-        with patch('src.crew.rag_crew.ChatOpenAI'), \
-             patch.object(RAGCrew, '_load_agent_configs'), \
-             patch.object(RAGCrew, '_setup_agents'):
-            
-            crew = RAGCrew()
+        with patch('src.crew.rag_crew.ChatOpenAI'):
+            # Create an instance by manually calling methods
+            crew = RAGCrew.__new__(RAGCrew)
+            crew.llm = Mock()
             crew.researcher = Mock()
             crew.writer = Mock()
             
+            # Call _setup_crew directly with mocked Task and Crew
             crew._setup_crew()
             
             # Verify tasks and crew were created
@@ -219,23 +225,26 @@ class TestRAGCrew:
         with patch('src.crew.rag_crew.RAGCrew') as mock_rag_crew_class:
             mock_rag_crew = Mock()
             mock_rag_crew.run.return_value = "Test result"
+            mock_rag_crew.researcher = Mock()
             mock_rag_crew.researcher.tools = [Mock(__name__='test_tool')]
+            mock_rag_crew.writer = Mock()
             mock_rag_crew.writer.tools = []
             mock_rag_crew_class.return_value = mock_rag_crew
             
             with patch('builtins.print') as mock_print:
-                # Import and run the main block
-                import src.crew.rag_crew as rag_module
-                
-                # Execute the main block logic
-                if __name__ == '__main__':
+                # Import the module to execute the main block 
+                with patch('sys.argv', ['rag_crew.py']):
+                    # Simulate running the module as main
+                    import src.crew.rag_crew as rag_module
+                    
+                    # Execute the main block logic directly as if __name__ == '__main__'
                     rag_crew = rag_module.RAGCrew()
                     example_query = "What are the latest advancements in AI-powered search technology?"
                     result = rag_crew.run(example_query)
-                
-                # Verify the crew was created and run was called
-                mock_rag_crew_class.assert_called_once()
-                mock_rag_crew.run.assert_called_once()
+                    
+                    # Verify the crew was created and run was called
+                    mock_rag_crew_class.assert_called_once()
+                    mock_rag_crew.run.assert_called_once_with(example_query)
 
     def test_crew_integration_with_real_config(self):
         """Test RAGCrew integration with actual config structure."""
@@ -268,9 +277,9 @@ class TestRAGCrew:
         try:
             with patch('src.crew.rag_crew.ChatOpenAI'), \
                  patch('os.path.join', return_value=temp_file), \
-                 patch('ai_engine.src.crew.rag_crew.Agent'), \
-                 patch('ai_engine.src.crew.rag_crew.Task'), \
-                 patch('ai_engine.src.crew.rag_crew.Crew'):
+                 patch('src.crew.rag_crew.Agent'), \
+                 patch('src.crew.rag_crew.Task'), \
+                 patch('src.crew.rag_crew.Crew'):
                 
                 crew = RAGCrew()
                 

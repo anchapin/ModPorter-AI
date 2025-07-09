@@ -314,5 +314,14 @@ class SearchTool:
     async def close(self):
         """Close vector database connection."""
         if hasattr(self, 'vector_client'):
-            await self.vector_client.close()
+            # Check if the close method is async or sync
+            if hasattr(self.vector_client, 'close'):
+                close_method = self.vector_client.close
+                if hasattr(close_method, '__call__'):
+                    # Check if it's awaitable
+                    import asyncio
+                    if asyncio.iscoroutinefunction(close_method):
+                        await close_method()
+                    else:
+                        close_method()
             logger.info("SearchTool connections closed")

@@ -33,33 +33,45 @@ class RAGCrew:
         except FileNotFoundError:
             print(f"ERROR: Agent configuration file not found at {config_path}")
             # Fallback to default configurations if YAML is not found
-            self.researcher_config = {
-                "role": "Default Information Researcher",
-                "goal": "To find relevant information.",
-                "backstory": "Default researcher.",
-                "tools": [], "verbose": True, "allow_delegation": False
+            self.agent_configs = {
+                'agents': {
+                    'researcher': {
+                        "role": "Default Information Researcher",
+                        "goal": "To find relevant information.",
+                        "backstory": "Default researcher.",
+                        "tools": [], "verbose": True, "allow_delegation": False
+                    },
+                    'writer': {
+                        "role": "Default Content Synthesizer",
+                        "goal": "To synthesize information.",
+                        "backstory": "Default writer.",
+                        "tools": [], "verbose": True, "allow_delegation": False
+                    }
+                }
             }
-            self.writer_config = {
-                "role": "Default Content Synthesizer",
-                "goal": "To synthesize information.",
-                "backstory": "Default writer.",
-                "tools": [], "verbose": True, "allow_delegation": False
-            }
+            self.researcher_config = self.agent_configs['agents']['researcher']
+            self.writer_config = self.agent_configs['agents']['writer']
         except Exception as e:
             print(f"ERROR: Could not load or parse agent configurations: {e}")
             # Fallback for other errors
-            self.researcher_config = {
-                "role": "Fallback Information Researcher",
-                "goal": "To find relevant information.",
-                "backstory": "Fallback researcher.",
-                "tools": [], "verbose": True, "allow_delegation": False
+            self.agent_configs = {
+                'agents': {
+                    'researcher': {
+                        "role": "Fallback Information Researcher",
+                        "goal": "To find relevant information.",
+                        "backstory": "Fallback researcher.",
+                        "tools": [], "verbose": True, "allow_delegation": False
+                    },
+                    'writer': {
+                        "role": "Fallback Content Synthesizer",
+                        "goal": "To synthesize information.",
+                        "backstory": "Fallback writer.",
+                        "tools": [], "verbose": True, "allow_delegation": False
+                    }
+                }
             }
-            self.writer_config = {
-                "role": "Fallback Content Synthesizer",
-                "goal": "To synthesize information.",
-                "backstory": "Fallback writer.",
-                "tools": [], "verbose": True, "allow_delegation": False
-            }
+            self.researcher_config = self.agent_configs['agents']['researcher']
+            self.writer_config = self.agent_configs['agents']['writer']
 
 
     def _get_tools_from_config(self, tool_names: list) -> list:

@@ -1,5 +1,5 @@
 """
-Tools module for ModPorter AI agents.
+Tools module for ModPorter AI.
 Contains various tools used by CrewAI agents for specialized tasks.
 """
 
