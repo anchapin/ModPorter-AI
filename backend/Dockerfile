@@ -3,7 +3,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 # Install system dependencies for building
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
@@ -20,7 +20,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
@@ -29,12 +29,12 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy source code
-COPY . .
-
 # Create non-root user for security
+# This needs to happen before COPY . . so that file permissions are set correctly
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
+# Copy source code after user creation and chown to ensure correct permissions
+COPY . .
 USER appuser
 
 # Health check
