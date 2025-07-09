@@ -139,6 +139,23 @@ export interface InteractiveReport { // This is the main model for the detailed 
   developer_log?: DeveloperLog | null;
 }
 
+// --- Feedback Types ---
+export interface FeedbackCreatePayload {
+  job_id: string; // Backend expects UUID, but string is fine from client
+  feedback_type: 'thumbs_up' | 'thumbs_down' | string;
+  user_id?: string | null;
+  comment?: string | null;
+}
+
+export interface FeedbackResponse {
+  id: string; // UUID string
+  job_id: string; // UUID string
+  feedback_type: string;
+  user_id?: string | null;
+  comment?: string | null;
+  created_at: string; // ISO date string
+}
+
 
 // --- Potentially legacy or alternative types (review if still needed) ---
 // The following interfaces seem to be part of an older/different API design.

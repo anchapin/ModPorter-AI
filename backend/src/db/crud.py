@@ -104,3 +104,54 @@ async def upsert_progress(
     prog = result.scalar_one()
     await session.commit()
     return prog
+
+
+async def create_feedback(
+    session: AsyncSession,
+    job_id: uuid.UUID,
+    feedback_type: str,
+    user_id: Optional[str] = None,
+    comment: Optional[str] = None,
+) -> models.ConversionFeedback:
+    """
+    Creates a new feedback entry for a given conversion job.
+    """
+    feedback = models.ConversionFeedback(
+        job_id=job_id,
+        feedback_type=feedback_type,
+        user_id=user_id,
+        comment=comment,
+    )
+    session.add(feedback)
+    await session.commit()
+    await session.refresh(feedback)
+    return feedback
+
+
+async def get_feedback_by_job_id(
+    session: AsyncSession, job_id: uuid.UUID
+) -> List[models.ConversionFeedback]:
+    """
+    Retrieves all feedback entries for a specific conversion job.
+    """
+    stmt = select(models.ConversionFeedback).where(
+        models.ConversionFeedback.job_id == job_id
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def list_all_feedback(
+    session: AsyncSession, skip: int = 0, limit: int = 100
+) -> List[models.ConversionFeedback]:
+    """
+    Retrieves all feedback entries with pagination.
+    """
+    stmt = (
+        select(models.ConversionFeedback)
+        .order_by(models.ConversionFeedback.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
