@@ -156,7 +156,7 @@ class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    embedding = Column(VECTOR(dimensions=1536), nullable=False) # Assuming nullable=False for embedding
+    embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding
     document_source = Column(String, nullable=False, index=True)
     content_hash = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
