@@ -1,10 +1,10 @@
 import pytest
 from pathlib import Path
 import json
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from src.agents.asset_converter import AssetConverterAgent
-from conftest import MockAudioSegment # Import the mock
+
 from pydub.exceptions import CouldntDecodeError
 
 # Uses agent fixture from conftest.py
@@ -29,9 +29,9 @@ def dummy_txt_file(tmp_path: Path) -> str:
 
 # Patch AudioSegment for all tests in this file
 @pytest.fixture(autouse=True)
-def mock_pydub_loading():
-    with patch('src.agents.asset_converter.AudioSegment', MockAudioSegment) as mock_audio_segment:
-        yield mock_audio_segment
+def mock_pydub_loading(mock_audio_segment):
+    with patch('src.agents.asset_converter.AudioSegment', mock_audio_segment) as mock_audio_segment_patched:
+        yield mock_audio_segment_patched
 
 def test_convert_single_audio_wav_input(agent: AssetConverterAgent, dummy_wav_file: str):
     result = agent._convert_single_audio(dummy_wav_file, {}, "block.stone")
