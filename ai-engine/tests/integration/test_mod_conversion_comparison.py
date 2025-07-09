@@ -154,6 +154,6 @@ def test_mod_conversion_comparison(mod_name, java_mod_fixture, downloaded_addon_
     assert os.path.exists(generated_addon), f"ModPorter-AI output file not found: {generated_addon}"
 
     print(f"Conversion successful. Generated addon at: {generated_addon}")
-    print("\nComparing addons...")
+    
     assert compare_addons(generated_addon, downloaded_addon_path), \
         f"Addon comparison failed for {mod_name}. File size difference exceeded tolerance."
