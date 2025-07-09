@@ -201,15 +201,23 @@ app = FastAPI(
             "name": "validation",
             "description": "AI-powered validation operations",
         },
+        {
+            "name": "embeddings",
+            "description": "Operations for managing and querying document embeddings",
+        },
     ],
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
 # Include API routers
+from src.api import embeddings as embeddings_api # New import for embeddings router
 app.include_router(validation_router, prefix="/api/v1")
 app.include_router(
     comparison_api.router, prefix="/api/v1/comparisons", tags=["comparisons"]
+)
+app.include_router(
+    embeddings_api.router, prefix="/api/v1", tags=["embeddings"] # Mount the new router
 )
 
 report_generator = ConversionReportGenerator()
