@@ -1,5 +1,13 @@
 ## The Power of Retrieval Augmented Generation (RAG) for AI Agents in Minecraft Modding: A Comprehensive Analysis
 
+**Table of Contents**
+- [1. Understanding Retrieval Augmented Generation (RAG)](#1-understanding-retrieval-augmented-generation-rag)
+- [2. Applying RAG to the Complexities of Minecraft Modding](#2-applying-rag-to-the-complexities-of-minecraft-modding)
+- [3. 'modporter-ai': A RAG-Powered Crew AI Concept for Mod Porting](#3-modporter-ai-a-rag-powered-crew-ai-concept-for-mod-porting)
+- [4. Synthesis: Why RAG is a Powerful Approach for 'modporter-ai'](#4-synthesis-why-rag-is-a-powerful-approach-for-modporter-ai)
+- [5. High-Level Implementation Considerations for a RAG-Powered 'modporter-ai'](#5-high-level-implementation-considerations-for-a-rag-powered-modporter-ai)
+- [6. Conclusion](#6-conclusion)
+
 ### 1. Understanding Retrieval Augmented Generation (RAG)
 
 Retrieval Augmented Generation (RAG) is a technique that significantly enhances the capabilities of Large Language Models (LLMs) by dynamically integrating external knowledge sources during the generation process. Instead of relying solely on their static training data, RAG-powered LLMs first retrieve relevant information from a specified knowledge base (e.g., documents, databases, websites) related to a user's query. This retrieved context is then provided to the LLM along with the original query, enabling it to generate responses that are more accurate, up-to-date, and contextually relevant.
@@ -16,7 +24,7 @@ Retrieval Augmented Generation (RAG) is a technique that significantly enhances 
 
 Minecraft modding, for both Java Edition (using APIs like Forge and Fabric) and Bedrock Edition (using Add-Ons and JavaScript), presents unique challenges where RAG can be highly beneficial:
 
-*   **Vast and Dispersed Knowledge:** Information is scattered across official documentation, community wikis (e.g., Minecraft Forge Wiki, Fabric Wiki, Bedrock.dev), forums, GitHub repositories, and video tutorials. RAG can consolidate these diverse sources.
+*   **Vast and Dispersed Knowledge:** Information is scattered across official documentation, community wikis (e.g., [Minecraft Forge Wiki](https://docs.minecraftforge.net/), [Fabric Wiki](https://fabricmc.net/wiki/), [Bedrock.dev](https://bedrock.dev/)), forums, GitHub repositories, and video tutorials. RAG can consolidate these diverse sources.
 *   **Version Sensitivity:** Minecraft updates frequently, often introducing breaking changes to APIs and modding systems. Mods and add-ons must be updated, and RAG can access version-specific documentation and community discussions on these changes.
 *   **API Nuances and Complexity:** Both Java Edition modding APIs and the Bedrock Edition's component-based system and JavaScript APIs have steep learning curves and intricate details. RAG can provide targeted explanations and code examples.
 *   **Debugging and Best Practices:** Identifying bugs and adhering to best practices is crucial. RAG can retrieve solutions to common problems and showcase established coding patterns.
@@ -41,16 +49,16 @@ To illustrate the practical application of RAG in Minecraft modding, consider a 
 **Agent Roles and RAG Empowerment:**
 
 *   **Java Mod Analyst:**
-    *   **Role:** Analyzes the source code and functionality of a Java Edition mod.
-    *   **RAG Empowerment:** Accesses a knowledge base of Java Edition modding APIs (Forge/Fabric), open-source mod code, and design patterns. This allows it to accurately identify core mechanics, custom features, and API usage within the Java mod. For instance, when encountering a specific Forge event handler, RAG provides context on its purpose and common implementations.
+  *   **Role:** Analyzes the source code and functionality of a Java Edition mod.
+  *   **RAG Empowerment:** Accesses a knowledge base of Java Edition modding APIs (Forge/Fabric), open-source mod code, and design patterns. This allows it to accurately identify core mechanics, custom features, and API usage within the Java mod. For instance, when encountering a specific Forge event handler, RAG provides context on its purpose and common implementations.
 
 *   **Bedrock Add-On Architect:**
-    *   **Role:** Designs the equivalent Bedrock Edition Add-On structure based on the Java Mod Analyst's findings.
-    *   **RAG Empowerment:** Queries a knowledge base of Bedrock Add-On documentation, vanilla pack examples, JSON schemas, and JavaScript API details. When the Java Mod Analyst identifies a feature (e.g., "custom entity that flies and shoots projectiles"), this agent uses RAG to find the corresponding Bedrock components and implementation methods (e.g., `minecraft:behavior.ranged_attack`, `minecraft:navigation.fly`). It also uses RAG to find workarounds if a direct Java feature equivalent doesn't exist in Bedrock.
+  *   **Role:** Designs the equivalent Bedrock Edition Add-On structure based on the Java Mod Analyst's findings.
+  *   **RAG Empowerment:** Queries a knowledge base of Bedrock Add-On documentation, vanilla pack examples, JSON schemas, and JavaScript API details. When the Java Mod Analyst identifies a feature (e.g., "custom entity that flies and shoots projectiles"), this agent uses RAG to find the corresponding Bedrock components and implementation methods (e.g., `minecraft:behavior.ranged_attack`, `minecraft:navigation.fly`). It also uses RAG to find workarounds if a direct Java feature equivalent doesn't exist in Bedrock.
 
 *   **Code and Asset Translator:**
-    *   **Role:** Assists in translating Java code logic to Bedrock's JavaScript API (where applicable) and adapting assets.
-    *   **RAG Empowerment:** Utilizes RAG to find examples of Bedrock JavaScript API usage for specific tasks (e.g., event handling that mirrors Java's event system), consults asset format specifications (textures, models, sounds), and retrieves templates for Bedrock's JSON-based configuration files.
+  *   **Role:** Assists in translating Java code logic to Bedrock's JavaScript API (where applicable) and adapting assets.
+  *   **RAG Empowerment:** Utilizes RAG to find examples of Bedrock JavaScript API usage for specific tasks (e.g., event handling that mirrors Java's event system), consults asset format specifications (textures, models, sounds), and retrieves templates for Bedrock's JSON-based configuration files.
 
 **Synergistic Benefits of RAG for 'modporter-ai':**
 
