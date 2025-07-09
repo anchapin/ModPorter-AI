@@ -30,39 +30,51 @@ def get_llm():
 
 class RAGAgents:
     def search_agent(self, llm, tools):
-        return Agent(
-            role='Research Specialist',
-            goal='To find the most relevant and up-to-date information on a given topic using available search tools.',
-            backstory=(
+        agent_kwargs = {
+            "role": 'Research Specialist',
+            "goal": 'To find the most relevant and up-to-date information on a given topic using available search tools.',
+            "backstory": (
                 "You are an expert researcher, skilled in sifting through vast amounts of data "
                 "to find nuggets of truth. You are proficient in using various search tools and techniques "
                 "to quickly locate information critical to answering complex queries."
             ),
-            verbose=True,
-            allow_delegation=False,
-            llm=llm,
-            tools=tools # Expecting search_tool to be passed here
-        )
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": llm,
+            "tools": tools # Expecting search_tool to be passed here
+        }
+        
+        # Disable memory in test environment to avoid validation issues
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            agent_kwargs["memory"] = False
+        
+        return Agent(**agent_kwargs)
 
     def summarization_agent(self, llm):
-        return Agent(
-            role='Content Summarizer',
-            goal='To synthesize information gathered from search results into a concise and easy-to-understand summary that directly answers the user\'s query.',
-            backstory=(
+        agent_kwargs = {
+            "role": 'Content Summarizer',
+            "goal": 'To synthesize information gathered from search results into a concise and easy-to-understand summary that directly answers the user\'s query.',
+            "backstory": (
                 "You are a master of brevity and clarity. You can take complex information from multiple sources "
                 "and distill it into a short, yet comprehensive summary. Your summaries are known for being highly "
                 "accurate and tailored to the user's original question."
             ),
-            verbose=True,
-            allow_delegation=False,
-            llm=llm,
+            "verbose": True,
+            "allow_delegation": False,
+            "llm": llm,
             # No specific tools needed for summarization beyond LLM capabilities
-        )
+        }
+        
+        # Disable memory in test environment to avoid validation issues
+        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+            agent_kwargs["memory"] = False
+        
+        return Agent(**agent_kwargs)
 
 if __name__ == '__main__':
     # Example of how to instantiate the agents
     # This part is for testing and might be removed or moved later
-    from ai_engine.src.tools.search_tool import SearchTool # Adjust import if necessary
+    from src.tools.search_tool import SearchTool # Adjust import if necessary
 
     llm_instance = get_llm()
     search_tool_instance = SearchTool()

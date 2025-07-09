@@ -4,30 +4,19 @@ import os
 import json # For handling JSON output from search tool
 
 # Import RAGAgents and SearchTool
-from ai_engine.src.agents.rag_agents import RAGAgents
-from ai_engine.src.tools.search_tool import SearchTool
+from src.agents.rag_agents import RAGAgents
+from src.tools.search_tool import SearchTool
 
 # Placeholder for LLM initialization (similar to rag_agents.py or conversion_crew.py)
 def get_llm_instance():
     if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
-        try:
-            import sys
-            from pathlib import Path
-            mock_llm_path = Path(__file__).parent.parent.parent / "tests" / "mocks"
-            if str(mock_llm_path) not in sys.path:
-                 sys.path.insert(0, str(mock_llm_path))
-            from mock_llm import MockLLM
-            # Provide enough mock responses for crew execution
-            return MockLLM(responses=[
-                json.dumps([{"id": "mock_doc1", "score": 0.9, "text": "This is a mock document from search."}]), # Search Agent's tool usage
-                "Mock summarization based on search results." # Summarization Agent's response
-            ])
-        except ImportError as e:
-            print(f"Error importing MockLLM: {e}")
-            from unittest.mock import MagicMock
-            llm = MagicMock()
-            llm.invoke.return_value = "Mock LLM response due to import error"
-            return llm
+        # Use MagicMock with proper LLM interface for testing
+        from unittest.mock import MagicMock
+        llm = MagicMock()
+        llm.invoke.return_value = "Mock summarization based on search results."
+        llm.predict.return_value = "Mock summarization based on search results."
+        llm.generate.return_value = "Mock summarization based on search results."
+        return llm
     else:
         return ChatOpenAI(model_name=os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo"), temperature=0.7)
 
