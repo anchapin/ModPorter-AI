@@ -120,6 +120,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install -r requirements.txt
+        pip install -r ../requirements-test.txt  # Install test dependencies
         pip install ruff  # Ensure ruff is installed for linting
         pip install alembic  # Ensure alembic is installed for migrations
     
@@ -230,6 +231,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install -r requirements.txt
+        pip install -r ../requirements-test.txt  # Install test dependencies
         pip install ruff  # Ensure ruff is installed for linting
     
     - name: Run AI engine tests
