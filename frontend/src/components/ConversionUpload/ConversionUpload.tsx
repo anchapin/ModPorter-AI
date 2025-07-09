@@ -181,11 +181,11 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     if (!currentConversionId) return;
     
     try {
-      const blob = await downloadResult(currentConversionId);
+      const { blob, filename } = await downloadResult(currentConversionId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `converted-mod-${currentConversionId}.mcaddon`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

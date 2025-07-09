@@ -1014,7 +1014,7 @@ async def download_converted_mod(
 
     # Construct the path to the mock output file
     # The actual filename stored on server uses job_id for uniqueness
-    internal_filename = f"{job.job_id}_converted.zip"
+    internal_filename = f"{job.job_id}_converted.mcaddon"
     file_path = os.path.join(CONVERSION_OUTPUTS_DIR, internal_filename)
 
     if not os.path.exists(file_path):
@@ -1028,10 +1028,10 @@ async def download_converted_mod(
 
     # Determine a user-friendly download filename
     original_filename_base = os.path.splitext(job.original_filename)[0]
-    download_filename = f"{original_filename_base}_converted.zip"
+    download_filename = f"{original_filename_base}_converted.mcaddon"
 
     return FileResponse(
-        path=file_path, media_type="application/zip", filename=download_filename
+        path=file_path, media_type="application/octet-stream", filename=download_filename
     )
 
 
