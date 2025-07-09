@@ -19,6 +19,10 @@ class Config:
     OPENAI_RPM_LIMIT: int = int(os.getenv("OPENAI_RPM_LIMIT", "50"))
     OPENAI_TPM_LIMIT: int = int(os.getenv("OPENAI_TPM_LIMIT", "40000"))
     OPENAI_MAX_RETRIES: int = int(os.getenv("OPENAI_MAX_RETRIES", "3"))
+
+    # Vector DB Configuration
+    VECTOR_DB_URL: str = os.getenv("VECTOR_DB_URL", "http://localhost:19530")
+    VECTOR_DB_API_KEY: Optional[str] = os.getenv("VECTOR_DB_API_KEY", "your_vector_db_api_key")
     
     # AI Engine Configuration
     MOCK_AI_RESPONSES: bool = os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true"
