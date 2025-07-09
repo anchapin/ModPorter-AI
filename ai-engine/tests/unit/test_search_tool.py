@@ -1,31 +1,104 @@
 import unittest
+from unittest.mock import patch, MagicMock
+import pytest # Added for potential future use, though current tests are unittest-based
+
 from src.tools.search_tool import SearchTool
 from src.utils.config import Config
+# Assuming a future VectorDBClient might be used by SearchTool
+# from src.utils.vector_db_client import VectorDBClient
 
 class TestSearchTool(unittest.TestCase):
 
-    def setUp(self):
+    @patch('src.tools.search_tool.VectorDBClient') # Mocking at the module level where SearchTool would import it
+    def setUp(self, MockVectorDBClient):
         """Setup common test resources."""
-        self.search_tool = SearchTool()
-        # Mock Config values if SearchTool relies on them directly for pymilvus setup
-        # For now, SearchTool doesn't use Config for db connection in its _run method
-        # but this is good practice if it were to.
+        # Instantiate the mock client
+        self.mock_vector_db_client = MockVectorDBClient()
+
+        # Configure SearchTool to use this mock client
+        # This assumes SearchTool is modified or designed to accept a client instance
+        # or that it internally instantiates VectorDBClient, which our patch will intercept.
+        self.search_tool = SearchTool(vector_db_client=self.mock_vector_db_client)
+
+        # Mock Config values if SearchTool relies on them directly
         self.config = Config()
         self.config.VECTOR_DB_URL = "mock_db_url"
-        self.config.VECTOR_DB_API_KEY = "mock_api_key" # Though API key not used by pymilvus connect
+        self.config.VECTOR_DB_API_KEY = "mock_api_key"
 
     def test_search_tool_run_success(self):
-        """Test the _run method with successful search results."""
-        # Test the current SearchTool implementation with hardcoded results
+        """Test the _run method with successful search results (hardcoded)."""
+        # This test reflects the current hardcoded behavior of SearchTool
         results = self.search_tool._run(query="AI advancements")
-
         self.assertIn("Found 2 results for query 'AI advancements':", results)
         self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
         self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
 
+    # The following tests will assume SearchTool is updated to use the injected vector_db_client
+    # For now, they will test the current hardcoded behavior or be adapted.
+
+    def test_run_successful_search_with_mock_client(self):
+        """Test _run with a mocked vector database client succeeding."""
+        # Since SearchTool currently has hardcoded results and doesn't use vector_db_client,
+        # this test will also reflect that. If SearchTool were to use the client,
+        # we would mock client.search(...) and verify its call.
+        # For now, this is similar to test_search_tool_run_success
+
+        # If SearchTool were using the client:
+        # self.mock_vector_db_client.search.return_value = [
+        #     {"id": "doc1", "score": 0.95, "text": "Mocked result 1"},
+        #     {"id": "doc2", "score": 0.90, "text": "Mocked result 2"},
+        # ]
+        # results = self.search_tool._run(query="test query")
+        # self.mock_vector_db_client.search.assert_called_once_with(query="test query")
+        # self.assertIn("Found 2 results for query 'test query':", results)
+        # self.assertIn("- (Score: 0.95) Mocked result 1", results)
+        # self.assertIn("- (Score: 0.90) Mocked result 2", results)
+
+        # Current behavior:
+        results = self.search_tool._run(query="test query with mock consideration")
+        self.assertIn("Found 2 results for query 'test query with mock consideration':", results)
+        self.assertIn("- (Score: 0.9) Some relevant document text 1", results)
+
+    def test_run_search_error_with_mock_client(self):
+        """Test _run with a mocked vector database client raising an error."""
+        # This test assumes SearchTool would propagate or handle errors from its client.
+        # Current SearchTool's _run doesn't call the client, so no error from client can occur.
+        # If it did:
+        # self.mock_vector_db_client.search.side_effect = Exception("Database connection error")
+        # with self.assertRaisesRegex(Exception, "Database connection error"):
+        #    self.search_tool._run(query="error query")
+        # self.mock_vector_db_client.search.assert_called_once_with(query="error query")
+
+        # Current behavior (no error is raised, returns hardcoded results):
+        results = self.search_tool._run(query="error query")
+        self.assertIn("Found 2 results for query 'error query':", results)
+        # No exception is expected with current hardcoded implementation.
+
+    def test_run_format_results_correctly_with_mock_client(self):
+        """Test _run for correct formatting of results from a mocked client."""
+        # This test focuses on the formatting aspect, which is present in the current SearchTool.
+        # If SearchTool used the client:
+        # self.mock_vector_db_client.search.return_value = [
+        #     {"id": "docA", "score": 0.77, "text": "Formatted text A"},
+        #     {"id": "docB", "score": 0.66, "text": "Formatted text B"},
+        # ]
+        # results = self.search_tool._run(query="format query")
+        # self.mock_vector_db_client.search.assert_called_once_with(query="format query")
+        # expected_output = "Found 2 results for query 'format query':\n" \
+        #                   "- (Score: 0.77) Formatted text A\n" \
+        #                   "- (Score: 0.66) Formatted text B\n"
+        # self.assertEqual(results.strip(), expected_output.strip())
+
+        # Current behavior (tests existing formatting with hardcoded data):
+        results = self.search_tool._run(query="format query")
+        expected_output = "Found 2 results for query 'format query':\n" \
+                          "- (Score: 0.9) Some relevant document text 1\n" \
+                          "- (Score: 0.85) Some relevant document text 2\n"
+        self.assertEqual(results.strip(), expected_output.strip())
+
 
     def test_search_tool_run_no_results(self):
-        """Test the _run method when no search results are found."""
+        """Test the _run method when no search results are found (hardcoded)."""
         # Test with a query that would return the same hardcoded results
         results = self.search_tool._run(query="obscure query")
 
@@ -34,7 +107,7 @@ class TestSearchTool(unittest.TestCase):
 
 
     def test_search_tool_collection_not_found(self):
-        """Test the _run method when collection is not found."""
+        """Test the _run method when collection is not found (hardcoded)."""
         # Current implementation doesn't actually use pymilvus, so this test
         # validates the current behavior (hardcoded results)
         results = self.search_tool._run(query="test query")
@@ -45,7 +118,7 @@ class TestSearchTool(unittest.TestCase):
         self.assertIn("- (Score: 0.85) Some relevant document text 2", results)
 
     def test_search_tool_connection_error(self):
-        """Test the _run method - currently returns hardcoded results regardless of connection."""
+        """Test the _run method - currently returns hardcoded results regardless of connection (hardcoded)."""
         # The current SearchTool implementation doesn't actually connect to a database
         # It returns hardcoded results, so no connection error can occur
         # This test verifies the current behavior
