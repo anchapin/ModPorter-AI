@@ -8,10 +8,12 @@ let conversionState: {
   progress: number;
   conversionId?: string;
   error?: string | null;
+  originalFilename?: string;
 } = {
   status: ConversionStatusEnum.PENDING,
   progress: 0,
   error: null,
+  originalFilename: undefined,
 };
 
 export const resetConversionState = () => {
@@ -20,6 +22,7 @@ export const resetConversionState = () => {
     progress: 0,
     conversionId: undefined,
     error: null,
+    originalFilename: undefined,
   };
 };
 
@@ -28,20 +31,39 @@ export const setServerConversionId = (id: string) => {
 };
 
 export const handlers = [
+  // Handles a POST /api/v1/upload request
+  http.post(`${API_BASE_URL}/upload`, async ({ request }) => {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return HttpResponse.json({ detail: 'No file provided' }, { status: 400 });
+    }
+
+    const fileId = `mock-file-${Date.now()}`;
+    return HttpResponse.json({
+      file_id: fileId,
+      original_filename: file.name,
+      saved_filename: `${fileId}.jar`,
+      size: file.size,
+      content_type: file.type,
+      message: `File '${file.name}' saved successfully`,
+    });
+  }),
+
   // Handles a POST /api/v1/convert request
   http.post(`${API_BASE_URL}/convert`, async ({ request }) => {
     resetConversionState(); // Reset state for new conversion
-    const formData = await request.formData();
-    const file = formData.get('mod_file');
-    // const modUrl = formData.get('mod_url');
-
-    if (!file /* && !modUrl */) { // Simplified check for this example
-      return HttpResponse.json({ detail: 'No file or URL provided' }, { status: 400 });
+    const body = await request.json() as { file_id: string; original_filename: string; target_version?: string; options?: any };
+    
+    if (!body.file_id || !body.original_filename) {
+      return HttpResponse.json({ detail: 'file_id and original_filename are required' }, { status: 422 });
     }
 
     conversionState.conversionId = `mock-${Date.now()}`;
     conversionState.status = ConversionStatusEnum.PENDING; // Or ANALYZING if it starts quickly
     conversionState.progress = 10;
+    conversionState.originalFilename = body.original_filename;
 
     return HttpResponse.json({
       job_id: conversionState.conversionId,
@@ -101,11 +123,17 @@ export const handlers = [
     if (id !== conversionState.conversionId || conversionState.status !== ConversionStatusEnum.COMPLETED) {
       return HttpResponse.json({ detail: 'File not ready or not found' }, { status: 404 });
     }
+    
+    // Generate user-friendly filename from original filename
+    const originalFilename = conversionState.originalFilename || 'unknown';
+    const originalFilenameBase = originalFilename.split('.').slice(0, -1).join('.') || 'converted-mod';
+    const downloadFilename = `${originalFilenameBase}_converted.mcaddon`;
+    
     const blob = new Blob(['mock file content'], { type: 'application/octet-stream' });
     return new HttpResponse(blob, {
         headers: {
             'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${id}_converted.mcaddon"`,
+            'Content-Disposition': `attachment; filename="${downloadFilename}"`,
         }
     });
   }),
