@@ -7,21 +7,6 @@ from src.agents.asset_converter import AssetConverterAgent
 
 from pydub.exceptions import CouldntDecodeError
 
-class MockAudioSegment:
-    def __init__(self, duration=1.0):
-        self.duration_seconds = duration
-
-    @classmethod
-    def from_wav(cls, file):
-        return cls(1.0) # Default duration for WAV mock
-
-    @classmethod
-    def from_ogg(cls, file):
-        return cls(2.0) # Default duration for OGG mock
-
-    def export(self, out_f, format):
-        pass # Mock export, do nothing
-
 # Uses agent fixture from conftest.py
 
 @pytest.fixture
@@ -44,9 +29,9 @@ def dummy_txt_file(tmp_path: Path) -> str:
 
 # Patch AudioSegment for all tests in this file
 @pytest.fixture(autouse=True)
-def mock_pydub_loading():
-    with patch('src.agents.asset_converter.AudioSegment', MockAudioSegment) as mock_audio_segment:
-        yield mock_audio_segment
+def mock_pydub_loading(mock_audio_segment):
+    with patch('src.agents.asset_converter.AudioSegment', mock_audio_segment) as mock_audio_segment_patched:
+        yield mock_audio_segment_patched
 
 def test_convert_single_audio_wav_input(agent: AssetConverterAgent, dummy_wav_file: str):
     result = agent._convert_single_audio(dummy_wav_file, {}, "block.stone")
