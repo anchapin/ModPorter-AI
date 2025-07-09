@@ -30,12 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Create non-root user for security
-# This needs to happen before COPY . . so that file permissions are set correctly
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
-# Copy source code after user creation and chown to ensure correct permissions
-COPY . .
+RUN adduser --disabled-password --gecos '' appuser
+# Copy source code after user creation with correct permissions
+COPY --chown=appuser:appuser . .
 USER appuser
 
 # Create directories for models and cache
