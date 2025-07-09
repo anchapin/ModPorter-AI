@@ -78,8 +78,11 @@ class LogicTranslatorAgent:
         # Handle javalang AST types
         if hasattr(java_type, 'name'):
             type_name = java_type.name
+            # Check if it's an array type
+            if hasattr(java_type, 'dimensions') and java_type.dimensions:
+                type_name += '[]'
         elif hasattr(java_type, 'type') and hasattr(java_type.type, 'name'):
-            # Handle ReferenceType
+            # Handle nested ReferenceType
             type_name = java_type.type.name
             # Check if it's an array type
             if hasattr(java_type, 'dimensions') and java_type.dimensions:

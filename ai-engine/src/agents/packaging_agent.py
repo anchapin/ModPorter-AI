@@ -174,42 +174,63 @@ class PackagingAgent:
             else:
                 data = manifest_data if isinstance(manifest_data, dict) else {"error": "Invalid input format"}
             
-            # Extract package info
+            # Extract package info and pack types
             package_info = data.get("package_info", {})
             capabilities = data.get("capabilities", [])
+            pack_types = data.get("pack_types", [])
             
-            # Generate manifest
-            manifest = {
+            # Determine which packs to generate
+            has_behavior_pack = "behavior_pack" in pack_types or package_info.get("has_behavior_pack", False)
+            has_resource_pack = "resource_pack" in pack_types or package_info.get("has_resource_pack", False)
+            
+            # Use top-level fields if available, otherwise fall back to package_info
+            mod_name = data.get("mod_name", package_info.get("name", "Converted Mod"))
+            mod_description = data.get("mod_description", package_info.get("description", "Converted from Java mod"))
+            mod_version = data.get("mod_version", package_info.get("version", [1, 0, 0]))
+            
+            # Generate base manifest
+            base_manifest = {
                 "format_version": 2,
                 "header": {
-                    "name": package_info.get("name", "Converted Mod"),
-                    "description": package_info.get("description", "Converted from Java mod"),
+                    "name": mod_name,
+                    "description": mod_description,
                     "uuid": str(uuid.uuid4()),
-                    "version": package_info.get("version", [1, 0, 0]),
+                    "version": mod_version,
                     "min_engine_version": [1, 19, 0]
                 },
                 "modules": []
             }
             
-            # Add behavior pack module if needed
-            if package_info.get("has_behavior_pack", False):
-                manifest["modules"].append({
+            # Add capabilities
+            if capabilities:
+                base_manifest["capabilities"] = capabilities
+                
+            result = {
+                "success": True,
+                "files_created": []
+            }
+            
+            # Generate behavior pack manifest if needed
+            if has_behavior_pack:
+                behavior_manifest = copy.deepcopy(base_manifest)
+                behavior_manifest["header"]["name"] = f"{mod_name} Behavior Pack"
+                behavior_manifest["modules"].append({
                     "type": "data",
                     "uuid": str(uuid.uuid4()),
                     "version": [1, 0, 0]
                 })
+                result["behavior_pack_manifest"] = behavior_manifest
             
-            # Add resource pack module if needed
-            if package_info.get("has_resource_pack", False):
-                manifest["modules"].append({
+            # Generate resource pack manifest if needed
+            if has_resource_pack:
+                resource_manifest = copy.deepcopy(base_manifest)
+                resource_manifest["header"]["name"] = f"{mod_name} Resource Pack"
+                resource_manifest["modules"].append({
                     "type": "resources",
                     "uuid": str(uuid.uuid4()),
                     "version": [1, 0, 0]
                 })
-            
-            # Add capabilities
-            if capabilities:
-                manifest["capabilities"] = capabilities
+                result["resource_pack_manifest"] = resource_manifest
             
             # Create output directory structure
             output_dir = package_info.get("output_directory", "")
@@ -217,42 +238,28 @@ class PackagingAgent:
                 output_path = Path(output_dir)
                 
                 # Create behavior pack directory if needed
-                if package_info.get("has_behavior_pack", False):
+                if has_behavior_pack and "behavior_pack_manifest" in result:
                     bp_dir = output_path / "behavior_pack"
                     bp_dir.mkdir(parents=True, exist_ok=True)
                     
                     # Write behavior pack manifest
-                    bp_manifest = copy.deepcopy(manifest)
-                    bp_manifest["modules"] = [m for m in bp_manifest["modules"] if m["type"] == "data"]
-                    
                     with open(bp_dir / "manifest.json", "w") as f:
-                        json.dump(bp_manifest, f, indent=2)
+                        json.dump(result["behavior_pack_manifest"], f, indent=2)
+                    
+                    result["behavior_manifest_path"] = f"{output_dir}/behavior_pack/manifest.json"
+                    result["files_created"].append(result["behavior_manifest_path"])
                 
                 # Create resource pack directory if needed
-                if package_info.get("has_resource_pack", False):
+                if has_resource_pack and "resource_pack_manifest" in result:
                     rp_dir = output_path / "resource_pack"
                     rp_dir.mkdir(parents=True, exist_ok=True)
                     
                     # Write resource pack manifest
-                    rp_manifest = copy.deepcopy(manifest)
-                    rp_manifest["modules"] = [m for m in rp_manifest["modules"] if m["type"] == "resources"]
-                    
                     with open(rp_dir / "manifest.json", "w") as f:
-                        json.dump(rp_manifest, f, indent=2)
-            
-            result = {
-                "success": True,
-                "manifest": manifest,
-                "files_created": []
-            }
-            
-            if package_info.get("has_behavior_pack"):
-                result["behavior_manifest_path"] = f"{output_dir}/behavior_pack/manifest.json"
-                result["files_created"].append(result["behavior_manifest_path"])
-            
-            if package_info.get("has_resource_pack"):
-                result["resource_manifest_path"] = f"{output_dir}/resource_pack/manifest.json"
-                result["files_created"].append(result["resource_manifest_path"])
+                        json.dump(result["resource_pack_manifest"], f, indent=2)
+                    
+                    result["resource_manifest_path"] = f"{output_dir}/resource_pack/manifest.json"
+                    result["files_created"].append(result["resource_manifest_path"])
             
             return json.dumps(result)
             
