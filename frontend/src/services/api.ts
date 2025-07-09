@@ -3,7 +3,15 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api';
+import {
+  ConversionRequest,
+  ConversionResponse,
+  ConversionStatus,
+  UploadResponse,
+  InitiateConversionParams,
+  FeedbackCreatePayload, // Added
+  FeedbackResponse // Added
+} from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
@@ -211,4 +219,21 @@ export const performanceBenchmarkAPI = {
     
     return { data: await response.json() };
   },
+};
+
+export const submitFeedback = async (payload: FeedbackCreatePayload): Promise<FeedbackResponse> => {
+  const response = await fetch(`${API_BASE_URL}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Unknown error submitting feedback' }));
+    throw new ApiError(errorData.detail || 'Failed to submit feedback', response.status);
+  }
+
+  return response.json();
 };
