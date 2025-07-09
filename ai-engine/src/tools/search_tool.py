@@ -1,6 +1,9 @@
 import importlib
+import logging
 from crewai.tools import BaseTool
-from ai_engine.src.utils.config import Config
+from ..utils.config import Config
+
+logger = logging.getLogger(__name__)
 
 class SearchTool(BaseTool):
     name: str = "Search Tool"
@@ -33,8 +36,8 @@ class SearchTool(BaseTool):
             if Config.SEARCH_FALLBACK_ENABLED:
                 tool_name = Config.FALLBACK_SEARCH_TOOL
                 # Construct module and class names
-                # e.g., "web_search_tool" -> module "ai_engine.src.tools.web_search_tool", class "WebSearchTool"
-                module_path = f"ai_engine.src.tools.{tool_name}"
+                # e.g., "web_search_tool" -> module "src.tools.web_search_tool", class "WebSearchTool"
+                module_path = f"src.tools.{tool_name}"
                 class_name_parts = [part.capitalize() for part in tool_name.split('_')]
                 class_name = "".join(class_name_parts)
 
@@ -43,7 +46,7 @@ class SearchTool(BaseTool):
                     FallbackToolClass = getattr(module, class_name)
                     fallback_tool_instance = FallbackToolClass()
                     # Assuming the fallback tool also has a _run method
-                    print(f"Primary search failed, attempting fallback with {tool_name}")
+                    logger.info(f"Primary search failed, attempting fallback with {tool_name}")
                     return fallback_tool_instance._run(query=query)
                 except ImportError:
                     # Log or handle the error that the module couldn't be imported
@@ -57,7 +60,7 @@ class SearchTool(BaseTool):
 
         # Format and return original results if not empty or fallback not used
         if not search_results: # If still no results after potential fallback failure
-             return f"No results found for query '{query}' after attempting primary search and potential fallback."
+            return f"No results found for query '{query}' after attempting primary search and potential fallback."
 
         formatted_results = f"Found {len(search_results)} results for query '{query}':\n"
         for result in search_results:
@@ -68,7 +71,7 @@ class SearchTool(BaseTool):
 # Example usage (optional, for testing purposes):
 # if __name__ == "__main__":
 #     # To test fallback, ensure SEARCH_FALLBACK_ENABLED=true and FALLBACK_SEARCH_TOOL=your_tool in .env
-#     # And that your_tool.py exists with YourTool class in ai_engine/src/tools/
+#     # And that your_tool.py exists with YourTool class in src/tools/
 #     search_tool = SearchTool()
 #     sample_query = "What are the latest advancements in AI?"
 #     output = search_tool._run(sample_query)

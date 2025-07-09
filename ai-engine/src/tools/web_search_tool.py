@@ -1,4 +1,7 @@
+import logging
 from crewai.tools import BaseTool
+
+logger = logging.getLogger(__name__)
 
 class WebSearchTool(BaseTool):
     name: str = "Web Search Tool"
@@ -10,7 +13,7 @@ class WebSearchTool(BaseTool):
         """
         # In a real scenario, this method would use a search engine API (e.g., Google, Bing)
         # to fetch actual search results.
-        print(f"WebSearchTool: Received query - {query}")
+        logger.info(f"WebSearchTool: Received query - {query}")
         return f"Simulated web search results for query '{query}': Found some information online about the topic."
 
 # Example usage (optional, for testing purposes):
