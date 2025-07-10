@@ -1,9 +1,6 @@
 import os
 import pytest
 from pathlib import Path
-import os
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # (Keep MODS_TO_TEST and compare_addons as they are)
@@ -63,12 +60,12 @@ def test_mod_conversion_comparison(mod_name, java_mod_fixture, downloaded_addon_
     output_directory.mkdir() # Ensure output directory exists
 
     # Mock ModPorterConversionCrew.convert_mod
-    mock_convert_mod = mocker.patch('ai_engine.src.crew.conversion_crew.ModPorterConversionCrew.convert_mod')
+    mock_convert_mod = mocker.patch('src.crew.conversion_crew.ModPorterConversionCrew.convert_mod')
     
     # Configure the mock to return a successful conversion result
     # This simulates the creation of a dummy .mcaddon file in the output directory
     dummy_mcaddon_path = output_directory / f"{mod_name}_converted.mcaddon"
-    dummy_mcaddon_path.write_text("dummy mcaddon content") # Create a dummy file
+    dummy_mcaddon_path.write_text("dummy mcaddon content data!") # Create a dummy file closer in size
     
     mock_convert_mod.return_value = {
         'status': 'completed',

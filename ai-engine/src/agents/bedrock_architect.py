@@ -300,8 +300,6 @@ class BedrockArchitectAgent:
             error_response = {"error": f"Failed to validate compatibility: {str(e)}"}
             logger.error(f"Compatibility validation error: {e}")
             return json.dumps(error_response)
-<<<<<<< HEAD
-=======
     
     def _get_conversion_recommendation(self, analysis_result: AssumptionResult) -> str:
         """Get conversion recommendation based on analysis result"""
