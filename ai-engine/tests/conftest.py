@@ -9,7 +9,26 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 # Set test environment variables
 os.environ["OPENAI_API_KEY"] = "test-key"
 os.environ["ANTHROPIC_API_KEY"] = "test-key"
-os.environ["MOCK_AI_RESPONSES"] = "true"
+
+# Configure LLM provider for tests
+# Options: "ollama", "openai"
+llm_provider = os.getenv("TEST_LLM_PROVIDER", "ollama")
+
+if llm_provider == "ollama":
+    os.environ["USE_OLLAMA"] = "true"
+    os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
+    os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    print(f"🦙 Using Ollama for tests with model: {os.environ['OLLAMA_MODEL']}")
+elif llm_provider == "openai":
+    os.environ["USE_OLLAMA"] = "false"
+    # Requires real OPENAI_API_KEY
+    print("🤖 Using OpenAI for tests")
+else:
+    # Fallback to Ollama as default
+    os.environ["USE_OLLAMA"] = "true"
+    os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
+    os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    print(f"🦙 Using Ollama as fallback for tests with model: {os.environ['OLLAMA_MODEL']}")
 
 @pytest.fixture
 def mock_openai_client():

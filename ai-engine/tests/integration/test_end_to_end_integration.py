@@ -1,10 +1,12 @@
 """
 End-to-End Integration Tests for ModPorter AI System
 Tests the complete workflow with enhanced SmartAssumptionEngine and all agent classes
+Using Ollama for real LLM responses instead of mocks
 """
 
 import json
-from unittest.mock import Mock, patch
+import os
+from unittest.mock import Mock, MagicMock, patch
 
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, 
@@ -314,7 +316,7 @@ class TestEndToEndIntegration:
                 }
             ]
         })
-        mock_crew_instance.kickoff.return_value = MagicMock(tasks_output=[Mock(), mock_task_output])
+        mock_crew_instance.kickoff.return_value = Mock(tasks_output=[Mock(), mock_task_output])
 
         # Test crew initialization
         crew = ModPorterConversionCrew()

@@ -26,7 +26,7 @@ from src.agents.qa_validator import QAValidatorAgent
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
 from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
-from src.utils.rate_limiter import create_rate_limited_llm, get_fallback_llm
+from src.utils.rate_limiter import create_rate_limited_llm, get_fallback_llm, create_ollama_llm
 
 logger = logging.getLogger(__name__)
 
@@ -38,50 +38,32 @@ class ModPorterConversionCrew:
     """
     
     def __init__(self, model_name: str = "gpt-4"):
-        # Use mock LLM in test environment
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        # Check for Ollama configuration
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             try:
-                # Try importing from the current project structure
-                import sys
-                from pathlib import Path
-                test_dir = Path(__file__).parent.parent.parent / "tests" / "mocks"
-                sys.path.insert(0, str(test_dir))
-                from mock_llm import MockLLM
-                self.llm = MockLLM(responses=[
-                    "Mock analysis complete",
-                    "Mock conversion plan generated", 
-                    "Mock translation complete",
-                    "Mock assets converted",
-                    "Mock package built",
-                    "Mock validation passed",
-                    "Mock comprehensive QA complete" # Added for new QAAgent
-                ])
-            except ImportError:
-                # Fallback if mock not available
-                from unittest.mock import MagicMock
-                self.llm = MagicMock()
-                self.llm.predict.return_value = "Mock response"
+                ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+                logger.info(f"Using Ollama with model: {ollama_model}")
+                self.llm = create_ollama_llm(
+                    model_name=ollama_model,
+                    temperature=0.1,
+                    max_tokens=4000
+                )
+                logger.info("Successfully initialized Ollama LLM")
+            except Exception as e:
+                logger.error(f"Failed to initialize Ollama LLM: {e}")
+                raise RuntimeError(f"Ollama LLM initialization failed: {e}")
         else:
             try:
-                # Use rate-limited LLM with proper error handling
+                # Use OpenAI with rate limiting for production
                 self.llm = create_rate_limited_llm(
                     model_name=model_name,
                     temperature=0.1,  # Low temperature for consistent technical output
                     max_tokens=4000
                 )
-                logger.info(f"Initialized rate-limited LLM with model: {model_name}")
+                logger.info(f"Initialized OpenAI LLM with model: {model_name}")
             except Exception as e:
-                # Fallback for OpenAI unavailability
-                logger.warning(f"Failed to initialize OpenAI LLM: {e}")
-                logger.info("Attempting to use fallback LLM")
-                try:
-                    self.llm = get_fallback_llm()
-                except Exception as fallback_error:
-                    logger.error(f"Fallback LLM also failed: {fallback_error}")
-                    from unittest.mock import MagicMock
-                    self.llm = MagicMock()
-                    self.llm.invoke.return_value = "Mock response due to LLM unavailability"
-                    self.llm.generate.return_value = "Mock response due to LLM unavailability"
+                logger.error(f"Failed to initialize OpenAI LLM: {e}")
+                raise RuntimeError(f"OpenAI LLM initialization failed: {e}. Please check your API key and configuration.")
         
         self.smart_assumption_engine = SmartAssumptionEngine()
         self._setup_agents()
@@ -116,7 +98,7 @@ class ModPorterConversionCrew:
         }
         
         # Disable memory in test environment to avoid validation issues
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             agent_kwargs["memory"] = False
         
         self.java_analyzer = Agent(**agent_kwargs)
@@ -135,7 +117,7 @@ class ModPorterConversionCrew:
             "tools": self.bedrock_architect_agent.get_tools()
         }
         
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             architect_kwargs["memory"] = False
         
         self.bedrock_architect = Agent(**architect_kwargs)
@@ -153,7 +135,7 @@ class ModPorterConversionCrew:
             "tools": self.logic_translator_agent.get_tools()
         }
         
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             translator_kwargs["memory"] = False
             
         self.logic_translator = Agent(**translator_kwargs)
@@ -171,7 +153,7 @@ class ModPorterConversionCrew:
             "tools": self.asset_converter_agent.get_tools()
         }
         
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             asset_kwargs["memory"] = False
             
         self.asset_converter = Agent(**asset_kwargs)
@@ -189,7 +171,7 @@ class ModPorterConversionCrew:
             "tools": self.packaging_agent_instance.get_tools()
         }
         
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             packaging_kwargs["memory"] = False
             
         self.packaging_agent = Agent(**packaging_kwargs)
@@ -207,7 +189,7 @@ class ModPorterConversionCrew:
             "tools": self.qa_validator_agent.get_tools()
         }
         
-        if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+        if os.getenv("USE_OLLAMA", "false").lower() == "true":
             qa_kwargs["memory"] = False
             
         self.qa_validator = Agent(**qa_kwargs)
@@ -432,13 +414,6 @@ class ModPorterConversionCrew:
                     'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [f'Mod file not found: {mod_path}']}
                 }
             
-            # Check if we should use test mode (when OpenAI is not available)
-            if hasattr(self.llm, 'model_name') and self.llm.model_name == 'mock-llm':
-                logger.info("Using test mode - returning mock conversion results")
-                return self._generate_mock_conversion_result(mod_path, output_path, smart_assumptions, include_dependencies)
-            
-            
-            
             # Prepare inputs for the crew
             inputs = {
                 'mod_path': str(mod_path),
@@ -463,13 +438,11 @@ class ModPorterConversionCrew:
                 # Check if crew execution failed or returned invalid result
                 if result is None or (hasattr(result, 'raw') and not result.raw):
                     logger.error(f"Crew execution failed - no valid result returned")
-                    logger.info("Falling back to test mode due to crew execution failure")
-                    return self._generate_mock_conversion_result(mod_path, output_path, smart_assumptions, include_dependencies)
+                    raise RuntimeError("Crew execution failed - no valid result returned")
                     
             except Exception as crew_error:
                 logger.error(f"Crew execution failed: {crew_error}")
-                logger.info("Falling back to test mode due to crew execution failure")
-                return self._generate_mock_conversion_result(mod_path, output_path, smart_assumptions, include_dependencies)
+                raise RuntimeError(f"Crew execution failed: {crew_error}")
             
             # Extract conversion plan components for assumption reporting
             plan_components = self._extract_plan_components(result)
@@ -493,83 +466,6 @@ class ModPorterConversionCrew:
                 'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
             }
     
-    def _generate_mock_conversion_result(self, mod_path: Path, output_path: Path, smart_assumptions: bool, include_dependencies: bool) -> Dict[str, Any]:
-        """Generate mock conversion results for testing when OpenAI is not available"""
-        import time
-        import os
-        
-        # Create a mock .mcaddon file for testing
-        mock_mcaddon_path = output_path
-        mock_mcaddon_dir = os.path.dirname(mock_mcaddon_path)
-        os.makedirs(mock_mcaddon_dir, exist_ok=True)
-        
-        # Create a simple zip file to simulate the .mcaddon
-        import zipfile
-        with zipfile.ZipFile(mock_mcaddon_path, 'w') as zf:
-            zf.writestr('manifest.json', '{"name": "Mock Conversion", "version": "1.0.0"}')
-            zf.writestr('pack_icon.png', b'fake_icon_data')
-            zf.writestr('BP/manifest.json', '{"name": "Behavior Pack", "version": "1.0.0"}')
-            zf.writestr('RP/manifest.json', '{"name": "Resource Pack", "version": "1.0.0"}')
-        
-        logger.info(f"Created mock .mcaddon file at: {mock_mcaddon_path}")
-        
-        return {
-            'status': 'completed',
-            'overall_success_rate': 0.85,
-            'converted_mods': [
-                {
-                    'name': os.path.basename(str(mod_path)),
-                    'original_path': str(mod_path),
-                    'converted_path': str(mock_mcaddon_path),
-                    'conversion_time': 45.2,
-                    'features_converted': [
-                        'Custom Blocks (3 blocks)',
-                        'Textures (12 textures)',
-                        'Crafting Recipes (5 recipes)',
-                        'Basic Items (8 items)'
-                    ],
-                    'success_rate': 0.85
-                }
-            ],
-            'failed_mods': [],
-            'smart_assumptions_applied': [
-                {
-                    'feature_type': 'custom_gui',
-                    'original_description': 'Custom inventory GUI',
-                    'assumption_applied': 'book_interface',
-                    'reason': 'Bedrock does not support custom GUIs - converted to book-based interface',
-                    'impact': 'Medium - functionality preserved but UI changed'
-                },
-                {
-                    'feature_type': 'complex_machinery',
-                    'original_description': 'Multi-block machinery system',
-                    'assumption_applied': 'simplified_blocks',
-                    'reason': 'Complex machinery simplified to individual blocks',
-                    'impact': 'High - some automation features lost'
-                }
-            ],
-            'download_url': f'/download/{os.path.basename(mock_mcaddon_path)}',
-            'detailed_report': {
-                'stage': 'completed',
-                'progress': 100,
-                'logs': [
-                    'Mock conversion started',
-                    'Analyzed Java mod structure',
-                    'Applied smart assumptions for incompatible features',
-                    'Converted textures and models',
-                    'Generated Bedrock scripts',
-                    'Created .mcaddon package',
-                    'Mock conversion completed successfully'
-                ],
-                'conversion_summary': {
-                    'total_files_processed': 45,
-                    'assets_converted': 20,
-                    'scripts_generated': 8,
-                    'smart_assumptions_count': 2,
-                    'estimated_functionality': '85%'
-                }
-            }
-        }
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
         """Extract conversion plan components from crew result for assumption reporting"""

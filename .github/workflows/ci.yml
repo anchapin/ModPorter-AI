@@ -205,10 +205,27 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
 
-  # AI Engine Tests
+  # AI Engine Tests - Matrix Strategy with Self-hosted Runner Support
   ai-engine-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          # Unit tests on GitHub-hosted runners
+          - test-type: unit
+            runs-on: ubuntu-latest
+            timeout: 15
+          # Integration tests on self-hosted runner with Ollama
+          - test-type: integration-ollama
+            runs-on: [self-hosted, ollama]
+            timeout: 30
+          # Integration tests on GitHub-hosted runner with OpenAI API
+          - test-type: integration-openai
+            runs-on: ubuntu-latest
+            timeout: 20
+      fail-fast: false  # Continue other tests even if one fails
+    
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: ${{ matrix.timeout }}
     
     steps:
     - uses: actions/checkout@v4
@@ -226,21 +243,82 @@ jobs:
         pip install -r requirements.txt
         pip install ruff  # Ensure ruff is installed for linting
     
-    - name: Run AI engine tests
+    - name: Run linting
       run: |
         cd ai-engine
-        python -m pytest --cov=src tests/ --cov-report=xml
+        if command -v ruff >/dev/null 2>&1; then
+          ruff check . || echo "Linting issues found but continuing..."
+        else
+          echo "Ruff not found, skipping linting"
+        fi
+    
+    - name: Run unit tests
+      if: matrix.test-type == 'unit'
+      run: |
+        cd ai-engine
+        python -m pytest --cov=src tests/ --ignore=tests/integration/ --cov-report=xml -v
       env:
         # Mock API keys for testing
         OPENAI_API_KEY: "test-key"
         ANTHROPIC_API_KEY: "test-key"
+    
+    - name: Check Ollama availability
+      if: matrix.test-type == 'integration-ollama'
+      run: |
+        echo "Checking Ollama availability..."
+        if command -v ollama >/dev/null 2>&1; then
+          echo "✅ Ollama CLI found"
+          if curl -f http://localhost:11434/api/version >/dev/null 2>&1; then
+            echo "✅ Ollama server is running"
+            # Check if model is available
+            if ollama list | grep -q "llama3.2"; then
+              echo "✅ Model llama3.2 is available"
+            else
+              echo "❌ Model llama3.2 not found. Pulling..."
+              ollama pull llama3.2
+            fi
+          else
+            echo "❌ Ollama server not running. Please start with 'ollama serve'"
+            exit 1
+          fi
+        else
+          echo "❌ Ollama not installed. Please install Ollama first."
+          exit 1
+        fi
+    
+    - name: Run integration tests with Ollama
+      if: matrix.test-type == 'integration-ollama'
+      run: |
+        cd ai-engine
+        python -m pytest tests/integration/ --cov=src --cov-report=xml -v
+      env:
+        TEST_LLM_PROVIDER: "ollama"
+        USE_OLLAMA: "true"
+        OLLAMA_MODEL: "llama3.2"
+        OLLAMA_BASE_URL: "http://localhost:11434"
+    
+    - name: Run integration tests with OpenAI
+      if: matrix.test-type == 'integration-openai' && secrets.OPENAI_API_KEY != ''
+      run: |
+        cd ai-engine
+        python -m pytest tests/integration/ --cov=src --cov-report=xml -v
+      env:
+        TEST_LLM_PROVIDER: "openai"
+        USE_OLLAMA: "false"
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    
+    - name: Skip OpenAI tests (no API key)
+      if: matrix.test-type == 'integration-openai' && secrets.OPENAI_API_KEY == ''
+      run: |
+        echo "⚠️  Skipping OpenAI integration tests - no API key available"
+        echo "To enable OpenAI integration tests, add OPENAI_API_KEY to repository secrets"
     
     - name: Upload AI engine coverage
       if: always()
       uses: codecov/codecov-action@v5
       with:
         directory: ./ai-engine
-        flags: ai-engine
+        flags: ai-engine-${{ matrix.test-type }}
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
 

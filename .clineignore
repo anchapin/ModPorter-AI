@@ -1,0 +1,124 @@
+# Dependencies and package managers
+node_modules/
+.pnpm/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+ai-engine/venv/
+backend/venv/
+frontend/venv/
+*/venv/
+*/env/
+*/.venv/
+frontend/node_modules/
+backend/node_modules/
+ai-engine/node_modules/
+*/node_modules/
+**/.pnpm/
+**/node_modules/.pnpm/
+**/node_modules/.ignored*/
+**/node_modules/**/node_modules/
+
+# Build outputs and artifacts
+dist/
+build/
+htmlcov/
+coverage.xml
+.coverage
+.pytest_cache/
+*.egg-info/
+site-packages/
+lib/python*/
+lib64/
+bin/python*
+include/python*/
+share/man/
+pyvenv.cfg
+
+# Temporary and upload files
+temp_uploads/
+conversion_outputs/
+*.tmp
+*.temp
+temp_uploads/BoB_extracted/
+temp_uploads/*_extracted/
+*_extracted/
+
+# Large binary and archive files
+*.jar
+*.war
+*.ear
+*.zip
+*.mcaddon
+*.class
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS and system files
+.DS_Store
+Thumbs.db
+
+# Environment and configuration files
+.env
+.env.*
+
+# Documentation temp files
+*.md:Zone.Identifier
+
+# Frontend build artifacts
+storybook-static/
+dist-storybook/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Test and coverage artifacts
+coverage/
+.nyc_output/
+.vitest/
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Documentation temp files
+*.md:Zone.Identifier
+
+# Storybook
+storybook-static/
+dist-storybook/
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
