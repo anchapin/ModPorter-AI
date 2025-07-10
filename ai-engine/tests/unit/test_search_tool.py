@@ -167,6 +167,7 @@ class TestSearchTool(unittest.TestCase):
             result = SearchTool.semantic_search.func("test query")
             result_data = json.loads(result)
             self.assertIn("error", result_data)
+<<<<<<< HEAD
 
     @patch.object(SearchTool, '_perform_semantic_search')
     def test_fallback_search_when_primary_fails(self, mock_primary_search):
