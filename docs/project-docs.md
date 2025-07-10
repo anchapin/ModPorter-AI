@@ -125,6 +125,24 @@ pytest --cov=src tests/
 - Conversion workflow testing
 - Mock LLM response testing
 
+#### RAG Testing Suite
+```bash
+cd ai-engine
+# Run RAG-specific tests
+pytest tests/test_rag_crew.py tests/unit/test_embedding_generator.py tests/integration/test_rag_workflow.py -v
+
+# Run RAG evaluation suite
+python src/testing/rag_evaluator.py
+
+# Check RAG code quality
+python check_code_quality.py
+```
+- RAG crew functionality testing
+- Embedding generation and vector database testing
+- End-to-end RAG workflow validation
+- Knowledge retrieval accuracy assessment
+- Performance metrics and evaluation
+
 ## Code Style
 
 ### TypeScript/React (Frontend)
