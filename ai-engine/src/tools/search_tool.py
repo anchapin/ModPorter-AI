@@ -1,13 +1,15 @@
 """
 SearchTool implementation for RAG workflow agents.
-Provides semantic search capabilities using the existing vector database.
+Provides semantic search capabilities using the existing vector database with fallback mechanism.
 """
 
 import json
 import logging
+import importlib
 from typing import List, Dict, Any, Optional
 from crewai.tools import tool
 from ..utils.vector_db_client import VectorDBClient
+from ..utils.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 class SearchTool:
     """
     SearchTool for semantic search across indexed documents.
-    Integrates with the existing vector database infrastructure.
+    Integrates with the existing vector database infrastructure and includes fallback mechanism.
     """
     
     _instance = None
@@ -80,6 +82,14 @@ class SearchTool:
                 document_source=document_source
             )
             
+            # Check if results are insufficient and fallback is enabled
+            if not results and Config.SEARCH_FALLBACK_ENABLED:
+                logger.info("Primary semantic search returned no results, attempting fallback")
+                fallback_results = tool_instance._attempt_fallback_search(query, limit)
+                if fallback_results:
+                    results = fallback_results
+                    logger.info(f"Fallback search returned {len(results)} results")
+            
             response = {
                 "query": query,
                 "results": results,
@@ -133,6 +143,14 @@ class SearchTool:
                 document_source=document_source,
                 content_type=content_type
             )
+            
+            # Check if results are insufficient and fallback is enabled
+            if not results and Config.SEARCH_FALLBACK_ENABLED:
+                logger.info("Primary document search returned no results, attempting fallback")
+                fallback_results = tool_instance._attempt_fallback_search(document_source, 10)
+                if fallback_results:
+                    results = fallback_results
+                    logger.info(f"Fallback search returned {len(results)} results")
             
             response = {
                 "document_source": document_source,
@@ -190,6 +208,14 @@ class SearchTool:
                 threshold=threshold,
                 limit=limit
             )
+            
+            # Check if results are insufficient and fallback is enabled
+            if not results and Config.SEARCH_FALLBACK_ENABLED:
+                logger.info("Primary similarity search returned no results, attempting fallback")
+                fallback_results = tool_instance._attempt_fallback_search(content[:100], limit)
+                if fallback_results:
+                    results = fallback_results
+                    logger.info(f"Fallback search returned {len(results)} results")
             
             response = {
                 "reference_content": content[:100] + "..." if len(content) > 100 else content,
@@ -313,6 +339,71 @@ class SearchTool:
             
         except Exception as e:
             logger.error(f"Semantic search execution failed: {str(e)}")
+            return []
+    
+    def _attempt_fallback_search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Attempt to use fallback search tool when primary search fails.
+        
+        This method implements the fallback mechanism by dynamically importing
+        and instantiating the configured fallback tool. It handles various error
+        scenarios gracefully and logs appropriate messages.
+        
+        Args:
+            query: Search query string
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of search results from fallback tool in standardized format,
+            or empty list if fallback fails or is disabled
+        """
+        if not Config.SEARCH_FALLBACK_ENABLED:
+            logger.info("Fallback search is disabled")
+            return []
+        
+        tool_name = Config.FALLBACK_SEARCH_TOOL
+        logger.info(f"Attempting fallback search with {tool_name}")
+        
+        try:
+            # Construct module and class names
+            module_path = f"src.tools.{tool_name}"
+            class_name_parts = [part.capitalize() for part in tool_name.split('_')]
+            class_name = "".join(class_name_parts)
+            
+            # Import and instantiate fallback tool
+            module = importlib.import_module(module_path)
+            FallbackToolClass = getattr(module, class_name)
+            fallback_tool_instance = FallbackToolClass()
+            
+            # Execute fallback search
+            fallback_result = fallback_tool_instance._run(query=query)
+            
+            # Convert fallback result to expected format
+            if isinstance(fallback_result, str):
+                # Parse fallback result and convert to our expected format
+                fallback_results = [{
+                    "id": "fallback_0",
+                    "content": fallback_result,
+                    "document_source": "fallback_search",
+                    "similarity_score": 0.7,
+                    "metadata": {
+                        "indexed_at": "2025-01-09T00:00:00Z",
+                        "content_type": "text",
+                        "source": "fallback"
+                    }
+                }]
+                return fallback_results[:limit]
+            
+            return []
+            
+        except ImportError as e:
+            logger.error(f"Fallback tool '{tool_name}' module not found at '{module_path}': {str(e)}")
+            return []
+        except AttributeError as e:
+            logger.error(f"Fallback tool class '{class_name}' not found in module '{module_path}': {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Error during fallback to {tool_name}: {str(e)}")
             return []
     
     def _search_by_document_source(self, document_source: str, content_type: Optional[str] = None) -> List[Dict[str, Any]]:
