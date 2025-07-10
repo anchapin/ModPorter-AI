@@ -295,20 +295,19 @@ jobs:
         OLLAMA_BASE_URL: "http://localhost:11434"
     
     - name: Run integration tests with OpenAI
-      if: matrix.test-type == 'integration-openai' && secrets.OPENAI_API_KEY != ''
+      if: matrix.test-type == 'integration-openai'
       run: |
         cd ai-engine
+        if [ -z "$OPENAI_API_KEY" ]; then
+          echo "⚠️  Skipping OpenAI integration tests - no API key available"
+          echo "To enable OpenAI integration tests, add OPENAI_API_KEY to repository secrets"
+          exit 0
+        fi
         python -m pytest tests/integration/ --cov=src --cov-report=xml -v
       env:
         TEST_LLM_PROVIDER: "openai"
         USE_OLLAMA: "false"
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    
-    - name: Skip OpenAI tests (no API key)
-      if: matrix.test-type == 'integration-openai' && secrets.OPENAI_API_KEY == ''
-      run: |
-        echo "⚠️  Skipping OpenAI integration tests - no API key available"
-        echo "To enable OpenAI integration tests, add OPENAI_API_KEY to repository secrets"
     
     - name: Upload AI engine coverage
       if: always()
