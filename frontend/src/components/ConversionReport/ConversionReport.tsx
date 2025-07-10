@@ -3,14 +3,16 @@
  * Visual, comprehensive reporting of conversion results
  */
 
-import React from 'react';
+import React, { useState } from 'react'; // Added useState
 import type {
   InteractiveReport,
   ModConversionStatus,
+  FeedbackCreatePayload, // Added
   AssumptionDetail,
   FeatureConversionDetail,
   LogEntry,
 } from '../../types/api';
+import { submitFeedback } from '../../services/api'; // Added
 
 interface ConversionReportProps {
   conversionResult: InteractiveReport;
@@ -58,6 +60,54 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
   jobStatus
 }) => {
+  // Feedback state
+  const [feedbackType, setFeedbackType] = useState<'thumbs_up' | 'thumbs_down' | null>(null);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+  const [submitMessage, setSubmitMessage] = useState('');
+
+  // Feedback handlers
+  const handleFeedbackTypeChange = (type: 'thumbs_up' | 'thumbs_down') => {
+    if (feedbackType === type) {
+      setFeedbackType(null); // Deselect if clicking the same button
+    } else {
+      setFeedbackType(type);
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackType) {
+      setSubmitStatus('error');
+      setSubmitMessage('Please select thumbs up or thumbs down.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    setSubmitMessage('');
+
+    try {
+      const payload: FeedbackCreatePayload = {
+        job_id: conversionResult.job_id,
+        feedback_type: feedbackType,
+        comment: comment || null,
+        user_id: undefined, // Not implemented yet
+      };
+
+      await submitFeedback(payload);
+      setFeedbackSubmitted(true);
+      setSubmitStatus('success');
+      setSubmitMessage('Thank you for your feedback!');
+    } catch (error) {
+      setSubmitStatus('error');
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to submit feedback');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Shared styling for mod cards
   const modCardStyle: React.CSSProperties = {
     border: '1px solid #e5e7eb', 
@@ -137,6 +187,92 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
           </a>
         </div>
       )}
+
+      {/* Feedback Section */}
+      <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#333' }}>Rate this Conversion</h3>
+        {feedbackSubmitted ? (
+          <div style={{ color: submitStatus === 'success' ? 'green' : 'red', padding: '1rem', border: `1px solid ${submitStatus === 'success' ? 'green' : 'red'}`, borderRadius: '4px', backgroundColor: submitStatus === 'success' ? '#f0fff4' : '#fff0f0' }}>
+            {submitMessage}
+          </div>
+        ) : (
+          <>
+            <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => handleFeedbackTypeChange('thumbs_up')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '1.25rem',
+                  border: feedbackType === 'thumbs_up' ? '2px solid #2563eb' : '1px solid #ccc',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  backgroundColor: feedbackType === 'thumbs_up' ? '#dbeafe' : 'white',
+                  boxShadow: feedbackType === 'thumbs_up' ? '0 0 5px rgba(59, 130, 246, 0.5)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                aria-pressed={feedbackType === 'thumbs_up'}
+                title="Thumbs Up"
+              >
+                👍
+              </button>
+              <button
+                onClick={() => handleFeedbackTypeChange('thumbs_down')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '1.25rem',
+                  border: feedbackType === 'thumbs_down' ? '2px solid #ef4444' : '1px solid #ccc',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  backgroundColor: feedbackType === 'thumbs_down' ? '#fee2e2' : 'white',
+                  boxShadow: feedbackType === 'thumbs_down' ? '0 0 5px rgba(239, 68, 68, 0.5)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                aria-pressed={feedbackType === 'thumbs_down'}
+                title="Thumbs Down"
+              >
+                👎
+              </button>
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Optional: Add any comments here..."
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #ccc',
+                borderRadius: '6px',
+                marginBottom: '1rem',
+                boxSizing: 'border-box',
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '0.95rem',
+              }}
+              disabled={isSubmitting}
+            />
+            <button
+              onClick={handleFeedbackSubmit}
+              disabled={isSubmitting || !feedbackType}
+              style={{
+                backgroundColor: isSubmitting || !feedbackType ? '#ccc' : '#2563eb',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: isSubmitting || !feedbackType ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                opacity: isSubmitting || !feedbackType ? 0.7 : 1,
+              }}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+            </button>
+            {submitStatus === 'error' && submitMessage && (
+              <p style={{ color: 'red', marginTop: '0.5rem', fontSize: '0.9rem' }}>Error: {submitMessage}</p>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Converted Mods */}
       {converted_mods && converted_mods.length > 0 && (

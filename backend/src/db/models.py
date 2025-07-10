@@ -55,6 +55,10 @@ class ConversionJob(Base):
     comparison_results = relationship(
         "ComparisonResultDb", back_populates="conversion_job"
     )
+    # Relationship to feedback
+    feedback = relationship(
+        "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
+    )
 
 
 class ConversionResult(Base):
@@ -105,6 +109,25 @@ class JobProgress(Base):
     )
 
     job = relationship("ConversionJob", back_populates="progress")
+
+
+class ConversionFeedback(Base):
+    __tablename__ = "conversion_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    job = relationship("ConversionJob", back_populates="feedback")
 
 
 class ComparisonResultDb(Base):
