@@ -201,6 +201,38 @@ def client(mock_db_session):
 
         return MockJob()
 
+    # Mock feedback CRUD functions
+    async def mock_create_feedback(session, job_id, feedback_type, user_id=None, comment=None):
+        from src.db.models import ConversionFeedback
+        from sqlalchemy.exc import IntegrityError
+        
+        # Check if job exists first by calling the mocked get_job
+        job = await mock_get_job(session, str(job_id))
+        if job is None:
+            # Simulate foreign key constraint error
+            raise IntegrityError(
+                "foreign key constraint fails",
+                "conversion_feedback_job_id_fkey",
+                "detail"
+            )
+        
+        mock_feedback = MagicMock(spec=ConversionFeedback)
+        mock_feedback.id = uuid.uuid4()
+        mock_feedback.job_id = job_id
+        mock_feedback.feedback_type = feedback_type
+        mock_feedback.user_id = user_id
+        mock_feedback.comment = comment
+        mock_feedback.created_at = datetime.now()
+        return mock_feedback
+
+    async def mock_list_all_feedback(session, skip=0, limit=100):
+        # Return empty list for tests
+        return []
+
+    async def mock_get_feedback_by_job_id(session, job_id):
+        # Return empty list for tests
+        return []
+
     async def override_get_db():
         yield mock_db_session
 
@@ -210,7 +242,9 @@ def client(mock_db_session):
         crud, "create_job", mock_create_job
     ), patch.object(crud, "list_jobs", mock_list_jobs), patch.object(
         crud, "update_job_status", mock_update_job_status
-    ):
+    ), patch.object(crud, "create_feedback", mock_create_feedback), patch.object(
+        crud, "list_all_feedback", mock_list_all_feedback
+    ), patch.object(crud, "get_feedback_by_job_id", mock_get_feedback_by_job_id):
 
         with TestClient(app) as test_client:
             yield test_client
