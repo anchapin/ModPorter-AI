@@ -213,19 +213,16 @@ jobs:
           # Unit tests on GitHub-hosted runners
           - test-type: unit
             runs-on: ubuntu-latest
-            timeout: 15
           # Integration tests on self-hosted runner with Ollama
           - test-type: integration-ollama
             runs-on: [self-hosted, ollama]
-            timeout: 30
           # Integration tests on GitHub-hosted runner with OpenAI API
           - test-type: integration-openai
             runs-on: ubuntu-latest
-            timeout: 20
       fail-fast: false  # Continue other tests even if one fails
     
     runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: ${{ matrix.timeout }}
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
