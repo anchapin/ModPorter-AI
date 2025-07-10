@@ -116,7 +116,6 @@ class RAGCrew:
             }
             self.researcher_config = self.agent_configs['agents']['researcher']
             self.writer_config = self.agent_configs['agents']['writer']
-
     def _get_tools_from_config(self, tool_names: list) -> list:
         tools_instances = []
         for tool_name in tool_names:
