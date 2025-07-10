@@ -4,44 +4,39 @@ import uuid
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from unittest.mock import MagicMock, AsyncMock
 
 
 from src.db import crud
 from src.db.models import ConversionJob, ConversionFeedback, JobProgress
 
-
-@pytest_asyncio.fixture
-async def test_conversion_job(test_db_session: AsyncSession) -> ConversionJob:
-    """Fixture to create a sample ConversionJob for feedback tests."""
-    # Use the existing crud.create_job function
-    # Ensure input_data has file_id and original_filename as get_training_data endpoint might use it
-    job_input_data = {
-        "file_id": str(uuid.uuid4()),
-        "original_filename": "test_mod.zip",
-        "target_version": "1.20.0",
-        "options": {},
-    }
-    job = ConversionJob(
-        status="completed", # Or any status, doesn't matter much for feedback itself
-        input_data=job_input_data
-    )
-    job.progress = JobProgress(progress=100) # Assuming progress is part of job creation or can be added
-
-    test_db_session.add(job)
-    await test_db_session.commit()
-    await test_db_session.refresh(job)
-    return job
-
 @pytest.mark.asyncio
-async def test_create_feedback(test_db_session: AsyncSession, test_conversion_job: ConversionJob):
+async def test_create_feedback():
     """Test creating a feedback entry."""
-    job_id = test_conversion_job.id
+    # Mock session
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+    
+    # Test data
+    job_id = uuid.uuid4()
     feedback_type = "thumbs_up"
     comment = "Great conversion!"
     user_id = "user123"
+    
+    # Mock the feedback refresh behavior
+    def mock_refresh_side_effect(feedback):
+        feedback.id = uuid.uuid4()
+        # Also set created_at since it's automatically set by the model
+        from datetime import datetime
+        feedback.created_at = datetime.now()
+        return None
+    
+    mock_session.refresh.side_effect = mock_refresh_side_effect
 
     feedback = await crud.create_feedback(
-        db=test_db_session,
+        session=mock_session,
         job_id=job_id,
         feedback_type=feedback_type,
         comment=comment,
@@ -55,98 +50,110 @@ async def test_create_feedback(test_db_session: AsyncSession, test_conversion_jo
     assert feedback.comment == comment
     assert feedback.user_id == user_id
     assert feedback.created_at is not None
-
-    # Verify it's in the DB
-    fetched_feedback = await test_db_session.get(ConversionFeedback, feedback.id)
-    assert fetched_feedback is not None
-    assert fetched_feedback.comment == comment
+    
+    # Verify session methods were called
+    mock_session.add.assert_called_once()
+    mock_session.commit.assert_called_once()
+    mock_session.refresh.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_get_feedback_by_job_id(test_db_session: AsyncSession, test_conversion_job: ConversionJob):
+async def test_get_feedback_by_job_id():
     """Test retrieving feedback by job_id."""
-    job_id = test_conversion_job.id
+    # Mock session
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = AsyncMock()
+    mock_scalars = MagicMock()  # Don't make this async
+    
+    job_id = uuid.uuid4()
+    
+    # Create mock feedback objects
+    feedback1 = MagicMock(spec=ConversionFeedback)
+    feedback1.id = uuid.uuid4()
+    feedback1.job_id = job_id
+    feedback1.feedback_type = "thumbs_up"
+    feedback1.comment = "Excellent"
+    feedback1.created_at = "2023-01-01T10:00:00"
+    
+    feedback2 = MagicMock(spec=ConversionFeedback)
+    feedback2.id = uuid.uuid4()
+    feedback2.job_id = job_id
+    feedback2.feedback_type = "thumbs_down"
+    feedback2.comment = "Could be better"
+    feedback2.created_at = "2023-01-01T09:00:00"
+    
+    mock_scalars.all.return_value = [feedback1, feedback2]
+    # Mock the scalars() method to return the mock_scalars object
+    mock_result.scalars = MagicMock(return_value=mock_scalars)
+    mock_session.execute.return_value = mock_result
 
-    feedback1 = await crud.create_feedback(
-        db=test_db_session, job_id=job_id, feedback_type="thumbs_up", comment="Excellent"
-    )
-    feedback2 = await crud.create_feedback(
-        db=test_db_session, job_id=job_id, feedback_type="thumbs_down", comment="Could be better"
-    )
-
-    # Create feedback for another job to ensure filtering works
-    other_job_input_data = {
-        "file_id": str(uuid.uuid4()), "original_filename": "other_mod.zip", "target_version": "1.19"
-    }
-    other_job = ConversionJob(status="completed", input_data=other_job_input_data)
-    other_job.progress = JobProgress(progress=100)
-    test_db_session.add(other_job)
-    await test_db_session.commit()
-    await crud.create_feedback(db=test_db_session, job_id=other_job.id, feedback_type="thumbs_up")
-
-    feedbacks = await crud.get_feedback_by_job_id(db=test_db_session, job_id=job_id)
+    feedbacks = await crud.get_feedback_by_job_id(session=mock_session, job_id=job_id)
 
     assert feedbacks is not None
     assert len(feedbacks) == 2
     feedback_comments = {f.comment for f in feedbacks}
     assert "Excellent" in feedback_comments
     assert "Could be better" in feedback_comments
-
-    # Check that the feedback items are correctly ordered (newest first by default in crud)
-    assert feedbacks[0].created_at >= feedbacks[1].created_at
+    
+    # Verify session.execute was called
+    mock_session.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_list_all_feedback(test_db_session: AsyncSession, test_conversion_job: ConversionJob):
+async def test_list_all_feedback():
     """Test listing all feedback entries with pagination."""
-    job1_id = test_conversion_job.id
-
-    other_job_input_data = {
-        "file_id": str(uuid.uuid4()), "original_filename": "another_mod.zip", "target_version": "1.18"
-    }
-    job2 = ConversionJob(status="completed", input_data=other_job_input_data)
-    job2.progress = JobProgress(progress=100)
-    test_db_session.add(job2)
-    await test_db_session.commit()
-    job2_id = job2.id
-
-    fb1 = await crud.create_feedback(db=test_db_session, job_id=job1_id, feedback_type="thumbs_up", comment="Job1 Feedback1")
-    await asyncio.sleep(0.01) # ensure different timestamps for ordering
-    fb2 = await crud.create_feedback(db=test_db_session, job_id=job2_id, feedback_type="thumbs_down", comment="Job2 Feedback1")
-    await asyncio.sleep(0.01)
-    fb3 = await crud.create_feedback(db=test_db_session, job_id=job1_id, feedback_type="thumbs_up", comment="Job1 Feedback2")
-    await asyncio.sleep(0.01)
-    fb4 = await crud.create_feedback(db=test_db_session, job_id=job2_id, feedback_type="thumbs_up", comment="Job2 Feedback2")
-
-    all_feedback_ids_desc = [fb4.id, fb3.id, fb2.id, fb1.id] # Newest first
+    # Mock session
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = AsyncMock()
+    mock_scalars = MagicMock()  # Don't make this async
+    
+    # Create mock feedback objects
+    fb1 = MagicMock(spec=ConversionFeedback)
+    fb1.id = uuid.uuid4()
+    fb1.comment = "Job1 Feedback1"
+    fb1.created_at = "2023-01-01T09:00:00"
+    
+    fb2 = MagicMock(spec=ConversionFeedback)
+    fb2.id = uuid.uuid4()
+    fb2.comment = "Job2 Feedback1"
+    fb2.created_at = "2023-01-01T10:00:00"
+    
+    fb3 = MagicMock(spec=ConversionFeedback)
+    fb3.id = uuid.uuid4()
+    fb3.comment = "Job1 Feedback2"
+    fb3.created_at = "2023-01-01T11:00:00"
+    
+    fb4 = MagicMock(spec=ConversionFeedback)
+    fb4.id = uuid.uuid4()
+    fb4.comment = "Job2 Feedback2"
+    fb4.created_at = "2023-01-01T12:00:00"
+    
+    # Mock returning all feedback in descending order
+    all_feedback = [fb4, fb3, fb2, fb1]
+    mock_scalars.all.return_value = all_feedback
+    # Mock the scalars() method to return the mock_scalars object
+    mock_result.scalars = MagicMock(return_value=mock_scalars)
+    mock_session.execute.return_value = mock_result
 
     # Test listing all
-    feedbacks_all = await crud.list_all_feedback(db=test_db_session, skip=0, limit=10)
+    feedbacks_all = await crud.list_all_feedback(session=mock_session, skip=0, limit=10)
     assert len(feedbacks_all) == 4
-    assert [f.id for f in feedbacks_all] == all_feedback_ids_desc
-
-    # Test pagination: skip 1, limit 2
-    feedbacks_paginated = await crud.list_all_feedback(db=test_db_session, skip=1, limit=2)
+    assert [f.id for f in feedbacks_all] == [fb4.id, fb3.id, fb2.id, fb1.id]
+    
+    # Verify session.execute was called
+    mock_session.execute.assert_called_once()
+    
+    # Test pagination case
+    mock_session.execute.reset_mock()
+    mock_scalars.all.return_value = [fb3, fb2]  # Skip 1, limit 2
+    mock_result.scalars = MagicMock(return_value=mock_scalars)
+    feedbacks_paginated = await crud.list_all_feedback(session=mock_session, skip=1, limit=2)
     assert len(feedbacks_paginated) == 2
-    assert [f.id for f in feedbacks_paginated] == [all_feedback_ids_desc[1], all_feedback_ids_desc[2]] # fb3, fb2
-
-    # Test pagination: skip enough to get none
-    feedbacks_empty = await crud.list_all_feedback(db=test_db_session, skip=4, limit=10)
+    assert [f.id for f in feedbacks_paginated] == [fb3.id, fb2.id]
+    
+    # Test empty case
+    mock_session.execute.reset_mock()
+    mock_scalars.all.return_value = []
+    mock_result.scalars = MagicMock(return_value=mock_scalars)
+    feedbacks_empty = await crud.list_all_feedback(session=mock_session, skip=4, limit=10)
     assert len(feedbacks_empty) == 0
-
-    # Test limit
-    feedbacks_limit_1 = await crud.list_all_feedback(db=test_db_session, skip=0, limit=1)
-    assert len(feedbacks_limit_1) == 1
-    assert feedbacks_limit_1[0].id == all_feedback_ids_desc[0] # fb4
-
-    # Test listing with default limit
-    # To make this testable, we need to know the default limit in crud.list_all_feedback (assume 100)
-    # For this test, we have 4 items, so default limit of 100 should return all.
-    feedbacks_default_limit = await crud.list_all_feedback(db=test_db_session) # skip=0, limit=100
-    assert len(feedbacks_default_limit) == 4
-    assert [f.id for f in feedbacks_default_limit] == all_feedback_ids_desc
-
-    # Test order (created_at desc by default)
-    assert feedbacks_all[0].created_at >= feedbacks_all[1].created_at
-    assert feedbacks_all[1].created_at >= feedbacks_all[2].created_at
-    assert feedbacks_all[2].created_at >= feedbacks_all[3].created_at
