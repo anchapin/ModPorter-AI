@@ -49,7 +49,7 @@ class RAGTasks:
 class RAGCrew:
     def __init__(self, model_name: str = "gpt-4", llm=None):
         # Allow passing a custom LLM instance for testing
-        self.llm = llm if llm else get_llm_instance()
+        self.llm = llm if llm else ChatOpenAI(model_name=model_name, temperature=0.1)
         self._load_agent_configs()
         self._setup_agents()
         self._setup_crew()
