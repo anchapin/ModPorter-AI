@@ -136,7 +136,7 @@ async def get_feedback_by_job_id(
     """
     stmt = select(models.ConversionFeedback).where(
         models.ConversionFeedback.job_id == job_id
-    )
+    ).order_by(models.ConversionFeedback.created_at.desc())
     result = await session.execute(stmt)
     return result.scalars().all()
 

@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import pytest
 import asyncio
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 from unittest.mock import AsyncMock, MagicMock
@@ -213,6 +214,22 @@ def client(mock_db_session):
 
         with TestClient(app) as test_client:
             yield test_client
+
+    # Clean up
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def test_client(test_db_session):
+    """Create an async test client for the FastAPI app with real test database."""
+    
+    async def override_get_db():
+        yield test_db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(app=app, base_url="http://test") as async_client:
+        yield async_client
 
     # Clean up
     app.dependency_overrides.clear()

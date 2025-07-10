@@ -1,11 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'; // Added fireEvent, waitFor
 import '@testing-library/jest-dom'; // For extended matchers like .toBeInTheDocument()
 import { ConversionReport } from './ConversionReport';
-import { InteractiveReport, FeedbackResponse } from '../../types/api'; // Added FeedbackResponse
+import type { InteractiveReport, FeedbackResponse } from '../../types/api'; // Added FeedbackResponse
 // Import mock data from stories. Note: Path might need adjustment if stories are elsewhere.
 // Assuming stories export named objects like 'successfulConversion' which have an 'args' property.
 import { Successful, Failed } from './ConversionReport.stories';
-import { submitFeedback as mockSubmitFeedback } from '../../services/api'; // Import the actual function to be mocked
+import { submitFeedback } from '../../services/api'; // Import the actual function to be mocked
 
 // Mock the API service
 jest.mock('../../services/api', () => ({
@@ -14,7 +14,7 @@ jest.mock('../../services/api', () => ({
 }));
 
 // Cast the mock for type safety in tests
-const mockedSubmitFeedback = submitFeedback as jest.MockedFunction<typeof mockSubmitFeedback>;
+const mockedSubmitFeedback = submitFeedback as jest.MockedFunction<typeof submitFeedback>;
 
 
 const minimalMockReport: InteractiveReport = {

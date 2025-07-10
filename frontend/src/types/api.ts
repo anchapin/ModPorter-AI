@@ -142,7 +142,7 @@ export interface InteractiveReport { // This is the main model for the detailed 
 // --- Feedback Types ---
 export interface FeedbackCreatePayload {
   job_id: string; // Backend expects UUID, but string is fine from client
-  feedback_type: 'thumbs_up' | 'thumbs_down' | string;
+  feedback_type: 'thumbs_up' | 'thumbs_down';
   user_id?: string | null;
   comment?: string | null;
 }
@@ -150,7 +150,7 @@ export interface FeedbackCreatePayload {
 export interface FeedbackResponse {
   id: string; // UUID string
   job_id: string; // UUID string
-  feedback_type: string;
+  feedback_type: 'thumbs_up' | 'thumbs_down';
   user_id?: string | null;
   comment?: string | null;
   created_at: string; // ISO date string

@@ -8,13 +8,11 @@ import type {
   InteractiveReport,
   ModConversionStatus,
   FeedbackCreatePayload, // Added
-  FeedbackResponse // Added
-} from '../../types/api';
-import { submitFeedback } from '../../services/api'; // Added
   AssumptionDetail,
   FeatureConversionDetail,
   LogEntry,
 } from '../../types/api';
+import { submitFeedback } from '../../services/api'; // Added
 
 interface ConversionReportProps {
   conversionResult: InteractiveReport;
@@ -62,6 +60,54 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
   conversionResult,
   jobStatus
 }) => {
+  // Feedback state
+  const [feedbackType, setFeedbackType] = useState<'thumbs_up' | 'thumbs_down' | null>(null);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+  const [submitMessage, setSubmitMessage] = useState('');
+
+  // Feedback handlers
+  const handleFeedbackTypeChange = (type: 'thumbs_up' | 'thumbs_down') => {
+    if (feedbackType === type) {
+      setFeedbackType(null); // Deselect if clicking the same button
+    } else {
+      setFeedbackType(type);
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackType) {
+      setSubmitStatus('error');
+      setSubmitMessage('Please select thumbs up or thumbs down.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    setSubmitMessage('');
+
+    try {
+      const payload: FeedbackCreatePayload = {
+        job_id: conversionResult.job_id,
+        feedback_type: feedbackType,
+        comment: comment || null,
+        user_id: undefined, // Not implemented yet
+      };
+
+      await submitFeedback(payload);
+      setFeedbackSubmitted(true);
+      setSubmitStatus('success');
+      setSubmitMessage('Thank you for your feedback!');
+    } catch (error) {
+      setSubmitStatus('error');
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to submit feedback');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Shared styling for mod cards
   const modCardStyle: React.CSSProperties = {
     border: '1px solid #e5e7eb', 

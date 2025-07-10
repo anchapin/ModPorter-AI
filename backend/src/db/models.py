@@ -55,6 +55,10 @@ class ConversionJob(Base):
     comparison_results = relationship(
         "ComparisonResultDb", back_populates="conversion_job"
     )
+    # Relationship to feedback
+    feedback = relationship(
+        "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
+    )
 
 
 class ConversionResult(Base):
