@@ -1,20 +1,18 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'; // Added fireEvent, waitFor
-import '@testing-library/jest-dom'; // For extended matchers like .toBeInTheDocument()
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { ConversionReport } from './ConversionReport';
-import type { InteractiveReport, FeedbackResponse } from '../../types/api'; // Added FeedbackResponse
-// Import mock data from stories. Note: Path might need adjustment if stories are elsewhere.
-// Assuming stories export named objects like 'successfulConversion' which have an 'args' property.
+import type { InteractiveReport, FeedbackResponse } from '../../types/api';
 import { Successful, Failed } from './ConversionReport.stories';
-import { submitFeedback } from '../../services/api'; // Import the actual function to be mocked
+import { vi } from 'vitest';
+import * as api from '../../services/api';
 
 // Mock the API service
-jest.mock('../../services/api', () => ({
-  ...jest.requireActual('../../services/api'), // Import and retain default exports
-  submitFeedback: jest.fn(), // Mock only submitFeedback
+vi.mock('../../services/api', () => ({
+  submitFeedback: vi.fn(),
 }));
 
 // Cast the mock for type safety in tests
-const mockedSubmitFeedback = submitFeedback as jest.MockedFunction<typeof submitFeedback>;
+const mockedSubmitFeedback = vi.mocked(api.submitFeedback);
 
 
 const minimalMockReport: InteractiveReport = {
@@ -39,7 +37,7 @@ const minimalMockReport: InteractiveReport = {
 describe('ConversionReport Component', () => {
     beforeEach(() => {
         // Clear mock call history before each test
-        mockedSubmitFeedback.mockClear();
+        vi.clearAllMocks();
     });
 
     test('renders successful conversion report correctly', () => {
@@ -156,6 +154,10 @@ describe('ConversionReport Component', () => {
 });
 
 describe('Feedback Functionality in ConversionReport', () => {
+    beforeEach(() => {
+        // Clear mock call history before each test
+        vi.clearAllMocks();
+    });
     test('renders feedback UI elements', () => {
         render(<ConversionReport conversionResult={minimalMockReport} />);
 
@@ -258,11 +260,12 @@ describe('Feedback Functionality in ConversionReport', () => {
         render(<ConversionReport conversionResult={minimalMockReport} />);
 
         const submitButton = screen.getByRole('button', { name: 'Submit Feedback' });
-        fireEvent.click(submitButton); // Try to submit without selection
-
-        // Check for client-side message if implemented, or just that API wasn't called
+        
+        // The submit button should be disabled when no feedback type is selected
+        expect(submitButton).toBeDisabled();
+        
+        // Since the button is disabled, clicking it should not call the API
+        fireEvent.click(submitButton);
         expect(mockedSubmitFeedback).not.toHaveBeenCalled();
-        // The component's internal handler should set a message
-        expect(screen.getByText('Please select thumbs up or thumbs down.')).toBeInTheDocument();
     });
 });
