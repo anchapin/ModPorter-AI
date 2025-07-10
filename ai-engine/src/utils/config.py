@@ -48,7 +48,7 @@ class Config:
     TASK_TIMEOUT: int = int(os.getenv("TASK_TIMEOUT", "300"))  # 5 minutes
     
     # File Processing Configuration
-    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "100"))  # MB
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "100").replace("MB", ""))  # MB
     TEMP_DIR: str = os.getenv("TEMP_DIR", "/tmp/modporter")
     
     # Java Analysis Configuration
