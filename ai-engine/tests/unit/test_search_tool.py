@@ -1,117 +1,317 @@
-import unittest
-from unittest.mock import patch, MagicMock
+"""
+Unit tests for the SearchTool implementation.
+"""
 
-from src.utils.config import Config
+import unittest
+import json
+from unittest.mock import Mock, patch, MagicMock
 from src.tools.search_tool import SearchTool
+from src.utils.config import Config
 from src.tools.web_search_tool import WebSearchTool
 
-class TestSearchToolFallback(unittest.TestCase):
-    """Test suite for SearchTool fallback functionality."""
+
+class TestSearchTool(unittest.TestCase):
+    """Test class for SearchTool functionality."""
 
     def setUp(self):
-        """Setup common test resources."""
-        self.search_tool = SearchTool()
-        self.query = "test query"
+        """Set up test fixtures."""
+        # Clear the singleton instance before each test
+        SearchTool._instance = None
 
-    @patch.object(SearchTool, '_perform_primary_search')
-    def test_search_with_primary_results(self, mock_primary_search):
-        """Test SearchTool returns primary results when available."""
-        expected_results_list = [{"id": 1, "score": 0.9, "text": "Primary result 1"}]
-        mock_primary_search.return_value = expected_results_list
+    def test_search_tool_singleton(self):
+        """Test that SearchTool follows singleton pattern."""
+        tool1 = SearchTool.get_instance()
+        tool2 = SearchTool.get_instance()
+        
+        self.assertIs(tool1, tool2)
+        self.assertIsInstance(tool1, SearchTool)
 
+    def test_get_tools_returns_expected_tools(self):
+        """Test that get_tools returns the correct list of tools."""
+        tool = SearchTool.get_instance()
+        tools = tool.get_tools()
+        
+        self.assertEqual(len(tools), 3)
+        self.assertIn(SearchTool.semantic_search, tools)
+        self.assertIn(SearchTool.document_search, tools)
+        self.assertIn(SearchTool.similarity_search, tools)
+
+    def test_semantic_search_with_string_query(self):
+        """Test semantic search with a simple string query."""
+        query = "test query"
+        result = SearchTool.semantic_search.func(query)
+        
+        result_data = json.loads(result)
+        self.assertIn("query", result_data)
+        self.assertIn("results", result_data)
+        self.assertIn("total_results", result_data)
+        self.assertEqual(result_data["query"], query)
+        self.assertEqual(result_data["total_results"], len(result_data["results"]))
+
+    def test_semantic_search_with_json_query(self):
+        """Test semantic search with JSON query data."""
+        query_data = {
+            "query": "advanced search",
+            "limit": 5,
+            "document_source": "test_source"
+        }
+        result = SearchTool.semantic_search.func(json.dumps(query_data))
+        
+        result_data = json.loads(result)
+        self.assertEqual(result_data["query"], "advanced search")
+        self.assertLessEqual(result_data["total_results"], 5)
+
+    def test_semantic_search_empty_query(self):
+        """Test semantic search with empty query returns error."""
+        result = SearchTool.semantic_search.func("")
+        
+        result_data = json.loads(result)
+        self.assertIn("error", result_data)
+        self.assertIn("Query is required", result_data["error"])
+
+    def test_document_search_with_source(self):
+        """Test document search with document source."""
+        source = "test_document_source"
+        result = SearchTool.document_search.func(source)
+        
+        result_data = json.loads(result)
+        self.assertIn("document_source", result_data)
+        self.assertIn("results", result_data)
+        self.assertEqual(result_data["document_source"], source)
+
+    def test_document_search_empty_source(self):
+        """Test document search with empty source returns error."""
+        result = SearchTool.document_search.func("")
+        
+        result_data = json.loads(result)
+        self.assertIn("error", result_data)
+        self.assertIn("Document source is required", result_data["error"])
+
+    def test_similarity_search_with_content(self):
+        """Test similarity search with content."""
+        content = "This is test content for similarity search"
+        result = SearchTool.similarity_search.func(content)
+        
+        result_data = json.loads(result)
+        self.assertIn("reference_content", result_data)
+        self.assertIn("threshold", result_data)
+        self.assertIn("results", result_data)
+        self.assertEqual(result_data["threshold"], 0.8)  # default threshold
+
+    def test_similarity_search_empty_content(self):
+        """Test similarity search with empty content returns error."""
+        result = SearchTool.similarity_search.func("")
+        
+        result_data = json.loads(result)
+        self.assertIn("error", result_data)
+        self.assertIn("Content is required", result_data["error"])
+
+    def test_search_tool_handles_json_decode_error(self):
+        """Test that SearchTool handles malformed JSON gracefully."""
+        malformed_json = "{'invalid': json}"
+        result = SearchTool.semantic_search.func(malformed_json)
+        
+        result_data = json.loads(result)
+        # Should treat as simple string query
+        self.assertEqual(result_data["query"], malformed_json)
+
+    @patch('src.tools.search_tool.logger')
+    def test_search_tool_logs_operations(self, mock_logger):
+        """Test that SearchTool logs operations properly."""
+        SearchTool.semantic_search.func("test query")
+        
+        # Check that info log was called (at least once for search completion)
+        mock_logger.info.assert_called()
+        # Find the call with "Semantic search completed" message
+        search_completion_calls = [call for call in mock_logger.info.call_args_list 
+                                   if "Semantic search completed" in str(call)]
+        self.assertTrue(len(search_completion_calls) >= 1)
+
+    def test_search_results_structure(self):
+        """Test that search results have expected structure."""
+        result = SearchTool.semantic_search.func("test")
+        result_data = json.loads(result)
+        
+        self.assertIn("results", result_data)
+        if result_data["results"]:
+            first_result = result_data["results"][0]
+            self.assertIn("id", first_result)
+            self.assertIn("content", first_result)
+            self.assertIn("document_source", first_result)
+            self.assertIn("similarity_score", first_result)
+            self.assertIn("metadata", first_result)
+
+    def test_private_methods_return_expected_format(self):
+        """Test private methods return expected data format."""
+        tool = SearchTool.get_instance()
+        
+        # Test semantic search
+        results = tool._perform_semantic_search("test query", limit=2)
+        self.assertIsInstance(results, list)
+        self.assertLessEqual(len(results), 2)
+        
+        # Test document search
+        results = tool._search_by_document_source("test_source")
+        self.assertIsInstance(results, list)
+        
+        # Test similarity search
+        results = tool._find_similar_documents("test content", threshold=0.5)
+        self.assertIsInstance(results, list)
+
+    def test_error_handling_in_private_methods(self):
+        """Test error handling in private methods."""
+        tool = SearchTool.get_instance()
+        
+        # Mock an exception scenario
+        with patch.object(tool, '_perform_semantic_search', side_effect=Exception("Test error")):
+            result = SearchTool.semantic_search.func("test query")
+            result_data = json.loads(result)
+            self.assertIn("error", result_data)
+
+    @patch.object(SearchTool, '_perform_semantic_search')
+    def test_fallback_search_when_primary_fails(self, mock_primary_search):
+        """Test fallback search is triggered when primary search fails."""
+        # Mock primary search to return empty results
+        mock_primary_search.return_value = []
+        
+        # Mock fallback tool
+        with patch('src.tools.search_tool.importlib.import_module') as mock_import:
+            mock_fallback_tool = MagicMock(spec=WebSearchTool)
+            mock_fallback_tool._run.return_value = "Fallback search result"
+            
+            MockFallbackClass = MagicMock(return_value=mock_fallback_tool)
+            mock_module = MagicMock()
+            setattr(mock_module, "WebSearchTool", MockFallbackClass)
+            mock_import.return_value = mock_module
+            
+            # Enable fallback in config
+            with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+                 patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
+                
+                result = SearchTool.semantic_search.func("test query")
+                result_data = json.loads(result)
+                
+                # Should have fallback results
+                self.assertGreater(result_data["total_results"], 0)
+                self.assertIn("results", result_data)
+                # Check that fallback metadata is present
+                if result_data["results"]:
+                    self.assertEqual(result_data["results"][0]["document_source"], "fallback_search")
+
+    @patch.object(SearchTool, '_perform_semantic_search')
+    def test_no_fallback_when_disabled(self, mock_primary_search):
+        """Test fallback is not triggered when disabled."""
+        # Mock primary search to return empty results
+        mock_primary_search.return_value = []
+        
+        # Disable fallback in config
         with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', False):
-            result_str = self.search_tool._run(self.query)
+            result = SearchTool.semantic_search.func("test query")
+            result_data = json.loads(result)
+            
+            # Should have no results
+            self.assertEqual(result_data["total_results"], 0)
+            self.assertEqual(result_data["results"], [])
 
-        mock_primary_search.assert_called_once_with(self.query)
-        self.assertIn("Found 1 results", result_str)
-        self.assertIn("Primary result 1", result_str)
-
-    @patch('src.tools.search_tool.importlib.import_module')
-    @patch.object(SearchTool, '_perform_primary_search')
-    def test_search_fallback_when_primary_fails_and_fallback_enabled(self, mock_primary_search, mock_import_module):
-        """Test fallback is used when primary search fails and fallback is enabled."""
+    @patch.object(SearchTool, '_perform_semantic_search')
+    def test_fallback_handles_import_error(self, mock_primary_search):
+        """Test fallback handles import errors gracefully."""
+        # Mock primary search to return empty results
         mock_primary_search.return_value = []
+        
+        # Mock import error
+        with patch('src.tools.search_tool.importlib.import_module', side_effect=ImportError("Module not found")):
+            with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+                 patch.object(Config, 'FALLBACK_SEARCH_TOOL', "non_existent_tool"):
+                
+                result = SearchTool.semantic_search.func("test query")
+                result_data = json.loads(result)
+                
+                # Should have no results due to failed fallback
+                self.assertEqual(result_data["total_results"], 0)
+                self.assertEqual(result_data["results"], [])
 
-        # Mock the fallback tool behavior
-        mock_fallback_tool_instance = MagicMock(spec=WebSearchTool)
-        mock_fallback_tool_instance._run.return_value = "Fallback search result"
-
-        MockFallbackToolClass = MagicMock(return_value=mock_fallback_tool_instance)
-        mock_module = MagicMock()
-        setattr(mock_module, "WebSearchTool", MockFallbackToolClass)
-        mock_import_module.return_value = mock_module
-
-        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
-             patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
-
-            result_str = self.search_tool._run(self.query)
-
-        mock_primary_search.assert_called_once_with(self.query)
-        mock_import_module.assert_called_once_with("src.tools.web_search_tool")
-        self.assertTrue(hasattr(mock_module, "WebSearchTool"))
-        MockFallbackToolClass.assert_called_once()
-        mock_fallback_tool_instance._run.assert_called_once_with(query=self.query)
-        self.assertEqual(result_str, "Fallback search result")
-
-    @patch.object(SearchTool, '_perform_primary_search')
-    @patch('src.tools.search_tool.importlib.import_module')
-    def test_search_no_fallback_when_primary_fails_and_fallback_disabled(self, mock_import_module, mock_primary_search):
-        """Test fallback is not used when primary fails and fallback is disabled."""
+    @patch.object(SearchTool, '_perform_semantic_search')
+    def test_fallback_handles_attribute_error(self, mock_primary_search):
+        """Test fallback handles missing class errors gracefully."""
+        # Mock primary search to return empty results
         mock_primary_search.return_value = []
-
-        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', False):
-            result_str = self.search_tool._run(self.query)
         
-        mock_primary_search.assert_called_once_with(self.query)
-        mock_import_module.assert_not_called()
-        self.assertIn(f"No results found for query '{self.query}'", result_str)
+        # Mock attribute error (class not found)
+        with patch('src.tools.search_tool.importlib.import_module') as mock_import:
+            mock_module = MagicMock()
+            mock_import.return_value = mock_module
+            
+            # Mock getattr to raise AttributeError
+            with patch('src.tools.search_tool.getattr', side_effect=AttributeError("Class not found")):
+                with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+                     patch.object(Config, 'FALLBACK_SEARCH_TOOL', "invalid_tool"):
+                    
+                    result = SearchTool.semantic_search.func("test query")
+                    result_data = json.loads(result)
+                    
+                    # Should have no results due to failed fallback
+                    self.assertEqual(result_data["total_results"], 0)
+                    self.assertEqual(result_data["results"], [])
 
-    @patch.object(SearchTool, '_perform_primary_search')
-    @patch('src.tools.search_tool.importlib.import_module')
-    def test_search_fallback_handles_invalid_tool_name(self, mock_import_module, mock_primary_search):
-        """Test fallback with an invalid tool name handles the error gracefully."""
-        mock_primary_search.return_value = []
-        mock_import_module.side_effect = ImportError("No module named non_existent_tool")
+    def test_fallback_search_method_exists(self):
+        """Test that the fallback search method exists and is callable."""
+        tool = SearchTool.get_instance()
+        self.assertTrue(hasattr(tool, '_attempt_fallback_search'))
+        self.assertTrue(callable(getattr(tool, '_attempt_fallback_search')))
 
-        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
-             patch.object(Config, 'FALLBACK_SEARCH_TOOL', "non_existent_tool"):
-
-            result_str = self.search_tool._run(self.query)
-
-        mock_primary_search.assert_called_once_with(self.query)
-        mock_import_module.assert_called_once_with("src.tools.non_existent_tool")
-        self.assertIn("Fallback tool 'non_existent_tool' module not found", result_str)
-        self.assertIn("Returning original (empty) results", result_str)
-
-    @patch.object(SearchTool, '_perform_primary_search')
-    @patch('src.tools.search_tool.importlib.import_module')
-    def test_search_fallback_handles_tool_without_class(self, mock_import_module, mock_primary_search):
-        """Test fallback with a valid module but missing class."""
-        mock_primary_search.return_value = []
-
-        # Configure mock module to raise AttributeError for the specific class name
-        tool_name_config = "valid_module_invalid_class_tool"
-        class_name_expected = "".join([part.capitalize() for part in tool_name_config.split('_')])
+    @patch.object(SearchTool, '_search_by_document_source')
+    def test_document_search_fallback(self, mock_document_search):
+        """Test fallback works for document search."""
+        # Mock document search to return empty results
+        mock_document_search.return_value = []
         
-        # Create a custom mock that handles getattr specifically
-        class MockModule:
-            def __getattr__(self, name):
-                if name == class_name_expected:
-                    raise AttributeError(f"module has no attribute '{name}'")
-                return MagicMock()
-        
-        mock_module = MockModule()
-        mock_import_module.return_value = mock_module
-        
-        with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
-             patch.object(Config, 'FALLBACK_SEARCH_TOOL', tool_name_config):
+        # Mock fallback tool
+        with patch('src.tools.search_tool.importlib.import_module') as mock_import:
+            mock_fallback_tool = MagicMock(spec=WebSearchTool)
+            mock_fallback_tool._run.return_value = "Fallback document search result"
+            
+            MockFallbackClass = MagicMock(return_value=mock_fallback_tool)
+            mock_module = MagicMock()
+            setattr(mock_module, "WebSearchTool", MockFallbackClass)
+            mock_import.return_value = mock_module
+            
+            # Enable fallback in config
+            with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+                 patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
+                
+                result = SearchTool.document_search.func("test_source")
+                result_data = json.loads(result)
+                
+                # Should have fallback results
+                self.assertGreater(result_data["total_results"], 0)
 
-            result_str = self.search_tool._run(self.query)
+    @patch.object(SearchTool, '_find_similar_documents')
+    def test_similarity_search_fallback(self, mock_similarity_search):
+        """Test fallback works for similarity search."""
+        # Mock similarity search to return empty results
+        mock_similarity_search.return_value = []
+        
+        # Mock fallback tool
+        with patch('src.tools.search_tool.importlib.import_module') as mock_import:
+            mock_fallback_tool = MagicMock(spec=WebSearchTool)
+            mock_fallback_tool._run.return_value = "Fallback similarity search result"
+            
+            MockFallbackClass = MagicMock(return_value=mock_fallback_tool)
+            mock_module = MagicMock()
+            setattr(mock_module, "WebSearchTool", MockFallbackClass)
+            mock_import.return_value = mock_module
+            
+            # Enable fallback in config
+            with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
+                 patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
+                
+                result = SearchTool.similarity_search.func("test content")
+                result_data = json.loads(result)
+                
+                # Should have fallback results
+                self.assertGreater(result_data["total_results"], 0)
 
-        mock_primary_search.assert_called_once_with(self.query)
-        mock_import_module.assert_called_once_with(f"src.tools.{tool_name_config}")
-        self.assertIn(f"Fallback tool class '{class_name_expected}' not found in module", result_str)
-        self.assertIn("Returning original (empty) results", result_str)
 
 if __name__ == '__main__':
     unittest.main()
