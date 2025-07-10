@@ -1,6 +1,6 @@
 import { submitFeedback } from './api';
 import type { FeedbackCreatePayload, FeedbackResponse } from '../types/api';
-import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
+import { beforeEach, describe, test, expect } from 'vitest';
 import { server } from '../test/setup';
 import { http, HttpResponse } from 'msw';
 
