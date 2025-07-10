@@ -1465,7 +1465,7 @@ async def submit_feedback(
         # Pydantic model `FeedbackCreate` ensures job_id is a valid UUID.
         # The crud.create_feedback function expects a uuid.UUID object for job_id.
         feedback = await crud.create_feedback(
-            db=db,
+            session=db,
             job_id=feedback_data.job_id,
             feedback_type=feedback_data.feedback_type,
             user_id=feedback_data.user_id,
@@ -1502,7 +1502,7 @@ async def get_training_data(
     if limit > 1000: # Max limit to prevent abuse
         limit = 1000
 
-    all_feedback_entries = await crud.list_all_feedback(db, skip=skip, limit=limit)
+    all_feedback_entries = await crud.list_all_feedback(session=db, skip=skip, limit=limit)
     # To get the total count, we might need another crud function or do a count query.
     # For now, let's assume we can approximate total or refine this later.
     # A simple way without a new crud is to count all feedback, but this is inefficient if paginating.
