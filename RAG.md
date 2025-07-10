@@ -17,11 +17,12 @@
   - [6.4. LLM Integration and Prompt Engineering](#64-llm-integration-and-prompt-engineering)
   - [6.5. Agent Communication Workflow](#65-agent-communication-workflow)
   - [6.6. Knowledge Base Curation](#66-knowledge-base-curation)
-  - [6.7. Continuous Evaluation and Iteration](#67-continuous-evaluation-and-iteration)
-  - [6.8. Handling Ambiguity](#68-handling-ambiguity)
-- [7. Usage Examples (Conceptual)](#7-usage-examples-conceptual)
+  - [6.7. Embedding Generation for Knowledge Sources](#67-embedding-generation-for-knowledge-sources)
+  - [6.8. Continuous Evaluation and Iteration](#68-continuous-evaluation-and-iteration)
+  - [6.9. Handling Ambiguity](#69-handling-ambiguity)
+- [8. Usage Examples (Conceptual)](#8-usage-examples-conceptual)
   - [Example: Using KnowledgeBaseAgent with SearchTool](#example-using-knowledgebaseagent-with-searchtool)
-- [8. Conclusion](#8-conclusion)
+- [9. Conclusion](#9-conclusion)
 
 ### 1. Understanding Retrieval Augmented Generation (RAG)
 
@@ -202,13 +203,16 @@ Defining clear workflows for how specialized agents in the Crew AI setup pass in
 ### 6.6. Knowledge Base Curation
 Meticulously selecting, ingesting, and preprocessing high-quality data sources for both Java Edition modding and Bedrock Edition Add-Ons remains paramount. This includes official documentation, community wikis, forums, and extensive open-source code repositories. The process of populating the knowledge base, as described in [Section 5.4](#54-populating-the-knowledge-base), is an ongoing task that directly impacts the RAG system's effectiveness.
 
-### 6.7. Continuous Evaluation and Iteration
+### 6.7. Embedding Generation for Knowledge Sources
+As a foundational step, a utility for generating text embeddings (e.g., using sentence-transformers) has been implemented. This allows for the vectorization of document chunks derived from mod information (like code comments, descriptions, or analyzed features), which is crucial for enabling semantic search and retrieval components of the RAG pipeline. This component is integrated into the `JavaAnalyzerAgent` to initially process and embed textual data from mods.
+
+### 6.8. Continuous Evaluation and Iteration
 Implementing mechanisms to evaluate the quality of the RAG system's outputs (i.e., the relevance of retrieved documents) and the overall effectiveness of 'modporter-ai' is vital. This allows for ongoing refinement of the knowledge bases, embedding strategies, retrieval parameters, and agent logic.
 
-### 6.8. Handling Ambiguity
+### 6.9. Handling Ambiguity
 Developing strategies for how agents should proceed when retrieved information is incomplete, conflicting, or when direct translations or mappings between modding platforms (Java vs. Bedrock) are not readily available in the knowledge base is a key challenge. This might involve multi-step retrieval, asking clarifying questions, or flagging areas for human review.
 
-### 7. Usage Examples (Conceptual)
+### 8. Usage Examples (Conceptual)
 
 The following examples are conceptual and aim to illustrate the *intended* functionality of RAG-enabled agents within the 'modporter-ai' system, particularly how the `SearchTool` would be utilized. It's important to remember that the `SearchTool` (as detailed in [Section 6.3](#63-ai-engine-components-ai-engine-service)) currently requires further implementation, specifically around generating meaningful query embeddings and calling the backend search API.
 
@@ -226,7 +230,7 @@ An AI agent, which is an instance of `KnowledgeBaseAgent` (or any agent equipped
 3.  **Execute SearchTool:** The agent invokes the `SearchTool` with the formulated query:
     ```python
     # Conceptual Python-like representation
-    retrieved_context = search_tool.run(query="Bedrock custom flying entity components")
+    retrieved_context = SearchTool.semantic_search(query="Bedrock custom flying entity components")
     ```
 
 **Hypothetical `SearchTool` Output (Once Fully Implemented):**
@@ -256,6 +260,6 @@ Retrieved Information:
 
 This example illustrates how RAG, through the `SearchTool`, provides specific, contextually relevant, and potentially up-to-date information (like the forum tip about the `minecraft:physics` component) directly to the LLM at the time of task execution. This significantly improves the quality, accuracy, and practical value of the agent's output compared to relying solely on its pre-trained knowledge.
 
-### 8. Conclusion
+### 9. Conclusion
 
 Retrieval Augmented Generation offers a powerful paradigm for enhancing AI agents, particularly in complex, knowledge-rich domains like Minecraft modding. For a conceptual project like 'modporter-ai', RAG is not merely an add-on but a foundational technology. By providing the specialized AI agents with access to grounded, up-to-date, and domain-specific information, RAG enables them to perform their roles with greater accuracy and efficiency. This approach transforms the ambitious goal of assisting with mod porting from a purely speculative endeavor into a more tangible and promising possibility, ultimately lowering the barrier to entry and fostering greater creativity across Minecraft's diverse modding communities.

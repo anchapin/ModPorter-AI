@@ -3,39 +3,39 @@
 from typing import Any, List, Optional, Dict
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.outputs import LLMResult, Generation
+from langchain_core.language_models.llms import LLM
 
 
-class MockLLM:
+class MockLLM(LLM):
     """Mock LLM implementation for testing"""
     
     def __init__(self, responses: Optional[List[str]] = None, **kwargs):
-        self.responses = responses or ["Mock response"]
-        self.call_count = 0
-        self.model_name = kwargs.get('model', 'mock-model')
-        self.temperature = kwargs.get('temperature', 0.1)
-        self.max_tokens = kwargs.get('max_tokens', 4000)
+        super().__init__(**kwargs)
+        self._responses = responses or ["Mock response"]
+        self._call_count = 0
+        self._model_name = kwargs.get('model', 'mock-model')
+        self._temperature = kwargs.get('temperature', 0.1)
+        self._max_tokens = kwargs.get('max_tokens', 4000)
     
-    def _generate(
+    def _call(
         self,
-        messages: List[BaseMessage],
+        prompt: str,
         stop: Optional[List[str]] = None,
         run_manager: Optional[Any] = None,
         **kwargs: Any,
-    ) -> LLMResult:
-        response = self.responses[self.call_count % len(self.responses)]
-        self.call_count += 1
-        
-        generation = Generation(text=response)
-        return LLMResult(generations=[[generation]])
+    ) -> str:
+        response = self._responses[self._call_count % len(self._responses)]
+        self._call_count += 1
+        return response
     
-    async def _agenerate(
+    async def _acall(
         self,
-        messages: List[BaseMessage],
+        prompt: str,
         stop: Optional[List[str]] = None,
         run_manager: Optional[Any] = None,
         **kwargs: Any,
-    ) -> LLMResult:
-        return self._generate(messages, stop, run_manager, **kwargs)
+    ) -> str:
+        return self._call(prompt, stop, run_manager, **kwargs)
     
     def _llm_type(self) -> str:
         return "mock"
@@ -45,8 +45,8 @@ class MockLLM:
         """Generate responses for prompts"""
         generations = []
         for prompt in prompts:
-            response = self.responses[self.call_count % len(self.responses)]
-            self.call_count += 1
+            response = self._responses[self._call_count % len(self._responses)]
+            self._call_count += 1
             generations.append([Generation(text=response)])
         return LLMResult(generations=generations)
     
@@ -56,16 +56,16 @@ class MockLLM:
     
     def predict(self, text: str, *, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
         """Predict method"""
-        response = self.responses[self.call_count % len(self.responses)]
-        self.call_count += 1
+        response = self._responses[self._call_count % len(self._responses)]
+        self._call_count += 1
         return response
     
     def predict_messages(
         self, messages: List[BaseMessage], *, stop: Optional[List[str]] = None, **kwargs: Any
     ) -> BaseMessage:
         """Predict messages method"""
-        response = self.responses[self.call_count % len(self.responses)]
-        self.call_count += 1
+        response = self._responses[self._call_count % len(self._responses)]
+        self._call_count += 1
         return AIMessage(content=response)
     
     async def apredict(self, text: str, *, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
@@ -85,8 +85,8 @@ class MockLLM:
         elif isinstance(input, list):
             return self.predict_messages(input, **kwargs)
         else:
-            response = self.responses[self.call_count % len(self.responses)]
-            self.call_count += 1
+            response = self._responses[self._call_count % len(self._responses)]
+            self._call_count += 1
             return response
     
     def bind(self, **kwargs):
@@ -103,7 +103,7 @@ class MockLLM:
     def _identifying_params(self) -> Dict[str, Any]:
         """Return identifying parameters"""
         return {
-            "model_name": self.model_name,
-            "temperature": self.temperature,
-            "max_tokens": self.max_tokens
+            "model_name": self._model_name,
+            "temperature": self._temperature,
+            "max_tokens": self._max_tokens
         }
