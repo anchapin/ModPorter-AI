@@ -155,7 +155,7 @@ class TestLogicTranslatorAST:
         method_node = ast.types[0].body[0]
         class_context = {"class_name": "TestBlock"}
         
-        result = self.translator._translate_block_interaction_method(method_node, class_context)
+        result = self.translator._translate_block_broken_method(method_node, class_context)
         
         assert result is not None
         assert "world.afterEvents.playerBreakBlock.subscribe" in result

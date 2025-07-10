@@ -4,7 +4,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 # Install system dependencies for building
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
@@ -21,7 +21,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -30,15 +30,13 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy source code
-COPY . .
-
-# Create non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
+RUN adduser --disabled-password --gecos '' appuser
+# Copy source code after user creation with correct permissions
+COPY --chown=appuser:appuser . .
 USER appuser
 
 # Create directories for models and cache
+# These directories are part of the application structure, so they should be created after COPY . .
 RUN mkdir -p /app/models /app/cache
 
 # Health check using curl

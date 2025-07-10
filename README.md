@@ -10,14 +10,17 @@ Empower Minecraft players and creators with a "one-click" AI-powered tool that i
 ## 🚀 Features
 - **One-Click Conversion**: Upload Java mods and get Bedrock add-ons automatically
 - **AI-Powered Analysis**: Multi-agent system using CrewAI for intelligent conversion
+- **RAG-Enhanced Knowledge**: Retrieval Augmented Generation system with specialized knowledge bases
 - **Smart Assumptions**: Handles incompatible features with logical workarounds
 - **Detailed Reporting**: Transparent conversion reports showing all changes
 - **Validation System**: AI-powered comparison between original and converted mods
+- **Comprehensive Testing**: Full test suite including RAG evaluation and behavioral testing
 
 ## 🛠️ Tech Stack
 - **Frontend**: React + TypeScript + Vite (served by Nginx in production)
 - **Backend**: Python + FastAPI + SQLAlchemy + AsyncPG
 - **AI Engine**: CrewAI + LangChain + FastAPI
+- **RAG System**: Vector database (pgvector) + Embedding generation + Knowledge retrieval
 - **Database**: PostgreSQL 15 with async support
 - **Cache**: Redis 7 for sessions and caching
 - **Infrastructure**: Docker + Docker Compose
@@ -211,14 +214,30 @@ cd backend && pytest
 ### Frontend tests
 cd frontend && npm test
 
+### AI Engine and RAG tests
+```bash
+# Run AI Engine tests
+cd ai-engine && pytest
+
+# Run RAG-specific tests
+cd ai-engine && pytest tests/test_rag_crew.py
+cd ai-engine && pytest tests/unit/test_embedding_generator.py
+cd ai-engine && pytest tests/integration/test_rag_workflow.py
+
+# Run RAG evaluation suite
+cd ai-engine && python src/testing/rag_evaluator.py
+```
+
 ### Docker Tests
 ```bash
 # Run tests in Docker containers
 docker-compose exec backend pytest
 docker-compose exec frontend npm test
+docker-compose exec ai-engine pytest
 
 # Run tests with coverage
 docker-compose exec backend pytest --cov=src
+docker-compose exec ai-engine pytest --cov=src
 ```
 
 ## 🔧 Development Workflows

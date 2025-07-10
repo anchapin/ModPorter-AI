@@ -57,16 +57,27 @@ logger = logging.getLogger(__name__)
 
 # AI Engine HTTP Configuration
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://ai-engine:8001")
-AI_ENGINE_TIMEOUT = httpx.Timeout(300.0)  # 5 minutes timeout for long conversions
+# Extended timeout for rate limiting scenarios - conversions can take 20+ minutes with rate limiting
+AI_ENGINE_TIMEOUT = httpx.Timeout(float(os.getenv("AI_ENGINE_TIMEOUT", "1800.0")))  # 30 minutes default
+AI_ENGINE_HEALTH_TIMEOUT = httpx.Timeout(float(os.getenv("AI_ENGINE_HEALTH_TIMEOUT", "30.0")))  # 30 seconds default
+MAX_CONVERSION_TIME = int(os.getenv("MAX_CONVERSION_TIME", "1800"))  # 30 minutes in seconds
 
 async def check_ai_engine_health():
     """Check if AI engine is available via HTTP"""
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+        logger.info(f"Checking AI engine health at: {AI_ENGINE_URL}")
+        async with httpx.AsyncClient(timeout=AI_ENGINE_HEALTH_TIMEOUT) as client:
             response = await client.get(f"{AI_ENGINE_URL}/api/v1/health")
-            return response.status_code == 200
+            logger.info(f"AI engine health check response: {response.status_code}")
+            
+            if response.status_code == 200:
+                logger.info("AI engine health check passed")
+                return True
+            else:
+                logger.warning(f"AI engine health check failed with status: {response.status_code}")
+                return False
     except Exception as e:
-        logger.warning(f"AI engine health check failed: {e}")
+        logger.warning(f"AI engine health check failed with exception: {e}")
         return False
 
 async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str):
@@ -90,9 +101,11 @@ async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str
             if response.status_code != 200:
                 return {"status": "failed", "error": f"AI engine returned {response.status_code}: {response.text}"}
             
-            # Poll for completion with a timeout
-            max_polls = 120  # 10 minutes timeout (120 polls * 5s sleep)
-            for _ in range(max_polls):
+            # Poll for completion with extended timeout for rate limiting
+            max_polls = MAX_CONVERSION_TIME // 5  # Calculate polls based on configured timeout (5s per poll)
+            poll_count = 0
+            
+            for poll_count in range(max_polls):
                 status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
                 if status_response.status_code != 200:
                     return {"status": "failed", "error": f"Failed to get job status: {status_response.text}"}
@@ -101,10 +114,18 @@ async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str
                 if status_data["status"] in ["completed", "failed"]:
                     return status_data
 
+                # Log progress every 60 seconds to show we're still alive
+                if poll_count % 12 == 0:  # Every 12 polls = 60 seconds
+                    elapsed_minutes = (poll_count * 5) / 60
+                    logger.info(f"Job {job_id} still processing after {elapsed_minutes:.1f} minutes, status: {status_data.get('status', 'unknown')}")
+
                 # Wait before checking again
                 await asyncio.sleep(5)
 
-            return {"status": "failed", "error": "Polling for job status timed out."}
+            return {
+                "status": "failed", 
+                "error": f"Conversion timed out after {max_polls * 5 / 60:.1f} minutes. This may be due to OpenAI API rate limiting. Please try again later."
+            }
                 
     except Exception as e:
         logger.error(f"AI engine HTTP call failed: {e}")
@@ -113,8 +134,8 @@ async def call_ai_engine_conversion(mod_path: str, output_path: str, job_id: str
 
 load_dotenv()
 
-TEMP_UPLOADS_DIR = "temp_uploads"
-CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
+TEMP_UPLOADS_DIR = os.getenv("TEMP_UPLOADS_DIR", "temp_uploads")
+CONVERSION_OUTPUTS_DIR = os.getenv("CONVERSION_OUTPUTS_DIR", "conversion_outputs")
 # MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB - Removed, handled by ValidationFramework
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
@@ -189,15 +210,23 @@ app = FastAPI(
             "name": "ai_engine_data",
             "description": "Endpoints for providing data to the AI engine.",
         },
+        {
+            "name": "embeddings",
+            "description": "Operations for managing and querying document embeddings",
+        },
     ],
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
 # Include API routers
+from src.api import embeddings as embeddings_api # New import for embeddings router
 app.include_router(validation_router, prefix="/api/v1")
 app.include_router(
     comparison_api.router, prefix="/api/v1/comparisons", tags=["comparisons"]
+)
+app.include_router(
+    embeddings_api.router, prefix="/api/v1", tags=["embeddings"] # Mount the new router
 )
 
 report_generator = ConversionReportGenerator()
@@ -1033,7 +1062,8 @@ async def download_converted_mod(
         ...,
         pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
         description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).",
-    )
+    ),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Download the converted mod file.
@@ -1041,7 +1071,8 @@ async def download_converted_mod(
     This endpoint allows downloading the output of a successfully completed conversion job.
     The job must have a status of "completed" and a valid result file available.
     """
-    job = conversion_jobs_db.get(job_id)
+    # Get job from the actual database instead of in-memory cache
+    job = await crud.get_job(db, job_id)
 
     if not job:
         raise HTTPException(
@@ -1054,19 +1085,9 @@ async def download_converted_mod(
             detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.",
         )
 
-    if not job.result_url:  # Should be set if status is completed and file was made
-        logger.error(
-            f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed."
-        )
-        # This indicates an internal inconsistency if the job is 'completed'.
-        raise HTTPException(
-            status_code=404,
-            detail=f"Result for job '{job_id}' not available or URL is missing.",
-        )
-
     # Construct the path to the mock output file
     # The actual filename stored on server uses job_id for uniqueness
-    internal_filename = f"{job.job_id}_converted.zip"
+    internal_filename = f"{job.id}_converted.mcaddon"
     file_path = os.path.join(CONVERSION_OUTPUTS_DIR, internal_filename)
 
     if not os.path.exists(file_path):
@@ -1079,11 +1100,12 @@ async def download_converted_mod(
         )
 
     # Determine a user-friendly download filename
-    original_filename_base = os.path.splitext(job.original_filename)[0]
-    download_filename = f"{original_filename_base}_converted.zip"
+    original_filename = job.input_data.get("original_filename", "mod")
+    original_filename_base = os.path.splitext(original_filename)[0]
+    download_filename = f"{original_filename_base}_converted.mcaddon"
 
     return FileResponse(
-        path=file_path, media_type="application/zip", filename=download_filename
+        path=file_path, media_type="application/octet-stream", filename=download_filename
     )
 
 

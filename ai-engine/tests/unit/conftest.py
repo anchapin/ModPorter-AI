@@ -3,6 +3,7 @@ from pathlib import Path
 from PIL import Image
 import json
 from src.agents.asset_converter import AssetConverterAgent
+import numpy as np # Added for MockSentenceTransformer
 
 @pytest.fixture(scope="module")
 def agent():
@@ -159,3 +160,46 @@ class MockAudioSegment:
     def export(self, out_f, format):
         # Mock export, does nothing but satisfies the call
         return out_f
+
+# --- Added MockSentenceTransformer and fixture ---
+# Mock SentenceTransformer for tests to avoid actual model loading/downloads
+class MockSentenceTransformer:
+    def __init__(self, model_name_or_path):
+        if model_name_or_path == "invalid-model-name": # Simulate loading failure
+            raise Exception("Mock model loading failed")
+        self.model_name = model_name_or_path
+        self.embedding_dim = 384 # Default for all-MiniLM-L6-v2
+
+    def encode(self, sentences, convert_to_numpy=True):
+        if not sentences:
+            return np.array([]) if convert_to_numpy else []
+
+        if self.model_name == "mock-model-invalid-output": # Simulate model producing wrong type
+            return ["not_an_embedding"] * len(sentences)
+
+        embeddings = []
+        for s in sentences:
+            val = sum(ord(c) for c in s) % 256 # Simple hash-based deterministic 'embedding'
+            embedding_vector = np.full((self.embedding_dim,), val, dtype=np.float32)
+            embeddings.append(embedding_vector)
+
+        if convert_to_numpy:
+            return np.array(embeddings)
+        else:
+            return [e.tolist() for e in embeddings]
+
+@pytest.fixture
+def mock_sentence_transformer_fixture(monkeypatch):
+    # Replace the actual SentenceTransformer with the mock in the embedding_generator module
+    # Note: The path to SentenceTransformer within embedding_generator.py is crucial.
+    # If EmbeddingGenerator imports it as `from sentence_transformers import SentenceTransformer`,
+    # then we need to patch `src.utils.embedding_generator.SentenceTransformer`.
+    monkeypatch.setattr("src.utils.embedding_generator.SentenceTransformer", MockSentenceTransformer)
+    # Also patch the availability flag to True so the tests can run
+    monkeypatch.setattr("src.utils.embedding_generator.SENTENCE_TRANSFORMERS_AVAILABLE", True)
+
+# You might need to add project root to sys.path here if not handled by pytest/IDE,
+# e.g., by uncommenting and adjusting the sys.path modification lines from the prompt.
+# import sys
+# import os
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

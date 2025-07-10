@@ -91,14 +91,26 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
   return response.json();
 };
 
-export const downloadResult = async (jobId: string): Promise<Blob> => {
+export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filename: string }> => {
   const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
   
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
   }
 
-  return response.blob();
+  // Extract filename from Content-Disposition header
+  const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+  let filename = `converted-mod-${jobId}.mcaddon`; // fallback to UUID-based name
+  
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    if (fileNameMatch) {
+      filename = fileNameMatch[1];
+    }
+  }
+
+  const blob = await response.blob();
+  return { blob, filename };
 };
 
 export const cancelJob = async (jobId: string): Promise<void> => {

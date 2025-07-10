@@ -132,3 +132,25 @@ def conversion_job_data():
             "preserve_functionality": True
         }
     }
+
+class MockAudioSegment:
+    """A mock for pydub.AudioSegment to prevent actual audio processing during tests."""
+    def __init__(self, duration_seconds=1.0):
+        self.duration_seconds = duration_seconds
+
+    @classmethod
+    def from_wav(cls, file):
+        return cls(duration_seconds=1.0)
+
+    @classmethod
+    def from_ogg(cls, file):
+        return cls(duration_seconds=2.0)
+
+    def export(self, out_f, format):
+        pass # Do nothing on export
+
+@pytest.fixture
+def mock_audio_segment():
+    """Fixture that provides the MockAudioSegment class."""
+    return MockAudioSegment
+

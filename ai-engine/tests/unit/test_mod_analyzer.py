@@ -1,191 +1,190 @@
 import pytest
+import json
+import logging
+from unittest.mock import MagicMock, patch
 
-# Mock ModAnalyzer class (to be implemented)
-class ModAnalyzer:
-    """Analyzes Java mods to extract structure and features."""
-    
-    def __init__(self, ai_client=None):
-        self.ai_client = ai_client
-    
-    def analyze_mod_structure(self, mod_files):
-        """Analyze the structure of a Java mod."""
-        return {
-            "mod_type": "forge",
-            "minecraft_version": "1.19.2",
-            "main_class": "com.example.TestMod",
-            "items": ["test_item"],
-            "blocks": ["test_block"],
-            "recipes": ["test_recipe"]
-        }
-    
-    def extract_features(self, mod_structure):
-        """Extract key features from mod structure."""
-        # Calculate complexity based on number of components
-        items_count = len(mod_structure.get("items", []))
-        blocks_count = len(mod_structure.get("blocks", []))
-        recipes_count = len(mod_structure.get("recipes", []))
-        
-        # Base complexity calculation
-        total_components = items_count + blocks_count + recipes_count
-        complexity_score = min(0.9, max(0.1, total_components * 0.02))
-        
-        return {
-            "has_items": items_count > 0,
-            "has_blocks": blocks_count > 0,
-            "has_recipes": recipes_count > 0,
-            "complexity_score": complexity_score
-        }
-    
-    async def analyze_with_ai(self, mod_files):
-        """Use AI to analyze mod files."""
-        if not self.ai_client:
-            raise ValueError("AI client not configured")
-        
-        # Mock AI analysis
-        return {
-            "analysis": "This mod adds new items and blocks to Minecraft",
-            "compatibility": "high",
-            "conversion_difficulty": "medium",
-            "recommendations": ["Use behavior packs for custom items"]
-        }
+from src.agents.java_analyzer import JavaAnalyzerAgent
+# Note: mock_sentence_transformer_fixture is automatically applied from conftest.py
+# For this test file, we need JavaAnalyzerAgent. Ensure EmbeddingGenerator within it uses the mock.
 
-class TestModAnalyzer:
-    """Test ModAnalyzer functionality."""
-    
-    def test_analyze_basic_mod_structure(self, sample_java_mod):
-        """Test basic mod structure analysis."""
-        analyzer = ModAnalyzer()
-        
-        result = analyzer.analyze_mod_structure(sample_java_mod["files"])
-        
-        assert "mod_type" in result
-        assert "minecraft_version" in result
-        assert "main_class" in result
-        assert result["mod_type"] in ["forge", "fabric", "quilt"]
-    
-    def test_extract_features_from_structure(self):
-        """Test feature extraction from mod structure."""
-        analyzer = ModAnalyzer()
-        
-        mod_structure = {
-            "items": ["sword", "pickaxe"],
-            "blocks": ["ore_block"],
-            "recipes": ["sword_recipe"]
+@pytest.fixture
+def java_analyzer_agent_instance(mock_sentence_transformer_fixture): # Ensure mock is active
+    # Reset singleton instance for test isolation if needed, or manage state.
+    JavaAnalyzerAgent._instance = None # This might be needed if tests interfere
+    agent = JavaAnalyzerAgent.get_instance()
+    # The agent's __init__ would have created an EmbeddingGenerator,
+    # which should have used the MockSentenceTransformer due to the fixture.
+    assert agent.embedding_generator is not None
+    assert "MockSentenceTransformer" in str(type(agent.embedding_generator.model))
+    return agent
+
+class TestJavaAnalyzerAgent:
+    """Test JavaAnalyzerAgent functionality."""
+
+    def test_analyze_mod_file_with_embeddings(self, java_analyzer_agent_instance, monkeypatch, caplog):
+        """Test analyze_mod_file method, focusing on embeddings_data."""
+        agent = java_analyzer_agent_instance
+        mock_mod_path = "dummy_mod.jar"
+
+        # Mock the tool functions called by analyze_mod_file
+        # These mocks will return controlled JSON strings.
+        mock_structure_result = {
+            "success": True,
+            "analysis_results": {
+                "mod_path": mock_mod_path,
+                "mod_type": "jar",
+                "framework": "forge",
+                "structure_analysis": {"total_files": 10},
+                "file_inventory": {"total_count": 10},
+                "complexity_assessment": {"overall_complexity": "medium"}
+            },
+            "recommendations": []
         }
-        
-        features = analyzer.extract_features(mod_structure)
-        
-        assert features["has_items"] is True
-        assert features["has_blocks"] is True
-        assert features["has_recipes"] is True
-        assert isinstance(features["complexity_score"], float)
-        assert 0 <= features["complexity_score"] <= 1
-    
-    def test_extract_features_empty_mod(self):
-        """Test feature extraction from empty mod."""
-        analyzer = ModAnalyzer()
-        
-        empty_structure = {"items": [], "blocks": [], "recipes": []}
-        features = analyzer.extract_features(empty_structure)
-        
-        assert features["has_items"] is False
-        assert features["has_blocks"] is False
-        assert features["has_recipes"] is False
-    
-    @pytest.mark.asyncio
-    async def test_ai_analysis_with_mock_client(self, mock_openai_client):
-        """Test AI-powered analysis with mocked client."""
-        analyzer = ModAnalyzer(ai_client=mock_openai_client)
-        
-        test_files = {"main.java": "public class TestMod {}"}
-        result = await analyzer.analyze_with_ai(test_files)
-        
-        assert "analysis" in result
-        assert "compatibility" in result
-        assert "conversion_difficulty" in result
-        assert "recommendations" in result
-    
-    @pytest.mark.asyncio
-    async def test_ai_analysis_without_client(self):
-        """Test AI analysis fails without client."""
-        analyzer = ModAnalyzer()
-        
-        with pytest.raises(ValueError, match="AI client not configured"):
-            await analyzer.analyze_with_ai({"test.java": "code"})
-    
-    def test_analyze_forge_mod(self):
-        """Test analysis of Forge mod specifically."""
-        analyzer = ModAnalyzer()
-        
-        forge_files = {
-            "main.java": """
-                @Mod("testmod")
-                public class TestMod {
-                    public static final String MODID = "testmod";
-                }
-            """,
-            "mods.toml": """
-                modLoader="javafml"
-                loaderVersion="[40,)"
-            """
+        monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps(mock_structure_result)))
+
+        mock_metadata_result = {
+            "success": True,
+            "metadata": {
+                "id": "testmod",
+                "version": "1.0",
+                "description": "A sample mod description.", # Text for embedding
+                "authors": ["TestAuthor"]
+            },
+            "extraction_summary": {}
         }
-        
-        result = analyzer.analyze_mod_structure(forge_files)
-        assert result["mod_type"] == "forge"
-    
-    def test_analyze_fabric_mod(self):
-        """Test analysis of Fabric mod specifically."""
-        analyzer = ModAnalyzer()
-        
-        fabric_files = {
-            "main.java": """
-                public class TestMod implements ModInitializer {
-                    @Override
-                    public void onInitialize() {}
-                }
-            """,
-            "fabric.mod.json": """
-                {
-                    "schemaVersion": 1,
-                    "id": "testmod",
-                    "version": "1.0.0"
-                }
-            """
+        monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps(mock_metadata_result)))
+
+        mock_features_result = {
+            "success": True,
+            "feature_results": {
+                "identified_features": [
+                    {"feature_id": "block_myblock", "feature_type": "blocks", "name": "MyBlock"}
+                ],
+                "feature_categories": { # Text for embedding
+                    "blocks": [{"name": "MyAwesomeBlock", "feature_type": "blocks"}],
+                    "items": [{"name": "MyAwesomeItem", "feature_type": "items"}]
+                },
+                "feature_complexity": {},
+                "conversion_challenges": []
+            },
+            "feature_summary": {}
         }
+        monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps(mock_features_result)))
         
-        result = analyzer.analyze_mod_structure(fabric_files)
-        # Note: This would need actual implementation to detect Fabric
-        assert "mod_type" in result
-    
-    def test_complexity_calculation(self):
-        """Test complexity score calculation."""
-        analyzer = ModAnalyzer()
-        
-        # Simple mod
-        simple_structure = {"items": ["stick"], "blocks": [], "recipes": []}
-        simple_features = analyzer.extract_features(simple_structure)
-        
-        # Complex mod
-        complex_structure = {
-            "items": ["sword", "bow", "armor"] * 10,
-            "blocks": ["ore", "machine", "decoration"] * 5,
-            "recipes": ["craft1", "craft2"] * 8
+        mock_assets_result = {
+            "success": True,
+            "assets": {"textures": ["texture1.png"]},
+            "conversion_notes": []
         }
-        complex_features = analyzer.extract_features(complex_structure)
-        
-        # Complex mod should have higher complexity score
-        assert complex_features["complexity_score"] > simple_features["complexity_score"]
-    
-    @pytest.mark.slow
-    def test_large_mod_analysis(self):
-        """Test analysis of large mod files."""
-        analyzer = ModAnalyzer()
-        
-        # Create a large mod structure
-        large_files = {}
-        for i in range(100):
-            large_files[f"file_{i}.java"] = f"public class File{i} {{}}"
-        
-        # Should complete without timeout
-        result = analyzer.analyze_mod_structure(large_files)
-        assert result is not None
+        monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps(mock_assets_result)))
+
+        # Call the method to be tested
+        analysis_json = agent.analyze_mod_file(mock_mod_path)
+        results = json.loads(analysis_json)
+
+        assert "embeddings_data" in results
+        embeddings_data = results["embeddings_data"]
+        assert isinstance(embeddings_data, list)
+
+        # Expected texts to be embedded: description, "MyAwesomeBlock", "MyAwesomeItem"
+        expected_num_embeddings = 3
+        assert len(embeddings_data) == expected_num_embeddings, \
+            f"Expected {expected_num_embeddings} embedded items, got {len(embeddings_data)}. Caplog: {caplog.text}"
+
+        found_desc = False
+        found_block_feature = False
+        found_item_feature = False
+
+        for item in embeddings_data:
+            assert "type" in item
+            assert "original_text" in item
+            assert "embedding" in item
+            assert item["embedding"] is not None, f"Embedding for {item['original_text']} is None"
+            assert isinstance(item["embedding"], list)
+            assert len(item["embedding"]) == 384 # Mock embedding dimension
+
+            if item["type"] == "mod_description":
+                assert item["original_text"] == "A sample mod description."
+                found_desc = True
+            elif item["type"] == "feature_name" and item["category"] == "blocks":
+                assert item["original_text"] == "MyAwesomeBlock"
+                found_block_feature = True
+            elif item["type"] == "feature_name" and item["category"] == "items":
+                assert item["original_text"] == "MyAwesomeItem"
+                found_item_feature = True
+
+        assert found_desc, "Mod description embedding not found."
+        assert found_block_feature, "Block feature name embedding not found."
+        assert found_item_feature, "Item feature name embedding not found."
+
+    def test_analyze_mod_file_no_text_for_embeddings(self, monkeypatch, caplog, mock_sentence_transformer_fixture):
+        """Test analyze_mod_file when no description or features are found."""
+        # Set log level to capture warnings for the specific logger
+        caplog.set_level(logging.WARNING, logger="src.agents.java_analyzer")
+        # Create a new agent instance after the mock is applied
+        agent = JavaAnalyzerAgent()
+        mock_mod_path = "dummy_mod_no_text.jar"
+
+        # Mock tools to return empty description and no features
+        monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps({
+            "success": True, "analysis_results": {"framework": "forge"}})))
+        monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps({
+            "success": True, "metadata": {"description": ""}}))) # Empty description
+        monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps({
+            "success": True, "feature_results": {"feature_categories": {}}}))) # No features
+        monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps({"success": True, "assets": {}})))
+
+        analysis_json = agent.analyze_mod_file(mock_mod_path)
+        results = json.loads(analysis_json)
+
+        assert "embeddings_data" in results
+        assert results["embeddings_data"] == []
+        # When sentence-transformers is not available, the embeddings_data should be empty
+        # We can verify the behavior by checking the empty embeddings_data field
+        # which is the expected behavior when no embedding generation happens
+
+
+    def test_analyze_mod_file_embedding_model_load_failure(self, monkeypatch, caplog):
+        """Test analyze_mod_file when EmbeddingGenerator model fails to load."""
+        # Temporarily break the EmbeddingGenerator's model loading for this test
+        # This requires ensuring a new instance of JavaAnalyzerAgent is created,
+        # or that its embedding_generator is re-initialized with a failing model.
+
+        # Patch SentenceTransformer to fail for this specific test scope
+        with patch('src.utils.embedding_generator.SentenceTransformer', MagicMock(side_effect=Exception("Mock model loading failed"))):
+            # Force re-creation or re-initialization of relevant parts
+            JavaAnalyzerAgent._instance = None # Reset singleton
+            agent = JavaAnalyzerAgent.get_instance()
+            # Now this agent's embedding_generator.model should be None
+
+            assert agent.embedding_generator.model is None, \
+                "EmbeddingGenerator model should be None due to load failure."
+
+            mock_mod_path = "dummy_mod_fail_embed_load.jar"
+            monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps({
+                "success": True, "analysis_results": {"framework": "forge"}})))
+            monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps({
+                "success": True, "metadata": {"description": "Some text"}})))
+            monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps({
+                "success": True, "feature_results": {"feature_categories": {}}})))
+            monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps({"success": True, "assets": {}})))
+
+            analysis_json = agent.analyze_mod_file(mock_mod_path)
+            results = json.loads(analysis_json)
+
+            assert "embeddings_data" in results
+            assert results["embeddings_data"] == []
+            assert "EmbeddingGenerator model not loaded. Skipping embedding generation." in caplog.text
+
+            # Clean up singleton for other tests
+            JavaAnalyzerAgent._instance = None
+            # It's generally better if fixtures handle setup/teardown of such global state (singleton)
+            # or if the singleton pattern is avoided/managed for testability.
+            # For now, manually resetting.
+
+# Commenting out old tests for the mock ModAnalyzer
+# class TestModAnalyzer:
+#    """Test ModAnalyzer functionality."""
+#
+#    def test_analyze_basic_mod_structure(self, sample_java_mod):
+# ... (rest of the old tests)
