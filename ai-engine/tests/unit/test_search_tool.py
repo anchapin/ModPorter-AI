@@ -69,6 +69,38 @@ class TestSearchTool(unittest.TestCase):
         self.assertIn("error", result_data)
         self.assertIn("Query is required", result_data["error"])
 
+    def test_semantic_search_ai_advancements_query(self):
+        """Test semantic search with AI advancements query returns specific results."""
+        query = "AI advancements"
+        result = SearchTool.semantic_search.func(query)
+        
+        result_data = json.loads(result)
+        self.assertIn("query", result_data)
+        self.assertIn("results", result_data)
+        self.assertEqual(result_data["query"], query)
+        self.assertEqual(len(result_data["results"]), 3)  # AI advancements returns 3 results
+        
+        # Check that the results contain AI-related content
+        first_result = result_data["results"][0]
+        self.assertIn("language models", first_result["content"])
+        self.assertEqual(first_result["similarity_score"], 0.92)
+
+    def test_semantic_search_minecraft_modding_query(self):
+        """Test semantic search with Minecraft modding query returns specific results."""
+        query = "Minecraft modding"
+        result = SearchTool.semantic_search.func(query)
+        
+        result_data = json.loads(result)
+        self.assertIn("query", result_data)
+        self.assertIn("results", result_data)
+        self.assertEqual(result_data["query"], query)
+        self.assertEqual(len(result_data["results"]), 3)  # Minecraft modding returns 3 results
+        
+        # Check that the results contain Minecraft-related content
+        first_result = result_data["results"][0]
+        self.assertIn("Minecraft Forge", first_result["content"])
+        self.assertEqual(first_result["similarity_score"], 0.95)
+
     def test_document_search_with_source(self):
         """Test document search with document source."""
         source = "test_document_source"
@@ -311,6 +343,39 @@ class TestSearchTool(unittest.TestCase):
                 
                 # Should have fallback results
                 self.assertGreater(result_data["total_results"], 0)
+
+    def test_document_source_filtering(self):
+        """Test that document source filtering works correctly."""
+        tool = SearchTool.get_instance()
+        
+        # Test with a document source that should be filtered
+        results = tool._perform_semantic_search("test query", document_source="specific_source")
+        self.assertIsInstance(results, list)
+        
+        # In the generic case, results should be filtered
+        if results:
+            for result in results:
+                self.assertIn("specific_source", result.get("document_source", ""))
+
+    def test_search_tool_initialization(self):
+        """Test SearchTool initialization and vector client setup."""
+        tool = SearchTool.get_instance()
+        
+        # Check that the tool has the necessary attributes
+        self.assertTrue(hasattr(tool, 'vector_client'))
+        self.assertTrue(hasattr(tool, 'get_tools'))
+        self.assertTrue(hasattr(tool, '_perform_semantic_search'))
+        self.assertTrue(hasattr(tool, '_search_by_document_source'))
+        self.assertTrue(hasattr(tool, '_find_similar_documents'))
+
+    def test_search_tool_close_method(self):
+        """Test SearchTool close method."""
+        tool = SearchTool.get_instance()
+        
+        # Test that close method exists and can be called
+        self.assertTrue(hasattr(tool, 'close'))
+        # Since this is an async method, we can't directly test it here
+        # but we can verify it exists and is callable
 
 
 if __name__ == '__main__':

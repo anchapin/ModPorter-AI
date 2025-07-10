@@ -248,23 +248,94 @@ class SearchTool:
             List of search results
         """
         try:
-            # This would integrate with the actual vector database
-            # For now, return a mock structure that matches expected format
-            results = [
-                {
-                    "id": f"doc_{i}",
-                    "content": f"Mock search result {i} for query: {query}",
-                    "document_source": document_source or f"source_{i}",
-                    "similarity_score": 0.9 - (i * 0.1),
-                    "metadata": {
-                        "indexed_at": "2025-01-09T00:00:00Z",
-                        "content_type": "text"
+            # Enhanced mock data with better content for different query types
+            if "AI advancements" in query:
+                base_results = [
+                    {
+                        "id": "doc1",
+                        "content": "Recent breakthroughs in large language models have enabled more natural and context-aware conversations.",
+                        "document_source": "ai_research_journal_vol2.pdf",
+                        "similarity_score": 0.92,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    },
+                    {
+                        "id": "doc2", 
+                        "content": "Generative Adversarial Networks (GANs) are being used to create hyper-realistic images and videos.",
+                        "document_source": "tech_conference_proceedings_2023.docx",
+                        "similarity_score": 0.88,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    },
+                    {
+                        "id": "doc3",
+                        "content": "Ethical considerations in AI development, including bias and fairness, are becoming increasingly important.",
+                        "document_source": "ethics_in_ai_whitepaper.pdf",
+                        "similarity_score": 0.85,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
                     }
-                }
-                for i in range(min(limit, 3))  # Mock 3 results max
-            ]
+                ]
+            elif "Minecraft modding" in query:
+                base_results = [
+                    {
+                        "id": "mc_doc1",
+                        "content": "Minecraft Forge is a popular modding API for the Java Edition, allowing extensive modifications.",
+                        "document_source": "forge_wiki.html",
+                        "similarity_score": 0.95,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    },
+                    {
+                        "id": "mc_doc2",
+                        "content": "Bedrock Edition uses Add-Ons, which are behavior packs and resource packs, often written in JSON and JavaScript.",
+                        "document_source": "bedrock.dev/docs",
+                        "similarity_score": 0.90,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    },
+                    {
+                        "id": "mc_doc3",
+                        "content": "The RAG.md document in this repository outlines a plan for using AI to assist with porting Minecraft mods.",
+                        "document_source": "RAG.md",
+                        "similarity_score": 0.87,
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    }
+                ]
+            else:
+                base_results = [
+                    {
+                        "id": f"doc_{i}",
+                        "content": f"Mock search result {i} for query: {query}",
+                        "document_source": document_source or f"source_{i}",
+                        "similarity_score": 0.9 - (i * 0.1),
+                        "metadata": {
+                            "indexed_at": "2025-01-09T00:00:00Z",
+                            "content_type": "text"
+                        }
+                    }
+                    for i in range(min(limit, 3))  # Mock 3 results max
+                ]
             
-            return results
+            # Apply document source filter if provided
+            if document_source:
+                base_results = [r for r in base_results if document_source in r.get('document_source', '')]
+            
+            # Apply limit
+            return base_results[:limit]
             
         except Exception as e:
             logger.error(f"Semantic search execution failed: {str(e)}")
@@ -416,3 +487,24 @@ class SearchTool:
                     else:
                         close_method()
             logger.info("SearchTool connections closed")
+
+
+# Demo functionality for testing
+if __name__ == "__main__":
+    search_tool = SearchTool.get_instance()
+    
+    # Test semantic search
+    sample_query_ai = "What are the latest advancements in AI?"
+    output_ai = SearchTool.semantic_search(sample_query_ai)
+    print(f"Query: {sample_query_ai}")
+    print(f"Output:\n{output_ai}\n")
+
+    sample_query_mc = "Tell me about Minecraft modding."
+    output_mc = SearchTool.semantic_search(sample_query_mc)
+    print(f"Query: {sample_query_mc}")
+    print(f"Output:\n{output_mc}\n")
+
+    sample_query_other = "Some other topic."
+    output_other = SearchTool.semantic_search(sample_query_other)
+    print(f"Query: {sample_query_other}")
+    print(f"Output:\n{output_other}\n")

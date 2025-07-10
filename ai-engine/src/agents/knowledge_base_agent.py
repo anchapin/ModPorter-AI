@@ -1,6 +1,6 @@
 from typing import List
 from crewai.tools import BaseTool
-from ..tools.search_tool import SearchTool # Assuming relative import path
+from src.tools.search_tool import SearchTool
 
 class KnowledgeBaseAgent:
     """

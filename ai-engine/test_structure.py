@@ -8,7 +8,7 @@ import json
 import tempfile
 import zipfile
 from pathlib import Path
-from agents.packaging_agent import PackagingAgent
+from src.agents.packaging_agent import PackagingAgent
 
 def create_sample_behavior_pack(pack_dir: Path):
     """Create a sample behavior pack with proper manifest"""

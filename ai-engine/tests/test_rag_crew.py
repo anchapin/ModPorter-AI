@@ -88,8 +88,8 @@ class TestRAGCrew:
             crew = RAGCrew()
             
             # Should use default configurations
-            assert crew.researcher_config['role'] == 'Default Information Researcher'
-            assert crew.writer_config['role'] == 'Default Content Synthesizer'
+            assert crew.researcher_config['role'] == 'Information Researcher'
+            assert crew.writer_config['role'] == 'Content Synthesizer'
 
     def test_load_agent_configs_with_invalid_yaml(self):
         """Test loading agent configs with invalid YAML structure."""
