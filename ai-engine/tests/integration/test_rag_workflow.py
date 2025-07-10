@@ -10,7 +10,7 @@ from src.tools.search_tool import SearchTool
 # Fixture for VectorDBClient
 @pytest.fixture
 def vector_db_client():
-    return VectorDBClient(api_key="test_api_key")
+    return VectorDBClient(base_url="http://test-backend:8000/api/v1")
 
 # Fixture for KnowledgeBaseAgent
 @pytest.fixture

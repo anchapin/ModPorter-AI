@@ -2,6 +2,8 @@ import httpx
 import hashlib
 import os
 import logging # Using standard logging
+from typing import Optional
+from dataclasses import dataclass
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +12,18 @@ logger = logging.getLogger(__name__)
 # Default embedding dimension (e.g., for OpenAI text-embedding-ada-002)
 # This could be made configurable if different models are used.
 DEFAULT_EMBEDDING_DIMENSION = 1536
+
+@dataclass
+class Document:
+    """Represents a document for indexing or retrieval."""
+    content: str
+    source: str
+    content_hash: Optional[str] = None
+    
+    def __post_init__(self):
+        """Generate content hash if not provided."""
+        if self.content_hash is None:
+            self.content_hash = hashlib.md5(self.content.encode("utf-8")).hexdigest()
 
 class VectorDBClient:
     def __init__(self, base_url: str = None, timeout: float = 30.0):

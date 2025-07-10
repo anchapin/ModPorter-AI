@@ -11,6 +11,7 @@ from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
+from src.utils.embedding_generator import EmbeddingGenerator # Added import
 import os
 import zipfile
 from pathlib import Path
@@ -28,6 +29,7 @@ class JavaAnalyzerAgent:
     
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
+        self.embedding_generator = EmbeddingGenerator() # Added EmbeddingGenerator instantiation
         
         # File patterns for different types of mod files
         self.file_patterns = {
@@ -115,8 +117,63 @@ class JavaAnalyzerAgent:
                 "features": features.get("feature_results", {}).get("feature_categories", {}),
                 "structure": structure.get("analysis_results", {}),
                 "metadata": metadata.get("metadata", {}),
-                "errors": []
+                "errors": [],
+                "embeddings_data": [] # Initialize embeddings_data
             }
+
+            # Embedding generation logic
+            texts_to_embed = [] # List to hold all text snippets for embedding
+
+            # 1. Extract mod description for embedding
+            description_text = metadata_info.get("description", "") # From metadata_tool output
+            if description_text:
+                texts_to_embed.append({"type": "mod_description", "original_text": description_text})
+
+            # 2. Extract feature names for embedding
+            # features_result from identify_features_tool, features is json.loads(features_result)
+            feature_categories_data = features.get("feature_results", {}).get("feature_categories", {})
+            if isinstance(feature_categories_data, dict):
+                for category, feature_list in feature_categories_data.items():
+                    if isinstance(feature_list, list):
+                        for feature_item in feature_list:
+                            if isinstance(feature_item, dict) and "name" in feature_item:
+                                texts_to_embed.append({
+                                    "type": "feature_name",
+                                    "category": category,
+                                    "original_text": feature_item["name"]
+                                })
+
+            if self.embedding_generator and self.embedding_generator.model:
+                if texts_to_embed:
+                    try:
+                        original_texts_list = [item['original_text'] for item in texts_to_embed]
+                        embeddings_list = self.embedding_generator.generate_embeddings(original_texts_list)
+
+                        if embeddings_list is not None:
+                            embedded_data = []
+                            for i, item in enumerate(texts_to_embed):
+                                embedding_value = None
+                                # Ensure embedding exists and convert to list for JSON serialization
+                                if i < len(embeddings_list) and embeddings_list[i] is not None:
+                                    embedding_value = embeddings_list[i].tolist()
+
+                                embedded_data.append({
+                                    "type": item["type"],
+                                    "category": item.get("category"),
+                                    "original_text": item["original_text"],
+                                    "embedding": embedding_value
+                                })
+                            combined_result["embeddings_data"] = embedded_data
+                        else:
+                            logger.warning("Embedding generation returned None.")
+                            # combined_result["embeddings_data"] is already []
+                    except Exception as e_embed:
+                        logger.error(f"Error during embedding generation or processing: {e_embed}")
+                        # combined_result["embeddings_data"] is already []
+                else:
+                    logger.info("No text found to generate embeddings for.")
+            else:
+                logger.warning("EmbeddingGenerator model not loaded. Skipping embedding generation.")
             
             return json.dumps(combined_result)
             
