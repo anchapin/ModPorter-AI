@@ -120,7 +120,6 @@ async def main():
     await client.close()
 
 if __name__ == "__main__":
-    import asyncio
     # This is a simple way to run the async main function.
     # In a real application, you'd integrate this into your async event loop.
     # print("Running VectorDBClient main example...")

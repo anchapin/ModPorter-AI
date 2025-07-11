@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
 from src.testing.rag_evaluator import RagEvaluator
 from src.tools.search_tool import SearchTool

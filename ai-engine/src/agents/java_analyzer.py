@@ -868,19 +868,18 @@ class JavaAnalyzerAgent:
                 try:
                     data = json.loads(mod_data)
                     mod_path = data.get('mod_path', '')
-                    structure_analysis = data.get('structure_analysis', {})
+                    data.get('structure_analysis', {})
                     extraction_mode = data.get('extraction_mode', 'comprehensive')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
                     data = {'mod_path': mod_path}
-                    structure_analysis = {}
                     extraction_mode = 'comprehensive'
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
                 mod_path = data.get('mod_path', str(mod_data))
-                structure_analysis = data.get('structure_analysis', {})
+                data.get('structure_analysis', {})
                 extraction_mode = data.get('extraction_mode', 'comprehensive')
             
             feature_results = {
@@ -935,7 +934,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with dependency analysis
         """
-        agent = JavaAnalyzerAgent.get_instance()
+        JavaAnalyzerAgent.get_instance()
 
         def _analyze_direct_dependencies(metadata: Dict) -> List[Dict]:
             """Analyze direct dependencies"""
@@ -963,17 +962,16 @@ class JavaAnalyzerAgent:
                 try:
                     data = json.loads(mod_data)
                     mod_metadata = data.get('mod_metadata', {})
-                    analysis_depth = data.get('analysis_depth', 'standard')
+                    data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_metadata = {}
-                    analysis_depth = 'standard'
                     data = {'mod_metadata': mod_metadata}
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_metadata': {}}
                 mod_metadata = data.get('mod_metadata', {})
-                analysis_depth = data.get('analysis_depth', 'standard')
+                data.get('analysis_depth', 'standard')
             
             dependency_results = {
                 'direct_dependencies': [],
@@ -1025,7 +1023,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with asset information
         """
-        agent = JavaAnalyzerAgent.get_instance()
+        JavaAnalyzerAgent.get_instance()
 
         def _extract_assets_from_jar(jar_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from JAR"""

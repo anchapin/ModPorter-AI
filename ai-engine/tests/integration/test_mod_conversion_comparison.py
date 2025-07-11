@@ -2,7 +2,6 @@ import os
 import pytest
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 # (Keep MODS_TO_TEST and compare_addons as they are)
 MODS_TO_TEST = [
@@ -36,7 +35,7 @@ def compare_addons(generated_addon_path, downloaded_addon_path, tolerance=0.5):
         print("For meaningful comparison, replace placeholder with actual Bedrock addon")
         
         # Instead of comparing sizes, just verify the generated addon has reasonable content
-        if generated_size > 500:  # Reasonable minimum for an addon file
+        if generated_size > 500:
             print("✅ Generated addon has reasonable size, test passes")
             return True
         else:
@@ -142,7 +141,7 @@ def test_mod_conversion_comparison(mod_name, java_mod_fixture, downloaded_addon_
     except Exception as e:
         print(f"Crew AI conversion failed with error: {e}")
         print("This is expected in CI environments without proper LLM configuration")
-        print(f"Will use realistic simulation instead for test validation")
+        print("Will use realistic simulation instead for test validation")
         conversion_result = None
     
     # If the actual conversion failed or didn't produce output, create a realistic test file

@@ -315,7 +315,7 @@ public class TestBlock extends Block {
         validator = QAValidatorAgent()
         
         # Test conversion quality assessment
-        conversion_data = json.dumps({
+        json.dumps({
             "mod_info": {
                 "name": "TestMod",
                 "version": "1.0.0",

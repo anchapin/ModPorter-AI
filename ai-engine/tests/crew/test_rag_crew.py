@@ -59,7 +59,7 @@ def test_rag_crew_search_tool_integration(set_mock_env_vars):
     from src.tools.search_tool import SearchTool
     
     # Test SearchTool directly
-    search_tool = SearchTool.get_instance()
+    SearchTool.get_instance()
     query = "Test query for search output structure"
 
     # Test the semantic search tool

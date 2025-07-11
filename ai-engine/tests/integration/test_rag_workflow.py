@@ -1,11 +1,9 @@
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
 # Assuming these are the relevant classes. Adjust paths if necessary.
-from src.utils.vector_db_client import VectorDBClient, Document
+from src.utils.vector_db_client import VectorDBClient
 from src.agents.knowledge_base_agent import KnowledgeBaseAgent
-from src.tools.search_tool import SearchTool
 
 # Fixture for VectorDBClient
 @pytest.fixture

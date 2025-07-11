@@ -5,8 +5,7 @@ Using Ollama for real LLM responses instead of mocks
 """
 
 import json
-import os
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, 
@@ -104,7 +103,7 @@ class TestEndToEndIntegration:
             if len(matching) > 1:
                 # Test conflict resolution
                 conflict_analysis = self.smart_engine.get_conflict_analysis(feature_type)
-                assert conflict_analysis["has_conflicts"] == True
+                assert conflict_analysis["has_conflicts"]
                 assert conflict_analysis["resolution_details"]["resolved_assumption"].java_feature == expected_selection
                 assert "resolved_assumption" in conflict_analysis["resolution_details"]
             
@@ -323,11 +322,11 @@ class TestEndToEndIntegration:
 
         # Verify crew status
         status = crew.get_conversion_crew_status()
-        assert status["agents_initialized"]["java_analyzer"] == True
-        assert status["agents_initialized"]["bedrock_architect"] == True
-        assert status["smart_assumption_engine"]["initialized"] == True
-        assert status["smart_assumption_engine"]["conflict_resolution_enabled"] == True
-        assert status["crew_ready"] == True
+        assert status["agents_initialized"]["java_analyzer"]
+        assert status["agents_initialized"]["bedrock_architect"]
+        assert status["smart_assumption_engine"]["initialized"]
+        assert status["smart_assumption_engine"]["conflict_resolution_enabled"]
+        assert status["crew_ready"]
     
     def test_agent_class_instantiation(self):
         """Test that all agent classes can be instantiated properly"""
@@ -373,7 +372,7 @@ class TestEndToEndIntegration:
         
         # Should detect and resolve conflicts
         if analysis_result.get("has_conflicts"):
-            assert analysis_result.get("resolution_applied") == True
+            assert analysis_result.get("resolution_applied")
     
     def test_assumption_impact_prioritization(self):
         """Test that higher impact assumptions take priority in conflicts"""

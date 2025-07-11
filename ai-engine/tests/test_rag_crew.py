@@ -2,11 +2,10 @@
 Tests for the RAG Crew implementation.
 """
 
-import pytest
 import os
 import tempfile
 import yaml
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from src.crew.rag_crew import RAGCrew, AVAILABLE_TOOLS
 
 
@@ -231,7 +230,7 @@ class TestRAGCrew:
             mock_rag_crew.writer.tools = []
             mock_rag_crew_class.return_value = mock_rag_crew
             
-            with patch('builtins.print') as mock_print:
+            with patch('builtins.print'):
                 # Import the module to execute the main block 
                 with patch('sys.argv', ['rag_crew.py']):
                     # Simulate running the module as main
@@ -240,7 +239,7 @@ class TestRAGCrew:
                     # Execute the main block logic directly as if __name__ == '__main__'
                     rag_crew = rag_module.RAGCrew()
                     example_query = "What are the latest advancements in AI-powered search technology?"
-                    result = rag_crew.run(example_query)
+                    rag_crew.run(example_query)
                     
                     # Verify the crew was created and run was called
                     mock_rag_crew_class.assert_called_once()

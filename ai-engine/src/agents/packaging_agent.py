@@ -2,12 +2,11 @@
 Packaging Agent for assembling converted components into .mcaddon packages
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 
 import logging
 import json
 import zipfile
-import tempfile
 import os
 import copy
 from pathlib import Path
@@ -276,11 +275,11 @@ class PackagingAgent:
             # Handle both JSON string and direct input
             if isinstance(component_data, str):
                 try:
-                    data = json.loads(component_data)
+                    json.loads(component_data)
                 except json.JSONDecodeError:
-                    data = {'input': component_data}
+                    pass
             else:
-                data = component_data if isinstance(component_data, dict) else {'input': str(component_data)}
+                component_data if isinstance(component_data, dict) else {'input': str(component_data)}
             
             # Mock analysis of conversion components
             analysis_result = {
@@ -349,11 +348,11 @@ class PackagingAgent:
             # Handle both JSON string and direct input
             if isinstance(validation_data, str):
                 try:
-                    data = json.loads(validation_data)
+                    json.loads(validation_data)
                 except json.JSONDecodeError:
-                    data = {'input': validation_data}
+                    pass
             else:
-                data = validation_data if isinstance(validation_data, dict) else {'input': str(validation_data)}
+                validation_data if isinstance(validation_data, dict) else {'input': str(validation_data)}
             
             # Mock package validation
             validation_result = {

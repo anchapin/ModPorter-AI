@@ -240,7 +240,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def validate_bedrock_compatibility_tool(compatibility_data: str) -> str:
         """Validate Bedrock compatibility of features."""
-        agent = BedrockArchitectAgent.get_instance()
+        BedrockArchitectAgent.get_instance()
         def _validate_component_compatibility(component: Dict[str, Any]) -> Dict[str, Any]:
             """Validate individual component compatibility with Bedrock"""
             validation = {
@@ -255,7 +255,7 @@ class BedrockArchitectAgent:
             
             # Check for high-impact conversions
             if impact_level == "high":
-                validation["warnings"].append(f"High-impact conversion may result in significant functionality loss")
+                validation["warnings"].append("High-impact conversion may result in significant functionality loss")
                 validation["recommendations"].append("Review user expectations and provide clear documentation about changes")
             
             # Check for specific assumption types

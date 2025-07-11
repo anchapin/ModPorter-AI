@@ -159,7 +159,7 @@ class AssetConverterAgent:
                         animation_data = mcmeta_content["animation"]
                         optimizations_applied.append("Parsed .mcmeta animation data")
                 except (json.JSONDecodeError, Exception) as e:
-                    logger.warning(f"Could not parse .mcmeta file for {texture_path}: {e}")
+                    logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
 
             base_name = Path(texture_path).stem
             if usage == 'block':
@@ -490,7 +490,7 @@ class AssetConverterAgent:
                 if java_parent in ["item/generated", "item/builtin/entity"]:
                     warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
                 elif java_parent == "item/handheld":
-                    warnings.append(f"Handling as 'item/handheld'. Display transformations not applied.")
+                    warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
 
                 texture_layers = java_model.get("textures", {})
                 layer_count = 0
@@ -855,7 +855,6 @@ class AssetConverterAgent:
             
             for asset in asset_list:
                 asset_path = asset.get('path', '')
-                asset_type = asset.get('type', 'unknown')
                 metadata = asset.get('metadata', {})
                 
                 file_ext = Path(asset_path).suffix.lower()
@@ -923,7 +922,8 @@ class AssetConverterAgent:
                 power *= 2
             return power
         def _previous_power_of_2(n: int) -> int:
-            if n <= 0: return 1 # Smallest power of 2, or raise error
+            if n <= 0:
+                return 1  # Smallest power of 2, or raise error
             power = 1
             while (power * 2) <= n:
                 power *= 2
@@ -952,7 +952,6 @@ class AssetConverterAgent:
 
                 # Determine if resizing is needed due to power-of-two requirement or exceeding max resolution
                 needs_pot_resize = must_be_power_of_2 and (not _is_power_of_2(width) or not _is_power_of_2(height))
-                exceeds_max_res = width > max_res or height > max_res
 
                 if needs_pot_resize:
                     new_width = _next_power_of_2(width)
@@ -1100,7 +1099,8 @@ class AssetConverterAgent:
 
                     # MCMETA frametime is in game ticks. Default to 1 if not specified.
                     ticks = anim_data.get("frametime", 1)
-                    if ticks <= 0: ticks = 1 # Ensure positive frametime
+                    if ticks <= 0:
+                        ticks = 1  # Ensure positive frametime
 
                     entry = {
                         "flipbook_texture": converted_path,
@@ -1189,7 +1189,6 @@ class AssetConverterAgent:
     @staticmethod
     def convert_models_tool(model_data: str) -> str:
         """Convert models to Bedrock format."""
-        agent = AssetConverterAgent.get_instance()
         def _convert_single_model(model_path: str, metadata: Dict, entity_type: str) -> Dict:
             warnings = []
             try:
@@ -1239,7 +1238,7 @@ class AssetConverterAgent:
                     if java_parent in ["item/generated", "item/builtin/entity"]:
                         warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
                     elif java_parent == "item/handheld":
-                        warnings.append(f"Handling as 'item/handheld'. Display transformations not applied.")
+                        warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
 
                     texture_layers = java_model.get("textures", {})
                     layer_count = 0
@@ -1304,10 +1303,14 @@ class AssetConverterAgent:
                             axis = rot.get("axis", "y")
                             java_rot_origin = rot.get("origin", [8.0, 8.0, 8.0])
                             bone_pivot = [c - 8.0 for c in java_rot_origin]
-                            if axis == "x": bone_rotation[0] = angle
-                            elif axis == "y": bone_rotation[1] = -angle # Often Y rotation is inverted
-                            elif axis == "z": bone_rotation[2] = angle
-                            else: warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
+                            if axis == "x":
+                                bone_rotation[0] = angle
+                            elif axis == "y":
+                                bone_rotation[1] = -angle  # Often Y rotation is inverted
+                            elif axis == "z":
+                                bone_rotation[2] = angle
+                            else:
+                                warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
                             warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
 
                         from_coords = element.get("from", [0.0,0.0,0.0])
@@ -1330,7 +1333,8 @@ class AssetConverterAgent:
                                 if face_name_priority in element_faces:
                                     face_data = element_faces[face_name_priority]
                                     break
-                            if not face_data: face_data = next(iter(element_faces.values()), None)
+                            if not face_data:
+                                face_data = next(iter(element_faces.values()), None)
                             if face_data and "uv" in face_data:
                                 cube_uv = [face_data["uv"][0], face_data["uv"][1]]
                                 texture_variable = face_data.get("texture")
@@ -1684,7 +1688,6 @@ class AssetConverterAgent:
             
             for asset in assets:
                 asset_path = asset.get('path', '')
-                asset_type = asset.get('type', 'unknown')
                 metadata = asset.get('metadata', {})
                 
                 validation = _validate_single_asset(asset_path, asset_type, metadata)
@@ -1950,7 +1953,8 @@ class AssetConverterAgent:
             return {'success': False, 'original_path': str(texture_path), 'error': str(e)}
 
     def _previous_power_of_2(self, n: int) -> int:
-        if n <= 0: return 1 # Smallest power of 2, or raise error
+        if n <= 0:
+            return 1  # Smallest power of 2, or raise error
         power = 1
         while (power * 2) <= n:
             power *= 2
@@ -2070,10 +2074,14 @@ class AssetConverterAgent:
                         axis = rot.get("axis", "y")
                         java_rot_origin = rot.get("origin", [8.0, 8.0, 8.0])
                         bone_pivot = [c - 8.0 for c in java_rot_origin]
-                        if axis == "x": bone_rotation[0] = angle
-                        elif axis == "y": bone_rotation[1] = -angle # Often Y rotation is inverted
-                        elif axis == "z": bone_rotation[2] = angle
-                        else: warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
+                        if axis == "x":
+                            bone_rotation[0] = angle
+                        elif axis == "y":
+                            bone_rotation[1] = -angle  # Often Y rotation is inverted
+                        elif axis == "z":
+                            bone_rotation[2] = angle
+                        else:
+                            warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
                         warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
 
                     from_coords = element.get("from", [0.0,0.0,0.0])
@@ -2096,7 +2104,8 @@ class AssetConverterAgent:
                             if face_name_priority in element_faces:
                                 face_data = element_faces[face_name_priority]
                                 break
-                        if not face_data: face_data = next(iter(element_faces.values()), None)
+                        if not face_data:
+                            face_data = next(iter(element_faces.values()), None)
                         if face_data and "uv" in face_data:
                             cube_uv = [face_data["uv"][0], face_data["uv"][1]]
                             texture_variable = face_data.get("texture")
@@ -2432,7 +2441,8 @@ class AssetConverterAgent:
 
                 # MCMETA frametime is in game ticks. Default to 1 if not specified.
                 ticks = anim_data.get("frametime", 1)
-                if ticks <= 0: ticks = 1 # Ensure positive frametime
+                if ticks <= 0:
+                    ticks = 1  # Ensure positive frametime
 
                 entry = {
                     "flipbook_texture": converted_path,

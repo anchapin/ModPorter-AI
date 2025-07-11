@@ -90,16 +90,21 @@ class TestScenarioExecutor:
             results["steps_executed"] += 1
             step_result = self._execute_step(step)
             results["step_results"].append(step_result)
-            if step_result["status"] == "SUCCESS": results["steps_succeeded"] += 1
-            else:
-                results["steps_failed"] += 1
-                if scenario_data.get("fail_fast", False):
-                    self.logger.warning(f"Step failed in fail_fast mode. Stopping scenario: {scenario_name}"); break
+            if step_result["status"] == "SUCCESS":
+            results["steps_succeeded"] += 1
+        else:
+            results["steps_failed"] += 1
+            if scenario_data.get("fail_fast", False):
+                self.logger.warning(f"Step failed in fail_fast mode. Stopping scenario: {scenario_name}")
+                break
         end_time = time.time()
         results["execution_time_ms"] = int((end_time - start_time) * 1000)
-        if results["steps_failed"] == 0 and results["steps_executed"] > 0: results["final_status"] = "SUCCESS"
-        elif results["steps_executed"] == 0: results["final_status"] = "NO_STEPS"
-        else: results["final_status"] = "FAILED"
+        if results["steps_failed"] == 0 and results["steps_executed"] > 0:
+            results["final_status"] = "SUCCESS"
+        elif results["steps_executed"] == 0:
+            results["final_status"] = "NO_STEPS"
+        else:
+            results["final_status"] = "FAILED"
         self.logger.info(f"Finished execution of scenario: {scenario_name}. Status: {results['final_status']}")
         return results
 
@@ -121,7 +126,8 @@ class TestScenarioExecutor:
                 target = step.get('target', 'unknown_target')
                 self.logger.info(f"Simulating action: {action} on target {target}")
                 self.state_tracker.update_state({"last_interaction": {"type": "right_click", "target": target, "timestamp": time.time()}})
-                if target == "custom_block_A": self.state_tracker.update_state({"gui_opened_for_custom_block_A": "main_menu_mock_value"})
+                if target == "custom_block_A":
+                    self.state_tracker.update_state({"gui_opened_for_custom_block_A": "main_menu_mock_value"})
                 step_status = "SUCCESS"; step_message = f"Right-click on '{target}' (simulated)."
             elif action == "verify_state":
                 key_to_verify = step.get("key"); expected_value = step.get("expected")
@@ -143,8 +149,14 @@ class TestScenarioExecutor:
                     step_status = "SUCCESS"; step_message = f"Behavior '{expected_behavior_id}' verified (simulated)."
                 else:
                     step_status = "FAILURE"; step_message = f"No recent event for behavior '{expected_behavior_id}' (simulated)."
-            else: self.logger.warning(f"Unknown action: {action}"); step_status = "SKIPPED"; step_message = f"Action '{action}' not implemented."
-        except Exception as e: self.logger.error(f"Error in step '{action}': {e}", exc_info=True); step_status = "ERROR"; step_message = str(e)
+            else:
+                self.logger.warning(f"Unknown action: {action}")
+                step_status = "SKIPPED"
+                step_message = f"Action '{action}' not implemented."
+        except Exception as e:
+            self.logger.error(f"Error in step '{action}': {e}", exc_info=True)
+            step_status = "ERROR"
+            step_message = str(e)
         exec_time_ms = int((time.time() - step_start_time) * 1000)
         return {"action": action, "details": step, "status": step_status, "message": step_message, "execution_time_ms": exec_time_ms}
 
@@ -205,7 +217,8 @@ class BehavioralAnalyzer:
 
     def analyze_interaction_patterns(self, interaction_history: List[Dict[str, Any]]) -> Dict[str, Any]:
         self.logger.info("Analyzing interaction patterns (placeholder).")
-        if not interaction_history: return {"pattern": "none", "details": "No history."}
+        if not interaction_history:
+            return {"pattern": "none", "details": "No history."}
         counts = {}
         for interaction in interaction_history:
             action_type = interaction.get("type", "unknown")
@@ -222,7 +235,8 @@ class TestResultProcessor:
     def process_scenario_result(self, scenario_execution_output: Dict[str, Any],
                                 behavioral_analysis_results: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         self.logger.info(f"Processing results for scenario: {scenario_execution_output.get('scenario_name', 'Unknown Scenario')}")
-        if behavioral_analysis_results is None: behavioral_analysis_results = []
+        if behavioral_analysis_results is None:
+            behavioral_analysis_results = []
 
         processed_scenario_result = {
             "scenario_name": scenario_execution_output.get("scenario_name", "Unknown Scenario"),
@@ -268,7 +282,8 @@ class TestResultProcessor:
         return batch_processed
 
     def get_summary(self) -> Dict[str, Any]:
-        if not self.processed_results: return {"message": "No results processed."}
+        if not self.processed_results:
+            return {"message": "No results processed."}
         total = len(self.processed_results)
         passed = sum(1 for r in self.processed_results if r["overall_status"] in ["SUCCESS", "PASSED"])
         failed = total - passed
@@ -323,9 +338,12 @@ class BehavioralReportGenerator:
                     lines.append(f"    Type: {issue.get('type', 'N/A')}")
                     lines.append(f"    Scenario: {issue.get('scenario', 'N/A')}")
                     lines.append(f"    Details: {issue.get('details', 'N/A')}")
-                    if issue.get("expected") is not None: lines.append(f"    Expected: {json.dumps(issue.get('expected'))}")
-                    if issue.get("actual") is not None: lines.append(f"    Actual: {json.dumps(issue.get('actual'))}")
-            else: lines.append("\nNo specific issues detected or summarized.")
+                    if issue.get("expected") is not None:
+                        lines.append(f"    Expected: {json.dumps(issue.get('expected'))}")
+                    if issue.get("actual") is not None:
+                        lines.append(f"    Actual: {json.dumps(issue.get('actual'))}")
+            else:
+                lines.append("\nNo specific issues detected or summarized.")
 
             if "processed_results_list" in report_data_to_embed:
                 lines.append("\n--- Individual Scenario Details ---")

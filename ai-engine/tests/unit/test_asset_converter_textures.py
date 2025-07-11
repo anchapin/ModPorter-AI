@@ -9,11 +9,11 @@ def get_image_dimensions(file_path: str) -> tuple[int, int]:
         return img.size
 
 def test_is_power_of_2(agent: AssetConverterAgent):
-    assert agent._is_power_of_2(16) == True
-    assert agent._is_power_of_2(15) == False
-    assert agent._is_power_of_2(1) == True
-    assert agent._is_power_of_2(0) == False
-    assert agent._is_power_of_2(-2) == False
+    assert agent._is_power_of_2(16)
+    assert not agent._is_power_of_2(15)
+    assert agent._is_power_of_2(1)
+    assert not agent._is_power_of_2(0)
+    assert not agent._is_power_of_2(-2)
 
 def test_next_power_of_2(agent: AssetConverterAgent):
     assert agent._next_power_of_2(15) == 16
@@ -36,7 +36,7 @@ def test_convert_single_texture_valid_png_no_resize(agent: AssetConverterAgent, 
     assert "textures/blocks/" in result["converted_path"]
     assert result["original_dimensions"] == (16, 16)
     assert result["converted_dimensions"] == (16, 16)
-    assert result["resized"] == False
+    assert not result["resized"]
     assert "Converted to RGBA" in result["optimizations_applied"]
     assert result["bedrock_reference"] == "block_dummy_16x16"
 
@@ -47,7 +47,7 @@ def test_convert_single_texture_valid_png_resize_needed(agent: AssetConverterAge
 
     assert result["success"]
     assert result["original_dimensions"] == original_dims
-    assert result["resized"] == True
+    assert result["resized"]
     # For 17x17, next_power_of_2 should be 32x32
     assert result["converted_dimensions"] == (32, 32)
     assert f"Resized from {original_dims} to {(32,32)}" in result["optimizations_applied"]
@@ -66,7 +66,7 @@ def test_convert_single_texture_exceeds_max_resolution(agent: AssetConverterAgen
 
     assert result["success"]
     assert result["original_dimensions"] == original_dims # (256,256)
-    assert result["resized"] == True
+    assert result["resized"]
     # It was 256x256. _next_power_of_2(256) is 256.
     # Then capped at max_res 128.
     # Then _previous_power_of_2(128) is 128.
@@ -141,4 +141,4 @@ def test_generate_texture_pack_structure(agent: AssetConverterAgent):
     assert lava_flipbook["atlas_tile"] == "animated_lava"
     assert lava_flipbook["ticks_per_frame"] == 2
     assert lava_flipbook["frames"] == [0,1,2,3]
-    assert lava_flipbook["interpolate"] == True
+    assert lava_flipbook["interpolate"]

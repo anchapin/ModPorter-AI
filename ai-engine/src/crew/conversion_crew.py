@@ -4,8 +4,7 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 """
 
 from crewai import Agent, Task, Crew, Process
-from langchain_openai import ChatOpenAI
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 import json
 import logging
 import os
@@ -27,7 +26,7 @@ from src.agents.qa_validator import QAValidatorAgent
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
 from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
-from src.utils.rate_limiter import create_rate_limited_llm, get_fallback_llm, create_ollama_llm
+from src.utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
 
 logger = logging.getLogger(__name__)
 
@@ -449,7 +448,7 @@ class ModPorterConversionCrew:
                 
                 # Check if crew execution failed or returned invalid result
                 if result is None or (hasattr(result, 'raw') and not result.raw):
-                    logger.error(f"Crew execution failed - no valid result returned")
+                    logger.error("Crew execution failed - no valid result returned")
                     raise RuntimeError("Crew execution failed - no valid result returned")
                     
             except Exception as crew_error:
