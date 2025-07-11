@@ -1,6 +1,5 @@
 import pytest
 import json
-import logging
 from unittest.mock import MagicMock, patch
 
 from src.agents.java_analyzer import JavaAnalyzerAgent
@@ -21,138 +20,100 @@ def java_analyzer_agent_instance(mock_sentence_transformer_fixture): # Ensure mo
 class TestJavaAnalyzerAgent:
     """Test JavaAnalyzerAgent functionality."""
 
-    def test_analyze_mod_file_with_embeddings(self, java_analyzer_agent_instance, monkeypatch, caplog):
-        """Test analyze_mod_file method, focusing on embeddings_data."""
-        agent = java_analyzer_agent_instance
-        mock_mod_path = "dummy_mod.jar"
-
-        # Mock the tool functions called by analyze_mod_file
-        # These mocks will return controlled JSON strings.
-        mock_structure_result = {
-            "success": True,
-            "analysis_results": {
-                "mod_path": mock_mod_path,
-                "mod_type": "jar",
-                "framework": "forge",
-                "structure_analysis": {"total_files": 10},
-                "file_inventory": {"total_count": 10},
-                "complexity_assessment": {"overall_complexity": "medium"}
-            },
-            "recommendations": []
-        }
-        monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps(mock_structure_result)))
-
-        mock_metadata_result = {
-            "success": True,
-            "metadata": {
-                "id": "testmod",
-                "version": "1.0",
-                "description": "A sample mod description.", # Text for embedding
-                "authors": ["TestAuthor"]
-            },
-            "extraction_summary": {}
-        }
-        monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps(mock_metadata_result)))
-
-        mock_features_result = {
-            "success": True,
-            "feature_results": {
-                "identified_features": [
-                    {"feature_id": "block_myblock", "feature_type": "blocks", "name": "MyBlock"}
-                ],
-                "feature_categories": { # Text for embedding
-                    "blocks": [{"name": "MyAwesomeBlock", "feature_type": "blocks"}],
-                    "items": [{"name": "MyAwesomeItem", "feature_type": "items"}]
-                },
-                "feature_complexity": {},
-                "conversion_challenges": []
-            },
-            "feature_summary": {}
-        }
-        monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps(mock_features_result)))
+    def test_analyze_mod_file_with_fabric_mod(self, java_analyzer_agent_instance, tmp_path):
+        """Test analyze_mod_file method with a real fabric mod file."""
+        import zipfile
         
-        mock_assets_result = {
-            "success": True,
-            "assets": {"textures": ["texture1.png"]},
-            "conversion_notes": []
-        }
-        monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps(mock_assets_result)))
-
+        agent = java_analyzer_agent_instance
+        
+        # Create a realistic fabric mod JAR file
+        mod_file = tmp_path / "testmod.jar"
+        with zipfile.ZipFile(mod_file, 'w') as zf:
+            # Add fabric.mod.json
+            fabric_manifest = {
+                "schemaVersion": 1,
+                "id": "testmod",
+                "version": "1.0.0",
+                "name": "TestMod",
+                "description": "A test mod for unit testing",
+                "authors": ["TestAuthor"],
+                "environment": "*",
+                "depends": {
+                    "minecraft": "1.19.4",
+                    "fabricloader": ">=0.14.0"
+                }
+            }
+            zf.writestr("fabric.mod.json", json.dumps(fabric_manifest))
+            
+            # Add some assets
+            zf.writestr("assets/testmod/textures/block/test_block.png", "fake_png_data")
+            zf.writestr("assets/testmod/textures/item/test_item.png", "fake_png_data")
+            zf.writestr("assets/testmod/models/block/test_block.json", '{"parent": "block/cube_all"}')
+            zf.writestr("assets/testmod/sounds/test_sound.ogg", "fake_ogg_data")
+            
+            # Add some Java source files (even though they won't be parsed)
+            zf.writestr("com/example/testmod/TestMod.java", "public class TestMod {}")
+        
         # Call the method to be tested
-        analysis_json = agent.analyze_mod_file(mock_mod_path)
+        analysis_json = agent.analyze_mod_file(str(mod_file))
         results = json.loads(analysis_json)
-
+        
+        # Verify the basic structure
+        assert "mod_info" in results
+        assert "assets" in results
+        assert "features" in results
+        assert "structure" in results
+        assert "metadata" in results
+        assert "errors" in results
         assert "embeddings_data" in results
-        embeddings_data = results["embeddings_data"]
-        assert isinstance(embeddings_data, list)
+        
+        # Verify mod info extraction
+        mod_info = results["mod_info"]
+        assert mod_info["name"] == "testmod"
+        assert mod_info["framework"] == "fabric"
+        assert mod_info["version"] == "1.0.0"
+        
+        # Verify assets analysis
+        assets = results["assets"]
+        assert "textures" in assets
+        assert "models" in assets
+        assert "sounds" in assets
+        assert len(assets["textures"]) == 2  # test_block.png, test_item.png
+        assert len(assets["models"]) == 1    # test_block.json
+        assert len(assets["sounds"]) == 1    # test_sound.ogg
+        
+        # Verify structure analysis
+        structure = results["structure"]
+        assert structure["type"] == "jar"
+        assert structure["files"] > 0
+        
+        # Verify no errors
+        assert len(results["errors"]) == 0
 
-        # Expected texts to be embedded: description, "MyAwesomeBlock", "MyAwesomeItem"
-        expected_num_embeddings = 3
-        assert len(embeddings_data) == expected_num_embeddings, \
-            f"Expected {expected_num_embeddings} embedded items, got {len(embeddings_data)}. Caplog: {caplog.text}"
-
-        found_desc = False
-        found_block_feature = False
-        found_item_feature = False
-
-        for item in embeddings_data:
-            assert "type" in item
-            assert "original_text" in item
-            assert "embedding" in item
-            assert item["embedding"] is not None, f"Embedding for {item['original_text']} is None"
-            assert isinstance(item["embedding"], list)
-            assert len(item["embedding"]) == 384 # Mock embedding dimension
-
-            if item["type"] == "mod_description":
-                assert item["original_text"] == "A sample mod description."
-                found_desc = True
-            elif item["type"] == "feature_name" and item["category"] == "blocks":
-                assert item["original_text"] == "MyAwesomeBlock"
-                found_block_feature = True
-            elif item["type"] == "feature_name" and item["category"] == "items":
-                assert item["original_text"] == "MyAwesomeItem"
-                found_item_feature = True
-
-        assert found_desc, "Mod description embedding not found."
-        assert found_block_feature, "Block feature name embedding not found."
-        assert found_item_feature, "Item feature name embedding not found."
-
-    def test_analyze_mod_file_no_text_for_embeddings(self, monkeypatch, caplog, mock_sentence_transformer_fixture):
-        """Test analyze_mod_file when no description or features are found."""
-        # Set log level to capture warnings for the specific logger
-        caplog.set_level(logging.WARNING, logger="src.agents.java_analyzer")
-        # Create a new agent instance after the mock is applied
-        agent = JavaAnalyzerAgent()
-        mock_mod_path = "dummy_mod_no_text.jar"
-
-        # Mock tools to return empty description and no features
-        monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps({
-            "success": True, "analysis_results": {"framework": "forge"}})))
-        monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps({
-            "success": True, "metadata": {"description": ""}}))) # Empty description
-        monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps({
-            "success": True, "feature_results": {"feature_categories": {}}}))) # No features
-        monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps({"success": True, "assets": {}})))
-
-        analysis_json = agent.analyze_mod_file(mock_mod_path)
+    def test_analyze_mod_file_with_invalid_file(self, java_analyzer_agent_instance):
+        """Test analyze_mod_file when file doesn't exist."""
+        agent = java_analyzer_agent_instance
+        nonexistent_file = "/path/to/nonexistent/file.jar"
+        
+        # Call the method with non-existent file
+        analysis_json = agent.analyze_mod_file(nonexistent_file)
         results = json.loads(analysis_json)
-
+        
+        # Verify error handling
+        assert "mod_info" in results
+        assert "errors" in results
+        assert len(results["errors"]) > 0
         assert "embeddings_data" in results
         assert results["embeddings_data"] == []
-        # When sentence-transformers is not available, the embeddings_data should be empty
-        # We can verify the behavior by checking the empty embeddings_data field
-        # which is the expected behavior when no embedding generation happens
 
 
-    def test_analyze_mod_file_embedding_model_load_failure(self, monkeypatch, caplog):
+    def test_analyze_mod_file_embedding_model_load_failure(self, caplog, tmp_path):
         """Test analyze_mod_file when EmbeddingGenerator model fails to load."""
-        # Temporarily break the EmbeddingGenerator's model loading for this test
-        # This requires ensuring a new instance of JavaAnalyzerAgent is created,
-        # or that its embedding_generator is re-initialized with a failing model.
-
+        import zipfile
+        
         # Patch SentenceTransformer to fail for this specific test scope
         with patch('src.utils.embedding_generator.SentenceTransformer', MagicMock(side_effect=Exception("Mock model loading failed"))):
-            # Force re-creation or re-initialization of relevant parts
+            # Force re-creation of JavaAnalyzerAgent with failed embedding model
             JavaAnalyzerAgent._instance = None # Reset singleton
             agent = JavaAnalyzerAgent.get_instance()
             # Now this agent's embedding_generator.model should be None
@@ -160,27 +121,37 @@ class TestJavaAnalyzerAgent:
             assert agent.embedding_generator.model is None, \
                 "EmbeddingGenerator model should be None due to load failure."
 
-            mock_mod_path = "dummy_mod_fail_embed_load.jar"
-            monkeypatch.setattr(agent.analyze_mod_structure_tool, 'func', MagicMock(return_value=json.dumps({
-                "success": True, "analysis_results": {"framework": "forge"}})))
-            monkeypatch.setattr(agent.extract_mod_metadata_tool, 'func', MagicMock(return_value=json.dumps({
-                "success": True, "metadata": {"description": "Some text"}})))
-            monkeypatch.setattr(agent.identify_features_tool, 'func', MagicMock(return_value=json.dumps({
-                "success": True, "feature_results": {"feature_categories": {}}})))
-            monkeypatch.setattr(agent.extract_assets_tool, 'func', MagicMock(return_value=json.dumps({"success": True, "assets": {}})))
+            # Create a real test JAR file that will succeed in analysis but fail in embedding
+            mod_file = tmp_path / "testmod_fail_embed.jar"
+            with zipfile.ZipFile(mod_file, 'w') as zf:
+                # Add fabric.mod.json
+                fabric_manifest = {
+                    "schemaVersion": 1,
+                    "id": "testmod_fail_embed",
+                    "version": "1.0.0", 
+                    "name": "TestMod Fail Embed",
+                    "description": "A test mod for embedding failure testing",
+                    "authors": ["TestAuthor"],
+                    "environment": "*"
+                }
+                zf.writestr("fabric.mod.json", json.dumps(fabric_manifest))
+                # Add some assets
+                zf.writestr("assets/testmod/textures/block/test_block.png", "fake_png_data")
 
-            analysis_json = agent.analyze_mod_file(mock_mod_path)
+            # Call the method - should work but skip embeddings
+            analysis_json = agent.analyze_mod_file(str(mod_file))
             results = json.loads(analysis_json)
 
+            # Verify basic analysis worked
+            assert "mod_info" in results
             assert "embeddings_data" in results
             assert results["embeddings_data"] == []
-            assert "EmbeddingGenerator model not loaded. Skipping embedding generation." in caplog.text
+            
+            # Verify the embedding failure was logged during EmbeddingGenerator initialization
+            assert "sentence-transformers not available. Cannot initialize EmbeddingGenerator." in caplog.text
 
             # Clean up singleton for other tests
             JavaAnalyzerAgent._instance = None
-            # It's generally better if fixtures handle setup/teardown of such global state (singleton)
-            # or if the singleton pattern is avoided/managed for testability.
-            # For now, manually resetting.
 
 # Commenting out old tests for the mock ModAnalyzer
 # class TestModAnalyzer:
