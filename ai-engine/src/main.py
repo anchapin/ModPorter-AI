@@ -186,18 +186,20 @@ async def startup_event():
         logger.info("SmartAssumptionEngine initialized")
         
         # Initialize ConversionCrew with retry logic for Ollama
-        max_retries = 10
-        retry_delay = 5  # seconds
+        max_retries = 15
+        retry_delay = 10  # seconds
         for i in range(max_retries):
+            logger.info(f"Attempt {i+1}/{max_retries} to initialize ModPorterConversionCrew...")
             try:
                 conversion_crew = ModPorterConversionCrew()
-                logger.info("ModPorterConversionCrew initialized")
+                logger.info("ModPorterConversionCrew initialized successfully.")
                 break  # Exit loop if successful
             except RuntimeError as e:
-                logger.warning(f"Attempt {i+1}/{max_retries}: Ollama LLM initialization failed: {e}. Retrying in {retry_delay} seconds...")
+                logger.warning(f"Attempt {i+1}/{max_retries}: ModPorterConversionCrew initialization failed: {e}. Retrying in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
         else:
-            raise RuntimeError(f"Failed to initialize Ollama LLM after {max_retries} retries.")
+            logger.error(f"Failed to initialize ModPorterConversionCrew after {max_retries} retries. Raising error.")
+            raise RuntimeError(f"Failed to initialize ModPorterConversionCrew after {max_retries} retries.")
         
         logger.info("ModPorter AI Engine startup complete")
         
