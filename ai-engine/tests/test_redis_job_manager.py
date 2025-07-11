@@ -8,7 +8,7 @@ that replaced the global dictionary.
 import pytest
 import json
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 from fastapi import HTTPException
 
 # Import the modules we need to test

@@ -1,7 +1,7 @@
 # Build stage
 FROM python:3.11-slim AS builder
 
-WORKDIR /app
+WORKDIR /tmp
 
 # Install system dependencies for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,15 +10,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies
-COPY requirements.txt .
+# Copy requirements
+COPY requirements.txt /tmp/
+COPY requirements-dev.txt /tmp/
+
+# Install core dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Conditionally install development dependencies
+ARG INSTALL_DEV_DEPS=false
+RUN if [ "$INSTALL_DEV_DEPS" = "true" ] ; then \
+    pip install --no-cache-dir -r requirements-dev.txt ; \
+fi
 
 # Production stage
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /tmp
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,17 +36,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 RUN adduser --disabled-password --gecos '' appuser
-# Copy source code after user creation with correct permissions
-COPY --chown=appuser:appuser . .
-USER appuser
-
 # Create directories for models and cache
 # These directories are part of the application structure, so they should be created after COPY . .
-RUN mkdir -p /app/models /app/cache
+RUN mkdir -p /tmp/models /tmp/cache
+
+# Copy source code after user creation with correct permissions
+COPY --chown=appuser:appuser . /tmp/
+USER appuser
 
 # Health check using curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

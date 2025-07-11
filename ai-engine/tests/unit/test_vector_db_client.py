@@ -1,8 +1,7 @@
 import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, patch
 
-from src.utils.vector_db_client import VectorDBClient, Document
+from src.utils.vector_db_client import VectorDBClient
 
 # Define a fixture for the VectorDBClient
 @pytest.fixture

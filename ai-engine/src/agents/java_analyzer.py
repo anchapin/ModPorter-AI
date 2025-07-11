@@ -2,11 +2,9 @@
 Java Analyzer Agent for analyzing Java mod structure and extracting features
 """
 
-import javalang
-import re
 import logging
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
@@ -91,102 +89,179 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with analysis results
         """
+        logger.info(f"Analyzing mod file: {mod_path}")
+        
         try:
-            # Use the underlying functions directly, not the tool decorators
-            structure_result = JavaAnalyzerAgent.analyze_mod_structure_tool.func(mod_path)
-            structure = json.loads(structure_result)
-            
-            metadata_result = JavaAnalyzerAgent.extract_mod_metadata_tool.func(mod_path)
-            metadata = json.loads(metadata_result)
-            
-            features_result = JavaAnalyzerAgent.identify_features_tool.func(mod_path)
-            features = json.loads(features_result)
-            
-            assets_result = JavaAnalyzerAgent.extract_assets_tool.func(mod_path)
-            assets = json.loads(assets_result)
-            
-            # Combine results
-            metadata_info = metadata.get("metadata", {})
-            combined_result = {
-                "mod_info": {
-                    "name": metadata_info.get("id", Path(mod_path).stem.lower()),
-                    "framework": structure.get("analysis_results", {}).get("framework", "unknown"),
-                    "version": metadata_info.get("version", "1.0.0")
-                },
-                "assets": assets.get("assets", {}),
-                "features": features.get("feature_results", {}).get("feature_categories", {}),
-                "structure": structure.get("analysis_results", {}),
-                "metadata": metadata.get("metadata", {}),
-                "errors": [],
-                "embeddings_data": [] # Initialize embeddings_data
-            }
-
-            # Embedding generation logic
-            texts_to_embed = [] # List to hold all text snippets for embedding
-
-            # 1. Extract mod description for embedding
-            description_text = metadata_info.get("description", "") # From metadata_tool output
-            if description_text:
-                texts_to_embed.append({"type": "mod_description", "original_text": description_text})
-
-            # 2. Extract feature names for embedding
-            # features_result from identify_features_tool, features is json.loads(features_result)
-            feature_categories_data = features.get("feature_results", {}).get("feature_categories", {})
-            if isinstance(feature_categories_data, dict):
-                for category, feature_list in feature_categories_data.items():
-                    if isinstance(feature_list, list):
-                        for feature_item in feature_list:
-                            if isinstance(feature_item, dict) and "name" in feature_item:
-                                texts_to_embed.append({
-                                    "type": "feature_name",
-                                    "category": category,
-                                    "original_text": feature_item["name"]
-                                })
-
-            if self.embedding_generator and self.embedding_generator.model:
-                if texts_to_embed:
-                    try:
-                        original_texts_list = [item['original_text'] for item in texts_to_embed]
-                        embeddings_list = self.embedding_generator.generate_embeddings(original_texts_list)
-
-                        if embeddings_list is not None:
-                            embedded_data = []
-                            for i, item in enumerate(texts_to_embed):
-                                embedding_value = None
-                                # Ensure embedding exists and convert to list for JSON serialization
-                                if i < len(embeddings_list) and embeddings_list[i] is not None:
-                                    embedding_value = embeddings_list[i].tolist()
-
-                                embedded_data.append({
-                                    "type": item["type"],
-                                    "category": item.get("category"),
-                                    "original_text": item["original_text"],
-                                    "embedding": embedding_value
-                                })
-                            combined_result["embeddings_data"] = embedded_data
-                        else:
-                            logger.warning("Embedding generation returned None.")
-                            # combined_result["embeddings_data"] is already []
-                    except Exception as e_embed:
-                        logger.error(f"Error during embedding generation or processing: {e_embed}")
-                        # combined_result["embeddings_data"] is already []
-                else:
-                    logger.info("No text found to generate embeddings for.")
-            else:
-                logger.warning("EmbeddingGenerator model not loaded. Skipping embedding generation.")
-            
-            return json.dumps(combined_result)
-            
-        except Exception as e:
-            logger.error(f"Error analyzing mod file {mod_path}: {e}")
-            return json.dumps({
+            # Initialize result structure
+            result = {
                 "mod_info": {"name": "unknown", "framework": "unknown", "version": "1.0.0"},
                 "assets": {},
                 "features": {},
                 "structure": {},
                 "metadata": {},
-                "errors": [str(e)]
+                "errors": [],
+                "embeddings_data": []
+            }
+            
+            # Analyze the mod file
+            if mod_path.endswith(('.jar', '.zip')):
+                result = self._analyze_jar_file(mod_path, result)
+            elif os.path.isdir(mod_path):
+                result = self._analyze_source_directory(mod_path, result)
+            else:
+                result["errors"].append(f"Unsupported mod file format: {mod_path}")
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing mod file {mod_path}: {e}")
+            return json.dumps({
+                "mod_info": {"name": "error", "framework": "unknown", "version": "1.0.0"},
+                "assets": {},
+                "features": {},
+                "structure": {},
+                "metadata": {},
+                "errors": [f"Analysis failed: {str(e)}"],
+                "embeddings_data": []
             })
+    
+    def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
+        """Analyze a JAR file for mod information"""
+        try:
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Detect framework
+                framework = self._detect_framework_from_jar_files(file_list, jar)
+                result["mod_info"]["framework"] = framework
+                
+                # Extract mod info from metadata files
+                mod_info = self._extract_mod_info_from_jar(jar, file_list)
+                result["mod_info"].update(mod_info)
+                
+                # Analyze assets
+                result["assets"] = self._analyze_assets_from_jar(file_list)
+                
+                # Analyze structure
+                result["structure"] = {"files": len(file_list), "type": "jar"}
+                
+        except Exception as e:
+            result["errors"].append(f"Error analyzing JAR file: {str(e)}")
+        
+        return result
+    
+    def _detect_framework_from_jar_files(self, file_list: list, jar: zipfile.ZipFile) -> str:
+        """Detect modding framework from JAR file contents"""
+        try:
+            # Check for framework-specific files and patterns
+            for framework, indicators in self.framework_indicators.items():
+                for indicator in indicators:
+                    if any(indicator in file_name for file_name in file_list):
+                        return framework
+            
+            # Check file contents if available
+            for file_name in file_list:
+                if file_name.endswith('.json') and 'mod' in file_name.lower():
+                    try:
+                        content = jar.read(file_name).decode('utf-8')
+                        for framework, indicators in self.framework_indicators.items():
+                            for indicator in indicators:
+                                if indicator in content:
+                                    return framework
+                    except:
+                        continue
+            
+            return 'unknown'
+        except:
+            return 'unknown'
+    
+    def _extract_mod_info_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> dict:
+        """Extract mod information from metadata files"""
+        mod_info = {}
+        
+        # Look for Fabric mod.json
+        if 'fabric.mod.json' in file_list:
+            try:
+                content = jar.read('fabric.mod.json').decode('utf-8')
+                fabric_data = json.loads(content)
+                mod_info["name"] = fabric_data.get("id", fabric_data.get("name", "unknown")).lower()
+                mod_info["version"] = fabric_data.get("version", "1.0.0")
+                return mod_info
+            except:
+                pass
+        
+        # Look for Quilt mod.json
+        if 'quilt.mod.json' in file_list:
+            try:
+                content = jar.read('quilt.mod.json').decode('utf-8')
+                quilt_data = json.loads(content)
+                mod_info["name"] = quilt_data.get("quilt_loader", {}).get("id", "unknown").lower()
+                mod_info["version"] = quilt_data.get("quilt_loader", {}).get("version", "1.0.0")
+                return mod_info
+            except:
+                pass
+        
+        # Look for Forge mcmod.info
+        if 'mcmod.info' in file_list:
+            try:
+                content = jar.read('mcmod.info').decode('utf-8')
+                mcmod_data = json.loads(content)
+                if isinstance(mcmod_data, list) and len(mcmod_data) > 0:
+                    mod_data = mcmod_data[0]
+                    mod_info["name"] = mod_data.get("modid", "unknown").lower()
+                    mod_info["version"] = mod_data.get("version", "1.0.0")
+                    return mod_info
+            except:
+                pass
+        
+        # Look for mods.toml
+        for file_name in file_list:
+            if file_name.endswith('mods.toml'):
+                try:
+                    content = jar.read(file_name).decode('utf-8')
+                    # Simple TOML parsing for modId
+                    for line in content.split('\n'):
+                        if 'modId' in line and '=' in line:
+                            mod_id = line.split('=')[1].strip().strip('"\'')
+                            mod_info["name"] = mod_id.lower()
+                            break
+                    return mod_info
+                except:
+                    pass
+        
+        return mod_info
+    
+    def _analyze_assets_from_jar(self, file_list: list) -> dict:
+        """Analyze assets in the JAR file"""
+        assets = {
+            "textures": [],
+            "models": [],
+            "sounds": [],
+            "other": []
+        }
+        
+        for file_name in file_list:
+            if '/textures/' in file_name and file_name.endswith(('.png', '.jpg', '.jpeg')):
+                assets["textures"].append(file_name)
+            elif '/models/' in file_name and file_name.endswith(('.json', '.obj')):
+                assets["models"].append(file_name)
+            elif '/sounds/' in file_name and file_name.endswith(('.ogg', '.wav')):
+                assets["sounds"].append(file_name)
+            elif any(file_name.endswith(ext) for ext in ['.png', '.jpg', '.ogg', '.wav', '.obj', '.mtl']):
+                assets["other"].append(file_name)
+        
+        return assets
+    
+    def _analyze_source_directory(self, source_path: str, result: dict) -> dict:
+        """Analyze a source directory for mod information"""
+        try:
+            # This would be implemented for source analysis
+            result["mod_info"]["framework"] = "source"
+            result["structure"] = {"type": "source", "path": source_path}
+        except Exception as e:
+            result["errors"].append(f"Error analyzing source directory: {str(e)}")
+        
+        return result
 
     @tool
     @staticmethod
@@ -480,6 +555,7 @@ class JavaAnalyzerAgent:
             return ["Complete feature extraction for detailed conversion planning"]
 
         try:
+            logger.info(f"Current working directory in JavaAnalyzerAgent: {os.getcwd()}")
             # Handle both JSON string and direct file path inputs
             if isinstance(mod_data, str):
                 try:
@@ -792,19 +868,18 @@ class JavaAnalyzerAgent:
                 try:
                     data = json.loads(mod_data)
                     mod_path = data.get('mod_path', '')
-                    structure_analysis = data.get('structure_analysis', {})
+                    data.get('structure_analysis', {})
                     extraction_mode = data.get('extraction_mode', 'comprehensive')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
                     data = {'mod_path': mod_path}
-                    structure_analysis = {}
                     extraction_mode = 'comprehensive'
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
                 mod_path = data.get('mod_path', str(mod_data))
-                structure_analysis = data.get('structure_analysis', {})
+                data.get('structure_analysis', {})
                 extraction_mode = data.get('extraction_mode', 'comprehensive')
             
             feature_results = {
@@ -859,7 +934,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with dependency analysis
         """
-        agent = JavaAnalyzerAgent.get_instance()
+        JavaAnalyzerAgent.get_instance()
 
         def _analyze_direct_dependencies(metadata: Dict) -> List[Dict]:
             """Analyze direct dependencies"""
@@ -887,17 +962,16 @@ class JavaAnalyzerAgent:
                 try:
                     data = json.loads(mod_data)
                     mod_metadata = data.get('mod_metadata', {})
-                    analysis_depth = data.get('analysis_depth', 'standard')
+                    data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_metadata = {}
-                    analysis_depth = 'standard'
                     data = {'mod_metadata': mod_metadata}
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_metadata': {}}
                 mod_metadata = data.get('mod_metadata', {})
-                analysis_depth = data.get('analysis_depth', 'standard')
+                data.get('analysis_depth', 'standard')
             
             dependency_results = {
                 'direct_dependencies': [],
@@ -949,7 +1023,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with asset information
         """
-        agent = JavaAnalyzerAgent.get_instance()
+        JavaAnalyzerAgent.get_instance()
 
         def _extract_assets_from_jar(jar_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from JAR"""

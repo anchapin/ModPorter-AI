@@ -1,7 +1,7 @@
 # ai-engine/tests/unit/test_smart_assumptions.py
 
 import pytest
-from typing import List, Dict, Any, Optional
+from typing import List
 
 # Assuming the models are in src.models relative to ai-engine directory
 # Adjust this import path if your project structure is different.
@@ -11,9 +11,7 @@ from src.models.smart_assumptions import (
     AssumptionImpact,
     FeatureContext,
     AssumptionResult,
-    ConversionPlanComponent,
-    AppliedAssumptionReportItem,
-    AssumptionReport
+    ConversionPlanComponent
 )
 
 @pytest.fixture
@@ -513,7 +511,7 @@ def test_get_conflict_analysis_no_conflicts(engine: SmartAssumptionEngine):
     """Test get_conflict_analysis with a feature that has no conflicts"""
     conflict_analysis = engine.get_conflict_analysis("simple_block_feature")
     
-    assert conflict_analysis['has_conflicts'] == False
+    assert not conflict_analysis['has_conflicts']
     assert len(conflict_analysis['matching_assumptions']) <= 1
     
     if len(conflict_analysis['matching_assumptions']) == 1:
@@ -685,8 +683,8 @@ def test_conflict_resolution_performance(engine: SmartAssumptionEngine):
     
     for feature_name in test_features:
         # Test both single assumption finding and conflict analysis
-        assumption = engine.find_assumption(feature_name)
-        conflict_analysis = engine.get_conflict_analysis(feature_name)
+        engine.find_assumption(feature_name)
+        engine.get_conflict_analysis(feature_name)
         
         # Create a test feature context and analyze it
         test_context = FeatureContext(
@@ -695,7 +693,7 @@ def test_conflict_resolution_performance(engine: SmartAssumptionEngine):
             name=feature_name.replace("_", " ").title(),
             original_data={}
         )
-        result = engine.analyze_feature(test_context)
+        engine.analyze_feature(test_context)
     
     end_time = time.time()
     execution_time = end_time - start_time

@@ -34,20 +34,27 @@ class LLMSemanticAnalyzer:
         confidence = random.uniform(0.75, 0.95)
         findings = []
         if "TODO" in code_snippet or "FIXME" in code_snippet:
-            intent_preserved = False; confidence *= 0.7
+            intent_preserved = False
+            confidence *= 0.7
             findings.append("Code contains 'TODO'/'FIXME' markers.")
         if "unsafe" in code_snippet.lower() or "danger" in code_snippet.lower():
-            confidence *= 0.8; findings.append("Code contains 'unsafe'/'danger' keywords.")
+            confidence *= 0.8
+            findings.append("Code contains 'unsafe'/'danger' keywords.")
         if len(code_snippet) < 50 and "simple" not in code_snippet.lower():
-            confidence *= 0.9; findings.append("Code snippet is very short.")
+            confidence *= 0.9
+            findings.append("Code snippet is very short.")
         if "complex_logic_pattern" in code_snippet:
-            confidence *= 0.85; findings.append("Identified complex logic pattern.")
-        if "error" in code_snippet.lower() or "exception" in code_snippet.lower() and "handle" not in code_snippet.lower() :
-             intent_preserved = False; confidence *= 0.6
-             findings.append("Code mentions unhandled 'error'/'exception'.")
+            confidence *= 0.85
+            findings.append("Identified complex logic pattern.")
+        if "error" in code_snippet.lower() or "exception" in code_snippet.lower() and "handle" not in code_snippet.lower():
+            intent_preserved = False
+            confidence *= 0.6
+            findings.append("Code mentions unhandled 'error'/'exception'.")
         confidence = min(max(confidence, 0.0), 1.0)
-        if not findings and intent_preserved and confidence > 0.8: findings.append("Code appears semantically sound (mock).")
-        elif not findings: findings.append("Mock analysis complete.")
+        if not findings and intent_preserved and confidence > 0.8:
+            findings.append("Code appears semantically sound (mock).")
+        elif not findings:
+            findings.append("Mock analysis complete.")
         print("LLMSemanticAnalyzer: Analysis complete. Intent preserved: %s, Confidence: %.2f" % (intent_preserved, confidence))
         return {"intent_preserved": intent_preserved, "confidence": round(confidence, 2), "findings": findings}
 
@@ -125,68 +132,107 @@ class AssetIntegrityChecker:
     def validate_assets(self, asset_files: list, base_path: str = "") -> dict:
         print("Validating %d asset files. Base path: '%s'" % (len(asset_files), base_path))
         corrupted_files, asset_specific_issues = [], {}
-        if not asset_files: return {"all_assets_valid": True, "corrupted_files": [], "asset_specific_issues": {"general": ["No asset files provided."] }}
+        if not asset_files:
+            return {"all_assets_valid": True, "corrupted_files": [], "asset_specific_issues": {"general": ["No asset files provided."] }}
         for asset_path in asset_files:
             full_path = os.path.join(base_path, asset_path) if base_path and base_path != "." else asset_path
             if "missing" in asset_path.lower():
-                corrupted_files.append(asset_path); asset_specific_issues.setdefault(asset_path, []).append("File missing: '%s'." % full_path)
+                corrupted_files.append(asset_path)
+                asset_specific_issues.setdefault(asset_path, []).append("File missing: '%s'." % full_path)
                 continue
-            _, ext = os.path.splitext(asset_path); ext = ext.lower(); issues = []
+            _, ext = os.path.splitext(asset_path)
+            ext = ext.lower()
+            issues = []
             if ext in self.supported_image_extensions:
-                if "corrupt_texture" in asset_path: issues.append("Mock: Texture corrupt.")
-                if "oversized_texture" in asset_path: issues.append("Mock: Texture oversized.")
+                if "corrupt_texture" in asset_path:
+                    issues.append("Mock: Texture corrupt.")
+                if "oversized_texture" in asset_path:
+                    issues.append("Mock: Texture oversized.")
             elif ext in self.supported_sound_extensions:
-                if ext != ".ogg" and "allow_non_ogg" not in asset_path: issues.append("Mock: Non-preferred sound format '%s'." % ext)
-                if "corrupt_sound" in asset_path: issues.append("Mock: Sound corrupt.")
+                if ext != ".ogg" and "allow_non_ogg" not in asset_path:
+                    issues.append("Mock: Non-preferred sound format '%s'." % ext)
+                if "corrupt_sound" in asset_path:
+                    issues.append("Mock: Sound corrupt.")
             elif ext in self.supported_model_extensions:
-                if "invalid_geo" in asset_path: issues.append("Mock: Model geo invalid.")
-            elif not ext: issues.append("Warning: File '%s' no extension." % asset_path)
-            else: issues.append("Warning: Unrecognized extension '%s' for '%s'." % (ext, asset_path))
-            if issues: corrupted_files.append(asset_path); asset_specific_issues.setdefault(asset_path, []).extend(issues)
+                if "invalid_geo" in asset_path:
+                    issues.append("Mock: Model geo invalid.")
+            elif not ext:
+                issues.append("Warning: File '%s' no extension." % asset_path)
+            else:
+                issues.append("Warning: Unrecognized extension '%s' for '%s'." % (ext, asset_path))
+            if issues:
+                corrupted_files.append(asset_path)
+                asset_specific_issues.setdefault(asset_path, []).extend(issues)
         return {"all_assets_valid": not corrupted_files, "corrupted_files": list(set(corrupted_files)), "asset_specific_issues": asset_specific_issues}
 
 class ManifestValidator:
-    def __init__(self): pass
+    def __init__(self):
+        pass
+        
     def validate_manifest(self, md: dict) -> ManifestValidationResult:
         err, warn = [], []
-        if not isinstance(md, dict): return ManifestValidationResult(is_valid=False, errors=["Manifest not dict."], warnings=warn)
+        if not isinstance(md, dict):
+            return ManifestValidationResult(is_valid=False, errors=["Manifest not dict."], warnings=warn)
         fv = md.get("format_version")
-        if fv is None: err.append("Missing 'format_version'.")
+        if fv is None:
+            err.append("Missing 'format_version'.")
         elif not isinstance(fv, int):
-            if isinstance(fv, str) and fv.isdigit(): warn.append("format_version (%s) is str, should be int." % str(fv)); fv = int(fv)
-            else: err.append("format_version (%s) must be int." % str(fv))
-        if isinstance(fv, int) and fv != 2: warn.append("format_version (%s) not typical (2)." % str(fv))
+            if isinstance(fv, str) and fv.isdigit():
+                warn.append("format_version (%s) is str, should be int." % str(fv))
+                fv = int(fv)
+            else:
+                err.append("format_version (%s) must be int." % str(fv))
+        if isinstance(fv, int) and fv != 2:
+            warn.append("format_version (%s) not typical (2)." % str(fv))
         hd = md.get("header")
-        if hd is None: err.append("Missing 'header'.")
-        elif not isinstance(hd, dict): err.append("'header' not dict.")
+        if hd is None:
+            err.append("Missing 'header'.")
+        elif not isinstance(hd, dict):
+            err.append("'header' not dict.")
         else:
             for field in ["name","description","uuid","version"]:
-                if field not in hd: err.append("Header missing '%s'." % field)
+                if field not in hd:
+                    err.append("Header missing '%s'." % field)
             if hd.get("uuid"):
-                try: uuid.UUID(str(hd.get("uuid")))
-                except ValueError: err.append("Header uuid (%s) invalid." % str(hd.get("uuid")))
+                try:
+                    uuid.UUID(str(hd.get("uuid")))
+                except ValueError:
+                    err.append("Header uuid (%s) invalid." % str(hd.get("uuid")))
             v = hd.get("version")
-            if v and not (isinstance(v,list) and len(v)==3 and all(isinstance(i,int) for i in v)): err.append("Header version (%s) invalid." % str(v))
+            if v and not (isinstance(v,list) and len(v)==3 and all(isinstance(i,int) for i in v)):
+                err.append("Header version (%s) invalid." % str(v))
             mev = hd.get("min_engine_version")
-            if mev and not (isinstance(mev,list) and len(mev)>=3 and all(isinstance(i,int) for i in mev)): warn.append("Header min_engine_version (%s) invalid." % str(mev))
+            if mev and not (isinstance(mev,list) and len(mev)>=3 and all(isinstance(i,int) for i in mev)):
+                warn.append("Header min_engine_version (%s) invalid." % str(mev))
         mods = md.get("modules")
-        if mods is None: err.append("Missing 'modules'.")
-        elif not isinstance(mods, list): err.append("'modules' not list.")
+        if mods is None:
+            err.append("Missing 'modules'.")
+        elif not isinstance(mods, list):
+            err.append("'modules' not list.")
         else:
-            if not mods: warn.append("'modules' empty.")
-            for i,m in enumerate(mods):
-                if not isinstance(m,dict): err.append("Module %d not dict." % i); continue
-                for field in ["type","uuid","version"]:
-                    if field not in m: err.append("Module %d missing '%s'." % (i,field))
+            if not mods:
+                warn.append("'modules' empty.")
+            for i, m in enumerate(mods):
+                if not isinstance(m, dict):
+                    err.append("Module %d not dict." % i)
+                    continue
+                for field in ["type", "uuid", "version"]:
+                    if field not in m:
+                        err.append("Module %d missing '%s'." % (i, field))
                 if m.get("uuid"):
-                    try: uuid.UUID(str(m.get("uuid")))
-                    except ValueError: err.append("Module %d uuid (%s) invalid." % (i,str(m.get("uuid"))))
+                    try:
+                        uuid.UUID(str(m.get("uuid")))
+                    except ValueError:
+                        err.append("Module %d uuid (%s) invalid." % (i, str(m.get("uuid"))))
                 mv = m.get("version")
-                if mv and not (isinstance(mv,list) and len(mv)==3 and all(isinstance(x,int) for x in mv)): err.append("Module %d version (%s) invalid." % (i,str(mv)))
+                if mv and not (isinstance(mv, list) and len(mv) == 3 and all(isinstance(x, int) for x in mv)):
+                    err.append("Module %d version (%s) invalid." % (i, str(mv)))
                 mt = m.get("type")
-                ok = ["data","resources","script","client_data","world_template","skin_pack","javascript"]
-                if mt and mt not in ok: warn.append("Module %d type ('%s') non-standard." % (i,mt))
-                if mt in ["script","javascript"] and "entry" not in m: warn.append("Module %d type '%s' missing 'entry'." % (i,mt))
+                ok = ["data", "resources", "script", "client_data", "world_template", "skin_pack", "javascript"]
+                if mt and mt not in ok:
+                    warn.append("Module %d type ('%s') non-standard." % (i, mt))
+                if mt in ["script", "javascript"] and "entry" not in m:
+                    warn.append("Module %d type '%s' missing 'entry'." % (i, mt))
         return ManifestValidationResult(is_valid=not err, errors=err, warnings=warn)
 
 class ValidationAgent:
@@ -239,7 +285,7 @@ class ValidationAgent:
         if not asset_model.all_assets_valid and asset_model.corrupted_files:
             recommendations.append("Review " + str(len(asset_model.corrupted_files)) + " asset(s) with issues.")
         if asset_model.asset_specific_issues.get("general"):
-             recommendations.extend(asset_model.asset_specific_issues["general"])
+            recommendations.extend(asset_model.asset_specific_issues["general"])
         if not manifest_result_model.is_valid:
             recommendations.append("Manifest has errors. Please check details.")
         if manifest_result_model.warnings:

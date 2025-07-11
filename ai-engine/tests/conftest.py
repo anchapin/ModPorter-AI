@@ -3,13 +3,75 @@ import os
 from unittest.mock import MagicMock
 from httpx import AsyncClient
 # Add src directory to sys.path for imports
-import sys, os
+import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 # Set test environment variables
 os.environ["OPENAI_API_KEY"] = "test-key"
 os.environ["ANTHROPIC_API_KEY"] = "test-key"
-os.environ["MOCK_AI_RESPONSES"] = "true"
+
+# Configure LLM provider for tests
+# Options: "ollama", "openai", "mock"
+llm_provider = os.getenv("TEST_LLM_PROVIDER", "ollama")
+
+if llm_provider == "mock":
+    os.environ["USE_OLLAMA"] = "false"
+    os.environ["USE_MOCK_LLM"] = "true"
+    print("🎭 Using Mock LLM for tests")
+elif llm_provider == "ollama":
+    os.environ["USE_OLLAMA"] = "true"
+    os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
+    os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    
+    # Set LiteLLM environment variables for Ollama compatibility
+    os.environ["LITELLM_LOG"] = "DEBUG"
+    os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    print(f"🦙 Using Ollama for tests with model: {os.environ['OLLAMA_MODEL']}")
+    
+    # Add CI diagnostics for Ollama availability
+    import subprocess
+    import sys
+    try:
+        # Check if Ollama is available
+        result = subprocess.run(['ollama', '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print(f"✅ Ollama version: {result.stdout.strip()}")
+        else:
+            print(f"❌ Ollama command failed: {result.stderr}")
+    except FileNotFoundError:
+        print("❌ Ollama command not found - not installed or not in PATH")
+    except Exception as e:
+        print(f"❌ Error checking Ollama: {e}")
+    
+    try:
+        # Check if Ollama server is running
+        import requests
+        response = requests.get("http://localhost:11434/api/version", timeout=5)
+        if response.status_code == 200:
+            print(f"✅ Ollama server running: {response.json()}")
+        else:
+            print(f"❌ Ollama server returned: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Ollama server not accessible: {e}")
+    
+    try:
+        # Check if model is available
+        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
+        if 'llama3.2' in result.stdout:
+            print("✅ llama3.2 model available")
+        else:
+            print(f"❌ llama3.2 model not found. Available models:\n{result.stdout}")
+    except Exception as e:
+        print(f"❌ Error checking models: {e}")
+elif llm_provider == "openai":
+    os.environ["USE_OLLAMA"] = "false"
+    # Requires real OPENAI_API_KEY
+    print("🤖 Using OpenAI for tests")
+else:
+    # Fallback to mock for unknown providers or CI environments
+    os.environ["USE_OLLAMA"] = "false"
+    os.environ["USE_MOCK_LLM"] = "true" 
+    print(f"🎭 Using Mock LLM as fallback for provider: {llm_provider}")
 
 @pytest.fixture
 def mock_openai_client():

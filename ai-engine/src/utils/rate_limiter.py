@@ -3,14 +3,11 @@ Rate limiting utility for OpenAI API calls and LLM interactions
 """
 
 import time
-import asyncio
 import logging
-from typing import Dict, Any, Optional, Callable
+from typing import Any, Callable
 from functools import wraps
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 import os
-from openai import OpenAI
 from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
@@ -215,6 +212,57 @@ def create_rate_limited_llm(model_name: str = "gpt-4", **kwargs):
     return base_llm
 
 
+def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://localhost:11434", **kwargs):
+    """
+    Factory function to create an Ollama LLM instance for local inference
+    
+    Args:
+        model_name: Name of the Ollama model to use (e.g., "llama3.2", "ollama/llama3.2", "codellama", "mistral")
+        base_url: Base URL for Ollama server
+        **kwargs: Additional parameters for the LLM
+    
+    Returns:
+        ChatOllama instance configured for Ollama
+    """
+    try:
+        from langchain_ollama import ChatOllama
+        
+        # Remove ollama/ prefix if present since ChatOllama expects just the model name
+        clean_model_name = model_name.replace("ollama/", "") if model_name.startswith("ollama/") else model_name
+        
+        logger.info(f"Creating Ollama LLM with ChatOllama model: {clean_model_name}")
+        
+        ollama_llm = ChatOllama(
+            model=clean_model_name,
+            base_url=base_url,
+            temperature=kwargs.get('temperature', 0.1),
+            num_predict=kwargs.get('max_tokens', 4000),
+            repeat_penalty=kwargs.get('repeat_penalty', 1.1),
+        )
+        
+        # Test the connection
+        try:
+            test_response = ollama_llm.invoke("Hello, are you working?")
+            logger.info(f"Ollama LLM test successful: {type(test_response)}")
+            
+            # After successful creation, modify the model property for CrewAI/LiteLLM compatibility
+            if not ollama_llm.model.startswith("ollama/"):
+                ollama_llm.model = f"ollama/{ollama_llm.model}"
+                logger.info(f"Modified model property for CrewAI compatibility: {ollama_llm.model}")
+            
+            return ollama_llm
+        except Exception as test_error:
+            logger.error(f"Ollama LLM test failed: {test_error}")
+            raise test_error
+            
+    except ImportError:
+        logger.error("langchain-ollama not installed. Install with: pip install langchain-ollama")
+        raise ImportError("langchain-ollama package is required for Ollama support")
+    except Exception as e:
+        logger.error(f"Failed to create Ollama LLM: {e}")
+        raise e
+
+
 class MockLLM:
     """
     A mock LLM that properly implements the LangChain interface
@@ -266,18 +314,31 @@ def get_fallback_llm():
     Get a fallback LLM for when OpenAI is unavailable
     """
     try:
-        # Try using a local model or alternative provider
-        # This is a placeholder - in production you might use:
-        # - Anthropic Claude
-        # - Local models via Ollama
-        # - Azure OpenAI
-        # - Google Gemini
+        # Try using Ollama as the only fallback
+        from langchain_ollama import ChatOllama
         
-        mock_llm = MockLLM()
+        # Get Ollama model from environment or use default
+        ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         
-        logger.warning("Using fallback mock LLM due to OpenAI unavailability")
-        return mock_llm
+        logger.info(f"Attempting to use Ollama as fallback with model: {ollama_model}")
+        
+        ollama_llm = ChatOllama(
+            model=ollama_model,
+            base_url=ollama_base_url,
+            temperature=0.1,
+            num_predict=4000,
+            top_k=40,
+            top_p=0.9,
+            repeat_penalty=1.1,
+        )
+        
+        # Test the connection
+        test_response = ollama_llm.invoke("Hello")
+        logger.info(f"Ollama fallback connection successful: {test_response}")
+        
+        return ollama_llm
         
     except Exception as e:
-        logger.error(f"Failed to create fallback LLM: {e}")
-        raise e
+        logger.error(f"Failed to create fallback Ollama LLM: {e}")
+        raise RuntimeError(f"No LLM available. Ollama fallback failed: {e}. Please ensure Ollama is running and the model is available.")

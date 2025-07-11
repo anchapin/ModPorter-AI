@@ -25,7 +25,7 @@ def get_llm():
             sys.path.insert(0, str(mock_llm_path))
             from mock_llm import MockLLM
             return MockLLM(responses=["Mock search agent response", "Mock summarization agent response"])
-        except (ImportError, OSError, FileNotFoundError) as e:
+        except (ImportError, OSError, FileNotFoundError):
             # Fallback to MagicMock if mock_llm import fails for any reason
             from unittest.mock import MagicMock
             llm = MagicMock()

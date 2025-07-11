@@ -2,7 +2,6 @@ from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 import os
 import yaml
-import json
 
 # Import the actual SearchTool
 from ..tools.search_tool import SearchTool

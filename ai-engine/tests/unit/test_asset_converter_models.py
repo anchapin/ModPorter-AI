@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 import json
 from src.agents.asset_converter import AssetConverterAgent

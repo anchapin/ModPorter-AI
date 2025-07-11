@@ -4,7 +4,7 @@ Unit tests for the SearchTool implementation.
 
 import unittest
 import json
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from src.tools.search_tool import SearchTool
 from src.utils.config import Config
 from src.tools.web_search_tool import WebSearchTool

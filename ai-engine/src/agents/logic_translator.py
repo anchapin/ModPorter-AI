@@ -2,11 +2,10 @@
 Logic Translator Agent for Java to JavaScript code conversion
 """
 
-from typing import Dict, List, Any, Optional
+from typing import List
 
 import logging
 import json
-import re
 from crewai.tools import tool
 import javalang  # Added javalang
 from src.models.smart_assumptions import (
@@ -389,7 +388,7 @@ class LogicTranslatorAgent:
                         handlers.append({
                             "event": "testEvent",
                             "bedrock_event": "itemUse",
-                            "handler": f"function onPlayerInteract() {{\n  // Handler for player interaction\n}}"
+                            "handler": "function onPlayerInteract() {\n  // Handler for player interaction\n}"
                         })
             
             # Handle events format

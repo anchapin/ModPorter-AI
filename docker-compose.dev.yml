@@ -60,7 +60,7 @@ services:
     build:
       context: ./ai-engine
       dockerfile: Dockerfile
-    command: python -m src.main --debug
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
     ports:
       - "8001:8001"
     volumes:
@@ -76,8 +76,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - PORT=8001
+      - TMPDIR=/tmp
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       redis:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     networks:
       - modporter-network
@@ -87,13 +91,29 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 90s
     deploy:
       resources:
         limits:
           memory: 2G
         reservations:
           memory: 1G
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   redis:
     image: redis:7-alpine
@@ -136,6 +156,8 @@ volumes:
   redis-data:
     driver: local
   postgres-data:
+    driver: local
+  ollama-data:
     driver: local
   conversion-cache:
     driver: local

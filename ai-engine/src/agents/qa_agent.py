@@ -3,7 +3,7 @@ import logging
 import random # For PerformanceAnalyzer
 import json # For main block dummy data
 import os # For main block dummy data file check
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 

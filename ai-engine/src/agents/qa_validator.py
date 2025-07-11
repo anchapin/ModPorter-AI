@@ -2,15 +2,13 @@
 QA Validator Agent for validating conversion quality and generating comprehensive reports
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import List
 
 import logging
 import json
-from datetime import datetime
-from pathlib import Path
 from crewai.tools import tool
 from src.models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext, ConversionPlanComponent, AssumptionReport
+    SmartAssumptionEngine
 )
 
 logger = logging.getLogger(__name__)
@@ -87,12 +85,12 @@ class QAValidatorAgent:
             # Handle both JSON string and direct input
             if isinstance(quality_data, str):
                 try:
-                    data = json.loads(quality_data)
+                    json.loads(quality_data)
                 except json.JSONDecodeError:
                     # If JSON parsing fails, create basic structure
-                    data = {'input': quality_data}
+                    pass
             else:
-                data = quality_data if isinstance(quality_data, dict) else {'input': str(quality_data)}
+                quality_data if isinstance(quality_data, dict) else {'input': str(quality_data)}
             
             # Basic validation structure with quality_assessment
             validation_result = {
@@ -132,11 +130,11 @@ class QAValidatorAgent:
             # Handle both JSON string and direct input
             if isinstance(test_data, str):
                 try:
-                    data = json.loads(test_data)
+                    json.loads(test_data)
                 except json.JSONDecodeError:
-                    data = {'input': test_data}
+                    pass
             else:
-                data = test_data if isinstance(test_data, dict) else {'input': str(test_data)}
+                test_data if isinstance(test_data, dict) else {'input': str(test_data)}
             
             # Mock functional test results
             test_results = {
@@ -171,11 +169,11 @@ class QAValidatorAgent:
             # Handle both JSON string and direct input
             if isinstance(compatibility_data, str):
                 try:
-                    data = json.loads(compatibility_data)
+                    json.loads(compatibility_data)
                 except json.JSONDecodeError:
-                    data = {'input': compatibility_data}
+                    pass
             else:
-                data = compatibility_data if isinstance(compatibility_data, dict) else {'input': str(compatibility_data)}
+                compatibility_data if isinstance(compatibility_data, dict) else {'input': str(compatibility_data)}
             
             # Mock compatibility analysis
             compatibility_result = {
@@ -214,11 +212,11 @@ class QAValidatorAgent:
             # Handle both JSON string and direct input
             if isinstance(performance_data, str):
                 try:
-                    data = json.loads(performance_data)
+                    json.loads(performance_data)
                 except json.JSONDecodeError:
-                    data = {'input': performance_data}
+                    pass
             else:
-                data = performance_data if isinstance(performance_data, dict) else {'input': str(performance_data)}
+                performance_data if isinstance(performance_data, dict) else {'input': str(performance_data)}
             
             # Mock performance assessment
             performance_result = {
@@ -261,11 +259,11 @@ class QAValidatorAgent:
             # Handle both JSON string and direct input
             if isinstance(report_data, str):
                 try:
-                    data = json.loads(report_data)
+                    json.loads(report_data)
                 except json.JSONDecodeError:
-                    data = {'input': report_data}
+                    pass
             else:
-                data = report_data if isinstance(report_data, dict) else {'input': str(report_data)}
+                report_data if isinstance(report_data, dict) else {'input': str(report_data)}
             
             # Generate comprehensive QA report
             qa_report = {

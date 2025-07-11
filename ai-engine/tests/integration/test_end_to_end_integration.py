@@ -1,20 +1,16 @@
 """
 End-to-End Integration Tests for ModPorter AI System
 Tests the complete workflow with enhanced SmartAssumptionEngine and all agent classes
+Using Ollama for real LLM responses instead of mocks
 """
 
-import pytest
 import json
-import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 from src.models.smart_assumptions import (
     SmartAssumptionEngine, 
     FeatureContext, 
-    AssumptionResult,
     ConversionPlanComponent,
-    AssumptionReport,
     AssumptionImpact
 )
 from src.crew.conversion_crew import ModPorterConversionCrew
@@ -107,7 +103,7 @@ class TestEndToEndIntegration:
             if len(matching) > 1:
                 # Test conflict resolution
                 conflict_analysis = self.smart_engine.get_conflict_analysis(feature_type)
-                assert conflict_analysis["has_conflicts"] == True
+                assert conflict_analysis["has_conflicts"]
                 assert conflict_analysis["resolution_details"]["resolved_assumption"].java_feature == expected_selection
                 assert "resolved_assumption" in conflict_analysis["resolution_details"]
             
@@ -299,12 +295,12 @@ class TestEndToEndIntegration:
             assert item.user_explanation is not None
     
     @patch('crewai.Crew')
-    def test_conversion_crew_integration(self, mock_crew_class):
+    def test_conversion_crew_integration(self, mock_crew_class, mocker):
         """Test ModPorterConversionCrew integration with enhanced features"""
         # Mock crew behavior
         mock_crew_instance = Mock()
         mock_crew_class.return_value = mock_crew_instance
-        
+
         # Mock task outputs with realistic structure
         mock_task_output = Mock()
         mock_task_output.raw = json.dumps({
@@ -319,19 +315,18 @@ class TestEndToEndIntegration:
                 }
             ]
         })
-        mock_crew_instance.kickoff.return_value.tasks_output = [Mock(), mock_task_output]
-        
+        mock_crew_instance.kickoff.return_value = Mock(tasks_output=[Mock(), mock_task_output])
+
         # Test crew initialization
-        with patch('src.crew.conversion_crew.ChatOpenAI'):
-            crew = ModPorterConversionCrew()
-            
+        crew = ModPorterConversionCrew()
+
         # Verify crew status
         status = crew.get_conversion_crew_status()
-        assert status["agents_initialized"]["java_analyzer"] == True
-        assert status["agents_initialized"]["bedrock_architect"] == True
-        assert status["smart_assumption_engine"]["initialized"] == True
-        assert status["smart_assumption_engine"]["conflict_resolution_enabled"] == True
-        assert status["crew_ready"] == True
+        assert status["agents_initialized"]["java_analyzer"]
+        assert status["agents_initialized"]["bedrock_architect"]
+        assert status["smart_assumption_engine"]["initialized"]
+        assert status["smart_assumption_engine"]["conflict_resolution_enabled"]
+        assert status["crew_ready"]
     
     def test_agent_class_instantiation(self):
         """Test that all agent classes can be instantiated properly"""
@@ -365,8 +360,7 @@ class TestEndToEndIntegration:
         )
         
         # Test using conversion crew's enhanced analysis method
-        with patch('src.crew.conversion_crew.ChatOpenAI'):
-            crew = ModPorterConversionCrew()
+        crew = ModPorterConversionCrew()
         
         analysis_result = crew.analyze_feature_with_assumptions(
             "complex_gui_machinery", 
@@ -378,7 +372,7 @@ class TestEndToEndIntegration:
         
         # Should detect and resolve conflicts
         if analysis_result.get("has_conflicts"):
-            assert analysis_result.get("resolution_applied") == True
+            assert analysis_result.get("resolution_applied")
     
     def test_assumption_impact_prioritization(self):
         """Test that higher impact assumptions take priority in conflicts"""

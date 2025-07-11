@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 from src.utils.embedding_generator import EmbeddingGenerator # Adjusted import path
 # The MockSentenceTransformer class and mock_sentence_transformer_fixture are now in conftest.py
@@ -154,7 +153,7 @@ def test_chunk_document_large_overlap(mock_sentence_transformer_fixture, caplog)
     """Test chunking where overlap >= chunk_size, which should be handled."""
     generator = EmbeddingGenerator()
     document = "word " * 20 # document is "word word ... word " (20 words then a space)
-    tokens = document.split() # 20 "word" tokens
+    document.split() # 20 "word" tokens
     # This should ideally log a warning or default to non-problematic overlap
     chunks = generator.chunk_document(document, chunk_size=5, overlap=5)
     #

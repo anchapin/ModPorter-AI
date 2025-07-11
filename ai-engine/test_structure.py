@@ -3,7 +3,6 @@
 Simple test to demonstrate the fixed .mcaddon folder structure.
 """
 
-import os
 import json
 import tempfile
 import zipfile

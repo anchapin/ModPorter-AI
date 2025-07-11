@@ -1,0 +1,28 @@
+# Node.js Base Image with Pre-installed Dependencies
+# Built weekly or when package.json/pnpm-lock.yaml changes
+
+FROM node:20-slim
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile && pnpm store prune
+
+# Create app user
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node --version || exit 1
+
+CMD ["node", "--version"]

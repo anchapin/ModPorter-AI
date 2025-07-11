@@ -1,7 +1,6 @@
 import pytest
 from pathlib import Path
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.agents.asset_converter import AssetConverterAgent
 
@@ -42,7 +41,7 @@ def test_convert_single_audio_wav_input(agent: AssetConverterAgent, dummy_wav_fi
     assert "sounds/block/stone/test.ogg" in result["converted_path"].replace("\\", "/") # OS agnostic path check
     assert result["original_format"] == "wav"
     assert result["bedrock_format"] == "ogg"
-    assert result["conversion_performed"] == True
+    assert result["conversion_performed"]
     assert "Converted WAV to OGG" in result["optimizations_applied"]
     assert result["bedrock_sound_event"] == "block.stone.test"
     assert result["duration_seconds"] == 1.0 # From MockAudioSegment.from_wav
@@ -56,7 +55,7 @@ def test_convert_single_audio_ogg_input(agent: AssetConverterAgent, dummy_ogg_fi
     assert "sounds/mob/pig/test.ogg" in result["converted_path"].replace("\\", "/")
     assert result["original_format"] == "ogg"
     assert result["bedrock_format"] == "ogg"
-    assert result["conversion_performed"] == False # No conversion needed
+    assert not result["conversion_performed"] # No conversion needed
     assert "Validated OGG format" in result["optimizations_applied"]
     assert result["bedrock_sound_event"] == "mob.pig.test"
     assert result["duration_seconds"] == 2.5 # Used metadata

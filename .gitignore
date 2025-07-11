@@ -71,3 +71,77 @@ opencode.json
 # Optional development files
 ai-engine/check_code_quality.py
 docs/RAG_TESTING_SUMMARY.md
+
+# Large test fixtures that can cause E2BIG errors
+*.jar
+*.war
+*.ear
+*.zip
+*.mcaddon
+*.class
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# Storybook
+storybook-static/
+dist-storybook/
+
+# pnpm
+.pnpm/
+.pnpm-store/
+
+# Large binary files
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Additional exclusions for Cline/AI tools
+**/.pnpm/
+**/node_modules/**
+**/*.pnpm-lock.yaml
+frontend/node_modules/**
+backend/node_modules/**
+ai-engine/node_modules/**
+frontend/node_modules/.pnpm/**
+**/node_modules/.pnpm/**
+**/node_modules/.ignored*/**
+**/node_modules/**/node_modules/**
+
+# Symlinks and complex nested structures
+**/.pnpm-store/
+.pnpm-store/
+**/lib/python*/**
+**/site-packages/**
+**/share/man/**
+**/bin/python*
+**/include/python*
+**/__pycache__/**
+**/.pytest_cache/**
+
+# File patterns that cause issues
+**/venv/**
+**/env/**
+**/.venv/**
+
+# Additional binary patterns
+*.node
+*.so.*
+*.dylib.*
+*.dll.*
+
+# Claude AI and related tools
+.claude/
+.hive-mind/
+.swarm/
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+memory/
+bin/

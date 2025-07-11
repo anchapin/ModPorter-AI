@@ -1,0 +1,24 @@
+# Backend Dockerfile using pre-built base image
+# Significantly faster builds by using cached dependencies
+
+ARG PYTHON_BASE_TAG=latest
+FROM ghcr.io/anchapin/modporter-ai/python-base:${PYTHON_BASE_TAG}
+
+# All dependencies are already installed in the base image
+# Just copy source code and set up the application
+
+WORKDIR /app
+
+# Copy source code
+COPY --chown=appuser:appuser . .
+
+# Install the package in development mode (fast operation)
+RUN pip install --no-deps -e .
+
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

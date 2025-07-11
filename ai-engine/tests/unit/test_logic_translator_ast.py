@@ -3,9 +3,8 @@ Unit tests for AST-based Java to JavaScript translation features in LogicTransla
 """
 
 import json
-import pytest
 import javalang
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from src.agents.logic_translator import LogicTranslatorAgent
 
 

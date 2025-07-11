@@ -3,10 +3,7 @@ Unit tests for the behavioral testing framework.
 """
 
 import pytest
-import logging
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, List
-import json
+from unittest.mock import Mock, patch
 
 # Import the framework components to test
 import sys

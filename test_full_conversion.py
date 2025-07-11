@@ -52,7 +52,7 @@ def test_full_conversion():
         upload_data = upload_response.json()
         file_id = upload_data.get('file_id')
         original_filename = upload_data.get('original_filename')
-        print(f"✅ Upload successful!")
+        print("✅ Upload successful!")
         print(f"   File ID: {file_id}")
         print(f"   Original filename: {original_filename}")
         
@@ -80,7 +80,7 @@ def test_full_conversion():
         
         conversion_result = convert_response.json()
         job_id = conversion_result.get('job_id')
-        print(f"✅ Conversion started!")
+        print("✅ Conversion started!")
         print(f"   Job ID: {job_id}")
         
         # Step 3: Monitor progress

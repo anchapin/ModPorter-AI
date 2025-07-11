@@ -79,7 +79,7 @@ public class TestItem extends Item {
         return mod_path
     
     @pytest.mark.integration
-    @patch('src.crew.conversion_crew.ChatOpenAI')
+    @patch('src.utils.rate_limiter.ChatOpenAI')
     def test_complete_conversion_workflow(self, mock_openai):
         """Test the complete conversion workflow from start to finish"""
         # Mock the LLM responses
@@ -315,7 +315,7 @@ public class TestBlock extends Block {
         validator = QAValidatorAgent()
         
         # Test conversion quality assessment
-        conversion_data = json.dumps({
+        json.dumps({
             "mod_info": {
                 "name": "TestMod",
                 "version": "1.0.0",
@@ -369,7 +369,7 @@ public class TestBlock extends Block {
         non_existent_path = self.temp_dir / "nonexistent.jar"
         output_path = self.temp_dir / "output"
         
-        with patch('src.crew.conversion_crew.ChatOpenAI'):
+        with patch('src.utils.rate_limiter.ChatOpenAI'):
             result = self.crew.convert_mod(
                 mod_path=non_existent_path,
                 output_path=output_path
@@ -410,7 +410,7 @@ public class TestBlock extends Block {
                     assert result is not None
     
     @pytest.mark.integration
-    @patch('src.crew.conversion_crew.ChatOpenAI')
+    @patch('src.utils.rate_limiter.ChatOpenAI')
     def test_end_to_end_conversion_with_assumptions(self, mock_openai):
         """Test end-to-end conversion with smart assumptions applied"""
         # Mock the LLM

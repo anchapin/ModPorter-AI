@@ -2,14 +2,13 @@
 Bedrock Architect Agent for conversion planning and smart assumption application
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 import logging
 import json
 from crewai.tools import tool
 from src.models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext, AssumptionResult, 
-    ConversionPlanComponent, AssumptionReport
+    SmartAssumptionEngine, FeatureContext, AssumptionResult
 )
 
 logger = logging.getLogger(__name__)
@@ -241,7 +240,7 @@ class BedrockArchitectAgent:
     @staticmethod
     def validate_bedrock_compatibility_tool(compatibility_data: str) -> str:
         """Validate Bedrock compatibility of features."""
-        agent = BedrockArchitectAgent.get_instance()
+        BedrockArchitectAgent.get_instance()
         def _validate_component_compatibility(component: Dict[str, Any]) -> Dict[str, Any]:
             """Validate individual component compatibility with Bedrock"""
             validation = {
@@ -256,7 +255,7 @@ class BedrockArchitectAgent:
             
             # Check for high-impact conversions
             if impact_level == "high":
-                validation["warnings"].append(f"High-impact conversion may result in significant functionality loss")
+                validation["warnings"].append("High-impact conversion may result in significant functionality loss")
                 validation["recommendations"].append("Review user expectations and provide clear documentation about changes")
             
             # Check for specific assumption types
@@ -301,6 +300,53 @@ class BedrockArchitectAgent:
             error_response = {"error": f"Failed to validate compatibility: {str(e)}"}
             logger.error(f"Compatibility validation error: {e}")
             return json.dumps(error_response)
+    
+    def _get_conversion_recommendation(self, analysis_result: AssumptionResult) -> str:
+        """Get conversion recommendation based on analysis result"""
+        if not analysis_result.applied_assumption:
+            return "Feature appears to be directly convertible without assumptions"
+        
+        assumption = analysis_result.applied_assumption
+        if assumption.impact.value == "high":
+            return f"High-impact conversion required using {assumption.java_feature} assumption. Significant functionality changes expected."
+        elif assumption.impact.value == "medium":
+            return f"Moderate conversion using {assumption.java_feature} assumption. Some functionality changes expected."
+        else:
+            return f"Low-impact conversion using {assumption.java_feature} assumption. Minimal functionality changes expected."
+    
+    def _validate_component_compatibility(self, component: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate individual component compatibility with Bedrock"""
+        validation = {
+            "component_id": component.get("original_feature_id", "unknown"),
+            "is_compatible": True,
+            "warnings": [],
+            "recommendations": []
+        }
+        
+        assumption_type = component.get("assumption_type", "")
+        impact_level = component.get("impact_level", "")
+        
+        # Check for high-impact conversions
+        if impact_level == "high":
+            validation["warnings"].append("High-impact conversion may result in significant functionality loss")
+            validation["recommendations"].append("Review user expectations and provide clear documentation about changes")
+        
+        # Check for specific assumption types
+        if "dimension" in assumption_type:
+            validation["warnings"].append("Custom dimension converted to static structure - dynamic generation lost")
+            validation["recommendations"].append("Consider creating multiple structure variants for variety")
+        
+        elif "machinery" in assumption_type:
+            validation["warnings"].append("Complex machinery logic will be simplified or removed")
+            validation["recommendations"].append("Preserve visual aesthetics and consider alternative interaction methods")
+        
+        elif "gui" in assumption_type:
+            validation["warnings"].append("Interactive GUI elements will become static text")
+            validation["recommendations"].append("Reorganize information for optimal book presentation")
+        
+        return validation
+
+    # --- Placeholder methods for Bedrock Definition Generation ---
 
     @tool
     @staticmethod
