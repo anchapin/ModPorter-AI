@@ -296,7 +296,7 @@ jobs:
       if: matrix.test-suite == 'frontend'
       run: |
         cd frontend
-        npm install -g pnpm
+        corepack enable && corepack prepare pnpm@latest --activate
         pnpm install
         pnpm run lint
         pnpm run test:coverage || echo "Frontend tests failed but continuing..."
