@@ -27,7 +27,13 @@ class Config:
     
     # AI Engine Configuration
     MOCK_AI_RESPONSES: bool = os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true"
+    BACKEND_API_URL: str = os.getenv("BACKEND_API_URL", "http://localhost:8000/api/v1") # Default for local backend
     
+    # RAG Configuration
+    RAG_EMBEDDING_MODEL: str = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    RAG_SIMILARITY_THRESHOLD: float = float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.7"))
+    RAG_MAX_RESULTS: int = int(os.getenv("RAG_MAX_RESULTS", "10"))
+
     # Search Tool Fallback Configuration
     # Enable/disable fallback mechanism when primary search returns insufficient results
     SEARCH_FALLBACK_ENABLED: bool = os.getenv("SEARCH_FALLBACK_ENABLED", "false").lower() == "true"
@@ -57,3 +63,8 @@ class Config:
     # Asset Processing Configuration
     MAX_TEXTURE_SIZE: int = int(os.getenv("MAX_TEXTURE_SIZE", "1024"))  # pixels
     SUPPORTED_FORMATS: list = ["png", "jpg", "jpeg", "ogg", "wav"]
+
+    # Bedrock Scraper Configuration
+    BEDROCK_SCRAPER_ENABLED: bool = os.getenv("BEDROCK_SCRAPER_ENABLED", "true").lower() == "true"
+    BEDROCK_SCRAPER_RATE_LIMIT: float = float(os.getenv("BEDROCK_SCRAPER_RATE_LIMIT", "1.0")) # requests per second
+    BEDROCK_DOCS_CACHE_TTL: int = int(os.getenv("BEDROCK_DOCS_CACHE_TTL", "86400")) # 24 hours
