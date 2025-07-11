@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.base import get_db
 from src.db import crud
-from src.db.models import DocumentEmbedding as DBDocumentEmbedding # SQLAlchemy model
+# DocumentEmbedding import removed as it's unused
 from src.models.embedding_models import (
     DocumentEmbeddingCreate,
     DocumentEmbeddingResponse,
