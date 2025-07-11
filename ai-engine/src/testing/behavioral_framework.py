@@ -91,12 +91,12 @@ class TestScenarioExecutor:
             step_result = self._execute_step(step)
             results["step_results"].append(step_result)
             if step_result["status"] == "SUCCESS":
-            results["steps_succeeded"] += 1
-        else:
-            results["steps_failed"] += 1
-            if scenario_data.get("fail_fast", False):
-                self.logger.warning(f"Step failed in fail_fast mode. Stopping scenario: {scenario_name}")
-                break
+                results["steps_succeeded"] += 1
+            else:
+                results["steps_failed"] += 1
+                if scenario_data.get("fail_fast", False):
+                    self.logger.warning(f"Step failed in fail_fast mode. Stopping scenario: {scenario_name}")
+                    break
         end_time = time.time()
         results["execution_time_ms"] = int((end_time - start_time) * 1000)
         if results["steps_failed"] == 0 and results["steps_executed"] > 0:

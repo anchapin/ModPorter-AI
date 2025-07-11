@@ -11,10 +11,14 @@ os.environ["OPENAI_API_KEY"] = "test-key"
 os.environ["ANTHROPIC_API_KEY"] = "test-key"
 
 # Configure LLM provider for tests
-# Options: "ollama", "openai"
+# Options: "ollama", "openai", "mock"
 llm_provider = os.getenv("TEST_LLM_PROVIDER", "ollama")
 
-if llm_provider == "ollama":
+if llm_provider == "mock":
+    os.environ["USE_OLLAMA"] = "false"
+    os.environ["USE_MOCK_LLM"] = "true"
+    print("🎭 Using Mock LLM for tests")
+elif llm_provider == "ollama":
     os.environ["USE_OLLAMA"] = "true"
     os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
     os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -64,15 +68,10 @@ elif llm_provider == "openai":
     # Requires real OPENAI_API_KEY
     print("🤖 Using OpenAI for tests")
 else:
-    # Fallback to Ollama as default
-    os.environ["USE_OLLAMA"] = "true"
-    os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
-    os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    
-    # Set LiteLLM environment variables for Ollama compatibility
-    os.environ["LITELLM_LOG"] = "DEBUG"
-    os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    print(f"🦙 Using Ollama as fallback for tests with model: {os.environ['OLLAMA_MODEL']}")
+    # Fallback to mock for unknown providers or CI environments
+    os.environ["USE_OLLAMA"] = "false"
+    os.environ["USE_MOCK_LLM"] = "true" 
+    print(f"🎭 Using Mock LLM as fallback for provider: {llm_provider}")
 
 @pytest.fixture
 def mock_openai_client():
