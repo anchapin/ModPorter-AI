@@ -220,26 +220,27 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://loca
     Factory function to create an Ollama LLM instance for local inference
     
     Args:
-        model_name: Name of the Ollama model to use (e.g., "llama3.2", "codellama", "mistral")
+        model_name: Name of the Ollama model to use (e.g., "llama3.2", "ollama/llama3.2", "codellama", "mistral")
         base_url: Base URL for Ollama server
         **kwargs: Additional parameters for the LLM
     
     Returns:
-        ChatOllama instance
+        ChatLiteLLM instance configured for Ollama
     """
     try:
-        from langchain_ollama import ChatOllama
+        from langchain_community.chat_models import ChatLiteLLM
         
-        logger.info(f"Creating Ollama LLM with model: {model_name}")
+        # Ensure ollama/ prefix is present for LiteLLM compatibility
+        if not model_name.startswith("ollama/"):
+            model_name = f"ollama/{model_name}"
         
-        ollama_llm = ChatOllama(
+        logger.info(f"Creating Ollama LLM with LiteLLM model: {model_name}")
+        
+        ollama_llm = ChatLiteLLM(
             model=model_name,
-            base_url=base_url,
+            api_base=base_url,
             temperature=kwargs.get('temperature', 0.1),
-            # Ollama-specific parameters
-            num_predict=kwargs.get('max_tokens', 4000),
-            top_k=kwargs.get('top_k', 40),
-            top_p=kwargs.get('top_p', 0.9),
+            max_tokens=kwargs.get('max_tokens', 4000),
             repeat_penalty=kwargs.get('repeat_penalty', 1.1),
         )
         

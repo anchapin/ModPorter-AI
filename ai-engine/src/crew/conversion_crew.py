@@ -42,6 +42,9 @@ class ModPorterConversionCrew:
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             try:
                 ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+                # Add ollama/ prefix if not present for LiteLLM compatibility
+                if not ollama_model.startswith("ollama/"):
+                    ollama_model = f"ollama/{ollama_model}"
                 logger.info(f"Using Ollama with model: {ollama_model}")
                 self.llm = create_ollama_llm(
                     model_name=ollama_model,
