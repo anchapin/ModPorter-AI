@@ -110,9 +110,10 @@ class TestJavaAnalyzerAgent:
     def test_analyze_mod_file_embedding_model_load_failure(self, caplog, tmp_path):
         """Test analyze_mod_file when EmbeddingGenerator model fails to load."""
         import zipfile
-        
-        # Patch SentenceTransformer to fail for this specific test scope
-        with patch('src.utils.embedding_generator.SentenceTransformer', MagicMock(side_effect=Exception("Mock model loading failed"))):
+
+        # Patch both the availability flag and SentenceTransformer to fail for this specific test scope
+        with patch('src.utils.embedding_generator.SENTENCE_TRANSFORMERS_AVAILABLE', True), \
+             patch('src.utils.embedding_generator.SentenceTransformer', MagicMock(side_effect=Exception("Mock model loading failed"))):
             # Force re-creation of JavaAnalyzerAgent with failed embedding model
             JavaAnalyzerAgent._instance = None # Reset singleton
             agent = JavaAnalyzerAgent.get_instance()
@@ -128,7 +129,7 @@ class TestJavaAnalyzerAgent:
                 fabric_manifest = {
                     "schemaVersion": 1,
                     "id": "testmod_fail_embed",
-                    "version": "1.0.0", 
+                    "version": "1.0.0",
                     "name": "TestMod Fail Embed",
                     "description": "A test mod for embedding failure testing",
                     "authors": ["TestAuthor"],
@@ -146,9 +147,9 @@ class TestJavaAnalyzerAgent:
             assert "mod_info" in results
             assert "embeddings_data" in results
             assert results["embeddings_data"] == []
-            
+
             # Verify the embedding failure was logged during EmbeddingGenerator initialization
-            assert "sentence-transformers not available. Cannot initialize EmbeddingGenerator." in caplog.text
+            assert "Failed to load SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2': Mock model loading failed" in caplog.text
 
             # Clean up singleton for other tests
             JavaAnalyzerAgent._instance = None

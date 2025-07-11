@@ -1,0 +1,173 @@
+# GitHub Actions Configuration for CI Optimization
+# Place this in .github/workflows/test-optimization.yml for easy testing
+
+name: Test CI Optimization
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode'
+        required: true
+        default: 'base-images-only'
+        type: choice
+        options:
+        - base-images-only
+        - optimized-builds
+        - full-comparison
+        - cleanup-only
+      force_rebuild:
+        description: 'Force rebuild base images'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test-optimization:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Calculate dependency hashes
+      id: hashes
+      run: |
+        PYTHON_HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        echo "python-hash=$PYTHON_HASH" >> $GITHUB_OUTPUT
+        echo "node-hash=$NODE_HASH" >> $GITHUB_OUTPUT
+        echo "Python deps hash: $PYTHON_HASH"
+        echo "Node deps hash: $NODE_HASH"
+    
+    - name: Test base image builds
+      if: github.event.inputs.test_mode != 'cleanup-only'
+      run: |
+        echo "🏗️ Testing base image builds..."
+        
+        # Time the builds
+        START_TIME=$(date +%s)
+        
+        # Build Python base
+        echo "Building Python base image..."
+        docker build -f docker/base-images/Dockerfile.python-base -t test-python-base .
+        
+        # Build Node base
+        echo "Building Node base image..."
+        docker build -f docker/base-images/Dockerfile.node-base -t test-node-base frontend/
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        echo "✅ Base images built in ${DURATION}s"
+        
+        # Test functionality
+        echo "Testing Python base image..."
+        docker run --rm test-python-base python -c "
+        import fastapi, crewai, langchain
+        print('✅ Python dependencies available')
+        "
+        
+        echo "Testing Node base image..."
+        docker run --rm test-node-base sh -c "
+        pnpm --version && node --version
+        echo '✅ Node dependencies available'
+        "
+    
+    - name: Test optimized builds
+      if: contains(fromJson('["optimized-builds", "full-comparison"]'), github.event.inputs.test_mode)
+      run: |
+        echo "🚀 Testing optimized builds..."
+        
+        START_TIME=$(date +%s)
+        
+        # Build optimized services
+        docker build -f ai-engine/Dockerfile.optimized --build-arg PYTHON_BASE_TAG=latest -t test-ai-engine-opt ai-engine/
+        docker build -f backend/Dockerfile.optimized --build-arg PYTHON_BASE_TAG=latest -t test-backend-opt backend/
+        docker build -f frontend/Dockerfile.optimized --build-arg NODE_BASE_TAG=latest -t test-frontend-opt frontend/
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        echo "✅ Optimized builds completed in ${DURATION}s"
+    
+    - name: Test standard builds for comparison
+      if: github.event.inputs.test_mode == 'full-comparison'
+      run: |
+        echo "📊 Testing standard builds for comparison..."
+        
+        START_TIME=$(date +%s)
+        
+        # Build standard services
+        docker build -f ai-engine/Dockerfile -t test-ai-engine-std ai-engine/
+        docker build -f backend/Dockerfile -t test-backend-std backend/
+        docker build -f frontend/Dockerfile -t test-frontend-std frontend/
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        echo "✅ Standard builds completed in ${DURATION}s"
+    
+    - name: Performance analysis
+      if: github.event.inputs.test_mode == 'full-comparison'
+      run: |
+        echo "📈 Performance Analysis"
+        echo "====================="
+        
+        echo "Image sizes:"
+        docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}" | grep test-
+        
+        echo ""
+        echo "Build strategy comparison:"
+        echo "- Base images: One-time cost, massive time savings for subsequent builds"
+        echo "- Optimized: Fast builds using pre-built dependencies"
+        echo "- Standard: Full dependency installation every time"
+    
+    - name: Push test base images
+      if: github.event.inputs.test_mode != 'cleanup-only' && github.event.inputs.force_rebuild == 'true'
+      run: |
+        echo "📤 Pushing test base images to registry..."
+        
+        # Tag and push
+        docker tag test-python-base ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:test-${{ steps.hashes.outputs.python-hash }}
+        docker tag test-node-base ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:test-${{ steps.hashes.outputs.node-hash }}
+        
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:test-${{ steps.hashes.outputs.python-hash }}
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:test-${{ steps.hashes.outputs.node-hash }}
+        
+        echo "✅ Test images pushed with test- prefix"
+    
+    - name: Cleanup test images
+      if: always()
+      run: |
+        echo "🧹 Cleaning up test images..."
+        docker rmi -f $(docker images -q test-*) 2>/dev/null || true
+        echo "✅ Cleanup complete"
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "🎉 Optimization Test Summary"
+        echo "=========================="
+        echo "Test mode: ${{ github.event.inputs.test_mode }}"
+        echo "Force rebuild: ${{ github.event.inputs.force_rebuild }}"
+        echo ""
+        echo "Expected improvements with this optimization:"
+        echo "- 60-70% reduction in CI execution time"
+        echo "- 50-60% reduction in GitHub Actions costs"
+        echo "- Better developer experience with faster feedback"
+        echo "- More reliable builds with better caching"

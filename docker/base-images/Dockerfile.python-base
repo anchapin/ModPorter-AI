@@ -1,0 +1,62 @@
+# Python Base Image with Pre-installed Dependencies
+# This image contains all Python dependencies for both backend and ai-engine
+# Built weekly or when requirements change to speed up CI
+
+FROM python:3.11-slim AS base-builder
+
+# Install system dependencies needed for building Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    curl \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install build tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Copy requirements from both services
+COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
+COPY backend/requirements.txt /tmp/backend-requirements.txt
+
+# Install all Python dependencies in a single layer
+# This is the time-consuming step that we want to cache
+RUN pip install --no-cache-dir \
+    -r /tmp/ai-engine-requirements.txt \
+    -r /tmp/backend-requirements.txt \
+    # Add common development dependencies
+    pytest pytest-asyncio pytest-cov pytest-timeout \
+    ruff black isort mypy \
+    alembic \
+    && pip cache purge
+
+# Production stage - smaller final image
+FROM python:3.11-slim
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ffmpeg \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder stage
+COPY --from=base-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=base-builder /usr/local/bin /usr/local/bin
+
+# Create app user
+RUN adduser --disabled-password --gecos '' appuser
+
+# Set up working directory
+WORKDIR /app
+RUN chown appuser:appuser /app
+
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import sys; print('Python base image healthy')" || exit 1
+
+CMD ["python", "--version"]
