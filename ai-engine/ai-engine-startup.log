@@ -1120,3 +1120,28 @@ ERROR:src.utils.embedding_generator:sentence-transformers not available. Cannot 
 INFO:src.main:ModPorterConversionCrew initialized
 INFO:src.main:ModPorter AI Engine startup complete
 INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'src/agents/java_analyzer.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36901]
+/home/anchapin/.pyenv/versions/3.11.8/lib/python3.11/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+WARNING:src.utils.embedding_generator:sentence-transformers not available. EmbeddingGenerator will be disabled.
+INFO:     Started server process [46090]
+INFO:     Waiting for application startup.
+INFO:src.main:Starting ModPorter AI Engine...
+INFO:src.main:Redis connection established
+INFO:src.main:RedisJobManager initialized
+INFO:src.main:SmartAssumptionEngine initialized
+INFO:src.crew.conversion_crew:Using Ollama with model: mistral
+INFO:src.utils.rate_limiter:Creating Ollama LLM with ChatOllama model: mistral
+INFO:httpx:HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:src.utils.rate_limiter:Ollama LLM test successful: <class 'langchain_core.messages.ai.AIMessage'>
+INFO:src.utils.rate_limiter:Modified model property for CrewAI compatibility: ollama/mistral
+INFO:src.crew.conversion_crew:Successfully initialized Ollama LLM
+ERROR:src.utils.embedding_generator:sentence-transformers not available. Cannot initialize EmbeddingGenerator.
+ERROR:src.utils.embedding_generator:sentence-transformers not available. Cannot initialize EmbeddingGenerator.
+INFO:src.main:ModPorterConversionCrew initialized
+INFO:src.main:ModPorter AI Engine startup complete
+INFO:     Application startup complete.

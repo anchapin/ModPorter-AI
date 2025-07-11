@@ -89,16 +89,179 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with analysis results
         """
-        logger.info(f"Bypassing actual mod analysis for debugging. Mod path: {mod_path}")
-        return json.dumps({
-            "mod_info": {"name": "dummy_mod", "framework": "debug", "version": "1.0.0"},
-            "assets": {},
-            "features": {},
-            "structure": {},
-            "metadata": {},
-            "errors": [],
-            "embeddings_data": []
-        })
+        logger.info(f"Analyzing mod file: {mod_path}")
+        
+        try:
+            # Initialize result structure
+            result = {
+                "mod_info": {"name": "unknown", "framework": "unknown", "version": "1.0.0"},
+                "assets": {},
+                "features": {},
+                "structure": {},
+                "metadata": {},
+                "errors": [],
+                "embeddings_data": []
+            }
+            
+            # Analyze the mod file
+            if mod_path.endswith(('.jar', '.zip')):
+                result = self._analyze_jar_file(mod_path, result)
+            elif os.path.isdir(mod_path):
+                result = self._analyze_source_directory(mod_path, result)
+            else:
+                result["errors"].append(f"Unsupported mod file format: {mod_path}")
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing mod file {mod_path}: {e}")
+            return json.dumps({
+                "mod_info": {"name": "error", "framework": "unknown", "version": "1.0.0"},
+                "assets": {},
+                "features": {},
+                "structure": {},
+                "metadata": {},
+                "errors": [f"Analysis failed: {str(e)}"],
+                "embeddings_data": []
+            })
+    
+    def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
+        """Analyze a JAR file for mod information"""
+        try:
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Detect framework
+                framework = self._detect_framework_from_jar_files(file_list, jar)
+                result["mod_info"]["framework"] = framework
+                
+                # Extract mod info from metadata files
+                mod_info = self._extract_mod_info_from_jar(jar, file_list)
+                result["mod_info"].update(mod_info)
+                
+                # Analyze assets
+                result["assets"] = self._analyze_assets_from_jar(file_list)
+                
+                # Analyze structure
+                result["structure"] = {"files": len(file_list), "type": "jar"}
+                
+        except Exception as e:
+            result["errors"].append(f"Error analyzing JAR file: {str(e)}")
+        
+        return result
+    
+    def _detect_framework_from_jar_files(self, file_list: list, jar: zipfile.ZipFile) -> str:
+        """Detect modding framework from JAR file contents"""
+        try:
+            # Check for framework-specific files and patterns
+            for framework, indicators in self.framework_indicators.items():
+                for indicator in indicators:
+                    if any(indicator in file_name for file_name in file_list):
+                        return framework
+            
+            # Check file contents if available
+            for file_name in file_list:
+                if file_name.endswith('.json') and 'mod' in file_name.lower():
+                    try:
+                        content = jar.read(file_name).decode('utf-8')
+                        for framework, indicators in self.framework_indicators.items():
+                            for indicator in indicators:
+                                if indicator in content:
+                                    return framework
+                    except:
+                        continue
+            
+            return 'unknown'
+        except:
+            return 'unknown'
+    
+    def _extract_mod_info_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> dict:
+        """Extract mod information from metadata files"""
+        mod_info = {}
+        
+        # Look for Fabric mod.json
+        if 'fabric.mod.json' in file_list:
+            try:
+                content = jar.read('fabric.mod.json').decode('utf-8')
+                fabric_data = json.loads(content)
+                mod_info["name"] = fabric_data.get("id", fabric_data.get("name", "unknown")).lower()
+                mod_info["version"] = fabric_data.get("version", "1.0.0")
+                return mod_info
+            except:
+                pass
+        
+        # Look for Quilt mod.json
+        if 'quilt.mod.json' in file_list:
+            try:
+                content = jar.read('quilt.mod.json').decode('utf-8')
+                quilt_data = json.loads(content)
+                mod_info["name"] = quilt_data.get("quilt_loader", {}).get("id", "unknown").lower()
+                mod_info["version"] = quilt_data.get("quilt_loader", {}).get("version", "1.0.0")
+                return mod_info
+            except:
+                pass
+        
+        # Look for Forge mcmod.info
+        if 'mcmod.info' in file_list:
+            try:
+                content = jar.read('mcmod.info').decode('utf-8')
+                mcmod_data = json.loads(content)
+                if isinstance(mcmod_data, list) and len(mcmod_data) > 0:
+                    mod_data = mcmod_data[0]
+                    mod_info["name"] = mod_data.get("modid", "unknown").lower()
+                    mod_info["version"] = mod_data.get("version", "1.0.0")
+                    return mod_info
+            except:
+                pass
+        
+        # Look for mods.toml
+        for file_name in file_list:
+            if file_name.endswith('mods.toml'):
+                try:
+                    content = jar.read(file_name).decode('utf-8')
+                    # Simple TOML parsing for modId
+                    for line in content.split('\n'):
+                        if 'modId' in line and '=' in line:
+                            mod_id = line.split('=')[1].strip().strip('"\'')
+                            mod_info["name"] = mod_id.lower()
+                            break
+                    return mod_info
+                except:
+                    pass
+        
+        return mod_info
+    
+    def _analyze_assets_from_jar(self, file_list: list) -> dict:
+        """Analyze assets in the JAR file"""
+        assets = {
+            "textures": [],
+            "models": [],
+            "sounds": [],
+            "other": []
+        }
+        
+        for file_name in file_list:
+            if '/textures/' in file_name and file_name.endswith(('.png', '.jpg', '.jpeg')):
+                assets["textures"].append(file_name)
+            elif '/models/' in file_name and file_name.endswith(('.json', '.obj')):
+                assets["models"].append(file_name)
+            elif '/sounds/' in file_name and file_name.endswith(('.ogg', '.wav')):
+                assets["sounds"].append(file_name)
+            elif any(file_name.endswith(ext) for ext in ['.png', '.jpg', '.ogg', '.wav', '.obj', '.mtl']):
+                assets["other"].append(file_name)
+        
+        return assets
+    
+    def _analyze_source_directory(self, source_path: str, result: dict) -> dict:
+        """Analyze a source directory for mod information"""
+        try:
+            # This would be implemented for source analysis
+            result["mod_info"]["framework"] = "source"
+            result["structure"] = {"type": "source", "path": source_path}
+        except Exception as e:
+            result["errors"].append(f"Error analyzing source directory: {str(e)}")
+        
+        return result
 
     @tool
     @staticmethod
