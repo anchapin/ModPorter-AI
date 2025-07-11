@@ -1873,7 +1873,7 @@ class AssetConverterAgent:
 
             # Determine if resizing is needed due to power-of-two requirement or exceeding max resolution
             needs_pot_resize = must_be_power_of_2 and (not self._is_power_of_2(width) or not self._is_power_of_2(height))
-            exceeds_max_res = width > max_res or height > max_res
+            # exceeds_max_res = width > max_res or height > max_res  # Unused variable removed
 
             if needs_pot_resize:
                 new_width = self._next_power_of_2(width)
