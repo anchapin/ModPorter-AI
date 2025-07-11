@@ -135,3 +135,13 @@ frontend/node_modules/.pnpm/**
 *.so.*
 *.dylib.*
 *.dll.*
+
+# Claude AI and related tools
+.claude/
+.hive-mind/
+.swarm/
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+memory/
+bin/
