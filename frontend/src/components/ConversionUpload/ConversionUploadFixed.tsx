@@ -134,6 +134,7 @@ export const ConversionUploadFixed: React.FC<ConversionUploadProps> = ({
       }, 3000);
       
     } catch (err: any) {
+      console.error('Conversion error:', err);
       setError('Conversion request failed. Please try again.');
       setIsConverting(false);
     }

@@ -131,7 +131,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   };
 
   // Get conversion status
-  const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+  const getConversionStatus = useCallback(async (jobId: string): Promise<ConversionStatus> => {
     const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
     
     if (!response.ok) {
@@ -140,7 +140,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     }
 
     return response.json();
-  };
+  }, [API_BASE_URL]);
 
   // Polling for status updates
   useEffect(() => {
@@ -183,7 +183,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
         clearInterval(intervalId);
       }
     };
-  }, [currentJobId, isConverting, onConversionComplete]);
+  }, [currentJobId, isConverting, onConversionComplete, getConversionStatus]);
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     if (rejectedFiles.length > 0) {
