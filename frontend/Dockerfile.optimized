@@ -1,0 +1,33 @@
+# Frontend Dockerfile using pre-built base image
+# Significantly faster builds by using cached dependencies
+
+ARG NODE_BASE_TAG=latest
+FROM ghcr.io/anchapin/modporter-ai/node-base:${NODE_BASE_TAG} AS builder
+
+# Dependencies are already installed in the base image
+# Just copy source code and build
+
+WORKDIR /app
+
+# Copy source code
+COPY --chown=appuser:appuser . .
+
+# Build the application (fast since deps are cached)
+RUN pnpm run build
+
+# Production stage with nginx
+FROM nginx:alpine
+
+# Copy built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
