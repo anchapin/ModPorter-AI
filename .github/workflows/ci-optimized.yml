@@ -10,7 +10,6 @@ env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # Calculate dependency hashes for cache keys
@@ -20,8 +19,15 @@ jobs:
       python-hash: ${{ steps.python-hash.outputs.hash }}
       node-hash: ${{ steps.node-hash.outputs.hash }}
       should-use-base-images: ${{ steps.check-base-images.outputs.available }}
+      image-name: ${{ steps.image-name.outputs.name }}
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Calculate lowercase image name
+      id: image-name
+      run: |
+        IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+        echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
     
     - name: Calculate Python dependencies hash
       id: python-hash
@@ -38,8 +44,8 @@ jobs:
     - name: Check if base images are available
       id: check-base-images
       run: |
-        PYTHON_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:${{ steps.python-hash.outputs.hash }}"
-        NODE_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:${{ steps.node-hash.outputs.hash }}"
+        PYTHON_IMAGE="${{ env.REGISTRY }}/${{ steps.image-name.outputs.name }}/python-base:${{ steps.python-hash.outputs.hash }}"
+        NODE_IMAGE="${{ env.REGISTRY }}/${{ steps.image-name.outputs.name }}/node-base:${{ steps.node-hash.outputs.hash }}"
         
         PYTHON_AVAILABLE=false
         NODE_AVAILABLE=false
@@ -88,8 +94,8 @@ jobs:
         file: docker/base-images/Dockerfile.python-base
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:latest
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }}
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:latest
         cache-from: type=gha,scope=python-base
         cache-to: type=gha,mode=max,scope=python-base
         platforms: linux/amd64
@@ -101,8 +107,8 @@ jobs:
         file: docker/base-images/Dockerfile.node-base
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:${{ needs.calculate-hashes.outputs.node-hash }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:latest
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/node-base:${{ needs.calculate-hashes.outputs.node-hash }}
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/node-base:latest
         cache-from: type=gha,scope=node-base
         cache-to: type=gha,mode=max,scope=node-base
         platforms: linux/amd64
@@ -166,7 +172,7 @@ jobs:
         docker run --rm \
           -v ${{ github.workspace }}/frontend:/app \
           -w /app \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:${{ needs.calculate-hashes.outputs.node-hash }} \
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/node-base:${{ needs.calculate-hashes.outputs.node-hash }} \
           sh -c "
             pnpm run lint
             if pnpm run test:coverage; then
@@ -187,7 +193,7 @@ jobs:
           -e DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter \
           -e REDIS_URL=redis://localhost:6379 \
           -e TESTING=true \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
             pip install --no-deps -e .
             ruff check . || echo 'Linting issues found but continuing...'
@@ -205,7 +211,7 @@ jobs:
           -e USE_OLLAMA=false \
           -e OPENAI_API_KEY=test-key \
           -e ANTHROPIC_API_KEY=test-key \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
             pip install --no-deps -e .
             ruff check . || echo 'Linting issues found but continuing...'
@@ -222,7 +228,7 @@ jobs:
           -e USE_OLLAMA=false \
           -e OPENAI_API_KEY=test-key \
           -e ANTHROPIC_API_KEY=test-key \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
             pip install --no-deps -e .
             python -m pytest tests/integration/ --cov=src --cov-report=xml -v
@@ -378,8 +384,8 @@ jobs:
         build-args: |
           ${{ matrix.service == 'frontend' && 'NODE_BASE_TAG' || 'PYTHON_BASE_TAG' }}=${{ steps.base-tag.outputs.tag }}
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:latest
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/${{ matrix.service }}:latest
+          ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/${{ matrix.service }}:${{ github.sha }}
         cache-from: type=gha,scope=${{ matrix.service }}
         cache-to: type=gha,mode=max,scope=${{ matrix.service }}
         platforms: linux/amd64
