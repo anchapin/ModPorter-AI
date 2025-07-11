@@ -1,5 +1,7 @@
 # Claude Code Configuration for Claude Flow
 
+<!-- Updated unit tests for JavaAnalyzerAgent -->
+
 ## 🚀 IMPORTANT: Claude Flow AI-Driven Development
 
 ### Claude Code Handles:
