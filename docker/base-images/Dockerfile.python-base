@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ffmpeg \
     postgresql-client \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder stage
