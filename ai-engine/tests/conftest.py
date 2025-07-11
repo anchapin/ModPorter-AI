@@ -23,6 +23,42 @@ if llm_provider == "ollama":
     os.environ["LITELLM_LOG"] = "DEBUG"
     os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     print(f"🦙 Using Ollama for tests with model: {os.environ['OLLAMA_MODEL']}")
+    
+    # Add CI diagnostics for Ollama availability
+    import subprocess
+    import sys
+    try:
+        # Check if Ollama is available
+        result = subprocess.run(['ollama', '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print(f"✅ Ollama version: {result.stdout.strip()}")
+        else:
+            print(f"❌ Ollama command failed: {result.stderr}")
+    except FileNotFoundError:
+        print("❌ Ollama command not found - not installed or not in PATH")
+    except Exception as e:
+        print(f"❌ Error checking Ollama: {e}")
+    
+    try:
+        # Check if Ollama server is running
+        import requests
+        response = requests.get("http://localhost:11434/api/version", timeout=5)
+        if response.status_code == 200:
+            print(f"✅ Ollama server running: {response.json()}")
+        else:
+            print(f"❌ Ollama server returned: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Ollama server not accessible: {e}")
+    
+    try:
+        # Check if model is available
+        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
+        if 'llama3.2' in result.stdout:
+            print("✅ llama3.2 model available")
+        else:
+            print(f"❌ llama3.2 model not found. Available models:\n{result.stdout}")
+    except Exception as e:
+        print(f"❌ Error checking models: {e}")
 elif llm_provider == "openai":
     os.environ["USE_OLLAMA"] = "false"
     # Requires real OPENAI_API_KEY
