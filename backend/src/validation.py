@@ -17,6 +17,9 @@ class ValidationFramework:
         "application/java-archive",
         "application/x-jar",
         "application/octet-stream",  # For .mcaddon files and generic archives
+        "application/x-zip-compressed",  # Alternative zip MIME type
+        "application/x-zip",  # Another zip variant
+        "multipart/x-zip",  # Another zip variant
     ]
 
     def validate_upload(self, file: IO[bytes], filename: str) -> ValidationResult:
@@ -77,6 +80,10 @@ class ValidationFramework:
         file.seek(0)  # Reset cursor to the beginning
 
         mime_type = magic.from_buffer(file_chunk, mime=True)
+        
+        # Debug logging to see what MIME type is detected
+        print(f"DEBUG: File '{filename}' detected MIME type: '{mime_type}'")
+        print(f"DEBUG: Allowed MIME types: {self.ALLOWED_MIME_TYPES}")
 
         if mime_type not in self.ALLOWED_MIME_TYPES:
             return ValidationResult(
