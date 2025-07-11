@@ -190,12 +190,13 @@ jobs:
           -v ${{ github.workspace }}/backend:/app \
           -w /app \
           --network host \
+          --user root \
           -e DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/modporter \
           -e REDIS_URL=redis://localhost:6379 \
           -e TESTING=true \
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
-            pip install --no-deps -e .
+            pip install -r requirements.txt
             ruff check . || echo 'Linting issues found but continuing...'
             python -m alembic upgrade head
             python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5
@@ -207,13 +208,14 @@ jobs:
         docker run --rm \
           -v ${{ github.workspace }}/ai-engine:/app \
           -w /app \
+          --user root \
           -e TEST_LLM_PROVIDER=mock \
           -e USE_OLLAMA=false \
           -e OPENAI_API_KEY=test-key \
           -e ANTHROPIC_API_KEY=test-key \
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
-            pip install --no-deps -e .
+            pip install -r requirements.txt
             ruff check . || echo 'Linting issues found but continuing...'
             python -m pytest --cov=src tests/ --ignore=tests/integration/ --cov-report=xml -v
           "
@@ -224,13 +226,14 @@ jobs:
         docker run --rm \
           -v ${{ github.workspace }}/ai-engine:/app \
           -w /app \
+          --user root \
           -e TEST_LLM_PROVIDER=mock \
           -e USE_OLLAMA=false \
           -e OPENAI_API_KEY=test-key \
           -e ANTHROPIC_API_KEY=test-key \
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.image-name }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
-            pip install --no-deps -e .
+            pip install -r requirements.txt
             python -m pytest tests/integration/ --cov=src --cov-report=xml -v
           "
 

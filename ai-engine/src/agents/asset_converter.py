@@ -1639,7 +1639,6 @@ class AssetConverterAgent:
     @staticmethod
     def validate_bedrock_assets_tool(validation_data: str) -> str:
         """Validate assets for Bedrock compatibility."""
-        agent = AssetConverterAgent.get_instance()
         def _validate_single_asset(asset_path: str, asset_type: str, metadata: Dict) -> Dict:
             """Validate a single asset for Bedrock compatibility"""
             is_valid = True
@@ -1688,6 +1687,7 @@ class AssetConverterAgent:
             
             for asset in assets:
                 asset_path = asset.get('path', '')
+                asset_type = asset.get('type', 'unknown')
                 metadata = asset.get('metadata', {})
                 
                 validation = _validate_single_asset(asset_path, asset_type, metadata)

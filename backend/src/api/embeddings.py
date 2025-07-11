@@ -1,5 +1,4 @@
-from typing import List, Optional
-from uuid import UUID as PyUUID # Renamed to avoid conflict with pydantic's UUID if any confusion
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
