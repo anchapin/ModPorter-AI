@@ -10,6 +10,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import tempfile
 
 from src.agents.java_analyzer import JavaAnalyzerAgent
 from src.agents.bedrock_architect import BedrockArchitectAgent
@@ -42,9 +43,6 @@ class ModPorterConversionCrew:
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             try:
                 ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
-                # Add ollama/ prefix if not present for LiteLLM compatibility
-                if not ollama_model.startswith("ollama/"):
-                    ollama_model = f"ollama/{ollama_model}"
                 logger.info(f"Using Ollama with model: {ollama_model}")
                 self.llm = create_ollama_llm(
                     model_name=ollama_model,
@@ -293,12 +291,13 @@ class ModPorterConversionCrew:
         self.package_task = Task(
             description="""Assemble all converted components into a valid .mcaddon:
             1. From the analysis report (context from analyze_task), extract the original mod name, description, and version.
-            2. Use 'create_package_structure_tool' to create the necessary directory structure. Pass the 'output_path' (from initial inputs) as 'output_dir' and the extracted mod name as 'mod_name'. Store the 'behavior_pack_path' and 'resource_pack_path' returned by this tool.
-            3. Generate manifest files for both behavior and resource packs using the 'generate_manifests_tool'. Use the extracted mod name, description, and version. Ensure the manifests are written to BEHAVIOR_PACK_DIR/manifest.json and RESOURCE_PACK_DIR/manifest.json respectively.
-            4. Organize converted assets and translated logic into BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR. This step is implicit and assumed to be handled by prior asset conversion and logic translation.
-            5. Validate the package structure and contents within BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR using 'validate_package_tool'.
-            6. Create the final .mcaddon package using 'build_mcaddon_tool'. Provide the 'output_path' (from initial inputs), BEHAVIOR_PACK_DIR, and RESOURCE_PACK_DIR to this tool.
-            7. Generate installation instructions for users.
+            2. Create a temporary directory within /app/conversion_outputs to serve as the intermediate build directory. This temporary directory path is available as `inputs['temp_dir']`.
+            3. Use 'create_package_structure_tool' to create the necessary directory structure within this temporary directory. Pass `inputs['temp_dir']` as 'output_dir' and the extracted mod name as 'mod_name'. Store the 'behavior_pack_path' and 'resource_pack_path' returned by this tool.
+            4. Generate manifest files for both behavior and resource packs using the 'generate_manifests_tool'. Use the extracted mod name, description, and version. Ensure the manifests are written to BEHAVIOR_PACK_DIR/manifest.json and RESOURCE_PACK_DIR/manifest.json respectively.
+            5. Organize converted assets and translated logic into BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR. This step is implicit and assumed to be handled by prior asset conversion and logic translation.
+            6. Validate the package structure and contents within BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR using 'validate_package_tool'.
+            7. Create the final .mcaddon package using 'build_mcaddon_tool'. Provide the `output_path` (from initial inputs), and the paths to the BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR within the temporary directory (from step 3) as `source_directories` to this tool.
+            8. Generate installation instructions for users.
             
             Ensure the package meets all Bedrock add-on standards and is ready for distribution.
             Use the packaging_agent tools for reliable packaging.""",
@@ -400,8 +399,11 @@ class ModPorterConversionCrew:
         Returns:
             Conversion result following PRD Feature 3 format
         """
+        temp_dir = None  # Initialize temp_dir to None
         try:
             logger.info(f"Starting conversion of {mod_path}")
+            logger.debug(f"Output path: {output_path}")
+            logger.debug(f"Temporary directory: {temp_dir}")
             
             # Check if mod file exists
             if not mod_path.exists():
@@ -417,10 +419,16 @@ class ModPorterConversionCrew:
                     'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [f'Mod file not found: {mod_path}']}
                 }
             
+            # Create a temporary directory for intermediate files 
+            # Use /tmp for local testing, /app/conversion_outputs for Docker
+            output_base_dir = "/app/conversion_outputs" if Path("/app/conversion_outputs").exists() else "/tmp"
+            temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
+            logger.info(f"Created temporary directory for conversion: {temp_dir}")
             # Prepare inputs for the crew
             inputs = {
                 'mod_path': str(mod_path),
                 'output_path': str(output_path),
+                'temp_dir': str(temp_dir),  # Pass the temporary directory to the crew
                 'smart_assumptions_enabled': smart_assumptions,
                 'include_dependencies': include_dependencies
                 # --- INTEGRATION PLAN FOR QAAgent ---
@@ -431,6 +439,7 @@ class ModPorterConversionCrew:
                 # For now, assuming 'ai-engine/src/testing/scenarios/example_scenarios.json' is hardcoded in the tool/task.
                 # --- END INTEGRATION PLAN ---
             }
+            logger.debug(f"Crew inputs: {inputs}")
             
             # Execute the crew workflow
             try:
@@ -455,7 +464,7 @@ class ModPorterConversionCrew:
             
             logger.info("Conversion completed successfully")
             return conversion_report
-            
+
         except Exception as e:
             logger.error(f"Conversion failed: {str(e)}")
             return {
@@ -468,6 +477,12 @@ class ModPorterConversionCrew:
                 'download_url': None,
                 'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
             }
+        finally:
+            # Clean up temporary directory if it was created
+            if temp_dir and temp_dir.exists():
+                import shutil
+                shutil.rmtree(temp_dir)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
     
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:

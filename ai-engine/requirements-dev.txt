@@ -1,0 +1,10 @@
+# Testing
+pytest
+pytest-asyncio
+pytest-mock
+pytest-cov
+
+# Development
+black
+ruff
+isort

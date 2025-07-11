@@ -225,22 +225,21 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://loca
         **kwargs: Additional parameters for the LLM
     
     Returns:
-        ChatLiteLLM instance configured for Ollama
+        ChatOllama instance configured for Ollama
     """
     try:
-        from langchain_community.chat_models import ChatLiteLLM
+        from langchain_ollama import ChatOllama
         
-        # Ensure ollama/ prefix is present for LiteLLM compatibility
-        if not model_name.startswith("ollama/"):
-            model_name = f"ollama/{model_name}"
+        # Remove ollama/ prefix if present since ChatOllama expects just the model name
+        clean_model_name = model_name.replace("ollama/", "") if model_name.startswith("ollama/") else model_name
         
-        logger.info(f"Creating Ollama LLM with LiteLLM model: {model_name}")
+        logger.info(f"Creating Ollama LLM with ChatOllama model: {clean_model_name}")
         
-        ollama_llm = ChatLiteLLM(
-            model=model_name,
-            api_base=base_url,
+        ollama_llm = ChatOllama(
+            model=clean_model_name,
+            base_url=base_url,
             temperature=kwargs.get('temperature', 0.1),
-            max_tokens=kwargs.get('max_tokens', 4000),
+            num_predict=kwargs.get('max_tokens', 4000),
             repeat_penalty=kwargs.get('repeat_penalty', 1.1),
         )
         
@@ -248,6 +247,12 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://loca
         try:
             test_response = ollama_llm.invoke("Hello, are you working?")
             logger.info(f"Ollama LLM test successful: {type(test_response)}")
+            
+            # After successful creation, modify the model property for CrewAI/LiteLLM compatibility
+            if not ollama_llm.model.startswith("ollama/"):
+                ollama_llm.model = f"ollama/{ollama_llm.model}"
+                logger.info(f"Modified model property for CrewAI compatibility: {ollama_llm.model}")
+            
             return ollama_llm
         except Exception as test_error:
             logger.error(f"Ollama LLM test failed: {test_error}")

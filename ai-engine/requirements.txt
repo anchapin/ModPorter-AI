@@ -12,7 +12,6 @@ openai>=1.0.0
 sentence-transformers
 
 # Data Processing
-pandas
 numpy
 python-dotenv
 
@@ -25,7 +24,6 @@ pydub
 
 # HTTP Client
 httpx
-aiohttp
 
 # Redis for job management
 redis>=4.5.0
@@ -33,17 +31,6 @@ redis>=4.5.0
 # Configuration Management
 pydantic>=2.0.0
 pydantic-settings
-
-# Testing
-pytest
-pytest-asyncio
-pytest-mock
-pytest-cov
-
-# Development
-black
-ruff
-isort
 
 # Monitoring
 prometheus-client

@@ -18,6 +18,10 @@ if llm_provider == "ollama":
     os.environ["USE_OLLAMA"] = "true"
     os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
     os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    
+    # Set LiteLLM environment variables for Ollama compatibility
+    os.environ["LITELLM_LOG"] = "DEBUG"
+    os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     print(f"🦙 Using Ollama for tests with model: {os.environ['OLLAMA_MODEL']}")
 elif llm_provider == "openai":
     os.environ["USE_OLLAMA"] = "false"
@@ -28,6 +32,10 @@ else:
     os.environ["USE_OLLAMA"] = "true"
     os.environ["OLLAMA_MODEL"] = os.getenv("OLLAMA_MODEL", "llama3.2")
     os.environ["OLLAMA_BASE_URL"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    
+    # Set LiteLLM environment variables for Ollama compatibility
+    os.environ["LITELLM_LOG"] = "DEBUG"
+    os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     print(f"🦙 Using Ollama as fallback for tests with model: {os.environ['OLLAMA_MODEL']}")
 
 @pytest.fixture

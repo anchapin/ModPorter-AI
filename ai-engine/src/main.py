@@ -16,6 +16,8 @@ import json
 import zipfile
 from dotenv import load_dotenv
 import redis.asyncio as aioredis
+import asyncio
+import asyncio
 
 from src.crew.conversion_crew import ModPorterConversionCrew
 from src.models.smart_assumptions import SmartAssumptionEngine
@@ -185,9 +187,19 @@ async def startup_event():
         assumption_engine = SmartAssumptionEngine()
         logger.info("SmartAssumptionEngine initialized")
         
-        # Initialize ConversionCrew
-        conversion_crew = ModPorterConversionCrew()
-        logger.info("ModPorterConversionCrew initialized")
+        # Initialize ConversionCrew with retry logic for Ollama
+        max_retries = 10
+        retry_delay = 5  # seconds
+        for i in range(max_retries):
+            try:
+                conversion_crew = ModPorterConversionCrew()
+                logger.info("ModPorterConversionCrew initialized")
+                break  # Exit loop if successful
+            except RuntimeError as e:
+                logger.warning(f"Attempt {i+1}/{max_retries}: Ollama LLM initialization failed: {e}. Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+        else:
+            raise RuntimeError(f"Failed to initialize Ollama LLM after {max_retries} retries.")
         
         logger.info("ModPorter AI Engine startup complete")
         
@@ -301,8 +313,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         if not output_path:
             # Default output path using job_id pattern that backend expects
             # Use the mounted volume path inside the container
-            backend_output_dir = "/shared_data/conversion_outputs"
-            output_path = os.path.join(backend_output_dir, f"{job_id}_converted.mcaddon")
+            output_path = os.path.join("/app/conversion_outputs", f"{job_id}_converted.mcaddon")
         
         # Ensure the output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

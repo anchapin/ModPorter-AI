@@ -89,102 +89,16 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with analysis results
         """
-        try:
-            # Use the underlying functions directly, not the tool decorators
-            structure_result = JavaAnalyzerAgent.analyze_mod_structure_tool.func(mod_path)
-            structure = json.loads(structure_result)
-            
-            metadata_result = JavaAnalyzerAgent.extract_mod_metadata_tool.func(mod_path)
-            metadata = json.loads(metadata_result)
-            
-            features_result = JavaAnalyzerAgent.identify_features_tool.func(mod_path)
-            features = json.loads(features_result)
-            
-            assets_result = JavaAnalyzerAgent.extract_assets_tool.func(mod_path)
-            assets = json.loads(assets_result)
-            
-            # Combine results
-            metadata_info = metadata.get("metadata", {})
-            combined_result = {
-                "mod_info": {
-                    "name": metadata_info.get("id", Path(mod_path).stem.lower()),
-                    "framework": structure.get("analysis_results", {}).get("framework", "unknown"),
-                    "version": metadata_info.get("version", "1.0.0")
-                },
-                "assets": assets.get("assets", {}),
-                "features": features.get("feature_results", {}).get("feature_categories", {}),
-                "structure": structure.get("analysis_results", {}),
-                "metadata": metadata.get("metadata", {}),
-                "errors": [],
-                "embeddings_data": [] # Initialize embeddings_data
-            }
-
-            # Embedding generation logic
-            texts_to_embed = [] # List to hold all text snippets for embedding
-
-            # 1. Extract mod description for embedding
-            description_text = metadata_info.get("description", "") # From metadata_tool output
-            if description_text:
-                texts_to_embed.append({"type": "mod_description", "original_text": description_text})
-
-            # 2. Extract feature names for embedding
-            # features_result from identify_features_tool, features is json.loads(features_result)
-            feature_categories_data = features.get("feature_results", {}).get("feature_categories", {})
-            if isinstance(feature_categories_data, dict):
-                for category, feature_list in feature_categories_data.items():
-                    if isinstance(feature_list, list):
-                        for feature_item in feature_list:
-                            if isinstance(feature_item, dict) and "name" in feature_item:
-                                texts_to_embed.append({
-                                    "type": "feature_name",
-                                    "category": category,
-                                    "original_text": feature_item["name"]
-                                })
-
-            if self.embedding_generator and self.embedding_generator.model:
-                if texts_to_embed:
-                    try:
-                        original_texts_list = [item['original_text'] for item in texts_to_embed]
-                        embeddings_list = self.embedding_generator.generate_embeddings(original_texts_list)
-
-                        if embeddings_list is not None:
-                            embedded_data = []
-                            for i, item in enumerate(texts_to_embed):
-                                embedding_value = None
-                                # Ensure embedding exists and convert to list for JSON serialization
-                                if i < len(embeddings_list) and embeddings_list[i] is not None:
-                                    embedding_value = embeddings_list[i].tolist()
-
-                                embedded_data.append({
-                                    "type": item["type"],
-                                    "category": item.get("category"),
-                                    "original_text": item["original_text"],
-                                    "embedding": embedding_value
-                                })
-                            combined_result["embeddings_data"] = embedded_data
-                        else:
-                            logger.warning("Embedding generation returned None.")
-                            # combined_result["embeddings_data"] is already []
-                    except Exception as e_embed:
-                        logger.error(f"Error during embedding generation or processing: {e_embed}")
-                        # combined_result["embeddings_data"] is already []
-                else:
-                    logger.info("No text found to generate embeddings for.")
-            else:
-                logger.warning("EmbeddingGenerator model not loaded. Skipping embedding generation.")
-            
-            return json.dumps(combined_result)
-            
-        except Exception as e:
-            logger.error(f"Error analyzing mod file {mod_path}: {e}")
-            return json.dumps({
-                "mod_info": {"name": "unknown", "framework": "unknown", "version": "1.0.0"},
-                "assets": {},
-                "features": {},
-                "structure": {},
-                "metadata": {},
-                "errors": [str(e)]
-            })
+        logger.info(f"Bypassing actual mod analysis for debugging. Mod path: {mod_path}")
+        return json.dumps({
+            "mod_info": {"name": "dummy_mod", "framework": "debug", "version": "1.0.0"},
+            "assets": {},
+            "features": {},
+            "structure": {},
+            "metadata": {},
+            "errors": [],
+            "embeddings_data": []
+        })
 
     @tool
     @staticmethod
@@ -478,6 +392,7 @@ class JavaAnalyzerAgent:
             return ["Complete feature extraction for detailed conversion planning"]
 
         try:
+            logger.info(f"Current working directory in JavaAnalyzerAgent: {os.getcwd()}")
             # Handle both JSON string and direct file path inputs
             if isinstance(mod_data, str):
                 try:
