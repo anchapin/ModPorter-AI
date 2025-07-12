@@ -203,8 +203,8 @@ jobs:
           echo "🦙 Running integration tests with Ollama"
           python -m pytest tests/integration/ --cov=src --cov-report=xml -v
         else
-          echo "⚠️ Ollama not available - running integration tests with mock LLM"
-          python -m pytest tests/integration/ --cov=src --cov-report=xml -v
+          echo "❌ Ollama not available. Failing the job as per acceptance criteria."
+          exit 1 # Fail the step if Ollama is not available
         fi
       env:
         TEST_LLM_PROVIDER: ${{ steps.check-ollama.outputs.available == 'true' && 'ollama' || 'mock' }}
@@ -213,6 +213,8 @@ jobs:
         OLLAMA_BASE_URL: "http://localhost:11434"
         OPENAI_API_KEY: "test-key"
         ANTHROPIC_API_KEY: "test-key"
+        # Set the environment variable for the self-hosted runner to indicate it's running with Ollama
+        RUNNING_WITH_OLLAMA: ${{ steps.check-ollama.outputs.available == 'true' && 'true' || 'false' }}
     
     - name: Run integration tests with OpenAI
       if: matrix.test-type == 'integration-openai'
