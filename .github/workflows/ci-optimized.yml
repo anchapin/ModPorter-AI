@@ -16,12 +16,25 @@ jobs:
   # Calculate dependency hashes for cache keys
   calculate-hashes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     outputs:
       python-hash: ${{ steps.python-hash.outputs.hash }}
       node-hash: ${{ steps.node-hash.outputs.hash }}
       should-use-base-images: ${{ steps.check-base-images.outputs.available }}
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Calculate Python dependencies hash
       id: python-hash
