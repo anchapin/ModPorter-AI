@@ -20,7 +20,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-python-base:
@@ -43,6 +42,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Set repository name to lowercase
+      id: repo-name
+      run: |
+        echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+    
     - name: Extract Python dependencies hash
       id: deps-hash
       run: |
@@ -54,9 +58,7 @@ jobs:
     - name: Check if base image exists
       id: check-image
       run: |
-        IMAGE_REPO=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-        IMAGE_TAG="${{ env.REGISTRY }}/$IMAGE_REPO/python-base:${{ steps.deps-hash.outputs.hash }}"
-        echo "image-repo=$IMAGE_REPO" >> $GITHUB_OUTPUT
+        IMAGE_TAG="${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/python-base:${{ steps.deps-hash.outputs.hash }}"
         if docker buildx imagetools inspect "$IMAGE_TAG" > /dev/null 2>&1; then
           echo "exists=true" >> $GITHUB_OUTPUT
           echo "Base image already exists: $IMAGE_TAG"
@@ -73,8 +75,8 @@ jobs:
         file: docker/base-images/Dockerfile.python-base
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ steps.check-image.outputs.image-repo }}/python-base:${{ steps.deps-hash.outputs.hash }}
-          ${{ env.REGISTRY }}/${{ steps.check-image.outputs.image-repo }}/python-base:latest
+          ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/python-base:${{ steps.deps-hash.outputs.hash }}
+          ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/python-base:latest
         cache-from: type=gha,scope=python-base
         cache-to: type=gha,mode=max,scope=python-base
         platforms: linux/amd64
@@ -99,6 +101,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Set repository name to lowercase
+      id: repo-name
+      run: |
+        echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+    
     - name: Extract Node dependencies hash
       id: deps-hash
       run: |
@@ -109,9 +116,7 @@ jobs:
     - name: Check if base image exists
       id: check-image
       run: |
-        IMAGE_REPO=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-        IMAGE_TAG="${{ env.REGISTRY }}/$IMAGE_REPO/node-base:${{ steps.deps-hash.outputs.hash }}"
-        echo "image-repo=$IMAGE_REPO" >> $GITHUB_OUTPUT
+        IMAGE_TAG="${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/node-base:${{ steps.deps-hash.outputs.hash }}"
         if docker buildx imagetools inspect "$IMAGE_TAG" > /dev/null 2>&1; then
           echo "exists=true" >> $GITHUB_OUTPUT
         else
@@ -126,8 +131,8 @@ jobs:
         file: docker/base-images/Dockerfile.node-base
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ steps.check-image.outputs.image-repo }}/node-base:${{ steps.deps-hash.outputs.hash }}
-          ${{ env.REGISTRY }}/${{ steps.check-image.outputs.image-repo }}/node-base:latest
+          ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/node-base:${{ steps.deps-hash.outputs.hash }}
+          ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/node-base:latest
         cache-from: type=gha,scope=node-base
         cache-to: type=gha,mode=max,scope=node-base
         platforms: linux/amd64
