@@ -116,7 +116,7 @@ jobs:
   optimized-tests:
     runs-on: ubuntu-latest
     needs: [calculate-hashes, build-base-images]
-    if: always() && (needs.calculate-hashes.outputs.should-use-base-images == 'true' || needs.build-base-images.result == 'success')
+    if: always() && needs.build-base-images.result == 'success'
     timeout-minutes: 15
     
     strategy:
@@ -235,6 +235,7 @@ jobs:
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.repo-lowercase }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
             pip install -r requirements.txt
+            pip install -r requirements-dev.txt
             python -m pytest tests/integration/ --cov=src --cov-report=xml -v
           "
 
@@ -314,6 +315,7 @@ jobs:
     - name: Install and test backend
       if: matrix.test-suite == 'backend'
       run: |
+        sudo apt-get update && sudo apt-get install -y libmagic1
         cd backend
         python -m pip install --upgrade pip
         pip install -e .
@@ -334,7 +336,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install -r requirements.txt
-        pip install ruff
+        pip install -r requirements-dev.txt
         ruff check . || echo "Linting issues found but continuing..."
         python -m pytest --cov=src tests/ --cov-report=xml -v
       env:
