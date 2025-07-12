@@ -1576,13 +1576,12 @@ async def get_training_data(
     # For now, let's assume we don't have total count easily.
     # The Pydantic model `TrainingDataResponse` has a `total` field.
     # We need to provide it. A simple, less accurate way for now:
-    approx_total = len(all_feedback_entries) if skip == 0 and len(all_feedback_entries) < limit else -1 # Signifies unknown
     # A better approach: add a count method to crud.
     # For now, if we fetched less than limit, we can assume it's the total. This is often wrong.
 
     return TrainingDataResponse(
         data=training_data_items,
-        total=approx_total,  # Use the computed approximation
+        total=len(training_data_items),  # Use the length of processed items
         limit=limit,
         skip=skip,
     )
