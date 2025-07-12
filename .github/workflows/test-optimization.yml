@@ -143,11 +143,11 @@ jobs:
         echo "📤 Pushing test base images to registry..."
         
         # Tag and push
-        docker tag test-python-base ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:test-${{ steps.hashes.outputs.python-hash }}
-        docker tag test-node-base ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:test-${{ steps.hashes.outputs.node-hash }}
+        docker tag test-python-base ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/python-base:test-${{ steps.hashes.outputs.python-hash }}
+        docker tag test-node-base ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/node-base:test-${{ steps.hashes.outputs.node-hash }}
         
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-base:test-${{ steps.hashes.outputs.python-hash }}
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/node-base:test-${{ steps.hashes.outputs.node-hash }}
+        docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/python-base:test-${{ steps.hashes.outputs.python-hash }}
+        docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')/node-base:test-${{ steps.hashes.outputs.node-hash }}
         
         echo "✅ Test images pushed with test- prefix"
     
