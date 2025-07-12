@@ -12,6 +12,7 @@ from src.models.smart_assumptions import (
 from src.utils.embedding_generator import EmbeddingGenerator # Added import
 import os
 import zipfile
+import javalang
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,8 @@ class JavaAnalyzerAgent:
             JavaAnalyzerAgent.extract_mod_metadata_tool,
             JavaAnalyzerAgent.identify_features_tool,
             JavaAnalyzerAgent.analyze_dependencies_tool,
-            JavaAnalyzerAgent.extract_assets_tool
+            JavaAnalyzerAgent.extract_assets_tool,
+            JavaAnalyzerAgent.analyze_java_block_class_tool
         ]
     
     def analyze_mod_file(self, mod_path: str) -> str:
@@ -265,6 +267,78 @@ class JavaAnalyzerAgent:
             result["errors"].append(f"Error analyzing source directory: {str(e)}")
         
         return result
+
+    @tool
+    @staticmethod
+    def analyze_java_block_class_tool(java_file_path: str) -> str:
+        """
+        Analyze a single Java file to determine if it's a block class and extract relevant information.
+
+        Args:
+            java_file_path: The path to the Java file.
+
+        Returns:
+            A JSON string containing the analysis of the Java file.
+        """
+        try:
+            with open(java_file_path, 'r') as file:
+                java_code = file.read()
+
+            tree = javalang.parse.parse(java_code)
+
+            for path, node in tree.filter(javalang.tree.ClassDeclaration):
+                class_name = node.name
+                if 'Block' not in class_name:
+                    continue
+
+                for constructor in node.constructors:
+                    for statement in constructor.body:
+                        if isinstance(statement, javalang.tree.StatementExpression) and \
+                           isinstance(statement.expression, javalang.tree.MethodInvocation) and \
+                           statement.expression.member == 'super':
+
+                            properties_arg = statement.expression.arguments[0]
+                            if isinstance(properties_arg, javalang.tree.MethodInvocation) and \
+                               properties_arg.member == 'of':
+
+                                material_arg = properties_arg.arguments[0]
+                                material = material_arg.member
+
+                                block_properties = {
+                                    "block_name": class_name,
+                                    "material": material,
+                                    "hardness": None,
+                                    "resistance": None,
+                                    "sound_type": None
+                                }
+
+                                for prop_path, prop_node in properties_arg.filter(javalang.tree.MethodInvocation):
+                                    if prop_node.member == 'strength':
+                                        if len(prop_node.arguments) == 1:
+                                            block_properties['hardness'] = prop_node.arguments[0].value
+                                            block_properties['resistance'] = prop_node.arguments[0].value
+                                        elif len(prop_node.arguments) == 2:
+                                            block_properties['hardness'] = prop_node.arguments[0].value
+                                            block_properties['resistance'] = prop_node.arguments[1].value
+
+                                    if prop_node.member == 'sound':
+                                        block_properties['sound_type'] = prop_node.arguments[0].member
+
+                                logger.info(f"Successfully analyzed block class: {class_name}")
+                                return json.dumps(block_properties)
+
+            logger.warning(f"Could not find block properties in {java_file_path}")
+            return json.dumps({"is_block_class": False, "reason": "Could not find block properties."})
+
+        except javalang.tokenizer.LexerError as e:
+            logger.error(f"Error parsing Java file {java_file_path}: {e}")
+            return json.dumps({"is_block_class": False, "reason": f"Error parsing Java file: {e}"})
+        except FileNotFoundError:
+            logger.error(f"Java file not found: {java_file_path}")
+            return json.dumps({"is_block_class": False, "reason": "Java file not found."})
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while analyzing {java_file_path}: {e}")
+            return json.dumps({"is_block_class": False, "reason": f"An unexpected error occurred: {e}"})
 
     @tool
     @staticmethod
