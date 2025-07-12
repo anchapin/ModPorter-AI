@@ -13,18 +13,6 @@ from src.models.document import Document
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class Document:
-    content: str
-    source: str # URL or identifier of the source
-    doc_type: str = "generic" # e.g., "api_reference", "tutorial", "schema"
-    metadata: Dict[str, any] = field(default_factory=dict)
-    content_hash: Optional[str] = None
-
-    def __post_init__(self):
-        if self.content_hash is None and self.content:
-            self.content_hash = hashlib.md5(self.content.encode("utf-8")).hexdigest()
-
 class BedrockDocsScraper:
     def __init__(self, rate_limit_seconds: float = 1.0, cache_ttl_seconds: int = 86400):
         self.target_urls = {

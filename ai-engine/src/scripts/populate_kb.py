@@ -117,7 +117,7 @@ async def main():
         logger.info("Closing scraper and vector DB client connections...")
         await scraper.close()
         await vector_db_client.close()
-        # chunker_embedding_generator does not have a close method currently.
+        
 
 if __name__ == "__main__":
     # Ensure environment variables like OPENAI_API_KEY, RAG_EMBEDDING_MODEL are set if needed by EmbeddingGenerator
