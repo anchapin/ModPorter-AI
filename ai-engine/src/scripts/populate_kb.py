@@ -4,6 +4,9 @@ import logging
 import os
 from typing import List # Required for type hinting List[ScraperDocument]
 
+# Use lightweight chunker for document chunking
+from src.utils.chunker import Chunker
+
 # Adjust import paths based on the actual location relative to ai-engine/src/
 # Assuming 'from src.utils...' if running from parent directory of src,
 # or 'from ..utils...' if running as a module within src.
@@ -13,7 +16,6 @@ from typing import List # Required for type hinting List[ScraperDocument]
 try:
     from src.utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
     from src.utils.vector_db_client import VectorDBClient
-    from src.utils.embedding_generator import EmbeddingGenerator # For chunking
 except ImportError:
     # Fallback for running script directly for development, assuming PYTHONPATH is set or script is in a location
     # where src is discoverable. This might need adjustment based on execution environment.
@@ -25,7 +27,6 @@ except ImportError:
         sys.path.insert(0, project_root)
     from src.utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
     from src.utils.vector_db_client import VectorDBClient
-    from src.utils.embedding_generator import EmbeddingGenerator
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,17 +39,8 @@ CHUNK_OVERLAP = 32 # As used in EmbeddingGenerator example
 async def main():
     logger.info("Starting knowledge base population pipeline...")
 
-    # Initialize utilities
-    # EmbeddingGenerator is needed for chunking. VectorDBClient instantiates its own.
-    # We need a separate one here if VectorDBClient doesn't expose chunking.
-    # EmbeddingGenerator is instantiated within VectorDBClient and BedrockDocsScraper,
-    # but we need its chunk_document method here.
-    # Let's create a standalone one for chunking.
-    # NOTE: EmbeddingGenerator's __init__ can take a model_name.
-    # The default 'sentence-transformers/all-MiniLM-L6-v2' is fine for chunking logic
-    # as chunking itself is model-agnostic (though token counting can be model-specific).
-    # The actual embedding for indexing will be handled by VectorDBClient's internal EmbeddingGenerator.
-    chunker_embedding_generator = EmbeddingGenerator() # Uses default model for its tokenizer logic if needed by chunker
+
+    # Use lightweight chunker for document chunking
 
     scraper = BedrockDocsScraper()
     vector_db_client = VectorDBClient()
@@ -75,7 +67,7 @@ async def main():
                 logger.warning(f"Document {doc.source} has no content or content is not a string. Skipping.")
                 continue
 
-            text_chunks = chunker_embedding_generator.chunk_document(
+            text_chunks = Chunker.chunk_document(
                 document=doc.content,
                 chunk_size=CHUNK_SIZE,
                 overlap=CHUNK_OVERLAP

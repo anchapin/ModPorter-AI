@@ -8,9 +8,8 @@ import validators # For URL validation
 # Aiofiles might be needed if we save intermediate results to files asynchronously
 # import aiofiles
 
-# Define Document dataclass (consider moving to a shared models location if used elsewhere)
-from dataclasses import dataclass, field
-import hashlib
+
+from src.models.document import Document
 
 logger = logging.getLogger(__name__)
 

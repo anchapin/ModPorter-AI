@@ -49,7 +49,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def semantic_search(query_data: str) -> str:
+    async def semantic_search(query_data: str) -> str:
         """
         Perform semantic search across indexed documents.
         
@@ -81,12 +81,11 @@ class SearchTool:
                 })
             
             # Perform semantic search using vector database
-            # results = tool_instance._perform_semantic_search( # Original call
-            results = asyncio.run(tool_instance._perform_semantic_search(
+            results = await tool_instance._perform_semantic_search(
                 query=query,
                 limit=limit,
                 document_source=document_source
-            ))
+            )
 
             
             # Check if results are insufficient and fallback is enabled
@@ -116,7 +115,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def document_search(query_data: str) -> str:
+    async def document_search(query_data: str) -> str:
         """
         Search for specific documents by source or content type.
         
@@ -146,11 +145,11 @@ class SearchTool:
                 })
             
             # Search for documents by source
-            results = asyncio.run(tool_instance._search_by_document_source(
+            results = await tool_instance._search_by_document_source(
                 document_source=document_source,
                 content_type=content_type, # content_type filter might be applied client-side if needed
                 limit=data.get('limit', 10) # Pass limit
-            ))
+            )
             
             # Check if results are insufficient and fallback is enabled
             if not results and Config.SEARCH_FALLBACK_ENABLED:
@@ -180,7 +179,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def similarity_search(query_data: str) -> str:
+    async def similarity_search(query_data: str) -> str:
         """
         Find documents similar to a given document or content.
         
@@ -211,11 +210,11 @@ class SearchTool:
                 })
             
             # Find similar documents
-            results = asyncio.run(tool_instance._find_similar_documents(
+            results = await tool_instance._find_similar_documents(
                 content=content,
                 threshold=threshold, # threshold might be applied client-side if needed
                 limit=limit
-            ))
+            )
             
             # Check if results are insufficient and fallback is enabled
             if not results and Config.SEARCH_FALLBACK_ENABLED:
@@ -245,7 +244,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def bedrock_api_search(query_data: str) -> str:
+    async def bedrock_api_search(query_data: str) -> str:
         """
         Search for Bedrock Edition API documentation.
         Input can be a simple query string or a JSON string:
@@ -274,7 +273,7 @@ class SearchTool:
             logger.info(f"Bedrock API search for: {formatted_query}")
 
             # Utilize existing semantic_search tool
-            return SearchTool.semantic_search(json.dumps({
+            return await SearchTool.semantic_search(json.dumps({
                 "query": formatted_query,
                 "limit": 10 # Default limit for API search
             }))
@@ -287,7 +286,7 @@ class SearchTool:
 
     @tool
     @staticmethod
-    def component_lookup(query_data: str) -> str:
+    async def component_lookup(query_data: str) -> str:
         """
         Lookup documentation for specific Bedrock Edition components (e.g., minecraft:loot, minecraft:behavior.float_wander).
         Input can be a simple component name string or a JSON string:
@@ -312,7 +311,7 @@ class SearchTool:
             formatted_query = f"Bedrock component documentation for {component_name}"
             logger.info(f"Component lookup for: {formatted_query}")
 
-            return SearchTool.semantic_search(json.dumps({
+            return await SearchTool.semantic_search(json.dumps({
                 "query": formatted_query,
                 "limit": 5 # More focused search
             }))
@@ -325,7 +324,7 @@ class SearchTool:
 
     @tool
     @staticmethod
-    def conversion_examples(query_data: str) -> str:
+    async def conversion_examples(query_data: str) -> str:
         """
         Search for examples of converting game elements or mechanics from Java Edition to Bedrock Edition.
         Input can be a simple query string describing the element or a JSON string:
@@ -349,7 +348,7 @@ class SearchTool:
             formatted_query = f"Java to Bedrock conversion example for {query}"
             logger.info(f"Conversion examples search for: {formatted_query}")
 
-            return SearchTool.semantic_search(json.dumps({
+            return await SearchTool.semantic_search(json.dumps({
                 "query": formatted_query,
                 "limit": 5
             }))
@@ -362,7 +361,7 @@ class SearchTool:
 
     @tool
     @staticmethod
-    def schema_validation_lookup(query_data: str) -> str:
+    async def schema_validation_lookup(query_data: str) -> str:
         """
         Search for Bedrock JSON schema information (e.g., for entities, blocks, items).
         Input can be a simple schema name string or a JSON string:
@@ -386,7 +385,7 @@ class SearchTool:
             formatted_query = f"Bedrock JSON schema for {schema_name}"
             logger.info(f"Schema validation lookup for: {formatted_query}")
 
-            return SearchTool.semantic_search(json.dumps({
+            return await SearchTool.semantic_search(json.dumps({
                 "query": formatted_query,
                 "limit": 3 # Schemas are often specific
             }))
@@ -557,20 +556,24 @@ class SearchTool:
 
 # Demo functionality for testing
 if __name__ == "__main__":
+    import asyncio
     search_tool = SearchTool.get_instance()
-    
-    # Test semantic search
-    sample_query_ai = "What are the latest advancements in AI?"
-    output_ai = SearchTool.semantic_search(sample_query_ai)
-    print(f"Query: {sample_query_ai}")
-    print(f"Output:\n{output_ai}\n")
 
-    sample_query_mc = "Tell me about Minecraft modding."
-    output_mc = SearchTool.semantic_search(sample_query_mc)
-    print(f"Query: {sample_query_mc}")
-    print(f"Output:\n{output_mc}\n")
+    async def demo():
+        # Test semantic search
+        sample_query_ai = "What are the latest advancements in AI?"
+        output_ai = await SearchTool.semantic_search(sample_query_ai)
+        print(f"Query: {sample_query_ai}")
+        print(f"Output:\n{output_ai}\n")
 
-    sample_query_other = "Some other topic."
-    output_other = SearchTool.semantic_search(sample_query_other)
-    print(f"Query: {sample_query_other}")
-    print(f"Output:\n{output_other}\n")
+        sample_query_mc = "Tell me about Minecraft modding."
+        output_mc = await SearchTool.semantic_search(sample_query_mc)
+        print(f"Query: {sample_query_mc}")
+        print(f"Output:\n{output_mc}\n")
+
+        sample_query_other = "Some other topic."
+        output_other = await SearchTool.semantic_search(sample_query_other)
+        print(f"Query: {sample_query_other}")
+        print(f"Output:\n{output_other}\n")
+
+    asyncio.run(demo())
