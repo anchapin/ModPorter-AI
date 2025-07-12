@@ -258,6 +258,7 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://loca
         
         # Test the connection
         try:
+            logger.info("Attempting to invoke Ollama LLM for connection test...")
             test_response = ollama_llm.invoke("Hello, are you working?")
             logger.info(f"Ollama LLM test successful: {type(test_response)}")
             
@@ -268,7 +269,7 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://loca
             
             return ollama_llm
         except Exception as test_error:
-            logger.error(f"Ollama LLM test failed: {test_error}")
+            logger.error(f"Ollama LLM test failed during invoke: {test_error!r}")
             raise test_error
             
     except ImportError:
