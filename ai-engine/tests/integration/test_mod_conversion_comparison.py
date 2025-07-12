@@ -3,7 +3,6 @@ import pytest
 import json
 from pathlib import Path
 import signal
-import time
 
 # (Keep MODS_TO_TEST and compare_addons as they are)
 MODS_TO_TEST = [

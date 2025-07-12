@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 import uuid
 from sqlalchemy import (
@@ -171,6 +172,10 @@ class FeatureMappingDb(Base):
 
 
 # New model for document embeddings
+# pgvector.sqlalchemy.VECTOR is already imported
+# uuid is already imported
+# sqlalchemy.dialects.postgresql.UUID is already imported
+# sqlalchemy.Column, String, DateTime, func are already imported
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
 

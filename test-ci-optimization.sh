@@ -190,8 +190,13 @@ performance_summary() {
 # Cleanup
 cleanup() {
     log_info "Cleaning up test images..."
-    docker rmi -f $(docker images -q test-*) 2>/dev/null || true
-    log_info "Cleanup complete"
+    test_images=$(docker images -q test-*)
+    if [[ -n "$test_images" ]]; then
+        docker rmi -f $test_images 2>/dev/null || true
+        log_info "Test images removed successfully."
+    else
+        log_info "No test images found to clean up."
+    fi
 }
 
 # Main execution

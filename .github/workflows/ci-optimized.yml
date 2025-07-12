@@ -10,7 +10,6 @@ env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # Calculate dependency hashes for cache keys
@@ -228,8 +227,7 @@ jobs:
           -e ANTHROPIC_API_KEY=test-key \
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.repo-lowercase }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
-            pip install -r requirements.txt
-            pip install -r requirements-dev.txt
+            pip install -r requirements.txt -r requirements-dev.txt
             ruff check . || echo 'Linting issues found but continuing...'
             python -m pytest --cov=src tests/ --ignore=tests/integration/ --cov-report=xml -v
           "
@@ -247,8 +245,7 @@ jobs:
           -e ANTHROPIC_API_KEY=test-key \
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.repo-lowercase }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
-            pip install -r requirements.txt
-            pip install -r requirements-dev.txt
+            pip install -r requirements.txt -r requirements-dev.txt
             python -m pytest tests/integration/ --cov=src --cov-report=xml -v
           "
 

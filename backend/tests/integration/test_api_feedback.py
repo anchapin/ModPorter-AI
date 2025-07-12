@@ -30,6 +30,6 @@ def test_get_training_data_empty(client):
     assert response.status_code == 200
     data = response.json()
     assert data["data"] == []
-    assert data["total"] == -1  # Current placeholder for total
+    assert data["total"] == 0  # Should be 0 when no training data exists
     assert data["limit"] == 100  # Default limit
     assert data["skip"] == 0     # Default skip

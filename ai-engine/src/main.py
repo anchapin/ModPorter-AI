@@ -311,7 +311,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         if not output_path:
             # Default output path using job_id pattern that backend expects
             # Use the mounted volume path inside the container
-            output_path = os.path.join("/app/conversion_outputs", f"{job_id}_converted.mcaddon")
+            output_path = os.path.join(os.getenv("CONVERSION_OUTPUT_DIR", "/app/conversion_outputs"), f"{job_id}_converted.mcaddon")
         
         # Ensure the output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

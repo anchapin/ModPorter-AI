@@ -1,12 +1,12 @@
 from typing import Optional, List
+from uuid import UUID as PyUUID # For type hinting UUID objects
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from uuid import UUID as PyUUID
 from src.db import models
 from src.db.models import DocumentEmbedding
-import uuid
 
 
 async def create_job(

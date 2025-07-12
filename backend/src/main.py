@@ -48,7 +48,9 @@ from dateutil.parser import parse as parse_datetime
 import logging
 import httpx
 from src.db.init_db import init_db
+# src.db.models import removed as unused
 from src.api import comparison as comparison_api  # New import for comparison routes
+from src.api import embeddings as embeddings_api # New import for embeddings router
 from pathlib import Path
 
 # Configure logging first
@@ -1577,11 +1579,10 @@ async def get_training_data(
     # We need to provide it. A simple, less accurate way for now:
     # A better approach: add a count method to crud.
     # For now, if we fetched less than limit, we can assume it's the total. This is often wrong.
-    # Let's pass a dummy value for total for now, highlighting this needs a proper count.
 
     return TrainingDataResponse(
         data=training_data_items,
-        total=-1, # Placeholder: A real count query is needed here.
+        total=approx_total,  # Use the computed approximation
         limit=limit,
         skip=skip,
     )
