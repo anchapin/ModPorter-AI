@@ -26,8 +26,8 @@ POLL_INTERVAL = 5
 @pytest.fixture(scope="class")
 def docker_environment(docker_compose_file, docker_compose_project_name, docker_services):
     """
-    Manages the full application stack using docker-compose.
-    - Starts all services defined in tests/docker-compose.test.yml.
+    Manages the full application stack using docker compose.
+    - Starts all services defined in tests/docker compose.test.yml.
     - Waits for services to be healthy.
     - Provides service URLs/info to tests.
     - Tears down the stack after tests.
@@ -35,8 +35,8 @@ def docker_environment(docker_compose_file, docker_compose_project_name, docker_
     # docker_compose_file and docker_compose_project_name are provided by pytest-docker
     # docker_services is also a pytest-docker fixture to interact with services
 
-    # Ensure docker-compose path is correct (relative to project root)
-    # This fixture assumes tests/docker-compose.test.yml exists
+    # Ensure docker compose path is correct (relative to project root)
+    # This fixture assumes tests/docker compose.test.yml exists
     # pytest-docker should handle the `up` command implicitly if configured via pytest.ini or command line.
     # If not, we might need: `docker_compose.up(detach=True, build=True)`
     # For now, assume pytest-docker handles 'up' based on docker_compose_file.
@@ -77,7 +77,7 @@ def docker_environment(docker_compose_file, docker_compose_project_name, docker_
 
                 elif service_config["type"] == "docker_health" or service_config["type"] == "docker_health_optional":
                     # Use docker_services fixture to check health
-                    # The service name in docker-compose might be different from our key
+                    # The service name in docker compose might be different from our key
                     # (e.g., projectname_service_1)
                     # We need to find the actual Docker service object.
                     # Note: pytest-docker's `docker_services.is_healthy(service_name)` might be simpler
@@ -139,7 +139,7 @@ def docker_environment(docker_compose_file, docker_compose_project_name, docker_
         # Capture logs from failed services
         for service_name in services_to_check:
             try:
-                # Service name in docker-compose might be <project>_<service_name>_1
+                # Service name in docker compose might be <project>_<service_name>_1
                 # However, `docker_services.get_logs` expects the logical service name.
                 logs = docker_services.get_logs(service_name)
                 if logs:
@@ -154,7 +154,7 @@ def docker_environment(docker_compose_file, docker_compose_project_name, docker_
     yield service_urls
 
     # Teardown is implicitly handled by pytest-docker when the fixture scope ends.
-    # It will run `docker-compose down`.
+    # It will run `docker compose down`.
     # If specific cleanup is needed (e.g., `docker_compose.down(volumes=True)`),
     # it can be added here or configured in pytest.ini.
     print("Docker environment teardown will be handled by pytest-docker.")
@@ -164,7 +164,7 @@ def docker_environment(docker_compose_file, docker_compose_project_name, docker_
 @pytest.fixture(scope="session")
 def docker_compose_file(pytestconfig):
     # Ensure the path is relative to the root of the project
-    return os.path.join(pytestconfig.rootdir, "tests", "docker-compose.test.yml")
+    return os.path.join(pytestconfig.rootdir, "tests", "docker compose.test.yml")
 
 # Note: docker_compose_project_name can also be set in pytest.ini to avoid collisions
 # For example:

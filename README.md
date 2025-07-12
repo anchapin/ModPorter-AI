@@ -58,10 +58,10 @@ cp .env.example .env
 # Edit .env and add your API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 
 # Start all services using Docker Hub images
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker compose.prod.yml up -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 **Service URLs:**
@@ -85,16 +85,16 @@ cp .env.example .env
 # Edit .env and add your API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 #### Development Environment
 ```bash
 # Use development configuration with hot reload
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml up -d
 ```
 
 #### Service URLs
@@ -107,19 +107,19 @@ docker-compose -f docker-compose.dev.yml up -d
 #### Docker Management
 ```bash
 # View logs
-docker-compose logs [service-name]
+docker compose logs [service-name]
 
 # Restart a service
-docker-compose restart [service-name]
+docker compose restart [service-name]
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # Rebuild and restart
-docker-compose up -d --build
+docker compose up -d --build
 
 # View real-time logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Option 3: Manual Local Setup (Advanced)
@@ -181,13 +181,13 @@ curl http://localhost:8080/api/v1/health
 curl http://localhost:8001/api/v1/health
 
 # Check all service status
-docker-compose ps
+docker compose ps
 ```
 
 ### Troubleshooting
 
 #### Common Issues
-1. **Port conflicts**: If ports 3000, 8080, 8001, 5433, or 6379 are in use, modify `docker-compose.yml`
+1. **Port conflicts**: If ports 3000, 8080, 8001, 5433, or 6379 are in use, modify `docker compose.yml`
 2. **Missing API keys**: Ensure `.env` file contains valid `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
 3. **Database connection**: Check PostgreSQL container logs if backend fails to start
 4. **WebSocket connection errors**: Ensure frontend environment variables are correctly set during Docker build
@@ -196,17 +196,17 @@ docker-compose ps
 #### Debugging Commands
 ```bash
 # View service logs
-docker-compose logs backend
-docker-compose logs ai-engine
-docker-compose logs frontend
+docker compose logs backend
+docker compose logs ai-engine
+docker compose logs frontend
 
 # Access container shell
-docker-compose exec backend bash
-docker-compose exec ai-engine bash
+docker compose exec backend bash
+docker compose exec ai-engine bash
 
 # Reset everything
-docker-compose down -v
-docker-compose up -d --build
+docker compose down -v
+docker compose up -d --build
 ```
 
 ## Testing
@@ -244,13 +244,13 @@ pytest tests/test_mvp_conversion.py
 ### Docker Tests
 ```bash
 # Run tests in Docker containers
-docker-compose exec backend pytest
-docker-compose exec frontend pnpm test
-docker-compose exec ai-engine pytest
+docker compose exec backend pytest
+docker compose exec frontend pnpm test
+docker compose exec ai-engine pytest
 
 # Run tests with coverage
-docker-compose exec backend pytest --cov=src
-docker-compose exec ai-engine pytest --cov=src
+docker compose exec backend pytest --cov=src
+docker compose exec ai-engine pytest --cov=src
 ```
 
 ## 🔧 Development Workflows
@@ -261,7 +261,7 @@ docker-compose exec ai-engine pytest --cov=src
 Use the development Docker Compose configuration for active development:
 ```bash
 # Start with hot reload enabled
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml up -d
 
 # This enables:
 # - Frontend: Vite dev server with hot reload
@@ -272,24 +272,24 @@ docker-compose -f docker-compose.dev.yml up -d
 #### Making Changes
 ```bash
 # After code changes, rebuild specific service
-docker-compose build backend
-docker-compose up -d backend
+docker compose build backend
+docker compose up -d backend
 
 # Or rebuild all services
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 #### Database Management
 ```bash
 # Access PostgreSQL directly
-docker-compose exec postgres psql -U postgres -d modporter
+docker compose exec postgres psql -U postgres -d modporter
 
 # Run database migrations
-docker-compose exec backend alembic upgrade head
+docker compose exec backend alembic upgrade head
 
 # Reset database (⚠️ destroys data)
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 #### Performance Monitoring
@@ -298,10 +298,10 @@ docker-compose up -d
 docker stats
 
 # View container resource limits
-docker-compose config
+docker compose config
 
 # Check service dependencies
-docker-compose ps --services
+docker compose ps --services
 ```
 
 ## 📖 Documentation
