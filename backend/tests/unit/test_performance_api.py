@@ -1,18 +1,6 @@
-import pytest
-import asyncio
-from unittest.mock import patch, MagicMock
-import json
-from datetime import datetime
+from unittest.mock import patch
 
-from src.api.performance import router, mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
-from src.models.performance_models import (
-    BenchmarkRunRequest,
-    BenchmarkRunResponse,
-    BenchmarkStatusResponse,
-    BenchmarkReportResponse,
-    ScenarioDefinition,
-    CustomScenarioRequest
-)
+from src.api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
 class TestPerformanceAPI:
     """Test cases for the performance benchmarking API endpoints."""

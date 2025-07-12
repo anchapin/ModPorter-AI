@@ -1,12 +1,11 @@
 import pytest
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from unittest.mock import MagicMock, AsyncMock
 
 
 from src.db import crud
-from src.db.models import ConversionJob, ConversionFeedback, JobProgress
+from src.db.models import ConversionFeedback
 
 @pytest.mark.asyncio
 async def test_create_feedback():
