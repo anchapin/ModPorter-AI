@@ -357,4 +357,11 @@ def get_fallback_llm():
         
     except Exception as e:
         logger.error(f"Failed to create fallback Ollama LLM: {e}")
-        raise RuntimeError(f"No LLM available. Ollama fallback failed: {e}. Please ensure Ollama is running and the model is available.")
+        raise RuntimeError(
+            f"No LLM available. Ollama fallback failed: {e}. "
+            "Troubleshooting steps: "
+            "1. Ensure the Ollama service is running. "
+            "2. Verify the environment variables OLLAMA_MODEL and OLLAMA_BASE_URL are correctly set. "
+            "3. Check network connectivity to the base URL. "
+            "For more information, visit the Ollama documentation: https://ollama.ai/docs/setup."
+        )
