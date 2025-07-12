@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir \
     alembic \
     && pip cache purge
 
-# Production stage - smaller final image
+# Production stage - smaller final image with libmagic support
 FROM python:3.11-slim
 
 # Install only runtime dependencies
