@@ -4,7 +4,6 @@
  */
 
 import {
-  ConversionRequest,
   ConversionResponse,
   ConversionStatus,
   UploadResponse,
@@ -51,8 +50,8 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   // Step 1: Upload the file
   const uploadResponse = await uploadFile(params.file);
 
-  // Step 2: Construct the ConversionRequest payload for the backend
-  const backendRequestPayload: ConversionRequest = {
+  // Step 2: Construct the backend request payload
+  const backendRequestPayload = {
     file_id: uploadResponse.file_id,
     original_filename: uploadResponse.original_filename,
     target_version: params.target_version, // Pass through target_version

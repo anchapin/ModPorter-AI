@@ -1,15 +1,16 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { ConversionUpload } from './components/ConversionUpload/ConversionUpload';
-import { Documentation } from './pages/Documentation';
+import { ConversionUploadReal } from './components/ConversionUpload/ConversionUploadReal';
+import { DocumentationSimple } from './pages/DocumentationSimple';
 import './App.css';
 
 function App() {
+  console.log('App component is rendering...');
+  
   const handleConversionStart = (data: any) => {
     console.log('Conversion started:', data);
-    // Handle conversion logic here
   };
-
+  
   return (
     <Router>
       <div className="app">
@@ -61,11 +62,11 @@ function App() {
                   <p style={{ fontSize: '1.2rem', color: '#666', marginBottom: '2rem' }}>
                     Convert Minecraft Java Edition mods to Bedrock Edition add-ons with AI
                   </p>
-                  <ConversionUpload onConversionStart={handleConversionStart} />
+                  <ConversionUploadReal onConversionStart={handleConversionStart} />
                 </div>
               } 
             />
-            <Route path="/docs" element={<Documentation />} />
+            <Route path="/docs" element={<DocumentationSimple />} />
           </Routes>
         </main>
       </div>

@@ -3,6 +3,10 @@ node_modules/
 */node_modules/
 __pycache__/
 *.pyc
+
+# Logs
+*.log
+logs/
 .env
 .env.local
 .env.development.local

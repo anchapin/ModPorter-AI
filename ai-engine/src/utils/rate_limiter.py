@@ -185,11 +185,27 @@ def create_rate_limited_llm(model_name: str = "gpt-4", **kwargs):
     rate_limiter = RateLimiter(rate_config)
     
     # Create wrapper methods - check what methods are available
+    # For newer langchain versions, use invoke method
     if hasattr(base_llm, 'invoke'):
         original_invoke = base_llm.invoke
         def rate_limited_invoke(*args, **kwargs):
             return _execute_with_retry(original_invoke, rate_limiter, rate_config, *args, **kwargs)
         base_llm.invoke = rate_limited_invoke
+    else:
+        # For older versions, create invoke method from predict
+        if hasattr(base_llm, 'predict'):
+            original_predict = base_llm.predict
+            def rate_limited_invoke(*args, **kwargs):
+                # Convert invoke-style call to predict-style call
+                if args and hasattr(args[0], 'content'):
+                    # If it's a message object, extract content
+                    text = args[0].content
+                elif args and isinstance(args[0], str):
+                    text = args[0]
+                else:
+                    text = str(args[0]) if args else ""
+                return _execute_with_retry(original_predict, rate_limiter, rate_config, text, **kwargs)
+            base_llm.invoke = rate_limited_invoke
     
     if hasattr(base_llm, 'generate'):
         original_generate = base_llm.generate
@@ -342,4 +358,11 @@ def get_fallback_llm():
         
     except Exception as e:
         logger.error(f"Failed to create fallback Ollama LLM: {e}")
-        raise RuntimeError(f"No LLM available. Ollama fallback failed: {e}. Please ensure Ollama is running and the model is available.")
+        raise RuntimeError(
+            f"No LLM available. Ollama fallback failed: {e}. "
+            "Troubleshooting steps: "
+            "1. Ensure the Ollama service is running. "
+            "2. Verify the environment variables OLLAMA_MODEL and OLLAMA_BASE_URL are correctly set. "
+            "3. Check network connectivity to the base URL. "
+            "For more information, visit the Ollama documentation: https://ollama.ai/docs/setup."
+        )

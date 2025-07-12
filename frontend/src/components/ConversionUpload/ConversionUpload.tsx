@@ -7,7 +7,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { convertMod, getConversionStatus, cancelJob, downloadResult } from '../../services/api';
 import {
-  ConversionRequest,
+  InitiateConversionParams,
   ConversionResponse,
   ConversionStatus,
   ConversionStatusEnum
@@ -212,7 +212,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     setError(null);
     
     try {
-      const request: ConversionRequest = {
+      const request: InitiateConversionParams = {
         file: selectedFile || undefined,
         modUrl: modUrl || undefined,
         smartAssumptions,

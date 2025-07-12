@@ -10,7 +10,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8080/api/v1
       - VITE_HMR_PORT=3001
     ports:
       - "3002:3000" # Map host port 3002 to container port 3000
@@ -41,6 +41,7 @@ services:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
       - REDIS_URL=redis://redis:6379
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3002,http://localhost:8080
     depends_on:
       redis:
         condition: service_healthy
@@ -80,6 +81,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - USE_MOCK_LLM=false
       - USE_OLLAMA=true
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       redis:
         condition: service_healthy
