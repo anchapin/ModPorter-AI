@@ -21,6 +21,7 @@ from src.db.base import get_db, AsyncSessionLocal
 from src.db import crud
 from src.services.cache import CacheService
 from src.validation import ValidationFramework  # Added import
+from src.api import embeddings as embeddings_api  # New import for embeddings router
 
 # report_generator imports
 from src.services.report_generator import (
@@ -1576,9 +1577,9 @@ async def get_training_data(
     # For now, let's assume we don't have total count easily.
     # The Pydantic model `TrainingDataResponse` has a `total` field.
     # We need to provide it. A simple, less accurate way for now:
-    approx_total = len(all_feedback_entries) if skip == 0 and len(all_feedback_entries) < limit else -1 # Signifies unknown
     # A better approach: add a count method to crud.
     # For now, if we fetched less than limit, we can assume it's the total. This is often wrong.
+    approx_total = len(training_data_items)  # Simple approximation using processed items
 
     return TrainingDataResponse(
         data=training_data_items,

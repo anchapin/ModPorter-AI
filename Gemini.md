@@ -45,7 +45,7 @@ The project uses Docker Compose for managing its services. You can use the follo
 
 *   **Run all Python tests:** `pytest` (from the project root or within `ai-engine/` or `backend/`)
 *   **Run specific Python tests:** `pytest <path_to_test_file>`
-*   **Run frontend tests:** Refer to `frontend/package.json` for specific test commands (e.g., `npm test` or `pnpm test`).
+*   **Run frontend tests:** Refer to `frontend/package.json` for specific test commands (e.g., `pnpm test`).
 
 ### Linting/Formatting
 

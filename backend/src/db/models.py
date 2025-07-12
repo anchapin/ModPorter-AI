@@ -175,7 +175,6 @@ class FeatureMappingDb(Base):
 # uuid is already imported
 # sqlalchemy.dialects.postgresql.UUID is already imported
 # sqlalchemy.Column, String, DateTime, func are already imported
-
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
 
