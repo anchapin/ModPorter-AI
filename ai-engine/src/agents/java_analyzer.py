@@ -1110,6 +1110,12 @@ class JavaAnalyzerAgent:
     def _generate_embeddings(self, result: dict) -> None:
         """Generate embeddings for the mod content to enable RAG retrieval"""
         try:
+            # Check if embedding model is available
+            if not self.embedding_generator.model:
+                logger.warning("Embedding model not available, skipping embedding generation")
+                result["embeddings_data"] = []
+                return
+            
             # Collect textual content for embedding generation
             embedding_texts = []
             
