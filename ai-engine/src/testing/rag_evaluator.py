@@ -45,7 +45,7 @@ class RagEvaluator:
             print(f"Error: Could not decode JSON from {self.eval_set_path}")
             return []
 
-    def evaluate_retrieval(self):
+    async def evaluate_retrieval(self):
         """
         Evaluates the retrieval part of the RAG system.
         Uses SearchTool to retrieve documents and checks for expected snippets.
@@ -71,7 +71,7 @@ class RagEvaluator:
             # Currently, SearchTool returns hardcoded results.
             # In a real scenario, this would involve actual search logic.
             # Using semantic_search method instead of private _run method
-            retrieved_docs_json = self.search_tool.semantic_search.func(query)
+            retrieved_docs_json = await self.search_tool.semantic_search.func(query)
             retrieved_docs_data = json.loads(retrieved_docs_json)
             retrieved_docs_text = " ".join([result.get("content", "") for result in retrieved_docs_data.get("results", [])])
 

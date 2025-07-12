@@ -98,7 +98,7 @@ class TestSearchTool(unittest.TestCase):
     def test_semantic_search_with_string_query(self):
         """Test semantic search with a simple string query."""
         query = "test query"
-        result = SearchTool.semantic_search.func(query)
+        result = asyncio.run(SearchTool.semantic_search.func(query))
         
         result_data = json.loads(result)
         self.assertIn("query", result_data)
@@ -114,7 +114,7 @@ class TestSearchTool(unittest.TestCase):
             "limit": 5,
             "document_source": "test_source"
         }
-        result = SearchTool.semantic_search.func(json.dumps(query_data))
+        result = asyncio.run(SearchTool.semantic_search.func(json.dumps(query_data)))
         
         result_data = json.loads(result)
         self.assertEqual(result_data["query"], "advanced search")
@@ -122,7 +122,7 @@ class TestSearchTool(unittest.TestCase):
 
     def test_semantic_search_empty_query(self):
         """Test semantic search with empty query returns error."""
-        result = SearchTool.semantic_search.func("")
+        result = asyncio.run(SearchTool.semantic_search.func(""))
         
         result_data = json.loads(result)
         self.assertIn("error", result_data)
@@ -136,7 +136,7 @@ class TestSearchTool(unittest.TestCase):
         mock_semantic_search.return_value = ai_results
         
         query = "AI advancements"
-        result = SearchTool.semantic_search.func(query)
+        result = asyncio.run(SearchTool.semantic_search.func(query))
         
         result_data = json.loads(result)
         self.assertIn("query", result_data)
@@ -158,7 +158,7 @@ class TestSearchTool(unittest.TestCase):
         mock_semantic_search.return_value = minecraft_results
         
         query = "Minecraft modding"
-        result = SearchTool.semantic_search.func(query)
+        result = asyncio.run(SearchTool.semantic_search.func(query))
         
         result_data = json.loads(result)
         self.assertIn("query", result_data)
@@ -175,7 +175,7 @@ class TestSearchTool(unittest.TestCase):
     def test_document_search_with_source(self):
         """Test document search with document source."""
         source = "test_document_source"
-        result = SearchTool.document_search.func(source)
+        result = asyncio.run(SearchTool.document_search.func(source))
         
         result_data = json.loads(result)
         self.assertIn("document_source", result_data)
@@ -184,7 +184,7 @@ class TestSearchTool(unittest.TestCase):
 
     def test_document_search_empty_source(self):
         """Test document search with empty source returns error."""
-        result = SearchTool.document_search.func("")
+        result = asyncio.run(SearchTool.document_search.func(""))
         
         result_data = json.loads(result)
         self.assertIn("error", result_data)
@@ -193,7 +193,7 @@ class TestSearchTool(unittest.TestCase):
     def test_similarity_search_with_content(self):
         """Test similarity search with content."""
         content = "This is test content for similarity search"
-        result = SearchTool.similarity_search.func(content)
+        result = asyncio.run(SearchTool.similarity_search.func(content))
         
         result_data = json.loads(result)
         self.assertIn("reference_content", result_data)
@@ -203,7 +203,7 @@ class TestSearchTool(unittest.TestCase):
 
     def test_similarity_search_empty_content(self):
         """Test similarity search with empty content returns error."""
-        result = SearchTool.similarity_search.func("")
+        result = asyncio.run(SearchTool.similarity_search.func(""))
         
         result_data = json.loads(result)
         self.assertIn("error", result_data)
@@ -212,7 +212,7 @@ class TestSearchTool(unittest.TestCase):
     def test_search_tool_handles_json_decode_error(self):
         """Test that SearchTool handles malformed JSON gracefully."""
         malformed_json = "{'invalid': json}"
-        result = SearchTool.semantic_search.func(malformed_json)
+        result = asyncio.run(SearchTool.semantic_search.func(malformed_json))
         
         result_data = json.loads(result)
         # Should treat as simple string query
@@ -221,7 +221,7 @@ class TestSearchTool(unittest.TestCase):
     @patch('src.tools.search_tool.logger')
     def test_search_tool_logs_operations(self, mock_logger):
         """Test that SearchTool logs operations properly."""
-        SearchTool.semantic_search.func("test query")
+        asyncio.run(SearchTool.semantic_search.func("test query"))
         
         # Check that info log was called (at least once for search completion)
         mock_logger.info.assert_called()
@@ -232,7 +232,7 @@ class TestSearchTool(unittest.TestCase):
 
     def test_search_results_structure(self):
         """Test that search results have expected structure."""
-        result = SearchTool.semantic_search.func("test")
+        result = asyncio.run(SearchTool.semantic_search.func("test"))
         result_data = json.loads(result)
         
         self.assertIn("results", result_data)
@@ -267,7 +267,7 @@ class TestSearchTool(unittest.TestCase):
         
         # Mock an exception scenario
         with patch.object(tool, '_perform_semantic_search', side_effect=Exception("Test error")):
-            result = SearchTool.semantic_search.func("test query")
+            result = asyncio.run(SearchTool.semantic_search.func("test query"))
             result_data = json.loads(result)
             self.assertIn("error", result_data)
 
@@ -291,7 +291,7 @@ class TestSearchTool(unittest.TestCase):
             with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
                  patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
                 
-                result = SearchTool.semantic_search.func("test query")
+                result = asyncio.run(SearchTool.semantic_search.func("test query"))
                 result_data = json.loads(result)
                 
                 # Should have fallback results
@@ -309,7 +309,7 @@ class TestSearchTool(unittest.TestCase):
         
         # Disable fallback in config
         with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', False):
-            result = SearchTool.semantic_search.func("test query")
+            result = asyncio.run(SearchTool.semantic_search.func("test query"))
             result_data = json.loads(result)
             
             # Should have no results
@@ -327,7 +327,7 @@ class TestSearchTool(unittest.TestCase):
             with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
                  patch.object(Config, 'FALLBACK_SEARCH_TOOL', "non_existent_tool"):
                 
-                result = SearchTool.semantic_search.func("test query")
+                result = asyncio.run(SearchTool.semantic_search.func("test query"))
                 result_data = json.loads(result)
                 
                 # Should have no results due to failed fallback
@@ -350,7 +350,7 @@ class TestSearchTool(unittest.TestCase):
                 with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
                      patch.object(Config, 'FALLBACK_SEARCH_TOOL', "invalid_tool"):
                     
-                    result = SearchTool.semantic_search.func("test query")
+                    result = asyncio.run(SearchTool.semantic_search.func("test query"))
                     result_data = json.loads(result)
                     
                     # Should have no results due to failed fallback
@@ -383,7 +383,7 @@ class TestSearchTool(unittest.TestCase):
             with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
                  patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
                 
-                result = SearchTool.document_search.func("test_source")
+                result = asyncio.run(SearchTool.document_search.func("test_source"))
                 result_data = json.loads(result)
                 
                 # Should have fallback results
@@ -409,7 +409,7 @@ class TestSearchTool(unittest.TestCase):
             with patch.object(Config, 'SEARCH_FALLBACK_ENABLED', True), \
                  patch.object(Config, 'FALLBACK_SEARCH_TOOL', "web_search_tool"):
                 
-                result = SearchTool.similarity_search.func("test content")
+                result = asyncio.run(SearchTool.similarity_search.func("test content"))
                 result_data = json.loads(result)
                 
                 # Should have fallback results
