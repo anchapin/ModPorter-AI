@@ -121,8 +121,8 @@ docker-compose logs -f
 If you prefer to run services locally without Docker:
 
 1. Clone the repository
-2. Install dependencies: `npm run install-all`
-3. Start development servers: `npm run dev`
+2. Install dependencies: `pnpm run install-all`
+3. Start development servers: `pnpm run dev`
 4. Open http://localhost:3000
 
 ## 🐳 Docker Architecture
@@ -206,13 +206,13 @@ docker-compose up -d --build
 ## Testing
 
 ### Run all tests
-npm run test
+pnpm run test
 
 ### Backend tests
 cd backend && pytest
 
 ### Frontend tests
-cd frontend && npm test
+cd frontend && pnpm test
 
 ### AI Engine and RAG tests
 ```bash
@@ -232,7 +232,7 @@ cd ai-engine && python src/testing/rag_evaluator.py
 ```bash
 # Run tests in Docker containers
 docker-compose exec backend pytest
-docker-compose exec frontend npm test
+docker-compose exec frontend pnpm test
 docker-compose exec ai-engine pytest
 
 # Run tests with coverage

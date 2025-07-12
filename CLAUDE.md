@@ -81,7 +81,7 @@ Message 6: Write "package.json"
 
 **Command Operations (Single Message):**
 - Multiple directories? → One message with all mkdir commands
-- Install + test + lint? → One message with all npm commands
+- Install + test + lint? → One message with all pnpm commands
 - Git operations? → One message with all git commands
 
 ## 🚀 Quick Setup (Stdio MCP - Recommended)
@@ -512,9 +512,9 @@ Dependencies: ↳ X deps | Actionable: ▶
   Read("test-app/.env.example")
   
   // Run multiple commands
-  Bash("cd test-app && npm install")
-  Bash("cd test-app && npm run lint")
-  Bash("cd test-app && npm test")
+  Bash("cd test-app && pnpm install")
+  Bash("cd test-app && pnpm run lint")
+  Bash("cd test-app && pnpm test")
 ```
 
 ### 🚫 NEVER DO THIS (Sequential = WRONG):
