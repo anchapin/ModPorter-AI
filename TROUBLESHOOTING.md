@@ -4,10 +4,10 @@
 
 ```bash
 # Check all services
-docker-compose -f docker-compose.dev.yml ps
+docker compose -f docker compose.dev.yml ps
 
 # Check logs for specific service
-docker-compose -f docker-compose.dev.yml logs [service-name]
+docker compose -f docker compose.dev.yml logs [service-name]
 
 # Test service health
 curl http://localhost:8080/api/v1/health  # Backend
@@ -24,7 +24,7 @@ curl http://localhost:3002               # Frontend
 **Solution**: 
 ```bash
 # Restart the frontend container to clear cache
-docker-compose -f docker-compose.dev.yml restart frontend
+docker compose -f docker compose.dev.yml restart frontend
 ```
 
 ### 2. AI Engine Not Starting
@@ -34,7 +34,7 @@ docker-compose -f docker-compose.dev.yml restart frontend
 **Solution**: The development environment uses mock LLM by default. Check configuration:
 ```bash
 # Check environment variables
-docker-compose -f docker-compose.dev.yml exec ai-engine env | grep -E "(USE_MOCK_LLM|USE_OLLAMA)"
+docker compose -f docker compose.dev.yml exec ai-engine env | grep -E "(USE_MOCK_LLM|USE_OLLAMA)"
 
 # Should show:
 # USE_MOCK_LLM=true
@@ -51,7 +51,7 @@ docker-compose -f docker-compose.dev.yml exec ai-engine env | grep -E "(USE_MOCK
 docker compose build
 
 # Correct (uses dev config)
-docker-compose -f docker-compose.dev.yml build
+docker compose -f docker compose.dev.yml build
 ```
 
 ### 4. Database Issues
@@ -85,18 +85,18 @@ netstat -tulpn | grep -E "(3002|8080|8001|5433|6379|11434)"
 
 ```bash
 # Start all services
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml up -d
 
 # Stop all services
-docker-compose -f docker-compose.dev.yml down
+docker compose -f docker compose.dev.yml down
 
 # Rebuild and restart
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml build --no-cache
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml down
+docker compose -f docker compose.dev.yml build --no-cache
+docker compose -f docker compose.dev.yml up -d
 
 # Check logs
-docker-compose -f docker-compose.dev.yml logs -f [service-name]
+docker compose -f docker compose.dev.yml logs -f [service-name]
 ```
 
 ## Configuration

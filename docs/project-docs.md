@@ -20,7 +20,7 @@ cd ModPorter-AI
 pnpm run install-all
 
 # Start development environment
-docker-compose up -d
+docker compose up -d
 
 # Or start services individually
 pnpm run dev

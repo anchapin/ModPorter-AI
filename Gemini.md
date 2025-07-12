@@ -22,7 +22,7 @@ This project, "ModPorter-AI", is a multi-component application designed for AI-d
 *   `database/`: SQL schema definitions.
 *   `docs/`: Project documentation.
 *   `tests/`: Integration and unit tests for various components.
-*   `docker-compose*.yml`: Docker Compose configurations for development and production environments.
+*   `docker compose*.yml`: Docker Compose configurations for development and production environments.
 
 ## How to Interact with the Project
 
@@ -36,10 +36,10 @@ This project, "ModPorter-AI", is a multi-component application designed for AI-d
 
 The project uses Docker Compose for managing its services. You can use the following commands:
 
-*   **Build and start services (development):** `docker-compose -f docker-compose.dev.yml up --build`
-*   **Build and start services (production):** `docker-compose -f docker-compose.prod.yml up --build`
-*   **Stop services:** `docker-compose down`
-*   **View logs:** `docker-compose logs -f <service_name>`
+*   **Build and start services (development):** `docker compose -f docker compose.dev.yml up --build`
+*   **Build and start services (production):** `docker compose -f docker compose.prod.yml up --build`
+*   **Stop services:** `docker compose down`
+*   **View logs:** `docker compose logs -f <service_name>`
 
 ### Testing
 
@@ -55,7 +55,7 @@ The project uses Docker Compose for managing its services. You can use the follo
 ### Building
 
 *   **Frontend:** `pnpm install` then `pnpm build` in `frontend/` directory.
-*   **Docker Images:** `docker-compose build` or `docker build` within specific component directories (`ai-engine/`, `backend/`, `frontend/`).
+*   **Docker Images:** `docker compose build` or `docker build` within specific component directories (`ai-engine/`, `backend/`, `frontend/`).
 
 ## Important Notes
 

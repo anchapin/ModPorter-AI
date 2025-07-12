@@ -1,5 +1,5 @@
 # HTTP Client
-httpx>=0.25.0
+httpx==0.28.1
 
 # Core Framework (updated for CI fix)
 fastapi==0.116.0
