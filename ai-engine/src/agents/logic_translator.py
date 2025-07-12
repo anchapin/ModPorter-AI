@@ -113,6 +113,7 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.generate_event_handlers_tool,
             LogicTranslatorAgent.validate_javascript_syntax_tool,
             LogicTranslatorAgent.translate_crafting_recipe_tool,
+            LogicTranslatorAgent.translate_java_block_tool,
         ]
     
     def translate_java_code(self, java_code: str, code_type: str) -> str:
@@ -196,6 +197,131 @@ class LogicTranslatorAgent:
         """Translate a Java crafting recipe JSON to Bedrock recipe JSON format."""
         agent = LogicTranslatorAgent.get_instance()
         return agent.translate_crafting_recipe_json(recipe_json_data)
+
+    @tool
+    @staticmethod
+    def translate_java_block_tool(java_block_json: str) -> str:
+        """
+        Translates a Java block's feature, identified by the JavaAnalyzerAgent, into JavaScript.
+
+        Args:
+            java_block_json (str): A JSON string containing the Java block's feature data.
+                                    This is expected to be the output from the
+                                    JavaAnalyzerAgent's identify_features_tool.
+
+        Returns:
+            str: A JSON string with the translation results, including the translated
+                 JavaScript code, notes, and any identified issues.
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        logger.info(f"Received input for translation: {java_block_json}")
+        try:
+            java_block_data = json.loads(java_block_json)
+
+            # Extract block properties from the input JSON
+            block_properties = java_block_data.get("features", {}).get("block_properties", {})
+            logger.info(f"Extracted block properties: {block_properties}")
+
+            if not block_properties:
+                logger.warning("No block properties found in the input JSON.")
+                return json.dumps({
+                    "success": False,
+                    "error": "No block properties found in the input JSON.",
+                    "issues": ["Missing 'block_properties' in the input."]
+                })
+
+            # Translate the block properties to Bedrock format
+            bedrock_block_json = agent.translate_block_to_bedrock(block_properties)
+            logger.info(f"Generated Bedrock block JSON: {bedrock_block_json}")
+
+            return json.dumps({
+                "success": True,
+                "bedrock_block_json": bedrock_block_json,
+                "notes": "Successfully translated Java block properties to Bedrock format.",
+                "issues": []
+            })
+
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON input: {java_block_json}")
+            return json.dumps({
+                "success": False,
+                "error": "Invalid JSON input.",
+                "issues": ["The provided string is not valid JSON."]
+            })
+        except Exception as e:
+            logger.error(f"Error in translate_java_block_tool: {e}")
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "issues": [f"An unexpected error occurred: {e}"]
+            })
+
+    def translate_block_to_bedrock(self, block_properties: dict) -> dict:
+        """
+        Translates a dictionary of Java block properties to a Bedrock block JSON dictionary.
+
+        Args:
+            block_properties (dict): A dictionary of block properties extracted from Java code.
+
+        Returns:
+            dict: A dictionary representing the Bedrock block JSON.
+        """
+        logger.info(f"Translating block with properties: {block_properties}")
+        try:
+            # Load the template
+            with open("src/templates/bedrock_block_template.json", "r") as f:
+                template_str = f.read()
+            logger.debug("Loaded bedrock block template.")
+
+            # Prepare the values for substitution
+            template_values = {
+                "identifier": block_properties.get("name", "unknown_block"),
+                "destroy_time": block_properties.get("destroy_time", 4.0),
+                "explosion_resistance": block_properties.get("explosion_resistance", 1.0),
+                "light_emission": block_properties.get("light_emission", 0)
+            }
+            logger.debug(f"Template values: {template_values}")
+
+            # Substitute the placeholders
+            # We need to manually handle the string to json conversion to avoid issues with python's string formatting
+            for key, value in template_values.items():
+                placeholder = f'"%({key})s"'
+                # json.dumps will add quotes to strings, which is what we want
+                template_str = template_str.replace(str(placeholder), str(json.dumps(value)))
+
+            # Parse the substituted string into a dictionary
+            bedrock_block = json.loads(template_str)
+            logger.info("Successfully created Bedrock block JSON from template.")
+            logger.debug(f"Generated Bedrock block: {bedrock_block}")
+
+            return bedrock_block
+
+        except FileNotFoundError:
+            logger.error("Bedrock block template file not found. Falling back to default.")
+            # Fallback to the old method if the template is not found
+            return {
+                "format_version": "1.19.0",
+                "minecraft:block": {
+                    "description": {
+                        "identifier": f"custom:{block_properties.get('name', 'unknown_block')}"
+                    },
+                    "components": {
+                        "minecraft:destroy_time": block_properties.get("destroy_time", 4.0),
+                        "minecraft:explosion_resistance": block_properties.get("explosion_resistance", 1.0),
+                        "minecraft:friction": 0.6,
+                        "minecraft:flammable": {
+                            "flame_odds": 0,
+                            "burn_odds": 0
+                        },
+                        "minecraft:map_color": "#FFFFFF",
+                        "minecraft:light_dampening": 15,
+                        "minecraft:light_emission": block_properties.get("light_emission", 0)
+                    }
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error processing block template: {e}")
+            return {"error": str(e)}
 
     def analyze_java_code_ast(self, java_code: str):
         """Analyze Java code and return AST"""

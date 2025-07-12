@@ -1,0 +1,20 @@
+{
+    "format_version": "1.19.0",
+    "minecraft:block": {
+        "description": {
+            "identifier": "custom:%(identifier)s"
+        },
+        "components": {
+            "minecraft:destroy_time": "%(destroy_time)s",
+            "minecraft:explosion_resistance": "%(explosion_resistance)s",
+            "minecraft:friction": 0.6,
+            "minecraft:flammable": {
+                "flame_odds": 0,
+                "burn_odds": 0
+            },
+            "minecraft:map_color": "#FFFFFF",
+            "minecraft:light_dampening": 15,
+            "minecraft:light_emission": "%(light_emission)s"
+        }
+    }
+}
