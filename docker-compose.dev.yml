@@ -5,7 +5,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    command: npm run dev
+    command: pnpm run dev
     volumes:
       - ./frontend:/app
       - /app/node_modules

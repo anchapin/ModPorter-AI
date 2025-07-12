@@ -15,6 +15,9 @@ jobs:
   # Calculate dependency hashes for cache keys
   calculate-hashes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     outputs:
       python-hash: ${{ steps.python-hash.outputs.hash }}
       node-hash: ${{ steps.node-hash.outputs.hash }}
@@ -31,13 +34,13 @@ jobs:
     - name: Calculate Python dependencies hash
       id: python-hash
       run: |
-        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt docker/base-images/Dockerfile.python-base | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
     
     - name: Calculate Node dependencies hash
       id: node-hash
       run: |
-        HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        HASH=$(cat frontend/pnpm-lock.yaml docker/base-images/Dockerfile.node-base | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
     
     - name: Check if base images are available
@@ -102,7 +105,7 @@ jobs:
     - name: Build and push Node base image
       uses: docker/build-push-action@v5
       with:
-        context: frontend
+        context: .
         file: docker/base-images/Dockerfile.node-base
         push: true
         tags: |
@@ -306,7 +309,7 @@ jobs:
       if: matrix.test-suite == 'frontend'
       run: |
         cd frontend
-        npm install -g pnpm
+        corepack enable && corepack prepare pnpm@latest --activate
         pnpm install
         pnpm run lint
         pnpm run test:coverage || echo "Frontend tests failed but continuing..."
@@ -319,7 +322,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install -r requirements.txt
-        pip install ruff alembic
+        pip install -r requirements-dev.txt
         ruff check . || echo "Linting issues found but continuing..."
         python -m alembic upgrade head
         python -m pytest --cov=. tests/ --cov-report=xml -v --timeout=300

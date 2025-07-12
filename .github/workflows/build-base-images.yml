@@ -127,7 +127,7 @@ jobs:
       if: steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
       uses: docker/build-push-action@v5
       with:
-        context: frontend
+        context: .
         file: docker/base-images/Dockerfile.node-base
         push: true
         tags: |
