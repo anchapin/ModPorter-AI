@@ -65,4 +65,4 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD python -c "import sys; print('Python base image healthy')" || exit 1
 
-CMD ["python", "--version"]
+CMD ["python", "-c", "print('Python base image ready')"]

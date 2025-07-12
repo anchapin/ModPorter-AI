@@ -111,6 +111,9 @@ class JavaAnalyzerAgent:
             else:
                 result["errors"].append(f"Unsupported mod file format: {mod_path}")
             
+            # Generate embeddings for the analyzed content
+            self._generate_embeddings(result)
+            
             return json.dumps(result)
             
         except Exception as e:
@@ -1103,3 +1106,37 @@ class JavaAnalyzerAgent:
             error_response = {"success": False, "error": f"Failed to extract assets: {str(e)}"}
             logger.error(f"Asset extraction error: {e}")
             return json.dumps(error_response)
+    
+    def _generate_embeddings(self, result: dict) -> None:
+        """Generate embeddings for the mod content to enable RAG retrieval"""
+        try:
+            # Collect textual content for embedding generation
+            embedding_texts = []
+            
+            # Add mod description and metadata
+            mod_info = result.get("mod_info", {})
+            if mod_info.get("description"):
+                embedding_texts.append(f"Mod Description: {mod_info['description']}")
+            
+            # Add feature descriptions
+            features = result.get("features", {})
+            for feature_name, feature_data in features.items():
+                if isinstance(feature_data, dict) and feature_data.get("description"):
+                    embedding_texts.append(f"Feature {feature_name}: {feature_data['description']}")
+            
+            # Add key structural information
+            if result.get("structure"):
+                structure_info = f"Mod Structure: {json.dumps(result['structure'])}"
+                embedding_texts.append(structure_info)
+            
+            # Store embedding data for later processing by the RAG system
+            if embedding_texts:
+                result["embeddings_data"] = [{
+                    "text": text,
+                    "type": "mod_analysis",
+                    "mod_name": mod_info.get("name", "unknown")
+                } for text in embedding_texts]
+                
+        except Exception as e:
+            logger.warning(f"Failed to generate embeddings: {e}")
+            result["embeddings_data"] = []
