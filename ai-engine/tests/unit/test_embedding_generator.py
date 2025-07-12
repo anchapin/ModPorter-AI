@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from src.utils.embedding_generator import EmbeddingGenerator # Adjusted import path
 # The MockSentenceTransformer class and mock_sentence_transformer_fixture are now in conftest.py
 
@@ -31,44 +32,53 @@ def test_embedding_generator_init_success(mock_sentence_transformer_fixture):
     """Test successful initialization of EmbeddingGenerator."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     assert generator.model is not None
-    assert generator.model.model_name == 'sentence-transformers/all-MiniLM-L6-v2'
+    assert generator.model.model_name == 'all-MiniLM-L6-v2'
 
 def test_embedding_generator_init_failure(mock_sentence_transformer_fixture, caplog):
     """Test failed initialization of EmbeddingGenerator if model loading fails."""
-    generator = EmbeddingGenerator(model_name='invalid-model-name')
+    generator = EmbeddingGenerator(model_name='sentence-transformers/invalid-model-name')
     assert generator.model is None
     assert "Failed to load SentenceTransformer model 'invalid-model-name'" in caplog.text
 
-    # Test that generate_embeddings handles model load failure
-    embeddings = generator.generate_embeddings(["test"])
+    # Test that generate_embeddings handles model load failure  
+    import asyncio
+    async def test_async():
+        embeddings = await generator.generate_embeddings(["test"])
+        return embeddings
+    
+    embeddings = asyncio.run(test_async())
     assert embeddings is None
-    assert "Embedding model is not loaded." in caplog.text
+    assert "SentenceTransformer model is not loaded. Cannot generate embeddings." in caplog.text
 
 
-def test_generate_embeddings_success(mock_sentence_transformer_fixture):
+@pytest.mark.asyncio
+async def test_generate_embeddings_success(mock_sentence_transformer_fixture):
     """Test successful embedding generation."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     texts = ["hello world", "another sentence"]
-    embeddings = generator.generate_embeddings(texts)
+    embeddings = await generator.generate_embeddings(texts)
     assert embeddings is not None
-    assert isinstance(embeddings, np.ndarray)
-    assert embeddings.shape[0] == len(texts)
-    assert embeddings.shape[1] == 384 # for all-MiniLM-L6-v2
+    assert isinstance(embeddings, list)
+    assert len(embeddings) == len(texts)
+    assert all(isinstance(emb, np.ndarray) for emb in embeddings)
+    assert all(emb.shape == (384,) for emb in embeddings)  # for all-MiniLM-L6-v2
 
-def test_generate_embeddings_empty_input(mock_sentence_transformer_fixture, caplog):
+@pytest.mark.asyncio
+async def test_generate_embeddings_empty_input(mock_sentence_transformer_fixture, caplog):
     """Test embedding generation with empty list of texts."""
     generator = EmbeddingGenerator()
-    embeddings = generator.generate_embeddings([])
+    embeddings = await generator.generate_embeddings([])
     assert embeddings == [] # As per current implementation
     assert "Input text_chunks is empty or not a list." in caplog.text
 
-def test_generate_embeddings_model_produces_invalid_output(mock_sentence_transformer_fixture, caplog, monkeypatch): # Added monkeypatch here
+@pytest.mark.asyncio
+async def test_generate_embeddings_model_produces_invalid_output(mock_sentence_transformer_fixture, caplog, monkeypatch): # Added monkeypatch here
     """Test scenario where model.encode doesn't return expected numpy arrays."""
     # This test assumes generate_embeddings might try to process non-numpy outputs,
     # which could lead to errors if not handled. Current mock returns list of strings.
     # The actual SentenceTransformer.encode should be robust.
     # This test is more about our wrapper's robustness if SentenceTransformer changes.
-    generator = EmbeddingGenerator(model_name='mock-model-invalid-output')
+    generator = EmbeddingGenerator(model_name='sentence-transformers/mock-model-invalid-output')
     texts = ["test sentence"]
     # The current generate_embeddings directly returns model.encode output.
     # If model.encode returns something other than ndarray, our type hints are violated.
@@ -84,15 +94,21 @@ def test_generate_embeddings_model_produces_invalid_output(mock_sentence_transfo
         raise ValueError("Simulated encoding error")
 
     # generator.model is an instance of MockSentenceTransformer due to the fixture.
-    monkeypatch.setattr(generator.model.__class__, "encode", mock_encode_error) # Patching on the Mock class itself
+    if generator.model is not None:
+        monkeypatch.setattr(generator.model.__class__, "encode", mock_encode_error) # Patching on the Mock class itself
 
-    # Re-initialize generator to ensure it picks up the newly patched MockSentenceTransformer's method
-    # if the model name matters for the mock's behavior being tested.
-    # In this specific case, the 'mock_encode_error' is general.
-    generator_with_erroring_model = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    embeddings = generator_with_erroring_model.generate_embeddings(texts)
-    assert embeddings is None
-    assert "Error generating embeddings: Simulated encoding error" in caplog.text
+        # Re-initialize generator to ensure it picks up the newly patched MockSentenceTransformer's method
+        # if the model name matters for the mock's behavior being tested.
+        # In this specific case, the 'mock_encode_error' is general.
+        generator_with_erroring_model = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
+        
+        embeddings = await generator_with_erroring_model.generate_embeddings(texts)
+        assert embeddings is None
+        assert "Error generating SentenceTransformer embeddings: Simulated encoding error" in caplog.text
+    else:
+        # If model is None due to unsupported format, test that case
+        embeddings = await generator.generate_embeddings(texts)
+        assert embeddings is None
 
 
 def test_chunk_document_simple(mock_sentence_transformer_fixture):

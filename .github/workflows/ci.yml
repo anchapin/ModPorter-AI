@@ -242,6 +242,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install -r requirements.txt
+        pip install -r requirements-dev.txt
         pip install ruff  # Ensure ruff is installed for linting
     
     - name: Run linting
