@@ -1579,6 +1579,7 @@ async def get_training_data(
     # We need to provide it. A simple, less accurate way for now:
     # A better approach: add a count method to crud.
     # For now, if we fetched less than limit, we can assume it's the total. This is often wrong.
+    approx_total = len(training_data_items)  # Simple approximation using processed items
 
     return TrainingDataResponse(
         data=training_data_items,

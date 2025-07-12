@@ -1,6 +1,5 @@
 import uuid
 from typing import Optional
-import uuid
 from sqlalchemy import (
     String,
     Integer,
