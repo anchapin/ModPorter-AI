@@ -13,7 +13,6 @@ import os
 import uuid
 import asyncio # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
-import shutil  # Add for file operations
 from dotenv import load_dotenv
 from db.init_db import init_db
 

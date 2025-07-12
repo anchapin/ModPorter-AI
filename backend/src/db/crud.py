@@ -1,10 +1,12 @@
 from typing import Optional, List
+from uuid import UUID as PyUUID # For type hinting UUID objects
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.db import models
-import uuid
+from src.db.models import DocumentEmbedding
 
 
 async def create_job(
@@ -158,9 +160,6 @@ async def list_all_feedback(
 
 
 # CRUD operations for DocumentEmbedding
-from src.db.models import DocumentEmbedding
-from sqlalchemy import delete # Added delete
-from uuid import UUID as PyUUID # For type hinting UUID objects
 
 async def create_document_embedding(
     db: AsyncSession,
