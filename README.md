@@ -331,4 +331,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the ModPorter AI team<!-- Fixed pytest-mock dependency issue Sat Jul 12 08:08:54 EDT 2025 -->
+Made with ❤️ by the ModPorter AI team
+
