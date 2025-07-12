@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libffi-dev \
     libssl-dev \
+    libmagic-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install build tools
@@ -43,6 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     postgresql-client \
     libmagic1 \
+    libmagic-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder stage
