@@ -67,7 +67,7 @@ jobs:
         docker run --rm \
           -v ${{ github.workspace }}/frontend:/app \
           -w /app \
-          ghcr.io/missing-semicolon/modporter/node-base:latest \
+          ghcr.io/anchapin/modporter-ai/node-base:latest \
           sh -c "
             pnpm run lint
             if pnpm run test:coverage; then
@@ -91,7 +91,7 @@ jobs:
           -e TESTING=true \
           -e TEMP_UPLOADS_DIR=/tmp/test_uploads \
           -e CONVERSION_OUTPUTS_DIR=/tmp/test_outputs \
-          ghcr.io/missing-semicolon/modporter/python-base:latest \
+          ghcr.io/anchapin/modporter-ai/python-base:latest \
           sh -c "
             pip install -r requirements.txt
             ruff check . || echo 'Linting issues found but continuing...'
