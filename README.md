@@ -234,6 +234,13 @@ cd ai-engine && pytest tests/integration/test_rag_workflow.py
 cd ai-engine && python src/testing/rag_evaluator.py
 ```
 
+### MVP Conversion Test
+To run the end-to-end MVP test case, which validates the complete pipeline from a Java block to Bedrock files, use the following command:
+
+```bash
+pytest tests/test_mvp_conversion.py
+```
+
 ### Docker Tests
 ```bash
 # Run tests in Docker containers
