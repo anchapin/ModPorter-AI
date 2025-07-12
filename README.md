@@ -8,13 +8,19 @@ An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition
 Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
 
 ## 🚀 Features
-- **One-Click Conversion**: Upload Java mods and get Bedrock add-ons automatically
-- **AI-Powered Analysis**: Multi-agent system using CrewAI for intelligent conversion
-- **RAG-Enhanced Knowledge**: Retrieval Augmented Generation system with specialized knowledge bases
-- **Smart Assumptions**: Handles incompatible features with logical workarounds
-- **Detailed Reporting**: Transparent conversion reports showing all changes
-- **Validation System**: AI-powered comparison between original and converted mods
-- **Comprehensive Testing**: Full test suite including RAG evaluation and behavioral testing
+
+### MVP Focus: Simple Block Conversion
+The current development priority is the Minimum Viable Product (MVP), which focuses on the core functionality of converting a simple Java block mod into a functional Bedrock add-on.
+
+-   **Java Block to Bedrock JSON**: Convert a `.jar` file containing a single block into a `.mcaddon` package.
+-   **Texture Preservation**: Ensure the block's appearance is correctly transferred.
+-   **Basic Functionality**: The converted block can be placed and destroyed in-game.
+
+### Future (Post-MVP) Features
+-   **Complex Conversions**: Support for items, entities, and complex logic.
+-   **AI-Powered Analysis**: A multi-agent system for advanced conversion strategies.
+-   **Detailed Reporting**: Transparent reports detailing the conversion process.
+-   **Validation System**: AI-powered comparison between the original and converted mods.
 
 ## 🛠️ Tech Stack
 - **Frontend**: React + TypeScript + Vite (served by Nginx in production)
