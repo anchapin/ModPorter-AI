@@ -220,9 +220,8 @@ jobs:
             use-ollama: false
           # Integration tests on self-hosted runner with Ollama (conditional)
           - test-type: integration-ollama
-            runs-on: ubuntu-latest  # Fallback to GitHub-hosted if no self-hosted available
+            runs-on: [self-hosted, ollama]
             use-ollama: true
-            self-hosted-preferred: true
       fail-fast: false  # Continue other tests even if one fails
     
     runs-on: ${{ matrix.runs-on }}
