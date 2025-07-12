@@ -1,13 +1,12 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID, uuid4
+from uuid import uuid4
 import os
 
 # Assuming pgvector.sqlalchemy might not be available or usable in SQLite context
 # For model definition, it's imported, but for creating test data, it's just a list[float]
 # from pgvector.sqlalchemy import VECTOR # Not strictly needed for test data creation
 
-from src.db.models import DocumentEmbedding
 from src.db import crud
 
 # Skip all tests if using SQLite (these tests require PostgreSQL with pgvector)
