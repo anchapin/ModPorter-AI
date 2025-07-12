@@ -20,7 +20,7 @@ if ! gh auth status &> /dev/null; then
     exit 1
 fi
 
-REPO="anchapin/ModPorter-AI"
+REPO=$(gh repo view --json fullName -q .fullName)
 echo "🔍 Checking repository: $REPO"
 echo
 

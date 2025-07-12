@@ -459,7 +459,7 @@ class ModPorterConversionCrew:
             
             # Create a temporary directory for intermediate files 
             # Use /tmp for local testing, /app/conversion_outputs for Docker
-            output_base_dir = "/app/conversion_outputs" if Path("/app/conversion_outputs").exists() else "/tmp"
+            output_base_dir = os.getenv("CONVERSION_OUTPUT_DIR", "/tmp")
             temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
             logger.info(f"Created temporary directory for conversion: {temp_dir}")
             # Prepare inputs for the crew

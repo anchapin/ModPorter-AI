@@ -1,7 +1,7 @@
 # HTTP Client
 httpx>=0.25.0
 
-# Core Framework
+# Core Framework (updated for CI fix)
 fastapi==0.116.0
 uvicorn[standard]==0.35.0
 pydantic==2.11.7
