@@ -7,6 +7,11 @@ import requests
 import json
 import time
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def test_full_conversion():
     """Test the full mod conversion process"""
@@ -14,15 +19,15 @@ def test_full_conversion():
     # Base URLs
     backend_url = "http://localhost:8080"
     
-    print("Testing full mod conversion process...")
+    logger.info("Testing full mod conversion process...")
     
     # Check if backend is accessible
     try:
         health_response = requests.get(f"{backend_url}/api/v1/health", timeout=5)
-        print(f"Backend health check: {health_response.status_code}")
+        logger.info(f"Backend health check: {health_response.status_code}")
         
         if health_response.status_code != 200:
-            print("❌ Backend health check failed")
+            logger.error("❌ Backend health check failed")
             return False
     except Exception as e:
         print(f"❌ Backend not accessible: {e}")
