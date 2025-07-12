@@ -39,6 +39,7 @@ RUN pip install --no-cache-dir \
 FROM python:3.11-slim
 
 # Install only runtime dependencies
+# Updated 2025-07-12: Added libmagic-dev for python-magic compatibility
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ffmpeg \
