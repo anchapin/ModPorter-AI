@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio # For async fixtures
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID, uuid4
 import os

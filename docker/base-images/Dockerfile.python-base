@@ -19,15 +19,17 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy requirements from both services
 COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
+COPY ai-engine/requirements-dev.txt /tmp/ai-engine-requirements-dev.txt
 COPY backend/requirements.txt /tmp/backend-requirements.txt
 
 # Install all Python dependencies in a single layer
 # This is the time-consuming step that we want to cache
 RUN pip install --no-cache-dir \
     -r /tmp/ai-engine-requirements.txt \
+    -r /tmp/ai-engine-requirements-dev.txt \
     -r /tmp/backend-requirements.txt \
-    # Add common development dependencies
-    pytest pytest-asyncio pytest-cov pytest-timeout \
+    # Add common development dependencies (in case not in requirements files)
+    pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock \
     ruff black isort mypy \
     alembic \
     && pip cache purge
