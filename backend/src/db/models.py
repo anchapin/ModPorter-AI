@@ -1,4 +1,5 @@
 from typing import Optional
+import uuid
 from sqlalchemy import (
     String,
     Integer,
@@ -13,9 +14,9 @@ from sqlalchemy import (
     TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.db.declarative_base import Base
-import uuid  # For default factories in new models
 
 
 class ConversionJob(Base):
@@ -170,11 +171,6 @@ class FeatureMappingDb(Base):
 
 
 # New model for document embeddings
-from pgvector.sqlalchemy import VECTOR
-import uuid # Already imported, but good to note for the new model
-# sqlalchemy.dialects.postgresql.UUID is already imported
-# sqlalchemy.Column, String, DateTime, func are already imported
-
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
 

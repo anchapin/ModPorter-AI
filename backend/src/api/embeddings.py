@@ -1,5 +1,4 @@
-from typing import List, Optional
-from uuid import UUID as PyUUID # Renamed to avoid conflict with pydantic's UUID if any confusion
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -7,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.base import get_db
 from src.db import crud
-from src.db.models import DocumentEmbedding as DBDocumentEmbedding # SQLAlchemy model
 from src.models.embedding_models import (
     DocumentEmbeddingCreate,
     DocumentEmbeddingResponse,

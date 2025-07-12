@@ -1,4 +1,3 @@
-import pytest
 import uuid
 
 def test_submit_feedback_invalid_job_id(client):

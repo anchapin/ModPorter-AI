@@ -17,7 +17,7 @@ def knowledge_base_agent():
     return KnowledgeBaseAgent()
 
 # Define Document class here for test convenience, mirroring its presumed structure
-class TestDocument:
+class MockDocument:
     def __init__(self, id: str, text: str, vector: list = None):
         self.id = id
         self.text = text
@@ -36,8 +36,8 @@ async def test_rag_workflow_end_to_end(MockSearchTool, vector_db_client, knowled
     mock_search_tool_instance = MockSearchTool.return_value
 
     # 1. Indexing a document (VectorDBClient with mocked API)
-    # Using the local TestDocument class for convenience in the test
-    doc_to_index = TestDocument(id="doc123", text="This is a test document about RAG.", vector=[0.1, 0.2, 0.3])
+    # Using the local MockDocument class for convenience in the test
+    doc_to_index = MockDocument(id="doc123", text="This is a test document about RAG.", vector=[0.1, 0.2, 0.3])
 
     mock_post_response = AsyncMock()
     # VectorDBClient.index_document returns True on 200 or 201
@@ -99,4 +99,4 @@ async def test_rag_workflow_end_to_end(MockSearchTool, vector_db_client, knowled
 #   VectorDBClient is async and handled with await.
 # - Document class: The `Document` class from `src.utils.vector_db_client` is not used directly
 #   by the `index_document` method, which takes content and source.
-#   The test uses a local `TestDocument` for structuring test data, which is fine.
+#   The test uses a local `MockDocument` for structuring test data, which is fine.

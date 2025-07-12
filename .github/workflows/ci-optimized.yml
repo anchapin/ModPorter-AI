@@ -26,13 +26,13 @@ jobs:
     - name: Calculate Python dependencies hash
       id: python-hash
       run: |
-        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt docker/base-images/Dockerfile.python-base | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
     
     - name: Calculate Node dependencies hash
       id: node-hash
       run: |
-        HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        HASH=$(cat frontend/pnpm-lock.yaml docker/base-images/Dockerfile.node-base | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
     
     - name: Check if base images are available
