@@ -398,10 +398,10 @@ jobs:
         cd frontend && pnpm install
         
         # Install backend dependencies
-        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt && pip install alembic
+        cd ../backend && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt && pip install alembic && pip install -r requirements-dev.txt
         
         # Install ai-engine dependencies  
-        cd ../ai-engine && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt
+        cd ../ai-engine && python -m pip install --upgrade pip && pip install -e . && pip install -r requirements.txt && pip install -r requirements-dev.txt
     
     - name: Build frontend
       run: |
