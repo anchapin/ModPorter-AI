@@ -201,6 +201,7 @@ jobs:
           ${{ env.REGISTRY }}/${{ needs.calculate-hashes.outputs.repo-lowercase }}/python-base:${{ needs.calculate-hashes.outputs.python-hash }} \
           sh -c "
             pip install -r requirements.txt
+            pip install -r requirements-dev.txt
             ruff check . || echo 'Linting issues found but continuing...'
             python -m alembic upgrade head
             python -m pytest --cov=. tests/ --cov-report=xml -v --tb=short --timeout=300 --maxfail=5

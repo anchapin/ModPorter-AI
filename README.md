@@ -211,10 +211,132 @@ docker-compose up -d --build
 
 ## Testing
 
-To run the tests, use the following command:
+### Run all tests
+pnpm run test
+
+### Backend tests
+cd backend && pytest
+
+### Frontend tests
+cd frontend && pnpm test
+
+### AI Engine and RAG tests
+```bash
+# Run AI Engine tests
+cd ai-engine && pytest
+
+# Run RAG-specific tests
+cd ai-engine && pytest tests/test_rag_crew.py
+cd ai-engine && pytest tests/unit/test_embedding_generator.py
+cd ai-engine && pytest tests/integration/test_rag_workflow.py
+
+# Run RAG evaluation suite
+cd ai-engine && python src/testing/rag_evaluator.py
+```
+
+### MVP Conversion Test
+To run the end-to-end MVP test case, which validates the complete pipeline from a Java block to Bedrock files, use the following command:
 
 ```bash
 pytest tests/test_mvp_conversion.py
 ```
 
-This will run the end-to-end MVP test case, which validates the complete pipeline from a Java block to Bedrock files.
+### Docker Tests
+```bash
+# Run tests in Docker containers
+docker-compose exec backend pytest
+docker-compose exec frontend pnpm test
+docker-compose exec ai-engine pytest
+
+# Run tests with coverage
+docker-compose exec backend pytest --cov=src
+docker-compose exec ai-engine pytest --cov=src
+```
+
+## 🔧 Development Workflows
+
+### Docker Development Best Practices
+
+#### Hot Reload Development
+Use the development Docker Compose configuration for active development:
+```bash
+# Start with hot reload enabled
+docker-compose -f docker-compose.dev.yml up -d
+
+# This enables:
+# - Frontend: Vite dev server with hot reload
+# - Backend: uvicorn with auto-reload
+# - AI Engine: uvicorn with auto-reload and debug mode
+```
+
+#### Making Changes
+```bash
+# After code changes, rebuild specific service
+docker-compose build backend
+docker-compose up -d backend
+
+# Or rebuild all services
+docker-compose up -d --build
+```
+
+#### Database Management
+```bash
+# Access PostgreSQL directly
+docker-compose exec postgres psql -U postgres -d modporter
+
+# Run database migrations
+docker-compose exec backend alembic upgrade head
+
+# Reset database (⚠️ destroys data)
+docker-compose down -v
+docker-compose up -d
+```
+
+#### Performance Monitoring
+```bash
+# Monitor resource usage
+docker stats
+
+# View container resource limits
+docker-compose config
+
+# Check service dependencies
+docker-compose ps --services
+```
+
+## 📖 Documentation
+
+- [Product Requirements Document](docs/PRD.md)
+- [API Documentation](docs/API.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/anchapin/ModPorter-AI/discussions)
+- **Documentation**: [Project Wiki](https://github.com/anchapin/ModPorter-AI/wiki)
+
+## 🏆 Acknowledgments
+
+- **CrewAI**: For the multi-agent AI framework
+- **FastAPI**: For the high-performance API framework
+- **React**: For the frontend framework
+- **Docker**: For containerization
+- **Minecraft Community**: For inspiration and support
+
+---
+
+Made with ❤️ by the ModPorter AI team
+

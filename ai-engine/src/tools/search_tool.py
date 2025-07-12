@@ -4,6 +4,7 @@ Provides semantic search capabilities using the existing vector database with fa
 """
 
 import json
+import asyncio
 import logging
 import importlib
 from typing import List, Dict, Any, Optional
@@ -39,12 +40,16 @@ class SearchTool:
         return [
             SearchTool.semantic_search,
             SearchTool.document_search,
-            SearchTool.similarity_search
+            SearchTool.similarity_search,
+            SearchTool.bedrock_api_search,
+            SearchTool.component_lookup,
+            SearchTool.conversion_examples,
+            SearchTool.schema_validation_lookup
         ]
     
     @tool
     @staticmethod
-    def semantic_search(query_data: str) -> str:
+    async def semantic_search(query_data: str) -> str:
         """
         Perform semantic search across indexed documents.
         
@@ -76,11 +81,12 @@ class SearchTool:
                 })
             
             # Perform semantic search using vector database
-            results = tool_instance._perform_semantic_search(
+            results = await tool_instance._perform_semantic_search(
                 query=query,
                 limit=limit,
                 document_source=document_source
             )
+
             
             # Check if results are insufficient and fallback is enabled
             if not results and Config.SEARCH_FALLBACK_ENABLED:
@@ -109,7 +115,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def document_search(query_data: str) -> str:
+    async def document_search(query_data: str) -> str:
         """
         Search for specific documents by source or content type.
         
@@ -139,9 +145,10 @@ class SearchTool:
                 })
             
             # Search for documents by source
-            results = tool_instance._search_by_document_source(
+            results = await tool_instance._search_by_document_source(
                 document_source=document_source,
-                content_type=content_type
+                content_type=content_type, # content_type filter might be applied client-side if needed
+                limit=data.get('limit', 10) # Pass limit
             )
             
             # Check if results are insufficient and fallback is enabled
@@ -172,7 +179,7 @@ class SearchTool:
     
     @tool
     @staticmethod
-    def similarity_search(query_data: str) -> str:
+    async def similarity_search(query_data: str) -> str:
         """
         Find documents similar to a given document or content.
         
@@ -203,9 +210,9 @@ class SearchTool:
                 })
             
             # Find similar documents
-            results = tool_instance._find_similar_documents(
+            results = await tool_instance._find_similar_documents(
                 content=content,
-                threshold=threshold,
+                threshold=threshold, # threshold might be applied client-side if needed
                 limit=limit
             )
             
@@ -235,7 +242,161 @@ class SearchTool:
             }
             return json.dumps(error_response)
     
-    def _perform_semantic_search(self, query: str, limit: int = 10, document_source: Optional[str] = None) -> List[Dict[str, Any]]:
+    @tool
+    @staticmethod
+    async def bedrock_api_search(query_data: str) -> str:
+        """
+        Search for Bedrock Edition API documentation.
+        Input can be a simple query string or a JSON string:
+        '{"query": "player events", "api_category": "Scripting API"}'
+        or simply "player events".
+        `api_category` is optional and can be things like 'Scripting API', 'Gametest Framework', etc.
+        """
+        tool_instance = SearchTool.get_instance()
+        query = ""
+        api_category = None
+        try:
+            if isinstance(query_data, str):
+                try:
+                    data = json.loads(query_data)
+                    query = data.get("query", "")
+                    api_category = data.get("api_category")
+                except json.JSONDecodeError:
+                    query = query_data # Treat as plain string query
+            else: # Should not happen if called by CrewAI with string arg
+                query = str(query_data)
+
+            if not query:
+                return json.dumps({"error": "Query parameter is required for Bedrock API search."})
+
+            formatted_query = f"Bedrock API {api_category if api_category else ''} {query}".strip()
+            logger.info(f"Bedrock API search for: {formatted_query}")
+
+            # Utilize existing semantic_search tool
+            return await SearchTool.semantic_search(json.dumps({
+                "query": formatted_query,
+                "limit": 10 # Default limit for API search
+            }))
+        except Exception as e:
+            logger.error(f"Bedrock API search failed: {str(e)}")
+            return json.dumps({
+                "error": f"Bedrock API search failed: {str(e)}",
+                "original_query": query_data
+            })
+
+    @tool
+    @staticmethod
+    async def component_lookup(query_data: str) -> str:
+        """
+        Lookup documentation for specific Bedrock Edition components (e.g., minecraft:loot, minecraft:behavior.float_wander).
+        Input can be a simple component name string or a JSON string:
+        '{"component_name": "minecraft:behavior.float_wander"}'
+        or simply "minecraft:behavior.float_wander".
+        """
+        tool_instance = SearchTool.get_instance()
+        component_name = ""
+        try:
+            if isinstance(query_data, str):
+                try:
+                    data = json.loads(query_data)
+                    component_name = data.get("component_name", "")
+                except json.JSONDecodeError:
+                    component_name = query_data
+            else:
+                component_name = str(query_data)
+
+            if not component_name:
+                return json.dumps({"error": "Component name is required for component lookup."})
+
+            formatted_query = f"Bedrock component documentation for {component_name}"
+            logger.info(f"Component lookup for: {formatted_query}")
+
+            return await SearchTool.semantic_search(json.dumps({
+                "query": formatted_query,
+                "limit": 5 # More focused search
+            }))
+        except Exception as e:
+            logger.error(f"Component lookup failed: {str(e)}")
+            return json.dumps({
+                "error": f"Component lookup failed: {str(e)}",
+                "original_query": query_data
+            })
+
+    @tool
+    @staticmethod
+    async def conversion_examples(query_data: str) -> str:
+        """
+        Search for examples of converting game elements or mechanics from Java Edition to Bedrock Edition.
+        Input can be a simple query string describing the element or a JSON string:
+        '{"query": "potion effects"}' or simply "potion effects".
+        """
+        tool_instance = SearchTool.get_instance()
+        query = ""
+        try:
+            if isinstance(query_data, str):
+                try:
+                    data = json.loads(query_data)
+                    query = data.get("query", "")
+                except json.JSONDecodeError:
+                    query = query_data
+            else:
+                query = str(query_data)
+
+            if not query:
+                return json.dumps({"error": "Query is required for conversion examples."})
+
+            formatted_query = f"Java to Bedrock conversion example for {query}"
+            logger.info(f"Conversion examples search for: {formatted_query}")
+
+            return await SearchTool.semantic_search(json.dumps({
+                "query": formatted_query,
+                "limit": 5
+            }))
+        except Exception as e:
+            logger.error(f"Conversion examples search failed: {str(e)}")
+            return json.dumps({
+                "error": f"Conversion examples search failed: {str(e)}",
+                "original_query": query_data
+            })
+
+    @tool
+    @staticmethod
+    async def schema_validation_lookup(query_data: str) -> str:
+        """
+        Search for Bedrock JSON schema information (e.g., for entities, blocks, items).
+        Input can be a simple schema name string or a JSON string:
+        '{"schema_name": "entity definition"}' or "entity definition".
+        """
+        tool_instance = SearchTool.get_instance() # Not strictly needed since we call static SearchTool.semantic_search
+        schema_name = ""
+        try:
+            if isinstance(query_data, str):
+                try:
+                    data = json.loads(query_data)
+                    schema_name = data.get("schema_name", "")
+                except json.JSONDecodeError:
+                    schema_name = query_data
+            else:
+                schema_name = str(query_data)
+
+            if not schema_name:
+                return json.dumps({"error": "Schema name/topic is required for schema validation lookup."})
+
+            formatted_query = f"Bedrock JSON schema for {schema_name}"
+            logger.info(f"Schema validation lookup for: {formatted_query}")
+
+            return await SearchTool.semantic_search(json.dumps({
+                "query": formatted_query,
+                "limit": 3 # Schemas are often specific
+            }))
+        except Exception as e:
+            logger.error(f"Schema validation lookup failed: {str(e)}")
+            return json.dumps({
+                "error": f"Schema validation lookup failed: {str(e)}",
+                "original_query": query_data
+            })
+
+    async def _perform_semantic_search(self, query: str, limit: int = 10, document_source: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Perform semantic search using vector database.
         
@@ -248,95 +409,12 @@ class SearchTool:
             List of search results
         """
         try:
-            # Enhanced mock data with better content for different query types
-            if "AI advancements" in query:
-                base_results = [
-                    {
-                        "id": "doc1",
-                        "content": "Recent breakthroughs in large language models have enabled more natural and context-aware conversations.",
-                        "document_source": "ai_research_journal_vol2.pdf",
-                        "similarity_score": 0.92,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    },
-                    {
-                        "id": "doc2", 
-                        "content": "Generative Adversarial Networks (GANs) are being used to create hyper-realistic images and videos.",
-                        "document_source": "tech_conference_proceedings_2023.docx",
-                        "similarity_score": 0.88,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    },
-                    {
-                        "id": "doc3",
-                        "content": "Ethical considerations in AI development, including bias and fairness, are becoming increasingly important.",
-                        "document_source": "ethics_in_ai_whitepaper.pdf",
-                        "similarity_score": 0.85,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    }
-                ]
-            elif "Minecraft modding" in query:
-                base_results = [
-                    {
-                        "id": "mc_doc1",
-                        "content": "Minecraft Forge is a popular modding API for the Java Edition, allowing extensive modifications.",
-                        "document_source": "forge_wiki.html",
-                        "similarity_score": 0.95,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    },
-                    {
-                        "id": "mc_doc2",
-                        "content": "Bedrock Edition uses Add-Ons, which are behavior packs and resource packs, often written in JSON and JavaScript.",
-                        "document_source": "bedrock.dev/docs",
-                        "similarity_score": 0.90,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    },
-                    {
-                        "id": "mc_doc3",
-                        "content": "The RAG.md document in this repository outlines a plan for using AI to assist with porting Minecraft mods.",
-                        "document_source": "RAG.md",
-                        "similarity_score": 0.87,
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    }
-                ]
-            else:
-                base_results = [
-                    {
-                        "id": f"doc_{i}",
-                        "content": f"Mock search result {i} for query: {query}",
-                        "document_source": document_source or f"source_{i}",
-                        "similarity_score": 0.9 - (i * 0.1),
-                        "metadata": {
-                            "indexed_at": "2025-01-09T00:00:00Z",
-                            "content_type": "text"
-                        }
-                    }
-                    for i in range(min(limit, 3))  # Mock 3 results max
-                ]
-            
-            # Apply document source filter if provided
-            if document_source:
-                base_results = [r for r in base_results if document_source in r.get('document_source', '')]
-            
-            # Apply limit
-            return base_results[:limit]
-            
+            results = await self.vector_client.search_documents(
+                query_text=query,
+                top_k=limit,
+                document_source_filter=document_source
+            )
+            return results
         except Exception as e:
             logger.error(f"Semantic search execution failed: {str(e)}")
             return []
@@ -406,40 +484,36 @@ class SearchTool:
             logger.error(f"Error during fallback to {tool_name}: {str(e)}")
             return []
     
-    def _search_by_document_source(self, document_source: str, content_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def _search_by_document_source(self, document_source: str, content_type: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Search documents by source identifier.
         
         Args:
             document_source: Document source to search for
-            content_type: Optional content type filter
+            content_type: Optional content type filter (currently not used in backend call)
+            limit: Maximum number of results
             
         Returns:
             List of matching documents
         """
         try:
-            # Mock implementation - would integrate with actual database
-            results = [
-                {
-                    "id": f"doc_source_{i}",
-                    "content": f"Document content from {document_source}",
-                    "document_source": document_source,
-                    "content_type": content_type or "text",
-                    "metadata": {
-                        "indexed_at": "2025-01-09T00:00:00Z",
-                        "size": 1024
-                    }
-                }
-                for i in range(2)  # Mock 2 results
-            ]
-            
+            # Using document_source as query_text for now.
+            # The backend's search logic will determine how this is interpreted.
+            # If specific "get by source" functionality is needed, backend API should support it.
+            results = await self.vector_client.search_documents(
+                query_text=document_source, # Or a more generic query if appropriate
+                top_k=limit,
+                document_source_filter=document_source # This is the key filter
+            )
+            # Client-side content_type filtering could be done here if results have 'content_type'
+            if content_type and results:
+                results = [r for r in results if r.get('metadata', {}).get('content_type') == content_type or r.get('content_type') == content_type]
             return results
-            
         except Exception as e:
             logger.error(f"Document source search failed: {str(e)}")
             return []
     
-    def _find_similar_documents(self, content: str, threshold: float = 0.8, limit: int = 10) -> List[Dict[str, Any]]:
+    async def _find_similar_documents(self, content: str, threshold: float = 0.8, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Find documents similar to given content.
         
@@ -452,23 +526,14 @@ class SearchTool:
             List of similar documents
         """
         try:
-            # Mock implementation - would use actual vector similarity
-            results = [
-                {
-                    "id": f"similar_{i}",
-                    "content": f"Similar content {i} to: {content[:50]}...",
-                    "document_source": f"similar_source_{i}",
-                    "similarity_score": threshold + (0.1 * i),
-                    "metadata": {
-                        "indexed_at": "2025-01-09T00:00:00Z",
-                        "content_type": "text"
-                    }
-                }
-                for i in range(min(limit, 3))  # Mock 3 results max
-            ]
-            
+            results = await self.vector_client.search_documents(
+                query_text=content,
+                top_k=limit
+            )
+            # Client-side threshold filtering could be done here if results have 'similarity_score'
+            if threshold > 0 and results: # Assuming threshold=0 means no filtering
+                results = [r for r in results if r.get('similarity_score', 0.0) >= threshold]
             return results
-            
         except Exception as e:
             logger.error(f"Similarity search execution failed: {str(e)}")
             return []
@@ -491,20 +556,24 @@ class SearchTool:
 
 # Demo functionality for testing
 if __name__ == "__main__":
+    import asyncio
     search_tool = SearchTool.get_instance()
-    
-    # Test semantic search
-    sample_query_ai = "What are the latest advancements in AI?"
-    output_ai = SearchTool.semantic_search(sample_query_ai)
-    print(f"Query: {sample_query_ai}")
-    print(f"Output:\n{output_ai}\n")
 
-    sample_query_mc = "Tell me about Minecraft modding."
-    output_mc = SearchTool.semantic_search(sample_query_mc)
-    print(f"Query: {sample_query_mc}")
-    print(f"Output:\n{output_mc}\n")
+    async def demo():
+        # Test semantic search
+        sample_query_ai = "What are the latest advancements in AI?"
+        output_ai = await SearchTool.semantic_search(sample_query_ai)
+        print(f"Query: {sample_query_ai}")
+        print(f"Output:\n{output_ai}\n")
 
-    sample_query_other = "Some other topic."
-    output_other = SearchTool.semantic_search(sample_query_other)
-    print(f"Query: {sample_query_other}")
-    print(f"Output:\n{output_other}\n")
+        sample_query_mc = "Tell me about Minecraft modding."
+        output_mc = await SearchTool.semantic_search(sample_query_mc)
+        print(f"Query: {sample_query_mc}")
+        print(f"Output:\n{output_mc}\n")
+
+        sample_query_other = "Some other topic."
+        output_other = await SearchTool.semantic_search(sample_query_other)
+        print(f"Query: {sample_query_other}")
+        print(f"Output:\n{output_other}\n")
+
+    asyncio.run(demo())
