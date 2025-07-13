@@ -477,6 +477,119 @@ class PackagingAgent:
             logger.error(f"Build error: {e}")
             return json.dumps({"success": False, "error": f"Build failed: {str(e)}"})
     
+    def build_mcaddon_mvp(self, temp_dir: str, output_path: str, mod_name: str = None) -> Dict[str, Any]:
+        """Build .mcaddon file from temp directory structure for MVP pipeline.
+        
+        Args:
+            temp_dir: Directory containing behavior_pack and resource_pack folders
+            output_path: Path where the .mcaddon file will be created
+            mod_name: Optional name for the mod (used for filename)
+            
+        Returns:
+            Dict with success status, file path, and validation info
+        """
+        try:
+            temp_path = Path(temp_dir)
+            
+            # Validate input directory exists
+            if not temp_path.exists():
+                raise ValueError(f"Temp directory does not exist: {temp_dir}")
+            
+            # Find behavior_pack and resource_pack directories
+            behavior_pack_dir = temp_path / "behavior_pack"
+            resource_pack_dir = temp_path / "resource_pack"
+            
+            if not behavior_pack_dir.exists() and not resource_pack_dir.exists():
+                raise ValueError(f"No behavior_pack or resource_pack directories found in {temp_dir}")
+            
+            # Ensure output directory exists
+            output_file = Path(output_path)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            # If output_path is a directory, generate filename
+            if output_file.is_dir() or output_path.endswith('/'):
+                filename = f"{mod_name or 'converted_mod'}.mcaddon"
+                output_file = output_file / filename
+            
+            # Create .mcaddon file (ZIP format)
+            with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # Add behavior pack if it exists
+                if behavior_pack_dir.exists():
+                    for file_path in behavior_pack_dir.rglob('*'):
+                        if file_path.is_file():
+                            arcname = f"behavior_pack/{file_path.relative_to(behavior_pack_dir)}"
+                            zipf.write(file_path, arcname)
+                
+                # Add resource pack if it exists
+                if resource_pack_dir.exists():
+                    for file_path in resource_pack_dir.rglob('*'):
+                        if file_path.is_file():
+                            arcname = f"resource_pack/{file_path.relative_to(resource_pack_dir)}"
+                            zipf.write(file_path, arcname)
+            
+            # Validate the created file
+            validation_info = self._validate_mcaddon_file(output_file)
+            
+            return {
+                "success": True,
+                "output_path": str(output_file),
+                "file_size": output_file.stat().st_size,
+                "validation": validation_info
+            }
+            
+        except Exception as e:
+            logger.error(f"MVP build error: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _validate_mcaddon_file(self, mcaddon_path: Path) -> Dict[str, Any]:
+        """Validate a created .mcaddon file.
+        
+        Args:
+            mcaddon_path: Path to the .mcaddon file
+            
+        Returns:
+            Dict with validation results
+        """
+        validation = {
+            "is_valid_zip": False,
+            "file_count": 0,
+            "has_behavior_pack": False,
+            "has_resource_pack": False,
+            "manifest_count": 0,
+            "errors": []
+        }
+        
+        try:
+            with zipfile.ZipFile(mcaddon_path, 'r') as zipf:
+                validation["is_valid_zip"] = True
+                namelist = zipf.namelist()
+                validation["file_count"] = len(namelist)
+                
+                # Check for pack structures
+                validation["has_behavior_pack"] = any(name.startswith("behavior_pack/") for name in namelist)
+                validation["has_resource_pack"] = any(name.startswith("resource_pack/") for name in namelist)
+                
+                # Count manifest files
+                validation["manifest_count"] = sum(1 for name in namelist if "manifest.json" in name)
+                
+                # Basic validation checks
+                if validation["manifest_count"] == 0:
+                    validation["errors"].append("No manifest.json files found")
+                
+                if not validation["has_behavior_pack"] and not validation["has_resource_pack"]:
+                    validation["errors"].append("No behavior_pack or resource_pack found")
+                    
+        except zipfile.BadZipFile as e:
+            validation["errors"].append(f"Invalid ZIP file: {e}")
+        except Exception as e:
+            validation["errors"].append(f"Validation error: {e}")
+        
+        validation["is_valid"] = len(validation["errors"]) == 0
+        return validation
+    
     @tool
     @staticmethod
     def analyze_conversion_components_tool(component_data: str) -> str:
