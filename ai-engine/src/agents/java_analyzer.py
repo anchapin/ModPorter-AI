@@ -4,6 +4,7 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 
 import logging
 import json
+import re
 from typing import List, Dict
 from crewai.tools import tool
 from src.models.smart_assumptions import (
@@ -130,76 +131,168 @@ class JavaAnalyzerAgent:
     
     def analyze_jar_for_mvp(self, jar_path: str) -> dict:
         """
-        Analyze a JAR file for MVP conversion - simplified version.
+        MVP-focused analysis: Extract registry name and texture path from simple block JAR.
+        
+        This method implements the specific requirements for Issue #167:
+        - Parse registry name from Java classes
+        - Find texture path in assets/*/textures/block/*.png
         
         Args:
             jar_path: Path to the JAR file
             
         Returns:
-            Dict with registry_name, texture_path, and success status
+            Dict with registry_name and texture_path
         """
+        logger.info(f"MVP analysis of JAR: {jar_path}")
+        
+        result = {
+            "registry_name": None,
+            "texture_path": None,
+            "success": False,
+            "errors": []
+        }
+        
         try:
-            result = {
-                'success': False,
-                'registry_name': 'unknown:block',
-                'texture_path': None
-            }
-            
             with zipfile.ZipFile(jar_path, 'r') as jar:
                 file_list = jar.namelist()
                 
-                # Find block texture
+                # Find texture path first (simpler)
                 texture_path = self._find_block_texture(file_list)
                 if texture_path:
-                    result['texture_path'] = texture_path
+                    result["texture_path"] = texture_path
+                    logger.info(f"Found texture: {texture_path}")
                 
-                # Extract registry name
+                # Find registry name from Java classes
                 registry_name = self._extract_registry_name_from_jar(jar, file_list)
                 if registry_name:
-                    result['registry_name'] = registry_name
+                    result["registry_name"] = registry_name
+                    logger.info(f"Found registry name: {registry_name}")
                 
-                result['success'] = True
-                return result
+                result["success"] = bool(registry_name and texture_path)
+                
+                if not result["success"]:
+                    if not registry_name:
+                        result["errors"].append("Could not extract registry name from JAR")
+                    if not texture_path:
+                        result["errors"].append("Could not find block texture in JAR")
                 
         except Exception as e:
-            logger.error(f"MVP analysis error: {e}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            logger.error(f"Error in MVP JAR analysis: {e}")
+            result["errors"].append(f"JAR analysis failed: {str(e)}")
+        
+        return result
     
     def _find_block_texture(self, file_list: list) -> str:
-        """Find a block texture in the JAR file list."""
-        for file_path in file_list:
-            if (file_path.startswith('assets/') and 
-                '/textures/block/' in file_path and 
-                file_path.endswith('.png')):
-                return file_path
+        """
+        Find the first block texture in the JAR.
+        Looks for: assets/*/textures/block/*.png
+        """
+        for file_name in file_list:
+            if (
+                file_name.startswith('assets/') and 
+                '/textures/block/' in file_name and 
+                file_name.endswith('.png')
+            ):
+                return file_name
         return None
     
-    def _extract_registry_name_from_jar(self, jar, file_list: list) -> str:
-        """Extract block registry name from JAR metadata."""
-        # Look for mod metadata files
-        for metadata_file in ['mcmod.info', 'fabric.mod.json', 'mods.toml']:
-            if metadata_file in file_list:
-                try:
-                    content = jar.read(metadata_file).decode('utf-8')
-                    if metadata_file == 'mcmod.info':
-                        import json
-                        data = json.loads(content)
-                        if isinstance(data, list) and len(data) > 0:
-                            mod_id = data[0].get('modid', 'unknown')
-                            return f"{mod_id}:copper_block"  # Default block name for MVP
-                    elif metadata_file == 'fabric.mod.json':
-                        import json
-                        data = json.loads(content)
-                        mod_id = data.get('id', 'unknown')
-                        return f"{mod_id}:copper_block"
-                except:
-                    continue
+    def _extract_registry_name_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> str:
+        """
+        Extract registry name from Java source files or class names.
+        Uses multiple strategies:
+        1. Parse fabric.mod.json or mcmod.info for mod ID
+        2. Look for Block class names
+        3. Try to parse Java source if available
+        """
+        # Strategy 1: Get mod ID from metadata (most reliable)
+        mod_id = self._extract_mod_id_from_metadata(jar, file_list)
+        if mod_id:
+            # Try to find a block class and construct registry name
+            block_class = self._find_block_class_name(file_list)
+            if block_class:
+                # Convert BlockName to snake_case
+                block_name = self._class_name_to_registry_name(block_class)
+                return f"{mod_id}:{block_name}"
+            return f"{mod_id}:unknown_block"
         
-        # Default fallback
-        return "unknown:copper_block"
+        # Strategy 2: Extract from main block class name  
+        block_class = self._find_block_class_name(file_list)
+        if block_class:
+            block_name = self._class_name_to_registry_name(block_class)
+            return f"modporter:{block_name}"
+        
+        # Strategy 3: Use JAR filename as fallback
+        return "modporter:unknown_block"
+    
+    def _extract_mod_id_from_metadata(self, jar: zipfile.ZipFile, file_list: list) -> str:
+        """Extract mod ID from metadata files."""
+        # Try fabric.mod.json first
+        if 'fabric.mod.json' in file_list:
+            try:
+                content = jar.read('fabric.mod.json').decode('utf-8')
+                data = json.loads(content)
+                return data.get('id', '').lower()
+            except Exception as e:
+                logger.warning(f"Error reading fabric.mod.json: {e}")
+        
+        # Try mcmod.info
+        if 'mcmod.info' in file_list:
+            try:
+                content = jar.read('mcmod.info').decode('utf-8')
+                data = json.loads(content)
+                if isinstance(data, list) and len(data) > 0:
+                    return data[0].get('modid', '').lower()
+            except Exception as e:
+                logger.warning(f"Error reading mcmod.info: {e}")
+        
+        # Try mods.toml
+        for file_name in file_list:
+            if file_name.endswith('mods.toml'):
+                try:
+                    content = jar.read(file_name).decode('utf-8')
+                    for line in content.split('\n'):
+                        if 'modId' in line and '=' in line:
+                            mod_id = line.split('=')[1].strip().strip('"\'')
+                            return mod_id.lower()
+                except Exception as e:
+                    logger.warning(f"Error reading {file_name}: {e}")
+        
+        return None
+    
+    def _find_block_class_name(self, file_list: list) -> str:
+        """Find the main block class name from file paths."""
+        block_candidates = []
+        
+        for file_name in file_list:
+            if file_name.endswith('.class'):
+                # Extract class name from path
+                class_name = Path(file_name).stem
+                
+                # Look for Block in class name
+                if 'Block' in class_name and not class_name.startswith('Abstract'):
+                    block_candidates.append(class_name)
+        
+        # Return the first/shortest block class name
+        if block_candidates:
+            # Prefer simpler names (shorter, fewer underscores)
+            block_candidates.sort(key=lambda x: (len(x), x.count('_')))
+            return block_candidates[0]
+        
+        return None
+    
+    def _class_name_to_registry_name(self, class_name: str) -> str:
+        """Convert Java class name to registry name format."""
+        # Remove 'Block' suffix if present
+        name = class_name.replace('Block', '').replace('block', '')
+        
+        # Convert CamelCase to snake_case
+        import re
+        name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+        
+        # Clean up any double underscores or leading/trailing underscores
+        name = re.sub('_+', '_', name).strip('_')
+        
+        return name if name else 'unknown_block'
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
