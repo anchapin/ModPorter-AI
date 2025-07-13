@@ -1,0 +1,17 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "{{ pack_name | default('ModPorter Block') }}",
+    "description": "{{ pack_description | default('Auto-converted block from ModPorter AI') }}",
+    "uuid": "{{ pack_uuid }}",
+    "version": {{ pack_version | default([1, 0, 0]) | tojson }},
+    "min_engine_version": {{ min_engine_version | default([1, 20, 0]) | tojson }}
+  },
+  "modules": [
+    {
+      "type": "{{ module_type | default('data') }}",
+      "uuid": "{{ module_uuid }}",
+      "version": {{ module_version | default([1, 0, 0]) | tojson }}
+    }
+  ]
+}
