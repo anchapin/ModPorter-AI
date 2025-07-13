@@ -128,6 +128,79 @@ class JavaAnalyzerAgent:
                 "embeddings_data": []
             })
     
+    def analyze_jar_for_mvp(self, jar_path: str) -> dict:
+        """
+        Analyze a JAR file for MVP conversion - simplified version.
+        
+        Args:
+            jar_path: Path to the JAR file
+            
+        Returns:
+            Dict with registry_name, texture_path, and success status
+        """
+        try:
+            result = {
+                'success': False,
+                'registry_name': 'unknown:block',
+                'texture_path': None
+            }
+            
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Find block texture
+                texture_path = self._find_block_texture(file_list)
+                if texture_path:
+                    result['texture_path'] = texture_path
+                
+                # Extract registry name
+                registry_name = self._extract_registry_name_from_jar(jar, file_list)
+                if registry_name:
+                    result['registry_name'] = registry_name
+                
+                result['success'] = True
+                return result
+                
+        except Exception as e:
+            logger.error(f"MVP analysis error: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def _find_block_texture(self, file_list: list) -> str:
+        """Find a block texture in the JAR file list."""
+        for file_path in file_list:
+            if (file_path.startswith('assets/') and 
+                '/textures/block/' in file_path and 
+                file_path.endswith('.png')):
+                return file_path
+        return None
+    
+    def _extract_registry_name_from_jar(self, jar, file_list: list) -> str:
+        """Extract block registry name from JAR metadata."""
+        # Look for mod metadata files
+        for metadata_file in ['mcmod.info', 'fabric.mod.json', 'mods.toml']:
+            if metadata_file in file_list:
+                try:
+                    content = jar.read(metadata_file).decode('utf-8')
+                    if metadata_file == 'mcmod.info':
+                        import json
+                        data = json.loads(content)
+                        if isinstance(data, list) and len(data) > 0:
+                            mod_id = data[0].get('modid', 'unknown')
+                            return f"{mod_id}:copper_block"  # Default block name for MVP
+                    elif metadata_file == 'fabric.mod.json':
+                        import json
+                        data = json.loads(content)
+                        mod_id = data.get('id', 'unknown')
+                        return f"{mod_id}:copper_block"
+                except:
+                    continue
+        
+        # Default fallback
+        return "unknown:copper_block"
+    
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
         try:
