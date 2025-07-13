@@ -6,37 +6,76 @@
     font-family: Arial, sans-serif;
 }
 
-.progress-bar-container {
-    width: 100%;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-    margin: 10px 0;
-    height: 20px;
-    overflow: hidden; /* Ensures inner bar stays within rounded corners */
+/* New styles for the steps-based UI */
+.conversion-steps-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
 }
 
-.progress-bar-filler {
-    height: 100%;
-    background-color: #4caf50;
-    text-align: center;
-    line-height: 20px; /* Vertically center text if any */
-    color: white;
-    border-radius: 4px 0 0 4px; /* Keep left corners rounded */
-    transition: width 0.3s ease-in-out;
+.conversion-step {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee; /* Separator for steps */
 }
 
-.progress-bar-filler.completed {
-    border-radius: 4px; /* All corners rounded when completed */
+.conversion-step:last-child {
+    border-bottom: none;
 }
 
-.progress-info p {
-    margin: 5px 0;
+.step-icon {
+    margin-right: 10px;
+    font-size: 1.2em; /* Make icon placeholder slightly larger */
+    color: #777; /* Default icon color (grey for pending) */
+}
+
+.step-name {
+    font-size: 1em;
+}
+
+/* Styling for different states */
+.conversion-step.pending .step-icon {
+    color: #777; /* Explicitly grey for pending icon */
+}
+.conversion-step.pending .step-name {
+    color: #777; /* Grey out pending steps */
+}
+
+.conversion-step.completed .step-icon {
+    color: #28a745; /* Green for checkmark */
+}
+.conversion-step.completed .step-name {
+    color: #333; /* Darker text for completed step name */
+    font-weight: normal;
+}
+
+.conversion-step.current .step-icon {
+    color: #007bff; /* Blue for current step icon */
+}
+.conversion-step.current .step-name {
+    font-weight: bold;
+    color: #007bff; /* Blue for current step name */
+}
+
+.status-message {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
     color: #333;
 }
 
-.progress-info strong {
-    color: #111;
+/* Connection error message specific style, if different from general error message */
+.connection-error-message {
+    color: #721c24; /* Darker red for text */
+    background-color: #f8d7da; /* Light pink background */
+    border-color: #f5c6cb; /* Reddish border */
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
 }
+
 
 .download-button {
     background-color: #007bff;
@@ -59,6 +98,7 @@
     cursor: not-allowed;
 }
 
+/* General error message for failed conversions */
 .error-message {
     color: #D8000C; /* Standard error red */
     background-color: #FFD2D2; /* Light red background */
