@@ -1,43 +1,61 @@
 # Build stage
-FROM python:3.11-slim AS builder
+FROM ubuntu:22.04 AS builder
 
 WORKDIR /tmp
 
-# Install system dependencies for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
+    python3-pip \
     gcc \
     g++ \
     curl \
+    wget \
+    gnupg \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Create virtual environment to ensure consistent package locations
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install ROCm using modern apt keyring method - minimal installation
+RUN wget -q -O /tmp/rocm.gpg.key https://repo.radeon.com/rocm/rocm.gpg.key && \
+    gpg --dearmor < /tmp/rocm.gpg.key > /usr/share/keyrings/rocm-archive-keyring.gpg && \
+    echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rocm-archive-keyring.gpg] https://repo.radeon.com/rocm/apt/6.0/ jammy main' > /etc/apt/sources.list.d/rocm.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends --allow-downgrades rocm-libs hip-runtime-amd && \
+    rm -rf /var/lib/apt/lists/* /tmp/rocm.gpg.key
+
 COPY requirements.txt /tmp/
 COPY requirements-dev.txt /tmp/
 
-# Install core dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Conditionally install development dependencies
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm6.0
+
 ARG INSTALL_DEV_DEPS=false
 RUN if [ "$INSTALL_DEV_DEPS" = "true" ] ; then \
-    pip install --no-cache-dir -r requirements-dev.txt ; \
+    pip install --no-cache-dir -r /tmp/requirements-dev.txt ; \
 fi
 
-# Production stage
-FROM python:3.11-slim
+FROM ubuntu:22.04
 
 WORKDIR /tmp
 
-# Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-venv \
+    python3-pip \
     curl \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the entire virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 RUN adduser --disabled-password --gecos '' appuser
 # Create directories for models and cache
@@ -47,6 +65,9 @@ RUN mkdir -p /tmp/models /tmp/cache
 # Copy source code after user creation with correct permissions
 COPY --chown=appuser:appuser . /tmp/
 USER appuser
+
+# Verify PyTorch sees AMD GPU (ROCm)
+RUN python -c "import torch; print(f'ROCm available: {torch.cuda.is_available()}')"
 
 # Health check using curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
