@@ -1,7 +1,7 @@
 # Build stage
 FROM python:3.11-slim AS builder
 
-WORKDIR /tmp
+WORKDIR /app
 
 # Install system dependencies for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt /tmp/
-COPY requirements-dev.txt /tmp/
+COPY requirements.txt /app/
+COPY requirements-dev.txt /app/
 
 # Install core dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Conditionally install development dependencies
 ARG INSTALL_DEV_DEPS=false
@@ -27,7 +27,7 @@ fi
 # Production stage
 FROM python:3.11-slim
 
-WORKDIR /tmp
+WORKDIR /app
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -42,10 +42,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 RUN adduser --disabled-password --gecos '' appuser
 # Create directories for models and cache
 # These directories are part of the application structure, so they should be created after COPY . .
-RUN mkdir -p /tmp/models /tmp/cache
+RUN mkdir -p /app/models /app/cache
 
 # Copy source code after user creation with correct permissions
-COPY --chown=appuser:appuser . /tmp/
+COPY --chown=appuser:appuser . /app/
 USER appuser
 
 # Health check using curl
