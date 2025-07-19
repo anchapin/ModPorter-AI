@@ -1,20 +1,21 @@
 import pytest
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, Mock
 
 from src.agents.java_analyzer import JavaAnalyzerAgent
 # Note: mock_sentence_transformer_fixture is automatically applied from conftest.py
 # For this test file, we need JavaAnalyzerAgent. Ensure EmbeddingGenerator within it uses the mock.
 
 @pytest.fixture
-def java_analyzer_agent_instance(mock_sentence_transformer_fixture): # Ensure mock is active
+def java_analyzer_agent_instance(mock_embedding_generator): # Ensure mock is active
     # Reset singleton instance for test isolation if needed, or manage state.
     JavaAnalyzerAgent._instance = None # This might be needed if tests interfere
     agent = JavaAnalyzerAgent.get_instance()
     # The agent's __init__ would have created an EmbeddingGenerator,
     # which should have used the MockSentenceTransformer due to the fixture.
+    agent.embedding_generator = mock_embedding_generator
     assert agent.embedding_generator is not None
-    assert "MockSentenceTransformer" in str(type(agent.embedding_generator.model))
+    assert isinstance(agent.embedding_generator.model, Mock)
     return agent
 
 class TestJavaAnalyzerAgent:
