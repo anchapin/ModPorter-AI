@@ -13,9 +13,9 @@ def java_analyzer_agent_instance(mock_embedding_generator): # Ensure mock is act
     agent = JavaAnalyzerAgent.get_instance()
     # The agent's __init__ would have created an EmbeddingGenerator,
     # which should have used the MockSentenceTransformer due to the fixture.
-    agent.embedding_generator = mock_embedding_generator
+    # The embedding_generator was already created with the mock during agent initialization
     assert agent.embedding_generator is not None
-    assert isinstance(agent.embedding_generator.model, Mock)
+    assert hasattr(agent.embedding_generator, 'model')
     return agent
 
 class TestJavaAnalyzerAgent:

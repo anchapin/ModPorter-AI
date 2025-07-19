@@ -63,34 +63,19 @@ def test_generate_embeddings_empty_input(mock_embedding_generator, caplog):
     assert "Input text_chunks is empty or not a list." in caplog.text
 
 def test_generate_embeddings_model_produces_invalid_output(mock_embedding_generator, caplog, monkeypatch):
-    """Test scenario where model.encode doesn't return expected numpy arrays."""
-    # This test assumes generate_embeddings might try to process non-numpy outputs,
-    # which could lead to errors if not handled. Current mock returns list of strings.
-    # The actual SentenceTransformer.encode should be robust.
-    # This test is more about our wrapper's robustness if SentenceTransformer changes.
-    generator = EmbeddingGenerator(model_name='mock-model-invalid-output')
-    texts = ["test sentence"]
-    # The current generate_embeddings directly returns model.encode output.
-    # If model.encode returns something other than ndarray, our type hints are violated.
-    # The test here will check if an error is logged or handled if model behaves unexpectedly.
-    # For now, SentenceTransformer is trusted to return ndarray or throw error.
-    # Our wrapper currently doesn't add much error handling *around* model.encode() itself for output type.
-    # Let's verify it logs an error if encode fails.
-    # To do this, we need encode to raise an error.
-
-    # Re-patch encode to simulate an error during encoding
-    # Corrected the way monkeypatch is used for a method within a class already mocked by fixture
-    def mock_encode_error(self, sentences, convert_to_numpy=True):
+    """Test scenario where model.encode throws an error."""
+    
+    def mock_encode_error(sentences, convert_to_numpy=True):
         raise ValueError("Simulated encoding error")
 
-    # generator.model is an instance of MockSentenceTransformer due to the fixture.
-    monkeypatch.setattr(generator.model.__class__, "encode", mock_encode_error) # Patching on the Mock class itself
-
-    # Re-initialize generator to ensure it picks up the newly patched MockSentenceTransformer's method
-    # if the model name matters for the mock's behavior being tested.
-    # In this specific case, the 'mock_encode_error' is general.
-    generator_with_erroring_model = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    embeddings = generator_with_erroring_model.generate_embeddings(texts)
+    # Create generator first
+    generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
+    
+    # Then patch the specific instance's encode method
+    monkeypatch.setattr(generator.model, "encode", mock_encode_error)
+    
+    texts = ["test sentence"]
+    embeddings = generator.generate_embeddings(texts)
     assert embeddings is None
     assert "Error generating embeddings: Simulated encoding error" in caplog.text
 
