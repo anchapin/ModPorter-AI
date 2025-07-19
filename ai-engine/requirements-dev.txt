@@ -1,5 +1,6 @@
 # Development dependencies for AI Engine
--r src/requirements.txt
+# Note: Base requirements are included in Dockerfile separately
+# This file only contains dev-specific dependencies
 
 # Testing
 pytest>=8.2
