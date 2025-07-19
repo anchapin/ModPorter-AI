@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env")
+    model_config = ConfigDict(env_file=".env", extra="ignore")
 
     database_url_raw: str = Field(
         default="postgresql+asyncpg://postgres:password@localhost:5432/modporter",
@@ -13,11 +13,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Convert DATABASE_URL to async format for application use"""
-        url = self.database_url_raw
-        if url.startswith("postgresql://"):
-            # Convert sync URL to async for application use
-            return url.replace("postgresql://", "postgresql+asyncpg://")
-        return url
+        return self.database_url_raw
 
     @property
     def sync_database_url(self) -> str:

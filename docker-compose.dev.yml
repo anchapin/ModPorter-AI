@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   frontend:
@@ -61,6 +60,7 @@ services:
     build:
       context: ./ai-engine
       dockerfile: Dockerfile
+    working_dir: /app
     command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
     ports:
       - "8001:8001"

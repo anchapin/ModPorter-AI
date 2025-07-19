@@ -2,41 +2,44 @@ from crewai import Agent
 from langchain_openai import ChatOpenAI # Or any other LLM you plan to use
 import os
 
-# Placeholder for initializing an LLM, similar to conversion_crew.py
-# This could be enhanced to use create_rate_limited_llm or MockLLM
+# Initialize LLM using the same logic as conversion_crew.py
 def get_llm():
-    if os.getenv("MOCK_AI_RESPONSES", "false").lower() == "true":
+    from src.utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+    
+    # Check for Ollama configuration first (for local testing)
+    if os.getenv("USE_OLLAMA", "false").lower() == "true":
         try:
-            # Try importing from the current project structure
-            import sys
-            from pathlib import Path
-            # Assuming this file is in ai-engine/src/agents/
-            # Adjust path to reach ai-engine/tests/mocks/
-            mock_llm_path = Path(__file__).parent.parent.parent / "tests" / "mocks"
+            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+            # Auto-detect Ollama base URL based on environment
+            default_base_url = "http://ollama:11434" if os.getenv("DOCKER_ENVIRONMENT") else "http://localhost:11434"
+            base_url = os.getenv("OLLAMA_BASE_URL", default_base_url)
             
-            # Verify the mock_llm_path exists and contains the expected file
-            if not mock_llm_path.exists():
-                raise ImportError(f"Mock LLM path does not exist: {mock_llm_path}")
+            llm = create_ollama_llm(
+                model_name=ollama_model,
+                base_url=base_url,
+                temperature=0.7,
+                max_tokens=1024,  # Reduced for faster responses
+                request_timeout=300,  # Extended timeout
+                num_ctx=4096,  # Context window
+                num_batch=512,  # Batch processing
+                num_thread=8,  # Multi-threading
+                streaming=False  # Disable streaming for consistency
+            )
             
-            mock_llm_file = mock_llm_path / "mock_llm.py"
-            if not mock_llm_file.exists():
-                raise ImportError(f"Mock LLM file does not exist: {mock_llm_file}")
-            
-            sys.path.insert(0, str(mock_llm_path))
-            from mock_llm import MockLLM
-            return MockLLM(responses=["Mock search agent response", "Mock summarization agent response"])
-        except (ImportError, OSError, FileNotFoundError):
-            # Fallback to MagicMock if mock_llm import fails for any reason
-            from unittest.mock import MagicMock
-            llm = MagicMock()
-            llm.invoke.return_value = "Mock LLM response due to import error"
+            # Enable CrewAI compatibility mode if the wrapper supports it
+            if hasattr(llm, 'enable_crew_mode'):
+                llm.enable_crew_mode()
+                
             return llm
+        except Exception as e:
+            raise RuntimeError(f"Ollama LLM initialization failed: {e}")
     else:
-        # In a real scenario, initialize your actual LLM
-        # For example, using ChatOpenAI or a custom rate-limited LLM
-        # from src.utils.rate_limiter import create_rate_limited_llm
-        # return create_rate_limited_llm(model_name="gpt-3.5-turbo")
-        return ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.7) # Default, replace as needed
+        # Use OpenAI with rate limiting for production
+        return create_rate_limited_llm(
+            model_name="gpt-3.5-turbo",
+            temperature=0.7,
+            max_tokens=2048
+        )
 
 class RAGAgents:
     def search_agent(self, llm, tools):

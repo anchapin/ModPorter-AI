@@ -27,13 +27,13 @@ from src.utils.embedding_generator import EmbeddingGenerator # Adjusted import p
 # Thus, `monkeypatch.setattr(generator.model.__class__, "encode", mock_encode_error)` should work.
 
 
-def test_embedding_generator_init_success(mock_sentence_transformer_fixture):
+def test_embedding_generator_init_success(mock_embedding_generator):
     """Test successful initialization of EmbeddingGenerator."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     assert generator.model is not None
     assert generator.model.model_name == 'sentence-transformers/all-MiniLM-L6-v2'
 
-def test_embedding_generator_init_failure(mock_sentence_transformer_fixture, caplog):
+def test_embedding_generator_init_failure(mock_embedding_generator, caplog):
     """Test failed initialization of EmbeddingGenerator if model loading fails."""
     generator = EmbeddingGenerator(model_name='invalid-model-name')
     assert generator.model is None
@@ -45,7 +45,7 @@ def test_embedding_generator_init_failure(mock_sentence_transformer_fixture, cap
     assert "Embedding model is not loaded." in caplog.text
 
 
-def test_generate_embeddings_success(mock_sentence_transformer_fixture):
+def test_generate_embeddings_success(mock_embedding_generator):
     """Test successful embedding generation."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     texts = ["hello world", "another sentence"]
@@ -55,47 +55,32 @@ def test_generate_embeddings_success(mock_sentence_transformer_fixture):
     assert embeddings.shape[0] == len(texts)
     assert embeddings.shape[1] == 384 # for all-MiniLM-L6-v2
 
-def test_generate_embeddings_empty_input(mock_sentence_transformer_fixture, caplog):
+def test_generate_embeddings_empty_input(mock_embedding_generator, caplog):
     """Test embedding generation with empty list of texts."""
     generator = EmbeddingGenerator()
     embeddings = generator.generate_embeddings([])
     assert embeddings == [] # As per current implementation
     assert "Input text_chunks is empty or not a list." in caplog.text
 
-def test_generate_embeddings_model_produces_invalid_output(mock_sentence_transformer_fixture, caplog, monkeypatch): # Added monkeypatch here
-    """Test scenario where model.encode doesn't return expected numpy arrays."""
-    # This test assumes generate_embeddings might try to process non-numpy outputs,
-    # which could lead to errors if not handled. Current mock returns list of strings.
-    # The actual SentenceTransformer.encode should be robust.
-    # This test is more about our wrapper's robustness if SentenceTransformer changes.
-    generator = EmbeddingGenerator(model_name='mock-model-invalid-output')
-    texts = ["test sentence"]
-    # The current generate_embeddings directly returns model.encode output.
-    # If model.encode returns something other than ndarray, our type hints are violated.
-    # The test here will check if an error is logged or handled if model behaves unexpectedly.
-    # For now, SentenceTransformer is trusted to return ndarray or throw error.
-    # Our wrapper currently doesn't add much error handling *around* model.encode() itself for output type.
-    # Let's verify it logs an error if encode fails.
-    # To do this, we need encode to raise an error.
-
-    # Re-patch encode to simulate an error during encoding
-    # Corrected the way monkeypatch is used for a method within a class already mocked by fixture
-    def mock_encode_error(self, sentences, convert_to_numpy=True):
+def test_generate_embeddings_model_produces_invalid_output(mock_embedding_generator, caplog, monkeypatch):
+    """Test scenario where model.encode throws an error."""
+    
+    def mock_encode_error(sentences, convert_to_numpy=True):
         raise ValueError("Simulated encoding error")
 
-    # generator.model is an instance of MockSentenceTransformer due to the fixture.
-    monkeypatch.setattr(generator.model.__class__, "encode", mock_encode_error) # Patching on the Mock class itself
-
-    # Re-initialize generator to ensure it picks up the newly patched MockSentenceTransformer's method
-    # if the model name matters for the mock's behavior being tested.
-    # In this specific case, the 'mock_encode_error' is general.
-    generator_with_erroring_model = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    embeddings = generator_with_erroring_model.generate_embeddings(texts)
+    # Create generator first
+    generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
+    
+    # Then patch the specific instance's encode method
+    monkeypatch.setattr(generator.model, "encode", mock_encode_error)
+    
+    texts = ["test sentence"]
+    embeddings = generator.generate_embeddings(texts)
     assert embeddings is None
     assert "Error generating embeddings: Simulated encoding error" in caplog.text
 
 
-def test_chunk_document_simple(mock_sentence_transformer_fixture):
+def test_chunk_document_simple(mock_embedding_generator):
     """Test basic document chunking."""
     generator = EmbeddingGenerator()
     document = "This is a test document. It has several sentences for chunking."
@@ -118,7 +103,7 @@ def test_chunk_document_simple(mock_sentence_transformer_fixture):
     assert chunks[0] == "This is a test document. It has"
     assert chunks[1] == "It has several sentences for chunking."
 
-def test_chunk_document_small_document(mock_sentence_transformer_fixture):
+def test_chunk_document_small_document(mock_embedding_generator):
     """Test chunking a document smaller than chunk_size."""
     generator = EmbeddingGenerator()
     document = "Short document."
@@ -126,14 +111,14 @@ def test_chunk_document_small_document(mock_sentence_transformer_fixture):
     assert len(chunks) == 1
     assert chunks[0] == "Short document."
 
-def test_chunk_document_empty_document(mock_sentence_transformer_fixture, caplog):
+def test_chunk_document_empty_document(mock_embedding_generator, caplog):
     """Test chunking an empty document."""
     generator = EmbeddingGenerator()
     chunks = generator.chunk_document("", chunk_size=100, overlap=20)
     assert chunks == []
     assert "Input document is empty or not a string." in caplog.text
 
-def test_chunk_document_no_overlap(mock_sentence_transformer_fixture):
+def test_chunk_document_no_overlap(mock_embedding_generator):
     """Test chunking with no overlap."""
     generator = EmbeddingGenerator()
     document = "one two three four five six seven eight nine ten" # 10 tokens
@@ -149,7 +134,7 @@ def test_chunk_document_no_overlap(mock_sentence_transformer_fixture):
     assert chunks[2] == "seven eight nine"
     assert chunks[3] == "ten"
 
-def test_chunk_document_large_overlap(mock_sentence_transformer_fixture, caplog):
+def test_chunk_document_large_overlap(mock_embedding_generator, caplog):
     """Test chunking where overlap >= chunk_size, which should be handled."""
     generator = EmbeddingGenerator()
     document = "word " * 20 # document is "word word ... word " (20 words then a space)
@@ -237,7 +222,7 @@ def test_chunk_document_large_overlap(mock_sentence_transformer_fixture, caplog)
     assert "Overlap 5 >= chunk_size 5. Using chunk_size - 1 as overlap." in caplog.text
 
 
-def test_chunk_document_exact_multiple(mock_sentence_transformer_fixture):
+def test_chunk_document_exact_multiple(mock_embedding_generator):
     """Test chunking when document length is an exact multiple of chunk_size - overlap (if overlap > 0) or chunk_size (if overlap == 0)."""
     generator = EmbeddingGenerator()
     # Case 1: overlap > 0. (chunk_size - overlap) is step.

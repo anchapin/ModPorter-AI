@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect } from 'vitest';
 import { PerformanceBenchmark } from './PerformanceBenchmark';
 
@@ -14,42 +14,59 @@ vi.mock('../../services/api', () => ({
 }));
 
 describe('PerformanceBenchmark', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Mock successful scenarios loading by default
+    const { performanceBenchmarkAPI } = await import('../../services/api');
+    performanceBenchmarkAPI.getScenarios.mockResolvedValue({ data: [] });
   });
 
-  test('renders without crashing', () => {
-    render(<PerformanceBenchmark />);
+  test('renders without crashing', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByText('Performance Benchmarking')).toBeInTheDocument();
   });
 
-  test('displays scenario selection dropdown', () => {
-    render(<PerformanceBenchmark />);
+  test('displays scenario selection dropdown', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByLabelText('Select Scenario:')).toBeInTheDocument();
   });
 
-  test('displays device type selection', () => {
-    render(<PerformanceBenchmark />);
+  test('displays device type selection', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByLabelText('Device Type:')).toBeInTheDocument();
   });
 
-  test('displays conversion ID input', () => {
-    render(<PerformanceBenchmark />);
+  test('displays conversion ID input', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByLabelText('Conversion ID (optional):')).toBeInTheDocument();
   });
 
-  test('displays run benchmark button', () => {
-    render(<PerformanceBenchmark />);
+  test('displays run benchmark button', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByRole('button', { name: 'Run Benchmark' })).toBeInTheDocument();
   });
 
-  test('displays create custom scenario button', () => {
-    render(<PerformanceBenchmark />);
+  test('displays create custom scenario button', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     expect(screen.getByRole('button', { name: 'Create Custom Scenario' })).toBeInTheDocument();
   });
 
-  test('run benchmark button is disabled when no scenario is selected', () => {
-    render(<PerformanceBenchmark />);
+  test('run benchmark button is disabled when no scenario is selected', async () => {
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
     const runButton = screen.getByRole('button', { name: 'Run Benchmark' });
     expect(runButton).toBeDisabled();
   });
@@ -72,7 +89,9 @@ describe('PerformanceBenchmark', () => {
     const { performanceBenchmarkAPI } = await import('../../services/api');
     (performanceBenchmarkAPI.getScenarios as any).mockImplementation(mockGetScenarios);
 
-    render(<PerformanceBenchmark />);
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
 
     await waitFor(() => {
       expect(mockGetScenarios).toHaveBeenCalledTimes(1);
@@ -85,7 +104,9 @@ describe('PerformanceBenchmark', () => {
     const { performanceBenchmarkAPI } = await import('../../services/api');
     (performanceBenchmarkAPI.getScenarios as any).mockImplementation(mockGetScenarios);
 
-    render(<PerformanceBenchmark />);
+    await act(async () => {
+      render(<PerformanceBenchmark />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load scenarios')).toBeInTheDocument();
