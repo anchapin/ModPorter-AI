@@ -1,0 +1,73 @@
+# Multi-stage Dockerfile optimized for Fly.io deployment
+# Builds all services in one container for simplified deployment
+
+# Frontend build stage
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json frontend/pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY frontend/ ./
+ARG VITE_API_URL=https://modporter.ai/api/v1
+ARG VITE_API_BASE_URL=https://modporter.ai
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN pnpm run build
+
+# Python dependencies build stage (consolidates all Python deps)
+FROM python:3.11-slim AS python-builder
+WORKDIR /tmp
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc g++ curl libmagic1 ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy all requirements files
+COPY backend/requirements.txt /tmp/backend-requirements.txt
+COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
+
+# Install all Python dependencies in one go to avoid conflicts
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r /tmp/backend-requirements.txt && \
+    pip install --no-cache-dir -r /tmp/ai-engine-requirements.txt
+
+# Production stage - Nginx + Python services
+FROM nginx:alpine
+WORKDIR /app
+
+# Install Python and dependencies
+RUN apk add --no-cache python3 py3-pip curl postgresql-client redis \
+    && ln -sf python3 /usr/bin/python
+
+# Copy Python packages from consolidated builder
+COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=python-builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY backend/ /app/backend/
+COPY ai-engine/ /app/ai-engine/
+COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx-fly.conf /etc/nginx/nginx.conf
+
+# Create non-root user and symlink app data directories to mounted volume
+RUN addgroup -g 1001 -S appuser && \
+    adduser -S appuser -u 1001 -G appuser && \
+    mkdir -p /data/cache /data/temp_uploads /data/conversion_outputs /data/logs /data/db && \
+    ln -s /data/cache /app/cache && \
+    ln -s /data/temp_uploads /app/temp_uploads && \
+    ln -s /data/conversion_outputs /app/conversion_outputs && \
+    ln -s /data/logs /app/logs && \
+    ln -s /data/db /app/data && \
+    chown -R appuser:appuser /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Copy startup script
+COPY scripts/fly-startup.sh /startup.sh
+RUN chmod +x /startup.sh
+
+EXPOSE 80 443 8000 8001
+
+CMD ["/startup.sh"]

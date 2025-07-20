@@ -152,208 +152,248 @@ def _execute_with_retry(func: Callable, rate_limiter: RateLimiter, rate_config: 
     raise last_exception
 
 
+class RateLimitedChatOpenAI:
+    """
+    A proper wrapper class for ChatOpenAI that implements rate limiting
+    """
+    def __init__(self, model_name: str = "gpt-4", **kwargs):
+        self.model_name = model_name
+        self.temperature = kwargs.get('temperature', 0.1)
+        self.max_tokens = kwargs.get('max_tokens', 4000)
+        
+        # Default rate limiting configuration
+        self.rate_config = RateLimitConfig(
+            requests_per_minute=50,  # Conservative limit
+            tokens_per_minute=40000,  # Conservative token limit
+            max_retries=3,
+            base_delay=1.0,
+            max_delay=60.0,
+            backoff_factor=2.0
+        )
+        
+        # Override with environment variables if available
+        if os.getenv("OPENAI_RPM_LIMIT"):
+            self.rate_config.requests_per_minute = int(os.getenv("OPENAI_RPM_LIMIT"))
+        if os.getenv("OPENAI_TPM_LIMIT"):
+            self.rate_config.tokens_per_minute = int(os.getenv("OPENAI_TPM_LIMIT"))
+        if os.getenv("OPENAI_MAX_RETRIES"):
+            self.rate_config.max_retries = int(os.getenv("OPENAI_MAX_RETRIES"))
+        
+        # Get API key from environment or kwargs
+        api_key = kwargs.get('openai_api_key') or os.getenv('OPENAI_API_KEY')
+        
+        # Create the underlying ChatOpenAI instance
+        try:
+            self._base_llm = ChatOpenAI(
+                model=model_name,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                openai_api_key=api_key
+            )
+        except Exception as e:
+            # No fallback - if OpenAI fails, raise the error
+            logger.error(f"OpenAI LLM initialization failed: {e}")
+            raise
+        
+        self.rate_limiter = RateLimiter(self.rate_config)
+    
+    def invoke(self, input_data, **kwargs):
+        """Implement the invoke method with rate limiting"""
+        return _execute_with_retry(
+            self._base_llm.invoke, 
+            self.rate_limiter, 
+            self.rate_config, 
+            input_data, 
+            **kwargs
+        )
+    
+    def generate(self, messages, **kwargs):
+        """Implement the generate method with rate limiting"""
+        return _execute_with_retry(
+            self._base_llm.generate,
+            self.rate_limiter,
+            self.rate_config,
+            messages,
+            **kwargs
+        )
+    
+    def predict(self, text, **kwargs):
+        """Implement the predict method with rate limiting"""
+        return _execute_with_retry(
+            self._base_llm.predict,
+            self.rate_limiter,
+            self.rate_config,
+            text,
+            **kwargs
+        )
+    
+    def __call__(self, *args, **kwargs):
+        """Make the instance callable"""
+        return self.invoke(*args, **kwargs)
+    
+    def __getattr__(self, name):
+        """Delegate any other attributes to the underlying LLM"""
+        return getattr(self._base_llm, name)
+
+
 def create_rate_limited_llm(model_name: str = "gpt-4", **kwargs):
     """
     Factory function to create a rate-limited LLM instance
     """
-    # Default rate limiting configuration
-    rate_config = RateLimitConfig(
-        requests_per_minute=50,  # Conservative limit
-        tokens_per_minute=40000,  # Conservative token limit
-        max_retries=3,
-        base_delay=1.0,
-        max_delay=60.0,
-        backoff_factor=2.0
-    )
-    
-    # Override with environment variables if available
-    if os.getenv("OPENAI_RPM_LIMIT"):
-        rate_config.requests_per_minute = int(os.getenv("OPENAI_RPM_LIMIT"))
-    if os.getenv("OPENAI_TPM_LIMIT"):
-        rate_config.tokens_per_minute = int(os.getenv("OPENAI_TPM_LIMIT"))
-    if os.getenv("OPENAI_MAX_RETRIES"):
-        rate_config.max_retries = int(os.getenv("OPENAI_MAX_RETRIES"))
-    
-    # Create a regular ChatOpenAI instance first
-    base_llm = ChatOpenAI(
-        model=model_name,
-        temperature=kwargs.get('temperature', 0.1),
-        max_tokens=kwargs.get('max_tokens', 4000)
-    )
-    
-    # Add rate limiting capabilities
-    rate_limiter = RateLimiter(rate_config)
-    
-    # Create wrapper methods - check what methods are available
-    # For newer langchain versions, use invoke method
-    if hasattr(base_llm, 'invoke'):
-        original_invoke = base_llm.invoke
-        def rate_limited_invoke(*args, **kwargs):
-            return _execute_with_retry(original_invoke, rate_limiter, rate_config, *args, **kwargs)
-        base_llm.invoke = rate_limited_invoke
-    else:
-        # For older versions, create invoke method from predict
-        if hasattr(base_llm, 'predict'):
-            original_predict = base_llm.predict
-            def rate_limited_invoke(*args, **kwargs):
-                # Convert invoke-style call to predict-style call
-                if args and hasattr(args[0], 'content'):
-                    # If it's a message object, extract content
-                    text = args[0].content
-                elif args and isinstance(args[0], str):
-                    text = args[0]
-                else:
-                    text = str(args[0]) if args else ""
-                return _execute_with_retry(original_predict, rate_limiter, rate_config, text, **kwargs)
-            base_llm.invoke = rate_limited_invoke
-    
-    if hasattr(base_llm, 'generate'):
-        original_generate = base_llm.generate
-        def rate_limited_generate(*args, **kwargs):
-            return _execute_with_retry(original_generate, rate_limiter, rate_config, *args, **kwargs)
-        base_llm.generate = rate_limited_generate
-    
-    if hasattr(base_llm, 'call'):
-        original_call = base_llm.call
-        def rate_limited_call(*args, **kwargs):
-            return _execute_with_retry(original_call, rate_limiter, rate_config, *args, **kwargs)
-        base_llm.call = rate_limited_call
-    
-    if hasattr(base_llm, 'predict'):
-        original_predict = base_llm.predict
-        def rate_limited_predict(*args, **kwargs):
-            return _execute_with_retry(original_predict, rate_limiter, rate_config, *args, **kwargs)
-        base_llm.predict = rate_limited_predict
-    
-    return base_llm
+    return RateLimitedChatOpenAI(model_name=model_name, **kwargs)
 
 
-def create_ollama_llm(model_name: str = "llama3.2", base_url: str = "http://localhost:11434", **kwargs):
+def create_ollama_llm(model_name: str = "llama3.2", base_url: str = None, **kwargs):
     """
     Factory function to create an Ollama LLM instance for local inference
     
     Args:
         model_name: Name of the Ollama model to use (e.g., "llama3.2", "ollama/llama3.2", "codellama", "mistral")
-        base_url: Base URL for Ollama server
+        base_url: Base URL for Ollama server (auto-detected if None)
         **kwargs: Additional parameters for the LLM
     
     Returns:
-        ChatOllama instance configured for Ollama
+        LiteLLM-compatible instance for CrewAI
     """
     try:
-        from langchain_ollama import ChatOllama
+        # Use LiteLLM for CrewAI compatibility
+        import litellm
         
-        # Remove ollama/ prefix if present since ChatOllama expects just the model name
+        # Auto-detect base URL if not provided
+        if base_url is None:
+            base_url = "http://ollama:11434" if os.getenv("DOCKER_ENVIRONMENT") else "http://localhost:11434"
+        
+        # Configure LiteLLM for Ollama
+        litellm.set_verbose = False
+        
+        # Remove ollama/ prefix if present since we'll add it for LiteLLM
         clean_model_name = model_name.replace("ollama/", "") if model_name.startswith("ollama/") else model_name
         
-        logger.info(f"Creating Ollama LLM with ChatOllama model: {clean_model_name}")
+        logger.info(f"Creating Ollama LLM with LiteLLM model: ollama/{clean_model_name}")
+        logger.info(f"Using Ollama base URL: {base_url}")
         
-        ollama_llm = ChatOllama(
-            model=clean_model_name,
+        # Create LiteLLM-compatible wrapper for Ollama
+        class LiteLLMOllamaWrapper:
+            def __init__(self, model_name, base_url, **kwargs):
+                self.model = f"ollama/{model_name}"
+                self.base_url = base_url
+                self.temperature = kwargs.get('temperature', 0.1)
+                self.max_tokens = kwargs.get('max_tokens', 1024)
+                self.request_timeout = kwargs.get('request_timeout', 300)
+                
+                # Set LiteLLM environment variables
+                os.environ["OLLAMA_API_BASE"] = base_url
+                
+            def invoke(self, messages, **kwargs):
+                """LangChain-compatible invoke method"""
+                try:
+                    # Convert messages to LiteLLM format
+                    if isinstance(messages, str):
+                        messages = [{"role": "user", "content": messages}]
+                    elif hasattr(messages, 'content'):
+                        messages = [{"role": "user", "content": messages.content}]
+                    elif isinstance(messages, list) and len(messages) > 0:
+                        if hasattr(messages[0], 'content'):
+                            messages = [{"role": msg.type if hasattr(msg, 'type') else "user", 
+                                       "content": msg.content} for msg in messages]
+                    
+                    # Make LiteLLM call
+                    response = litellm.completion(
+                        model=self.model,
+                        messages=messages,
+                        temperature=self.temperature,
+                        max_tokens=self.max_tokens,
+                        timeout=self.request_timeout,
+                        stream=False
+                    )
+                    
+                    # Create LangChain-compatible response
+                    from langchain_core.messages import AIMessage
+                    return AIMessage(
+                        content=response.choices[0].message.content,
+                        response_metadata={
+                            'model': self.model,
+                            'finish_reason': response.choices[0].finish_reason,
+                            'usage': response.usage.dict() if response.usage else {}
+                        }
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"LiteLLM Ollama call failed: {e}")
+                    raise e
+                    
+            def generate(self, messages, **kwargs):
+                """LangChain-compatible generate method"""
+                return self.invoke(messages, **kwargs)
+                
+            def predict(self, text, **kwargs):
+                """LangChain-compatible predict method"""
+                return self.invoke(text, **kwargs)
+                
+            def __call__(self, *args, **kwargs):
+                return self.invoke(*args, **kwargs)
+                
+            def enable_crew_mode(self):
+                """Enable CrewAI compatibility mode"""
+                logger.info(f"CrewAI mode enabled - model: {self.model}")
+                
+            def disable_crew_mode(self):
+                """Disable CrewAI compatibility mode"""
+                logger.info(f"CrewAI mode disabled - model: {self.model}")
+        
+        wrapper = LiteLLMOllamaWrapper(
+            model_name=clean_model_name,
             base_url=base_url,
-            temperature=kwargs.get('temperature', 0.1),
-            num_predict=kwargs.get('max_tokens', 4000),
-            repeat_penalty=kwargs.get('repeat_penalty', 1.1),
+            **kwargs
         )
         
-        # Test the connection
-        try:
-            logger.info("Attempting to invoke Ollama LLM for connection test...")
-            test_response = ollama_llm.invoke("Hello, are you working?")
-            logger.info(f"Ollama LLM test successful: {type(test_response)}")
-            
-            # After successful creation, modify the model property for CrewAI/LiteLLM compatibility
-            if not ollama_llm.model.startswith("ollama/"):
-                ollama_llm.model = f"ollama/{ollama_llm.model}"
-                logger.info(f"Modified model property for CrewAI compatibility: {ollama_llm.model}")
-            
-            return ollama_llm
-        except Exception as test_error:
-            logger.error(f"Ollama LLM test failed during invoke: {test_error!r}")
-            raise test_error
+        logger.info("LiteLLM Ollama wrapper created successfully")
+        return wrapper
             
     except ImportError:
-        logger.error("langchain-ollama not installed. Install with: pip install langchain-ollama")
-        raise ImportError("langchain-ollama package is required for Ollama support")
+        logger.error("litellm not installed. Install with: pip install litellm")
+        raise ImportError("litellm package is required for Ollama support with CrewAI")
     except Exception as e:
-        logger.error(f"Failed to create Ollama LLM: {e}")
+        logger.error(f"Failed to create LiteLLM Ollama wrapper: {e}")
         raise e
 
 
-class MockLLM:
-    """
-    A mock LLM that properly implements the LangChain interface
-    """
-    def __init__(self):
-        self.model_name = "mock-llm"
-        self.temperature = 0.1
-        self.max_tokens = 4000
-        
-    def invoke(self, input_text, **kwargs):
-        """Mock invoke method that returns a realistic response"""
-        # Return a mock response that looks like a real LangChain response
-        class MockResponse:
-            def __init__(self, content):
-                self.content = content
-                
-            def __str__(self):
-                return self.content
-                
-        return MockResponse("Mock analysis complete - Java mod structure identified with textures, models, and custom blocks.")
-        
-    def generate(self, messages, **kwargs):
-        """Mock generate method"""
-        class MockGeneration:
-            def __init__(self, content):
-                self.text = content
-                
-        class MockLLMResult:
-            def __init__(self, generations):
-                self.generations = [generations]
-                
-        return MockLLMResult([MockGeneration("Mock generation complete")])
-        
-    def predict(self, text, **kwargs):
-        """Mock predict method for older LangChain interfaces"""
-        return "Mock prediction complete"
-        
-    def call(self, inputs, **kwargs):
-        """Mock call method for older LangChain interfaces"""
-        return "Mock call complete"
-        
-    def __call__(self, *args, **kwargs):
-        """Make the mock callable"""
-        return self.invoke(*args, **kwargs)
 
 
 def get_fallback_llm():
     """
-    Get a fallback LLM for when OpenAI is unavailable
+    Get a fallback LLM for when OpenAI is unavailable - uses only Ollama
     """
     try:
-        # Try using Ollama as the only fallback
+        # Use Ollama as the only fallback
         from langchain_ollama import ChatOllama
         
         # Get Ollama model from environment or use default
         ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
-        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        # Auto-detect base URL based on environment
+        default_base_url = "http://ollama:11434" if os.getenv("DOCKER_ENVIRONMENT") else "http://localhost:11434"
+        ollama_base_url = os.getenv("OLLAMA_BASE_URL", default_base_url)
         
         logger.info(f"Attempting to use Ollama as fallback with model: {ollama_model}")
+        logger.info(f"Using Ollama base URL: {ollama_base_url}")
         
         ollama_llm = ChatOllama(
             model=ollama_model,
             base_url=ollama_base_url,
             temperature=0.1,
-            num_predict=4000,
+            num_predict=1024,  # Reduced for faster responses
             top_k=40,
             top_p=0.9,
             repeat_penalty=1.1,
+            request_timeout=300,  # 5 minute timeout
+            # Performance optimizations
+            num_ctx=4096,
+            num_batch=512,
+            num_thread=8,
+            streaming=False,
         )
         
-        # Test the connection
-        test_response = ollama_llm.invoke("Hello")
-        logger.info(f"Ollama fallback connection successful: {test_response}")
-        
+        logger.info("Ollama fallback LLM created successfully")
         return ollama_llm
         
     except Exception as e:
