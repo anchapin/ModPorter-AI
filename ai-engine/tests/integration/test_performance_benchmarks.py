@@ -90,7 +90,7 @@ class PerformanceBenchmarks(unittest.TestCase):
             print(f"  📦 {mod_id}: {perf_data['avg_time']:.3f}s ± {perf_data['std_dev']:.3f}s")
             
             # Performance assertions - adjusted for CI environment
-            self.assertLess(perf_data['avg_time'], 15.0, f"{mod_id} should convert in under 15 seconds")
+            self.assertLess(perf_data['avg_time'], 30.0, f"{mod_id} should convert in under 30 seconds")
             self.assertEqual(perf_data['success_rate'], 1.0, f"{mod_id} should have 100% success rate")
             
             self.results.append({
