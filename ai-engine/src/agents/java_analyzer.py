@@ -345,7 +345,7 @@ class JavaAnalyzerAgent:
         name = re.sub('_+', '_', name).strip('_')
         
         # Return clean name without adding '_block' suffix
-        return name if name else 'unknown_block'
+        return name if name else 'unknown'
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
