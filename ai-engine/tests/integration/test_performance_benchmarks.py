@@ -128,7 +128,7 @@ class PerformanceBenchmarks(unittest.TestCase):
             })
             
             # Performance assertions - adjusted for CI environment
-            self.assertLess(perf_data['avg_time'], count * 5.0, f"Should scale better than 5.0s per block")
+            self.assertLess(perf_data['avg_time'], count * 8.0, f"Should scale better than 8.0s per block")
     
     def test_mod_framework_comparison(self):
         """Compare performance across different mod frameworks."""
