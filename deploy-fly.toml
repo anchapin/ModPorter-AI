@@ -38,55 +38,8 @@ primary_region = "iad"  # US East (Ashburn) - change as needed
   hard_limit = 200
   soft_limit = 100
 
-# Frontend service
-[[services]]
-  protocol = "tcp"
-  internal_port = 80
-  processes = ["frontend"]
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-    force_https = true
-
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-  [services.concurrency]
-    type = "requests"
-    hard_limit = 200
-    soft_limit = 100
-
-# Backend API service  
-[[services]]
-  protocol = "tcp"
-  internal_port = 8000
-  processes = ["backend"]
-
-  [[services.ports]]
-    port = 8080
-    handlers = ["http"]
-
-  [services.concurrency]
-    type = "requests"
-    hard_limit = 100
-    soft_limit = 50
-
-# AI Engine service
-[[services]]
-  protocol = "tcp"
-  internal_port = 8001
-  processes = ["ai-engine"]
-
-  [[services.ports]]
-    port = 8001
-    handlers = ["http"]
-
-  [services.concurrency]
-    type = "requests"
-    hard_limit = 10
-    soft_limit = 5
+# Note: All services run in a single process behind Nginx
+# No separate service configurations needed for monolithic deployment
 
 # Machine specifications
 [machine]
@@ -115,6 +68,7 @@ primary_region = "iad"  # US East (Ashburn) - change as needed
 
 # Environment variables (secrets set via flyctl)
 # Run: flyctl secrets set KEY=value
+# Note: DATABASE_URL will be set automatically by 'flyctl postgres attach'
+# REDIS_URL will be set automatically by 'flyctl redis attach'
 [env_vars]
-  REDIS_URL = "redis://modporter-redis.internal:6379"
-  DATABASE_URL = "postgresql://postgres:password@modporter-postgres.internal:5432/modporter"
+  # Add any non-secret environment variables here

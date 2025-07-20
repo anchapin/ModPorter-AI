@@ -8,8 +8,8 @@ echo "🚀 Starting ModPorter AI on Fly.io..."
 # Start PostgreSQL if needed (or connect to external)
 if [ "$DATABASE_URL" = "" ]; then
     echo "⚠️  No DATABASE_URL set, using local SQLite"
-    export DATABASE_URL="sqlite:///app/data/modporter.db"
-    mkdir -p /app/data
+    export DATABASE_URL="sqlite:///data/db/modporter.db"
+    mkdir -p /data/db
 fi
 
 # Start Redis if needed (or connect to external)

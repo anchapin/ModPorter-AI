@@ -7,11 +7,10 @@ __pycache__/
 # Logs
 *.log
 logs/
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+
+# Environment files (all variations)
+.env*
+!.env.example
 
 # Build outputs
 build/
