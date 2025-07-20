@@ -34,20 +34,19 @@ scrape_configs:
     metrics_path: '/api/v1/metrics'
     scrape_interval: 10s
 
-  # Redis metrics
+  # Redis metrics (via redis-exporter)
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
 
-  # PostgreSQL metrics
+  # PostgreSQL metrics (via postgres-exporter)
   - job_name: 'postgres'
     static_configs:
-      - targets: ['postgres:5432']
-
-  # Nginx metrics
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['nginx-exporter:9113']
+      - targets: ['postgres-exporter:9187']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
 
   # Node exporter for system metrics
   - job_name: 'node-exporter'

@@ -223,7 +223,8 @@ class JavaAnalyzerAgent:
                         data = json.loads(content)
                         mod_id = data.get('id', 'unknown')
                         return f"{mod_id}:copper_block"
-                except:
+                except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                    logger.debug(f"Could not parse {metadata_file}: {e}")
                     continue
         
         # Default fallback
@@ -389,11 +390,13 @@ class JavaAnalyzerAgent:
                             for indicator in indicators:
                                 if indicator in content:
                                     return framework
-                    except:
+                    except (UnicodeDecodeError, KeyError) as e:
+                        logger.debug(f"Could not read {file_name}: {e}")
                         continue
             
             return 'unknown'
-        except:
+        except Exception as e:
+            logger.warning(f"Error detecting framework: {e}")
             return 'unknown'
     
     def _extract_mod_info_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> dict:
@@ -408,7 +411,8 @@ class JavaAnalyzerAgent:
                 mod_info["name"] = fabric_data.get("id", fabric_data.get("name", "unknown")).lower()
                 mod_info["version"] = fabric_data.get("version", "1.0.0")
                 return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse fabric.mod.json: {e}")
                 pass
         
         # Look for Quilt mod.json
@@ -419,7 +423,8 @@ class JavaAnalyzerAgent:
                 mod_info["name"] = quilt_data.get("quilt_loader", {}).get("id", "unknown").lower()
                 mod_info["version"] = quilt_data.get("quilt_loader", {}).get("version", "1.0.0")
                 return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse quilt.mod.json: {e}")
                 pass
         
         # Look for Forge mcmod.info
@@ -432,7 +437,8 @@ class JavaAnalyzerAgent:
                     mod_info["name"] = mod_data.get("modid", "unknown").lower()
                     mod_info["version"] = mod_data.get("version", "1.0.0")
                     return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse mcmod.info: {e}")
                 pass
         
         # Look for mods.toml
@@ -447,7 +453,8 @@ class JavaAnalyzerAgent:
                             mod_info["name"] = mod_id.lower()
                             break
                     return mod_info
-                except:
+                except Exception as e:
+                    logger.debug(f"Could not parse mods.toml: {e}")
                     pass
         
         return mod_info
@@ -533,11 +540,13 @@ class JavaAnalyzerAgent:
                                     for indicator in indicators:
                                         if indicator in content:
                                             return framework
-                            except:
+                            except (UnicodeDecodeError, KeyError) as e:
+                                logger.debug(f"Could not read {file_name}: {e}")
                                 continue
                     
                     return 'unknown'
-            except:
+            except Exception as e:
+                logger.warning(f"Error in framework detection tool: {e}")
                 return 'unknown'
 
         def _detect_framework_from_source(source_path: str) -> str:
@@ -561,11 +570,13 @@ class JavaAnalyzerAgent:
                                         for indicator in indicators:
                                             if indicator in content:
                                                 return framework
-                            except:
+                            except (UnicodeDecodeError, FileNotFoundError, PermissionError) as e:
+                                logger.debug(f"Could not read {file_path}: {e}")
                                 continue
                 
                 return 'unknown'
-            except:
+            except Exception as e:
+                logger.warning(f"Error in source framework detection: {e}")
                 return 'unknown'
 
         def _analyze_jar_structure(jar_path: str, analysis_depth: str) -> Dict:

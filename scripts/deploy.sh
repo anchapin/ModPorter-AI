@@ -55,7 +55,13 @@ docker-compose -f ${COMPOSE_FILE} pull
 
 # Build application images
 echo "🔨 Building application images..."
-docker-compose -f ${COMPOSE_FILE} build --no-cache
+if [ "${FORCE_REBUILD:-false}" = "true" ]; then
+    echo "🔄 Force rebuild requested, using --no-cache"
+    docker-compose -f ${COMPOSE_FILE} build --no-cache
+else
+    echo "🚀 Using cached layers for faster build"
+    docker-compose -f ${COMPOSE_FILE} build
+fi
 
 # Stop existing services gracefully
 echo "🛑 Stopping existing services..."
@@ -67,7 +73,33 @@ docker-compose -f ${COMPOSE_FILE} up -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to be healthy..."
-sleep 30
+echo "🔄 Checking service readiness..."
+TIMEOUT=300  # 5 minutes timeout
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+    READY=true
+    for service in backend ai-engine redis postgres; do
+        if ! docker-compose -f ${COMPOSE_FILE} ps ${service} | grep -q "healthy\|Up"; then
+            READY=false
+            break
+        fi
+    done
+    
+    if [ "$READY" = true ]; then
+        echo "✅ All services are ready!"
+        break
+    fi
+    
+    echo "⏳ Services still starting... (${ELAPSED}s/${TIMEOUT}s)"
+    sleep 10
+    ELAPSED=$((ELAPSED + 10))
+done
+
+if [ $ELAPSED -ge $TIMEOUT ]; then
+    echo "❌ Timeout waiting for services to be ready"
+    docker-compose -f ${COMPOSE_FILE} logs
+    exit 1
+fi
 
 # Check service health
 echo "🏥 Checking service health..."
@@ -120,7 +152,9 @@ fi
 
 # Setup log rotation
 echo "📝 Setting up log rotation..."
-cat > /etc/logrotate.d/modporter << EOF
+if [ "$EUID" -eq 0 ]; then
+    # Running as root, can write directly to /etc/logrotate.d/
+    cat > /etc/logrotate.d/modporter << EOF
 /var/lib/docker/volumes/modporter_*_logs/_data/*.log {
     daily
     missingok
@@ -133,6 +167,28 @@ cat > /etc/logrotate.d/modporter << EOF
     endscript
 }
 EOF
+    echo "✅ Log rotation configured in /etc/logrotate.d/modporter"
+else
+    # Not running as root, create in local directory and provide instructions
+    cat > ./logrotate-modporter << EOF
+/var/lib/docker/volumes/modporter_*_logs/_data/*.log {
+    daily
+    missingok
+    rotate 52
+    compress
+    notifempty
+    create 644 root root
+    postrotate
+        docker-compose -f ${COMPOSE_FILE} restart
+    endscript
+}
+EOF
+    echo "⚠️  Log rotation config created in ./logrotate-modporter"
+    echo "📝 To enable log rotation, run as root:"
+    echo "    sudo cp ./logrotate-modporter /etc/logrotate.d/modporter"
+    echo "    sudo chown root:root /etc/logrotate.d/modporter"
+    echo "    sudo chmod 644 /etc/logrotate.d/modporter"
+fi
 
 # Setup backup cron job
 echo "💾 Setting up backup cron job..."

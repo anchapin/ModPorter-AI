@@ -11,6 +11,7 @@ logs/
 # Environment files (all variations)
 .env*
 !.env.example
+!.env.*.example
 
 # Build outputs
 build/
