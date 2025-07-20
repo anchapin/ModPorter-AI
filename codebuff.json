@@ -1,0 +1,28 @@
+{
+  "description": "ModPorter AI - Minecraft mod conversion platform with AI-powered translation from Java to Bedrock",
+  "startupProcesses": [
+    {
+      "name": "docker-dev",
+      "command": "docker-compose -f docker-compose.dev.yml up --build",
+      "cwd": ".",
+      "stdoutFile": "logs/docker-dev.log"
+    }
+  ],
+  "fileChangeHooks": [
+    {
+      "name": "backend-lint",
+      "command": "cd backend && python -m ruff check .",
+      "filePattern": "backend/**/*.py"
+    },
+    {
+      "name": "frontend-lint", 
+      "command": "cd frontend && pnpm run lint",
+      "filePattern": "frontend/**/*.{ts,tsx,js,jsx}"
+    },
+    {
+      "name": "ai-engine-lint",
+      "command": "cd ai-engine && python -m ruff check .",
+      "filePattern": "ai-engine/**/*.py"
+    }
+  ]
+}
