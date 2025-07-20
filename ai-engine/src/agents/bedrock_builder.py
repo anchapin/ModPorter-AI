@@ -96,39 +96,32 @@ class BedrockBuilderAgent:
                 namespace = 'modporter'
                 block_name = registry_name
             
-            # Create temporary directory
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = Path(temp_dir)
-                
-                # Create BP and RP directories
-                bp_path = temp_path / "BP"
-                rp_path = temp_path / "RP"
-                bp_path.mkdir()
-                rp_path.mkdir()
-                
-                # Generate UUIDs for manifests
-                bp_uuid = str(uuid.uuid4())
-                rp_uuid = str(uuid.uuid4())
-                
-                # Build behavior pack
-                bp_files = self._build_bp_mvp(bp_path, namespace, block_name, bp_uuid)
-                result["bp_files"] = bp_files
-                
-                # Build resource pack with texture
-                rp_files = self._build_rp_mvp(rp_path, namespace, block_name, rp_uuid, texture_path, jar_path)
-                result["rp_files"] = rp_files
-                
-                # Package into .mcaddon
-                addon_name = f"{namespace}_{block_name}"
-                addon_path = Path(output_dir) / f"{addon_name}.mcaddon"
-                addon_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                self._package_addon_mvp(temp_path, addon_path)
-                
-                result["success"] = True
-                result["addon_path"] = str(addon_path)
-                
-                logger.info(f"MVP: Successfully created {addon_path}")
+            # Use provided output directory
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+            
+            # Create behavior_pack and resource_pack directories
+            bp_path = output_path / "behavior_pack"
+            rp_path = output_path / "resource_pack"
+            bp_path.mkdir(parents=True, exist_ok=True)
+            rp_path.mkdir(parents=True, exist_ok=True)
+            
+            # Generate UUIDs for manifests
+            bp_uuid = str(uuid.uuid4())
+            rp_uuid = str(uuid.uuid4())
+            
+            # Build behavior pack
+            bp_files = self._build_bp_mvp(bp_path, namespace, block_name, bp_uuid)
+            result["bp_files"] = bp_files
+            
+            # Build resource pack with texture
+            rp_files = self._build_rp_mvp(rp_path, namespace, block_name, rp_uuid, texture_path, jar_path)
+            result["rp_files"] = rp_files
+            
+            result["success"] = True
+            result["output_dir"] = str(output_path)
+            
+            logger.info(f"MVP: Successfully created pack directories in {output_path}")
                 
         except Exception as e:
             logger.error(f"MVP build failed: {e}")
@@ -235,12 +228,14 @@ class BedrockBuilderAgent:
                     texture_data = jar.read(texture_path)
                     
                     # Process with Pillow
-                    with tempfile.NamedTemporaryFile() as temp_file:
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                         temp_file.write(texture_data)
                         temp_file.flush()
-                        
+                        temp_file_path = temp_file.name
+                    
+                    try:
                         # Open and resize to 16x16 (Bedrock standard)
-                        with Image.open(temp_file.name) as img:
+                        with Image.open(temp_file_path) as img:
                             # Convert to RGBA for consistency
                             img = img.convert('RGBA')
                             
@@ -255,6 +250,20 @@ class BedrockBuilderAgent:
                             files_created.append(str(output_path))
                             
                             logger.info(f"Texture copied: {texture_path} -> {output_path}")
+                    except Exception as img_error:
+                        logger.warning(f"Failed to process texture {texture_path}: {img_error}")
+                        # Create a fallback 16x16 colored texture
+                        fallback_img = Image.new('RGBA', (16, 16), (139, 69, 19, 255))  # Brown color
+                        output_path = textures_dir / f"{block_name}.png"
+                        fallback_img.save(output_path, 'PNG')
+                        files_created.append(str(output_path))
+                        logger.info(f"Created fallback texture: {output_path}")
+                    finally:
+                        # Clean up temp file
+                        try:
+                            os.unlink(temp_file_path)
+                        except OSError:
+                            pass
                 else:
                     logger.warning(f"Texture not found in JAR: {texture_path}")
                     
