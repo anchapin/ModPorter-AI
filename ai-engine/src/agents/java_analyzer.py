@@ -147,7 +147,8 @@ class JavaAnalyzerAgent:
             result = {
                 'success': False,
                 'registry_name': 'unknown:block',
-                'texture_path': None
+                'texture_path': None,
+                'errors': []
             }
             
             with zipfile.ZipFile(jar_path, 'r') as jar:
@@ -163,14 +164,24 @@ class JavaAnalyzerAgent:
                 if registry_name:
                     result['registry_name'] = registry_name
                 
-                result['success'] = True
+                # Check if we have both texture and registry name for success
+                if texture_path and registry_name:
+                    result['success'] = True
+                else:
+                    if not texture_path:
+                        result['errors'].append("No block texture found in JAR file")
+                    if not registry_name or registry_name == 'unknown:block':
+                        result['errors'].append("Could not determine block registry name")
+                
                 return result
                 
         except Exception as e:
             logger.error(f"MVP analysis error: {e}")
             return {
                 'success': False,
-                'error': str(e)
+                'registry_name': 'unknown:block',
+                'texture_path': None,
+                'errors': [str(e)]
             }
     
     def _find_block_texture(self, file_list: list) -> str:
