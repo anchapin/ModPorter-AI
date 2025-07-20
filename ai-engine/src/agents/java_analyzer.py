@@ -329,10 +329,12 @@ class JavaAnalyzerAgent:
     
     def _class_name_to_registry_name(self, class_name: str) -> str:
         """Convert Java class name to registry name format."""
-        # Remove 'Block' suffix if present, but preserve the base name
+        # Remove 'Block' suffix or prefix if present
         name = class_name
         if name.endswith('Block'):
             name = name[:-5]  # Remove 'Block' from the end
+        elif name.startswith('Block'):
+            name = name[5:]  # Remove 'Block' from the start
         
         # Convert CamelCase to snake_case
         import re
@@ -341,9 +343,7 @@ class JavaAnalyzerAgent:
         # Clean up any double underscores or leading/trailing underscores
         name = re.sub('_+', '_', name).strip('_')
         
-        # Only add '_block' suffix if it doesn't already end with 'block'
-        if name and not name.endswith('_block'):
-            return f"{name}_block"
+        # Return clean name without adding '_block' suffix
         return name if name else 'unknown_block'
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
