@@ -5,7 +5,7 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 import logging
 import json
 import re
-from typing import List, Dict
+from typing import List, Dict, Union
 from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
@@ -434,7 +434,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_mod_structure_tool(mod_data: str) -> str:
+    def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str:
         """
         Analyze the overall structure of a Java mod.
         
@@ -729,8 +729,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    analysis_depth = data.get('analysis_depth', 'standard')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        analysis_depth = data.get('analysis_depth', 'standard')
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        analysis_depth = data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -738,8 +743,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                analysis_depth = data.get('analysis_depth', 'standard')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    analysis_depth = data.get('analysis_depth', 'standard')
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    analysis_depth = data.get('analysis_depth', 'standard')
             
             if not os.path.exists(mod_path):
                 return json.dumps({"success": False, "error": f"Mod file not found: {mod_path}"})
@@ -792,7 +802,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_mod_metadata_tool(mod_data: str) -> str:
+    def extract_mod_metadata_tool(mod_data: Union[str, Dict]) -> str:
         """
         Extract metadata from mod files.
         
@@ -861,7 +871,11 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                    else:
+                        mod_path = data.get('mod_path', '')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -869,7 +883,11 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
             
             metadata_results = {
                 'mod_info': {},
@@ -904,7 +922,7 @@ class JavaAnalyzerAgent:
 
     @tool 
     @staticmethod
-    def identify_features_tool(mod_data: str) -> str:
+    def identify_features_tool(mod_data: Union[str, Dict]) -> str:
         """
         Identify features in the mod.
         
@@ -1036,9 +1054,15 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    data.get('structure_analysis', {})
-                    extraction_mode = data.get('extraction_mode', 'comprehensive')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        data.get('structure_analysis', {})
+                        extraction_mode = data.get('extraction_mode', 'comprehensive')
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        data.get('structure_analysis', {})
+                        extraction_mode = data.get('extraction_mode', 'comprehensive')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -1047,9 +1071,15 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                data.get('structure_analysis', {})
-                extraction_mode = data.get('extraction_mode', 'comprehensive')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    data.get('structure_analysis', {})
+                    extraction_mode = data.get('extraction_mode', 'comprehensive')
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    data.get('structure_analysis', {})
+                    extraction_mode = data.get('extraction_mode', 'comprehensive')
             
             feature_results = {
                 'identified_features': [],
@@ -1093,7 +1123,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_dependencies_tool(mod_data: str) -> str:
+    def analyze_dependencies_tool(mod_data: Union[str, Dict]) -> str:
         """
         Analyze mod dependencies.
         
@@ -1130,8 +1160,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_metadata = data.get('mod_metadata', {})
-                    data.get('analysis_depth', 'standard')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_metadata = data['mod_data'] if isinstance(data['mod_data'], dict) else {}
+                        data.get('analysis_depth', 'standard')
+                    else:
+                        mod_metadata = data.get('mod_metadata', {})
+                        data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_metadata = {}
@@ -1139,8 +1174,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_metadata': {}}
-                mod_metadata = data.get('mod_metadata', {})
-                data.get('analysis_depth', 'standard')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_metadata = data['mod_data'] if isinstance(data['mod_data'], dict) else {}
+                    data.get('analysis_depth', 'standard')
+                else:
+                    mod_metadata = data.get('mod_metadata', {})
+                    data.get('analysis_depth', 'standard')
             
             dependency_results = {
                 'direct_dependencies': [],
@@ -1182,7 +1222,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_assets_tool(mod_data: str) -> str:
+    def extract_assets_tool(mod_data: Union[str, Dict]) -> str:
         """
         Extract assets from the mod.
         
@@ -1196,15 +1236,79 @@ class JavaAnalyzerAgent:
 
         def _extract_assets_from_jar(jar_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from JAR"""
-            return []  # Placeholder
+            assets = []
+            try:
+                with zipfile.ZipFile(jar_path, 'r') as jar:
+                    file_list = jar.namelist()
+                    
+                    for file_path in file_list:
+                        if '/textures/' in file_path and file_path.endswith(('.png', '.jpg', '.jpeg')):
+                            assets.append({
+                                'type': 'texture',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+                        elif '/models/' in file_path and file_path.endswith(('.json', '.obj')):
+                            assets.append({
+                                'type': 'model',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+                        elif '/sounds/' in file_path and file_path.endswith(('.ogg', '.wav')):
+                            assets.append({
+                                'type': 'sound',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+            except Exception as e:
+                logger.warning(f"Error extracting assets from JAR: {e}")
+            
+            return assets
     
         def _extract_assets_from_source(source_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from source"""
-            return []  # Placeholder
+            assets = []
+            try:
+                for root, dirs, files in os.walk(source_path):
+                    for file_name in files:
+                        file_path = os.path.join(root, file_name)
+                        rel_path = os.path.relpath(file_path, source_path)
+                        
+                        if '/textures/' in rel_path and file_name.endswith(('.png', '.jpg', '.jpeg')):
+                            assets.append({
+                                'type': 'texture',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+                        elif '/models/' in rel_path and file_name.endswith(('.json', '.obj')):
+                            assets.append({
+                                'type': 'model',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+                        elif '/sounds/' in rel_path and file_name.endswith(('.ogg', '.wav')):
+                            assets.append({
+                                'type': 'sound',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+            except Exception as e:
+                logger.warning(f"Error extracting assets from source: {e}")
+            
+            return assets
     
         def _determine_asset_type(asset: Dict) -> str:
             """Determine asset type"""
-            return "other_assets"  # Placeholder
+            asset_type = asset.get('type', 'unknown')
+            if asset_type in ['texture', 'model', 'sound']:
+                return f"{asset_type}s"  # Convert to plural form
+            return "other_assets"
     
         def _generate_asset_summary(assets: Dict) -> Dict:
             """Generate asset summary"""
@@ -1219,8 +1323,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -1229,8 +1338,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
             
             asset_results = {
                 'textures': [],

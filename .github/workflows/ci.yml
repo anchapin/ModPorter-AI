@@ -268,7 +268,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build and push optimized image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ${{ matrix.service }}
         file: ${{ matrix.service }}/Dockerfile.optimized
