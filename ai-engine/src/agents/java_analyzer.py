@@ -182,8 +182,8 @@ class JavaAnalyzerAgent:
                 return file_path
         return None
     
-    def _extract_registry_name_from_jar(self, jar, file_list: list) -> str:
-        """Extract block registry name from JAR metadata."""
+    def _extract_registry_name_from_jar_simple(self, jar, file_list: list) -> str:
+        """Extract block registry name from JAR metadata (simple version)."""
         # Look for mod metadata files
         for metadata_file in ['mcmod.info', 'fabric.mod.json', 'mods.toml']:
             if metadata_file in file_list:
@@ -205,49 +205,8 @@ class JavaAnalyzerAgent:
         
         # Default fallback
         return "unknown:copper_block"
-=======
-            Dict with registry_name and texture_path
-        """
-        logger.info(f"MVP analysis of JAR: {jar_path}")
-        
-        result = {
-            "registry_name": None,
-            "texture_path": None,
-            "success": False,
-            "errors": []
-        }
-        
-        try:
-            with zipfile.ZipFile(jar_path, 'r') as jar:
-                file_list = jar.namelist()
-                
-                # Find texture path first (simpler)
-                texture_path = self._find_block_texture(file_list)
-                if texture_path:
-                    result["texture_path"] = texture_path
-                    logger.info(f"Found texture: {texture_path}")
-                
-                # Find registry name from Java classes
-                registry_name = self._extract_registry_name_from_jar(jar, file_list)
-                if registry_name:
-                    result["registry_name"] = registry_name
-                    logger.info(f"Found registry name: {registry_name}")
-                
-                result["success"] = bool(registry_name and texture_path)
-                
-                if not result["success"]:
-                    if not registry_name:
-                        result["errors"].append("Could not extract registry name from JAR")
-                    if not texture_path:
-                        result["errors"].append("Could not find block texture in JAR")
-                
-        except Exception as e:
-            logger.error(f"Error in MVP JAR analysis: {e}")
-            result["errors"].append(f"JAR analysis failed: {str(e)}")
-        
-        return result
     
-    def _find_block_texture(self, file_list: list) -> str:
+    def _find_block_texture_extended(self, file_list: list) -> str:
         """
         Find the first block texture in the JAR.
         Looks for: assets/*/textures/block/*.png
