@@ -144,6 +144,7 @@ class JavaAnalyzerAgent:
             Dict with registry_name, texture_path, and success status
         """
         try:
+            logger.info(f"MVP analysis of JAR: {jar_path}")
             result = {
                 'success': False,
                 'registry_name': 'unknown:block',
@@ -158,11 +159,13 @@ class JavaAnalyzerAgent:
                 texture_path = self._find_block_texture(file_list)
                 if texture_path:
                     result['texture_path'] = texture_path
+                    logger.info(f"Found texture: {texture_path}")
                 
                 # Extract registry name
                 registry_name = self._extract_registry_name_from_jar(jar, file_list)
                 if registry_name:
                     result['registry_name'] = registry_name
+                    logger.info(f"Found registry name: {registry_name}")
                 
                 # Check if we have both texture and registry name for success
                 if texture_path and registry_name:

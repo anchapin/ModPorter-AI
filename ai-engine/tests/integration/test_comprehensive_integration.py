@@ -14,7 +14,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.cli.main import convert_mod
-from tests.fixtures.test_jar_generator import create_test_mod_suite
+from src.tests.fixtures.test_jar_generator import create_test_mod_suite
 
 
 class ComprehensiveIntegrationTests(unittest.TestCase):
