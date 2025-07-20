@@ -78,8 +78,16 @@ public class {block.title().replace('_', '')}Block extends Block {{
 """
                 jar.writestr(f"net/{mod_id}/blocks/{block.title().replace('_', '')}Block.java", block_class)
                 
-                # Block texture (minimal PNG)
-                png_data = b'\\x89PNG\\r\\n\\x1a\\n\\x00\\x00\\x00\\rIHDR\\x00\\x00\\x00\\x10\\x00\\x00\\x00\\x10\\x08\\x02\\x00\\x00\\x00\\x90\\x91h6\\x00\\x00\\x00\\x0bIDATx\\x9cc\\xf8\\x0f\\x00\\x00\\x01\\x00\\x01\\x00\\x18\\xdd\\x8d\\xb4\\x00\\x00\\x00\\x00IEND\\xaeB`\\x82'
+                # Block texture (create a proper 16x16 PNG with PIL for consistency)
+                import tempfile
+                from PIL import Image
+                import io
+                
+                # Create a 16x16 brown texture
+                test_img = Image.new('RGBA', (16, 16), (139, 69, 19, 255))
+                png_buffer = io.BytesIO()
+                test_img.save(png_buffer, 'PNG', optimize=False, compress_level=6)
+                png_data = png_buffer.getvalue()
                 jar.writestr(f"assets/{mod_id}/textures/block/{block}.png", png_data)
                 
                 # Block model
