@@ -167,9 +167,10 @@ class JavaAnalyzerAgent:
                 # Check if we have both texture and registry name for success
                 if texture_path and registry_name:
                     result['success'] = True
+                    logger.info(f"MVP analysis completed successfully for {jar_path}")
                 else:
                     if not texture_path:
-                        result['errors'].append("No block texture found in JAR file")
+                        result['errors'].append("Could not find block texture in JAR")
                     if not registry_name or registry_name == 'unknown:block':
                         result['errors'].append("Could not determine block registry name")
                 
@@ -181,7 +182,7 @@ class JavaAnalyzerAgent:
                 'success': False,
                 'registry_name': 'unknown:block',
                 'texture_path': None,
-                'errors': [str(e)]
+                'errors': [f"JAR analysis failed: {str(e)}"]
             }
     
     def _find_block_texture(self, file_list: list) -> str:
