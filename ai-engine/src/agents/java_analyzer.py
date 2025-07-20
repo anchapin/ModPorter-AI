@@ -155,6 +155,14 @@ class JavaAnalyzerAgent:
             with zipfile.ZipFile(jar_path, 'r') as jar:
                 file_list = jar.namelist()
                 
+                # Handle empty JARs gracefully
+                if not file_list:
+                    logger.warning(f"Empty JAR file: {jar_path}")
+                    result['success'] = True  # Consider empty JAR as successfully analyzed
+                    result['registry_name'] = 'empty:jar'
+                    result['errors'].append("JAR file is empty but analysis completed")
+                    return result
+                
                 # Find block texture
                 texture_path = self._find_block_texture(file_list)
                 if texture_path:
@@ -303,7 +311,7 @@ class JavaAnalyzerAgent:
         block_candidates = []
         
         for file_name in file_list:
-            if file_name.endswith('.class'):
+            if file_name.endswith('.class') or file_name.endswith('.java'):
                 # Extract class name from path
                 class_name = Path(file_name).stem
                 

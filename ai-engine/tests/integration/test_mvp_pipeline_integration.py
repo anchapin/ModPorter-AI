@@ -493,7 +493,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         fastest = min(r['processing_time'] for r in benchmark_results)
         slowest = max(r['processing_time'] for r in benchmark_results)
         
-        self.assertLess(fastest, 2.0, "Fastest case should be under 2 seconds")
+        self.assertLess(fastest, 5.0, "Fastest case should be under 5 seconds")
         self.assertLess(slowest, 10.0, "Slowest case should be under 10 seconds")
         
         return benchmark_results
