@@ -159,7 +159,7 @@ class JavaAnalyzerAgent:
                 if not file_list:
                     logger.warning(f"Empty JAR file: {jar_path}")
                     result['success'] = True  # Consider empty JAR as successfully analyzed
-                    result['registry_name'] = 'empty:jar'
+                    result['registry_name'] = 'unknown:copper_block'  # Default fallback for empty JARs
                     result['errors'].append("JAR file is empty but analysis completed")
                     return result
                 
@@ -329,8 +329,10 @@ class JavaAnalyzerAgent:
     
     def _class_name_to_registry_name(self, class_name: str) -> str:
         """Convert Java class name to registry name format."""
-        # Remove 'Block' suffix if present
-        name = class_name.replace('Block', '').replace('block', '')
+        # Remove 'Block' suffix if present, but preserve the base name
+        name = class_name
+        if name.endswith('Block'):
+            name = name[:-5]  # Remove 'Block' from the end
         
         # Convert CamelCase to snake_case
         import re
@@ -339,6 +341,9 @@ class JavaAnalyzerAgent:
         # Clean up any double underscores or leading/trailing underscores
         name = re.sub('_+', '_', name).strip('_')
         
+        # Only add '_block' suffix if it doesn't already end with 'block'
+        if name and not name.endswith('_block'):
+            return f"{name}_block"
         return name if name else 'unknown_block'
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:

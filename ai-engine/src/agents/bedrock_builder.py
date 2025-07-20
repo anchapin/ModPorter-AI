@@ -135,6 +135,9 @@ class BedrockBuilderAgent:
             result["success"] = True
             result["addon_path"] = str(addon_path)
             result["output_dir"] = str(output_path)
+            result["registry_name"] = registry_name
+            result["behavior_pack_dir"] = str(bp_path)
+            result["resource_pack_dir"] = str(rp_path)
             
             logger.info(f"MVP: Successfully created .mcaddon file: {addon_path}")
                 
