@@ -14,6 +14,7 @@ describe('QAReport', () => {
   afterEach(() => {
     vi.useRealTimers();
     mockConsoleLog.mockRestore();
+    overallTimeoutTimer = setTimeout(() => {}, 0); // Clear any pending timers
   });
 
   test('shows loading state initially', () => {

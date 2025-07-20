@@ -24,7 +24,7 @@ describe('MermaidDiagram', () => {
     
     render(<MermaidDiagram chart={chart} />);
     
-    const container = screen.getByText(chart).closest('div');
+    const container = screen.getByRole('img', { name: /flowchart/i }).closest('div');
     expect(container).toBeInTheDocument();
     expect(container).toHaveClass('mermaid-diagram');
   });
@@ -42,7 +42,7 @@ describe('MermaidDiagram', () => {
       />
     );
     
-    const container = screen.getByText(chart).closest('div');
+    const container = screen.getByRole('img', { name: chart }).closest('div');
     expect(container).toHaveId(customId);
     expect(container).toHaveClass('mermaid-diagram', customClass);
   });
@@ -229,7 +229,7 @@ describe('MermaidDiagram', () => {
     
     render(<MermaidDiagram chart={emptyChart} />);
     
-    const container = screen.getByRole('generic');
+    const container = screen.getByRole('img', { hidden: true });
     expect(container).toBeInTheDocument();
     expect(container).toHaveClass('mermaid-diagram');
     expect(mermaid.default.init).toHaveBeenCalled();
@@ -289,9 +289,8 @@ describe('MermaidDiagram', () => {
     const chart = 'graph TD\n  A-->B';
     
     // Should not throw error even if mermaid fails
-    expect(() => {
-      render(<MermaidDiagram chart={chart} />);
-    }).not.toThrow();
+    render(<MermaidDiagram chart={chart} />);
+    expect(screen.getByRole('img', { name: chart })).toBeInTheDocument();
     
     consoleSpy.mockRestore();
   });
