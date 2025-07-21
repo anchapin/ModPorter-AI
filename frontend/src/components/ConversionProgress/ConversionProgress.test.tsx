@@ -44,7 +44,10 @@ describe('ConversionProgress', () => {
     
     expect(screen.getByText('Conversion Progress (ID: test-job-123)')).toBeInTheDocument();
     expect(screen.getByText('running')).toBeInTheDocument();
-    expect(screen.getByText('25%')).toBeInTheDocument();
+    
+    // Progress percentage is now inside the progress bar
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveTextContent('25%');
   });
 
   test('displays progress bar with correct value', () => {
@@ -94,9 +97,10 @@ describe('ConversionProgress', () => {
     });
     
     // Should show either WebSocket or polling indicator
+    // In tests, WebSocket is mocked so it will typically show polling
     expect(
-      screen.getByText(/real-time updates active/i) || 
-      screen.getByText(/using fallback polling/i)
+      screen.queryByText('Real-time updates active') || 
+      screen.queryByText('Using fallback polling')
     ).toBeInTheDocument();
   });
 
@@ -148,7 +152,10 @@ describe('ConversionProgress', () => {
     // Should render without crashing and show default values
     expect(screen.getByText('Conversion Progress (ID: test-job-123)')).toBeInTheDocument();
     expect(screen.getByText('queued')).toBeInTheDocument(); // Default status
-    expect(screen.getByText('0%')).toBeInTheDocument(); // Default progress
+    
+    // Default progress is now inside the progress bar
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveTextContent('0%');
   });
 
   test('displays proper message with connection status', () => {
@@ -171,8 +178,9 @@ describe('ConversionProgress', () => {
       await vi.advanceTimersByTimeAsync(100);
     });
     
-    // Should round to whole number for display
-    expect(screen.getByText('34%')).toBeInTheDocument();
+    // Should round to whole number for display (inside progress bar)
+    const progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveTextContent('34%');
   });
 
   test('shows error section when status is failed', () => {
@@ -222,16 +230,28 @@ describe('ConversionProgress', () => {
 
   test('handles edge case progress values', async () => {
     // Test 0% progress
+    const { unmount: unmount1 } = render(<ConversionProgress jobId="test-job-123" progress={0} />);
     await act(async () => {
-      const { rerender } = render(<ConversionProgress jobId="test-job-123" progress={0} />);
       await vi.advanceTimersByTimeAsync(100);
-      expect(screen.getByText('0%')).toBeInTheDocument();
-      
-      // Test 100% progress
-      rerender(<ConversionProgress jobId="test-job-123" progress={100} />);
-      await vi.advanceTimersByTimeAsync(100);
-      expect(screen.getByText('100%')).toBeInTheDocument();
     });
+    
+    // Progress percentage is now inside the progress bar
+    let progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveTextContent('0%');
+    
+    // Clean up first render
+    unmount1();
+    
+    // Test 100% progress with new render
+    const { unmount: unmount2 } = render(<ConversionProgress jobId="test-job-456" progress={100} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    
+    progressBar = screen.getByRole('progressbar');
+    expect(progressBar).toHaveTextContent('100%');
+    
+    unmount2();
   });
 
   test('WebSocket constructor is called with correct URL when jobId provided', async () => {

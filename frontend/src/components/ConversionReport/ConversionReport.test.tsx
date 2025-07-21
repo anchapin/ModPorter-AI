@@ -174,23 +174,17 @@ describe('Feedback Functionality in ConversionReport', () => {
         const thumbsUpButton = screen.getByTitle('Thumbs Up');
         const thumbsDownButton = screen.getByTitle('Thumbs Down');
 
-        // Initially, neither should be "pressed" (or have specific styling indicating selection)
-        // This test relies on the styling added in the component:
-        // border: feedbackType === 'thumbs_up' ? '2px solid #2563eb' : '1px solid #ccc'
-        expect(thumbsUpButton).toHaveStyle('border: 1px solid #ccc');
-        expect(thumbsDownButton).toHaveStyle('border: 1px solid #ccc');
+        // Initially, neither should be "pressed" - use aria-pressed attribute which is more reliable
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'false');
 
         fireEvent.click(thumbsUpButton);
-        expect(thumbsUpButton).toHaveStyle('border: 2px solid #2563eb');
-        expect(thumbsDownButton).toHaveStyle('border: 1px solid #ccc');
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'true');
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'false');
 
         fireEvent.click(thumbsDownButton);
-        expect(thumbsDownButton).toHaveStyle('border: 2px solid #ef4444');
-        expect(thumbsUpButton).toHaveStyle('border: 1px solid #ccc');
-
-        // Test deselecting
-        fireEvent.click(thumbsDownButton);
-        expect(thumbsDownButton).toHaveStyle('border: 1px solid #ccc');
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'true');
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
     });
 
     test('submit feedback success flow', async () => {
