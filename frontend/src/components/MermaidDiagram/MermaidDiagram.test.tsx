@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect, afterEach } from 'vitest';
 import { MermaidDiagram } from './MermaidDiagram';
 
@@ -22,11 +22,11 @@ describe('MermaidDiagram', () => {
   test('renders diagram container with default props', () => {
     const chart = 'graph TD\n  A-->B';
     
-    render(<MermaidDiagram chart={chart} />);
+    const { container } = render(<MermaidDiagram chart={chart} />);
     
-    const container = screen.getByText(chart).closest('div');
-    expect(container).toBeInTheDocument();
-    expect(container).toHaveClass('mermaid-diagram');
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
+    expect(diagramContainer).toHaveClass('mermaid-diagram');
   });
 
   test('renders with custom id and className', () => {
@@ -34,7 +34,7 @@ describe('MermaidDiagram', () => {
     const customId = 'custom-mermaid-id';
     const customClass = 'custom-class';
     
-    render(
+    const { container } = render(
       <MermaidDiagram 
         chart={chart} 
         id={customId} 
@@ -42,18 +42,18 @@ describe('MermaidDiagram', () => {
       />
     );
     
-    const container = screen.getByText(chart).closest('div');
-    expect(container).toHaveId(customId);
-    expect(container).toHaveClass('mermaid-diagram', customClass);
+    const diagramContainer = container.querySelector(`#${customId}`);
+    expect(diagramContainer).toHaveAttribute('id', customId);
+    expect(diagramContainer).toHaveClass('mermaid-diagram', customClass);
   });
 
   test('generates random id when not provided', () => {
     const chart = 'graph TD\n  A-->B';
     
-    render(<MermaidDiagram chart={chart} />);
+    const { container } = render(<MermaidDiagram chart={chart} />);
     
-    const container = screen.getByText(chart).closest('div');
-    const id = container?.getAttribute('id');
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    const id = diagramContainer?.getAttribute('id');
     
     expect(id).toBeDefined();
     expect(id).toMatch(/^mermaid-[a-z0-9]{9}$/);
@@ -109,9 +109,10 @@ describe('MermaidDiagram', () => {
     const chart = 'graph TD\n  A-->B\n  B-->C';
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={chart} />);
+    const { container } = render(<MermaidDiagram chart={chart} />);
     
-    expect(screen.getByText(chart)).toBeInTheDocument();
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.init).toHaveBeenCalled();
   });
 
@@ -120,24 +121,26 @@ describe('MermaidDiagram', () => {
     const updatedChart = 'graph TD\n  A-->B\n  B-->C';
     const mermaid = await import('mermaid');
     
-    const { rerender } = render(<MermaidDiagram chart={initialChart} />);
+    const { rerender, container } = render(<MermaidDiagram chart={initialChart} />);
     
-    expect(screen.getByText(initialChart)).toBeInTheDocument();
+    let diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.init).toHaveBeenCalledTimes(1);
     
     rerender(<MermaidDiagram chart={updatedChart} />);
     
-    expect(screen.getByText(updatedChart)).toBeInTheDocument();
+    diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.init).toHaveBeenCalledTimes(2);
   });
 
   test('applies correct styling', () => {
     const chart = 'graph TD\n  A-->B';
     
-    render(<MermaidDiagram chart={chart} />);
+    const { container } = render(<MermaidDiagram chart={chart} />);
     
-    const container = screen.getByText(chart).closest('div');
-    expect(container).toHaveStyle({
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toHaveStyle({
       display: 'flex',
       justifyContent: 'center',
       padding: '1rem',
@@ -160,9 +163,10 @@ describe('MermaidDiagram', () => {
     `;
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={flowchartChart} />);
+    const { container } = render(<MermaidDiagram chart={flowchartChart} />);
     
-    expect(screen.getByText(flowchartChart)).toBeInTheDocument();
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.initialize).toHaveBeenCalledWith(
       expect.objectContaining({
         flowchart: {
@@ -184,9 +188,10 @@ describe('MermaidDiagram', () => {
     `;
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={sequenceChart} />);
+    const { container } = render(<MermaidDiagram chart={sequenceChart} />);
     
-    expect(screen.getByText(sequenceChart)).toBeInTheDocument();
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.initialize).toHaveBeenCalledWith(
       expect.objectContaining({
         sequence: expect.objectContaining({
@@ -209,9 +214,10 @@ describe('MermaidDiagram', () => {
     `;
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={ganttChart} />);
+    const { container } = render(<MermaidDiagram chart={ganttChart} />);
     
-    expect(screen.getByText(ganttChart)).toBeInTheDocument();
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.initialize).toHaveBeenCalledWith(
       expect.objectContaining({
         gantt: expect.objectContaining({
@@ -227,11 +233,11 @@ describe('MermaidDiagram', () => {
     const emptyChart = '';
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={emptyChart} />);
+    const { container } = render(<MermaidDiagram chart={emptyChart} />);
     
-    const container = screen.getByRole('generic');
-    expect(container).toBeInTheDocument();
-    expect(container).toHaveClass('mermaid-diagram');
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
+    expect(diagramContainer).toHaveClass('mermaid-diagram');
     expect(mermaid.default.init).toHaveBeenCalled();
   });
 
@@ -254,9 +260,10 @@ describe('MermaidDiagram', () => {
     `;
     const mermaid = await import('mermaid');
     
-    render(<MermaidDiagram chart={architectureChart} />);
+    const { container } = render(<MermaidDiagram chart={architectureChart} />);
     
-    expect(screen.getByText(architectureChart)).toBeInTheDocument();
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
     expect(mermaid.default.initialize).toHaveBeenCalled();
     expect(mermaid.default.init).toHaveBeenCalled();
   });
@@ -264,17 +271,17 @@ describe('MermaidDiagram', () => {
   test('maintains accessibility with proper container structure', () => {
     const chart = 'graph TD\n  A-->B';
     
-    render(<MermaidDiagram chart={chart} />);
+    const { container } = render(<MermaidDiagram chart={chart} />);
     
-    const container = screen.getByText(chart).closest('div');
+    const diagramContainer = container.querySelector('.mermaid-diagram');
     
     // Should have proper styling for accessibility
-    expect(container).toHaveStyle({
+    expect(diagramContainer).toHaveStyle({
       overflow: 'auto', // Ensures scrollability for large diagrams
     });
     
     // Should have identifiable class for styling and testing
-    expect(container).toHaveClass('mermaid-diagram');
+    expect(diagramContainer).toHaveClass('mermaid-diagram');
   });
 
   test('handles mermaid initialization errors gracefully', async () => {
@@ -288,10 +295,13 @@ describe('MermaidDiagram', () => {
     
     const chart = 'graph TD\n  A-->B';
     
-    // Should not throw error even if mermaid fails
-    expect(() => {
-      render(<MermaidDiagram chart={chart} />);
-    }).not.toThrow();
+    // Should not throw error even if mermaid fails - should handle gracefully
+    const { container } = render(<MermaidDiagram chart={chart} />);
+    const diagramContainer = container.querySelector('.mermaid-diagram');
+    expect(diagramContainer).toBeInTheDocument();
+    
+    // Should have logged the error
+    expect(consoleSpy).toHaveBeenCalledWith('Error initializing or rendering Mermaid diagram:', expect.any(Error));
     
     consoleSpy.mockRestore();
   });

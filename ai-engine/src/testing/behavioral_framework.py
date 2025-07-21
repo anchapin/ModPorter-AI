@@ -128,27 +128,35 @@ class TestScenarioExecutor:
                 self.state_tracker.update_state({"last_interaction": {"type": "right_click", "target": target, "timestamp": time.time()}})
                 if target == "custom_block_A":
                     self.state_tracker.update_state({"gui_opened_for_custom_block_A": "main_menu_mock_value"})
-                step_status = "SUCCESS"; step_message = f"Right-click on '{target}' (simulated)."
+                step_status = "SUCCESS"
+                step_message = f"Right-click on '{target}' (simulated)."
             elif action == "verify_state":
-                key_to_verify = step.get("key"); expected_value = step.get("expected")
+                key_to_verify = step.get("key")
+                expected_value = step.get("expected")
                 actual_value = self.state_tracker.query_state(key_to_verify)
                 self.logger.info(f"Verifying state: '{key_to_verify}', Expected: '{expected_value}', Actual: '{actual_value}'")
                 if str(actual_value) == str(expected_value):
-                    step_status = "SUCCESS"; step_message = f"State '{key_to_verify}' matches."
+                    step_status = "SUCCESS"
+                    step_message = f"State '{key_to_verify}' matches."
                 else:
-                    step_status = "FAILURE"; step_message = f"State '{key_to_verify}' mismatch. Expected: '{expected_value}', Actual: '{actual_value}'."
+                    step_status = "FAILURE"
+                    step_message = f"State '{key_to_verify}' mismatch. Expected: '{expected_value}', Actual: '{actual_value}'."
             elif action == "player_approach":
-                target = step.get('target', 'unknown_target'); distance = step.get('distance', 0)
+                target = step.get('target', 'unknown_target')
+                distance = step.get('distance', 0)
                 self.logger.info(f"Simulating action: {action} to target '{target}' at distance {distance}")
                 self.state_tracker.update_state({"player_proximity_event": {"target": target, "distance": distance, "timestamp": time.time()}})
-                step_status = "SUCCESS"; step_message = f"Player approached '{target}' (simulated)."
+                step_status = "SUCCESS"
+                step_message = f"Player approached '{target}' (simulated)."
             elif action == "verify_behavior":
                 expected_behavior_id = step.get('expected_behavior_id', 'unknown_behavior')
                 self.logger.info(f"Simulating behavior verification: {expected_behavior_id}")
                 if self.state_tracker.query_state("last_interaction") or self.state_tracker.query_state("player_proximity_event"):
-                    step_status = "SUCCESS"; step_message = f"Behavior '{expected_behavior_id}' verified (simulated)."
+                    step_status = "SUCCESS"
+                    step_message = f"Behavior '{expected_behavior_id}' verified (simulated)."
                 else:
-                    step_status = "FAILURE"; step_message = f"No recent event for behavior '{expected_behavior_id}' (simulated)."
+                    step_status = "FAILURE"
+                    step_message = f"No recent event for behavior '{expected_behavior_id}' (simulated)."
             else:
                 self.logger.warning(f"Unknown action: {action}")
                 step_status = "SKIPPED"
@@ -177,7 +185,8 @@ class BehavioralAnalyzer:
         behavior_type = expected_behavior.get("type")
 
         if behavior_type == "state_change":
-            key = expected_behavior.get("key"); expected_value = expected_behavior.get("expected_value")
+            key = expected_behavior.get("key")
+            expected_value = expected_behavior.get("expected_value")
             if key is None or expected_value is None:
                 analysis_result["details"] = "Invalid 'state_change': 'key' and 'expected_value' required."
                 return analysis_result
@@ -185,17 +194,22 @@ class BehavioralAnalyzer:
                 else actual_behavior_context.get(key)
             analysis_result["actual"] = {key: actual_value}
             if str(actual_value) == str(expected_value):
-                analysis_result["match"] = True; analysis_result["details"] = f"State '{key}' matches."
+                analysis_result["match"] = True
+                analysis_result["details"] = f"State '{key}' matches."
             else:
                 analysis_result["details"] = f"State '{key}' mismatch. Expected: '{expected_value}', Actual: '{actual_value}'."
 
         elif behavior_type == "event_sequence":
             expected_events = expected_behavior.get("events", [])
             analysis_result["actual"] = {"summary": "Event sequence analysis is placeholder."}
-            if not expected_events: analysis_result["details"] = "No events for 'event_sequence'."; return analysis_result
+            if not expected_events:
+                analysis_result["details"] = "No events for 'event_sequence'."
+                return analysis_result
             if self.state_tracker.get_state_history(): # Placeholder logic
-                analysis_result["match"] = True; analysis_result["details"] = f"Simulated match for events: {expected_events}."
-            else: analysis_result["details"] = f"Simulated mismatch for events: {expected_events} (no history)."
+                analysis_result["match"] = True
+                analysis_result["details"] = f"Simulated match for events: {expected_events}."
+            else:
+                analysis_result["details"] = f"Simulated mismatch for events: {expected_events} (no history)."
 
         elif behavior_type == "action_mapping":
             java_action_id = expected_behavior.get("java_action_id")
@@ -203,15 +217,19 @@ class BehavioralAnalyzer:
             if not java_action_id or not bedrock_outcome:
                 analysis_result["details"] = "Invalid 'action_mapping': requires 'java_action_id' and 'bedrock_equivalent_outcome'."
                 return analysis_result
-            key_to_check = bedrock_outcome.get("key"); expected_val = bedrock_outcome.get("expected_value")
+            key_to_check = bedrock_outcome.get("key")
+            expected_val = bedrock_outcome.get("expected_value")
             actual_val = self.state_tracker.query_state(key_to_check) if actual_behavior_context is None \
                 else actual_behavior_context.get(key_to_check)
             analysis_result["actual"] = {key_to_check: actual_val}
             if str(actual_val) == str(expected_val):
-                analysis_result["match"] = True; analysis_result["details"] = f"Action map '{java_action_id}': Bedrock outcome '{key_to_check}={expected_val}' matches."
-            else: analysis_result["details"] = f"Action map '{java_action_id}': Bedrock outcome '{key_to_check}' mismatch. Expected: '{expected_val}', Actual: '{actual_val}'."
+                analysis_result["match"] = True
+                analysis_result["details"] = f"Action map '{java_action_id}': Bedrock outcome '{key_to_check}={expected_val}' matches."
+            else:
+                analysis_result["details"] = f"Action map '{java_action_id}': Bedrock outcome '{key_to_check}' mismatch. Expected: '{expected_val}', Actual: '{actual_val}'."
 
-        else: analysis_result["details"] = f"Unknown behavior type: '{behavior_type}'."
+        else:
+            analysis_result["details"] = f"Unknown behavior type: '{behavior_type}'."
         self.logger.debug(f"Analysis for {scenario_name}: {analysis_result['details']}")
         return analysis_result
 

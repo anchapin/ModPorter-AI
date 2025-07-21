@@ -229,7 +229,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          {progressData.progress}%
+          {Math.round(progressData.progress)}%
         </div>
       </div>
 
