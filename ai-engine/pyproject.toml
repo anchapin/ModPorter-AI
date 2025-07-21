@@ -75,21 +75,25 @@ gpu-nvidia = [
     "accelerate>=0.24.0",
 ]
 
-# AMD GPU acceleration (ROCm for Linux, DirectML for Windows) 
+# AMD GPU acceleration (ROCm for Linux, DirectML for Windows)
+# Note: Install with specific index URL when needed:
+# pip install .[gpu-amd] -f https://download.pytorch.org/whl/rocm6.0 
 gpu-amd = [
-    "torch>=2.5.0 --index-url https://download.pytorch.org/whl/rocm6.0",
-    "torchvision>=0.20.0 --index-url https://download.pytorch.org/whl/rocm6.0",
-    "torchaudio>=2.5.0 --index-url https://download.pytorch.org/whl/rocm6.0",
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
     "onnxruntime-rocm>=1.19.0; sys_platform == 'linux'",
     "onnxruntime-directml>=1.19.0; sys_platform == 'win32'",
     "accelerate>=0.24.0",
 ]
 
-# CPU-only (explicit CPU versions)
+# CPU-only (explicit CPU versions)  
+# Note: Install with specific index URL when needed:
+# pip install .[cpu-only] -f https://download.pytorch.org/whl/cpu
 cpu-only = [
-    "torch>=2.5.0 --index-url https://download.pytorch.org/whl/cpu",
-    "torchvision>=0.20.0 --index-url https://download.pytorch.org/whl/cpu", 
-    "torchaudio>=2.5.0 --index-url https://download.pytorch.org/whl/cpu",
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
     "onnxruntime>=1.19.0",
 ]
 
