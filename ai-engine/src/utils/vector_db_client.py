@@ -4,6 +4,9 @@ import os
 import logging # Using standard logging
 from typing import Optional, List, Dict, Any # Added List, Dict, Any
 from src.models.document import Document
+from src.utils.embedding_generator import EmbeddingGenerator
+
+logger = logging.getLogger(__name__)
 
 class VectorDBClient:
     def __init__(self, base_url: str = None, timeout: float = 30.0):
