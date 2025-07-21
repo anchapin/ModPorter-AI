@@ -2,7 +2,7 @@
 # Builds all services in one container for simplified deployment
 
 # Frontend build stage
-FROM node:20-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json frontend/pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
@@ -14,7 +14,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm run build
 
 # Python dependencies build stage (consolidates all Python deps)
-FROM python:3.11-slim AS python-builder
+FROM python:3.13-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
