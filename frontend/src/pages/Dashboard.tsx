@@ -11,8 +11,8 @@ import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'convert' | 'history' | 'performance'>('convert');
-  const [recentConversions, setRecentConversions] = useState<number>(0);
-  const [successRate, setSuccessRate] = useState<number>(0);
+  // const [recentConversions, setRecentConversions] = useState<number>(0);
+  // const [successRate, setSuccessRate] = useState<number>(0);
   
   const { addConversion, updateConversion, setHistoryRef } = useConversionHistory();
 
@@ -33,7 +33,7 @@ export const Dashboard: React.FC = () => {
     });
 
     // Update stats
-    setRecentConversions(prev => prev + 1);
+    // setRecentConversions(prev => prev + 1);
   }, [addConversion]);
 
   // Handle conversion completion
@@ -47,16 +47,16 @@ export const Dashboard: React.FC = () => {
     });
 
     // Update success rate (simplified calculation)
-    setSuccessRate(prev => Math.min(prev + 5, 100));
+    // setSuccessRate(prev => Math.min(prev + 5, 100));
   }, [updateConversion]);
 
   // Update conversion file info
-  const updateConversionInfo = useCallback((jobId: string, filename: string, fileSize?: number) => {
-    updateConversion(jobId, {
-      original_filename: filename,
-      file_size: fileSize
-    });
-  }, [updateConversion]);
+  // const updateConversionInfo = useCallback((jobId: string, filename: string, fileSize?: number) => {
+  //   updateConversion(jobId, {
+  //     original_filename: filename,
+  //     file_size: fileSize
+  //   });
+  // }, [updateConversion]);
 
   const getDashboardStats = () => {
     const storedHistory = localStorage.getItem('modporter_conversion_history');

@@ -1,7 +1,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect, afterEach } from 'vitest';
 import ConversionProgress from './ConversionProgress';
-import * as api from '../../services/api';
+// import * as api from '../../services/api';
 
 // Mock the API service
 vi.mock('../../services/api', () => ({
@@ -19,7 +19,7 @@ global.WebSocket = vi.fn().mockImplementation(() => ({
 })) as any;
 
 describe('ConversionProgress', () => {
-  const mockGetConversionStatus = vi.mocked(api.getConversionStatus);
+  // const mockGetConversionStatus = vi.mocked(api.getConversionStatus);
   
   beforeEach(() => {
     vi.clearAllMocks();

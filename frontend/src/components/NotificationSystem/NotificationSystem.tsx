@@ -312,4 +312,5 @@ export const withNotificationErrorHandling = <P extends object>(
   return WrappedComponent;
 };
 
-export default NotificationSystem;
+// Export the main component
+export default NotificationProvider;

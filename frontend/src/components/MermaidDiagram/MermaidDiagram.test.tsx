@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect, afterEach } from 'vitest';
 import { MermaidDiagram } from './MermaidDiagram';
 
