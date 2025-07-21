@@ -39,11 +39,13 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Load conversion history from localStorage for now
   // In production, this would come from the backend API
+  const loadHistoryCallback = React.useCallback(() => loadHistory(), [loadHistory]);
+  
   useEffect(() => {
-    loadHistory();
-  }, []);
+    loadHistoryCallback();
+  }, [loadHistoryCallback]);
 
-  const loadHistory = async () => {
+  const loadHistory = React.useCallback(async () => {
     try {
       setLoading(true);
       
@@ -66,25 +68,25 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [maxItems]);
 
   // Add new conversion to history
-  const addToHistory = (item: ConversionHistoryItem) => {
+  const addToHistory = React.useCallback((item: ConversionHistoryItem) => {
     const updatedHistory = [item, ...history];
     setHistory(updatedHistory.slice(0, maxItems));
     
     // Save to localStorage
     localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
-  };
+  }, [history, maxItems]);
 
   // Update existing conversion status
-  const updateConversionStatus = (jobId: string, updates: Partial<ConversionHistoryItem>) => {
+  const updateConversionStatus = React.useCallback((jobId: string, updates: Partial<ConversionHistoryItem>) => {
     const updatedHistory = history.map(item => 
       item.job_id === jobId ? { ...item, ...updates } : item
     );
     setHistory(updatedHistory);
     localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
-  };
+  }, [history]);
 
   // Download conversion result
   const downloadConversion = async (jobId: string, filename: string) => {
@@ -190,7 +192,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     addToHistory,
     updateConversionStatus,
     loadHistory
-  }), [history]);
+  }), [addToHistory, updateConversionStatus, loadHistory]);
 
   if (loading) {
     return (
@@ -332,6 +334,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 };
 
 // Create a hook for managing conversion history from other components
+// eslint-disable-next-line react-refresh/only-export-components
 export const useConversionHistory = () => {
   const [historyRef, setHistoryRef] = useState<any>(null);
 

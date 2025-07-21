@@ -164,6 +164,7 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 // Hook version for functional components
+// eslint-disable-next-line react-refresh/only-export-components
 export const useErrorHandler = () => {
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -186,6 +187,7 @@ export const useErrorHandler = () => {
 };
 
 // Higher-order component for error handling
+// eslint-disable-next-line react-refresh/only-export-components
 export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
   fallback?: ReactNode

@@ -27,6 +27,7 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -71,7 +72,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
 
     return id;
-  }, [defaultDuration, maxNotifications]);
+  }, [defaultDuration, maxNotifications, removeNotification]);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
@@ -208,6 +209,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 };
 
 // Convenience hooks for common notification types
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSuccessNotification = () => {
   const { addNotification } = useNotifications();
   
@@ -221,6 +223,7 @@ export const useSuccessNotification = () => {
   }, [addNotification]);
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useErrorNotification = () => {
   const { addNotification } = useNotifications();
   
@@ -235,6 +238,7 @@ export const useErrorNotification = () => {
   }, [addNotification]);
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useWarningNotification = () => {
   const { addNotification } = useNotifications();
   
@@ -249,6 +253,7 @@ export const useWarningNotification = () => {
   }, [addNotification]);
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useInfoNotification = () => {
   const { addNotification } = useNotifications();
   
@@ -263,6 +268,7 @@ export const useInfoNotification = () => {
 };
 
 // HOC for automatic error handling
+// eslint-disable-next-line react-refresh/only-export-components
 export const withNotificationErrorHandling = <P extends object>(
   Component: React.ComponentType<P>
 ) => {
