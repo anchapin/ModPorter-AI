@@ -32,7 +32,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
 
   const filteredFeatures = features.filter(feature => {
     if (filterType === 'all') return true;
-    return feature.mapping_type.toLowerCase().includes(filterType.toLowerCase());
+    return feature.mapping_type === filterType;
   });
 
   const mappingTypes = [...new Set(features.map(f => f.mapping_type))];
@@ -68,6 +68,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
             {filteredFeatures.map((feature) => (
               <div 
                 key={feature.id}
+                data-testid={`feature-card-${feature.id}`}
                 style={{ 
                   border: '1px solid #e5e7eb', 
                   borderRadius: '8px', 
@@ -133,7 +134,10 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
                 </div>
                 
                 {selectedMapping === feature.id && (
-                  <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
+                  <div 
+                    data-testid={`details-${feature.id}`}
+                    style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '4px' }}
+                  >
                     <h4 style={{ margin: '0 0 8px 0', color: '#374151' }}>Mapping Details</h4>
                     <div style={{ fontSize: '14px', color: '#6b7280' }}>
                       <p><strong>ID:</strong> {feature.id}</p>
