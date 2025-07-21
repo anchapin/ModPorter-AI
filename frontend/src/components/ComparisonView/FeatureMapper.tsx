@@ -101,7 +101,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
                     ></span>
                     <span style={{ fontSize: '12px', color: '#6b7280' }}>
                       {getConfidenceLabel(feature.confidence_score)} 
-                      {feature.confidence_score && `(${(feature.confidence_score * 100).toFixed(0)}%)`}
+                      {feature.confidence_score && ` (${(feature.confidence_score * 100).toFixed(0)}%)`}
                     </span>
                   </div>
                 </div>

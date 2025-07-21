@@ -229,12 +229,12 @@ describe('FeatureMapper', () => {
 
     const filterSelect = screen.getByLabelText('Filter by type:');
     
-    // Filter by partial match
-    fireEvent.change(filterSelect, { target: { value: 'mapping' } });
+    // Filter by exact match (since the component filters by exact type)
+    fireEvent.change(filterSelect, { target: { value: 'direct_mapping' } });
 
-    // Should show features that contain 'mapping' in their type
+    // Should show only direct_mapping features
     expect(screen.getByText('CustomBlock.onRightClick()')).toBeInTheDocument(); // direct_mapping
-    expect(screen.getByText('EntityDamageEvent')).toBeInTheDocument(); // event_mapping
+    expect(screen.queryByText('EntityDamageEvent')).not.toBeInTheDocument(); // event_mapping
     expect(screen.queryByText('ItemStack.getItemMeta()')).not.toBeInTheDocument(); // api_adaptation
   });
 

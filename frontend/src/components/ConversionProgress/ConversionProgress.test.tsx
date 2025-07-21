@@ -165,9 +165,10 @@ describe('ConversionProgress', () => {
     expect(messageElement).toBeInTheDocument();
   });
 
-  test('formats progress percentage correctly', () => {
-    act(() => {
+  test('formats progress percentage correctly', async () => {
+    await act(async () => {
       render(<ConversionProgress jobId="test-job-123" progress={33.7} />);
+      await vi.advanceTimersByTimeAsync(100);
     });
     
     // Should round to whole number for display
@@ -219,21 +220,24 @@ describe('ConversionProgress', () => {
     expect(screen.getByText('Estimated Time Remaining:')).toBeInTheDocument();
   });
 
-  test('handles edge case progress values', () => {
+  test('handles edge case progress values', async () => {
     // Test 0% progress
-    act(() => {
+    await act(async () => {
       const { rerender } = render(<ConversionProgress jobId="test-job-123" progress={0} />);
+      await vi.advanceTimersByTimeAsync(100);
       expect(screen.getByText('0%')).toBeInTheDocument();
       
       // Test 100% progress
       rerender(<ConversionProgress jobId="test-job-123" progress={100} />);
+      await vi.advanceTimersByTimeAsync(100);
       expect(screen.getByText('100%')).toBeInTheDocument();
     });
   });
 
-  test('WebSocket constructor is called with correct URL when jobId provided', () => {
-    act(() => {
+  test('WebSocket constructor is called with correct URL when jobId provided', async () => {
+    await act(async () => {
       render(<ConversionProgress jobId="test-job-123" />);
+      await vi.advanceTimersByTimeAsync(100);
     });
     
     // Verify WebSocket was instantiated (even though it's mocked)
