@@ -32,3 +32,6 @@ dist.bak.old/
 
 *storybook.log
 storybook-static
+
+# Test coverage reports
+coverage/
