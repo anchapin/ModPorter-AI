@@ -44,8 +44,8 @@ python -c "import onnxruntime; print(onnxruntime.get_available_providers())"
 ### Linux (ROCm - Best Performance)
 ```bash
 # Install ROCm drivers first
-wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
-echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
+wget -qO- https://repo.radeon.com/rocm/rocm.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rocm-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/rocm-archive-keyring.gpg] https://repo.radeon.com/rocm/apt/6.0/ jammy main" | sudo tee /etc/apt/sources.list.d/rocm.list
 sudo apt update && sudo apt install rocm-dkms rocm-libs
 
 # Install AI Engine with ROCm

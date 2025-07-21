@@ -28,23 +28,26 @@ RUN wget -q -O /tmp/rocm.gpg.key https://repo.radeon.com/rocm/rocm.gpg.key && \
     apt-get install -y --no-install-recommends --allow-downgrades rocm-libs hip-runtime-amd && \
     rm -rf /var/lib/apt/lists/* /tmp/rocm.gpg.key
 
-# Copy requirements
-COPY requirements.txt /app/
-COPY requirements-dev.txt /app/
+# Copy project files needed for installation
+COPY pyproject.toml README.md /app/
+COPY src /app/src
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
-RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm6.0
+# Install all dependencies, including AMD GPU extras, from pyproject.toml
+RUN pip install --no-cache-dir .[gpu-amd]
 
 ARG INSTALL_DEV_DEPS=false
 RUN if [ "$INSTALL_DEV_DEPS" = "true" ] ; then \
-    pip install --no-cache-dir -r /app/requirements-dev.txt ; \
+    pip install --no-cache-dir .[dev] ; \
 fi
 
 FROM ubuntu:22.04
 
 WORKDIR /app
+
+# Copy ROCm repo config from builder to install runtime libs
+COPY --from=builder /usr/share/keyrings/rocm-archive-keyring.gpg /usr/share/keyrings/rocm-archive-keyring.gpg
+COPY --from=builder /etc/apt/sources.list.d/rocm.list /etc/apt/sources.list.d/rocm.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11 \
@@ -52,6 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     curl \
     ffmpeg \
+    rocm-libs hip-runtime-amd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the entire virtual environment from builder

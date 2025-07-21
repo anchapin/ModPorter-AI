@@ -12,18 +12,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /tmp/
-COPY requirements-dev.txt /tmp/
+# Create virtual environment to ensure consistent package locations
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY pyproject.toml README.md /tmp/
+COPY src /tmp/src
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
-# Install CPU-only PyTorch
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Install all dependencies, including CPU-only extras, from pyproject.toml
+RUN pip install --no-cache-dir .[cpu-only]
 
 ARG INSTALL_DEV_DEPS=false
 RUN if [ "$INSTALL_DEV_DEPS" = "true" ] ; then \
-    pip install --no-cache-dir -r /tmp/requirements-dev.txt ; \
+    pip install --no-cache-dir .[dev] ; \
 fi
 
 # Runtime stage
@@ -36,9 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the entire virtual environment from builder for consistency
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 RUN adduser --disabled-password --gecos '' appuser
 RUN mkdir -p /tmp/models /tmp/cache
