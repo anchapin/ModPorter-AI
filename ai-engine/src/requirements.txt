@@ -1,0 +1,40 @@
+# Core FastAPI for AI Engine API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# AI Framework
+crewai>=0.140.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-ollama>=0.1.0
+openai>=1.0.0
+sentence-transformers
+
+# Vector Database (pin version for embedchain compatibility)
+chromadb<1.1.0
+
+# Data Processing
+numpy
+python-dotenv
+
+# Java analysis
+javalang>=0.13.0
+
+# File processing
+Pillow
+pydub
+
+# HTTP Client
+httpx
+
+# Redis for job management
+redis>=4.5.0
+
+# Configuration Management
+pydantic>=2.0.0
+pydantic-settings
+
+# Monitoring
+prometheus-client
+psutil

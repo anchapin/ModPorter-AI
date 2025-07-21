@@ -148,4 +148,13 @@ export const handlers = [
     conversionState.progress = 0; // Or whatever progress it was at
     return HttpResponse.json(null, { status: 204 }); // No content
   }),
+
+  // Handles a POST /api/v1/feedback request
+  http.post(`${API_BASE_URL}/feedback`, async ({ request }) => {
+    const body = await request.json();
+    if (!body.feedback_type) {
+      return HttpResponse.json({ detail: 'Feedback type is required' }, { status: 400 });
+    }
+    return HttpResponse.json({ message: 'Feedback submitted successfully' }, { status: 200 });
+  }),
 ];

@@ -1,0 +1,2 @@
+# Development dependencies are included in requirements.txt
+# This file exists for compatibility with CI workflows

@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Test coverage reports
+coverage/
+
+# Temporary build directories
+dist.bak/
+dist.bak.old/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
