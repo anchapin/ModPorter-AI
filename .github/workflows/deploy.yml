@@ -108,12 +108,12 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        pnpm test
+        pnpm test:ci
 
     - name: Frontend type check
       run: |
         cd frontend
-        pnpm type-check
+        npx tsc --noEmit
 
     - name: Frontend lint check
       run: |
