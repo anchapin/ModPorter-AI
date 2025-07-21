@@ -70,7 +70,7 @@ jobs:
           ghcr.io/anchapin/modporter-ai/node-base:latest \
           sh -c "
             pnpm run lint
-            if pnpm run test:coverage; then
+            if pnpm run test:ci; then
               echo 'Frontend tests passed'
             else
               echo 'Frontend tests failed, but continuing...'
