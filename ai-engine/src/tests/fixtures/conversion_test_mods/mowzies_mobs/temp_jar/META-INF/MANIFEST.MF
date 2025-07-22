@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Main-Class: com.example.mowziesmobs.MowziesMobsMod
+Specification-Title: Mowzies Mobs
+Specification-Version: 1.0
+Implementation-Title: Mowzies Mobs
+Implementation-Version: 1.0

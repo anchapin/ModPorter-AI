@@ -17,6 +17,7 @@ setup(
         'pytest-asyncio',
         'pytest-cov',
         'pytest-mock',
+        'pytest-timeout',
         'langchain-openai',
         'langchain-anthropic',
         'ruff',

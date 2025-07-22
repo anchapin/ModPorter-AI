@@ -54,7 +54,7 @@ class PerformanceMetricsCollector:
                 if cpu_times_system is None:
                     time.sleep(0.1)
                     cpu_times_system = psutil.cpu_times_percent(interval=0.1)
-            except Exception as e:
+            except Exception:
                 # print(f"Could not retrieve system CPU times percent: {e}")
                 pass # Continue with what we have, or defaults
 

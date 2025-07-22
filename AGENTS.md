@@ -1,12 +1,12 @@
 # AGENTS.md - ModPorter AI Development Guide
 
 ## Build/Test Commands
-- `npm run dev` - Start all services (frontend:3000, backend:8000)
-- `npm run test` - Run all tests (frontend + backend)
-- `cd frontend && npm test -- ConversionUpload.test.tsx` - Single frontend test
+- `pnpm run dev` - Start all services (frontend:3000, backend:8000)
+- `pnpm run test` - Run all tests (frontend + backend)
+- `cd frontend && pnpm test -- ConversionUpload.test.tsx` - Single frontend test
 - `cd backend && source .venv/bin/activate && python -m pytest tests/test_main.py::test_specific_function` - Single backend test
-- `npm run lint` - Lint all services (ESLint + Ruff)
-- `npm run format` - Format code (Prettier + Black)
+- `pnpm run lint` - Lint all services (ESLint + Ruff)
+- `pnpm run format` - Format code (Prettier + Black)
 
 ## Code Style
 - **Frontend**: TypeScript + React, Prettier (2 spaces, single quotes), ESLint strict mode

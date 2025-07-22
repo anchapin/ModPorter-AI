@@ -3,11 +3,17 @@
  * Implements PRD API specifications
  */
 
-import { ConversionRequest, ConversionResponse, ConversionStatus, UploadResponse, InitiateConversionParams } from '../types/api';
+import {
+  ConversionResponse,
+  ConversionStatus,
+  UploadResponse,
+  InitiateConversionParams,
+  FeedbackCreatePayload, // Added
+  FeedbackResponse // Added
+} from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.MODE === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -43,8 +49,8 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   // Step 1: Upload the file
   const uploadResponse = await uploadFile(params.file);
 
-  // Step 2: Construct the ConversionRequest payload for the backend
-  const backendRequestPayload: ConversionRequest = {
+  // Step 2: Construct the backend request payload
+  const backendRequestPayload = {
     file_id: uploadResponse.file_id,
     original_filename: uploadResponse.original_filename,
     target_version: params.target_version, // Pass through target_version
@@ -83,14 +89,26 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
   return response.json();
 };
 
-export const downloadResult = async (jobId: string): Promise<Blob> => {
+export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filename: string }> => {
   const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
   
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
   }
 
-  return response.blob();
+  // Extract filename from Content-Disposition header
+  const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+  let filename = `converted-mod-${jobId}.mcaddon`; // fallback to UUID-based name
+  
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    if (fileNameMatch) {
+      filename = fileNameMatch[1];
+    }
+  }
+
+  const blob = await response.blob();
+  return { blob, filename };
 };
 
 export const cancelJob = async (jobId: string): Promise<void> => {
@@ -211,4 +229,21 @@ export const performanceBenchmarkAPI = {
     
     return { data: await response.json() };
   },
+};
+
+export const submitFeedback = async (payload: FeedbackCreatePayload): Promise<FeedbackResponse> => {
+  const response = await fetch(`${API_BASE_URL}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Unknown error submitting feedback' }));
+    throw new ApiError(errorData.detail || 'Failed to submit feedback', response.status);
+  }
+
+  return response.json();
 };

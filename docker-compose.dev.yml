@@ -1,35 +1,180 @@
-version: '3.8'
 
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    command: npm run dev
+    command: pnpm run dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8080/api/v1
       - VITE_HMR_PORT=3001
     ports:
-      - "3000:3000"
+      - "3002:3000" # Map host port 3002 to container port 3000
       - "3001:3001"  # Vite HMR port
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - modporter-network
+    restart: unless-stopped
 
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8080:8000"
     volumes:
       - ./backend:/app
+      - conversion-cache:/app/cache
+      - temp-uploads:/app/temp_uploads
+      - conversion-outputs:/app/conversion_outputs
     environment:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
       - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
+      - REDIS_URL=redis://redis:6379
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3002,http://localhost:8080
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   ai-engine:
-    command: python -m src.main --debug
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
     volumes:
       - ./ai-engine:/app
+      - model-cache:/app/models
+      - temp-uploads:/app/temp_uploads
+      - conversion-outputs:/app/conversion_outputs
     environment:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
+      - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PORT=8001
+      - TMPDIR=/tmp
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - USE_MOCK_LLM=false
+      - USE_OLLAMA=true
+      - OLLAMA_MODEL=llama3.2
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=modporter
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  ollama-data:
+    driver: local
+  conversion-cache:
+    driver: local
+  model-cache:
+    driver: local
+  temp-uploads:
+    driver: local
+  conversion-outputs:
+    driver: local
+
+networks:
+  modporter-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,12 +1,45 @@
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom'; // For extended matchers like .toBeInTheDocument()
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { ConversionReport } from './ConversionReport';
-import { InteractiveReport } from '../../types/api';
-// Import mock data from stories. Note: Path might need adjustment if stories are elsewhere.
-// Assuming stories export named objects like 'successfulConversion' which have an 'args' property.
+import type { InteractiveReport, FeedbackResponse } from '../../types/api';
 import { Successful, Failed } from './ConversionReport.stories';
+import { vi } from 'vitest';
+import * as api from '../../services/api';
+
+// Mock the API service
+vi.mock('../../services/api', () => ({
+  submitFeedback: vi.fn(),
+}));
+
+// Cast the mock for type safety in tests
+const mockedSubmitFeedback = vi.mocked(api.submitFeedback);
+
+
+const minimalMockReport: InteractiveReport = {
+  job_id: 'test-job-123',
+  report_generation_date: new Date().toISOString(),
+  summary: {
+    overall_success_rate: 100,
+    total_features: 10,
+    converted_features: 10,
+    partially_converted_features: 0,
+    failed_features: 0,
+    assumptions_applied_count: 1,
+    processing_time_seconds: 60,
+    download_url: '/download/test-job-123.zip',
+    quick_statistics: {},
+  },
+  converted_mods: [],
+  failed_mods: [],
+};
+
 
 describe('ConversionReport Component', () => {
+    beforeEach(() => {
+        // Clear mock call history before each test
+        vi.clearAllMocks();
+    });
+
     test('renders successful conversion report correctly', () => {
         // Storybook's 'Successful' export is an object with an 'args' property
         // which contains 'conversionResult'.
@@ -117,5 +150,116 @@ describe('ConversionReport Component', () => {
         if (mockReportWithDevLog.developer_log.code_translation_details && mockReportWithDevLog.developer_log.code_translation_details.length > 0) {
             expect(screen.getByText(new RegExp(mockReportWithDevLog.developer_log.code_translation_details[0].message, "i"))).toBeInTheDocument();
         }
+    });
+});
+
+describe('Feedback Functionality in ConversionReport', () => {
+    beforeEach(() => {
+        // Clear mock call history before each test
+        vi.clearAllMocks();
+    });
+    test('renders feedback UI elements', () => {
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        expect(screen.getByText('Rate this Conversion')).toBeInTheDocument();
+        expect(screen.getByTitle('Thumbs Up')).toBeInTheDocument(); // Using title for emoji buttons
+        expect(screen.getByTitle('Thumbs Down')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Optional: Add any comments here...')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Submit Feedback' })).toBeInTheDocument();
+    });
+
+    test('feedback type selection works correctly', () => {
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        const thumbsUpButton = screen.getByTitle('Thumbs Up');
+        const thumbsDownButton = screen.getByTitle('Thumbs Down');
+
+        // Initially, neither should be "pressed" - use aria-pressed attribute which is more reliable
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'false');
+
+        fireEvent.click(thumbsUpButton);
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'true');
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'false');
+
+        fireEvent.click(thumbsDownButton);
+        expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'true');
+        expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    test('submit feedback success flow', async () => {
+        const mockSuccessResponse: FeedbackResponse = {
+            id: 'fb-1', job_id: minimalMockReport.job_id, feedback_type: 'thumbs_up', comment: 'Great!', created_at: new Date().toISOString()
+        };
+        mockedSubmitFeedback.mockResolvedValueOnce(mockSuccessResponse);
+
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        fireEvent.click(screen.getByTitle('Thumbs Up'));
+        fireEvent.change(screen.getByPlaceholderText('Optional: Add any comments here...'), {
+            target: { value: 'Great!' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Submit Feedback' }));
+
+        expect(mockedSubmitFeedback).toHaveBeenCalledWith({
+            job_id: minimalMockReport.job_id,
+            feedback_type: 'thumbs_up',
+            comment: 'Great!',
+            user_id: undefined, // Assuming user_id is not implemented/passed yet
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText('Thank you for your feedback!')).toBeInTheDocument();
+        });
+        // Check if form is hidden or submit button is gone
+        expect(screen.queryByRole('button', { name: 'Submit Feedback' })).not.toBeInTheDocument();
+        expect(screen.queryByTitle('Thumbs Up')).not.toBeInTheDocument();
+    });
+
+    test('submit feedback API error flow', async () => {
+        const errorMessage = 'Failed to submit feedback due to server issue';
+        mockedSubmitFeedback.mockRejectedValueOnce(new Error(errorMessage));
+
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        fireEvent.click(screen.getByTitle('Thumbs Down'));
+        fireEvent.click(screen.getByRole('button', { name: 'Submit Feedback' }));
+
+        expect(mockedSubmitFeedback).toHaveBeenCalledTimes(1);
+
+        await waitFor(() => {
+            expect(screen.getByText(`Error: ${errorMessage}`)).toBeInTheDocument();
+        });
+        // Form should still be visible for retry
+        expect(screen.getByRole('button', { name: 'Submit Feedback' })).toBeInTheDocument();
+    });
+
+    test('submit button is disabled until a feedback type is selected', () => {
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        const submitButton = screen.getByRole('button', { name: 'Submit Feedback' });
+        expect(submitButton).toBeDisabled();
+
+        fireEvent.click(screen.getByTitle('Thumbs Up'));
+        expect(submitButton).not.toBeDisabled();
+
+        fireEvent.click(screen.getByTitle('Thumbs Up')); // Deselect
+        expect(submitButton).toBeDisabled();
+
+        fireEvent.click(screen.getByTitle('Thumbs Down'));
+        expect(submitButton).not.toBeDisabled();
+    });
+
+    test('submit feedback fails if no feedback type is selected (client-side check)', () => {
+        render(<ConversionReport conversionResult={minimalMockReport} />);
+
+        const submitButton = screen.getByRole('button', { name: 'Submit Feedback' });
+        
+        // The submit button should be disabled when no feedback type is selected
+        expect(submitButton).toBeDisabled();
+        
+        // Since the button is disabled, clicking it should not call the API
+        fireEvent.click(submitButton);
+        expect(mockedSubmitFeedback).not.toHaveBeenCalled();
     });
 });

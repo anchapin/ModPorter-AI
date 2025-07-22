@@ -1,0 +1,28 @@
+{
+  "evaluation_queries": [
+    {
+      "id": "RAG_Q001",
+      "query": "What are the latest advancements in AI?",
+      "expected_document_snippet": "Some relevant document text 1",
+      "expected_response_keywords": ["AI", "advancements", "latest"]
+    },
+    {
+      "id": "RAG_Q002",
+      "query": "Tell me about photosynthesis.",
+      "expected_document_snippet": "Some relevant document text 2",
+      "expected_response_keywords": ["photosynthesis", "chlorophyll", "light", "energy"]
+    },
+    {
+      "id": "RAG_Q003",
+      "query": "What is the capital of France?",
+      "expected_document_snippet": "Paris is the capital of France",
+      "expected_response_keywords": ["Paris", "capital", "France"]
+    },
+    {
+      "id": "RAG_Q004",
+      "query": "Explain black holes.",
+      "expected_document_snippet": "region of spacetime where gravity is so strong",
+      "expected_response_keywords": ["black hole", "gravity", "spacetime", "singularity"]
+    }
+  ]
+}

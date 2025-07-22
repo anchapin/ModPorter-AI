@@ -8,16 +8,25 @@ An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition
 Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
 
 ## 🚀 Features
-- **One-Click Conversion**: Upload Java mods and get Bedrock add-ons automatically
-- **AI-Powered Analysis**: Multi-agent system using CrewAI for intelligent conversion
-- **Smart Assumptions**: Handles incompatible features with logical workarounds
-- **Detailed Reporting**: Transparent conversion reports showing all changes
-- **Validation System**: AI-powered comparison between original and converted mods
+
+### MVP Focus: Simple Block Conversion
+The current development priority is the Minimum Viable Product (MVP), which focuses on the core functionality of converting a simple Java block mod into a functional Bedrock add-on.
+
+-   **Java Block to Bedrock JSON**: Convert a `.jar` file containing a single block into a `.mcaddon` package.
+-   **Texture Preservation**: Ensure the block's appearance is correctly transferred.
+-   **Basic Functionality**: The converted block can be placed and destroyed in-game.
+
+### Future (Post-MVP) Features
+-   **Complex Conversions**: Support for items, entities, and complex logic.
+-   **AI-Powered Analysis**: A multi-agent system for advanced conversion strategies.
+-   **Detailed Reporting**: Transparent reports detailing the conversion process.
+-   **Validation System**: AI-powered comparison between the original and converted mods.
 
 ## 🛠️ Tech Stack
 - **Frontend**: React + TypeScript + Vite (served by Nginx in production)
 - **Backend**: Python + FastAPI + SQLAlchemy + AsyncPG
 - **AI Engine**: CrewAI + LangChain + FastAPI
+- **RAG System**: Vector database (pgvector) + Embedding generation + Knowledge retrieval
 - **Database**: PostgreSQL 15 with async support
 - **Cache**: Redis 7 for sessions and caching
 - **Infrastructure**: Docker + Docker Compose
@@ -49,10 +58,10 @@ cp .env.example .env
 # Edit .env and add your API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 
 # Start all services using Docker Hub images
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker compose.prod.yml up -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 **Service URLs:**
@@ -76,16 +85,16 @@ cp .env.example .env
 # Edit .env and add your API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 #### Development Environment
 ```bash
 # Use development configuration with hot reload
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml up -d
 ```
 
 #### Service URLs
@@ -98,19 +107,19 @@ docker-compose -f docker-compose.dev.yml up -d
 #### Docker Management
 ```bash
 # View logs
-docker-compose logs [service-name]
+docker compose logs [service-name]
 
 # Restart a service
-docker-compose restart [service-name]
+docker compose restart [service-name]
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # Rebuild and restart
-docker-compose up -d --build
+docker compose up -d --build
 
 # View real-time logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Option 3: Manual Local Setup (Advanced)
@@ -118,8 +127,8 @@ docker-compose logs -f
 If you prefer to run services locally without Docker:
 
 1. Clone the repository
-2. Install dependencies: `npm run install-all`
-3. Start development servers: `npm run dev`
+2. Install dependencies: `pnpm run install-all`
+3. Start development servers: `pnpm run dev`
 4. Open http://localhost:3000
 
 ## 🐳 Docker Architecture
@@ -172,13 +181,13 @@ curl http://localhost:8080/api/v1/health
 curl http://localhost:8001/api/v1/health
 
 # Check all service status
-docker-compose ps
+docker compose ps
 ```
 
 ### Troubleshooting
 
 #### Common Issues
-1. **Port conflicts**: If ports 3000, 8080, 8001, 5433, or 6379 are in use, modify `docker-compose.yml`
+1. **Port conflicts**: If ports 3000, 8080, 8001, 5433, or 6379 are in use, modify `docker compose.yml`
 2. **Missing API keys**: Ensure `.env` file contains valid `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
 3. **Database connection**: Check PostgreSQL container logs if backend fails to start
 4. **WebSocket connection errors**: Ensure frontend environment variables are correctly set during Docker build
@@ -187,38 +196,61 @@ docker-compose ps
 #### Debugging Commands
 ```bash
 # View service logs
-docker-compose logs backend
-docker-compose logs ai-engine
-docker-compose logs frontend
+docker compose logs backend
+docker compose logs ai-engine
+docker compose logs frontend
 
 # Access container shell
-docker-compose exec backend bash
-docker-compose exec ai-engine bash
+docker compose exec backend bash
+docker compose exec ai-engine bash
 
 # Reset everything
-docker-compose down -v
-docker-compose up -d --build
+docker compose down -v
+docker compose up -d --build
 ```
 
 ## Testing
 
 ### Run all tests
-npm run test
+pnpm run test
 
 ### Backend tests
 cd backend && pytest
 
 ### Frontend tests
-cd frontend && npm test
+cd frontend && pnpm test
+
+### AI Engine and RAG tests
+```bash
+# Run AI Engine tests
+cd ai-engine && pytest
+
+# Run RAG-specific tests
+cd ai-engine && pytest tests/test_rag_crew.py
+cd ai-engine && pytest tests/unit/test_embedding_generator.py
+cd ai-engine && pytest tests/integration/test_rag_workflow.py
+
+# Run RAG evaluation suite
+cd ai-engine && python src/testing/rag_evaluator.py
+```
+
+### MVP Conversion Test
+To run the end-to-end MVP test case, which validates the complete pipeline from a Java block to Bedrock files, use the following command:
+
+```bash
+pytest tests/test_mvp_conversion.py
+```
 
 ### Docker Tests
 ```bash
 # Run tests in Docker containers
-docker-compose exec backend pytest
-docker-compose exec frontend npm test
+docker compose exec backend pytest
+docker compose exec frontend pnpm test
+docker compose exec ai-engine pytest
 
 # Run tests with coverage
-docker-compose exec backend pytest --cov=src
+docker compose exec backend pytest --cov=src
+docker compose exec ai-engine pytest --cov=src
 ```
 
 ## 🔧 Development Workflows
@@ -229,7 +261,7 @@ docker-compose exec backend pytest --cov=src
 Use the development Docker Compose configuration for active development:
 ```bash
 # Start with hot reload enabled
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker compose.dev.yml up -d
 
 # This enables:
 # - Frontend: Vite dev server with hot reload
@@ -240,24 +272,24 @@ docker-compose -f docker-compose.dev.yml up -d
 #### Making Changes
 ```bash
 # After code changes, rebuild specific service
-docker-compose build backend
-docker-compose up -d backend
+docker compose build backend
+docker compose up -d backend
 
 # Or rebuild all services
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 #### Database Management
 ```bash
 # Access PostgreSQL directly
-docker-compose exec postgres psql -U postgres -d modporter
+docker compose exec postgres psql -U postgres -d modporter
 
 # Run database migrations
-docker-compose exec backend alembic upgrade head
+docker compose exec backend alembic upgrade head
 
 # Reset database (⚠️ destroys data)
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 #### Performance Monitoring
@@ -266,10 +298,10 @@ docker-compose up -d
 docker stats
 
 # View container resource limits
-docker-compose config
+docker compose config
 
 # Check service dependencies
-docker-compose ps --services
+docker compose ps --services
 ```
 
 ## 📖 Documentation
@@ -307,3 +339,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ by the ModPorter AI team
+

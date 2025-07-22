@@ -89,7 +89,8 @@ class PerformanceAnalyzer:
         cpu_metrics = bedrock_metrics_set.get('cpu', {})
         process_cpu_usage = cpu_metrics.get('process_cpu_usage_percent', 0.0)
         # Ensure process_cpu_usage is treated as float for comparison
-        if not isinstance(process_cpu_usage, (int,float)): process_cpu_usage = 0.0
+        if not isinstance(process_cpu_usage, (int,float)):
+            process_cpu_usage = 0.0
 
         if process_cpu_usage > self.thresholds['max_cpu_usage_percent']:
             issue = f"High CPU Usage: Bedrock process CPU at {process_cpu_usage:.2f}% exceeds threshold of {self.thresholds['max_cpu_usage_percent']}%."
@@ -99,7 +100,8 @@ class PerformanceAnalyzer:
         # Memory Analysis
         memory_metrics = bedrock_metrics_set.get('memory', {})
         process_rss_mb = memory_metrics.get('process_rss_mb', 0.0)
-        if not isinstance(process_rss_mb, (int,float)): process_rss_mb = 0.0
+        if not isinstance(process_rss_mb, (int,float)):
+            process_rss_mb = 0.0
 
         if process_rss_mb > self.thresholds['max_memory_rss_mb_process']:
             issue = f"High Memory Usage (RSS): Bedrock process RSS at {process_rss_mb:.2f}MB exceeds threshold of {self.thresholds['max_memory_rss_mb_process']}MB."
@@ -124,7 +126,7 @@ class PerformanceAnalyzer:
 
         # The actual key for load time in metrics from collect_all_metrics_for_target is feature_name + "_time_seconds"
         # e.g. "bedrock_load_time_seconds"
-        feature_name_prefix = bedrock_metrics_set.get('load_time',{}).get('feature_name_prefix_for_analyzer', target_name_for_load_key + "_load") # a bit meta
+        bedrock_metrics_set.get('load_time',{}).get('feature_name_prefix_for_analyzer', target_name_for_load_key + "_load") # a bit meta
         # A more direct approach: assume keys like "bedrock_load_some_feature_time_seconds"
         # For this example, let's assume a general load time metric if one exists, or use a specific one if known.
         # This part is tricky as load_time keys are dynamic.

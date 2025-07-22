@@ -1,10 +1,12 @@
 from typing import Optional, List
+from uuid import UUID as PyUUID # For type hinting UUID objects
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.db import models
-import uuid
+from src.db.models import DocumentEmbedding
 
 
 async def create_job(
@@ -104,3 +106,163 @@ async def upsert_progress(
     prog = result.scalar_one()
     await session.commit()
     return prog
+
+
+async def create_feedback(
+    session: AsyncSession,
+    job_id: uuid.UUID,
+    feedback_type: str,
+    user_id: Optional[str] = None,
+    comment: Optional[str] = None,
+) -> models.ConversionFeedback:
+    """
+    Creates a new feedback entry for a given conversion job.
+    """
+    feedback = models.ConversionFeedback(
+        job_id=job_id,
+        feedback_type=feedback_type,
+        user_id=user_id,
+        comment=comment,
+    )
+    session.add(feedback)
+    await session.commit()
+    await session.refresh(feedback)
+    return feedback
+
+
+async def get_feedback_by_job_id(
+    session: AsyncSession, job_id: uuid.UUID
+) -> List[models.ConversionFeedback]:
+    """
+    Retrieves all feedback entries for a specific conversion job.
+    """
+    stmt = select(models.ConversionFeedback).where(
+        models.ConversionFeedback.job_id == job_id
+    ).order_by(models.ConversionFeedback.created_at.desc())
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def list_all_feedback(
+    session: AsyncSession, skip: int = 0, limit: int = 100
+) -> List[models.ConversionFeedback]:
+    """
+    Retrieves all feedback entries with pagination.
+    """
+    stmt = (
+        select(models.ConversionFeedback)
+        .order_by(models.ConversionFeedback.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+# CRUD operations for DocumentEmbedding
+
+async def create_document_embedding(
+    db: AsyncSession,
+    embedding: list[float],
+    document_source: str,
+    content_hash: str,
+) -> DocumentEmbedding:
+    """
+    Creates a new document embedding record.
+    """
+    db_embedding = DocumentEmbedding(
+        embedding=embedding,
+        document_source=document_source,
+        content_hash=content_hash,
+    )
+    db.add(db_embedding)
+    await db.commit()
+    await db.refresh(db_embedding)
+    return db_embedding
+
+
+async def get_document_embedding_by_hash(
+    db: AsyncSession, content_hash: str
+) -> Optional[DocumentEmbedding]:
+    """
+    Retrieves a document embedding by its content hash.
+    """
+    stmt = select(DocumentEmbedding).where(
+        DocumentEmbedding.content_hash == content_hash
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_document_embedding_by_id(
+    db: AsyncSession, embedding_id: PyUUID
+) -> Optional[DocumentEmbedding]:
+    """
+    Retrieves a document embedding by its ID.
+    """
+    stmt = select(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def update_document_embedding(
+    db: AsyncSession,
+    embedding_id: PyUUID,
+    embedding: Optional[list[float]] = None,
+    document_source: Optional[str] = None,
+) -> Optional[DocumentEmbedding]:
+    """
+    Updates a document embedding. Only provided fields are updated.
+    """
+    db_embedding = await get_document_embedding_by_id(db, embedding_id)
+    if db_embedding is None:
+        return None
+
+    update_data = {}
+    if embedding is not None:
+        update_data["embedding"] = embedding
+    if document_source is not None:
+        update_data["document_source"] = document_source
+
+    if not update_data: # Nothing to update
+        return db_embedding
+
+    stmt = (
+        update(DocumentEmbedding)
+        .where(DocumentEmbedding.id == embedding_id)
+        .values(**update_data)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    await db.refresh(db_embedding)
+    return db_embedding
+
+
+async def delete_document_embedding(db: AsyncSession, embedding_id: PyUUID) -> bool:
+    """
+    Deletes a document embedding by its ID.
+    Returns True if deleted, False otherwise.
+    """
+    db_embedding = await get_document_embedding_by_id(db, embedding_id)
+    if db_embedding is None:
+        return False
+
+    stmt = delete(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id)
+    await db.execute(stmt)
+    await db.commit()
+    return True
+
+
+async def find_similar_embeddings(
+    db: AsyncSession, query_embedding: list[float], limit: int = 5
+) -> List[DocumentEmbedding]:
+    """
+    Finds document embeddings similar to the query_embedding using L2 distance.
+    """
+    stmt = (
+        select(DocumentEmbedding)
+        .order_by(DocumentEmbedding.embedding.l2_distance(query_embedding))
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()

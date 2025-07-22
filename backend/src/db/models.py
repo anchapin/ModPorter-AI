@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 from sqlalchemy import (
     String,
@@ -13,9 +14,9 @@ from sqlalchemy import (
     TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.db.declarative_base import Base
-import uuid  # For default factories in new models
 
 
 class ConversionJob(Base):
@@ -54,6 +55,10 @@ class ConversionJob(Base):
     # Relationship to comparison_results
     comparison_results = relationship(
         "ComparisonResultDb", back_populates="conversion_job"
+    )
+    # Relationship to feedback
+    feedback = relationship(
+        "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
     )
 
 
@@ -107,6 +112,25 @@ class JobProgress(Base):
     job = relationship("ConversionJob", back_populates="progress")
 
 
+class ConversionFeedback(Base):
+    __tablename__ = "conversion_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    job = relationship("ConversionJob", back_populates="feedback")
+
+
 class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
 
@@ -144,3 +168,19 @@ class FeatureMappingDb(Base):
     comparison_result = relationship(
         "ComparisonResultDb", back_populates="feature_mappings"
     )
+
+
+# New model for document embeddings
+# pgvector.sqlalchemy.VECTOR is already imported
+# uuid is already imported
+# sqlalchemy.dialects.postgresql.UUID is already imported
+# sqlalchemy.Column, String, DateTime, func are already imported
+class DocumentEmbedding(Base):
+    __tablename__ = "document_embeddings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding
+    document_source = Column(String, nullable=False, index=True)
+    content_hash = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
