@@ -20,50 +20,58 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initialize mermaid with configuration
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true,
-        curve: 'basis',
-      },
-      sequence: {
-        diagramMarginX: 50,
-        diagramMarginY: 10,
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35,
-        mirrorActors: true,
-        bottomMarginAdj: 1,
-        useMaxWidth: true,
-        rightAngles: false,
-        showSequenceNumbers: false,
-      },
-      gantt: {
-        titleTopMargin: 25,
-        barHeight: 20,
-        fontFamily: '"Open Sans", sans-serif',
-        fontSize: 11,
-        fontWeight: 'normal',
-        gridLineStartPadding: 35,
-        bottomPadding: 50,
-        leftPadding: 75,
-        topPadding: 50,
-        numberSectionStyles: 4,
-      },
-    });
+    try {
+      // Initialize mermaid with configuration
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true,
+          curve: 'basis',
+        },
+        sequence: {
+          diagramMarginX: 50,
+          diagramMarginY: 10,
+          actorMargin: 50,
+          width: 150,
+          height: 65,
+          boxMargin: 10,
+          boxTextMargin: 5,
+          noteMargin: 10,
+          messageMargin: 35,
+          mirrorActors: true,
+          bottomMarginAdj: 1,
+          useMaxWidth: true,
+          rightAngles: false,
+          showSequenceNumbers: false,
+        },
+        gantt: {
+          titleTopMargin: 25,
+          barHeight: 20,
+          fontFamily: '"Open Sans", sans-serif',
+          fontSize: 11,
+          fontWeight: 'normal',
+          gridLineStartPadding: 35,
+          bottomPadding: 50,
+          leftPadding: 75,
+          topPadding: 50,
+          numberSectionStyles: 4,
+        },
+      });
 
-    // Render the diagram
-    if (chartRef.current) {
-      chartRef.current.innerHTML = chart;
-      mermaid.init(undefined, chartRef.current);
+      // Render the diagram
+      if (chartRef.current) {
+        chartRef.current.innerHTML = chart;
+        mermaid.init(undefined, chartRef.current);
+      }
+    } catch (error) {
+      console.error('Error initializing or rendering Mermaid diagram:', error);
+      // Gracefully handle errors by showing the chart content as plain text
+      if (chartRef.current) {
+        chartRef.current.innerHTML = chart;
+      }
     }
   }, [chart]);
 

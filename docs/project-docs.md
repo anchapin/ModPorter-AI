@@ -5,7 +5,7 @@ Thank you for your interest in contributing to ModPorter AI! This document provi
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+ and npm 9+
+- Node.js 18+ and pnpm 7+
 - Python 3.9+ and pip
 - Docker and Docker Compose (optional but recommended)
 - Git
@@ -17,13 +17,13 @@ git clone https://github.com/YOUR_USERNAME/ModPorter-AI.git
 cd ModPorter-AI
 
 # Install all dependencies
-npm run install-all
+pnpm run install-all
 
 # Start development environment
-docker-compose up -d
+docker compose up -d
 
 # Or start services individually
-npm run dev
+pnpm run dev
 ```
 
 ## Project Structure
@@ -45,11 +45,11 @@ We follow TDD principles as specified in the PRD:
 
 ```bash
 # Write tests first
-npm run test:watch
+pnpm run test:watch
 
 # Implement feature
 # Run tests to verify
-npm run test
+pnpm run test
 ```
 
 ### 2. Code Quality Standards
@@ -72,7 +72,7 @@ test: add conversion crew unit tests
 2. Create feature branch: `git checkout -b feature/amazing-feature`
 3. Write tests following TDD approach
 4. Implement feature according to PRD specifications
-5. Ensure all tests pass: `npm run test`
+5. Ensure all tests pass: `pnpm run test`
 6. Submit pull request with clear description
 
 ## PRD Compliance
@@ -98,7 +98,7 @@ Refer to PRD Section 1.0.2 for the complete Smart Assumptions table. Any new ass
 ### Frontend Tests
 ```bash
 cd frontend
-npm test -- --coverage
+pnpm test -- --coverage
 ```
 - Component testing with React Testing Library
 - User interaction testing
@@ -124,6 +124,24 @@ pytest --cov=src tests/
 - Smart assumption logic verification
 - Conversion workflow testing
 - Mock LLM response testing
+
+#### RAG Testing Suite
+```bash
+cd ai-engine
+# Run RAG-specific tests
+pytest tests/test_rag_crew.py tests/unit/test_embedding_generator.py tests/integration/test_rag_workflow.py -v
+
+# Run RAG evaluation suite
+python src/testing/rag_evaluator.py
+
+# Check RAG code quality
+python check_code_quality.py
+```
+- RAG crew functionality testing
+- Embedding generation and vector database testing
+- End-to-end RAG workflow validation
+- Knowledge retrieval accuracy assessment
+- Performance metrics and evaluation
 
 ## Code Style
 

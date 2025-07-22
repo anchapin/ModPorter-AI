@@ -29,7 +29,7 @@ describe('ConversionUpload Component', () => {
       render(<ConversionUpload />);
       expect(screen.getByText(/drag.*drop/i)).toBeInTheDocument();
       expect(screen.getByText(/CurseForge.*Modrinth/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /convert to bedrock/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /upload/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/file upload/i)).toBeInTheDocument();
     });
 
@@ -96,7 +96,7 @@ describe('ConversionUpload Component', () => {
   describe('Basic Functionality', () => {
     test('convert button is disabled without file or URL', () => {
       render(<ConversionUpload />);
-      const convertButton = screen.getByRole('button', { name: /convert to bedrock/i });
+      const convertButton = screen.getByRole('button', { name: /upload/i });
       expect(convertButton).toBeDisabled();
     });
 
@@ -120,14 +120,14 @@ describe('ConversionUpload Component', () => {
       await act(async () => { await user.upload(fileInput, mockFile); });
 
       expect(screen.getByText(mockFile.name)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /convert to bedrock/i })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: /upload/i })).not.toBeDisabled();
 
       // 2. Click convert
-      await act(async () => { await user.click(screen.getByRole('button', { name: /convert to bedrock/i })); });
+      await act(async () => { await user.click(screen.getByRole('button', { name: /upload/i })); });
 
-      // 3. Check that conversion starts (button changes to "Converting...")
+      // 3. Check that conversion starts (button changes to "Uploading...")
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /converting.../i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /uploading.../i })).toBeInTheDocument();
       }, { timeout: 2000 });
 
       // 4. Verify cancel button appears
@@ -141,11 +141,11 @@ describe('ConversionUpload Component', () => {
       const fileInput = screen.getByLabelText(/file upload/i);
       const mockFile = createMockFile('cancel-mod.zip', 1024, 'application/zip');
       await act(async () => { await user.upload(fileInput, mockFile); });
-      await act(async () => { await user.click(screen.getByRole('button', { name: /convert to bedrock/i })); });
+      await act(async () => { await user.click(screen.getByRole('button', { name: /upload/i })); });
 
       // Wait for conversion to start (button text changes)
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /converting.../i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /uploading.../i })).toBeInTheDocument();
       }, { timeout: 2000 });
 
       // Cancel button should be visible now

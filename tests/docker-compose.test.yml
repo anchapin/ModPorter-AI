@@ -118,4 +118,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/16 # Use a different subnet from the main docker-compose.yml
+        - subnet: 172.21.0.0/16 # Use a different subnet from the main docker compose.yml

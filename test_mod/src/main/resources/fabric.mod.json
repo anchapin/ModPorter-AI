@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "test_mod",
+  "version": "1.0.0",
+  "name": "Test Mod",
+  "description": "A simple test mod for conversion testing",
+  "authors": ["TestAuthor"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/testmod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.example.mod.TestMod"
+    ]
+  },
+  "mixins": [
+    "testmod.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "fabric": "*",
+    "minecraft": ">=1.19.0"
+  }
+}
