@@ -1,0 +1,62 @@
+# CPU-only Dockerfile for faster builds and testing
+FROM python:3.11-slim AS builder
+
+WORKDIR /tmp
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    curl \
+    wget \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment to ensure consistent package locations
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY pyproject.toml README.md /tmp/
+COPY src /tmp/src
+
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+# Install all dependencies, including CPU-only extras, from pyproject.toml
+RUN pip install --no-cache-dir .[cpu-only]
+
+ARG INSTALL_DEV_DEPS=false
+RUN if [ "$INSTALL_DEV_DEPS" = "true" ] ; then \
+    pip install --no-cache-dir .[dev] ; \
+fi
+
+# Runtime stage
+FROM python:3.11-slim
+
+WORKDIR /tmp
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the entire virtual environment from builder for consistency
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN adduser --disabled-password --gecos '' appuser
+RUN mkdir -p /tmp/models /tmp/cache
+
+# Copy source code
+COPY --chown=appuser:appuser . /tmp/
+USER appuser
+
+# Verify PyTorch CPU installation
+RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}, Device: {torch.device(\"cpu\")}')"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8001/api/v1/health || exit 1
+
+EXPOSE 8001
+
+# Use modern uvicorn settings
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]

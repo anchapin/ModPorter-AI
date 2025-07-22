@@ -1,0 +1,55 @@
+/* frontend/src/components/QAReport/QAReport.css */
+.qa-report-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.qa-report-container h2 {
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.qa-report-container h3 {
+    color: #555;
+    margin-top: 20px;
+}
+
+.qa-section {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.qa-report-loading,
+.qa-report-error,
+.qa-report-empty {
+    padding: 20px;
+    text-align: center;
+    font-size: 1.2em;
+    color: #777;
+}
+
+.qa-report-error {
+    color: #d9534f; /* Bootstrap danger color */
+}
+
+.qa-section pre {
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 4px;
+    white-space: pre-wrap; /* Wrap long lines */
+    word-break: break-all;
+}
+
+.qa-section ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}

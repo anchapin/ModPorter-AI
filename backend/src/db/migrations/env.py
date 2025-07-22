@@ -5,11 +5,12 @@ import sys
 import os
 
 # Must modify sys.path before importing custom modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 # Now import custom modules
 from src.config import settings  # noqa: E402
 from src.db.declarative_base import Base  # noqa: E402
+
 # Import models to ensure they are registered with the Base metadata
 import src.db.models  # noqa: E402 F401
 
@@ -19,14 +20,19 @@ fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline():
     # Use sync database URL for migrations
     url = settings.sync_database_url
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"}
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
     )
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online():
     # Use sync database URL for migrations
@@ -38,11 +44,10 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

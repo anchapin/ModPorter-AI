@@ -2,7 +2,7 @@
  * TypeScript definitions matching PRD API specifications
  */
 
-// --- Existing API types (mostly unchanged) ---
+// Core API interfaces - exported first to ensure proper module resolution
 
 export interface ConversionRequest {
   file_id: string; // Made mandatory for the actual call to /api/v1/convert
@@ -14,6 +14,25 @@ export interface ConversionRequest {
     modUrl?: string; // modUrl can be part of options
     // any other relevant options
   };
+}
+
+export interface ConversionResponse {
+  job_id: string; // Matches backend
+  status: string; // General status like 'queued', 'processing', etc.
+  message: string;
+  estimated_time?: number; // Initial estimated time for completion
+}
+
+export interface ConversionStatus {
+  job_id: string;
+  status: string; // e.g., "queued", "preprocessing", "ai_conversion", "postprocessing", "completed", "failed", "cancelled"
+  progress: number; // Percentage 0-100
+  message: string;
+  stage?: string | null; // Descriptive stage name
+  estimated_time_remaining?: number | null; // In seconds
+  result_url?: string | null; // This might be part of the SummaryReport now or still relevant here
+  error?: string | null;
+  created_at: string; // ISO date string
 }
 
 export interface UploadResponse {
@@ -34,23 +53,19 @@ export interface InitiateConversionParams {
   target_version?: string; // Added
 }
 
-export interface ConversionResponse {
-  job_id: string; // Matches backend
-  status: string; // General status like 'queued', 'processing', etc.
-  message: string;
-  estimated_time?: number; // Initial estimated time for completion
+export interface FeedbackCreatePayload {
+  job_id: string; // Backend expects UUID, but string is fine from client
+  feedback_type: 'thumbs_up' | 'thumbs_down';
+  user_id?: string | null;
+  comment?: string | null;
 }
 
-// This interface will match the backend's ConversionStatus model
-export interface ConversionStatus {
-  job_id: string;
-  status: string; // e.g., "queued", "preprocessing", "ai_conversion", "postprocessing", "completed", "failed", "cancelled"
-  progress: number; // Percentage 0-100
-  message: string;
-  stage?: string | null; // Descriptive stage name
-  estimated_time_remaining?: number | null; // In seconds
-  result_url?: string | null; // This might be part of the SummaryReport now or still relevant here
-  error?: string | null;
+export interface FeedbackResponse {
+  id: string; // UUID string
+  job_id: string; // UUID string
+  feedback_type: 'thumbs_up' | 'thumbs_down';
+  user_id?: string | null;
+  comment?: string | null;
   created_at: string; // ISO date string
 }
 
@@ -138,6 +153,8 @@ export interface InteractiveReport { // This is the main model for the detailed 
   smart_assumptions_report?: AssumptionsReport | null; // Uses AssumptionDetail
   developer_log?: DeveloperLog | null;
 }
+
+// --- Feedback Types (moved to top of file) ---
 
 
 // --- Potentially legacy or alternative types (review if still needed) ---

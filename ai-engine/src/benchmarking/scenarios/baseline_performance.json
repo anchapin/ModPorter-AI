@@ -1,0 +1,16 @@
+{
+  "scenario_id": "baseline_idle_001",
+  "scenario_name": "Idle Performance",
+  "description": "Measure performance impact when add-on is loaded but not actively used.",
+  "type": "baseline",
+  "target_platform": "any",
+  "duration_seconds": 300,
+  "metrics_to_collect": ["cpu_idle", "memory_baseline", "network_idle"],
+  "parameters": {
+    "load_level": "none"
+  },
+  "expected_impact": {
+    "max_cpu_percent_system": 5,
+    "max_memory_mb_process": 50
+  }
+}
