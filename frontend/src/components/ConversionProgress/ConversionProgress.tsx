@@ -2,6 +2,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConversionStatus } from '../../types/api';
 import { getConversionStatus } from '../../services/api'; // Import the API service
 import './ConversionProgress.css';
+// SVG icons as inline components for better compatibility
+const CheckmarkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
+    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+  </svg>
+);
+
+const PendingIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
+    <circle cx="12" cy="12" r="10"/>
+  </svg>
+);
 
 // Define the props for the component
 export interface ConversionProgressProps {
@@ -12,23 +24,6 @@ export interface ConversionProgressProps {
   stage?: string | null;
 }
 
-// Helper function to format seconds into minutes and seconds
-const formatTime = (totalSeconds: number | undefined | null): string => {
-  if (totalSeconds === undefined || totalSeconds === null || totalSeconds < 0) {
-    return 'N/A';
-  }
-  if (totalSeconds === 0) {
-    return '0s';
-  }
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  let formattedTime = '';
-  if (minutes > 0) {
-    formattedTime += `${minutes}m `;
-  }
-  formattedTime += `${seconds}s`;
-  return formattedTime.trim();
-};
 
 const ConversionProgress: React.FC<ConversionProgressProps> = ({
   jobId,
@@ -37,13 +32,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   message,
   stage
 }) => {
+  // Define the steps for the conversion process
+  const conversionSteps = ["Queued", "Processing", "Completed"];
+
   // Initialize all hooks first before any early returns
   const [progressData, setProgressData] = useState<ConversionStatus>({
     job_id: jobId || '',
     status: status || 'queued',
     progress: progress || 0,
     message: message || 'Processing...',
-    stage: stage || 'Queued',
+    stage: stage || 'Queued', // Default to 'Queued'
     estimated_time_remaining: null,
     result_url: null,
     error: null,
@@ -195,54 +193,110 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     }
   };
 
-  const progressBarFillerClass = progressData.progress === 100
-    ? "progress-bar-filler completed"
-    : "progress-bar-filler";
-
   let statusMessage = progressData.message;
   if (connectionError && !usingWebSocket) {
     statusMessage = connectionError;
-  } else if (usingWebSocket) {
+  } else if (usingWebSocket && progressData.message) {
     statusMessage = `Connected via WebSocket. ${progressData.message}`;
+  } else if (usingWebSocket) {
+    statusMessage = "Connected via WebSocket. Processing..."
+  }
+
+
+  // Determine the current step index
+  // This is a simplified mapping. A more robust solution might be needed.
+  let currentStepIndex = conversionSteps.indexOf(progressData.stage || "Queued");
+  if (currentStepIndex === -1) {
+    if (progressData.status === 'completed') {
+      currentStepIndex = conversionSteps.length -1;
+    } else if (progressData.status === 'failed' || progressData.status === 'cancelled') {
+      // Handle error/cancelled state - perhaps show all steps as pending or a specific error step
+      // For now, let's assume it stays at the last known stage or resets.
+      // Or find the last non-completed step if stages are dynamic from backend.
+      // Setting to 0 for now if stage is unknown and not completed/failed.
+      currentStepIndex = 0; // Default to first step if stage is unrecognized
+    } else {
+      currentStepIndex = 0; // Default for unknown stages if not terminal
+    }
+  }
+  // If status is 'completed', all steps up to "Completed" are done.
+  // If status is 'failed', we might want to show the step it failed on.
+  // For this implementation, 'Completed' stage implies all steps are done.
+  if (progressData.status === 'completed') {
+    currentStepIndex = conversionSteps.indexOf("Completed");
   }
 
 
   return (
     <div className="conversion-progress-container">
-      <h4>Conversion Progress (ID: {jobId})</h4>
-      <p><i>{usingWebSocket ? 'Real-time updates active' : 'Using fallback polling'}</i></p>
-      {connectionError && <p className="error-message">Connection issue: {connectionError}</p>}
-
-      <div className="progress-info">
-        <p><strong>Status:</strong> {progressData.status}</p>
-        <p><strong>Stage:</strong> {progressData.stage || 'N/A'}</p>
-        <p><strong>Message:</strong> {statusMessage}</p>
-        <p><strong>Estimated Time Remaining:</strong> {formatTime(progressData.estimated_time_remaining)}</p>
+      <h4>Conversion Progress</h4>
+      
+      {/* Connection Status Indicator */}
+      <div className="connection-status">
+        <div className={`connection-indicator ${usingWebSocket ? '' : 'polling'}${connectionError ? ' error' : ''}`}></div>
+        <span>{usingWebSocket ? 'Real-time updates' : connectionError ? 'Connection issues' : 'Polling updates'}</span>
       </div>
 
+      {/* Progress Steps */}
+      <ul className="conversion-steps-list">
+        {conversionSteps.map((step, index) => {
+          // Determine step completion status
+          let stepCompleted = index < currentStepIndex;
+          if (progressData.status === 'completed' && step === "Completed") {
+            stepCompleted = true;
+          }
+          
+          // Determine if this is the current/active step
+          const isCurrent = index === currentStepIndex && progressData.status !== 'completed' && progressData.status !== 'failed';
+
+          return (
+            <li key={step} className={`conversion-step ${isCurrent ? 'current' : ''} ${stepCompleted ? 'completed' : 'pending'}`}>
+              <div className="step-icon">
+                {stepCompleted ? <CheckmarkIcon /> : <PendingIcon />}
+              </div>
+              <div className="step-name">{step}</div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Overall Progress Bar */}
       <div className="progress-bar-container">
-        <div
-          className={progressBarFillerClass}
-          style={{ width: `${progressData.progress}%` }}
-          role="progressbar"
-          aria-valuenow={progressData.progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          {Math.round(progressData.progress)}%
-        </div>
+        <div 
+          className="progress-bar-fill" 
+          style={{ width: `${Math.min(progressData.progress, 100)}%` }}
+        ></div>
       </div>
 
+      {/* Status Message */}
+      {statusMessage && (
+        <div className="status-message">
+          <strong>Status:</strong> {statusMessage}
+        </div>
+      )}
+
+      {/* Connection Error */}
+      {connectionError && (
+        <div className="connection-error-message">
+          <strong>Connection Issue:</strong> {connectionError}
+        </div>
+      )}
+
+      {/* Download Button */}
       {progressData.status === 'completed' && progressData.result_url && (
         <button onClick={handleDownload} className="download-button">
+          <span>📥</span>
           Download Converted File
         </button>
       )}
 
+      {/* Error Display */}
       {progressData.status === 'failed' && (
         <div className="error-message">
-          <p><strong>Error:</strong> {progressData.error || 'An unknown error occurred.'}</p>
-          <p>Details: {progressData.message}</p>
+          <p><strong>Conversion Failed:</strong> {progressData.error || 'An unknown error occurred.'}</p>
+          {progressData.message && progressData.message !== progressData.error && (
+            <p><strong>Details:</strong> {progressData.message}</p>
+          )}
         </div>
       )}
     </div>
