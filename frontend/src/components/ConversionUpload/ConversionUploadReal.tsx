@@ -142,11 +142,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     return response.json();
   }, [API_BASE_URL]);
 
-  // Polling for status updates
+  // Polling for status updates (every 2 seconds as per issue #171)
   useEffect(() => {
     let intervalId: number | null = null;
     let attempts = 0;
-    const maxAttempts = 120; // 2 minutes with 1-second intervals
+    const maxAttempts = 300; // 10 minutes with 2-second intervals (was 120)
 
     if (currentJobId && isConverting) {
       intervalId = setInterval(async () => {
@@ -165,7 +165,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             setError(status.error || 'Conversion failed');
           } else if (attempts >= maxAttempts) {
             setIsConverting(false);
-            setError('Conversion timed out. Please try again.');
+            setError('Conversion timed out after 10 minutes. Please try again.');
           }
         } catch (error) {
           console.error('Status check error:', error);
@@ -175,7 +175,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             setError('Unable to check conversion status. Please try again.');
           }
         }
-      }, 1000); // Check every second
+      }, 2000); // Check every 2 seconds as per issue requirement
     }
 
     return () => {
@@ -292,11 +292,28 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
         throw new Error('Download failed');
       }
 
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+      let filename = `converted-mod-${currentJobId}.mcaddon`; // fallback
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (fileNameMatch) {
+          filename = fileNameMatch[1];
+        }
+      }
+      
+      // Use original filename if available
+      if (selectedFile?.name) {
+        const baseName = selectedFile.name.replace(/\.(jar|zip)$/i, '');
+        filename = `${baseName}-converted.mcaddon`;
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `converted-mod-${currentJobId}.mcaddon`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -337,33 +354,58 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       )}
 
       {/* Progress Display */}
-      {isConverting && currentStatus && (
+      {(isConverting || currentStatus) && currentStatus && (
         <div style={{ 
-          backgroundColor: '#e3f2fd', 
-          padding: '1rem', 
-          borderRadius: '6px',
-          marginBottom: '1rem',
-          textAlign: 'left'
+          backgroundColor: currentStatus.status === 'completed' ? '#e8f5e8' : currentStatus.status === 'failed' ? '#ffeaea' : '#e3f2fd', 
+          padding: '1.5rem', 
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          textAlign: 'left',
+          border: `2px solid ${currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3'}`,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
         }}>
-          <h4>Conversion Progress</h4>
-          <p><strong>Job ID:</strong> {currentStatus.job_id}</p>
-          <p><strong>Status:</strong> {currentStatus.status}</p>
-          <p><strong>Progress:</strong> {currentStatus.progress}%</p>
-          <p><strong>Message:</strong> {getStatusMessage()}</p>
-          <div style={{ 
-            backgroundColor: '#f0f0f0', 
-            borderRadius: '4px', 
-            height: '20px',
-            marginTop: '0.5rem'
-          }}>
-            <div style={{ 
-              backgroundColor: '#4caf50', 
-              height: '100%', 
-              width: `${currentStatus.progress}%`,
-              borderRadius: '4px',
-              transition: 'width 0.3s ease'
-            }}></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h4 style={{ margin: 0, color: '#333' }}>
+              {currentStatus.status === 'completed' ? '✅ Conversion Complete!' : 
+               currentStatus.status === 'failed' ? '❌ Conversion Failed' : '🔄 Converting...'}
+            </h4>
+            <span style={{ 
+              backgroundColor: currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3',
+              color: 'white', 
+              padding: '0.25rem 0.75rem', 
+              borderRadius: '16px',
+              fontSize: '0.875rem',
+              textTransform: 'uppercase',
+              fontWeight: 'bold'
+            }}>
+              {currentStatus.status}
+            </span>
           </div>
+          <p style={{ margin: '0.5rem 0', color: '#666' }}><strong>Message:</strong> {getStatusMessage()}</p>
+          {currentStatus.progress !== undefined && (
+            <>
+              <p style={{ margin: '0.5rem 0', color: '#666' }}><strong>Progress:</strong> {currentStatus.progress}%</p>
+              <div style={{ 
+                backgroundColor: '#f0f0f0', 
+                borderRadius: '8px', 
+                height: '12px',
+                marginTop: '0.75rem',
+                overflow: 'hidden'
+              }}>
+                <div style={{ 
+                  backgroundColor: currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3',
+                  height: '100%', 
+                  width: `${Math.max(0, Math.min(100, currentStatus.progress))}%`,
+                  borderRadius: '8px',
+                  transition: 'width 0.6s ease-in-out',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                }}></div>
+              </div>
+            </>
+          )}
+          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#888' }}>
+            <strong>Job ID:</strong> {currentStatus.job_id.substring(0, 8)}...
+          </p>
         </div>
       )}
 
@@ -496,10 +538,34 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
           ) : currentStatus.status === 'completed' ? (
             <button
               type="button"
-              className="download-button"
               onClick={downloadResult}
+              style={{
+                background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                border: 'none',
+                color: 'white',
+                padding: '1rem 2rem',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                minWidth: '220px'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(76, 175, 80, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0px)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(76, 175, 80, 0.3)';
+              }}
             >
-              Download Converted Mod
+              📥 Download .mcaddon
             </button>
           ) : null}
         </div>
