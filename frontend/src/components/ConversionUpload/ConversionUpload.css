@@ -370,8 +370,8 @@
   gap: 15px;
 }
 
-/* Convert button style */
-.convert-button {
+/* Upload/Convert button style */
+.upload-button {
   background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
   padding: 16px 32px;
@@ -387,7 +387,7 @@
   overflow: hidden;
 }
 
-.convert-button:hover {
+.upload-button:hover {
   background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
@@ -417,7 +417,7 @@
   box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
-.convert-button:disabled,
+.upload-button:disabled,
 .download-button:disabled {
   background: #e5e7eb;
   color: #9ca3af;
@@ -449,6 +449,106 @@
   margin-bottom: 25px;
 }
 
+.progress-display {
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid;
+}
+
+.progress-display.status-completed {
+  background-color: #e8f5e8;
+  border-color: #4caf50;
+}
+
+.progress-display.status-failed {
+  background-color: #ffeaea;
+  border-color: #f44336;
+}
+
+.progress-display.status-processing {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-title {
+  margin: 0;
+  color: #333;
+}
+
+.progress-status-badge {
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.progress-status-badge.status-completed {
+  background-color: #4caf50;
+}
+
+.progress-status-badge.status-failed {
+  background-color: #f44336;
+}
+
+.progress-status-badge.status-processing {
+  background-color: #2196f3;
+}
+
+.progress-message {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.progress-percentage {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.progress-bar-container {
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  height: 12px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.6s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar-fill.status-completed {
+  background-color: #4caf50;
+}
+
+.progress-bar-fill.status-failed {
+  background-color: #f44336;
+}
+
+.progress-bar-fill.status-processing {
+  background-color: #2196f3;
+}
+
+.progress-job-id {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.875rem;
+  color: #888;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .conversion-upload {
@@ -465,7 +565,7 @@
     flex-direction: column;
   }
   
-  .convert-button,
+  .upload-button,
   .cancel-button,
   .download-button {
     width: 100%;

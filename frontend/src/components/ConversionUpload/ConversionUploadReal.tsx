@@ -292,21 +292,18 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
         throw new Error('Download failed');
       }
 
-      // Extract filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
-      let filename = `converted-mod-${currentJobId}.mcaddon`; // fallback
-      
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
-        if (fileNameMatch) {
-          filename = fileNameMatch[1];
-        }
-      }
-      
-      // Use original filename if available
-      if (selectedFile?.name) {
+      // Determine filename with priority: Content-Disposition > original filename > fallback
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename: string;
+
+      const dispositionMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      if (dispositionMatch && dispositionMatch[1]) {
+        filename = dispositionMatch[1];
+      } else if (selectedFile?.name) {
         const baseName = selectedFile.name.replace(/\.(jar|zip)$/i, '');
         filename = `${baseName}-converted.mcaddon`;
+      } else {
+        filename = `converted-mod-${currentJobId}.mcaddon`; // fallback
       }
 
       const blob = await response.blob();
@@ -355,55 +352,29 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
       {/* Progress Display */}
       {(isConverting || currentStatus) && currentStatus && (
-        <div style={{ 
-          backgroundColor: currentStatus.status === 'completed' ? '#e8f5e8' : currentStatus.status === 'failed' ? '#ffeaea' : '#e3f2fd', 
-          padding: '1.5rem', 
-          borderRadius: '12px',
-          marginBottom: '1.5rem',
-          textAlign: 'left',
-          border: `2px solid ${currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3'}`,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h4 style={{ margin: 0, color: '#333' }}>
+        <div className={`progress-display status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
+          <div className="progress-header">
+            <h4 className="progress-title">
               {currentStatus.status === 'completed' ? '✅ Conversion Complete!' : 
                currentStatus.status === 'failed' ? '❌ Conversion Failed' : '🔄 Converting...'}
             </h4>
-            <span style={{ 
-              backgroundColor: currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3',
-              color: 'white', 
-              padding: '0.25rem 0.75rem', 
-              borderRadius: '16px',
-              fontSize: '0.875rem',
-              textTransform: 'uppercase',
-              fontWeight: 'bold'
-            }}>
+            <span className={`progress-status-badge status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
               {currentStatus.status}
             </span>
           </div>
-          <p style={{ margin: '0.5rem 0', color: '#666' }}><strong>Message:</strong> {getStatusMessage()}</p>
+          <p className="progress-message"><strong>Message:</strong> {getStatusMessage()}</p>
           {currentStatus.progress !== undefined && (
             <>
-              <p style={{ margin: '0.5rem 0', color: '#666' }}><strong>Progress:</strong> {currentStatus.progress}%</p>
-              <div style={{ 
-                backgroundColor: '#f0f0f0', 
-                borderRadius: '8px', 
-                height: '12px',
-                marginTop: '0.75rem',
-                overflow: 'hidden'
-              }}>
-                <div style={{ 
-                  backgroundColor: currentStatus.status === 'completed' ? '#4caf50' : currentStatus.status === 'failed' ? '#f44336' : '#2196f3',
-                  height: '100%', 
-                  width: `${Math.max(0, Math.min(100, currentStatus.progress))}%`,
-                  borderRadius: '8px',
-                  transition: 'width 0.6s ease-in-out',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                }}></div>
+              <p className="progress-percentage"><strong>Progress:</strong> {currentStatus.progress}%</p>
+              <div className="progress-bar-container">
+                <div 
+                  className={`progress-bar-fill status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, currentStatus.progress))}%` }}
+                ></div>
               </div>
             </>
           )}
-          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#888' }}>
+          <p className="progress-job-id">
             <strong>Job ID:</strong> {currentStatus.job_id.substring(0, 8)}...
           </p>
         </div>
@@ -530,7 +501,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
           {!currentStatus || currentStatus.status === 'failed' ? (
             <button
               type="submit"
-              className="convert-button"
+              className="upload-button"
               disabled={isConverting || (!selectedFile && !modUrl)}
             >
               {isConverting ? 'Converting with AI...' : 'Convert to Bedrock (Real AI)'}
