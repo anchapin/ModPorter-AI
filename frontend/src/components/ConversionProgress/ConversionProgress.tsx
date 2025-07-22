@@ -2,8 +2,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConversionStatus } from '../../types/api';
 import { getConversionStatus } from '../../services/api'; // Import the API service
 import './ConversionProgress.css';
-import { ReactComponent as CheckmarkIcon } from '../../assets/icons/checkmark-icon.svg';
-import { ReactComponent as PendingIcon } from '../../assets/icons/pending-icon.svg';
+// SVG icons as inline components for better compatibility
+const CheckmarkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
+    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+  </svg>
+);
+
+const PendingIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
+    <circle cx="12" cy="12" r="10"/>
+  </svg>
+);
 
 // Define the props for the component
 export interface ConversionProgressProps {
@@ -14,23 +24,6 @@ export interface ConversionProgressProps {
   stage?: string | null;
 }
 
-// Helper function to format seconds into minutes and seconds
-const formatTime = (totalSeconds: number | undefined | null): string => {
-  if (totalSeconds === undefined || totalSeconds === null || totalSeconds < 0) {
-    return 'N/A';
-  }
-  if (totalSeconds === 0) {
-    return '0s';
-  }
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  let formattedTime = '';
-  if (minutes > 0) {
-    formattedTime += `${minutes}m `;
-  }
-  formattedTime += `${seconds}s`;
-  return formattedTime.trim();
-};
 
 const ConversionProgress: React.FC<ConversionProgressProps> = ({
   jobId,
@@ -236,55 +229,74 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
   return (
     <div className="conversion-progress-container">
-      <h4>Conversion Progress (ID: {jobId})</h4>
-      <p><i>{usingWebSocket ? 'Real-time updates active' : 'Using fallback polling'}</i></p>
-      {connectionError && <p className="error-message connection-error-message">Connection issue: {connectionError}</p>}
+      <h4>Conversion Progress</h4>
+      
+      {/* Connection Status Indicator */}
+      <div className="connection-status">
+        <div className={`connection-indicator ${usingWebSocket ? '' : 'polling'}${connectionError ? ' error' : ''}`}></div>
+        <span>{usingWebSocket ? 'Real-time updates' : connectionError ? 'Connection issues' : 'Polling updates'}</span>
+      </div>
 
+      {/* Progress Steps */}
       <ul className="conversion-steps-list">
         {conversionSteps.map((step, index) => {
-          const isCompleted = progressData.status === 'completed' || index < currentStepIndex;
-          // If the overall status is 'failed', only steps before the current one might be 'completed'.
-          // The current step where it failed should not show as 'completed'.
-          // However, the requirement is to show checkmark if step is completed.
-          // If status is 'failed', currentStepIndex might be the failing step.
-          // Let's refine: a step is completed if its index is less than current step index,
-          // OR if the overall status is 'completed' and this is the 'Completed' step.
+          // Determine step completion status
           let stepCompleted = index < currentStepIndex;
           if (progressData.status === 'completed' && step === "Completed") {
             stepCompleted = true;
           }
-          // If the job failed, no step should be marked as 'current' in the same way,
-          // but the list should still display the state at failure.
-          // The "current" step highlight might mean "active" or "failed at".
-          // For now, "current" means the active processing stage.
+          
+          // Determine if this is the current/active step
           const isCurrent = index === currentStepIndex && progressData.status !== 'completed' && progressData.status !== 'failed';
 
           return (
             <li key={step} className={`conversion-step ${isCurrent ? 'current' : ''} ${stepCompleted ? 'completed' : 'pending'}`}>
-              <span className="step-icon">
+              <div className="step-icon">
                 {stepCompleted ? <CheckmarkIcon /> : <PendingIcon />}
-              </span>
-              <span className="step-name">{step}</span>
+              </div>
+              <div className="step-name">{step}</div>
             </li>
           );
         })}
       </ul>
 
-      {/* Display overall status message or specific stage message if available */}
-      {statusMessage && <p className="status-message">Status: {statusMessage}</p>}
+      {/* Overall Progress Bar */}
+      <div className="progress-bar-container">
+        <div 
+          className="progress-bar-fill" 
+          style={{ width: `${Math.min(progressData.progress, 100)}%` }}
+        ></div>
+      </div>
 
+      {/* Status Message */}
+      {statusMessage && (
+        <div className="status-message">
+          <strong>Status:</strong> {statusMessage}
+        </div>
+      )}
 
+      {/* Connection Error */}
+      {connectionError && (
+        <div className="connection-error-message">
+          <strong>Connection Issue:</strong> {connectionError}
+        </div>
+      )}
+
+      {/* Download Button */}
       {progressData.status === 'completed' && progressData.result_url && (
         <button onClick={handleDownload} className="download-button">
+          <span>📥</span>
           Download Converted File
         </button>
       )}
 
+      {/* Error Display */}
       {progressData.status === 'failed' && (
         <div className="error-message">
-          <p><strong>Error:</strong> {progressData.error || 'An unknown error occurred.'}</p>
-          {/* Displaying the general statusMessage which might contain more context if error message is brief */}
-          {progressData.message && progressData.message !== progressData.error && <p>Details: {progressData.message}</p>}
+          <p><strong>Conversion Failed:</strong> {progressData.error || 'An unknown error occurred.'}</p>
+          {progressData.message && progressData.message !== progressData.error && (
+            <p><strong>Details:</strong> {progressData.message}</p>
+          )}
         </div>
       )}
     </div>
