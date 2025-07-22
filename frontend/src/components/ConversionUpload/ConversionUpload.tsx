@@ -307,13 +307,22 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
 
       <form onSubmit={handleSubmit}>
         {/* File Upload Area */}
-        <div 
-          {...getRootProps()} 
+        {/* File Upload Area */}
+        <div
+          {...getRootProps()}
           className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
         >
           <input {...getInputProps()} aria-label="File upload" disabled={isProcessing || isCompleted} />
-          
-          {selectedFile ? (
+
+          {isFinished ? ( // Displayed after completion/failure/cancellation
+            <div className="upload-prompt">
+              <div className="upload-icon">🎉</div> {/* Or other relevant icon */}
+              <h3>{getStatusMessage()}</h3>
+              <button type="button" className="browse-button" onClick={resetConversionState}>
+                Start New Conversion
+              </button>
+            </div>
+          ) : selectedFile ? ( // Displayed when a file is selected
             <div className="file-preview">
               <div className="file-icon">📦</div>
               <div className="file-info">
@@ -321,7 +330,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                 <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
                 <div className="status">{getStatusMessage()}</div>
               </div>
-              <button 
+              <button
                 type="button"
                 className="remove-file"
                 onClick={(e) => {
@@ -333,33 +342,40 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                 ✕
               </button>
             </div>
-          ) : isFinished ? (
-            <div className="upload-prompt">
-              <div className="upload-icon">🎉</div>
-              <h3>{getStatusMessage()}</h3>
-              <button type="button" className="browse-button" onClick={resetConversionState}>
-                Start New Conversion
-              </button>
-            </div>
-          ) : (
-            <div className="upload-prompt">
-              <div className="upload-icon">📁</div>
+          ) : ( // Initial state of the dropzone
+            <div className="upload-prompt initial-prompt">
+              <div className="upload-icon-large">☁️</div>
               <h3>Drag & drop your modpack here</h3>
-              <p>Supports .jar files and .zip modpack archives</p>
-              <button type="button" className="browse-button" disabled={isProcessing || isCompleted}>
+              {/* Clicking this button will open the file dialog */}
+              <button
+                type="button"
+                className="browse-button"
+                onClick={() => {
+                  // Hack to trigger file input:
+                  // Query for the input element and click it.
+                  // This assumes the input element is a descendant of the form.
+                  // A more robust solution might involve passing a ref from getInputProps.
+                  const fileInput = document.querySelector('input[type="file"][aria-label="File upload"]');
+                  if (fileInput instanceof HTMLElement) {
+                    fileInput.click();
+                  }
+                }}
+                disabled={isProcessing || isCompleted}
+              >
                 Browse Files
               </button>
+              <p className="supporting-text">Supports .jar files and .zip modpack archives</p>
             </div>
           )}
         </div>
 
-        {/* URL Input - Hide if file selected or in finished states */}
+        {/* URL Input Section - appears below drag-and-drop */}
+        {/* Hide if file selected or in finished states */}
         {!selectedFile && !isFinished && (
           <div className="url-input-section">
             <div className="divider">
               <span>or paste URL</span>
             </div>
-
             <input
               type="url"
               value={modUrl}
@@ -368,14 +384,14 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               className="url-input"
               disabled={!!selectedFile || isProcessing || isCompleted}
             />
-
             <div className="supported-sites">
               <span>Supported: CurseForge • Modrinth</span>
             </div>
           </div>
         )}
 
-        {/* Configuration Options - Hide on final states */}
+        {/* Configuration Options - appears below URL input */}
+        {/* Hide on final states */}
         {!isFinished && (
           <div className={`conversion-options ${isProcessing || isCompleted ? 'disabled-options' : ''}`}>
             <div className="option-group">
@@ -388,7 +404,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                 />
                 <span className="checkmark"></span>
                 Enable Smart Assumptions
-                <button 
+                <button
                   type="button"
                   className="info-button"
                   onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
@@ -430,9 +446,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
           </div>
         )}
 
-        {/* Progress Display */}
+        {/* Progress Display - appears when isProcessing is true */}
         {isProcessing && currentStatus && (
-          <ConversionProgress 
+          <ConversionProgress
             jobId={currentConversionId}
             status={currentStatus.status}
             progress={progressPercentage}
@@ -441,16 +457,16 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
           />
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons - appears below configuration options or progress display */}
         <div className="action-buttons">
           {!isFinished && (
             <>
               <button
                 type="submit"
-                className="convert-button"
+                className="convert-button" // Assuming this class will be styled for "Upload"
                 disabled={isProcessing || (!selectedFile && !modUrl)}
               >
-                {isProcessing ? 'Converting...' : 'Convert to Bedrock'}
+                {isProcessing ? 'Uploading...' : 'Upload'}
               </button>
               
               {isProcessing && (
