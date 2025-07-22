@@ -1,105 +1,113 @@
-/* General body styles - Assuming a light gray background for the page if set outside this component. */
-/* For this component, we'll ensure its own background and container settings. */
+/* Modern redesigned styles for ConversionUpload component */
 
 .conversion-upload {
-  max-width: 700px; /* Reasonably wide central column */
-  margin: 40px auto; /* Centered on page with top/bottom margin */
+  max-width: 700px;
+  margin: 40px auto;
   padding: 30px;
-  background-color: #ffffff; /* White background for the component itself */
+  background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  text-align: center; /* Most text is centered */
+  text-align: center;
 }
 
 .conversion-upload h2 {
-  font-size: 32px; /* Larger for better hierarchy */
-  font-weight: 700; /* Bolder */
-  color: #1e293b; /* Modern dark color */
-  margin-bottom: 8px; /* Less margin for tighter spacing */
-  letter-spacing: -0.025em; /* Slight letter spacing for modern look */
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  letter-spacing: -0.025em;
 }
 
 .conversion-upload p.description {
-  font-size: 17px; /* Slightly larger */
-  color: #64748b; /* Modern gray */
-  margin-bottom: 35px; /* More space before upload area */
+  font-size: 17px;
+  color: #64748b;
+  margin-bottom: 35px;
   line-height: 1.5;
   font-weight: 400;
 }
 
 .error-message {
-  background-color: #ffebee; /* Light pink/red */
-  color: #c62828; /* Dark red */
+  background-color: #ffebee;
+  color: #c62828;
   padding: 15px;
   border-radius: 6px;
   margin-bottom: 25px;
   border: 1px solid #ef9a9a;
-  text-align: left; /* Errors might be better left-aligned for readability */
+  text-align: left;
 }
 
 .dropzone {
   width: 100%;
-  height: 280px; /* Even larger height for more prominence */
-  background-color: #f8fafc; /* Slightly bluer light background */
-  border: 3px dashed #cbd5e0; /* Thicker dashed border */
-  border-radius: 16px; /* More modern rounded corners */
+  height: 280px;
+  background-color: #f8fafc;
+  border: 3px dashed #cbd5e0;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 25px; /* More vertical padding */
+  padding: 40px 25px;
   box-sizing: border-box;
-  color: #4a5568; /* Slightly darker text for better contrast */
+  color: #4a5568;
   cursor: pointer;
-  transition: all 0.3s ease; /* Smoother transitions */
-  margin-bottom: 30px; /* More space below */
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
   position: relative;
 }
 
 .dropzone.drag-active {
-  background-color: #ebf4ff; /* Blue-tinted background for active drag */
-  border-color: #2563eb; /* More modern blue border */
-  transform: scale(1.02); /* Subtle scale effect */
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15); /* Elegant shadow */
+  background-color: #ebf4ff;
+  border-color: #2563eb;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+}
+
+.dropzone.file-selected {
+  border-color: #28a745;
+  background-color: #f8fff8;
 }
 
 .dropzone.disabled-dropzone {
   opacity: 0.7;
   cursor: not-allowed;
-  background-color: #e9ecef; /* Slightly different gray for disabled */
+  background-color: #e9ecef;
 }
 
-/* Styles for content inside the dropzone when no file is selected */
+/* Upload prompt styles */
+.upload-prompt {
+  text-align: center;
+}
+
 .dropzone .upload-prompt.initial-prompt .upload-icon-large {
-  font-size: 64px; /* Even larger icon for better prominence */
-  color: #2563eb; /* Modern blue color */
+  font-size: 64px;
+  color: #2563eb;
   margin-bottom: 20px;
   opacity: 0.8;
 }
 
 .dropzone .upload-prompt h3 {
-  font-size: 20px; /* Slightly larger for better hierarchy */
+  font-size: 20px;
   font-weight: 600;
-  color: #1e293b; /* Darker, more modern color */
+  color: #1e293b;
   margin-bottom: 12px;
   line-height: 1.3;
 }
 
 .dropzone .upload-prompt p.supporting-text {
-  font-size: 14px; /* Slightly larger for better readability */
-  color: #64748b; /* Modern gray color */
+  font-size: 14px;
+  color: #64748b;
   margin-bottom: 20px;
   line-height: 1.4;
 }
 
 .dropzone .upload-prompt .browse-button {
   background-color: transparent;
-  color: #2563eb; /* Modern blue text */
-  padding: 12px 24px; /* More generous padding */
-  border: 2px solid #e2e8f0; /* Modern border */
-  border-radius: 8px; /* More rounded corners */
-  font-size: 15px; /* Slightly larger */
-  font-weight: 600; /* Bolder */
+  color: #2563eb;
+  padding: 12px 24px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -117,31 +125,23 @@
   cursor: not-allowed;
 }
 
-
-/* Styles for the finished state (e.g., "Conversion Completed!") */
-.dropzone .upload-prompt .upload-icon { /* For smaller icons like checkmark/error in finished state */
-  font-size: 36px;
-  margin-bottom: 10px;
-}
-.dropzone .upload-prompt .upload-icon.success { color: #28a745; } /* Green for success */
-.dropzone .upload-prompt .upload-icon.error { color: #dc3545; } /* Red for error */
-
-
+/* File preview styles */
 .file-preview {
   display: flex;
   align-items: center;
   text-align: left;
   padding: 15px;
-  background-color: #ffffff; /* White background for the preview box */
+  background-color: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  width: 100%; /* Take full width of dropzone */
-  max-width: 500px; /* But not too wide */
+  width: 100%;
+  max-width: 500px;
+  gap: 1rem;
 }
 
 .file-preview .file-icon {
-  font-size: 32px; /* Larger emoji/icon */
+  font-size: 32px;
   margin-right: 15px;
 }
 
@@ -169,13 +169,23 @@
   color: #999;
   cursor: pointer;
   padding: 5px;
-}
-.file-preview .remove-file:hover {
-  color: #333;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
 }
 
+.file-preview .remove-file:hover {
+  color: #333;
+  background-color: #f8d7da;
+}
+
+/* URL input section */
 .url-input-section {
-  margin-top: 20px; /* Spacing from dropzone or elements above */
+  margin-top: 20px;
   margin-bottom: 25px;
 }
 
@@ -211,60 +221,68 @@
   font-size: 15px;
   box-sizing: border-box;
   margin-bottom: 10px;
+  transition: border-color 0.3s ease;
 }
+
 .url-input:focus {
   border-color: #1a73e8;
   box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
   outline: none;
 }
 
+.url-input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
 
 .url-input-section .supported-sites {
   font-size: 13px;
   color: #777777;
   margin-top: 5px;
+  text-align: center;
 }
 
+/* Conversion options */
 .conversion-options {
   margin-top: 20px;
   margin-bottom: 30px;
-  text-align: left; /* Align options to the left */
+  text-align: left;
   padding: 20px;
-  background-color: #f9f9f9; /* Slight off-white background for options section */
+  background-color: #f9f9f9;
   border-radius: 8px;
   border: 1px solid #eef0f2;
 }
+
 .conversion-options.disabled-options {
   opacity: 0.6;
 }
 
-
 .conversion-options .option-group {
   margin-bottom: 15px;
 }
+
 .conversion-options .option-group:last-child {
   margin-bottom: 0;
 }
 
-
 .checkbox-label {
-  display: flex; /* Changed to flex for better alignment */
-  align-items: center; /* Vertically align items */
+  display: flex;
+  align-items: center;
   font-size: 15px;
   color: #333;
   cursor: pointer;
-  position: relative; /* For custom checkbox positioning */
+  position: relative;
 }
 
 .checkbox-label input[type="checkbox"] {
-  opacity: 0; /* Hide default checkbox */
+  opacity: 0;
   width: 0;
   height: 0;
   position: absolute;
 }
 
 .checkbox-label .checkmark {
-  position: relative; /* Adjust if needed, was absolute */
+  position: relative;
   display: inline-block;
   width: 20px;
   height: 20px;
@@ -302,13 +320,15 @@
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  margin-left: 8px; /* Spacing from label text */
-  display: inline-flex; /* For centering content */
+  margin-left: 8px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0; /* Reset padding */
-  line-height: 1; /* Ensure '?' is centered */
+  padding: 0;
+  line-height: 1;
+  transition: all 0.3s ease;
 }
+
 .checkbox-label .info-button:hover {
   background-color: #ced4da;
 }
@@ -323,6 +343,7 @@
   color: #495057;
   text-align: left;
 }
+
 .info-panel h4 {
   margin-top: 0;
   margin-bottom: 10px;
@@ -330,62 +351,64 @@
   font-weight: 600;
   color: #343a40;
 }
+
 .info-panel ul {
   padding-left: 20px;
   margin-bottom: 0;
 }
+
 .info-panel li {
   margin-bottom: 5px;
 }
 
-
+/* Action buttons */
 .action-buttons {
   margin-top: 30px;
   display: flex;
-  justify-content: center; /* Center buttons */
+  justify-content: center;
   align-items: center;
-  gap: 15px; /* Space between buttons if they are next to each other */
+  gap: 15px;
 }
 
 /* Primary action button style (Upload / Download) */
 .convert-button,
 .download-button {
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); /* Modern gradient */
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
-  padding: 16px 32px; /* More generous padding for prominence */
+  padding: 16px 32px;
   border: none;
-  border-radius: 12px; /* More rounded for modern look */
-  font-size: 17px; /* Slightly larger */
-  font-weight: 600; /* Bolder */
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 240px; /* Wider for better prominence */
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2); /* Initial shadow */
+  min-width: 240px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
   position: relative;
   overflow: hidden;
 }
 
 .convert-button:hover,
 .download-button:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); /* Darker gradient */
-  transform: translateY(-2px); /* Lift effect */
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35); /* Enhanced shadow */
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
 }
 
 .convert-button:disabled,
 .download-button:disabled {
-  background: #e5e7eb; /* Gray background for disabled */
-  color: #9ca3af; /* Muted text */
+  background: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
 }
 
 .cancel-button {
-  background-color: #f8f9fa; /* Light gray, almost white */
-  color: #555555; /* Dark gray text */
+  background-color: #f8f9fa;
+  color: #555555;
   padding: 12px 28px;
-  border: 1px solid #ced4da; /* Light border */
+  border: 1px solid #ced4da;
   border-radius: 6px;
   font-size: 16px;
   font-weight: 500;
@@ -394,50 +417,36 @@
 }
 
 .cancel-button:hover {
-  background-color: #e9ecef; /* Slightly darker gray on hover */
+  background-color: #e9ecef;
   border-color: #adb5bd;
 }
 
-/* Progress Display - Assuming ConversionProgress component handles its own internal styling mostly,
-   but we can add margin here if needed. */
-.conversion-progress-container { /* If you wrap ConversionProgress in a div with this class */
+/* Progress Display */
+.conversion-progress-container {
   margin-top: 25px;
   margin-bottom: 25px;
 }
 
-/* Ensure checkbox and info button are vertically centered */
-.checkbox-label {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-label .checkmark {
-  flex-shrink: 0; /* Prevent checkmark from shrinking */
-}
-
-.checkbox-label .info-button {
-  flex-shrink: 0; /* Prevent info button from shrinking */
-}
-
-/* Adjustments for the finished state in dropzone (e.g. "Start New Conversion" button) */
-.dropzone .upload-prompt .browse-button.start-new-button { /* If you add this class for clarity */
-  background-color: #28a745; /* Green for a positive action */
-  color: white;
-  border: none;
-}
-.dropzone .upload-prompt .browse-button.start-new-button:hover {
-  background-color: #218838;
-}
-
-/* Specific styling for the "Browse Files" button within the initial dropzone prompt,
-   to differentiate it from primary action buttons if needed. */
-.dropzone .upload-prompt.initial-prompt .browse-button {
-  background-color: transparent;
-  color: #1a73e8; /* Primary blue */
-  border: 1px solid #1a73e8;
-  padding: 8px 16px; /* Slightly smaller padding */
-}
-
-.dropzone .upload-prompt.initial-prompt .browse-button:hover {
-  background-color: rgba(26, 115, 232, 0.05); /* Very light blue background on hover */
+/* Responsive design */
+@media (max-width: 768px) {
+  .conversion-upload {
+    padding: 1rem;
+    margin: 1rem;
+  }
+  
+  .dropzone {
+    height: 200px;
+    padding: 20px 15px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .convert-button,
+  .cancel-button,
+  .download-button {
+    width: 100%;
+    min-width: auto;
+  }
 }

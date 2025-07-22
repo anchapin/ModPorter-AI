@@ -1,0 +1,127 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-engine"
+version = "0.1.0"
+description = "AI Engine with GPU acceleration support"
+authors = [{name = "ModPorter AI", email = "ai@modporter.dev"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Core FastAPI for AI Engine API
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    
+    # AI Framework
+    "crewai>=0.140.0",
+    "langchain>=0.3.0", 
+    "langchain-openai>=0.2.0",
+    "langchain-ollama>=0.1.0",
+    "openai>=1.0.0",
+    "sentence-transformers",
+    
+    # Vector Database (pin version for embedchain compatibility)
+    "chromadb<0.6.0",
+    
+    # Data Processing
+    "numpy",
+    "python-dotenv",
+    
+    # Java analysis
+    "javalang>=0.13.0",
+    
+    # File processing
+    "Pillow",
+    "pydub",
+    
+    # HTTP Client
+    "httpx",
+    
+    # Redis for job management
+    "redis>=4.5.0",
+    
+    # Configuration Management
+    "pydantic>=2.0.0",
+    "pydantic-settings",
+    
+    # Monitoring
+    "prometheus-client",
+    "psutil",
+]
+
+[project.optional-dependencies]
+# NVIDIA GPU acceleration (CUDA)
+gpu-nvidia = [
+    "torch>=2.5.0",
+    "torchvision>=0.20.0",
+    "torchaudio>=2.5.0", 
+    "onnxruntime-gpu>=1.19.0",
+    "accelerate>=0.24.0",
+]
+
+# AMD GPU acceleration (ROCm for Linux, DirectML for Windows)
+# Note: Install with specific index URL when needed:
+# pip install .[gpu-amd] -f https://download.pytorch.org/whl/rocm6.0 
+gpu-amd = [
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
+    "onnxruntime-rocm>=1.19.0; sys_platform == 'linux'",
+    "onnxruntime-directml>=1.19.0; sys_platform == 'win32'",
+    "accelerate>=0.24.0",
+]
+
+# CPU-only (explicit CPU versions)  
+# Note: Install with specific index URL when needed:
+# pip install .[cpu-only] -f https://download.pytorch.org/whl/cpu
+cpu-only = [
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
+    "onnxruntime>=1.19.0",
+]
+
+# Development dependencies
+dev = [
+    "pytest",
+    "pytest-asyncio", 
+    "pytest-mock",
+    "pytest-cov",
+    "pytest-timeout",
+    "black",
+    "ruff",
+    "isort",
+]
+
+# All GPU options combined
+gpu-all = [
+    "ai-engine[gpu-nvidia]",
+    "ai-engine[gpu-amd]",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/ai-engine"
+Repository = "https://github.com/your-org/ai-engine"
+Issues = "https://github.com/your-org/ai-engine/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

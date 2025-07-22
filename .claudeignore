@@ -1,0 +1,91 @@
+# Claude Code provider specific exclusions
+# This file helps the Claude Code API provider handle large workspaces
+
+# Massive directories that cause E2BIG errors
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+ai-engine/node_modules/
+.pnpm/
+**/.pnpm/
+
+# Virtual environments
+venv/
+ai-engine/venv/
+backend/venv/
+frontend/venv/
+**/.venv/
+**/venv/
+
+# Build and cache artifacts
+dist/
+build/
+htmlcov/
+**/__pycache__/
+**/.pytest_cache/
+coverage.xml
+.coverage
+*.egg-info/
+
+# Temporary and upload directories
+temp_uploads/
+conversion_outputs/
+**/temp_uploads/
+**/conversion_outputs/
+
+# Large binary files
+*.jar
+*.war
+*.ear
+*.zip
+*.mcaddon
+*.class
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.node
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+*.pnpm-lock.yaml
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.*
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+storybook-static/
+dist-storybook/
+
+# Python specific
+site-packages/
+lib/python*/
+bin/python*
+include/python*
+share/man/
+pyvenv.cfg
+
+# Complex nested structures that confuse Claude Code
+**/node_modules/.pnpm/
+**/node_modules/.ignored*/
+**/node_modules/**/node_modules/
+**/.pnpm-store/
+**/lib/python*/**
+**/site-packages/**
+**/share/man/**

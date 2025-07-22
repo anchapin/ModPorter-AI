@@ -1,0 +1,24 @@
+# Development override for faster builds
+services:
+  frontend:
+    # Override any development command that might be set
+    command: ["nginx", "-g", "daemon off;"]
+    
+  ai-engine:
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile.cpu  # Use CPU-only version for faster builds
+      args:
+        - INSTALL_DEV_DEPS=false
+    environment:
+      - PYTHONPATH=/tmp
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=INFO
+      - PORT=8001
+      - FORCE_CPU=true  # Force CPU mode for compatibility
+    volumes:
+      - model-cache:/tmp/models
+      - temp-uploads:/tmp/temp_uploads
+      - conversion-outputs:/tmp/conversion_outputs
