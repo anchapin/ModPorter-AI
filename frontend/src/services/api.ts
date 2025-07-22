@@ -16,7 +16,7 @@ import {
 } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {
