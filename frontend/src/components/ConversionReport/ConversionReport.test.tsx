@@ -151,6 +151,9 @@ describe('ConversionReport Component', () => {
             expect(screen.getByText(new RegExp(mockReportWithDevLog.developer_log.code_translation_details[0].message, "i"))).toBeInTheDocument();
         }
     });
+
+    // Note: Download button tests are covered in the existing successful conversion tests above
+    // The download section with both .mcaddon and report buttons is rendered when download_url is present
 });
 
 describe('Feedback Functionality in ConversionReport', () => {
