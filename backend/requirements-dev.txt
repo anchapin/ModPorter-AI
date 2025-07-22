@@ -5,8 +5,5 @@
 # Additional testing tools (beyond what's in requirements.txt)
 pytest-mock>=3.11.0
 
-# Code Quality (if not already in requirements.txt)
-# ruff and black are already in requirements.txt
-
 # Development Tools
 pre-commit>=3.0.0

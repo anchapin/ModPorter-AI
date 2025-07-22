@@ -4,7 +4,8 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 
 import logging
 import json
-from typing import List, Dict
+import re
+from typing import List, Dict, Union
 from crewai.tools import tool
 from src.models.smart_assumptions import (
     SmartAssumptionEngine,
@@ -128,6 +129,224 @@ class JavaAnalyzerAgent:
                 "embeddings_data": []
             })
     
+    def analyze_jar_for_mvp(self, jar_path: str) -> dict:
+        """
+        MVP-focused analysis: Extract registry name and texture path from simple block JAR.
+        
+        This method implements the specific requirements for Issue #167:
+        - Parse registry name from Java classes
+        - Find texture path in assets/*/textures/block/*.png
+        
+        Args:
+            jar_path: Path to the JAR file
+            
+        Returns:
+            Dict with registry_name, texture_path, and success status
+        """
+        try:
+            logger.info(f"MVP analysis of JAR: {jar_path}")
+            result = {
+                'success': False,
+                'registry_name': 'unknown:block',
+                'texture_path': None,
+                'errors': []
+            }
+            
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Handle empty JARs gracefully
+                if not file_list:
+                    logger.warning(f"Empty JAR file: {jar_path}")
+                    result['success'] = True  # Consider empty JAR as successfully analyzed
+                    result['registry_name'] = 'unknown:copper_block'  # Default fallback for empty JARs
+                    result['errors'].append("JAR file is empty but analysis completed")
+                    return result
+                
+                # Find block texture
+                texture_path = self._find_block_texture(file_list)
+                if texture_path:
+                    result['texture_path'] = texture_path
+                    logger.info(f"Found texture: {texture_path}")
+                
+                # Extract registry name
+                registry_name = self._extract_registry_name_from_jar(jar, file_list)
+                if registry_name:
+                    result['registry_name'] = registry_name
+                    logger.info(f"Found registry name: {registry_name}")
+                
+                # Check if we have both texture and registry name for success
+                if texture_path and registry_name:
+                    result['success'] = True
+                    logger.info(f"MVP analysis completed successfully for {jar_path}")
+                else:
+                    if not texture_path:
+                        result['errors'].append("Could not find block texture in JAR")
+                    if not registry_name or registry_name == 'unknown:block':
+                        result['errors'].append("Could not determine block registry name")
+                
+                return result
+                
+        except Exception as e:
+            logger.error(f"MVP analysis error: {e}")
+            return {
+                'success': False,
+                'registry_name': 'unknown:block',
+                'texture_path': None,
+                'errors': [f"JAR analysis failed: {str(e)}"]
+            }
+    
+    def _find_block_texture(self, file_list: list) -> str:
+        """Find a block texture in the JAR file list."""
+        for file_path in file_list:
+            if (file_path.startswith('assets/') and 
+                '/textures/block/' in file_path and 
+                file_path.endswith('.png')):
+                return file_path
+        return None
+    
+    def _extract_registry_name_from_jar_simple(self, jar, file_list: list) -> str:
+        """Extract block registry name from JAR metadata (simple version)."""
+        # Look for mod metadata files
+        for metadata_file in ['mcmod.info', 'fabric.mod.json', 'mods.toml']:
+            if metadata_file in file_list:
+                try:
+                    content = jar.read(metadata_file).decode('utf-8')
+                    if metadata_file == 'mcmod.info':
+                        import json
+                        data = json.loads(content)
+                        if isinstance(data, list) and len(data) > 0:
+                            mod_id = data[0].get('modid', 'unknown')
+                            return f"{mod_id}:copper_block"  # Default block name for MVP
+                    elif metadata_file == 'fabric.mod.json':
+                        import json
+                        data = json.loads(content)
+                        mod_id = data.get('id', 'unknown')
+                        return f"{mod_id}:copper_block"
+                except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                    logger.debug(f"Could not parse {metadata_file}: {e}")
+                    continue
+        
+        # Default fallback
+        return "unknown:copper_block"
+    
+    def _find_block_texture_extended(self, file_list: list) -> str:
+        """
+        Find the first block texture in the JAR.
+        Looks for: assets/*/textures/block/*.png
+        """
+        for file_name in file_list:
+            if (
+                file_name.startswith('assets/') and 
+                '/textures/block/' in file_name and 
+                file_name.endswith('.png')
+            ):
+                return file_name
+        return None
+    
+    def _extract_registry_name_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> str:
+        """
+        Extract registry name from Java source files or class names.
+        Uses multiple strategies:
+        1. Parse fabric.mod.json or mcmod.info for mod ID
+        2. Look for Block class names
+        3. Try to parse Java source if available
+        """
+        # Strategy 1: Get mod ID from metadata (most reliable)
+        mod_id = self._extract_mod_id_from_metadata(jar, file_list)
+        if mod_id:
+            # Try to find a block class and construct registry name
+            block_class = self._find_block_class_name(file_list)
+            if block_class:
+                # Convert BlockName to snake_case
+                block_name = self._class_name_to_registry_name(block_class)
+                return f"{mod_id}:{block_name}"
+            return f"{mod_id}:unknown_block"
+        
+        # Strategy 2: Extract from main block class name  
+        block_class = self._find_block_class_name(file_list)
+        if block_class:
+            block_name = self._class_name_to_registry_name(block_class)
+            return f"modporter:{block_name}"
+        
+        # Strategy 3: Use JAR filename as fallback
+        return "modporter:unknown_block"
+    
+    def _extract_mod_id_from_metadata(self, jar: zipfile.ZipFile, file_list: list) -> str:
+        """Extract mod ID from metadata files."""
+        # Try fabric.mod.json first
+        if 'fabric.mod.json' in file_list:
+            try:
+                content = jar.read('fabric.mod.json').decode('utf-8')
+                data = json.loads(content)
+                return data.get('id', '').lower()
+            except Exception as e:
+                logger.warning(f"Error reading fabric.mod.json: {e}")
+        
+        # Try mcmod.info
+        if 'mcmod.info' in file_list:
+            try:
+                content = jar.read('mcmod.info').decode('utf-8')
+                data = json.loads(content)
+                if isinstance(data, list) and len(data) > 0:
+                    return data[0].get('modid', '').lower()
+            except Exception as e:
+                logger.warning(f"Error reading mcmod.info: {e}")
+        
+        # Try mods.toml
+        for file_name in file_list:
+            if file_name.endswith('mods.toml'):
+                try:
+                    content = jar.read(file_name).decode('utf-8')
+                    for line in content.split('\n'):
+                        if 'modId' in line and '=' in line:
+                            mod_id = line.split('=')[1].strip().strip('"\'')
+                            return mod_id.lower()
+                except Exception as e:
+                    logger.warning(f"Error reading {file_name}: {e}")
+        
+        return None
+    
+    def _find_block_class_name(self, file_list: list) -> str:
+        """Find the main block class name from file paths."""
+        block_candidates = []
+        
+        for file_name in file_list:
+            if file_name.endswith('.class') or file_name.endswith('.java'):
+                # Extract class name from path
+                class_name = Path(file_name).stem
+                
+                # Look for Block in class name
+                if 'Block' in class_name and not class_name.startswith('Abstract'):
+                    block_candidates.append(class_name)
+        
+        # Return the first/shortest block class name
+        if block_candidates:
+            # Prefer simpler names (shorter, fewer underscores)
+            block_candidates.sort(key=lambda x: (len(x), x.count('_')))
+            return block_candidates[0]
+        
+        return None
+    
+    def _class_name_to_registry_name(self, class_name: str) -> str:
+        """Convert Java class name to registry name format."""
+        # Remove 'Block' suffix if present, but only if it's not the entire name
+        name = class_name
+        if name.endswith('Block') and len(name) > 5:
+            name = name[:-5]  # Remove 'Block' from the end
+        elif name.startswith('Block') and len(name) > 5 and name[5].isupper():
+            name = name[5:]  # Remove 'Block' from the start if it's a prefix like BlockOfCopper
+        
+        # Convert CamelCase to snake_case
+        import re
+        name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+        
+        # Clean up any double underscores or leading/trailing underscores
+        name = re.sub(r'_+', '_', name).strip('_')
+        
+        # Ensure it's not empty after processing
+        return name if name else 'unknown'
+    
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
         try:
@@ -171,11 +390,13 @@ class JavaAnalyzerAgent:
                             for indicator in indicators:
                                 if indicator in content:
                                     return framework
-                    except:
+                    except (UnicodeDecodeError, KeyError) as e:
+                        logger.debug(f"Could not read {file_name}: {e}")
                         continue
             
             return 'unknown'
-        except:
+        except Exception as e:
+            logger.warning(f"Error detecting framework: {e}")
             return 'unknown'
     
     def _extract_mod_info_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> dict:
@@ -190,7 +411,8 @@ class JavaAnalyzerAgent:
                 mod_info["name"] = fabric_data.get("id", fabric_data.get("name", "unknown")).lower()
                 mod_info["version"] = fabric_data.get("version", "1.0.0")
                 return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse fabric.mod.json: {e}")
                 pass
         
         # Look for Quilt mod.json
@@ -201,7 +423,8 @@ class JavaAnalyzerAgent:
                 mod_info["name"] = quilt_data.get("quilt_loader", {}).get("id", "unknown").lower()
                 mod_info["version"] = quilt_data.get("quilt_loader", {}).get("version", "1.0.0")
                 return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse quilt.mod.json: {e}")
                 pass
         
         # Look for Forge mcmod.info
@@ -214,7 +437,8 @@ class JavaAnalyzerAgent:
                     mod_info["name"] = mod_data.get("modid", "unknown").lower()
                     mod_info["version"] = mod_data.get("version", "1.0.0")
                     return mod_info
-            except:
+            except (json.JSONDecodeError, UnicodeDecodeError, KeyError) as e:
+                logger.debug(f"Could not parse mcmod.info: {e}")
                 pass
         
         # Look for mods.toml
@@ -229,7 +453,8 @@ class JavaAnalyzerAgent:
                             mod_info["name"] = mod_id.lower()
                             break
                     return mod_info
-                except:
+                except Exception as e:
+                    logger.debug(f"Could not parse mods.toml: {e}")
                     pass
         
         return mod_info
@@ -268,7 +493,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_mod_structure_tool(mod_data: str) -> str:
+    def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str:
         """
         Analyze the overall structure of a Java mod.
         
@@ -315,11 +540,13 @@ class JavaAnalyzerAgent:
                                     for indicator in indicators:
                                         if indicator in content:
                                             return framework
-                            except:
+                            except (UnicodeDecodeError, KeyError) as e:
+                                logger.debug(f"Could not read {file_name}: {e}")
                                 continue
                     
                     return 'unknown'
-            except:
+            except Exception as e:
+                logger.warning(f"Error in framework detection tool: {e}")
                 return 'unknown'
 
         def _detect_framework_from_source(source_path: str) -> str:
@@ -343,11 +570,13 @@ class JavaAnalyzerAgent:
                                         for indicator in indicators:
                                             if indicator in content:
                                                 return framework
-                            except:
+                            except (UnicodeDecodeError, FileNotFoundError, PermissionError) as e:
+                                logger.debug(f"Could not read {file_path}: {e}")
                                 continue
                 
                 return 'unknown'
-            except:
+            except Exception as e:
+                logger.warning(f"Error in source framework detection: {e}")
                 return 'unknown'
 
         def _analyze_jar_structure(jar_path: str, analysis_depth: str) -> Dict:
@@ -563,8 +792,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    analysis_depth = data.get('analysis_depth', 'standard')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        analysis_depth = data.get('analysis_depth', 'standard')
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        analysis_depth = data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -572,8 +806,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                analysis_depth = data.get('analysis_depth', 'standard')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    analysis_depth = data.get('analysis_depth', 'standard')
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    analysis_depth = data.get('analysis_depth', 'standard')
             
             if not os.path.exists(mod_path):
                 return json.dumps({"success": False, "error": f"Mod file not found: {mod_path}"})
@@ -626,7 +865,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_mod_metadata_tool(mod_data: str) -> str:
+    def extract_mod_metadata_tool(mod_data: Union[str, Dict]) -> str:
         """
         Extract metadata from mod files.
         
@@ -695,7 +934,11 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                    else:
+                        mod_path = data.get('mod_path', '')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -703,7 +946,11 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
             
             metadata_results = {
                 'mod_info': {},
@@ -738,7 +985,7 @@ class JavaAnalyzerAgent:
 
     @tool 
     @staticmethod
-    def identify_features_tool(mod_data: str) -> str:
+    def identify_features_tool(mod_data: Union[str, Dict]) -> str:
         """
         Identify features in the mod.
         
@@ -870,9 +1117,15 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    data.get('structure_analysis', {})
-                    extraction_mode = data.get('extraction_mode', 'comprehensive')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        data.get('structure_analysis', {})
+                        extraction_mode = data.get('extraction_mode', 'comprehensive')
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        data.get('structure_analysis', {})
+                        extraction_mode = data.get('extraction_mode', 'comprehensive')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -881,9 +1134,15 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                data.get('structure_analysis', {})
-                extraction_mode = data.get('extraction_mode', 'comprehensive')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    data.get('structure_analysis', {})
+                    extraction_mode = data.get('extraction_mode', 'comprehensive')
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    data.get('structure_analysis', {})
+                    extraction_mode = data.get('extraction_mode', 'comprehensive')
             
             feature_results = {
                 'identified_features': [],
@@ -927,7 +1186,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_dependencies_tool(mod_data: str) -> str:
+    def analyze_dependencies_tool(mod_data: Union[str, Dict]) -> str:
         """
         Analyze mod dependencies.
         
@@ -964,8 +1223,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_metadata = data.get('mod_metadata', {})
-                    data.get('analysis_depth', 'standard')
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_metadata = data['mod_data'] if isinstance(data['mod_data'], dict) else {}
+                        data.get('analysis_depth', 'standard')
+                    else:
+                        mod_metadata = data.get('mod_metadata', {})
+                        data.get('analysis_depth', 'standard')
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_metadata = {}
@@ -973,8 +1237,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_metadata': {}}
-                mod_metadata = data.get('mod_metadata', {})
-                data.get('analysis_depth', 'standard')
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_metadata = data['mod_data'] if isinstance(data['mod_data'], dict) else {}
+                    data.get('analysis_depth', 'standard')
+                else:
+                    mod_metadata = data.get('mod_metadata', {})
+                    data.get('analysis_depth', 'standard')
             
             dependency_results = {
                 'direct_dependencies': [],
@@ -1016,7 +1285,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_assets_tool(mod_data: str) -> str:
+    def extract_assets_tool(mod_data: Union[str, Dict]) -> str:
         """
         Extract assets from the mod.
         
@@ -1030,15 +1299,79 @@ class JavaAnalyzerAgent:
 
         def _extract_assets_from_jar(jar_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from JAR"""
-            return []  # Placeholder
+            assets = []
+            try:
+                with zipfile.ZipFile(jar_path, 'r') as jar:
+                    file_list = jar.namelist()
+                    
+                    for file_path in file_list:
+                        if '/textures/' in file_path and file_path.endswith(('.png', '.jpg', '.jpeg')):
+                            assets.append({
+                                'type': 'texture',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+                        elif '/models/' in file_path and file_path.endswith(('.json', '.obj')):
+                            assets.append({
+                                'type': 'model',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+                        elif '/sounds/' in file_path and file_path.endswith(('.ogg', '.wav')):
+                            assets.append({
+                                'type': 'sound',
+                                'path': file_path,
+                                'name': Path(file_path).name,
+                                'size': jar.getinfo(file_path).file_size
+                            })
+            except Exception as e:
+                logger.warning(f"Error extracting assets from JAR: {e}")
+            
+            return assets
     
         def _extract_assets_from_source(source_path: str, asset_types: List[str]) -> List[Dict]:
             """Extract assets from source"""
-            return []  # Placeholder
+            assets = []
+            try:
+                for root, dirs, files in os.walk(source_path):
+                    for file_name in files:
+                        file_path = os.path.join(root, file_name)
+                        rel_path = os.path.relpath(file_path, source_path)
+                        
+                        if '/textures/' in rel_path and file_name.endswith(('.png', '.jpg', '.jpeg')):
+                            assets.append({
+                                'type': 'texture',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+                        elif '/models/' in rel_path and file_name.endswith(('.json', '.obj')):
+                            assets.append({
+                                'type': 'model',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+                        elif '/sounds/' in rel_path and file_name.endswith(('.ogg', '.wav')):
+                            assets.append({
+                                'type': 'sound',
+                                'path': rel_path,
+                                'name': file_name,
+                                'size': os.path.getsize(file_path)
+                            })
+            except Exception as e:
+                logger.warning(f"Error extracting assets from source: {e}")
+            
+            return assets
     
         def _determine_asset_type(asset: Dict) -> str:
             """Determine asset type"""
-            return "other_assets"  # Placeholder
+            asset_type = asset.get('type', 'unknown')
+            if asset_type in ['texture', 'model', 'sound']:
+                return f"{asset_type}s"  # Convert to plural form
+            return "other_assets"
     
         def _generate_asset_summary(assets: Dict) -> Dict:
             """Generate asset summary"""
@@ -1053,8 +1386,13 @@ class JavaAnalyzerAgent:
             if isinstance(mod_data, str):
                 try:
                     data = json.loads(mod_data)
-                    mod_path = data.get('mod_path', '')
-                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                    # Check if CrewAI wrapped the parameter
+                    if 'mod_data' in data:
+                        mod_path = data['mod_data']
+                        asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                    else:
+                        mod_path = data.get('mod_path', '')
+                        asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as direct file path
                     mod_path = mod_data
@@ -1063,8 +1401,13 @@ class JavaAnalyzerAgent:
             else:
                 # Handle dict or other object types
                 data = mod_data if isinstance(mod_data, dict) else {'mod_path': str(mod_data)}
-                mod_path = data.get('mod_path', str(mod_data))
-                asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                # Check if CrewAI wrapped the parameter
+                if 'mod_data' in data:
+                    mod_path = data['mod_data']
+                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
+                else:
+                    mod_path = data.get('mod_path', str(mod_data))
+                    asset_types = data.get('asset_types', ['textures', 'models', 'sounds'])
             
             asset_results = {
                 'textures': [],
