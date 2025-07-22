@@ -588,7 +588,6 @@ async def simulate_ai_conversion(job_id: str):
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
             print(f"Job {job_id}: Status updated to FAILED due to error.")
->>>>>>> main
 
 
 # Conversion endpoints
@@ -1114,8 +1113,3 @@ async def export_addon_mcaddon(
         headers={"Content-Disposition": f"attachment; filename=\"{download_filename}\""}
     )
 
-
-        print(f"AI Engine not available ({e}), falling back to simulation for job {job_id}")
-    
-    # Fallback to simulation
-    await simulate_ai_conversion(job_id)
