@@ -16,7 +16,7 @@ from src.api.validation import (
     _validation_jobs_lock,
     _validation_reports_lock,
 )
-from backend.src.api.validation_constants import ValidationJobStatus, ValidationMessages
+from api.validation_constants import ValidationJobStatus, ValidationMessages
 
 
 @pytest.fixture

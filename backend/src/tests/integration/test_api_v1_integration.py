@@ -467,7 +467,7 @@ class TestV1FullWorkflowIntegration:
 
 # Imports for Report API tests (ensure these are at the top if not already)
 # from fastapi.testclient import TestClient # Already imported via pytest
-# from backend.src.main import app # Already imported via pytest
+# from main import app # Already imported via pytest
 
 # Module-level client for report tests, if not using pytest fixtures for all tests
 # client = TestClient(app) # Pytest client fixture is generally preferred

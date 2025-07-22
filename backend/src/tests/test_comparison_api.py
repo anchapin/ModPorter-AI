@@ -1,6 +1,6 @@
 import uuid
 from fastapi.testclient import TestClient
-from backend.src.main import app
+from main import app
 
 
 def test_comparison_api_endpoints_exist():

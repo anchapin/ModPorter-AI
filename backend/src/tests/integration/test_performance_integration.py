@@ -4,7 +4,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.main import app
-from backend.src.api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
+from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
 class TestPerformanceIntegration:
     """Integration tests for the performance benchmarking system."""

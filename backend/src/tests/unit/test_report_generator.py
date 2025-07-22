@@ -3,7 +3,7 @@ from typing import cast
 
 # Assuming execution from backend/ directory or PYTHONPATH includes backend/
 from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
-from backend.src.services.report_models import (
+from services.report_models import (
     FeatureConversionDetail, AssumptionDetail
 )
 

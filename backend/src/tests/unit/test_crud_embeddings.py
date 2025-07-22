@@ -7,7 +7,7 @@ import os
 # For model definition, it's imported, but for creating test data, it's just a list[float]
 # from pgvector.sqlalchemy import VECTOR # Not strictly needed for test data creation
 
-from backend.src.db import crud
+from db import crud
 
 # Skip all tests if using SQLite (these tests require PostgreSQL with pgvector)
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
