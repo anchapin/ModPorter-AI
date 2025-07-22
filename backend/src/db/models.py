@@ -112,6 +112,155 @@ class JobProgress(Base):
     job = relationship("ConversionJob", back_populates="progress")
 
 
+# Addon Management Models
+
+class Addon(Base):
+    __tablename__ = "addons"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    user_id: Mapped[str] = mapped_column(String, nullable=False) # Assuming user_id is a string for now
+    created_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    blocks = relationship("AddonBlock", back_populates="addon", cascade="all, delete-orphan")
+    assets = relationship("AddonAsset", back_populates="addon", cascade="all, delete-orphan")
+    recipes = relationship("AddonRecipe", back_populates="addon", cascade="all, delete-orphan")
+
+
+class AddonBlock(Base):
+    __tablename__ = "addon_blocks"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    addon_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
+    )
+    identifier: Mapped[str] = mapped_column(String, nullable=False)
+    properties: Mapped[dict] = mapped_column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    addon = relationship("Addon", back_populates="blocks")
+    behavior = relationship("AddonBehavior", back_populates="block", uselist=False, cascade="all, delete-orphan")
+
+
+class AddonAsset(Base):
+    __tablename__ = "addon_assets"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    addon_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
+    )
+    type: Mapped[str] = mapped_column(String, nullable=False)  # E.g., "texture", "sound", "script"
+    path: Mapped[str] = mapped_column(String, nullable=False) # Relative path within the addon structure
+    original_filename: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    addon = relationship("Addon", back_populates="assets")
+
+
+class AddonBehavior(Base):
+    __tablename__ = "addon_behaviors"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    block_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("addon_blocks.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Behavior components, events, etc.
+    created_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    block = relationship("AddonBlock", back_populates="behavior")
+
+
+class AddonRecipe(Base):
+    __tablename__ = "addon_recipes"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    addon_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
+    )
+    data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Crafting recipe definition
+    created_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    addon = relationship("Addon", back_populates="recipes")
+
+
+# Feedback Models
+
 class ConversionFeedback(Base):
     __tablename__ = "conversion_feedback"
 
@@ -130,6 +279,8 @@ class ConversionFeedback(Base):
 
     job = relationship("ConversionJob", back_populates="feedback")
 
+
+# Comparison Models
 
 class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
@@ -170,11 +321,8 @@ class FeatureMappingDb(Base):
     )
 
 
-# New model for document embeddings
-# pgvector.sqlalchemy.VECTOR is already imported
-# uuid is already imported
-# sqlalchemy.dialects.postgresql.UUID is already imported
-# sqlalchemy.Column, String, DateTime, func are already imported
+# Document Embedding Models
+
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
 

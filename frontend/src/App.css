@@ -97,3 +97,169 @@ main {
 .read-the-docs {
   color: #888;
 }
+
+/* Editor Layout Styles */
+.editor-layout {
+  display: grid;
+  grid-template-areas:
+    "header header header"
+    "sidebar-left main-content sidebar-right"
+    "footer footer footer";
+  grid-template-columns: 250px 1fr 250px; /* Example column sizes */
+  grid-template-rows: auto 1fr auto; /* Header/footer auto, main content takes remaining space */
+  min-height: 90vh; /* Make editor take most of the viewport height */
+  border: 1px solid #ccc;
+  text-align: left; /* Override global text-align: center */
+}
+
+.editor-header {
+  grid-area: header;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.editor-sidebar-left {
+  grid-area: sidebar-left;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+}
+
+.editor-main-content {
+  grid-area: main-content;
+  padding: 15px;
+  overflow-y: auto; /* Allow scrolling for main content */
+}
+
+.editor-sidebar-right {
+  grid-area: sidebar-right;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-left: 1px solid #ccc;
+}
+
+.editor-footer {
+  grid-area: footer;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  text-align: center;
+}
+
+.editor-status {
+  padding: 20px;
+  text-align: center;
+}
+.editor-error {
+  color: red;
+}
+
+/* Basic styling for lists within sidebars if any */
+.editor-sidebar-left div,
+.editor-sidebar-right div {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+.editor-sidebar-left div:last-child,
+.editor-sidebar-right div:last-child {
+  border-bottom: none;
+}
+
+/* Styles for sidebar tabs */
+.sidebar-tabs {
+  display: flex;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.sidebar-tab-button {
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent; /* For active indicator */
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.sidebar-tab-button.active {
+  font-weight: bold;
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.sidebar-tab-button:hover:not(.active) {
+  background-color: #f0f0f0;
+}
+
+.sidebar-tab-content {
+  /* Styles for the content area of the tab if needed */
+  /* For example, if you want consistent padding */
+}
+
+/* Adjust .editor-sidebar-right to better accommodate tabs and content */
+.editor-sidebar-right {
+  grid-area: sidebar-right;
+  background-color: #f9f9f9;
+  padding: 0; /* Remove padding if tabs handle it */
+  border-left: 1px solid #ccc;
+  display: flex; /* Allow tab content to grow */
+  flex-direction: column; /* Stack tabs above content */
+}
+
+.editor-sidebar-right .sidebar-tabs {
+  padding: 0 10px; /* Add padding to the tab bar itself */
+}
+
+.editor-sidebar-right .sidebar-tab-content {
+  padding: 10px; /* Add padding to the content area below tabs */
+  overflow-y: auto; /* Allow content to scroll */
+  flex-grow: 1;
+}
+
+/* Remove generic div styling within editor-sidebar-right if it conflicts with tab content */
+.editor-sidebar-right > div:not(.sidebar-tabs):not(.sidebar-tab-content) {
+  /* This selector is an example if direct children were being styled by the generic rule.
+     It's better to make the generic rule more specific or remove it if it causes issues.
+     For now, the generic rule was:
+     .editor-sidebar-left div, .editor-sidebar-right div { padding: 5px 0; border-bottom: 1px solid #eee; }
+     This might conflict with AssetManager/RecipeManager structure.
+     Let's assume the components within AssetManager/RecipeManager handle their own item borders.
+  */
+  border-bottom: none; /* Override generic rule for direct children of sidebar */
+  padding: 0;
+}
+
+/* Editor Footer Save Button */
+.editor-footer {
+  display: flex; /* Align items in footer */
+  justify-content: flex-end; /* Push save button to the right */
+  align-items: center;
+  gap: 10px; /* Space between button and error message */
+}
+
+.save-changes-button {
+  padding: 8px 15px;
+  background-color: #28a745; /* Green for save */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.save-changes-button:hover {
+  background-color: #218838;
+}
+
+.save-changes-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.save-error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-right: auto; /* Push other items to the right */
+}

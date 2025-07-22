@@ -5,6 +5,7 @@ import { DocumentationSimple } from './pages/DocumentationSimple';
 import { Dashboard } from './pages/Dashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
+import EditorPage from './pages/EditorPage'; // Added for Editor Route
 import './App.css';
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
                 />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/docs" element={<DocumentationSimple />} />
+                <Route path="/editor/:addonId" element={<EditorPage />} /> {/* Added Editor Route */}
               </Routes>
             </main>
           </div>
