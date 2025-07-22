@@ -1,4 +1,4 @@
-from backend.src.db import models
+from db import models
 
 
 def test_model_tablenames() -> None:

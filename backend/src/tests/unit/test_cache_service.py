@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from src.services.cache import CacheService
 
 # Absolute import for src.models.cache_models
-from backend.src.models.cache_models import CacheStats
+from models.cache_models import CacheStats
 
 # Need to import datetime here for the global test data
 from datetime import datetime

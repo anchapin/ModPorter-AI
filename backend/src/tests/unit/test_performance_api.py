@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from backend.src.api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
+from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
 class TestPerformanceAPI:
     """Test cases for the performance benchmarking API endpoints."""

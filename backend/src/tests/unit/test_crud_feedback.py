@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 
 from src.db import crud
-from backend.src.db.models import ConversionFeedback
+from db.models import ConversionFeedback
 
 @pytest.mark.asyncio
 async def test_create_feedback():

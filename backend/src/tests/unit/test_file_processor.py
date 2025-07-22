@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from unittest import mock  # For mock.patch
 
-from backend.src.file_processor import FileProcessor
+from file_processor import FileProcessor
 
 # Configure basic logging for tests if needed, or mock it out
 # logging.basicConfig(level=logging.DEBUG) # Could be noisy
