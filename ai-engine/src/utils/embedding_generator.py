@@ -221,19 +221,6 @@ class EmbeddingGenerator:
             logger.warning("Input document is empty or not a string. Returning empty list.")
             return []
 
-        """
-        Splits a document into overlapping chunks based on token count (approximated by words).
-        Args:
-            document (str): The document text to chunk.
-            chunk_size (int): The target size of each chunk (in approximate tokens/words).
-            overlap (int): The number of tokens/words to overlap between chunks.
-        Returns:
-            List[str]: A list of text chunks.
-        """
-        if not document or not isinstance(document, str):
-            logger.warning("Input document is empty or not a string. Returning empty list.")
-            return []
-
         tokens = document.split() # Simple whitespace tokenization
         if not tokens:
             return []
