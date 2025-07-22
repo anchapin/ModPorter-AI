@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 from sqlalchemy import (
     String,
@@ -13,9 +14,10 @@ from sqlalchemy import (
     TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.db.declarative_base import Base
-import uuid # For default factories in new models
+
 
 class ConversionJob(Base):
     __tablename__ = "conversion_jobs"
@@ -30,9 +32,7 @@ class ConversionJob(Base):
         nullable=False,
         server_default=text("'queued'"),
     )
-    input_data: Mapped[dict] = mapped_column(
-        JSONB, nullable=False
-    )
+    input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[Optional[DateTime]] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -46,10 +46,21 @@ class ConversionJob(Base):
     )
 
     # Relationship: one job -> many results and progress
-    results = relationship("ConversionResult", back_populates="job", cascade="all, delete-orphan")
-    progress = relationship("JobProgress", back_populates="job", cascade="all, delete-orphan", uselist=False)
+    results = relationship(
+        "ConversionResult", back_populates="job", cascade="all, delete-orphan"
+    )
+    progress = relationship(
+        "JobProgress", back_populates="job", cascade="all, delete-orphan", uselist=False
+    )
     # Relationship to comparison_results
-    comparison_results = relationship("ComparisonResultDb", back_populates="conversion_job")
+    comparison_results = relationship(
+        "ComparisonResultDb", back_populates="conversion_job"
+    )
+    # Relationship to feedback
+    feedback = relationship(
+        "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
+    )
+
 
 class ConversionResult(Base):
     __tablename__ = "conversion_results"
@@ -64,9 +75,7 @@ class ConversionResult(Base):
         ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    output_data: Mapped[dict] = mapped_column(
-        JSONB, nullable=False
-    )
+    output_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[Optional[DateTime]] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -74,6 +83,7 @@ class ConversionResult(Base):
     )
 
     job = relationship("ConversionJob", back_populates="results")
+
 
 class JobProgress(Base):
     __tablename__ = "job_progress"
@@ -102,11 +112,32 @@ class JobProgress(Base):
     job = relationship("ConversionJob", back_populates="progress")
 
 
+class ConversionFeedback(Base):
+    __tablename__ = "conversion_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    job = relationship("ConversionJob", back_populates="feedback")
+
+
 class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversion_id = Column(UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False)
+    conversion_id = Column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
+    )
     structural_diff = Column(JSONB)
     code_diff = Column(JSONB)
     asset_diff = Column(JSONB)
@@ -114,7 +145,11 @@ class ComparisonResultDb(Base):
     confidence_scores = Column(JSONB)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    feature_mappings = relationship("FeatureMappingDb", back_populates="comparison_result", cascade="all, delete-orphan")
+    feature_mappings = relationship(
+        "FeatureMappingDb",
+        back_populates="comparison_result",
+        cascade="all, delete-orphan",
+    )
     conversion_job = relationship("ConversionJob", back_populates="comparison_results")
 
 
@@ -122,10 +157,30 @@ class FeatureMappingDb(Base):
     __tablename__ = "feature_mappings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    comparison_id = Column(UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False)
+    comparison_id = Column(
+        UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False
+    )
     java_feature = Column(Text)
     bedrock_equivalent = Column(Text)
     mapping_type = Column(VARCHAR(50))
-    confidence_score = Column(DECIMAL(3,2))
+    confidence_score = Column(DECIMAL(3, 2))
 
-    comparison_result = relationship("ComparisonResultDb", back_populates="feature_mappings")
+    comparison_result = relationship(
+        "ComparisonResultDb", back_populates="feature_mappings"
+    )
+
+
+# New model for document embeddings
+# pgvector.sqlalchemy.VECTOR is already imported
+# uuid is already imported
+# sqlalchemy.dialects.postgresql.UUID is already imported
+# sqlalchemy.Column, String, DateTime, func are already imported
+class DocumentEmbedding(Base):
+    __tablename__ = "document_embeddings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding
+    document_source = Column(String, nullable=False, index=True)
+    content_hash = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

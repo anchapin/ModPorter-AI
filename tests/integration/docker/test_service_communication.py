@@ -19,7 +19,7 @@ class TestServiceCommunication:
         assert backend_api_url, "Backend API URL not provided by docker_environment fixture"
 
         # The health endpoint should verify database connectivity
-        health_response = requests.get(f"{backend_api_url}/health", timeout=30)
+        health_response = requests.get(f"{backend_api_url}/api/v1/health", timeout=30)
         assert health_response.status_code == 200
         
         health_data = health_response.json()
@@ -99,7 +99,7 @@ class TestServiceCommunication:
         assert backend_api_url, "Backend API URL not provided by docker_environment fixture"
 
         # Backend should be healthy (depends on postgres and redis)
-        health_response = requests.get(f"{backend_api_url}/health", timeout=30)
+        health_response = requests.get(f"{backend_api_url}/api/v1/health", timeout=30)
         assert health_response.status_code == 200
         
         health_data = health_response.json()
@@ -121,7 +121,7 @@ class TestServiceCommunication:
 
         # Make multiple requests to ensure stability
         for i in range(3):
-            health_response = requests.get(f"{backend_api_url}/health", timeout=30)
+            health_response = requests.get(f"{backend_api_url}/api/v1/health", timeout=30)
             assert health_response.status_code == 200
             
             health_data = health_response.json()
