@@ -370,9 +370,8 @@
   gap: 15px;
 }
 
-/* Primary action button style (Upload / Download) */
-.convert-button,
-.download-button {
+/* Convert button style */
+.convert-button {
   background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
   padding: 16px 32px;
@@ -388,11 +387,34 @@
   overflow: hidden;
 }
 
-.convert-button:hover,
-.download-button:hover {
+.convert-button:hover {
   background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+/* Green download button style */
+.download-button {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  border: none;
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 220px;
+}
+
+.download-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .convert-button:disabled,
