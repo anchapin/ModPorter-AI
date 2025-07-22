@@ -150,7 +150,7 @@ class TestJavaAnalyzerAgent:
             assert results["embeddings_data"] == []
 
             # Verify the embedding failure was logged during EmbeddingGenerator initialization
-            assert "Failed to load SentenceTransformer model 'sentence-transformers/all-MiniLM-L6-v2': Mock model loading failed" in caplog.text
+            assert "Failed to load SentenceTransformer model 'all-MiniLM-L6-v2': Mock model loading failed" in caplog.text
 
             # Clean up singleton for other tests
             JavaAnalyzerAgent._instance = None

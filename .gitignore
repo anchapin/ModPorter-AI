@@ -60,6 +60,9 @@ setup-*.sh
 coverage.xml
 */.coverage
 */coverage.xml
+coverage/
+*/coverage/
+frontend/coverage/
 
 # Temporary uploads
 temp_uploads/

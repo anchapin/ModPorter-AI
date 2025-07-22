@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import tempfile
@@ -60,7 +61,7 @@ class TestRagEvaluator(unittest.TestCase):
         mock_kb_agent.return_value.get_tools.return_value = [mock_search_tool]
         
         evaluator = RagEvaluator(self.temp_file.name)
-        evaluator.evaluate_retrieval()
+        asyncio.run(evaluator.evaluate_retrieval())
         
         # Check metrics - the SearchTool has default results that should match our expectation
         self.assertEqual(evaluator.retrieval_metrics["total_queries"], 1)
@@ -75,7 +76,7 @@ class TestRagEvaluator(unittest.TestCase):
         mock_kb_agent.return_value.get_tools.return_value = [mock_search_tool]
         
         evaluator = RagEvaluator(self.temp_file.name)
-        evaluator.evaluate_retrieval()
+        asyncio.run(evaluator.evaluate_retrieval())
         
         # Check metrics - since we're using real SearchTool, exact hit count depends on hardcoded results
         self.assertEqual(evaluator.retrieval_metrics["total_queries"], 1)

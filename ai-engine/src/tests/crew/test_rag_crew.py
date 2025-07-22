@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import os
 import json
@@ -63,7 +64,7 @@ def test_rag_crew_search_tool_integration(set_mock_env_vars):
     query = "Test query for search output structure"
 
     # Test the semantic search tool
-    search_output = SearchTool.semantic_search.func(query)
+    search_output = asyncio.run(SearchTool.semantic_search.func(query))
     
     assert search_output is not None, "Search tool output should not be None"
     print(f"Search tool raw output: {search_output}")

@@ -30,8 +30,8 @@ The conversion uses **6 specialized AI agents** working in sequence:
 pnpm install && cd frontend && pnpm install
 
 # Start all services (Docker recommended)
-docker-compose up -d                    # Production images
-docker-compose -f docker-compose.dev.yml up -d  # Development with hot reload
+docker compose up -d                    # Production images
+docker compose -f docker compose.dev.yml up -d  # Development with hot reload
 
 # Local development (requires services)
 npm run dev                             # Both frontend + backend

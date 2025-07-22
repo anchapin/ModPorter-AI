@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from src.utils.embedding_generator import EmbeddingGenerator # Adjusted import path
 # The MockSentenceTransformer class and mock_sentence_transformer_fixture are now in conftest.py
 
@@ -31,38 +32,47 @@ def test_embedding_generator_init_success(mock_embedding_generator):
     """Test successful initialization of EmbeddingGenerator."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     assert generator.model is not None
-    assert generator.model.model_name == 'sentence-transformers/all-MiniLM-L6-v2'
+    assert generator.model.model_name == 'all-MiniLM-L6-v2'
 
 def test_embedding_generator_init_failure(mock_embedding_generator, caplog):
     """Test failed initialization of EmbeddingGenerator if model loading fails."""
-    generator = EmbeddingGenerator(model_name='invalid-model-name')
+    generator = EmbeddingGenerator(model_name='sentence-transformers/invalid-model-name')
     assert generator.model is None
     assert "Failed to load SentenceTransformer model 'invalid-model-name'" in caplog.text
 
-    # Test that generate_embeddings handles model load failure
-    embeddings = generator.generate_embeddings(["test"])
+    # Test that generate_embeddings handles model load failure  
+    import asyncio
+    async def test_async():
+        embeddings = await generator.generate_embeddings(["test"])
+        return embeddings
+    
+    embeddings = asyncio.run(test_async())
     assert embeddings is None
-    assert "Embedding model is not loaded." in caplog.text
+    assert "SentenceTransformer model is not loaded. Cannot generate embeddings." in caplog.text
 
 
-def test_generate_embeddings_success(mock_embedding_generator):
+@pytest.mark.asyncio
+async def test_generate_embeddings_success(mock_embedding_generator):
     """Test successful embedding generation."""
     generator = EmbeddingGenerator(model_name='sentence-transformers/all-MiniLM-L6-v2')
     texts = ["hello world", "another sentence"]
-    embeddings = generator.generate_embeddings(texts)
+    embeddings = await generator.generate_embeddings(texts)
     assert embeddings is not None
-    assert isinstance(embeddings, np.ndarray)
-    assert embeddings.shape[0] == len(texts)
-    assert embeddings.shape[1] == 384 # for all-MiniLM-L6-v2
+    assert isinstance(embeddings, list)
+    assert len(embeddings) == len(texts)
+    assert all(isinstance(emb, np.ndarray) for emb in embeddings)
+    assert all(emb.shape == (384,) for emb in embeddings)  # for all-MiniLM-L6-v2
 
-def test_generate_embeddings_empty_input(mock_embedding_generator, caplog):
+@pytest.mark.asyncio
+async def test_generate_embeddings_empty_input(mock_embedding_generator, caplog):
     """Test embedding generation with empty list of texts."""
     generator = EmbeddingGenerator()
-    embeddings = generator.generate_embeddings([])
+    embeddings = await generator.generate_embeddings([])
     assert embeddings == [] # As per current implementation
     assert "Input text_chunks is empty or not a list." in caplog.text
 
-def test_generate_embeddings_model_produces_invalid_output(mock_embedding_generator, caplog, monkeypatch):
+@pytest.mark.asyncio
+async def test_generate_embeddings_model_produces_invalid_output(mock_embedding_generator, caplog, monkeypatch):
     """Test scenario where model.encode throws an error."""
     
     def mock_encode_error(sentences, convert_to_numpy=True):
@@ -75,7 +85,7 @@ def test_generate_embeddings_model_produces_invalid_output(mock_embedding_genera
     monkeypatch.setattr(generator.model, "encode", mock_encode_error)
     
     texts = ["test sentence"]
-    embeddings = generator.generate_embeddings(texts)
+    embeddings = await generator.generate_embeddings(texts)
     assert embeddings is None
     assert "Error generating embeddings: Simulated encoding error" in caplog.text
 

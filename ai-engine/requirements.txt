@@ -9,7 +9,7 @@ langchain>=0.3.0
 langchain-openai>=0.2.0
 langchain-ollama>=0.1.0
 openai>=1.0.0
-sentence-transformers
+sentence-transformers>=2.2.0
 
 # Vector Database (pin version for embedchain compatibility)
 chromadb<1.1.0
@@ -26,7 +26,10 @@ Pillow
 pydub
 
 # HTTP Client
-httpx
+httpx==0.28.1
+beautifulsoup4>=4.12.0 # For web scraping (BedrockDocsScraper)
+aiofiles>=23.0.0     # For async file operations (potentially in scraper or other utils)
+validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 
 # Redis for job management
 redis>=4.5.0

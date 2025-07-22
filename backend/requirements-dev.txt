@@ -1,2 +1,9 @@
-# Development dependencies are included in requirements.txt
-# This file exists for compatibility with CI workflows
+# Development dependencies for backend
+# Note: Base requirements including pytest are already in requirements.txt
+# This file contains additional dev-only tools
+
+# Additional testing tools (beyond what's in requirements.txt)
+pytest-mock>=3.11.0
+
+# Development Tools
+pre-commit>=3.0.0
