@@ -87,6 +87,20 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
   const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
   const [submitMessage, setSubmitMessage] = useState('');
 
+  const handleDownloadReport = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const pageHTML = document.documentElement.outerHTML;
+    const blob = new Blob([pageHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'conversion-report.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Feedback handlers
   const handleFeedbackTypeChange = (type: 'thumbs_up' | 'thumbs_down') => {
     if (feedbackType === type) {
@@ -178,15 +192,53 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
 
       {/* Download Section */}
       {summary.download_url && (
-        <div className={styles.downloadSection}>
-          <h3 className={styles.downloadTitle}>Your Bedrock Add-on is Ready!</h3>
-          <a
-            href={summary.download_url}
-            download
-            className={styles.downloadButton}
-          >
-            📦 Download .mcaddon
-          </a>
+        <div style={{
+          marginBottom: '2rem',
+          backgroundColor: '#f0f9ff',
+          padding: '1.5rem',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: 0, color: '#1e40af' }}>Your Bedrock Add-on is Ready!</h3>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            <a
+              href={summary.download_url}
+              download
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#007bff',
+                color: 'white',
+                padding: '1rem 2rem',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                marginTop: '0.5rem',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              📥 Download .mcaddon
+            </a>
+            <a
+              href="#"
+              onClick={handleDownloadReport}
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#007bff',
+                color: 'white',
+                padding: '1rem 2rem',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                marginTop: '0.5rem',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              📄 Download Report
+            </a>
+          </div>
         </div>
       )}
 
