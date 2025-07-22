@@ -151,11 +151,15 @@ Required environment variables (add to `.env`):
 OPENAI_API_KEY=your-openai-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 
-# Database (auto-configured for Docker)
+# Database Configuration
+# For local development (auto-configured for Docker):
 DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
 POSTGRES_DB=modporter
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
+
+# For Supabase (production):
+DATABASE_URL=postgresql://supabase_user:supabase_password@db.your_project_id.supabase.co:5432/postgres
 
 # Redis (auto-configured for Docker)
 REDIS_URL=redis://redis:6379
