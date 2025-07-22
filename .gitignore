@@ -60,6 +60,9 @@ setup-*.sh
 coverage.xml
 */.coverage
 */coverage.xml
+coverage/
+*/coverage/
+frontend/coverage/
 
 # Temporary uploads
 temp_uploads/
@@ -74,6 +77,7 @@ opencode.json
 
 # Optional development files
 ai-engine/check_code_quality.py
+ai-engine/src/check_code_quality.py
 docs/RAG_TESTING_SUMMARY.md
 
 # Large test fixtures that can cause E2BIG errors
