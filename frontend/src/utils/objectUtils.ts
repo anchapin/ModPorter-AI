@@ -53,7 +53,7 @@ export const getPropertyByPath = (obj: any, path: string): any => {
   const keys = path.split('.');
   let current = obj;
   for (const key of keys) {
-    if (typeof current !== 'object' || current === null || !current.hasOwnProperty(key)) {
+    if (typeof current !== 'object' || current === null || !Object.prototype.hasOwnProperty.call(current, key)) {
       return undefined;
     }
     current = current[key];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditorContext } from '../../../context/EditorContext';
 import { getPropertyByPath } from '../../../utils/objectUtils'; // Import the utility
 // AddonBlock type is implicitly available via selectedBlock from addonData.blocks

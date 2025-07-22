@@ -4,7 +4,6 @@
  */
 
 import {
-  ConversionRequest,
   ConversionResponse,
   ConversionStatus,
   UploadResponse,

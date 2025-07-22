@@ -148,6 +148,7 @@ export const EditorProvider: React.FC<EditorProviderProps> = ({ children }) => {
 };
 
 // 4. Custom Hook for using the EditorContext
+// eslint-disable-next-line react-refresh/only-export-components
 export const useEditorContext = (): EditorState => {
   const context = useContext(EditorContext);
   if (context === undefined) {
