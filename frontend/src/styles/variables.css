@@ -50,6 +50,13 @@
   --color-button-success: #4caf50;
   --color-button-success-hover: #45a049;
   
+  /* Specific Component Colors */
+  --color-warning-dark: #92400e;
+  --color-purple-bg: #ddd6fe;
+  --color-purple-text: #5b21b6;
+  --color-blue-dark: #0369a1;
+  --color-orange: #e65100;
+  
   /* Gradient Colors */
   --gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -60,6 +67,7 @@
   --spacing-sm: 0.5rem;    /* 8px */
   --spacing-md: 1rem;      /* 16px */
   --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-l: 1.25rem;    /* 20px */
   --spacing-xl: 2rem;      /* 32px */
   --spacing-2xl: 3rem;     /* 48px */
   
@@ -113,6 +121,7 @@
   --container-sm: 640px;
   --container-md: 768px;
   --container-lg: 1024px;
+  --container-documentation: 1200px;
   --container-xl: 1280px;
   --container-2xl: 1400px;
 }

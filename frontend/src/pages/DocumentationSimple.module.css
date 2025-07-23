@@ -1,40 +1,40 @@
 /* DocumentationSimple Page Styles */
 
 .container {
-  max-width: 1200px;
+  max-width: var(--container-documentation);
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--spacing-xl);
 }
 
 .header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .title {
-  font-size: 2.5rem;
-  color: #333;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-4xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .subtitle {
-  font-size: 1.2rem;
-  color: #666;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
   max-width: 600px;
   margin: 0 auto;
 }
 
 .navigation {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
   text-align: center;
 }
 
 .navLink {
-  margin: 0 1rem;
-  color: #007bff;
+  margin: 0 var(--spacing-md);
+  color: var(--color-link);
   text-decoration: none;
 }
 
@@ -43,179 +43,179 @@
 }
 
 .section {
-  margin-bottom: 3rem;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .sectionTitle {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-3xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .quickStartPanel {
-  background-color: #e8f5e8;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  background-color: var(--color-bg-success);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .quickStartTitle {
-  color: #333;
-  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .quickStartList {
-  font-size: 1.1rem;
-  color: #555;
-  line-height: 1.8;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-loose);
 }
 
 .featuresGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
 }
 
 .featureCard {
-  background-color: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
 }
 
 .featureTitle {
-  color: #007bff;
-  margin-bottom: 1rem;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .featureDescription {
-  color: #555;
-  line-height: 1.6;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
 }
 
 .processPanel {
-  background-color: #fff3e0;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  background-color: var(--color-bg-warning);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .processPanelTitle {
-  color: #333;
-  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .processStages {
-  font-size: 1.1rem;
-  color: #555;
-  line-height: 1.8;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-loose);
 }
 
 .processStage {
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .assumptionsPanel {
-  background-color: #f3e5f5;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  background-color: var(--color-bg-purple);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .assumptionsPanelTitle {
-  color: #333;
-  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
 }
 
 .assumptionsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  font-size: 1rem;
+  gap: var(--spacing-lg);
+  font-size: var(--font-size-base);
 }
 
 .assumptionItem h4 {
   color: #9c27b0;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .assumptionItem p {
-  color: #555;
-  line-height: 1.6;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
 }
 
 .helpSection {
-  background-color: #e3f2fd;
-  padding: 2rem;
-  border-radius: 8px;
+  background-color: var(--color-bg-info);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
   text-align: center;
-  margin-top: 3rem;
+  margin-top: var(--spacing-2xl);
 }
 
 .helpTitle {
   color: #1976d2;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .helpDescription {
-  color: #555;
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .helpButtons {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
 .examplesButton {
-  background-color: #007bff;
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  padding: 0.75rem var(--spacing-lg);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+  font-size: var(--font-size-base);
+  transition: var(--transition-fast);
 }
 
 .examplesButton:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .supportButton {
-  background-color: #28a745;
+  background-color: var(--color-success);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  padding: 0.75rem var(--spacing-lg);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+  font-size: var(--font-size-base);
+  transition: var(--transition-fast);
 }
 
 .supportButton:hover {
-  background-color: #1e7e34;
+  background-color: var(--color-success-dark);
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
   .container {
-    padding: 1rem;
+    padding: var(--spacing-md);
   }
   
   .title {
-    font-size: 2rem;
+    font-size: var(--font-size-3xl);
   }
   
   .subtitle {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
   
   .sectionTitle {
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
   }
   
   .featuresGrid {
@@ -227,12 +227,12 @@
   }
   
   .navigation {
-    padding: 0.5rem;
+    padding: var(--spacing-sm);
   }
   
   .navLink {
     display: block;
-    margin: 0.5rem 0;
+    margin: var(--spacing-sm) 0;
   }
   
   .helpButtons {

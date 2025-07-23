@@ -1,42 +1,42 @@
 /* App Component Styles */
 
 .heroSection {
-  padding: 2rem;
+  padding: var(--spacing-xl);
   text-align: center;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  margin: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-2xl);
+  margin: var(--spacing-xl);
+  box-shadow: var(--shadow-xl);
 }
 
 .heroTitle {
-  font-size: 3rem;
-  color: #333;
-  margin-bottom: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: var(--font-size-5xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  background: var(--gradient-hero);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .heroDescription {
-  font-size: 1.2rem;
-  color: #666;
-  margin-bottom: 2rem;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xl);
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
   .heroSection {
-    padding: 1.5rem;
-    margin: 1rem;
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md);
   }
   
   .heroTitle {
-    font-size: 2.5rem;
+    font-size: var(--font-size-4xl);
   }
   
   .heroDescription {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
 }

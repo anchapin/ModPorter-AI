@@ -1,48 +1,48 @@
 /* AssumptionTracker Component Styles */
 
 .container {
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin: 20px 0;
+  padding: var(--spacing-l);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-l) 0;
 }
 
 .title {
-  margin-bottom: 20px;
-  color: #1f2937;
+  margin-bottom: var(--spacing-l);
+  color: var(--color-text-dark);
 }
 
 .emptyState {
   text-align: center;
-  padding: 40px 20px;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  border: 2px dashed #d1d5db;
+  padding: 40px var(--spacing-l);
+  background-color: var(--color-bg-light);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border-medium);
 }
 
 .emptyIcon {
   font-size: 48px;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .emptyText {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-style: italic;
   margin: 0;
 }
 
 .emptySubtext {
-  color: #9ca3af;
-  font-size: 14px;
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
   margin: 5px 0 0 0;
 }
 
 .infoPanel {
-  background-color: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 6px;
+  background-color: var(--color-bg-yellow);
+  border: 1px solid var(--color-border-warning);
+  border-radius: var(--radius-md);
   padding: 12px;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-l);
 }
 
 .infoPanelHeader {
@@ -57,14 +57,14 @@
 }
 
 .infoPanelTitle {
-  color: #92400e;
+  color: var(--color-warning-dark);
   font-weight: bold;
 }
 
 .infoPanelText {
   margin: 0;
-  color: #92400e;
-  font-size: 14px;
+  color: var(--color-warning-dark);
+  font-size: var(--font-size-sm);
 }
 
 .assumptionsGrid {
@@ -73,25 +73,25 @@
 }
 
 .assumptionCard {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
 }
 
 .assumptionHeader {
   padding: 15px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: var(--transition-fast);
 }
 
 .assumptionHeaderExpanded {
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--color-bg-light);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .assumptionHeaderCollapsed {
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
 }
 
 .assumptionContent {
@@ -112,11 +112,11 @@
 }
 
 .assumptionId {
-  background-color: #ddd6fe;
-  color: #5b21b6;
+  background-color: var(--color-purple-bg);
+  color: var(--color-purple-text);
   padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   font-weight: bold;
   font-family: monospace;
 }
@@ -128,24 +128,24 @@
 }
 
 .impactText {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: bold;
 }
 
 .impactHigh {
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 .impactMedium {
-  color: #d97706;
+  color: var(--color-warning);
 }
 
 .impactLow {
-  color: #059669;
+  color: var(--color-success);
 }
 
 .impactDefault {
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .confidenceBadge {
@@ -155,22 +155,22 @@
 }
 
 .confidenceText {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .assumptionDescription {
   margin: 0;
-  color: #374151;
-  font-size: 14px;
-  line-height: 1.5;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 .expandIcon {
   margin-left: 10px;
-  color: #9ca3af;
-  font-size: 12px;
-  transition: transform 0.2s;
+  color: var(--color-text-light);
+  font-size: var(--font-size-xs);
+  transition: var(--transition-fast);
 }
 
 .expandIconExpanded {
@@ -183,19 +183,19 @@
 
 .expandedContent {
   padding: 15px;
-  background-color: #f9fafb;
+  background-color: var(--color-bg-light);
 }
 
 .expandedTitle {
   margin: 0 0 10px 0;
-  color: #374151;
-  font-size: 14px;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-sm);
 }
 
 .expandedDetails {
   font-size: 13px;
-  color: #6b7280;
-  line-height: 1.5;
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
 }
 
 .impactDetail {
@@ -203,9 +203,9 @@
 }
 
 .whyNeeded {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
   padding: 10px;
 }
 
@@ -214,16 +214,16 @@
 }
 
 .confidenceSubtext {
-  font-size: 12px;
-  color: #9ca3af;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
 }
 
 .proTip {
-  margin-top: 20px;
+  margin-top: var(--spacing-l);
   padding: 15px;
-  background-color: #f0f9ff;
-  border: 1px solid #0ea5e9;
-  border-radius: 6px;
+  background-color: var(--color-bg-blue);
+  border: 1px solid var(--color-border-info);
+  border-radius: var(--radius-md);
 }
 
 .proTipHeader {
@@ -238,14 +238,14 @@
 }
 
 .proTipTitle {
-  color: #0369a1;
+  color: var(--color-blue-dark);
   font-weight: bold;
 }
 
 .proTipText {
   margin: 0;
-  color: #0369a1;
-  font-size: 14px;
+  color: var(--color-blue-dark);
+  font-size: var(--font-size-sm);
 }
 
 /* Responsive design */
