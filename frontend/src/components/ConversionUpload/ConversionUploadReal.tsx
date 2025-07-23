@@ -142,11 +142,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     return response.json();
   }, [API_BASE_URL]);
 
-  // Polling for status updates
+  // Polling for status updates (every 2 seconds as per issue #171)
   useEffect(() => {
     let intervalId: number | null = null;
     let attempts = 0;
-    const maxAttempts = 120; // 2 minutes with 1-second intervals
+    const maxAttempts = 300; // 10 minutes with 2-second intervals (was 120)
 
     if (currentJobId && isConverting) {
       intervalId = setInterval(async () => {
@@ -165,7 +165,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             setError(status.error || 'Conversion failed');
           } else if (attempts >= maxAttempts) {
             setIsConverting(false);
-            setError('Conversion timed out. Please try again.');
+            setError('Conversion timed out after 10 minutes. Please try again.');
           }
         } catch (error) {
           console.error('Status check error:', error);
@@ -175,7 +175,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             setError('Unable to check conversion status. Please try again.');
           }
         }
-      }, 1000); // Check every second
+      }, 2000); // Check every 2 seconds as per issue requirement
     }
 
     return () => {
@@ -292,11 +292,25 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
         throw new Error('Download failed');
       }
 
+      // Determine filename with priority: Content-Disposition > original filename > fallback
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename: string;
+
+      const dispositionMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      if (dispositionMatch && dispositionMatch[1]) {
+        filename = dispositionMatch[1];
+      } else if (selectedFile?.name) {
+        const baseName = selectedFile.name.replace(/\.(jar|zip)$/i, '');
+        filename = `${baseName}-converted.mcaddon`;
+      } else {
+        filename = `converted-mod-${currentJobId}.mcaddon`; // fallback
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `converted-mod-${currentJobId}.mcaddon`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -337,33 +351,32 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       )}
 
       {/* Progress Display */}
-      {isConverting && currentStatus && (
-        <div style={{ 
-          backgroundColor: '#e3f2fd', 
-          padding: '1rem', 
-          borderRadius: '6px',
-          marginBottom: '1rem',
-          textAlign: 'left'
-        }}>
-          <h4>Conversion Progress</h4>
-          <p><strong>Job ID:</strong> {currentStatus.job_id}</p>
-          <p><strong>Status:</strong> {currentStatus.status}</p>
-          <p><strong>Progress:</strong> {currentStatus.progress}%</p>
-          <p><strong>Message:</strong> {getStatusMessage()}</p>
-          <div style={{ 
-            backgroundColor: '#f0f0f0', 
-            borderRadius: '4px', 
-            height: '20px',
-            marginTop: '0.5rem'
-          }}>
-            <div style={{ 
-              backgroundColor: '#4caf50', 
-              height: '100%', 
-              width: `${currentStatus.progress}%`,
-              borderRadius: '4px',
-              transition: 'width 0.3s ease'
-            }}></div>
+      {(isConverting || currentStatus) && currentStatus && (
+        <div className={`progress-display status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
+          <div className="progress-header">
+            <h4 className="progress-title">
+              {currentStatus.status === 'completed' ? '✅ Conversion Complete!' : 
+               currentStatus.status === 'failed' ? '❌ Conversion Failed' : '🔄 Converting...'}
+            </h4>
+            <span className={`progress-status-badge status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
+              {currentStatus.status}
+            </span>
           </div>
+          <p className="progress-message"><strong>Message:</strong> {getStatusMessage()}</p>
+          {currentStatus.progress !== undefined && (
+            <>
+              <p className="progress-percentage"><strong>Progress:</strong> {currentStatus.progress}%</p>
+              <div className="progress-bar-container">
+                <div 
+                  className={`progress-bar-fill status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, currentStatus.progress))}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+          <p className="progress-job-id">
+            <strong>Job ID:</strong> {currentStatus.job_id.substring(0, 8)}...
+          </p>
         </div>
       )}
 
@@ -488,7 +501,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
           {!currentStatus || currentStatus.status === 'failed' ? (
             <button
               type="submit"
-              className="convert-button"
+              className="upload-button"
               disabled={isConverting || (!selectedFile && !modUrl)}
             >
               {isConverting ? 'Converting with AI...' : 'Convert to Bedrock (Real AI)'}
@@ -499,7 +512,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               className="download-button"
               onClick={downloadResult}
             >
-              Download Converted Mod
+              📥 Download .mcaddon
             </button>
           ) : null}
         </div>
