@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
+import styles from './MermaidDiagram.module.css';
 
 interface MermaidDiagramProps {
   chart: string;
@@ -79,17 +80,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     <div 
       ref={chartRef}
       id={id}
-      className={`mermaid-diagram ${className}`}
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '1rem',
-        backgroundColor: '#fafafa',
-        borderRadius: '8px',
-        border: '1px solid #e0e0e0',
-        margin: '1rem 0',
-        overflow: 'auto',
-      }}
+      className={`${styles.container} mermaid-diagram ${className}`}
     />
   );
 };

@@ -1,0 +1,20 @@
+/* MermaidDiagram Component Styles */
+
+.container {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-light);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  margin: var(--spacing-md) 0;
+  overflow: auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+  }
+}
