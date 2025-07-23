@@ -7,6 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import EditorPage from './pages/EditorPage'; // Added for Editor Route
 import './App.css';
+import styles from './App.module.css';
 
 function App() {
   console.log('App component is rendering...');
@@ -44,11 +45,11 @@ function App() {
                 <Route 
                   path="/" 
                   element={
-                    <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(255, 255, 255, 0.95)', borderRadius: '16px', margin: '2rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)' }}>
-                      <h1 style={{ fontSize: '3rem', color: '#333', marginBottom: '1rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                    <div className={styles.heroSection}>
+                      <h1 className={styles.heroTitle}>
                         ModPorter AI
                       </h1>
-                      <p style={{ fontSize: '1.2rem', color: '#666', marginBottom: '2rem' }}>
+                      <p className={styles.heroDescription}>
                         Convert Minecraft Java Edition mods to Bedrock Edition add-ons with AI
                       </p>
                       <ConversionUploadReal onConversionStart={handleConversionStart} />

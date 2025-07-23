@@ -1,0 +1,164 @@
+/* Documentation Page Styles */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.navigation {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.navLink {
+  margin: 0 1rem;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.sectionDescription {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 2rem;
+}
+
+.infoPanel {
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.infoPanelArchitecture {
+  background-color: #f8f9fa;
+}
+
+.infoPanelProcess {
+  background-color: #e8f5e8;
+}
+
+.infoPanelAssumptions {
+  background-color: #fff3e0;
+}
+
+.infoPanelTitle {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.list {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+.orderedList {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+.assumptionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.assumptionItem h4 {
+  color: #e65100;
+  margin-bottom: 0.5rem;
+}
+
+.assumptionItem p {
+  color: #555;
+}
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 3rem;
+  color: #666;
+}
+
+.footerLink {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+.footerSubtext {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+  }
+  
+  .assumptionsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .navigation {
+    padding: 0.5rem;
+  }
+  
+  .navLink {
+    display: block;
+    margin: 0.5rem 0;
+  }
+}

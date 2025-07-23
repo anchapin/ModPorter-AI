@@ -1,0 +1,248 @@
+/* DocumentationSimple Page Styles */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.navigation {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.navLink {
+  margin: 0 1rem;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.quickStartPanel {
+  background-color: #e8f5e8;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.quickStartTitle {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.quickStartList {
+  font-size: 1.1rem;
+  color: #555;
+  line-height: 1.8;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.featureCard {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.featureTitle {
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+.featureDescription {
+  color: #555;
+  line-height: 1.6;
+}
+
+.processPanel {
+  background-color: #fff3e0;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.processPanelTitle {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.processStages {
+  font-size: 1.1rem;
+  color: #555;
+  line-height: 1.8;
+}
+
+.processStage {
+  margin-bottom: 1rem;
+}
+
+.assumptionsPanel {
+  background-color: #f3e5f5;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.assumptionsPanelTitle {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.assumptionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  font-size: 1rem;
+}
+
+.assumptionItem h4 {
+  color: #9c27b0;
+  margin-bottom: 0.5rem;
+}
+
+.assumptionItem p {
+  color: #555;
+  line-height: 1.6;
+}
+
+.helpSection {
+  background-color: #e3f2fd;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.helpTitle {
+  color: #1976d2;
+  margin-bottom: 1rem;
+}
+
+.helpDescription {
+  color: #555;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.helpButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.examplesButton {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.examplesButton:hover {
+  background-color: #0056b3;
+}
+
+.supportButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.supportButton:hover {
+  background-color: #1e7e34;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+  }
+  
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .assumptionsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .navigation {
+    padding: 0.5rem;
+  }
+  
+  .navLink {
+    display: block;
+    margin: 0.5rem 0;
+  }
+  
+  .helpButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .examplesButton,
+  .supportButton {
+    width: 100%;
+    max-width: 200px;
+  }
+}
