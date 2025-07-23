@@ -80,7 +80,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     <div 
       ref={chartRef}
       id={id}
-      className={`${styles.container} mermaid-diagram ${className}`}
+      className={[styles.container, 'mermaid-diagram', className].filter(Boolean).join(' ')}
     />
   );
 };

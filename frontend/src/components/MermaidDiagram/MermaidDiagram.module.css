@@ -12,7 +12,7 @@
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: var(--container-md)) {
   .container {
     padding: var(--spacing-sm);
     margin: var(--spacing-sm) 0;
