@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { MermaidDiagram } from '../components/MermaidDiagram/MermaidDiagram';
+import styles from './Documentation.module.css';
 
 const systemArchitecture = `
 graph TB
@@ -109,47 +110,36 @@ flowchart TD
 
 export const Documentation: React.FC = () => {
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', color: '#333', marginBottom: '1rem' }}>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>
           ModPorter AI - Technical Documentation
         </h1>
-        <p style={{ fontSize: '1.2rem', color: '#666', maxWidth: '600px', margin: '0 auto' }}>
+        <p className={styles.subtitle}>
           Interactive visual documentation of the ModPorter AI system architecture, 
           conversion process flow, and technical implementation details.
         </p>
       </header>
 
-      <nav style={{ 
-        backgroundColor: '#f8f9fa', 
-        padding: '1rem', 
-        borderRadius: '8px', 
-        marginBottom: '2rem',
-        textAlign: 'center'
-      }}>
-        <a href="#architecture" style={{ margin: '0 1rem', color: '#007bff' }}>System Architecture</a>
-        <a href="#process" style={{ margin: '0 1rem', color: '#007bff' }}>Conversion Process</a>
-        <a href="#assumptions" style={{ margin: '0 1rem', color: '#007bff' }}>Smart Assumptions</a>
+      <nav className={styles.navigation}>
+        <a href="#architecture" className={styles.navLink}>System Architecture</a>
+        <a href="#process" className={styles.navLink}>Conversion Process</a>
+        <a href="#assumptions" className={styles.navLink}>Smart Assumptions</a>
       </nav>
 
-      <section id="architecture" style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2rem', color: '#333', marginBottom: '1rem' }}>
+      <section id="architecture" className={styles.section}>
+        <h2 className={styles.sectionTitle}>
           System Architecture Overview
         </h2>
-        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '2rem' }}>
+        <p className={styles.sectionDescription}>
           The ModPorter AI system follows a modern microservices architecture with a React frontend, 
           FastAPI backend, and a multi-agent AI engine powered by CrewAI and LangChain.
         </p>
         <MermaidDiagram chart={systemArchitecture} />
         
-        <div style={{ 
-          backgroundColor: '#f8f9fa', 
-          padding: '1.5rem', 
-          borderRadius: '8px',
-          marginTop: '1rem'
-        }}>
-          <h3 style={{ color: '#333', marginBottom: '1rem' }}>Key Components:</h3>
-          <ul style={{ fontSize: '1rem', color: '#555', lineHeight: '1.6' }}>
+        <div className={`${styles.infoPanel} ${styles.infoPanelArchitecture}`}>
+          <h3 className={styles.infoPanelTitle}>Key Components:</h3>
+          <ul className={styles.list}>
             <li><strong>React Frontend:</strong> Modern TypeScript-based UI with Vite build system</li>
             <li><strong>FastAPI Backend:</strong> High-performance Python API with async support</li>
             <li><strong>AI Engine:</strong> Multi-agent system with specialized conversion agents</li>
@@ -159,24 +149,19 @@ export const Documentation: React.FC = () => {
         </div>
       </section>
 
-      <section id="process" style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2rem', color: '#333', marginBottom: '1rem' }}>
+      <section id="process" className={styles.section}>
+        <h2 className={styles.sectionTitle}>
           Conversion Process Flow
         </h2>
-        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '2rem' }}>
+        <p className={styles.sectionDescription}>
           The conversion process implements all four PRD features through a sophisticated 
           multi-agent workflow that analyzes Java mods and intelligently converts them to Bedrock add-ons.
         </p>
         <MermaidDiagram chart={conversionFlow} />
         
-        <div style={{ 
-          backgroundColor: '#e8f5e8', 
-          padding: '1.5rem', 
-          borderRadius: '8px',
-          marginTop: '1rem'
-        }}>
-          <h3 style={{ color: '#333', marginBottom: '1rem' }}>Process Stages:</h3>
-          <ol style={{ fontSize: '1rem', color: '#555', lineHeight: '1.6' }}>
+        <div className={`${styles.infoPanel} ${styles.infoPanelProcess}`}>
+          <h3 className={styles.infoPanelTitle}>Process Stages:</h3>
+          <ol className={styles.orderedList}>
             <li><strong>Input Validation:</strong> Verify file types and repository URLs</li>
             <li><strong>Java Analysis:</strong> Parse mod structure and identify features</li>
             <li><strong>Conversion Planning:</strong> Map features and apply smart assumptions</li>
@@ -187,55 +172,44 @@ export const Documentation: React.FC = () => {
         </div>
       </section>
 
-      <section id="assumptions" style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2rem', color: '#333', marginBottom: '1rem' }}>
+      <section id="assumptions" className={styles.section}>
+        <h2 className={styles.sectionTitle}>
           Smart Assumptions Decision Tree
         </h2>
-        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '2rem' }}>
+        <p className={styles.sectionDescription}>
           When Java features have no direct Bedrock equivalent, the AI engine applies intelligent 
           assumptions to preserve as much functionality as possible while maintaining compatibility.
         </p>
         <MermaidDiagram chart={smartAssumptions} />
         
-        <div style={{ 
-          backgroundColor: '#fff3e0', 
-          padding: '1.5rem', 
-          borderRadius: '8px',
-          marginTop: '1rem'
-        }}>
-          <h3 style={{ color: '#333', marginBottom: '1rem' }}>Smart Assumption Categories:</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.95rem' }}>
-            <div>
-              <h4 style={{ color: '#e65100', marginBottom: '0.5rem' }}>🌍 Custom Dimensions</h4>
-              <p style={{ color: '#555' }}>Converted to large explorable structures in existing dimensions</p>
+        <div className={`${styles.infoPanel} ${styles.infoPanelAssumptions}`}>
+          <h3 className={styles.infoPanelTitle}>Smart Assumption Categories:</h3>
+          <div className={styles.assumptionsGrid}>
+            <div className={styles.assumptionItem}>
+              <h4>🌍 Custom Dimensions</h4>
+              <p>Converted to large explorable structures in existing dimensions</p>
             </div>
-            <div>
-              <h4 style={{ color: '#e65100', marginBottom: '0.5rem' }}>⚙️ Complex Machinery</h4>
-              <p style={{ color: '#555' }}>Simplified to decorative blocks while preserving visual design</p>
+            <div className={styles.assumptionItem}>
+              <h4>⚙️ Complex Machinery</h4>
+              <p>Simplified to decorative blocks while preserving visual design</p>
             </div>
-            <div>
-              <h4 style={{ color: '#e65100', marginBottom: '0.5rem' }}>📱 Custom GUIs</h4>
-              <p style={{ color: '#555' }}>Transformed into book interfaces for information access</p>
+            <div className={styles.assumptionItem}>
+              <h4>📱 Custom GUIs</h4>
+              <p>Transformed into book interfaces for information access</p>
             </div>
-            <div>
-              <h4 style={{ color: '#e65100', marginBottom: '0.5rem' }}>🎨 Client Rendering</h4>
-              <p style={{ color: '#555' }}>Excluded with clear user notification and alternatives</p>
+            <div className={styles.assumptionItem}>
+              <h4>🎨 Client Rendering</h4>
+              <p>Excluded with clear user notification and alternatives</p>
             </div>
           </div>
         </div>
       </section>
 
-      <footer style={{ 
-        textAlign: 'center', 
-        padding: '2rem', 
-        borderTop: '1px solid #e0e0e0',
-        marginTop: '3rem',
-        color: '#666'
-      }}>
+      <footer className={styles.footer}>
         <p>Documentation generated with Mermaid.js - Interactive diagrams for ModPorter AI</p>
-        <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-          For technical details, see the <a href="/docs/API.md" style={{ color: '#007bff' }}>API Documentation</a> 
-          and <a href="/docs/ARCHITECTURE.md" style={{ color: '#007bff' }}>Architecture Guide</a>
+        <p className={styles.footerSubtext}>
+          For technical details, see the <a href="/docs/API.md" className={styles.footerLink}>API Documentation</a> 
+          and <a href="/docs/ARCHITECTURE.md" className={styles.footerLink}>Architecture Guide</a>
         </p>
       </footer>
     </div>
