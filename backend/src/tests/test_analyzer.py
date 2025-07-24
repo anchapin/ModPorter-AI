@@ -159,6 +159,38 @@ public class PolishedCopperBlock extends Block {
         assert result["registry_name"] == "copper_extras:copper_ingot"
         assert result["texture_path"] == "assets/copper_extras/textures/block/copper_ingot_block.png"
     
+    def test_analyze_jar_with_mods_toml(self, analyzer):
+        """Test MVP analysis with mods.toml (Forge) metadata."""
+        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, 'w') as zf:
+                # Add mods.toml with proper TOML structure
+                mods_toml = '''
+modLoader="javafml"
+loaderVersion="[40,)"
+license="MIT"
+
+[[mods]]
+modId="advanced_copper"
+version="2.0.0"
+displayName="Advanced Copper Mod"
+authors="Test Author"
+'''
+                zf.writestr('META-INF/mods.toml', mods_toml.encode('utf-8'))
+                
+                # Add texture and class
+                zf.writestr('assets/advanced_copper/textures/block/oxidized_copper_block.png', b'fake_png_data')
+                zf.writestr('com/example/OxidizedCopperBlock.class', b'fake_class_data')
+                
+            try:
+                result = analyzer.analyze_jar_for_mvp(jar_file.name)
+                
+                assert result["success"] is True
+                assert result["registry_name"] == "advanced_copper:oxidized_copper"
+                assert result["texture_path"] == "assets/advanced_copper/textures/block/oxidized_copper_block.png"
+                assert len(result["errors"]) == 0
+            finally:
+                os.unlink(jar_file.name)
+    
     def test_find_block_texture(self, analyzer):
         """Test texture finding logic."""
         file_list = [

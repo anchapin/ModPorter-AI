@@ -82,7 +82,7 @@ class JavaAnalyzerAgent:
                 return result
                 
         except Exception as e:
-            logger.error(f"MVP analysis error: {e}")
+            logger.exception(f"MVP analysis of {jar_path} failed")
             return {
                 'success': False,
                 'registry_name': 'unknown:block',
@@ -232,10 +232,11 @@ class JavaAnalyzerAgent:
         for file_name in file_list:
             if file_name.endswith('mods.toml'):
                 try:
+                    import tomli
                     content = jar.read(file_name).decode('utf-8')
-                    for line in content.split('\n'):
-                        if 'modId' in line and '=' in line:
-                            mod_id = line.split('=')[1].strip().strip('"\'')
+                    data = tomli.loads(content)
+                    if (mods := data.get('mods')) and isinstance(mods, list) and mods:
+                        if mod_id := mods[0].get('modId'):
                             return mod_id.lower()
                 except Exception as e:
                     logger.warning(f"Error reading {file_name}: {e}")
