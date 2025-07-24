@@ -23,6 +23,7 @@ redis[asyncio]==6.2.0
 python-multipart==0.0.20
 tomli==2.2.1  # TOML parsing for Python <3.11
 python-magic==0.4.27
+javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent
 
 # HTTP Client for file downloads
 httpx==0.28.1
