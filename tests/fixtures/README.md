@@ -53,7 +53,7 @@ When processed through the ModPorter AI pipeline, this JAR should produce:
       "identifier": "simple_copper:polished_copper"
     },
     "components": {
-      "minecraft:destroy_time": 1.5,
+      "minecraft:destroy_time": 3.0,
       "minecraft:explosion_resistance": 6.0,
       "minecraft:material_instances": {
         "*": {

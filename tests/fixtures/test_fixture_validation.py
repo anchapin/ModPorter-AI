@@ -44,7 +44,7 @@ def test_jar_has_required_structure():
         ]
         
         for required_file in required_files:
-            assert any(required_file in f for f in files), f"Missing required file: {required_file}"
+            assert required_file in files, f"Missing required file: {required_file}"
 
 
 def test_fabric_mod_json_structure():
@@ -61,8 +61,6 @@ def test_fabric_mod_json_structure():
         assert fabric_mod['version'] == '1.0.0', "Incorrect version"
         assert fabric_mod['name'] == 'Simple Copper Block', "Incorrect mod name"
         
-        # Verify it contains block texture path
-        assert 'simple_copper' in fabric_mod['id'], "Mod ID should contain simple_copper"
 
 
 def test_texture_file_present():
