@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
-from services.cache import CacheService
+from src.services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -22,6 +22,7 @@ import logging
 from src.db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
 from src.models import addon_models as pydantic_addon_models # For addon Pydantic models
+from src.services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
