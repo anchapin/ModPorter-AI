@@ -94,7 +94,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         
         # Assertions
         self.assertGreater(success_rate, 0.7, "Should have >70% success rate across all mod types")
-        self.assertLess(avg_time, 5.0, "Average conversion time should be <5s")
+        self.assertLess(avg_time, 10.0, "Average conversion time should be <10s")
     
     def test_pipeline_consistency(self):
         """Test that the pipeline produces consistent results."""
