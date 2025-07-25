@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         """Convert DATABASE_URL to async format for application use"""
         # Use test database if in testing mode
         if os.getenv("TESTING") == "true":
-            test_db_url = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5433/modporter")
+            test_db_url = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5434/modporter")
             return test_db_url
         return self.database_url_raw
 

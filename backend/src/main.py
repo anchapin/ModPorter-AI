@@ -2,12 +2,12 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, P
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
-from src.services.cache import CacheService
+from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from src.services import addon_exporter # For .mcaddon export
-from src.services import conversion_parser # For parsing converted pack output
+from services import addon_exporter # For .mcaddon export
+from services import conversion_parser # For parsing converted pack output
 import shutil # For directory operations
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -19,10 +19,10 @@ import httpx  # Add for AI Engine communication
 from dotenv import load_dotenv
 from dateutil.parser import parse as parse_datetime
 import logging
-from src.db.init_db import init_db
+from db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
-from src.models import addon_models as pydantic_addon_models # For addon Pydantic models
-from src.services.report_models import InteractiveReport, FullConversionReport # For conversion report model
+from models import addon_models as pydantic_addon_models # For addon Pydantic models
+from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -873,7 +873,8 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
 @app.on_event("startup")
 async def on_startup():
     # Skip database initialization during tests to avoid startup failures
-    if os.getenv("TESTING", "false").lower() == "true":
+    testing_env = os.getenv("TESTING", "false").lower()
+    if testing_env == "true":
         logger.info("Skipping database initialization during tests")
         return
     
