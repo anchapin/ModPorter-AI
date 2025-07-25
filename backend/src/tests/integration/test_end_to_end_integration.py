@@ -10,45 +10,41 @@ import pytest
 import time
 from pathlib import Path
 
+# Polling configuration constants
+POLL_MAX_ATTEMPTS = 30  # 30 attempts * 2 seconds = 1 minute max wait
+POLL_INTERVAL_SECONDS = 2  # seconds
+SHORT_POLL_MAX_ATTEMPTS = 15  # For faster tests that don't need full timeout
+
 
 class TestEndToEndIntegration:
     """End-to-end integration tests for the conversion workflow."""
-
-    def test_complete_jar_to_mcaddon_conversion(self, client):
-        """
-        Complete test: uploads simple_copper_block.jar → waits for Celery job → downloads .mcaddon.
-        
-        This is the core test required by issue #170:
-        - Upload tests/fixtures/simple_copper_block.jar
-        - Use FastAPI TestClient + simulated Celery processing
-        - Assert HTTP 200 and non-zero .mcaddon bytes
-        """
-        
-        # Step 1: Verify fixture exists
-        fixture_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "fixtures" / "simple_copper_block.jar"
-        assert fixture_path.exists(), f"Test fixture not found: {fixture_path}"
-        
-        # Step 2: Upload the JAR file
+    
+    def _upload_and_convert_jar(self, client, fixture_path, target_version="1.20.0", options=None):
+        """Helper method to upload JAR file and start conversion."""
+        if options is None:
+            options = {"test_mode": True}
+            
+        # Upload the JAR file
         with open(fixture_path, "rb") as jar_file:
             upload_response = client.post(
                 "/api/v1/upload",
-                files={"file": ("simple_copper_block.jar", jar_file, "application/java-archive")}
+                files={"file": (fixture_path.name, jar_file, "application/java-archive")}
             )
         
         assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
         upload_data = upload_response.json()
         assert "file_id" in upload_data
-        assert upload_data["original_filename"] == "simple_copper_block.jar"
+        assert upload_data["original_filename"] == fixture_path.name
         file_id = upload_data["file_id"]
         
-        # Step 3: Start conversion job
+        # Start conversion job
         conversion_response = client.post(
             "/api/v1/convert",
             json={
                 "file_id": file_id,
-                "original_filename": "simple_copper_block.jar",
-                "target_version": "1.20.0",
-                "options": {"test_mode": True}
+                "original_filename": fixture_path.name,
+                "target_version": target_version,
+                "options": options
             }
         )
         
@@ -56,12 +52,14 @@ class TestEndToEndIntegration:
         conversion_data = conversion_response.json()
         assert "job_id" in conversion_data
         assert conversion_data["status"] in ["preprocessing", "queued"]
-        job_id = conversion_data["job_id"]
         
-        # Step 4: Poll for completion (simulating Celery job processing)
-        max_attempts = 30  # 30 attempts * 2 seconds = 1 minute max wait
-        poll_interval = 2  # seconds
-        
+        return conversion_data["job_id"]
+    
+    def _poll_for_completion(self, client, job_id, max_attempts=None):
+        """Helper method to poll for job completion."""
+        if max_attempts is None:
+            max_attempts = POLL_MAX_ATTEMPTS
+            
         final_status = None
         for attempt in range(max_attempts):
             status_response = client.get(f"/api/v1/convert/{job_id}/status")
@@ -82,9 +80,29 @@ class TestEndToEndIntegration:
             
             # Wait before next poll
             if attempt < max_attempts - 1:
-                time.sleep(poll_interval)
+                time.sleep(POLL_INTERVAL_SECONDS)
         
-        # Assert conversion completed successfully
+        return final_status
+
+    def test_complete_jar_to_mcaddon_conversion(self, client, project_root):
+        """
+        Complete test: uploads simple_copper_block.jar → waits for Celery job → downloads .mcaddon.
+        
+        This is the core test required by issue #170:
+        - Upload tests/fixtures/simple_copper_block.jar
+        - Use FastAPI TestClient + simulated Celery processing
+        - Assert HTTP 200 and non-zero .mcaddon bytes
+        """
+        
+        # Step 1: Verify fixture exists
+        fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
+        assert fixture_path.exists(), f"Test fixture not found: {fixture_path}"
+        
+        # Step 2-3: Upload and start conversion
+        job_id = self._upload_and_convert_jar(client, fixture_path)
+        
+        # Step 4: Poll for completion
+        final_status = self._poll_for_completion(client, job_id)
         assert final_status == "completed", f"Job did not complete successfully. Final status: {final_status}"
         
         # Step 5: Download the converted .mcaddon file
@@ -105,38 +123,18 @@ class TestEndToEndIntegration:
         print(f"   - Final status: {final_status}")
         print(f"   - .mcaddon size: {len(mcaddon_content):,} bytes")
         
-    def test_job_appears_in_conversions_list(self, client):
+    def test_job_appears_in_conversions_list(self, client, project_root):
         """
         Verify that completed jobs appear in the conversions list endpoint.
         """
-        fixture_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "fixtures" / "simple_copper_block.jar"
+        fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
+        assert fixture_path.exists(), f"Test fixture not found: {fixture_path}"
         
-        # Upload and convert (abbreviated version of above test)
-        with open(fixture_path, "rb") as jar_file:
-            upload_response = client.post(
-                "/api/v1/upload",
-                files={"file": ("simple_copper_block.jar", jar_file, "application/java-archive")}
-            )
-        
-        file_id = upload_response.json()["file_id"]
-        
-        conversion_response = client.post(
-            "/api/v1/convert",
-            json={
-                "file_id": file_id,
-                "original_filename": "simple_copper_block.jar",
-                "target_version": "1.20.0"
-            }
-        )
-        
-        job_id = conversion_response.json()["job_id"]
+        # Upload and convert
+        job_id = self._upload_and_convert_jar(client, fixture_path, options={})
         
         # Wait for completion (short wait for list test)
-        for _ in range(15):
-            status_response = client.get(f"/api/v1/convert/{job_id}/status")
-            if status_response.json()["status"] in ["completed", "failed"]:
-                break
-            time.sleep(2)
+        self._poll_for_completion(client, job_id, max_attempts=SHORT_POLL_MAX_ATTEMPTS)
         
         # Test: Job appears in conversions list
         list_response = client.get("/api/v1/conversions")

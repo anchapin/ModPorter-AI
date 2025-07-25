@@ -3,26 +3,15 @@ Pytest configuration and fixtures for ModPorter AI tests.
 """
 
 import os
-import sys
 import pytest
 from pathlib import Path
 
-# Set test environment
+# Set test environment (pytest.ini also sets this via env section)
 os.environ["TESTING"] = "true"
 
-# Add backend/src directory to Python path for imports
-project_root = Path(__file__).parent.parent
-backend_src_path = project_root / "backend" / "src"
-sys.path.insert(0, str(backend_src_path))
+# Define project root fixture for consistent path resolution
+@pytest.fixture(scope="session")
+def project_root():
+    """Provide project root path for consistent fixture paths."""
+    return Path(__file__).parent.parent
 
-# Set working directory to backend/src for relative imports
-original_cwd = os.getcwd()
-os.chdir(str(backend_src_path))
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Setup test environment and cleanup after all tests."""
-    # Setup
-    yield
-    # Cleanup: restore original working directory
-    os.chdir(original_cwd)

@@ -16,7 +16,7 @@ from pathlib import Path
 class TestCLIIntegration:
     """CLI integration tests for the conversion workflow."""
 
-    def test_complete_jar_to_mcaddon_conversion_via_cli(self):
+    def test_complete_jar_to_mcaddon_conversion_via_cli(self, project_root):
         """
         Complete test: CLI converts simple_copper_block.jar → creates .mcaddon file.
         
@@ -26,7 +26,7 @@ class TestCLIIntegration:
         - Asserts non-zero .mcaddon bytes and HTTP 200 equivalent (exit code 0)
         """
         # Step 1: Verify fixture exists
-        fixture_path = Path(__file__).parent / "fixtures" / "simple_copper_block.jar"
+        fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
         assert fixture_path.exists(), f"Test fixture not found: {fixture_path}"
         
         # Step 2: Create temporary output directory
@@ -36,7 +36,7 @@ class TestCLIIntegration:
                 "python", "-m", "modporter.cli",
                 str(fixture_path),
                 "-o", temp_dir
-            ], capture_output=True, text=True, cwd=Path(__file__).parent.parent)
+            ], capture_output=True, text=True, cwd=project_root)
             
             # Step 4: Assert CLI success (equivalent to HTTP 200)
             assert result.returncode == 0, f"CLI conversion failed: {result.stderr}"
@@ -62,7 +62,7 @@ class TestCLIIntegration:
             print(f"   - .mcaddon size: {mcaddon_size:,} bytes")
             print(f"   - CLI output: {result.stdout.strip()}")
 
-    def test_cli_handles_invalid_jar_file(self):
+    def test_cli_handles_invalid_jar_file(self, project_root):
         """
         Test CLI error handling for invalid JAR files.
         """
@@ -78,7 +78,7 @@ class TestCLIIntegration:
                     "python", "-m", "modporter.cli",
                     temp_jar_path,
                     "-o", temp_dir
-                ], capture_output=True, text=True, cwd=Path(__file__).parent.parent)
+                ], capture_output=True, text=True, cwd=project_root)
                 
                 # Should fail with non-zero exit code
                 assert result.returncode != 0, "CLI should fail for invalid JAR files"
@@ -89,11 +89,11 @@ class TestCLIIntegration:
             # Clean up temporary file
             os.unlink(temp_jar_path)
 
-    def test_cli_creates_expected_file_structure(self):
+    def test_cli_creates_expected_file_structure(self, project_root):
         """
         Test that CLI creates the expected .mcaddon file structure.
         """
-        fixture_path = Path(__file__).parent / "fixtures" / "simple_copper_block.jar"
+        fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Run CLI conversion
@@ -101,7 +101,7 @@ class TestCLIIntegration:
                 "python", "-m", "modporter.cli",
                 str(fixture_path),
                 "-o", temp_dir
-            ], capture_output=True, text=True, cwd=Path(__file__).parent.parent)
+            ], capture_output=True, text=True, cwd=project_root)
             
             assert result.returncode == 0, f"CLI conversion failed: {result.stderr}"
             
