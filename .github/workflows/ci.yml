@@ -98,6 +98,10 @@ jobs:
         timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
         echo "Waiting for PostgreSQL..."
         timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U postgres; do sleep 1; done'
+        echo "Checking Ollama availability..."
+        timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'
+        echo "Ensuring llama3.2 model is available..."
+        curl -f http://localhost:11434/api/tags | grep -q "llama3.2" || echo "Warning: llama3.2 model may not be available"
 
     - name: Set up database
       run: |
@@ -114,6 +118,9 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         PYTHONPATH: /home/runner/work/ModPorter-AI/ModPorter-AI/ai-engine
         LOG_LEVEL: INFO
+        USE_OLLAMA: "true"
+        OLLAMA_MODEL: "llama3.2"
+        OLLAMA_BASE_URL: "http://localhost:11434"
 
     - name: Run full conversion workflow test
       run: |
@@ -124,6 +131,9 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         PYTHONPATH: /home/runner/work/ModPorter-AI/ModPorter-AI/ai-engine
         LOG_LEVEL: INFO
+        USE_OLLAMA: "true"
+        OLLAMA_MODEL: "llama3.2"
+        OLLAMA_BASE_URL: "http://localhost:11434"
 
     - name: Run backend integration tests
       run: |
@@ -134,6 +144,9 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/modporter
         PYTHONPATH: /home/runner/work/ModPorter-AI/ModPorter-AI/backend
         LOG_LEVEL: INFO
+        USE_OLLAMA: "true"
+        OLLAMA_MODEL: "llama3.2"
+        OLLAMA_BASE_URL: "http://localhost:11434"
 
     - name: Move cache
       run: |
