@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  test-postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: modporter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  test_postgres_data:

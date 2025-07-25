@@ -215,27 +215,46 @@ docker compose up -d --build
 
 ## Testing
 
-### Run all tests
+### Prerequisites for Testing
+- Docker and Docker Compose (for test database)
+
+### Setup Test Database
+```bash
+# Start the test PostgreSQL database
+./scripts/test-db.sh start
+
+# Or manually with docker-compose
+docker-compose -f docker-compose.test.yml up -d test-postgres
+```
+
+### Run Tests
+```bash
+# Run all tests
 pnpm run test
 
-### Backend tests
+# Backend tests
 cd backend && pytest
 
-### Frontend tests
+# Frontend tests
 cd frontend && pnpm test
 
-### AI Engine and RAG tests
-```bash
-# Run AI Engine tests
+# AI Engine and RAG tests
 cd ai-engine && pytest
+```
 
-# Run RAG-specific tests
-cd ai-engine && pytest tests/test_rag_crew.py
-cd ai-engine && pytest tests/unit/test_embedding_generator.py
-cd ai-engine && pytest tests/integration/test_rag_workflow.py
+### Test Database Management
+```bash
+# Start test database
+./scripts/test-db.sh start
 
-# Run RAG evaluation suite
-cd ai-engine && python src/testing/rag_evaluator.py
+# Stop test database
+./scripts/test-db.sh stop
+
+# Reset test database (clears all data)
+./scripts/test-db.sh reset
+
+# View database logs
+./scripts/test-db.sh logs
 ```
 
 ### MVP Conversion Test

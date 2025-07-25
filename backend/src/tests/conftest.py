@@ -17,4 +17,7 @@ os.environ["TESTING"] = "true"
 def client():
     """Create a test client for the FastAPI app."""
     from main import app
-    return TestClient(app)
+    
+    # TestClient will trigger startup events which includes init_db()
+    with TestClient(app) as test_client:
+        yield test_client
