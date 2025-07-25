@@ -15,13 +15,22 @@ os.environ["TESTING"] = "true"
 # Import fixtures and setup code here
 
 @pytest.fixture
+def project_root():
+    """Get the project root directory for accessing test fixtures."""
+    # Navigate from backend/src/tests/conftest.py to project root
+    current_dir = Path(__file__).parent  # tests/
+    src_dir = current_dir.parent         # src/
+    backend_dir = src_dir.parent         # backend/
+    project_root = backend_dir.parent    # project root
+    return project_root
+
+@pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
-    # Mock the init_db function to prevent database initialization during tests
-    with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
-        # Import main AFTER setting up the mock
-        from main import app
-        
-        # Create TestClient - init_db will be mocked and won't actually run
-        with TestClient(app) as test_client:
-            yield test_client
+    # For integration tests, we need the database to be properly initialized
+    # Import main to create the app
+    from main import app
+    
+    # Create TestClient - this will trigger startup events including init_db
+    with TestClient(app) as test_client:
+        yield test_client
