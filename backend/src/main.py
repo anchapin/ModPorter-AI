@@ -872,7 +872,11 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
 
 @app.on_event("startup")
 async def on_startup():
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        logger.warning(f"Database initialization failed during startup: {e}")
+        logger.info("Application will continue without database initialization")
 
 if __name__ == "__main__":
     uvicorn.run(
