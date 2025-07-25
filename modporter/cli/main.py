@@ -10,33 +10,36 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any
 
-# For now, we still need the sys.path manipulation until we can restructure the entire project
-# This is a temporary solution to address the review while maintaining functionality
-# TODO: Remove this when ai-engine is properly packaged as a dependency
-import sys
-from pathlib import Path
-
-# Add ai-engine directories to the path so we can import the agents
-ai_engine_root = Path(__file__).parent.parent.parent / "ai-engine"
-ai_engine_src = ai_engine_root / "src"
-
-# Add both the ai-engine root and src directories to handle different import patterns
-if str(ai_engine_root) not in sys.path:
-    sys.path.insert(0, str(ai_engine_root))
-if str(ai_engine_src) not in sys.path:
-    sys.path.insert(0, str(ai_engine_src))
-
-# Change working directory to ai-engine to handle relative imports correctly
-import os
-original_cwd = os.getcwd()
-os.chdir(str(ai_engine_src))
-
-from agents.java_analyzer import JavaAnalyzerAgent
-from agents.bedrock_builder import BedrockBuilderAgent
-from agents.packaging_agent import PackagingAgent
-
-# Restore original working directory after imports
-os.chdir(original_cwd)
+# TODO: High Priority Review Comment - Package ai-engine properly to eliminate sys.path manipulation
+# This is a structural issue that requires converting ai-engine into a proper, installable Python package
+# Current solution is a temporary workaround until project restructuring is completed
+try:
+    # Try importing from properly packaged ai-engine (future state)
+    from ai_engine.agents.java_analyzer import JavaAnalyzerAgent
+    from ai_engine.agents.bedrock_builder import BedrockBuilderAgent
+    from ai_engine.agents.packaging_agent import PackagingAgent
+except ImportError:
+    # Fallback to current project structure with path manipulation
+    import os
+    import sys
+    from pathlib import Path
+    
+    ai_engine_src = Path(__file__).parent.parent.parent / "ai-engine" / "src"
+    original_cwd = os.getcwd()
+    
+    if str(ai_engine_src) not in sys.path:
+        sys.path.insert(0, str(ai_engine_src))
+    
+    # Temporarily change directory for relative imports
+    os.chdir(str(ai_engine_src))
+    
+    try:
+        from agents.java_analyzer import JavaAnalyzerAgent
+        from agents.bedrock_builder import BedrockBuilderAgent
+        from agents.packaging_agent import PackagingAgent
+    finally:
+        # Always restore original working directory
+        os.chdir(original_cwd)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
