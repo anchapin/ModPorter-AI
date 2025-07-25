@@ -30,11 +30,13 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        # Core dependencies from ai-engine
+        # Core dependencies for the CLI functionality
+        # Note: For MVP, we maintain the current structure with direct imports
+        # TODO: Refactor to proper package dependency when ai-engine is packaged
         "sentence-transformers",
-        "pillow",
+        "pillow", 
         "numpy",
-        "pathlib",
+        # pathlib is part of Python standard library since 3.4, removed as suggested
     ],
     entry_points={
         "console_scripts": [
