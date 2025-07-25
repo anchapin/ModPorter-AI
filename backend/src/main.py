@@ -25,7 +25,7 @@ from models import addon_models as pydantic_addon_models # For addon Pydantic mo
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, qa
+from api import performance, behavioral_testing, validation, comparison, embeddings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -93,11 +93,10 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
-app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
+app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"]) 
 app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
 app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"]) 
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
-app.include_router(qa.router, prefix="/api/v1/qa", tags=["qa"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
