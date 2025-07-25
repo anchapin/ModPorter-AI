@@ -25,7 +25,7 @@ from models import addon_models as pydantic_addon_models # For addon Pydantic mo
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +97,7 @@ app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behaviora
 app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
 app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"]) 
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
+app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
@@ -627,16 +628,20 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         else:
             raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
 
-    # Persist job to DB (status 'queued', progress 0)
+    # Persist job to DB (status 'queued', progress 0) in a single transaction
     job = await crud.create_job(
         db,
         file_id=file_id,
         original_filename=original_filename,
         target_version=request.target_version,
-        options=request.options
+        options=request.options,
+        commit=False
     )
-    # Immediately update job status to 'queued' after creation
-    job = await crud.update_job_status(db, job.id, "queued")
+    # Update job status to 'queued' in the same transaction
+    job = await crud.update_job_status(db, str(job.id), "queued", commit=False)
+    # Commit the entire transaction at once
+    await db.commit()
+    await db.refresh(job)
 
     # Build legacy-mirror dict for in-memory compatibility (ConversionJob pydantic)
     # Set mirror status to 'preprocessing', but leave DB as 'queued'

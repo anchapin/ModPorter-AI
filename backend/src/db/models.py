@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.db.declarative_base import Base
+from db.declarative_base import Base
 
 
 class ConversionJob(Base):

@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from src.db import models
-from src.db.models import DocumentEmbedding
+from db import models
+from db.models import DocumentEmbedding
 
 
 async def create_job(
@@ -16,6 +16,7 @@ async def create_job(
     original_filename: str,
     target_version: str,
     options: Optional[dict] = None,
+    commit: bool = True,
 ) -> models.ConversionJob:
     job = models.ConversionJob(
         status="queued",
@@ -30,8 +31,11 @@ async def create_job(
     # records and linking them in a single transaction.
     job.progress = models.JobProgress(progress=0)
     session.add(job)
-    await session.commit()
-    await session.refresh(job)
+    if commit:
+        await session.commit()
+        await session.refresh(job)
+    else:
+        await session.flush()  # Flush to get the ID without committing
     return job
 
 
@@ -62,7 +66,7 @@ async def list_jobs(session: AsyncSession) -> List[models.ConversionJob]:
 
 
 async def update_job_status(
-    session: AsyncSession, job_id: str, status: str
+    session: AsyncSession, job_id: str, status: str, commit: bool = True
 ) -> Optional[models.ConversionJob]:
     # Update status on ConversionJob
     # Convert string job_id to UUID for database query
@@ -76,13 +80,14 @@ async def update_job_status(
         .values(status=status)
     )
     await session.execute(stmt)
-    await session.commit()
+    if commit:
+        await session.commit()
     job = await get_job(session, job_id)
     return job
 
 
 async def upsert_progress(
-    session: AsyncSession, job_id: str, progress: int
+    session: AsyncSession, job_id: str, progress: int, commit: bool = True
 ) -> models.JobProgress:
     # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
     from sqlalchemy import func
@@ -104,13 +109,14 @@ async def upsert_progress(
 
     result = await session.execute(stmt)
     prog = result.scalar_one()
-    await session.commit()
+    if commit:
+        await session.commit()
     return prog
 
 # Addon Management CRUD functions
 
 from uuid import UUID as PyUUID
-from src.models import addon_models as pydantic_addon_models
+from models import addon_models as pydantic_addon_models
 from sqlalchemy import delete
 import os
 import shutil
