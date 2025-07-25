@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
@@ -12,7 +13,30 @@ sys.path.insert(0, str(src_dir))
 # Set testing environment variable BEFORE importing main
 os.environ["TESTING"] = "true"
 
-# Import fixtures and setup code here
+# Global flag to track database initialization
+_db_initialized = False
+
+def pytest_sessionstart(session):
+    """Initialize database once at the start of the test session."""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            # Run database initialization synchronously
+            import asyncio
+            from db.init_db import init_db
+            
+            # Create a new event loop for this operation
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(init_db())
+                _db_initialized = True
+                print("✅ Test database initialized successfully")
+            finally:
+                loop.close()
+        except Exception as e:
+            print(f"⚠️ Warning: Database initialization failed: {e}")
+            _db_initialized = False
 
 @pytest.fixture
 def project_root():
@@ -27,10 +51,11 @@ def project_root():
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
-    # For integration tests, we need the database to be properly initialized
-    # Import main to create the app
-    from main import app
-    
-    # Create TestClient - this will trigger startup events including init_db
-    with TestClient(app) as test_client:
-        yield test_client
+    # Mock the init_db function to prevent re-initialization during TestClient startup
+    with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
+        # Import main AFTER setting up the mock
+        from main import app
+        
+        # Create TestClient - init_db will be mocked since we already initialized it
+        with TestClient(app) as test_client:
+            yield test_client
