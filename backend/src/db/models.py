@@ -21,6 +21,7 @@ from db.declarative_base import Base
 
 class ConversionJob(Base):
     __tablename__ = "conversion_jobs"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -64,6 +65,7 @@ class ConversionJob(Base):
 
 class ConversionResult(Base):
     __tablename__ = "conversion_results"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -87,6 +89,7 @@ class ConversionResult(Base):
 
 class JobProgress(Base):
     __tablename__ = "job_progress"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -116,6 +119,7 @@ class JobProgress(Base):
 
 class Addon(Base):
     __tablename__ = "addons"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -145,6 +149,7 @@ class Addon(Base):
 
 class AddonBlock(Base):
     __tablename__ = "addon_blocks"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -175,6 +180,7 @@ class AddonBlock(Base):
 
 class AddonAsset(Base):
     __tablename__ = "addon_assets"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -205,6 +211,7 @@ class AddonAsset(Base):
 
 class AddonBehavior(Base):
     __tablename__ = "addon_behaviors"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -233,6 +240,7 @@ class AddonBehavior(Base):
 
 class AddonRecipe(Base):
     __tablename__ = "addon_recipes"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -263,6 +271,7 @@ class AddonRecipe(Base):
 
 class ConversionFeedback(Base):
     __tablename__ = "conversion_feedback"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -284,6 +293,7 @@ class ConversionFeedback(Base):
 
 class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversion_id = Column(
@@ -306,6 +316,7 @@ class ComparisonResultDb(Base):
 
 class FeatureMappingDb(Base):
     __tablename__ = "feature_mappings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     comparison_id = Column(
@@ -325,6 +336,7 @@ class FeatureMappingDb(Base):
 
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding

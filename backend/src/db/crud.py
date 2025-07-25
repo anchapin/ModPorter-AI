@@ -116,7 +116,7 @@ async def upsert_progress(
 # Addon Management CRUD functions
 
 from uuid import UUID as PyUUID
-from models import addon_models as pydantic_addon_models
+from src.models import addon_models as pydantic_addon_models
 from sqlalchemy import delete
 import os
 import shutil
