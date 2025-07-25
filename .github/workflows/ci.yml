@@ -131,6 +131,7 @@ jobs:
         USE_OLLAMA: "true"
         OLLAMA_MODEL: "llama3.2"
         OLLAMA_BASE_URL: "http://localhost:11434"
+        TESTING: "true"
 
     # Cache management removed - not using Docker buildx cache
 

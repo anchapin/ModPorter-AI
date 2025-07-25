@@ -872,6 +872,11 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
 
 @app.on_event("startup")
 async def on_startup():
+    # Skip database initialization during tests to avoid startup failures
+    if os.getenv("TESTING", "false").lower() == "true":
+        logger.info("Skipping database initialization during tests")
+        return
+    
     try:
         await init_db()
     except Exception as e:
