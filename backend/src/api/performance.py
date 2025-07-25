@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from typing import Dict, Any, List
 
-from ..models import (
+from models import (
     BenchmarkRunRequest,
     BenchmarkRunResponse,
     BenchmarkStatusResponse,
