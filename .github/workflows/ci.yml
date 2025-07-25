@@ -9,7 +9,7 @@ on:
 jobs:
   integration-tests:
     name: Integration Tests
-    runs-on: local-ollama-runner
+    runs-on: [self-hosted, Linux, X64, ollama]
     timeout-minutes: 30
 
     services:
