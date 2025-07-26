@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
     String,
@@ -16,11 +17,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.db.declarative_base import Base
+from db.declarative_base import Base
 
 
 class ConversionJob(Base):
     __tablename__ = "conversion_jobs"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -33,12 +35,12 @@ class ConversionJob(Base):
         server_default=text("'queued'"),
     )
     input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -64,6 +66,7 @@ class ConversionJob(Base):
 
 class ConversionResult(Base):
     __tablename__ = "conversion_results"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -76,7 +79,7 @@ class ConversionResult(Base):
         nullable=False,
     )
     output_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -87,6 +90,7 @@ class ConversionResult(Base):
 
 class JobProgress(Base):
     __tablename__ = "job_progress"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -102,7 +106,7 @@ class JobProgress(Base):
     progress: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default=text("0")
     )
-    last_update: Mapped[Optional[DateTime]] = mapped_column(
+    last_update: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -116,6 +120,7 @@ class JobProgress(Base):
 
 class Addon(Base):
     __tablename__ = "addons"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -125,12 +130,12 @@ class Addon(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, nullable=False) # Assuming user_id is a string for now
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -145,6 +150,7 @@ class Addon(Base):
 
 class AddonBlock(Base):
     __tablename__ = "addon_blocks"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -156,12 +162,12 @@ class AddonBlock(Base):
     )
     identifier: Mapped[str] = mapped_column(String, nullable=False)
     properties: Mapped[dict] = mapped_column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -175,6 +181,7 @@ class AddonBlock(Base):
 
 class AddonAsset(Base):
     __tablename__ = "addon_assets"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -187,12 +194,12 @@ class AddonAsset(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)  # E.g., "texture", "sound", "script"
     path: Mapped[str] = mapped_column(String, nullable=False) # Relative path within the addon structure
     original_filename: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -205,6 +212,7 @@ class AddonAsset(Base):
 
 class AddonBehavior(Base):
     __tablename__ = "addon_behaviors"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -215,12 +223,12 @@ class AddonBehavior(Base):
         UUID(as_uuid=True), ForeignKey("addon_blocks.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Behavior components, events, etc.
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -233,6 +241,7 @@ class AddonBehavior(Base):
 
 class AddonRecipe(Base):
     __tablename__ = "addon_recipes"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -243,12 +252,12 @@ class AddonRecipe(Base):
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
     )
     data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Crafting recipe definition
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -263,6 +272,7 @@ class AddonRecipe(Base):
 
 class ConversionFeedback(Base):
     __tablename__ = "conversion_feedback"
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -273,7 +283,7 @@ class ConversionFeedback(Base):
     user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
@@ -284,6 +294,7 @@ class ConversionFeedback(Base):
 
 class ComparisonResultDb(Base):
     __tablename__ = "comparison_results"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversion_id = Column(
@@ -306,6 +317,7 @@ class ComparisonResultDb(Base):
 
 class FeatureMappingDb(Base):
     __tablename__ = "feature_mappings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     comparison_id = Column(
@@ -325,6 +337,7 @@ class FeatureMappingDb(Base):
 
 class DocumentEmbedding(Base):
     __tablename__ = "document_embeddings"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     embedding = Column(VECTOR(1536), nullable=False) # Assuming nullable=False for embedding

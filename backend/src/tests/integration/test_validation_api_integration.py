@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 import uuid
 
-from src.main import app
-from src.api.validation import (
+from main import app
+from api.validation import (
     validation_jobs,
     validation_reports,
     _validation_jobs_lock,

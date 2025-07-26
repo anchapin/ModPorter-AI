@@ -4,7 +4,7 @@ import shutil
 import uuid
 from typing import List, Dict, Optional, Any
 
-from src.models import addon_models as pydantic_addon_models
+from models import addon_models as pydantic_addon_models
 
 # Placeholder for actual user ID retrieval logic
 DEFAULT_USER_ID = "conversion_system_user"

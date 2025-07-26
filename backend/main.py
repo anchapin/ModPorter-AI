@@ -15,6 +15,7 @@ import asyncio # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
 from dotenv import load_dotenv
 from db.init_db import init_db
+from api.feedback import router as feedback_router
 
 load_dotenv()
 
@@ -69,6 +70,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(feedback_router, prefix="/api/v1")
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):

@@ -1,8 +1,9 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
+import os
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env", extra="ignore")
+    model_config = ConfigDict(env_file="../.env", extra="ignore")
 
     database_url_raw: str = Field(
         default="postgresql://supabase_user:supabase_password@db.supabase_project_id.supabase.co:5432/postgres",
@@ -13,6 +14,10 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Convert DATABASE_URL to async format for application use"""
+        # Use test database if in testing mode
+        if os.getenv("TESTING") == "true":
+            test_db_url = os.getenv("TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5434/modporter")
+            return test_db_url
         return self.database_url_raw
 
     @property

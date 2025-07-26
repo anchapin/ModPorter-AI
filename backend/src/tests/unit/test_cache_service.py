@@ -4,7 +4,7 @@ import base64
 from unittest.mock import AsyncMock, patch
 
 # Absolute import for src.services.cache
-from src.services.cache import CacheService
+from services.cache import CacheService
 
 # Absolute import for src.models.cache_models
 from models.cache_models import CacheStats

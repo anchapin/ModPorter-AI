@@ -3,7 +3,7 @@ import time
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from src.main import app
+from main import app
 from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
 class TestPerformanceIntegration:

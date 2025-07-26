@@ -103,7 +103,6 @@ class ValidationReportResponse(
 
 
 router = APIRouter(
-    prefix="/validation",
     tags=["Validation"],
     responses={404: {"description": "Not found"}},
 )

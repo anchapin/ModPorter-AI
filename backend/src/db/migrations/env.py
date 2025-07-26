@@ -8,8 +8,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 # Now import custom modules
-from src.config import settings  # noqa: E402
-from src.db.declarative_base import Base  # noqa: E402
+from config import settings  # noqa: E402
+from db.declarative_base import Base  # noqa: E402
 
 # Import models to ensure they are registered with the Base metadata
 import src.db.models  # noqa: E402 F401

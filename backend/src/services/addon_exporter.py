@@ -4,8 +4,8 @@ import io
 import zipfile
 from typing import Dict, Any, List
 
-from src.db.models import Addon, AddonBlock, AddonAsset, AddonBehavior, AddonRecipe # For type hinting if passing SQLAlchemy models
-from src.models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
+from db.models import Addon, AddonBlock, AddonAsset, AddonBehavior, AddonRecipe # For type hinting if passing SQLAlchemy models
+from models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
 
 # Constants for manifest versions, can be updated as needed
 MIN_ENGINE_VERSION_RP = [1, 16, 0]
