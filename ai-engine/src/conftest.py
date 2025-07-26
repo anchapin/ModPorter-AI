@@ -1,15 +1,15 @@
-"""Pytest configuration for backend tests."""
+"""Pytest configuration for ai-engine tests."""
 import os
 import sys
 import pytest
 import asyncio
 from pathlib import Path
 
-# Add the backend/src directory to the Python path
-backend_src = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(backend_src))
+# Add the src directory to Python path
+src_dir = Path(__file__).parent
+sys.path.insert(0, str(src_dir))
 
-# Set testing environment variable
+# Set testing environment
 os.environ["TESTING"] = "true"
 
 @pytest.fixture(scope="session")
@@ -24,6 +24,4 @@ def setup_test_env():
     """Set up test environment variables."""
     os.environ["TESTING"] = "true"
     os.environ["LOG_LEVEL"] = "DEBUG"
-    # Use in-memory SQLite for tests
-    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
     yield
