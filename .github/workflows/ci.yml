@@ -114,8 +114,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'pnpm'
-        cache-dependency-path: pnpm-lock.yaml
 
     - name: Cache pip dependencies (extended)
       uses: actions/cache@v4
@@ -153,8 +151,7 @@ jobs:
 
     - name: Install pnpm
       run: |
-        corepack enable
-        corepack prepare pnpm@latest --activate
+        npm install -g pnpm@9
 
     - name: Install Python dependencies
       run: |
@@ -256,8 +253,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-        cache-dependency-path: pnpm-lock.yaml
 
     - name: Cache frontend dependencies
       uses: actions/cache@v4
@@ -274,8 +269,7 @@ jobs:
 
     - name: Install pnpm
       run: |
-        corepack enable
-        corepack prepare pnpm@latest --activate
+        npm install -g pnpm@9
 
     - name: Install dependencies
       run: |
