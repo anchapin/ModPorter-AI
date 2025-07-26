@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+import httpx
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -19,8 +20,15 @@ from config import settings
 test_engine = create_async_engine(
     settings.database_url,
     echo=False,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=1,
+    max_overflow=0,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    connect_args={
+        "server_settings": {
+            "application_name": "modporter_test",
+        }
+    }
 )
 
 TestAsyncSessionLocal = async_sessionmaker(
@@ -72,16 +80,12 @@ def project_root():
 @pytest.fixture(scope="function")
 async def db_session():
     """Create a database session for each test with transaction rollback."""
-    connection = await test_engine.connect()
-    transaction = await connection.begin()
-    
-    session = AsyncSession(bind=connection, expire_on_commit=False)
-    
-    yield session
-    
-    await session.close()
-    await transaction.rollback()
-    await connection.close()
+    async with test_engine.begin() as connection:
+        session = AsyncSession(bind=connection, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            await session.close()
 
 @pytest.fixture
 def client():
@@ -92,17 +96,23 @@ def client():
         from main import app
         from db.base import get_db
         
+        # Create a fresh session maker per test to avoid connection sharing
+        test_session_maker = async_sessionmaker(
+            bind=test_engine, 
+            expire_on_commit=False, 
+            class_=AsyncSession
+        )
+        
         # Override the database dependency to use isolated sessions
         async def override_get_db():
-            connection = await test_engine.connect()
-            transaction = await connection.begin()
-            session = AsyncSession(bind=connection, expire_on_commit=False)
-            try:
-                yield session
-            finally:
-                await session.close()
-                await transaction.rollback()
-                await connection.close()
+            async with test_session_maker() as session:
+                try:
+                    yield session
+                except Exception:
+                    await session.rollback()
+                    raise
+                finally:
+                    await session.close()
         
         app.dependency_overrides[get_db] = override_get_db
         
