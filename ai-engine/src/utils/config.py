@@ -68,3 +68,9 @@ class Config:
     BEDROCK_SCRAPER_ENABLED: bool = os.getenv("BEDROCK_SCRAPER_ENABLED", "true").lower() == "true"
     BEDROCK_SCRAPER_RATE_LIMIT: float = float(os.getenv("BEDROCK_SCRAPER_RATE_LIMIT", "1.0")) # requests per second
     BEDROCK_DOCS_CACHE_TTL: int = int(os.getenv("BEDROCK_DOCS_CACHE_TTL", "86400")) # 24 hours
+    
+    # GPU Configuration
+    GPU_TYPE: str = os.getenv("GPU_TYPE", "cpu").lower()  # nvidia, amd, cpu
+    GPU_ENABLED: bool = os.getenv("GPU_ENABLED", "false").lower() == "true"
+    MODEL_CACHE_SIZE: str = os.getenv("MODEL_CACHE_SIZE", "2GB")
+    MAX_TOKENS_PER_REQUEST: int = int(os.getenv("MAX_TOKENS_PER_REQUEST", "4000"))

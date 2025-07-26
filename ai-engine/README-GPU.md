@@ -1,17 +1,54 @@
 # GPU Acceleration Guide for AI Engine
 
-The AI Engine supports acceleration on NVIDIA GPUs, AMD GPUs, and CPU-only execution.
+The AI Engine supports automatic GPU acceleration on NVIDIA GPUs, AMD GPUs, and CPU-only execution with automatic configuration via environment variables.
 
-## Quick Start
+## 🚀 Quick Start with Auto-Configuration
 
-### 🟢 Default Installation (CPU-Only)
+### 1. Set GPU Type in Environment
 ```bash
-pip install .
+# Option 1: Set in .env file
+echo "GPU_TYPE=nvidia" >> .env   # or 'amd' or 'cpu'
+echo "GPU_ENABLED=true" >> .env
+
+# Option 2: Set as environment variable
+export GPU_TYPE=nvidia  # or 'amd' or 'cpu'
+export GPU_ENABLED=true
+```
+
+### 2. Run Auto-Setup Script
+```bash
+# Automatically detect and configure GPU libraries
+./scripts/setup-gpu.sh
+
+# Or with Docker
+./scripts/setup-gpu.sh --docker-only
+```
+
+### 3. Start the Application
+```bash
+# Regular startup (auto-detects GPU config)
+python -m src.main
+
+# Or with Docker
+docker compose up  # CPU-only
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up  # GPU-enabled
+```
+
+## Manual Installation (Advanced)
+
+### 🟢 CPU-Only (Default)
+```bash
+# Set environment
+export GPU_TYPE=cpu
+pip install .[cpu-only]
 ```
 Works on any computer, no GPU required.
 
 ### 🔥 NVIDIA GPU Acceleration  
 ```bash
+# Set environment
+export GPU_TYPE=nvidia
+export GPU_ENABLED=true
 pip install .[gpu-nvidia]
 ```
 **Requirements:**
@@ -21,6 +58,9 @@ pip install .[gpu-nvidia]
 
 ### 🔴 AMD GPU Acceleration
 ```bash
+# Set environment
+export GPU_TYPE=amd
+export GPU_ENABLED=true
 pip install .[gpu-amd]  
 ```
 **Requirements:**
@@ -156,16 +196,40 @@ pip install torch --index-url https://download.pytorch.org/whl/cu124
 
 ## Environment Variables
 
+### GPU Configuration
 ```bash
-# Force CPU execution
-export CUDA_VISIBLE_DEVICES=""
+# Primary GPU configuration
+GPU_TYPE=nvidia         # Options: nvidia, amd, cpu
+GPU_ENABLED=true        # Enable/disable GPU acceleration
+MODEL_CACHE_SIZE=2GB    # Model cache size
+MAX_TOKENS_PER_REQUEST=4000
 
-# AMD ROCm debugging  
-export HIP_VISIBLE_DEVICES=0
-export ROCR_VISIBLE_DEVICES=0
+# Advanced debugging
+CUDA_VISIBLE_DEVICES=""     # Force CPU execution
+HIP_VISIBLE_DEVICES=0       # AMD ROCm device selection
+ROCR_VISIBLE_DEVICES=0      # AMD ROCm debugging
+CUDA_LAUNCH_BLOCKING=1      # NVIDIA debugging
+DEBUG=true                  # Enable detailed GPU info logging
+```
 
-# NVIDIA debugging
-export CUDA_LAUNCH_BLOCKING=1
+### Auto-Configuration
+The AI Engine automatically:
+- ✅ **Detects** GPU_TYPE from environment variables
+- ✅ **Installs** appropriate PyTorch and ONNX Runtime providers
+- ✅ **Configures** device selection and memory optimization
+- ✅ **Validates** hardware compatibility and driver availability
+- ✅ **Falls back** to CPU if GPU configuration fails
+
+### Testing Your Configuration
+```bash
+# Check GPU detection
+python -c "from src.utils.gpu_config import print_gpu_info; print_gpu_info()"
+
+# Validate configuration
+python -c "from src.utils.gpu_config import get_gpu_config; config = get_gpu_config(); print(config.validate_configuration())"
+
+# Test PyTorch device
+python -c "from src.utils.gpu_config import get_torch_device; print(f'PyTorch device: {get_torch_device()}')"
 ```
 
 ## Docker Support

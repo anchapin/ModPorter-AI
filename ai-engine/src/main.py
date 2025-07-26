@@ -17,22 +17,11 @@ from dotenv import load_dotenv
 import redis.asyncio as aioredis
 import asyncio
 
-from src.crew.conversion_crew import ModPorterConversionCrew
-from src.models.smart_assumptions import SmartAssumptionEngine
+# Configure logging using centralized configuration
+from src.utils.logging_config import setup_logging, get_agent_logger
 
 # Load environment variables
 load_dotenv()
-
-# Status enumeration for conversion states
-class ConversionStatusEnum(str, Enum):
-    QUEUED = "queued"
-    IN_PROGRESS = "in_progress" 
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-# Configure logging using centralized configuration
-from src.utils.logging_config import setup_logging, get_agent_logger
 
 # Setup logging with environment-based configuration
 debug_mode = os.getenv("DEBUG", "false").lower() == "true"
@@ -42,6 +31,27 @@ setup_logging(
 )
 
 logger = get_agent_logger("main")
+
+from src.crew.conversion_crew import ModPorterConversionCrew
+from src.models.smart_assumptions import SmartAssumptionEngine
+from src.utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
+
+# Initialize GPU configuration
+gpu_config = get_gpu_config()
+optimize_for_inference()
+logger.info(f"GPU Configuration initialized: {gpu_config.gpu_type.value}")
+
+# Print GPU info if debug mode is enabled
+if debug_mode:
+    print_gpu_info()
+
+# Status enumeration for conversion states
+class ConversionStatusEnum(str, Enum):
+    QUEUED = "queued"
+    IN_PROGRESS = "in_progress" 
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 # FastAPI app configuration
 app = FastAPI(
