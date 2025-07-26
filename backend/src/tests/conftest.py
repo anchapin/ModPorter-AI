@@ -5,6 +5,9 @@ import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import event
+from db.base import async_engine, AsyncSessionLocal
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -48,14 +51,46 @@ def project_root():
     project_root = backend_dir.parent    # project root
     return project_root
 
+@pytest.fixture(scope="function")
+async def db_session():
+    """Create a database session for each test with transaction rollback."""
+    connection = await async_engine.connect()
+    transaction = await connection.begin()
+    
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    
+    yield session
+    
+    await session.close()
+    await transaction.rollback()
+    await connection.close()
+
 @pytest.fixture
 def client():
-    """Create a test client for the FastAPI app."""
+    """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
     with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
-        # Import main AFTER setting up the mock
+        # Import dependencies
         from main import app
+        from db.base import get_db
+        
+        # Override the database dependency to use isolated sessions
+        async def override_get_db():
+            connection = await async_engine.connect()
+            transaction = await connection.begin()
+            session = AsyncSession(bind=connection, expire_on_commit=False)
+            try:
+                yield session
+            finally:
+                await session.close()
+                await transaction.rollback()
+                await connection.close()
+        
+        app.dependency_overrides[get_db] = override_get_db
         
         # Create TestClient - init_db will be mocked since we already initialized it
         with TestClient(app) as test_client:
             yield test_client
+        
+        # Clean up dependency override
+        app.dependency_overrides.clear()
