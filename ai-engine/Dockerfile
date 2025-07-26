@@ -153,8 +153,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN adduser --disabled-password --gecos '' appuser
 RUN mkdir -p /app/models /app/cache
 
-# Copy source code with correct permissions
-COPY --chown=appuser:appuser . /app/
+# Copy only necessary application files with correct permissions
+COPY --from=builder-${GPU_TYPE} --chown=appuser:appuser /app/src /app/src
 USER appuser
 
 # Verify GPU setup based on type

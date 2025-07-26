@@ -152,7 +152,7 @@ class GPUConfig:
         try:
             import onnxruntime as ort
             return "ROCMExecutionProvider" in ort.get_available_providers()
-        except:
+        except (ImportError, Exception):
             return False
     
     def _is_directml_available(self) -> bool:
@@ -160,7 +160,7 @@ class GPUConfig:
         try:
             import onnxruntime as ort
             return "DmlExecutionProvider" in ort.get_available_providers()
-        except:
+        except (ImportError, Exception):
             return False
     
     def get_torch_device(self):
