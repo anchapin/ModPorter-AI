@@ -123,7 +123,6 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          ~/.cache/pip
           ~/.local/lib/python3.11/site-packages
         key: ${{ runner.os }}-pip-extended-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}
         restore-keys: |
@@ -134,7 +133,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*') }}
         restore-keys: |
           ${{ runner.os }}-buildx-
 
@@ -145,7 +144,7 @@ jobs:
           ai-engine/.pytest_cache
           backend/.pytest_cache
           frontend/node_modules/.cache
-        key: ${{ runner.os }}-test-cache-${{ github.sha }}
+        key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', '**/pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
         restore-keys: |
           ${{ runner.os }}-test-cache-
 
@@ -319,8 +318,8 @@ jobs:
         echo ""
         echo "Cache Keys Generated:"
         echo "- pip-extended-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- buildx-${{ github.sha }}"
-        echo "- test-cache-${{ github.sha }}"
+        echo "- buildx-${{ hashFiles('**/Dockerfile*') }}"
+        echo "- test-cache-${{ hashFiles('**/requirements*.txt', '**/pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}"
         echo "- frontend-20-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
         echo ""
         echo "Expected Cache Hit Rate: >80%"

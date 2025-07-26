@@ -33,7 +33,6 @@ This document outlines the implementation of a high-performance GitHub Actions c
   uses: actions/cache@v4
   with:
     path: |
-      ~/.cache/pip
       ~/.local/lib/python3.11/site-packages
     key: ${{ runner.os }}-pip-extended-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}
     restore-keys: |
@@ -59,7 +58,7 @@ This document outlines the implementation of a high-performance GitHub Actions c
   uses: actions/cache@v4
   with:
     path: /tmp/.buildx-cache
-    key: ${{ runner.os }}-buildx-${{ github.sha }}
+    key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*') }}
     restore-keys: |
       ${{ runner.os }}-buildx-
 ```
@@ -87,14 +86,10 @@ on:
     filters: |
       backend:
         - 'backend/**'
-        - 'backend/requirements*.txt'
       frontend:
         - 'frontend/**'
-        - 'frontend/package.json'
-        - 'frontend/pnpm-lock.yaml'
       ai-engine:
         - 'ai-engine/**'
-        - 'ai-engine/requirements*.txt'
 ```
 
 #### Matrix Strategy for Parallel Execution
@@ -143,7 +138,7 @@ cache-to: |
       ai-engine/.pytest_cache
       backend/.pytest_cache
       frontend/node_modules/.cache
-    key: ${{ runner.os }}-test-cache-${{ github.sha }}
+    key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', '**/pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
     restore-keys: |
       ${{ runner.os }}-test-cache-
 ```
@@ -176,7 +171,7 @@ restore-keys: |
   Linux-frontend-
 
 # Docker Builds
-key: Linux-buildx-abc123def456...
+key: Linux-buildx-${{ hashFiles('**/Dockerfile*') }}
 restore-keys: |
   Linux-buildx-
 ```
@@ -187,9 +182,9 @@ restore-keys: |
 ```bash
 echo "📊 Cache Monitoring Report"
 echo "Cache Keys Generated:"
-echo "- pip-extended-${{ hashFiles('**/requirements*.txt') }}"
-echo "- frontend-20-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
-echo "- buildx-${{ github.sha }}"
+echo "- pip-extended-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
+echo "- frontend-20-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-lock.yaml') }}"
+echo "- buildx-${{ hashFiles('**/Dockerfile*') }}"
 echo "Expected Cache Hit Rate: >80%"
 ```
 
