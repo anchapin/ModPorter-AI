@@ -152,7 +152,9 @@ jobs:
     # Skip system dependencies - using Docker containers and existing services
 
     - name: Install pnpm
-      run: npm install -g pnpm@latest
+      run: |
+        corepack enable
+        corepack prepare pnpm@latest --activate
 
     - name: Install Python dependencies
       run: |
@@ -271,10 +273,14 @@ jobs:
           ${{ runner.os }}-frontend-
 
     - name: Install pnpm
-      run: npm install -g pnpm@latest
+      run: |
+        corepack enable
+        corepack prepare pnpm@latest --activate
 
     - name: Install dependencies
       run: |
+        echo "Installing workspace dependencies from root..."
+        ls -la pnpm-workspace.yaml
         pnpm install --frozen-lockfile
 
     - name: Run matrix test
