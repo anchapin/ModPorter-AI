@@ -38,6 +38,9 @@
     "@types/jest": "^30.0.0",
     "concurrently": "^9.2.0"
   },
+  "overrides": {
+    "form-data@>=4.0.0 <4.0.4": ">=4.0.4"
+  },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=7.0.0"

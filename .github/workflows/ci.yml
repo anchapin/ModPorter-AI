@@ -114,10 +114,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'pnpm'
-        cache-dependency-path: |
-          frontend/pnpm-lock.yaml
-          pnpm-lock.yaml
 
     - name: Cache pip dependencies (extended)
       uses: actions/cache@v4
@@ -144,7 +140,7 @@ jobs:
           ai-engine/.pytest_cache
           backend/.pytest_cache
           frontend/node_modules/.cache
-        key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', '**/pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
+        key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', 'pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
         restore-keys: |
           ${{ runner.os }}-test-cache-
 
@@ -152,6 +148,10 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     # Skip system dependencies - using Docker containers and existing services
+
+    - name: Install pnpm
+      run: |
+        npm install -g pnpm@9
 
     - name: Install Python dependencies
       run: |
@@ -253,24 +253,28 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml
 
     - name: Cache frontend dependencies
       uses: actions/cache@v4
       with:
         path: |
+          node_modules
           frontend/node_modules
           frontend/.vite
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ matrix.node-version }}-
           ${{ runner.os }}-frontend-
 
+    - name: Install pnpm
+      run: |
+        npm install -g pnpm@9
+
     - name: Install dependencies
       run: |
-        cd frontend
+        echo "Installing workspace dependencies from root..."
+        ls -la pnpm-workspace.yaml
         pnpm install --frozen-lockfile
 
     - name: Run matrix test
