@@ -14,6 +14,11 @@
 
 /* Navigation styles are now handled by TopNavigation component */
 
+/* Page wrapper for consistent padding */
+.page-wrapper {
+  padding: 2rem;
+}
+
 /* Main Content */
 main {
   position: relative;

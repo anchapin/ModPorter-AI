@@ -16,6 +16,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
     return location.pathname.startsWith(path);
   };
 
+  const navigationLinks = [
+    { to: '/', label: 'Convert' },
+    { to: '/comparison', label: 'Comparison' },
+    { to: '/behavioral-test', label: 'Behavioral Test' },
+    { to: '/docs', label: 'Documentation' }
+  ];
+
   return (
     <header className={`top-navigation ${className}`}>
       <nav className="top-navigation__nav">
@@ -24,33 +31,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
         </Link>
         
         <div className="top-navigation__links">
-          <Link 
-            to="/" 
-            className={`top-navigation__link ${isActive('/') ? 'top-navigation__link--active' : ''}`}
-          >
-            Convert
-          </Link>
-          
-          <Link 
-            to="/comparison" 
-            className={`top-navigation__link ${isActive('/comparison') ? 'top-navigation__link--active' : ''}`}
-          >
-            Comparison
-          </Link>
-          
-          <Link 
-            to="/behavioral-test" 
-            className={`top-navigation__link ${isActive('/behavioral-test') ? 'top-navigation__link--active' : ''}`}
-          >
-            Behavioral Test
-          </Link>
-          
-          <Link 
-            to="/docs" 
-            className={`top-navigation__link ${isActive('/docs') ? 'top-navigation__link--active' : ''}`}
-          >
-            Documentation
-          </Link>
+          {navigationLinks.map(({ to, label }) => (
+            <Link 
+              key={to}
+              to={to} 
+              className={`top-navigation__link ${isActive(to) ? 'top-navigation__link--active' : ''}`}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </nav>
     </header>

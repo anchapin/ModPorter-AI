@@ -19,7 +19,7 @@ export const Progress: React.FC<ProgressProps> = ({
       {...props}
     >
       <div 
-        className="h-2 w-full flex-1 bg-blue-600 transition-all duration-300 ease-in-out"
+        className="h-2 w-full bg-blue-600 transition-all duration-300 ease-in-out"
         style={{ transform: `translateX(-${100 - percentage}%)` }}
       />
     </div>

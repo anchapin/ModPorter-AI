@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   children: React.ReactNode;
 }
@@ -21,8 +21,8 @@ export const Badge: React.FC<BadgeProps> = ({
   };
   
   return (
-    <div className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
+    <span className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
       {children}
-    </div>
+    </span>
   );
 };
