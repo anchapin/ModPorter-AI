@@ -5,9 +5,7 @@ import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import event
-from db.base import async_engine, AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -15,6 +13,19 @@ sys.path.insert(0, str(src_dir))
 
 # Set testing environment variable BEFORE importing main
 os.environ["TESTING"] = "true"
+
+# Set up async engine for tests
+from config import settings
+test_engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    pool_size=10,
+    max_overflow=20,
+)
+
+TestAsyncSessionLocal = async_sessionmaker(
+    bind=test_engine, expire_on_commit=False, class_=AsyncSession
+)
 
 # Global flag to track database initialization
 _db_initialized = False
@@ -26,13 +37,20 @@ def pytest_sessionstart(session):
         try:
             # Run database initialization synchronously
             import asyncio
-            from db.init_db import init_db
+            
+            async def init_test_db():
+                from db.declarative_base import Base
+                from sqlalchemy import text
+                async with test_engine.begin() as conn:
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                    await conn.run_sync(Base.metadata.create_all)
             
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(init_db())
+                loop.run_until_complete(init_test_db())
                 _db_initialized = True
                 print("✅ Test database initialized successfully")
             finally:
@@ -54,7 +72,7 @@ def project_root():
 @pytest.fixture(scope="function")
 async def db_session():
     """Create a database session for each test with transaction rollback."""
-    connection = await async_engine.connect()
+    connection = await test_engine.connect()
     transaction = await connection.begin()
     
     session = AsyncSession(bind=connection, expire_on_commit=False)
@@ -76,7 +94,7 @@ def client():
         
         # Override the database dependency to use isolated sessions
         async def override_get_db():
-            connection = await async_engine.connect()
+            connection = await test_engine.connect()
             transaction = await connection.begin()
             session = AsyncSession(bind=connection, expire_on_commit=False)
             try:
