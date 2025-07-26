@@ -13,9 +13,6 @@ def test_logging_config():
     print("=== Testing Logging Configuration ===")
     
     try:
-        # Import the logging config directly
-        sys.path.insert(0, str(Path(__file__).parent))
-        
         # Test basic imports
         from utils.logging_config import AgentLogFormatter, AgentLogger, setup_logging
         print("✓ Successfully imported logging components")

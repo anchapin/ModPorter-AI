@@ -8,12 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
-# Set PYTHONPATH to handle src imports
-os.environ['PYTHONPATH'] = str(Path(__file__).parent)
-
+# Import the logging modules directly
 try:
     from utils.logging_config import setup_logging, get_agent_logger, get_crew_logger, log_performance
     LOGGING_AVAILABLE = True

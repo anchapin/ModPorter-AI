@@ -7,6 +7,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -110,9 +111,10 @@ class AgentLogger:
     
     def log_agent_decision(self, decision: str, reasoning: str, **context):
         """Log agent decision-making process"""
-        context['decision'] = decision
-        context['reasoning'] = reasoning
-        self.info(f"Decision: {decision}", agent_context=context)
+        log_context = context.copy()
+        log_context['decision'] = decision
+        log_context['reasoning'] = reasoning
+        self.info(f"Decision: {decision}", agent_context=log_context)
     
     def log_data_transfer(self, from_agent: str, to_agent: str, data_type: str, data_size: Optional[int] = None):
         """Log data transfer between agents"""
@@ -128,10 +130,8 @@ class AgentLogger:
     
     def _build_extra(self, **kwargs) -> Dict[str, Any]:
         """Build extra dictionary for logging"""
-        extra = {}
-        for key, value in kwargs.items():
-            if key in ['agent_context', 'operation_time', 'tool_name', 'tool_result']:
-                extra[key] = value
+        valid_keys = {'agent_context', 'operation_time', 'tool_name', 'tool_result'}
+        extra = {key: value for key, value in kwargs.items() if key in valid_keys}
         return extra
 
 
@@ -232,7 +232,6 @@ def log_performance(operation_name: str = None):
     """Decorator to log operation performance"""
     def decorator(func):
         def wrapper(*args, **kwargs):
-            import time
             
             # Get logger from the class instance if available
             if args and hasattr(args[0], 'logger'):
