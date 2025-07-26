@@ -9,7 +9,7 @@ import validators # For URL validation
 # import aiofiles
 
 
-from src.models.document import Document
+from models.document import Document
 
 logger = logging.getLogger(__name__)
 

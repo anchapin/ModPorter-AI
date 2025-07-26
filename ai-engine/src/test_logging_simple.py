@@ -13,6 +13,9 @@ def test_logging_config():
     print("=== Testing Logging Configuration ===")
     
     try:
+        # Add src to path for imports (needed for standalone test script)
+        sys.path.insert(0, str(Path(__file__).parent))
+        
         # Test basic imports
         from utils.logging_config import AgentLogFormatter, AgentLogger, setup_logging
         print("✓ Successfully imported logging components")
@@ -61,6 +64,9 @@ def test_environment_variables():
         print(f"✓ Set {var}={value}")
     
     try:
+        # Add src to path for imports (needed for standalone test script)  
+        sys.path.insert(0, str(Path(__file__).parent))
+        
         from utils.logging_config import setup_logging
         setup_logging()
         print("✓ Environment variables processed correctly")
