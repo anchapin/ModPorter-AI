@@ -27,8 +27,10 @@ from src.agents.qa_validator import QAValidatorAgent
 # --- END INTEGRATION PLAN ---
 from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
 from src.utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+from src.utils.logging_config import get_crew_logger, log_performance
 
-logger = logging.getLogger(__name__)
+# Use enhanced crew logger
+logger = get_crew_logger()
 
 
 class ModPorterConversionCrew:
@@ -408,6 +410,7 @@ class ModPorterConversionCrew:
             verbose=True
         )
     
+    @log_performance("mod_conversion")
     def convert_mod(
         self, 
         mod_path: Path, 
@@ -428,22 +431,28 @@ class ModPorterConversionCrew:
             Conversion result following PRD Feature 3 format
         """
         temp_dir = None  # Initialize temp_dir to None
+        
+        # Log conversion start with context
+        logger.log_operation_start("mod_conversion", 
+                                 mod_path=str(mod_path),
+                                 output_path=str(output_path),
+                                 smart_assumptions=smart_assumptions,
+                                 include_dependencies=include_dependencies)
+        
         try:
-            logger.info(f"Starting conversion of {mod_path}")
-            logger.debug(f"Output path: {output_path}")
-            logger.debug(f"Temporary directory: {temp_dir}")
-            
             # Resolve the mod path relative to /app if it's a relative path
             if not mod_path.is_absolute():
+                original_path = str(mod_path)
                 mod_path = Path("/app") / mod_path
-                logger.debug(f"Resolved mod path to: {mod_path}")
+                logger.debug(f"Resolved relative path from {original_path} to {mod_path}")
             
             # Check if mod file exists
             if not mod_path.exists():
-                logger.error(f"Mod file not found: {mod_path}")
+                error_msg = f"Mod file not found: {mod_path}"
+                logger.error(error_msg)
                 return {
                     'status': 'failed',
-                    'error': f"Mod file not found: {mod_path}",
+                    'error': error_msg,
                     'overall_success_rate': 0.0,
                     'converted_mods': [],
                     'failed_mods': [{'name': str(mod_path), 'reason': 'File not found', 'suggestions': ['Check file path']}],

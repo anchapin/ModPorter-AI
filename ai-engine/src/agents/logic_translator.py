@@ -12,8 +12,11 @@ from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 from src.agents.java_analyzer import JavaAnalyzerAgent  # Added JavaAnalyzerAgent
+from src.utils.logging_config import get_agent_logger, log_performance
+import time
 
-logger = logging.getLogger(__name__)
+# Use enhanced agent logger
+logger = get_agent_logger("logic_translator")
 
 
 class LogicTranslatorAgent:
@@ -25,6 +28,7 @@ class LogicTranslatorAgent:
     _instance = None
     
     def __init__(self):
+        self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
         self.java_analyzer_agent = (
             JavaAnalyzerAgent()
