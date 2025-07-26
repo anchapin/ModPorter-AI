@@ -13,7 +13,15 @@ jobs:
     timeout-minutes: 30
 
     services:
-      # Use existing Redis on port 6379 (no Redis service defined)
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+        ports:
+          - 6379:6379
       postgres:
         image: pgvector/pgvector:pg15
         env:
