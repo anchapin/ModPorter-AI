@@ -1,10 +1,13 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ConversionUploadReal } from './components/ConversionUpload/ConversionUploadReal';
 import { DocumentationSimple } from './pages/DocumentationSimple';
 import { Dashboard } from './pages/Dashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
+import { TopNavigation } from './components/TopNavigation';
+import { ComparisonView } from './components/ComparisonView';
+import { BehavioralTestWrapper } from './components/BehavioralTest/BehavioralTestWrapper';
 import EditorPage from './pages/EditorPage'; // Added for Editor Route
 import './App.css';
 import styles from './App.module.css';
@@ -21,24 +24,7 @@ function App() {
       <NotificationProvider>
         <Router>
           <div className="app">
-            <header className="app-header">
-              <nav>
-                <Link to="/">
-                  ModPorter AI
-                </Link>
-                <div>
-                  <Link to="/">
-                    Convert
-                  </Link>
-                  <Link to="/dashboard">
-                    Dashboard
-                  </Link>
-                  <Link to="/docs">
-                    Documentation
-                  </Link>
-                </div>
-              </nav>
-            </header>
+            <TopNavigation />
 
             <main>
               <Routes>
@@ -57,6 +43,9 @@ function App() {
                   } 
                 />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/comparison" element={<div className="page-wrapper"><ComparisonView /></div>} />
+                <Route path="/comparison/:comparisonId" element={<div className="page-wrapper"><ComparisonView /></div>} />
+                <Route path="/behavioral-test/:conversionId" element={<div className="page-wrapper"><BehavioralTestWrapper /></div>} />
                 <Route path="/docs" element={<DocumentationSimple />} />
                 <Route path="/editor/:addonId" element={<EditorPage />} /> {/* Added Editor Route */}
               </Routes>

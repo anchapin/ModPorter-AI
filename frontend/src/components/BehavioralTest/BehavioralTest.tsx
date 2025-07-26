@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { PlayCircle, Download, RefreshCw } from 'lucide-react';
+// Simple icon replacements for lucide-react icons
+const PlayCircle = () => <span>▶</span>;
+const Download = () => <span>⬇</span>;
+const RefreshCw = () => <span>↻</span>;
 
 interface TestScenario {
   scenario: string;

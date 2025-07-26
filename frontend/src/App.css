@@ -12,48 +12,11 @@
   position: relative;
 }
 
-/* Enhanced Navigation */
-.app-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-}
+/* Navigation styles are now handled by TopNavigation component */
 
-.app-header nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.app-header nav a {
-  color: #333;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-}
-
-.app-header nav a:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  transform: translateY(-1px);
-}
-
-.app-header nav > a {
-  font-size: 1.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Page wrapper for consistent padding */
+.page-wrapper {
+  padding: 2rem;
 }
 
 /* Main Content */
