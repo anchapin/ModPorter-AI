@@ -11,11 +11,14 @@ from src.models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 from src.utils.embedding_generator import EmbeddingGenerator # Added import
+from src.utils.logging_config import get_agent_logger, log_performance
 import os
 import zipfile
 from pathlib import Path
+import time
 
-logger = logging.getLogger(__name__)
+# Use enhanced agent logger
+logger = get_agent_logger("java_analyzer")
 
 
 class JavaAnalyzerAgent:
@@ -27,6 +30,7 @@ class JavaAnalyzerAgent:
     _instance = None
     
     def __init__(self):
+        self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
         self.embedding_generator = EmbeddingGenerator() # Added EmbeddingGenerator instantiation
         
@@ -80,6 +84,7 @@ class JavaAnalyzerAgent:
             JavaAnalyzerAgent.extract_assets_tool
         ]
     
+    @log_performance("mod_file_analysis")
     def analyze_mod_file(self, mod_path: str) -> str:
         """
         Analyze a mod file and return comprehensive results.
@@ -90,7 +95,7 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with analysis results
         """
-        logger.info(f"Analyzing mod file: {mod_path}")
+        self.logger.log_operation_start("mod_file_analysis", mod_path=mod_path, file_size=self._get_file_size(mod_path))
         
         try:
             # Initialize result structure
@@ -104,22 +109,45 @@ class JavaAnalyzerAgent:
                 "embeddings_data": []
             }
             
-            # Analyze the mod file
+            self.logger.debug("Initialized analysis result structure")
+            
+            # Analyze the mod file based on type
             if mod_path.endswith(('.jar', '.zip')):
+                self.logger.info("Analyzing JAR/ZIP file", file_type="archive")
                 result = self._analyze_jar_file(mod_path, result)
             elif os.path.isdir(mod_path):
+                self.logger.info("Analyzing source directory", file_type="directory")
                 result = self._analyze_source_directory(mod_path, result)
             else:
-                result["errors"].append(f"Unsupported mod file format: {mod_path}")
+                error_msg = f"Unsupported mod file format: {mod_path}"
+                self.logger.error(error_msg)
+                result["errors"].append(error_msg)
+            
+            # Log analysis results summary
+            self.logger.info("Analysis completed", 
+                           mod_name=result["mod_info"]["name"],
+                           framework=result["mod_info"]["framework"],
+                           assets_count=len(result["assets"]),
+                           features_count=len(result["features"]),
+                           errors_count=len(result["errors"]))
             
             # Generate embeddings for the analyzed content
+            self.logger.debug("Generating embeddings for analyzed content")
+            embedding_start = time.time()
             self._generate_embeddings(result)
+            embedding_duration = time.time() - embedding_start
+            self.logger.log_tool_usage("embedding_generator", 
+                                     result=f"Generated {len(result['embeddings_data'])} embeddings",
+                                     duration=embedding_duration)
             
-            return json.dumps(result)
+            result_json = json.dumps(result)
+            self.logger.debug("Analysis result serialized", result_size=len(result_json))
+            return result_json
             
         except Exception as e:
-            logger.error(f"Error analyzing mod file {mod_path}: {e}")
-            return json.dumps({
+            self.logger.error(f"Error analyzing mod file {mod_path}: {e}", 
+                            error_type=type(e).__name__)
+            error_result = {
                 "mod_info": {"name": "error", "framework": "unknown", "version": "1.0.0"},
                 "assets": {},
                 "features": {},
@@ -127,7 +155,28 @@ class JavaAnalyzerAgent:
                 "metadata": {},
                 "errors": [f"Analysis failed: {str(e)}"],
                 "embeddings_data": []
-            })
+            }
+            return json.dumps(error_result)
+    
+    def _get_file_size(self, file_path: str) -> int:
+        """Get file size in bytes, return 0 if file doesn't exist or is directory"""
+        try:
+            if os.path.isfile(file_path):
+                return os.path.getsize(file_path)
+            elif os.path.isdir(file_path):
+                # Calculate directory size
+                total_size = 0
+                for dirpath, dirnames, filenames in os.walk(file_path):
+                    for filename in filenames:
+                        filepath = os.path.join(dirpath, filename)
+                        try:
+                            total_size += os.path.getsize(filepath)
+                        except (OSError, IOError):
+                            continue
+                return total_size
+            return 0
+        except (OSError, IOError):
+            return 0
     
     def analyze_jar_for_mvp(self, jar_path: str) -> dict:
         """

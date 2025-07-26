@@ -21,7 +21,7 @@ jobs:
           --health-timeout 5s
           --health-retries 3
         ports:
-          - 6379:6379
+          - 6380:6379
       postgres:
         image: pgvector/pgvector:pg15
         env:
@@ -88,7 +88,7 @@ jobs:
     - name: Wait for services to be ready
       run: |
         echo "Checking Redis connectivity..."
-        timeout 30 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
+        timeout 30 bash -c 'until echo "PING" | nc localhost 6380 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
         echo "Checking PostgreSQL connectivity..."
         timeout 30 bash -c 'until nc -z localhost 5434; do echo "Waiting for PostgreSQL..."; sleep 2; done'
         echo "Checking Ollama availability..."
@@ -107,7 +107,7 @@ jobs:
         python -m pytest src/tests/integration/test_basic_integration.py -v --tb=short
         python -m pytest src/tests/integration/test_end_to_end_integration.py -v --tb=short || echo "End-to-end test skipped due to missing dependencies"
       env:
-        REDIS_URL: redis://localhost:6379
+        REDIS_URL: redis://localhost:6380
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
         PYTHONPATH: ${{ github.workspace }}/ai-engine/src
         LOG_LEVEL: INFO
@@ -121,7 +121,7 @@ jobs:
         cd ai-engine
         python -m pytest src/tests/integration/test_full_conversion_workflow.py -v --tb=short || echo "Full conversion test skipped due to missing dependencies"
       env:
-        REDIS_URL: redis://localhost:6379
+        REDIS_URL: redis://localhost:6380
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
         PYTHONPATH: ${{ github.workspace }}/ai-engine/src
         LOG_LEVEL: INFO
@@ -136,7 +136,7 @@ jobs:
         python -m pytest tests/integration/ -v --tb=short || echo "Backend integration tests skipped due to missing dependencies"
         python -m pytest tests/test_health.py -v --tb=short
       env:
-        REDIS_URL: redis://localhost:6379
+        REDIS_URL: redis://localhost:6380
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
         PYTHONPATH: ${{ github.workspace }}/backend/src
         LOG_LEVEL: INFO
@@ -162,4 +162,4 @@ jobs:
       run: |
         echo "❌ Integration tests failed!"
         echo "Check the test results artifact for detailed information."
-        exit 1
+        exit 1# Trigger CI

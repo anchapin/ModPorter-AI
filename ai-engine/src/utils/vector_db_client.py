@@ -3,8 +3,8 @@ import hashlib
 import os
 import logging # Using standard logging
 from typing import Optional, List, Dict, Any # Added List, Dict, Any
-from src.models.document import Document
-from src.utils.embedding_generator import EmbeddingGenerator
+from models.document import Document
+from utils.embedding_generator import EmbeddingGenerator
 
 logger = logging.getLogger(__name__)
 

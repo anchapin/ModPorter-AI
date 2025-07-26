@@ -31,12 +31,17 @@ class ConversionStatusEnum(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO if os.getenv("LOG_LEVEL", "INFO").upper() == "INFO" else logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# Configure logging using centralized configuration
+from src.utils.logging_config import setup_logging, get_agent_logger
+
+# Setup logging with environment-based configuration
+debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+setup_logging(
+    debug_mode=debug_mode,
+    enable_file_logging=os.getenv("ENABLE_FILE_LOGGING", "true").lower() == "true"
 )
-logger = logging.getLogger(__name__)
+
+logger = get_agent_logger("main")
 
 # FastAPI app configuration
 app = FastAPI(
