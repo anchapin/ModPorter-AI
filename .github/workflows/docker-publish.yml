@@ -68,7 +68,12 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=${{ matrix.service }}
+            type=registry,ref=ghcr.io/${{ github.repository }}/modporter-ai-${{ matrix.service }}:cache
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.service }}
+            type=registry,ref=ghcr.io/${{ github.repository }}/modporter-ai-${{ matrix.service }}:cache,mode=max
           build-args: |
             NODE_ENV=production
+            BUILDKIT_INLINE_CACHE=1
