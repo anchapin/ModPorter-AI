@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
     String,
@@ -34,12 +35,12 @@ class ConversionJob(Base):
         server_default=text("'queued'"),
     )
     input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -78,7 +79,7 @@ class ConversionResult(Base):
         nullable=False,
     )
     output_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -105,7 +106,7 @@ class JobProgress(Base):
     progress: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default=text("0")
     )
-    last_update: Mapped[Optional[DateTime]] = mapped_column(
+    last_update: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -129,12 +130,12 @@ class Addon(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, nullable=False) # Assuming user_id is a string for now
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -161,12 +162,12 @@ class AddonBlock(Base):
     )
     identifier: Mapped[str] = mapped_column(String, nullable=False)
     properties: Mapped[dict] = mapped_column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -193,12 +194,12 @@ class AddonAsset(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)  # E.g., "texture", "sound", "script"
     path: Mapped[str] = mapped_column(String, nullable=False) # Relative path within the addon structure
     original_filename: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -222,12 +223,12 @@ class AddonBehavior(Base):
         UUID(as_uuid=True), ForeignKey("addon_blocks.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Behavior components, events, etc.
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -251,12 +252,12 @@ class AddonRecipe(Base):
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
     )
     data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Crafting recipe definition
-    created_at: Mapped[Optional[DateTime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[Optional[DateTime]] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -282,7 +283,7 @@ class ConversionFeedback(Base):
     user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
