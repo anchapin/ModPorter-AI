@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import MagicMock, AsyncMock
 
 
-from src.db import crud
+from db import crud
 from db.models import ConversionFeedback
 
 @pytest.mark.asyncio

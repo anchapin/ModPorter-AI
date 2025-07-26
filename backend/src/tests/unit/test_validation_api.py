@@ -8,8 +8,8 @@ from unittest.mock import patch
 import uuid
 import time
 
-from src.main import app
-from src.api.validation import (
+from main import app
+from api.validation import (
     MockValidationAgent,
     ValidationRequest,
     ValidationJob,

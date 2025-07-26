@@ -1,12 +1,12 @@
 import json
 import redis.asyncio as aioredis
-from src.config import settings
+from config import settings
 from typing import Optional
 from datetime import datetime
 import logging
 import base64
 import os
-from src.models.cache_models import CacheStats
+from models.cache_models import CacheStats
 
 logger = logging.getLogger(__name__)
 
