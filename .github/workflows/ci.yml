@@ -115,9 +115,7 @@ jobs:
       with:
         node-version: '20'
         cache: 'pnpm'
-        cache-dependency-path: |
-          frontend/pnpm-lock.yaml
-          pnpm-lock.yaml
+        cache-dependency-path: pnpm-lock.yaml
 
     - name: Cache pip dependencies (extended)
       uses: actions/cache@v4
@@ -144,7 +142,7 @@ jobs:
           ai-engine/.pytest_cache
           backend/.pytest_cache
           frontend/node_modules/.cache
-        key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', '**/pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
+        key: ${{ runner.os }}-test-cache-${{ hashFiles('**/requirements*.txt', 'pnpm-lock.yaml', 'ai-engine/src/**', 'backend/src/**', 'frontend/src/**') }}
         restore-keys: |
           ${{ runner.os }}-test-cache-
 
@@ -254,7 +252,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml
+        cache-dependency-path: pnpm-lock.yaml
 
     - name: Cache frontend dependencies
       uses: actions/cache@v4
@@ -263,7 +261,7 @@ jobs:
           frontend/node_modules
           frontend/.vite
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ matrix.node-version }}-
           ${{ runner.os }}-frontend-
