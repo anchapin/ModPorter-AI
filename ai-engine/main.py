@@ -433,7 +433,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
 
 if __name__ == "__main__":
     uvicorn.run(
-        "src.main:app",
+        "main:app",
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", 8001)),
         reload=os.getenv("DEBUG", "false").lower() == "true"

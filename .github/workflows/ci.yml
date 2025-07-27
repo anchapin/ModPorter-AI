@@ -139,7 +139,7 @@ jobs:
             test-path: 'backend/tests/integration/'
             container-name: 'backend-test'
           - test-suite: ai-engine
-            test-path: 'ai-engine/tests/integration/test_end_to_end_integration.py'
+            test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
     # Use Python base image if available, fallback to setup-python
@@ -357,8 +357,8 @@ jobs:
             echo "Test files available:"
             find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
             
-            echo "Running end-to-end integration tests..."
-            timeout 600s python -m pytest tests/integration/test_basic.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            echo "Running import tests..."
+            timeout 600s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
         

@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 def test_integration_basic():
     """Basic integration test that can be skipped if dependencies missing."""
     try:
-        from src.main import app
+        from main import app
         client = TestClient(app)
         
         # Test if we can import the app
