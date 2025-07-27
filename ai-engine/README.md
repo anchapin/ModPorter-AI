@@ -43,7 +43,7 @@ pytest --cov=src --cov-report=html
 
 ```bash
 # Run RAG evaluation suite
-python src/testing/rag_evaluator.py
+python testing/rag_evaluator.py
 ```
 
 ### Code Quality Check

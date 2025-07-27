@@ -27,7 +27,7 @@ export GPU_ENABLED=true
 ### 3. Start the Application
 ```bash
 # Regular startup (auto-detects GPU config)
-python -m src.main
+python -m main
 
 # Or with Docker
 docker compose up  # CPU-only

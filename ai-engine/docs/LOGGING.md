@@ -168,7 +168,7 @@ class MyConversionCrew:
 
 ### File Structure
 ```
-ai-engine/src/utils/
+ai-engine/utils/
 ├── logging_config.py          # Main logging configuration
 └── __init__.py               # Package initialization
 ```
@@ -221,7 +221,7 @@ python test_logging_simple.py
 
 # Test in Docker environment
 docker compose exec ai-engine python -c "
-from src.utils.logging_config import setup_logging, get_agent_logger
+from utils.logging_config import setup_logging, get_agent_logger
 setup_logging(debug_mode=True)
 logger = get_agent_logger('test')
 logger.info('Test successful')
