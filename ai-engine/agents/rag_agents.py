@@ -87,7 +87,11 @@ class RAGAgents:
 if __name__ == '__main__':
     # Example of how to instantiate the agents
     # This part is for testing and might be removed or moved later
+<<<<<<< HEAD
     from ai_engine.src.tools.search_tool import SearchTool # Adjust import if necessary
+=======
+    from src.tools.search_tool import SearchTool # Adjust import if necessary
+>>>>>>> origin/main
 
     llm_instance = get_llm()
     search_tool_instance = SearchTool()

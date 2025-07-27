@@ -86,7 +86,15 @@ class JavaAnalyzerAgent:
     
     @log_performance("mod_file_analysis")
     def analyze_mod_file(self, mod_path: str) -> str:
-        print(f"DEBUG: Entering analyze_mod_file for path: {mod_path}")
+        """
+        Analyze a mod file and return comprehensive results.
+        
+        Args:
+            mod_path: Path to the mod file
+            
+        Returns:
+            JSON string with analysis results
+        """
         self.logger.log_operation_start("mod_file_analysis", mod_path=mod_path, file_size=self._get_file_size(mod_path))
         
         try:
@@ -132,15 +140,14 @@ class JavaAnalyzerAgent:
                                      result=f"Generated {len(result['embeddings_data'])} embeddings",
                                      duration=embedding_duration)
             
-            result_json = json.dumps(result, indent=2)
+            result_json = json.dumps(result)
             self.logger.debug("Analysis result serialized", result_size=len(result_json))
-            print(f"DEBUG: Final result from analyze_mod_file:\n{result_json}")
             return result_json
             
         except Exception as e:
             self.logger.error(f"Error analyzing mod file {mod_path}: {e}", 
                             error_type=type(e).__name__)
-            return json.dumps({
+            error_result = {
                 "mod_info": {"name": "error", "framework": "unknown", "version": "1.0.0"},
                 "assets": {},
                 "features": {},
@@ -148,7 +155,8 @@ class JavaAnalyzerAgent:
                 "metadata": {},
                 "errors": [f"Analysis failed: {str(e)}"],
                 "embeddings_data": []
-            })
+            }
+            return json.dumps(error_result)
     
     def _get_file_size(self, file_path: str) -> int:
         """Get file size in bytes, return 0 if file doesn't exist or is directory"""
@@ -410,19 +418,6 @@ class JavaAnalyzerAgent:
                 
         except Exception as e:
             result["errors"].append(f"Error analyzing JAR file: {str(e)}")
-            # Ensure all keys are present even on error within this function
-            if "mod_info" not in result:
-                result["mod_info"] = {"name": "unknown", "framework": "unknown", "version": "1.0.0"}
-            if "assets" not in result:
-                result["assets"] = {}
-            if "features" not in result:
-                result["features"] = {}
-            if "structure" not in result:
-                result["structure"] = {}
-            if "metadata" not in result:
-                result["metadata"] = {}
-            if "embeddings_data" not in result:
-                result["embeddings_data"] = []
         
         return result
     

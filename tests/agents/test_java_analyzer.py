@@ -5,14 +5,23 @@ import zipfile
 import shutil
 import sys
 
-# Add the ai-engine directory to sys.path
-project_root = Path(__file__).resolve().parent.parent.parent
-ai_engine_path = project_root / "ai-engine"
-sys.path.insert(0, str(ai_engine_path))
+def setup_ai_engine_imports():
+    """Setup sys.path to import ai-engine modules."""
+    project_root = Path(__file__).resolve().parent.parent.parent
+    ai_engine_path = project_root / "ai-engine"
+    
+    if str(ai_engine_path) not in sys.path:
+        sys.path.insert(0, str(ai_engine_path))
+    
+    return ai_engine_path
+
+# Setup imports
+setup_ai_engine_imports()
 
 try:
     from agents.java_analyzer import JavaAnalyzerAgent
 except ImportError as e:
+    ai_engine_path = setup_ai_engine_imports()
     print(f"Failed to import JavaAnalyzerAgent from {ai_engine_path}")
     print(f"Original error: {e}")
     # As a fallback for the tool to proceed, define a dummy agent

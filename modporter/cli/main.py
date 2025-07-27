@@ -10,13 +10,21 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any
 
-import sys
-from pathlib import Path
+def add_ai_engine_to_path():
+    """Setup sys.path to import ai-engine modules (addresses review comment)."""
+    import sys
+    from pathlib import Path
+    
+    project_root = Path(__file__).parent.parent.parent
+    ai_engine_path = project_root / "ai-engine"
+    
+    if str(ai_engine_path) not in sys.path:
+        sys.path.insert(0, str(ai_engine_path))
+    
+    return ai_engine_path
 
-# Add ai-engine to path for imports
-project_root = Path(__file__).parent.parent.parent
-ai_engine_path = project_root / "ai-engine"
-sys.path.insert(0, str(ai_engine_path))
+# Setup imports
+add_ai_engine_to_path()
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
