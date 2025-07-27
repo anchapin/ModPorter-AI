@@ -499,10 +499,11 @@ class PackagingAgent:
             behavior_pack_dir = temp_path / "behavior_pack"
             resource_pack_dir = temp_path / "resource_pack"
             
-            if not behavior_pack_dir.exists() and not resource_pack_dir.exists():
+            # Validate that pack directories are actually directories (addresses review comment)
+            if not behavior_pack_dir.is_dir() and not resource_pack_dir.is_dir():
                 raise ValueError(f"No behavior_pack or resource_pack directories found in {temp_dir}")
             
-            # Validate that found paths are actually directories
+            # Additional validation for individual pack paths
             if behavior_pack_dir.exists() and not behavior_pack_dir.is_dir():
                 raise ValueError(f"behavior_pack exists but is not a directory: {behavior_pack_dir}")
             
