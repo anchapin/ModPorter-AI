@@ -364,7 +364,7 @@ jobs:
         
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
       env:
-        REDIS_URL: redis://localhost:6380
+        REDIS_URL: redis://localhost:6379
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
         PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
