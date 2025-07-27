@@ -132,14 +132,12 @@ jobs:
       matrix:
         test-suite: ['integration', 'backend', 'ai-engine']
         include:
-          - test-suite: integration
-            test-path: 'ai-engine/src/tests/integration/test_basic_integration.py'
+          test-path: 'ai-engine/tests/integration/test_basic_integration.py'
             container-name: 'integration-test'
           - test-suite: backend
             test-path: 'backend/tests/integration/'
             container-name: 'backend-test'
-          - test-suite: ai-engine
-            test-path: 'ai-engine/src/tests/integration/test_end_to_end_integration.py'
+          test-path: 'ai-engine/tests/integration/test_end_to_end_integration.py'
             container-name: 'ai-engine-test'
 
     # Use Python base image if available, fallback to setup-python
@@ -300,7 +298,7 @@ jobs:
             ;;
           "ai-engine")
             cd ai-engine
-            python -m pytest src/tests/integration/test_end_to_end_integration.py src/tests/integration/test_full_conversion_workflow.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml || echo "End-to-end tests completed with warnings"
+            python -m pytest tests/integration/test_end_to_end_integration.py tests/integration/test_full_conversion_workflow.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml || echo "End-to-end tests completed with warnings"
             ;;
         esac
       env:
