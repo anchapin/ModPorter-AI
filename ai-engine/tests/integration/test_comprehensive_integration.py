@@ -196,7 +196,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         print("\\n✅ Testing Output Validation...")
         
         # Test with a complex mod
-        test_mod_name = "complex_fabric"
+        test_mod_name = "complex_mod"
         test_mod_path = self.test_mods[test_mod_name]
         
         output_dir = self.temp_path / "validation_output"

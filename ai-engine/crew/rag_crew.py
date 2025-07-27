@@ -4,7 +4,7 @@ import os
 import yaml
 
 # Import the actual SearchTool
-from ..tools.search_tool import SearchTool
+from tools.search_tool import SearchTool
 
 # Mapping tool names from YAML to actual tool classes/functions
 AVAILABLE_TOOLS = {
