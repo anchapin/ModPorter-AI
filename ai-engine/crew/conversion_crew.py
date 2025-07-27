@@ -11,12 +11,12 @@ import os
 from pathlib import Path
 import tempfile
 
-from src.agents.java_analyzer import JavaAnalyzerAgent
-from src.agents.bedrock_architect import BedrockArchitectAgent
-from src.agents.logic_translator import LogicTranslatorAgent
-from src.agents.asset_converter import AssetConverterAgent
-from src.agents.packaging_agent import PackagingAgent
-from src.agents.qa_validator import QAValidatorAgent
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.bedrock_architect import BedrockArchitectAgent
+from agents.logic_translator import LogicTranslatorAgent
+from agents.asset_converter import AssetConverterAgent
+from agents.packaging_agent import PackagingAgent
+from agents.qa_validator import QAValidatorAgent
 # --- INTEGRATION PLAN FOR QAAgent ---
 # The following comments outline where and how the new QAAgent
 # (for comprehensive QA testing) would be integrated into this crew.
@@ -25,9 +25,9 @@ from src.agents.qa_validator import QAValidatorAgent
 # 1. Import QAAgent:
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
-from src.models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
-from src.utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
-from src.utils.logging_config import get_crew_logger, log_performance
+from models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
+from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+from utils.logging_config import get_crew_logger, log_performance
 
 # Use enhanced crew logger
 logger = get_crew_logger()

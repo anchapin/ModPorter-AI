@@ -6,8 +6,8 @@ from typing import List, Dict, Any
 # This assumes rag_evaluator.py might be run as a script from the project root,
 # or that PYTHONPATH is set up appropriately.
 try:
-    from src.agents.knowledge_base_agent import KnowledgeBaseAgent
-    from src.tools.search_tool import SearchTool
+    from agents.knowledge_base_agent import KnowledgeBaseAgent
+    from tools.search_tool import SearchTool
 except ImportError:
     # Fallback for direct script execution from within `ai-engine/src/testing`
     import sys
@@ -16,8 +16,8 @@ except ImportError:
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
-    from src.agents.knowledge_base_agent import KnowledgeBaseAgent
-    from src.tools.search_tool import SearchTool
+    from agents.knowledge_base_agent import KnowledgeBaseAgent
+    from tools.search_tool import SearchTool
 
 
 class RagEvaluator:

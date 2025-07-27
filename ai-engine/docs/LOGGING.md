@@ -54,17 +54,7 @@ LOG_BACKUP_COUNT=5  # Number of backup files
 ### Setup in Application
 
 ```python
-from src.utils.logging_config import setup_logging
-
-# Basic setup
-setup_logging()
-
-# Advanced setup
-setup_logging(
-    debug_mode=True,
-    enable_file_logging=True,
-    log_level="DEBUG"
-)
+from utils.logging_config import setup_logging
 ```
 
 ## Usage
@@ -72,7 +62,7 @@ setup_logging(
 ### Agent Logging
 
 ```python
-from src.utils.logging_config import get_agent_logger, log_performance
+from utils.logging_config import get_agent_logger, log_performance
 
 class MyAgent:
     def __init__(self):
@@ -109,7 +99,7 @@ class MyAgent:
 ### Performance Logging
 
 ```python
-from src.utils.logging_config import log_performance
+from utils.logging_config import log_performance
 
 class MyAgent:
     def __init__(self):

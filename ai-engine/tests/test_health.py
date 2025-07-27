@@ -7,7 +7,7 @@ def test_health_check():
     """Test that the AI engine can start without import errors."""
     # Basic import test
     try:
-        from src.main import app
+        from main import app
         client = TestClient(app)
         
         # Test if we can import the app
