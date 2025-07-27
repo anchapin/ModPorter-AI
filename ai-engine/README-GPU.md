@@ -223,13 +223,13 @@ The AI Engine automatically:
 ### Testing Your Configuration
 ```bash
 # Check GPU detection
-python -c "from src.utils.gpu_config import print_gpu_info; print_gpu_info()"
+python -c "from utils.gpu_config import print_gpu_info; print_gpu_info()"
 
 # Validate configuration
-python -c "from src.utils.gpu_config import get_gpu_config; config = get_gpu_config(); print(config.validate_configuration())"
+python -c "from utils.gpu_config import get_gpu_config; config = get_gpu_config(); print(config.validate_configuration())"
 
 # Test PyTorch device
-python -c "from src.utils.gpu_config import get_torch_device; print(f'PyTorch device: {get_torch_device()}')"
+python -c "from utils.gpu_config import get_torch_device; print(f'PyTorch device: {get_torch_device()}')"
 ```
 
 ## Docker Support

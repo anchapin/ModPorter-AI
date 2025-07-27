@@ -34,7 +34,7 @@ logger = get_agent_logger("main")
 
 from crew.conversion_crew import ModPorterConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
-from src.utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
+from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
 
 # Initialize GPU configuration
 gpu_config = get_gpu_config()

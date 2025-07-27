@@ -115,7 +115,7 @@ class MyAgent:
 ### Crew Logging
 
 ```python
-from src.utils.logging_config import get_crew_logger
+from utils.logging_config import get_crew_logger
 
 class MyConversionCrew:
     def __init__(self):
@@ -272,10 +272,10 @@ pytest tests/test_crew_logging.py
 ### Debug Commands
 ```bash
 # Check logging configuration
-python -c "from src.utils.logging_config import setup_logging; setup_logging(debug_mode=True)"
+python -c "from utils.logging_config import setup_logging; setup_logging(debug_mode=True)"
 
 # Test agent logger
-python -c "from src.utils.logging_config import get_agent_logger; logger = get_agent_logger('test'); logger.info('Test')"
+python -c "from utils.logging_config import get_agent_logger; logger = get_agent_logger('test'); logger.info('Test')"
 
 # Verify log files
 ls -la /tmp/modporter-ai/logs/

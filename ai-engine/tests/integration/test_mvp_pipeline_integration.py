@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
-from src.cli.main import convert_mod
+from modporter.cli import convert_mod
 
 
 class TestMVPPipelineIntegration(unittest.TestCase):

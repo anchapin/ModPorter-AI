@@ -178,7 +178,7 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 python -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from src.crew.conversion_crew import ModPorterConversionCrew
+from crew.conversion_crew import ModPorterConversionCrew
 crew = ModPorterConversionCrew()
 "
 ```
