@@ -12,8 +12,11 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 
-# Add the parent directory to the path so we can import from src
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Add the ai-engine and root directories to the path
+ai_engine_root = Path(__file__).parent.parent.parent
+project_root = ai_engine_root.parent
+sys.path.insert(0, str(ai_engine_root))
+sys.path.insert(0, str(project_root))
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent

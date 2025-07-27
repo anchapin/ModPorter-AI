@@ -132,12 +132,14 @@ jobs:
       matrix:
         test-suite: ['integration', 'backend', 'ai-engine']
         include:
-          test-path: 'ai-engine/tests/integration/test_basic_integration.py'
+          - test-suite: integration
+            test-path: 'ai-engine/tests/integration/test_basic_integration.py'
             container-name: 'integration-test'
           - test-suite: backend
             test-path: 'backend/tests/integration/'
             container-name: 'backend-test'
-          test-path: 'ai-engine/tests/integration/test_end_to_end_integration.py'
+          - test-suite: ai-engine
+            test-path: 'ai-engine/tests/integration/test_end_to_end_integration.py'
             container-name: 'ai-engine-test'
 
     # Use Python base image if available, fallback to setup-python
