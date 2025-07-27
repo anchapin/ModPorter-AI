@@ -499,11 +499,6 @@ class PackagingAgent:
             behavior_pack_dir = temp_path / "behavior_pack"
             resource_pack_dir = temp_path / "resource_pack"
             
-<<<<<<< HEAD
-            if not behavior_pack_dir.exists() and not resource_pack_dir.exists():
-                raise ValueError(f"No behavior_pack or resource_pack directories found in {temp_dir}")
-            
-=======
             # Validate that pack directories are actually directories (addresses review comment)
             if not behavior_pack_dir.is_dir() and not resource_pack_dir.is_dir():
                 raise ValueError(f"No behavior_pack or resource_pack directories found in {temp_dir}")
@@ -515,7 +510,6 @@ class PackagingAgent:
             if resource_pack_dir.exists() and not resource_pack_dir.is_dir():
                 raise ValueError(f"resource_pack exists but is not a directory: {resource_pack_dir}")
             
->>>>>>> origin/main
             # Ensure output directory exists
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
