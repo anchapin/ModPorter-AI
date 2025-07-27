@@ -298,7 +298,7 @@ jobs:
             ;;
           "ai-engine")
             cd ai-engine
-            python -m pytest tests/integration/test_end_to_end_integration.py tests/integration/test_full_conversion_workflow.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml || echo "End-to-end tests completed with warnings"
+            python -m pytest tests/integration/test_end_to_end_integration.py tests/integration/test_full_conversion_workflow.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml
             ;;
         esac
       env:
