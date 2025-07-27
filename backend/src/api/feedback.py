@@ -3,7 +3,7 @@ Feedback API endpoints for conversion job feedback and AI training data.
 """
 
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
