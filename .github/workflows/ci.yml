@@ -283,7 +283,7 @@ jobs:
         echo "🔍 Checking service connectivity..."
         
         echo "Testing Redis connectivity..."
-        if timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'; then
+        if timeout 60 bash -c 'until echo "PING" | nc localhost 6380 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'; then
           echo "✅ Redis is ready"
         else
           echo "❌ Redis connection failed"
@@ -364,7 +364,7 @@ jobs:
         
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
       env:
-        REDIS_URL: redis://localhost:6379
+        REDIS_URL: redis://localhost:6380
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
         PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
