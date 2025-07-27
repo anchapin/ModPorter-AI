@@ -156,7 +156,7 @@ jobs:
 
     - name: Run Bandit security linter (AI Engine)
       run: |
-        bandit -r ai-engine/src/ -f json -o bandit-ai.json || true
+        bandit -r ai-engine/ -f json -o bandit-ai.json || true
 
   build:
     needs: [test, security]
