@@ -88,7 +88,7 @@ matrix:
 
 **pnpm Optimizations:**
 ```bash
-pnpm config set verify-store-integrity false
+pnpm config set verify-store-integrity false  # Disabled for performance; assumes trusted cache
 pnpm config set package-import-method copy
 pnpm install --frozen-lockfile --prefer-offline
 ```
@@ -214,7 +214,7 @@ The `performance-monitoring` job provides:
 
 ```bash
 # Check cache keys
-echo "Python deps hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
+echo "Python deps hash: $(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt requirements-test.txt 2>/dev/null | sha256sum | cut -d' ' -f1 | head -c16)"
 
 # Check base image availability
 docker buildx imagetools inspect ghcr.io/anchapin/modporter-ai/python-base:latest

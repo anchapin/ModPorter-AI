@@ -449,7 +449,7 @@ jobs:
         
         # Use pnpm with performance optimizations
         pnpm config set store-dir ~/.local/share/pnpm/store
-        pnpm config set verify-store-integrity false
+        pnpm config set verify-store-integrity false  # Disabled for performance; assumes trusted cache
         pnpm config set package-import-method copy
         
         # Install with frozen lockfile for faster, deterministic installs
