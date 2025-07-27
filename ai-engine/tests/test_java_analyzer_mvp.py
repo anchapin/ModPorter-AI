@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from src.agents.java_analyzer import JavaAnalyzerAgent
+from agents.java_analyzer import JavaAnalyzerAgent
 
 
 class TestJavaAnalyzerMVP:
@@ -199,7 +199,7 @@ class TestJavaAnalyzerMVP:
         assert result["success"] is False
         assert len(result["errors"]) > 0
     
-    @patch('src.agents.java_analyzer.logger')
+    @patch('agents.java_analyzer.logger')
     def test_logging_behavior(self, mock_logger, analyzer, simple_jar_with_texture):
         """Test that appropriate logging occurs during analysis."""
         analyzer.analyze_jar_for_mvp(simple_jar_with_texture)

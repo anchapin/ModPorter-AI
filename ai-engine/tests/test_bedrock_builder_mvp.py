@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from src.agents.bedrock_builder import BedrockBuilderAgent
+from agents.bedrock_builder import BedrockBuilderAgent
 
 
 class TestBedrockBuilderMVP:
@@ -164,7 +164,7 @@ class TestBedrockBuilderMVP:
         rp_path.mkdir()
         
         # Mock Pillow Image processing since we have fake PNG data
-        with patch('src.agents.bedrock_builder.Image') as mock_image:
+        with patch('agents.bedrock_builder.Image') as mock_image:
             mock_img = Mock()
             mock_img.size = (32, 32)
             mock_img.convert.return_value = mock_img
@@ -278,7 +278,7 @@ class TestBedrockBuilderMVP:
         assert result["success"] is False
         assert len(result["errors"]) > 0
     
-    @patch('src.agents.bedrock_builder.logger')
+    @patch('agents.bedrock_builder.logger')
     def test_logging_behavior(self, mock_logger, builder, test_jar_with_texture, output_dir):
         """Test that appropriate logging occurs during build."""
         builder.build_block_addon_mvp(

@@ -15,9 +15,9 @@ from typing import Dict, Any
 # Add the parent directory to the path so we can import from src
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.agents.java_analyzer import JavaAnalyzerAgent
-from src.agents.bedrock_builder import BedrockBuilderAgent
-from src.agents.packaging_agent import PackagingAgent
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.bedrock_builder import BedrockBuilderAgent
+from agents.packaging_agent import PackagingAgent
 from src.cli.main import convert_mod
 
 
