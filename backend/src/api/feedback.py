@@ -3,6 +3,9 @@ Feedback API endpoints for conversion job feedback and AI training data.
 """
 
 import uuid
+import os
+import sys
+import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +13,9 @@ from pydantic import BaseModel
 
 from db.base import get_db
 from db import crud
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,6 +34,36 @@ class FeedbackRequest(BaseModel):
     performance_rating: Optional[int] = None  # 1-5 scale
     ease_of_use: Optional[int] = None  # 1-5 scale
     agent_specific_feedback: Optional[Dict[str, Any]] = None  # Agent-specific ratings
+    
+    class Config:
+        # Enable better serialization
+        json_encoders = {
+            # Handle UUID serialization
+            uuid.UUID: str
+        }
+        
+        # Validate assignment to prevent None values where not expected
+        validate_assignment = True
+        
+        # Example schema for documentation
+        schema_extra = {
+            "example": {
+                "job_id": "123e4567-e89b-12d3-a456-426614174000",
+                "feedback_type": "detailed",
+                "user_id": "user123",
+                "comment": "Great conversion quality!",
+                "quality_rating": 4,
+                "specific_issues": ["Minor texture issue"],
+                "conversion_accuracy": 5,
+                "visual_quality": 4,
+                "performance_rating": 5,
+                "ease_of_use": 4,
+                "agent_specific_feedback": {
+                    "java_analyzer": {"accuracy": 5, "speed": 4},
+                    "asset_converter": {"quality": 4, "completeness": 5}
+                }
+            }
+        }
 
 
 class FeedbackResponse(BaseModel):
@@ -64,17 +100,47 @@ async def submit_feedback(
     db: AsyncSession = Depends(get_db)
 ):
     """Submit feedback for a conversion job."""
+    logger.info(f"Receiving feedback for job {feedback.job_id}")
+    
+    # Validate job ID format
     try:
         job_uuid = uuid.UUID(feedback.job_id)
-    except ValueError:
+    except ValueError as e:
+        logger.warning(f"Invalid job ID format: {feedback.job_id}")
         raise HTTPException(status_code=400, detail="Invalid job ID format")
     
-    # Check if job exists
-    job = await crud.get_job(db, feedback.job_id)
-    if not job:
+    # Validate feedback type
+    valid_feedback_types = ['thumbs_up', 'thumbs_down', 'detailed']
+    if feedback.feedback_type not in valid_feedback_types:
         raise HTTPException(
-            status_code=404,
-            detail=f"Conversion job with ID '{feedback.job_id}' not found"
+            status_code=400,
+            detail=f"Invalid feedback type. Must be one of: {', '.join(valid_feedback_types)}"
+        )
+    
+    # Validate rating scales (1-5)
+    rating_fields = ['quality_rating', 'conversion_accuracy', 'visual_quality', 'performance_rating', 'ease_of_use']
+    for field in rating_fields:
+        value = getattr(feedback, field, None)
+        if value is not None and (value < 1 or value > 5):
+            raise HTTPException(
+                status_code=400,
+                detail=f"{field} must be between 1 and 5"
+            )
+    
+    # Check if job exists
+    try:
+        job = await crud.get_job(db, feedback.job_id)
+        if not job:
+            logger.warning(f"Job not found: {feedback.job_id}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversion job with ID '{feedback.job_id}' not found"
+            )
+    except Exception as e:
+        logger.error(f"Database error checking job {feedback.job_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error validating job ID"
         )
     
     # Create enhanced feedback with RL training data
@@ -120,7 +186,22 @@ async def get_training_data(
     db: AsyncSession = Depends(get_db)
 ):
     """Get enhanced feedback data for RL training."""
-    feedback_list = await crud.list_all_feedback(db, skip=skip, limit=limit)
+    logger.info(f"Fetching training data: skip={skip}, limit={limit}, include_quality_metrics={include_quality_metrics}")
+    
+    # Validate parameters
+    if skip < 0:
+        raise HTTPException(status_code=400, detail="skip must be non-negative")
+    if limit <= 0 or limit > 1000:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
+    
+    try:
+        feedback_list = await crud.list_all_feedback(db, skip=skip, limit=limit)
+    except Exception as e:
+        logger.error(f"Database error fetching feedback: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error retrieving training data"
+        )
     
     training_data = []
     for feedback in feedback_list:
@@ -173,119 +254,211 @@ async def get_training_data(
 async def trigger_rl_training():
     """Manually trigger RL training cycle."""
     try:
-        # Import and run training manager
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src'))
+        logger.info("Starting manual RL training trigger")
         
-        from training_manager import fetch_training_data_from_backend, train_model_with_feedback
+        # Dynamic import with better error handling
+        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        if ai_engine_path not in sys.path:
+            sys.path.append(ai_engine_path)
+        
+        try:
+            from training_manager import fetch_training_data_from_backend, train_model_with_feedback
+        except ImportError as ie:
+            logger.error(f"Failed to import RL training components: {ie}")
+            raise HTTPException(
+                status_code=503, 
+                detail="RL training system is not available"
+            )
         
         # Fetch training data
         backend_url = os.getenv("MODPORTER_BACKEND_URL", "http://localhost:8000")
+        logger.info(f"Fetching training data from {backend_url}")
+        
         training_data = await fetch_training_data_from_backend(backend_url, skip=0, limit=50)
         
         if training_data:
+            logger.info(f"Found {len(training_data)} training items, starting RL training")
             # Run RL training
             result = await train_model_with_feedback(training_data)
+            logger.info("RL training completed successfully")
+            
             return {
                 "status": "success",
                 "message": "RL training completed successfully",
-                "training_result": result
+                "training_result": result,
+                "training_data_count": len(training_data)
             }
         else:
+            logger.warning("No training data available for RL training")
             return {
                 "status": "warning",
                 "message": "No training data available for RL training"
             }
             
+    except HTTPException:
+        raise
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"RL training failed: {str(e)}"
-        }
+        logger.error(f"RL training failed with error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"RL training failed: {str(e)}"
+        )
 
 
 @router.get("/ai/performance/agents")
 async def get_agent_performance():
     """Get performance metrics for all AI agents."""
     try:
-        # Import RL components
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src'))
+        logger.info("Fetching agent performance metrics")
         
-        from rl.agent_optimizer import create_agent_optimizer
+        # Dynamic import with better error handling
+        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        if ai_engine_path not in sys.path:
+            sys.path.append(ai_engine_path)
+        
+        try:
+            from rl.agent_optimizer import create_agent_optimizer
+        except ImportError as ie:
+            logger.error(f"Failed to import RL optimizer components: {ie}")
+            raise HTTPException(
+                status_code=503,
+                detail="Agent performance monitoring is not available"
+            )
         
         optimizer = create_agent_optimizer()
         system_metrics = optimizer.get_system_wide_metrics()
+        
+        logger.info(f"Retrieved metrics for {system_metrics.get('total_agents', 0)} agents")
         
         return {
             "status": "success",
             "metrics": system_metrics
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to get agent performance: {str(e)}"
-        }
+        logger.error(f"Failed to get agent performance: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve agent performance: {str(e)}"
+        )
 
 
 @router.get("/ai/performance/agents/{agent_type}")
 async def get_specific_agent_performance(agent_type: str):
     """Get detailed performance metrics for a specific agent type."""
     try:
-        # Import RL components
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src'))
+        logger.info(f"Fetching performance metrics for agent: {agent_type}")
         
-        from rl.agent_optimizer import create_agent_optimizer
+        # Validate agent_type
+        valid_agent_types = ['java_analyzer', 'asset_converter', 'behavior_translator', 'conversion_planner', 'qa_validator']
+        if agent_type not in valid_agent_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid agent type. Must be one of: {', '.join(valid_agent_types)}"
+            )
+        
+        # Dynamic import with better error handling
+        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        if ai_engine_path not in sys.path:
+            sys.path.append(ai_engine_path)
+        
+        try:
+            from rl.agent_optimizer import create_agent_optimizer
+        except ImportError as ie:
+            logger.error(f"Failed to import RL optimizer components: {ie}")
+            raise HTTPException(
+                status_code=503,
+                detail="Agent performance monitoring is not available"
+            )
         
         optimizer = create_agent_optimizer()
         
         # Check if we have performance history for this agent
         if agent_type in optimizer.performance_history and optimizer.performance_history[agent_type]:
             latest_metrics = optimizer.performance_history[agent_type][-1]
+            logger.info(f"Found performance data for {agent_type}")
+            
+            # Convert to dict safely
+            metrics_dict = latest_metrics.__dict__ if hasattr(latest_metrics, '__dict__') else {}
+            
             return {
                 "status": "success",
                 "agent_type": agent_type,
-                "metrics": latest_metrics.__dict__
+                "metrics": metrics_dict
             }
         else:
+            logger.warning(f"No performance data available for agent type: {agent_type}")
             return {
                 "status": "warning",
-                "message": f"No performance data available for agent type: {agent_type}"
+                "message": f"No performance data available for agent type: {agent_type}",
+                "agent_type": agent_type
             }
             
+    except HTTPException:
+        raise
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to get agent performance: {str(e)}"
-        }
+        logger.error(f"Failed to get performance for agent {agent_type}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve performance for agent {agent_type}: {str(e)}"
+        )
 
 
 @router.post("/ai/performance/compare")
 async def compare_agent_performance(agent_types: List[str]):
     """Compare performance between multiple agent types."""
     try:
-        # Import RL components
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src'))
+        logger.info(f"Comparing performance for agents: {agent_types}")
         
-        from rl.agent_optimizer import create_agent_optimizer
+        # Validate input
+        if not agent_types or len(agent_types) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="At least 2 agent types are required for comparison"
+            )
+        
+        valid_agent_types = ['java_analyzer', 'asset_converter', 'behavior_translator', 'conversion_planner', 'qa_validator']
+        invalid_agents = [agent for agent in agent_types if agent not in valid_agent_types]
+        if invalid_agents:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid agent types: {invalid_agents}. Must be one of: {', '.join(valid_agent_types)}"
+            )
+        
+        # Dynamic import with better error handling
+        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        if ai_engine_path not in sys.path:
+            sys.path.append(ai_engine_path)
+        
+        try:
+            from rl.agent_optimizer import create_agent_optimizer
+        except ImportError as ie:
+            logger.error(f"Failed to import RL optimizer components: {ie}")
+            raise HTTPException(
+                status_code=503,
+                detail="Agent performance comparison is not available"
+            )
         
         optimizer = create_agent_optimizer()
         comparison_report = optimizer.compare_agents(agent_types)
         
+        logger.info(f"Generated comparison report for {len(agent_types)} agents")
+        
+        # Convert to dict safely
+        report_dict = comparison_report.__dict__ if hasattr(comparison_report, '__dict__') else {}
+        
         return {
             "status": "success",
-            "comparison_report": comparison_report.__dict__
+            "comparison_report": report_dict
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to compare agents: {str(e)}"
-        }
+        logger.error(f"Failed to compare agents {agent_types}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compare agents: {str(e)}"
+        )
