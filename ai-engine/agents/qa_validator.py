@@ -8,7 +8,7 @@ from datetime import datetime
 import logging
 import json
 from crewai.tools import tool
-from src.models.smart_assumptions import (
+from models.smart_assumptions import (
     SmartAssumptionEngine
 )
 

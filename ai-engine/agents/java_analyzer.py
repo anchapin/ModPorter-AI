@@ -7,11 +7,11 @@ import json
 import re
 from typing import List, Dict, Union
 from crewai.tools import tool
-from src.models.smart_assumptions import (
+from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from src.utils.embedding_generator import EmbeddingGenerator # Added import
-from src.utils.logging_config import get_agent_logger, log_performance
+from utils.embedding_generator import EmbeddingGenerator
+from utils.logging_config import get_agent_logger, log_performance
 import os
 import zipfile
 from pathlib import Path
@@ -86,15 +86,7 @@ class JavaAnalyzerAgent:
     
     @log_performance("mod_file_analysis")
     def analyze_mod_file(self, mod_path: str) -> str:
-        """
-        Analyze a mod file and return comprehensive results.
-        
-        Args:
-            mod_path: Path to the mod file
-            
-        Returns:
-            JSON string with analysis results
-        """
+        print(f"DEBUG: Entering analyze_mod_file for path: {mod_path}")
         self.logger.log_operation_start("mod_file_analysis", mod_path=mod_path, file_size=self._get_file_size(mod_path))
         
         try:
@@ -140,14 +132,15 @@ class JavaAnalyzerAgent:
                                      result=f"Generated {len(result['embeddings_data'])} embeddings",
                                      duration=embedding_duration)
             
-            result_json = json.dumps(result)
+            result_json = json.dumps(result, indent=2)
             self.logger.debug("Analysis result serialized", result_size=len(result_json))
+            print(f"DEBUG: Final result from analyze_mod_file:\n{result_json}")
             return result_json
             
         except Exception as e:
             self.logger.error(f"Error analyzing mod file {mod_path}: {e}", 
                             error_type=type(e).__name__)
-            error_result = {
+            return json.dumps({
                 "mod_info": {"name": "error", "framework": "unknown", "version": "1.0.0"},
                 "assets": {},
                 "features": {},
@@ -155,8 +148,7 @@ class JavaAnalyzerAgent:
                 "metadata": {},
                 "errors": [f"Analysis failed: {str(e)}"],
                 "embeddings_data": []
-            }
-            return json.dumps(error_result)
+            })
     
     def _get_file_size(self, file_path: str) -> int:
         """Get file size in bytes, return 0 if file doesn't exist or is directory"""
@@ -418,6 +410,19 @@ class JavaAnalyzerAgent:
                 
         except Exception as e:
             result["errors"].append(f"Error analyzing JAR file: {str(e)}")
+            # Ensure all keys are present even on error within this function
+            if "mod_info" not in result:
+                result["mod_info"] = {"name": "unknown", "framework": "unknown", "version": "1.0.0"}
+            if "assets" not in result:
+                result["assets"] = {}
+            if "features" not in result:
+                result["features"] = {}
+            if "structure" not in result:
+                result["structure"] = {}
+            if "metadata" not in result:
+                result["metadata"] = {}
+            if "embeddings_data" not in result:
+                result["embeddings_data"] = []
         
         return result
     

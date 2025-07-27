@@ -4,7 +4,7 @@ import os
 
 # Initialize LLM using the same logic as conversion_crew.py
 def get_llm():
-    from src.utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+    from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
     
     # Check for Ollama configuration first (for local testing)
     if os.getenv("USE_OLLAMA", "false").lower() == "true":
@@ -87,7 +87,7 @@ class RAGAgents:
 if __name__ == '__main__':
     # Example of how to instantiate the agents
     # This part is for testing and might be removed or moved later
-    from src.tools.search_tool import SearchTool # Adjust import if necessary
+    from ai_engine.src.tools.search_tool import SearchTool # Adjust import if necessary
 
     llm_instance = get_llm()
     search_tool_instance = SearchTool()
