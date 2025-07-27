@@ -86,7 +86,19 @@ async def async_test_db():
     
     # Import and create tables
     try:
-        from src.database.models import Base
+        # Try multiple import paths for models
+        try:
+            from src.database.models import Base
+        except ImportError:
+            try:
+                from src.db.models import Base
+            except ImportError:
+                try:
+                    from db.models import Base
+                except ImportError:
+                    # Try declarative base
+                    from db.declarative_base import Base
+        
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     except ImportError:
@@ -111,7 +123,20 @@ async def async_client():
     This fixture provides the recommended way to test FastAPI apps with async databases.
     """
     try:
-        from src.main import app
+        # Try multiple import paths
+        try:
+            from src.main import app
+        except ImportError:
+            try:
+                from main import app
+            except ImportError:
+                # Try relative import from backend directory
+                import sys
+                import os
+                backend_path = os.path.join(os.path.dirname(__file__), '..')
+                if backend_path not in sys.path:
+                    sys.path.insert(0, backend_path)
+                from main import app
         
         async with AsyncTestClient(app) as client:
             yield client
@@ -128,7 +153,21 @@ async def httpx_client():
     This is useful when you need more control over the HTTP client configuration.
     """
     try:
-        from main import app
+        # Try multiple import paths
+        try:
+            from src.main import app
+        except ImportError:
+            try:
+                from main import app
+            except ImportError:
+                # Try relative import from backend directory
+                import sys
+                import os
+                backend_path = os.path.join(os.path.dirname(__file__), '..')
+                if backend_path not in sys.path:
+                    sys.path.insert(0, backend_path)
+                from main import app
+        
         from httpx import ASGITransport
         
         transport = ASGITransport(app=app)
