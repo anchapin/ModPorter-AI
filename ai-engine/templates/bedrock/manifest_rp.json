@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "{{ pack_name | default('ModPorter Resource Pack') }}",
+    "description": "{{ pack_description | default('Auto-converted resource pack from ModPorter AI') }}",
+    "uuid": "{{ pack_uuid }}",
+    "version": {{ pack_version | default([1, 0, 0]) | tojson }},
+    "min_engine_version": {{ min_engine_version | default([1, 20, 0]) | tojson }}
+  },
+  "modules": [
+    {
+      "type": "{{ module_type | default('resources') }}",
+      "uuid": "{{ module_uuid }}",
+      "version": {{ module_version | default([1, 0, 0]) | tojson }}
+    }
+  ]{% if dependencies %},
+  "dependencies": {{ dependencies | tojson }}{% endif %}
+}
