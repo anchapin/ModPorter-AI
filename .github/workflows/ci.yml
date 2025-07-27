@@ -145,7 +145,7 @@ jobs:
     # Use Python base image if available, fallback to setup-python
     container:
       image: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image || '' }}
-      options: --name test-container-${{ matrix.test-suite }}
+      options: --name test-container-${{ matrix.test-suite }} --user root
 
     services:
       redis:
@@ -292,7 +292,7 @@ jobs:
         case "${{ matrix.test-suite }}" in
           "integration")
             cd ai-engine
-            python -m pytest src/tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml
+            python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml
             ;;
           "backend")
             cd backend
@@ -306,7 +306,7 @@ jobs:
       env:
         REDIS_URL: redis://localhost:6380
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
-        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine/src' || 'backend/src' }}
+        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend/src' }}
         LOG_LEVEL: INFO
         USE_OLLAMA: "true"
         OLLAMA_MODEL: "llama3.2"
