@@ -283,28 +283,32 @@ jobs:
         echo "🔍 Checking service connectivity..."
         
         echo "Testing Redis connectivity..."
-        if timeout 60 bash -c 'until nc -z localhost 6380; do echo "Waiting for Redis..."; sleep 2; done'; then
+        # Inside containers, services are accessible by service name, not localhost
+        if timeout 60 bash -c 'until nc -z redis 6379; do echo "Waiting for Redis..."; sleep 2; done'; then
           echo "✅ Redis port is accessible"
-          # Test actual Redis protocol
-          if timeout 10 bash -c 'echo -e "*1\r\n\$4\r\nPING\r\n" | nc localhost 6380 | grep -q PONG'; then
+          # Test actual Redis protocol using service name
+          if timeout 10 bash -c 'echo -e "*1\r\n\$4\r\nPING\r\n" | nc redis 6379 | grep -q PONG'; then
             echo "✅ Redis is responding correctly"
           else
             echo "⚠️ Redis port open but not responding to PING"
           fi
         else
           echo "❌ Redis connection failed"
-          echo "Redis container status:"
-          docker ps | grep redis || echo "No Redis container found"
+          echo "Container networking debug:"
+          echo "Available services:"
+          getent hosts redis || echo "Redis service not resolvable"
+          getent hosts postgres || echo "Postgres service not resolvable"
           exit 1
         fi
         
         echo "Testing PostgreSQL connectivity..."
-        if timeout 60 bash -c 'until nc -z localhost 5434; do echo "Waiting for PostgreSQL..."; sleep 2; done'; then
+        # Inside containers, services are accessible by service name, not localhost
+        if timeout 60 bash -c 'until nc -z postgres 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'; then
           echo "✅ PostgreSQL is ready"
         else
           echo "❌ PostgreSQL connection failed"
-          echo "PostgreSQL container status:"
-          docker ps | grep postgres || echo "No PostgreSQL container found"
+          echo "PostgreSQL service debug:"
+          getent hosts postgres || echo "Postgres service not resolvable"
           exit 1
         fi
         
@@ -370,8 +374,8 @@ jobs:
         
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
       env:
-        REDIS_URL: redis://localhost:6380
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
+        REDIS_URL: redis://redis:6379
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
         PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
         USE_OLLAMA: "true"
