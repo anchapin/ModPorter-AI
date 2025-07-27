@@ -105,14 +105,16 @@ async def async_test_db():
         # Models might not exist yet, that's ok for basic tests
         pass
     
-    # Create session
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    # Create and return session directly
+    from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
     async_session = async_sessionmaker(engine, expire_on_commit=False)
     
-    async with async_session() as session:
+    session: AsyncSession = async_session()
+    try:
         yield session
-    
-    await engine.dispose()
+    finally:
+        await session.close()
+        await engine.dispose()
 
 
 @pytest.fixture
