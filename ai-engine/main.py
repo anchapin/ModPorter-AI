@@ -18,7 +18,7 @@ import redis.asyncio as aioredis
 import asyncio
 
 # Configure logging using centralized configuration
-from src.utils.logging_config import setup_logging, get_agent_logger
+from utils.logging_config import setup_logging, get_agent_logger
 
 # Load environment variables
 load_dotenv()
@@ -32,8 +32,8 @@ setup_logging(
 
 logger = get_agent_logger("main")
 
-from src.crew.conversion_crew import ModPorterConversionCrew
-from src.models.smart_assumptions import SmartAssumptionEngine
+from crew.conversion_crew import ModPorterConversionCrew
+from models.smart_assumptions import SmartAssumptionEngine
 from src.utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
 
 # Initialize GPU configuration
