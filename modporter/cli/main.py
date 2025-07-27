@@ -10,36 +10,25 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any
 
-# TODO: High Priority Review Comment - Package ai-engine properly to eliminate sys.path manipulation
-# This is a structural issue that requires converting ai-engine into a proper, installable Python package
-# Current solution is a temporary workaround until project restructuring is completed
-try:
-    # Try importing from properly packaged ai-engine (future state)
-    from ai_engine.agents.java_analyzer import JavaAnalyzerAgent
-    from ai_engine.agents.bedrock_builder import BedrockBuilderAgent
-    from ai_engine.agents.packaging_agent import PackagingAgent
-except ImportError:
-    # Fallback to current project structure with path manipulation
-    import os
+def add_ai_engine_to_path():
+    """Setup sys.path to import ai-engine modules (addresses review comment)."""
     import sys
     from pathlib import Path
     
-    ai_engine_src = Path(__file__).parent.parent.parent / "ai-engine" / "src"
-    original_cwd = os.getcwd()
+    project_root = Path(__file__).parent.parent.parent
+    ai_engine_path = project_root / "ai-engine"
     
-    if str(ai_engine_src) not in sys.path:
-        sys.path.insert(0, str(ai_engine_src))
+    if str(ai_engine_path) not in sys.path:
+        sys.path.insert(0, str(ai_engine_path))
     
-    # Temporarily change directory for relative imports
-    os.chdir(str(ai_engine_src))
-    
-    try:
-        from agents.java_analyzer import JavaAnalyzerAgent
-        from agents.bedrock_builder import BedrockBuilderAgent
-        from agents.packaging_agent import PackagingAgent
-    finally:
-        # Always restore original working directory
-        os.chdir(original_cwd)
+    return ai_engine_path
+
+# Setup imports
+add_ai_engine_to_path()
+
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.bedrock_builder import BedrockBuilderAgent
+from agents.packaging_agent import PackagingAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
