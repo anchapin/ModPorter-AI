@@ -828,8 +828,35 @@ class JavaAnalyzerAgent:
             return complexity
 
         def _is_main_class(class_path: str) -> bool:
-            """Check if a class is a main mod class"""
-            return 'mod' in class_path.lower() and ('main' in class_path.lower() or class_path.count('/') <= 3)
+            """Check if a class is a main mod class
+            
+            More robust detection of main mod classes by examining:
+            1. Package structure for mod-related naming
+            2. Class name for mod-related keywords
+            3. Position in package hierarchy (shallower classes more likely to be main)
+            """
+            # More robust detection of main mod classes
+            class_name = class_path.split('/')[-1].replace('.class', '')
+            package_path = '/'.join(class_path.split('/')[:-1])
+            
+            # Check for common mod main class patterns
+            mod_indicators = [
+                'mod', 'Mod', 'main', 'Main', 'init', 'Init', 'loader', 'Loader',
+                'Core', 'core', 'Entry', 'entry', 'Plugin', 'plugin'
+            ]
+            
+            # Check if it's in a likely mod package structure
+            package_parts = package_path.split('/')
+            has_mod_package = any('mod' in part.lower() or 'plugin' in part.lower() 
+                                for part in package_parts if part)
+            
+            # Check if class name contains mod indicators
+            has_mod_name = any(indicator in class_name for indicator in mod_indicators)
+            
+            # Classes closer to root are more likely to be main classes
+            is_shallow = class_path.count('/') <= 3
+            
+            return (has_mod_package and has_mod_name) or is_shallow
 
         def _generate_analysis_recommendations(analysis: Dict) -> List[str]:
             """Generate recommendations based on analysis"""

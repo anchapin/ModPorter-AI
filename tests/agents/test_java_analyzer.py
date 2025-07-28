@@ -5,6 +5,10 @@ import zipfile
 import shutil
 import sys
 
+# Import the shared fixture
+sys.path.append(str(Path(__file__).parent.parent / "fixtures"))
+from simple_copper_block import create_simple_copper_block_jar, get_expected_analysis_result
+
 def setup_ai_engine_imports():
     """Setup sys.path to import ai-engine modules."""
     project_root = Path(__file__).resolve().parent.parent.parent
@@ -94,6 +98,24 @@ class TestJavaAnalyzerAgent(unittest.TestCase):
         self.assertIn("models", report["assets"])
 
         self.assertEqual(report["errors"], []) # Should be no errors
+
+    def test_analyze_shared_fixture(self):
+        """Test analysis of the shared test fixture."""
+        # Create the fixture JAR
+        jar_path = create_simple_copper_block_jar()
+        
+        # Analyze it with the agent
+        report_str = self.agent.analyze_mod_file(str(jar_path))
+        report = json.loads(report_str)
+        
+        # Get expected result
+        expected = get_expected_analysis_result()
+        
+        # Verify the results match expectations
+        self.assertTrue(report["success"])
+        self.assertEqual(report["registry_name"], expected["registry_name"])
+        self.assertEqual(report["texture_path"], expected["texture_path"])
+        self.assertEqual(report["errors"], expected["errors"])
 
     def test_analyze_non_existent_mod(self):
         """Test analysis of a non-existent JAR file."""
