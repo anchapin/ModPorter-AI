@@ -66,14 +66,14 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   };
 
   // Centralized fetch wrapper with error handling
-  const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+  const apiFetch = useCallback(async (url: string, options?: globalThis.RequestInit): Promise<Response> => {
     try {
       const response = await fetch(url, options);
       return response;
     } catch (error) {
       throw handleApiError(error);
     }
-  };
+  }, []);
 
   // File validation
   const validateFile = (file: File): boolean => {
@@ -162,7 +162,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     }
 
     return response.json();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, apiFetch]);
 
   // Polling for status updates (every 2 seconds as per issue #171)
   useEffect(() => {
