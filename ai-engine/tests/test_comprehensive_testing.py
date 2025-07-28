@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
-from ai_engine.testing.comprehensive_testing_framework import (
+from testing.comprehensive_testing_framework import (
     ComprehensiveTestingFramework,
     MinecraftBedrockValidator,
     PerformanceBenchmarker,
