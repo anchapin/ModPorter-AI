@@ -8,12 +8,12 @@ Tests the main components introduced in Issue #159:
 - ComprehensiveTestingFramework
 """
 
-import pytest
 import asyncio
 import json
+import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 from testing.comprehensive_testing_framework import (
     ComprehensiveTestingFramework,
@@ -21,7 +21,7 @@ from testing.comprehensive_testing_framework import (
     PerformanceBenchmarker,
     RegressionTestManager,
     PerformanceMetrics,
-    TestResult
+    ComprehensiveTestResult
 )
 
 
@@ -127,8 +127,13 @@ class TestPerformanceBenchmarker:
         assert benchmarker.baseline_file == Path('./custom_baseline.json')
         assert benchmarker.benchmark_history == Path('./custom_history.json')
     
-    def test_benchmark_conversion_performance(self):
-        """Test performance benchmarking"""
+    @patch('testing.comprehensive_testing_framework.random')
+    def test_benchmark_conversion_performance(self, mock_random):
+        """Test performance benchmarking with deterministic results"""
+        # Mock random values for deterministic testing
+        mock_random.uniform.side_effect = [128.5, 45.2, 0.95, 2.5]  # memory, cpu, accuracy, throughput
+        mock_random.randint.return_value = 1000  # execution time
+        
         with tempfile.TemporaryDirectory() as temp_dir:
             config = {
                 'baseline_file': f'{temp_dir}/baseline.json',
@@ -155,10 +160,10 @@ class TestPerformanceBenchmarker:
             assert len(result['mod_results']) == 2
     
     def test_calculate_consistency_score(self):
-        """Test consistency score calculation"""
+        """Test consistency score calculation with deterministic data"""
         benchmarker = PerformanceBenchmarker()
         
-        # Test with consistent metrics
+        # Test with consistent metrics (low variance)
         consistent_metrics = [
             {'execution_time_ms': 100, 'memory_usage_mb': 50},
             {'execution_time_ms': 102, 'memory_usage_mb': 52},
@@ -168,7 +173,7 @@ class TestPerformanceBenchmarker:
         score = benchmarker._calculate_consistency_score(consistent_metrics)
         assert 0.8 <= score <= 1.0  # Should be high consistency
         
-        # Test with inconsistent metrics
+        # Test with inconsistent metrics (high variance)
         inconsistent_metrics = [
             {'execution_time_ms': 100, 'memory_usage_mb': 50},
             {'execution_time_ms': 500, 'memory_usage_mb': 200},
@@ -194,8 +199,13 @@ class TestRegressionTestManager:
         assert manager.test_suite_path == Path('./custom_tests')
         assert manager.known_good_path == Path('./custom_known_good')
     
-    def test_run_regression_tests(self):
-        """Test running regression tests"""
+    @patch('testing.comprehensive_testing_framework.random')
+    def test_run_regression_tests(self, mock_random):
+        """Test running regression tests with deterministic results"""
+        # Mock random behavior for deterministic testing
+        mock_random.random.side_effect = [0.05, 0.05]  # Success for both tests (< 0.1 threshold)
+        mock_random.uniform.return_value = 0.95  # High conversion quality
+        
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create mock test files
             test_suite_path = Path(temp_dir) / 'test_suite'

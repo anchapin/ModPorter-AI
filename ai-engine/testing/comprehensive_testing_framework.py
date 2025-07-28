@@ -10,16 +10,19 @@ Builds upon the existing qa_framework.py and behavioral_framework.py
 to provide production-ready testing capabilities.
 """
 
-import logging
-import json
-import time
 import asyncio
+import json
+import logging
+import random
 import statistics
-from typing import Dict, Any, List, Optional, Tuple, Union
-from pathlib import Path
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from enum import Enum
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Tuple, Union
 
 # Import existing framework components
 try:
@@ -43,6 +46,59 @@ except (ImportError, ValueError):
 
 logger = logging.getLogger(__name__)
 
+# Constants
+DEFAULT_TIMEOUT_SECONDS = 30
+DEFAULT_PERFORMANCE_BASELINE_THRESHOLD = 0.1
+DEFAULT_CONSISTENCY_THRESHOLD = 0.8
+MIN_ITERATIONS_FOR_CONSISTENCY = 3
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_EXECUTION_TIME_MS = 100
+MIN_MEMORY_USAGE_MB = 10.0
+MIN_CPU_USAGE_PERCENT = 1.0
+SIMULATED_SLEEP_SECONDS = 0.05
+DEFAULT_SUCCESS_RATE = 0.85
+EXECUTION_TIME_RANGE_MIN = 50
+EXECUTION_TIME_RANGE_MAX = 500
+MEMORY_USAGE_RANGE_MIN = 50
+MEMORY_USAGE_RANGE_MAX = 200
+CPU_USAGE_RANGE_MIN = 10
+CPU_USAGE_RANGE_MAX = 80
+CONVERSION_ACCURACY_MIN = 0.85
+CONVERSION_ACCURACY_MAX = 0.98
+THROUGHPUT_RANGE_MIN = 1
+THROUGHPUT_RANGE_MAX = 10
+PERFORMANCE_REGRESSION_THRESHOLD = 1.2  # 20% slower
+ACCURACY_REGRESSION_THRESHOLD = 0.95    # 5% accuracy drop
+MAX_BENCHMARK_HISTORY = 100
+CONVERSION_SUCCESS_RATE = 0.9   # 90% success rate
+BEHAVIORAL_SUCCESS_RATE = 0.85  # 85% success rate
+
+class TestStatus(Enum):
+    """Test status enumeration"""
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    ERROR = "ERROR"
+    SKIPPED = "SKIPPED"
+    NO_TESTS_RUN = "NO_TESTS_RUN"
+    ISSUES_DETECTED = "ISSUES_DETECTED"
+    REGRESSIONS_DETECTED = "REGRESSIONS_DETECTED"
+
+class RegressionSeverity(Enum):
+    """Regression severity levels"""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+class TestPriority(Enum):
+    """Test priority levels"""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
 @dataclass
 class PerformanceMetrics:
     """Performance metrics for benchmarking"""
@@ -57,12 +113,12 @@ class PerformanceMetrics:
         return asdict(self)
 
 @dataclass 
-class TestResult:
+class ComprehensiveTestResult:
     """Comprehensive test result structure"""
     test_id: str
     test_name: str
     category: str
-    status: str  # PASSED, FAILED, SKIPPED, ERROR
+    status: str  # Use TestStatus enum values
     execution_time_ms: int
     performance_metrics: PerformanceMetrics
     behavioral_validation: Dict[str, Any]
@@ -105,7 +161,7 @@ class MinecraftBedrockValidator:
             'execution_time_ms': 0
         }
         
-        start_time = time.time()
+        start_time = time.perf_counter()
         
         try:
             # Initialize test environment (placeholder - would integrate with actual Bedrock server)
@@ -118,7 +174,7 @@ class MinecraftBedrockValidator:
                 scenario_result = await self._execute_behavioral_scenario(scenario)
                 validation_results['scenarios_tested'] += 1
                 
-                if scenario_result['status'] == 'PASSED':
+                if scenario_result['status'] == TestStatus.PASSED.value:
                     validation_results['scenarios_passed'] += 1
                 else:
                     validation_results['behavioral_issues'].append({
@@ -130,16 +186,24 @@ class MinecraftBedrockValidator:
             
             # Determine overall validation status
             if validation_results['scenarios_passed'] == validation_results['scenarios_tested']:
-                validation_results['validation_status'] = 'PASSED'
+                validation_results['validation_status'] = TestStatus.PASSED.value
             else:
-                validation_results['validation_status'] = 'FAILED'
+                validation_results['validation_status'] = TestStatus.FAILED.value
             
-            validation_results['execution_time_ms'] = int((time.time() - start_time) * 1000)
+            validation_results['execution_time_ms'] = int((time.perf_counter() - start_time) * 1000)
             
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            self.logger.error(f"File system error during behavioral validation: {e}")
+            validation_results['validation_status'] = TestStatus.ERROR.value
+            validation_results['error'] = f"File system error: {str(e)}"
+        except (json.JSONDecodeError, ValueError) as e:
+            self.logger.error(f"Data format error during behavioral validation: {e}")
+            validation_results['validation_status'] = TestStatus.ERROR.value
+            validation_results['error'] = f"Data format error: {str(e)}"
         except Exception as e:
-            self.logger.error(f"Error during behavioral validation: {e}", exc_info=True)
-            validation_results['validation_status'] = 'ERROR'
-            validation_results['error'] = str(e)
+            self.logger.error(f"Unexpected error during behavioral validation: {e}", exc_info=True)
+            validation_results['validation_status'] = TestStatus.ERROR.value
+            validation_results['error'] = f"Unexpected error: {str(e)}"
         
         finally:
             await self._cleanup_test_environment()
@@ -155,16 +219,16 @@ class MinecraftBedrockValidator:
     async def _execute_behavioral_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a single behavioral validation scenario"""
         # Placeholder implementation - would interact with actual Bedrock server
-        await asyncio.sleep(0.05)  # Simulate scenario execution
+        await asyncio.sleep(SIMULATED_SLEEP_SECONDS)  # Simulate scenario execution
         
         # Mock scenario results based on scenario complexity
-        success_rate = 0.85  # 85% success rate for simulation
+        success_rate = DEFAULT_SUCCESS_RATE  # Simulation success rate
         import random
         is_success = random.random() < success_rate
         
         return {
-            'status': 'PASSED' if is_success else 'FAILED',
-            'execution_time_ms': random.randint(50, 500),
+            'status': TestStatus.PASSED.value if is_success else TestStatus.FAILED.value,
+            'execution_time_ms': random.randint(EXECUTION_TIME_RANGE_MIN, EXECUTION_TIME_RANGE_MAX),
             'error': None if is_success else 'Simulated behavioral mismatch',
             'expected': scenario.get('expected_behavior', {}),
             'actual': scenario.get('expected_behavior', {}) if is_success else {'state': 'different'}
@@ -190,7 +254,7 @@ class PerformanceBenchmarker:
         self.logger.info(f"Starting performance benchmark with {len(mod_paths)} mods, {iterations} iterations each")
         
         benchmark_results = {
-            'benchmark_id': f"perf_{int(time.time())}",
+            'benchmark_id': f"perf_{int(time.perf_counter() * 1000)}",
             'timestamp': datetime.now().isoformat(),
             'total_mods_tested': len(mod_paths),
             'iterations_per_mod': iterations,
@@ -234,20 +298,20 @@ class PerformanceBenchmarker:
             self.logger.debug(f"Running iteration {i+1}/{iterations} for {mod_path}")
             
             # Simulate conversion performance measurement
-            start_time = time.time()
+            start_time = time.perf_counter()
             
             # Placeholder for actual conversion benchmarking
             import random
             time.sleep(random.uniform(0.1, 0.5))  # Simulate conversion time
             
-            execution_time = int((time.time() - start_time) * 1000)
+            execution_time = int((time.perf_counter() - start_time) * 1000)
             
             metrics = PerformanceMetrics(
                 execution_time_ms=execution_time,
-                memory_usage_mb=random.uniform(50, 200),
-                cpu_usage_percent=random.uniform(10, 80),
-                conversion_accuracy=random.uniform(0.85, 0.98),
-                throughput_ops_per_sec=random.uniform(1, 10),
+                memory_usage_mb=random.uniform(MEMORY_USAGE_RANGE_MIN, MEMORY_USAGE_RANGE_MAX),
+                cpu_usage_percent=random.uniform(CPU_USAGE_RANGE_MIN, CPU_USAGE_RANGE_MAX),
+                conversion_accuracy=random.uniform(CONVERSION_ACCURACY_MIN, CONVERSION_ACCURACY_MAX),
+                throughput_ops_per_sec=random.uniform(THROUGHPUT_RANGE_MIN, THROUGHPUT_RANGE_MAX),
                 error_rate=random.uniform(0, 0.1)
             )
             
@@ -356,7 +420,7 @@ class PerformanceBenchmarker:
                 baseline_time = baseline['execution_time_ms']['mean']
                 current_time = current_metrics['execution_time_ms']['mean']
                 
-                if current_time > baseline_time * 1.2:  # 20% regression threshold
+                if current_time > baseline_time * PERFORMANCE_REGRESSION_THRESHOLD:
                     regressions.append({
                         'type': 'execution_time_regression',
                         'severity': 'HIGH' if current_time > baseline_time * 1.5 else 'MEDIUM',
@@ -370,7 +434,7 @@ class PerformanceBenchmarker:
                 baseline_accuracy = baseline['conversion_accuracy']['mean']
                 current_accuracy = current_metrics['conversion_accuracy']['mean']
                 
-                if current_accuracy < baseline_accuracy * 0.95:  # 5% accuracy regression
+                if current_accuracy < baseline_accuracy * ACCURACY_REGRESSION_THRESHOLD:
                     regressions.append({
                         'type': 'accuracy_regression',
                         'severity': 'HIGH' if current_accuracy < baseline_accuracy * 0.9 else 'MEDIUM',
@@ -379,8 +443,10 @@ class PerformanceBenchmarker:
                         'regression_percent': ((baseline_accuracy - current_accuracy) / baseline_accuracy) * 100
                     })
         
+        except (KeyError, TypeError, ValueError) as e:
+            self.logger.warning(f"Data error checking performance regressions: {e}")
         except Exception as e:
-            self.logger.warning(f"Error checking performance regressions: {e}")
+            self.logger.warning(f"Unexpected error checking performance regressions: {e}")
         
         return regressions
     
@@ -408,15 +474,17 @@ class PerformanceBenchmarker:
             try:
                 with open(self.benchmark_history, 'r') as f:
                     history = json.load(f)
-            except Exception as e:
+            except FileNotFoundError:
+                self.logger.info("No benchmark history file found, creating new one")
+            except (json.JSONDecodeError, PermissionError) as e:
                 self.logger.warning(f"Error loading benchmark history: {e}")
         
         # Append current results
         history.append(results)
         
-        # Keep only last 100 benchmark runs
-        if len(history) > 100:
-            history = history[-100:]
+        # Keep only last N benchmark runs
+        if len(history) > MAX_BENCHMARK_HISTORY:
+            history = history[-MAX_BENCHMARK_HISTORY:]
         
         # Save updated history
         with open(self.benchmark_history, 'w') as f:
@@ -441,7 +509,7 @@ class RegressionTestManager:
         test_categories = test_categories or ['conversion', 'behavioral', 'performance']
         
         regression_results = {
-            'test_run_id': f"regression_{int(time.time())}",
+            'test_run_id': f"regression_{int(time.perf_counter() * 1000)}",
             'timestamp': datetime.now().isoformat(),
             'categories_tested': test_categories,
             'category_results': {},
@@ -453,7 +521,7 @@ class RegressionTestManager:
             'execution_time_ms': 0
         }
         
-        start_time = time.time()
+        start_time = time.perf_counter()
         
         try:
             for category in test_categories:
@@ -468,18 +536,26 @@ class RegressionTestManager:
             
             # Determine overall status
             if regression_results['tests_failed'] == 0 and not regression_results['regressions_detected']:
-                regression_results['overall_status'] = 'PASSED'
+                regression_results['overall_status'] = TestStatus.PASSED.value
             elif regression_results['regressions_detected']:
                 regression_results['overall_status'] = 'REGRESSIONS_DETECTED'
             else:
-                regression_results['overall_status'] = 'FAILED'
+                regression_results['overall_status'] = TestStatus.FAILED.value
             
-            regression_results['execution_time_ms'] = int((time.time() - start_time) * 1000)
+            regression_results['execution_time_ms'] = int((time.perf_counter() - start_time) * 1000)
             
+        except (FileNotFoundError, PermissionError) as e:
+            self.logger.error(f"File access error during regression testing: {e}")
+            regression_results['overall_status'] = TestStatus.ERROR.value
+            regression_results['error'] = f"File access error: {str(e)}"
+        except (json.JSONDecodeError, ValueError) as e:
+            self.logger.error(f"Data format error during regression testing: {e}")
+            regression_results['overall_status'] = TestStatus.ERROR.value
+            regression_results['error'] = f"Data format error: {str(e)}"
         except Exception as e:
-            self.logger.error(f"Error during regression testing: {e}", exc_info=True)
-            regression_results['overall_status'] = 'ERROR'
-            regression_results['error'] = str(e)
+            self.logger.error(f"Unexpected error during regression testing: {e}", exc_info=True)
+            regression_results['overall_status'] = TestStatus.ERROR.value
+            regression_results['error'] = f"Unexpected error: {str(e)}"
         
         return regression_results
     
@@ -502,7 +578,7 @@ class RegressionTestManager:
             category_result['test_details'].append(result)
             category_result['tests_executed'] += 1
             
-            if result['status'] == 'PASSED':
+            if result['status'] == TestStatus.PASSED.value:
                 category_result['tests_passed'] += 1
             else:
                 category_result['tests_failed'] += 1
@@ -530,7 +606,10 @@ class RegressionTestManager:
             with open(category_file, 'r') as f:
                 data = json.load(f)
             return data.get('test_cases', [])
-        except Exception as e:
+        except FileNotFoundError:
+            self.logger.error(f"Test case file not found for category: {category}")
+            return []
+        except (json.JSONDecodeError, PermissionError) as e:
             self.logger.error(f"Error loading test cases for {category}: {e}")
             return []
     
@@ -544,7 +623,7 @@ class RegressionTestManager:
             'details': {}
         }
         
-        start_time = time.time()
+        start_time = time.perf_counter()
         
         try:
             # Simulate test execution based on test type
@@ -553,23 +632,23 @@ class RegressionTestManager:
             if test_type == 'conversion':
                 # Simulate conversion test
                 import random
-                success = random.random() > 0.1  # 90% success rate
+                success = random.random() > (1 - CONVERSION_SUCCESS_RATE)
                 if success:
-                    test_result['status'] = 'PASSED'
-                    test_result['details'] = {'conversion_quality': random.uniform(0.85, 0.98)}
+                    test_result['status'] = TestStatus.PASSED.value
+                    test_result['details'] = {'conversion_quality': random.uniform(CONVERSION_ACCURACY_MIN, CONVERSION_ACCURACY_MAX)}
                 else:
-                    test_result['status'] = 'FAILED'
+                    test_result['status'] = TestStatus.FAILED.value
                     test_result['error'] = 'Conversion failed unexpectedly'
                     
             elif test_type == 'behavioral':
                 # Simulate behavioral test
                 import random
-                success = random.random() > 0.15  # 85% success rate
+                success = random.random() > (1 - BEHAVIORAL_SUCCESS_RATE)
                 if success:
-                    test_result['status'] = 'PASSED'
+                    test_result['status'] = TestStatus.PASSED.value
                     test_result['details'] = {'behavioral_match': True}
                 else:
-                    test_result['status'] = 'FAILED'
+                    test_result['status'] = TestStatus.FAILED.value
                     test_result['error'] = 'Behavioral validation failed'
                     
             elif test_type == 'performance':
@@ -577,22 +656,26 @@ class RegressionTestManager:
                 import random
                 perf_score = random.uniform(0.7, 1.0)
                 if perf_score > 0.8:
-                    test_result['status'] = 'PASSED'
+                    test_result['status'] = TestStatus.PASSED.value
                     test_result['details'] = {'performance_score': perf_score}
                 else:
-                    test_result['status'] = 'FAILED'
+                    test_result['status'] = TestStatus.FAILED.value
                     test_result['error'] = f'Performance below threshold: {perf_score:.2f}'
             
             else:
-                test_result['status'] = 'SKIPPED'
+                test_result['status'] = TestStatus.SKIPPED.value
                 test_result['error'] = f'Unknown test type: {test_type}'
                 
+        except (KeyError, TypeError) as e:
+            test_result['status'] = TestStatus.ERROR.value
+            test_result['error'] = f"Test configuration error: {str(e)}"
+            self.logger.error(f"Test configuration error for {test_case.get('name')}: {e}")
         except Exception as e:
-            test_result['status'] = 'ERROR'
-            test_result['error'] = str(e)
-            self.logger.error(f"Error executing regression test {test_case.get('name')}: {e}")
+            test_result['status'] = TestStatus.ERROR.value
+            test_result['error'] = f"Unexpected error: {str(e)}"
+            self.logger.error(f"Unexpected error executing regression test {test_case.get('name')}: {e}")
         
-        test_result['execution_time_ms'] = int((time.time() - start_time) * 1000)
+        test_result['execution_time_ms'] = int((time.perf_counter() - start_time) * 1000)
         return test_result
     
     def _is_regression(self, test_case: Dict[str, Any], result: Dict[str, Any]) -> bool:
@@ -602,17 +685,20 @@ class RegressionTestManager:
         
         if not known_good_file.exists():
             # If no known good result, any failure could be a regression
-            return result['status'] in ['FAILED', 'ERROR']
+            return result['status'] in [TestStatus.FAILED.value, TestStatus.ERROR.value]
         
         try:
             with open(known_good_file, 'r') as f:
                 known_good = json.load(f)
             
             # Simple regression check: was previously passing, now failing
-            return known_good.get('status') == 'PASSED' and result['status'] in ['FAILED', 'ERROR']
+            return known_good.get('status') == TestStatus.PASSED.value and result['status'] in [TestStatus.FAILED.value, TestStatus.ERROR.value]
             
-        except Exception as e:
+        except (FileNotFoundError, json.JSONDecodeError) as e:
             self.logger.warning(f"Error checking known good result for {test_case.get('name')}: {e}")
+            return False
+        except Exception as e:
+            self.logger.warning(f"Unexpected error checking known good result for {test_case.get('name')}: {e}")
             return False
     
     def _assess_regression_severity(self, test_case: Dict[str, Any], result: Dict[str, Any]) -> str:
@@ -653,7 +739,7 @@ class ComprehensiveTestingFramework:
         self.logger.info("Starting comprehensive test suite execution")
         
         suite_results = {
-            'suite_id': f"comprehensive_{int(time.time())}",
+            'suite_id': f"comprehensive_{int(time.perf_counter() * 1000)}",
             'timestamp': datetime.now().isoformat(),
             'configuration': test_config,
             'overall_status': 'PENDING',
@@ -669,7 +755,7 @@ class ComprehensiveTestingFramework:
             }
         }
         
-        start_time = time.time()
+        start_time = time.perf_counter()
         
         try:
             # Phase 1: Basic functional testing
@@ -702,7 +788,7 @@ class ComprehensiveTestingFramework:
             
             # Determine overall status
             suite_results['overall_status'] = self._determine_overall_status(suite_results)
-            suite_results['execution_time_ms'] = int((time.time() - start_time) * 1000)
+            suite_results['execution_time_ms'] = int((time.perf_counter() - start_time) * 1000)
             
             # Generate comprehensive report
             report = self._generate_comprehensive_report(suite_results)
@@ -713,10 +799,18 @@ class ComprehensiveTestingFramework:
             
             self.logger.info(f"Comprehensive test suite completed with status: {suite_results['overall_status']}")
             
+        except (FileNotFoundError, PermissionError) as e:
+            self.logger.error(f"File access error during comprehensive test execution: {e}")
+            suite_results['overall_status'] = TestStatus.ERROR.value
+            suite_results['error'] = f"File access error: {str(e)}"
+        except (json.JSONDecodeError, ValueError) as e:
+            self.logger.error(f"Data format error during comprehensive test execution: {e}")
+            suite_results['overall_status'] = TestStatus.ERROR.value
+            suite_results['error'] = f"Data format error: {str(e)}"
         except Exception as e:
-            self.logger.error(f"Error during comprehensive test execution: {e}", exc_info=True)
-            suite_results['overall_status'] = 'ERROR'
-            suite_results['error'] = str(e)
+            self.logger.error(f"Unexpected error during comprehensive test execution: {e}", exc_info=True)
+            suite_results['overall_status'] = TestStatus.ERROR.value
+            suite_results['error'] = f"Unexpected error: {str(e)}"
         
         return suite_results
     
@@ -728,7 +822,7 @@ class ComprehensiveTestingFramework:
         
         if not scenarios:
             return {
-                'status': 'SKIPPED',
+                'status': TestStatus.SKIPPED.value,
                 'message': 'No functional test scenarios found',
                 'tests_executed': 0,
                 'tests_passed': 0,
@@ -755,7 +849,7 @@ class ComprehensiveTestingFramework:
         
         if not test_addons:
             return {
-                'status': 'SKIPPED',
+                'status': TestStatus.SKIPPED.value,
                 'message': 'No test addons specified for behavioral validation',
                 'behavioral_issues': 0
             }
@@ -774,7 +868,7 @@ class ComprehensiveTestingFramework:
             
             behavioral_results['validation_details'].append(validation_result)
             
-            if validation_result['validation_status'] == 'PASSED':
+            if validation_result['validation_status'] == TestStatus.PASSED.value:
                 behavioral_results['addons_passed'] += 1
             else:
                 behavioral_results['behavioral_issues'] += len(validation_result.get('behavioral_issues', []))
@@ -788,7 +882,7 @@ class ComprehensiveTestingFramework:
         
         if not test_mods:
             return {
-                'status': 'SKIPPED',
+                'status': TestStatus.SKIPPED.value,
                 'message': 'No test mods specified for performance benchmarking',
                 'performance_issues': 0
             }
@@ -846,7 +940,7 @@ class ComprehensiveTestingFramework:
         elif summary['total_tests'] == 0:
             return 'NO_TESTS_RUN'
         else:
-            return 'PASSED'
+            return TestStatus.PASSED.value
     
     def _generate_comprehensive_report(self, suite_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive test report"""
@@ -916,8 +1010,10 @@ class ComprehensiveTestingFramework:
             with open(summary_file, 'w') as f:
                 json.dump(summary_data, f, indent=2)
                 
+        except (PermissionError, OSError) as e:
+            self.logger.error(f"File system error saving test results: {e}")
         except Exception as e:
-            self.logger.error(f"Error saving test results: {e}")
+            self.logger.error(f"Unexpected error saving test results: {e}")
 
 # Example usage and testing
 if __name__ == '__main__':
