@@ -16,7 +16,13 @@ class TestJarGenerator:
         Args:
             temp_dir: Optional temporary directory for JAR creation
         """
-        self.temp_dir = temp_dir or tempfile.mkdtemp()
+        if temp_dir:
+            self.temp_dir = temp_dir
+            # Ensure the directory exists
+            Path(self.temp_dir).mkdir(parents=True, exist_ok=True)
+        else:
+            self.temp_dir = tempfile.mkdtemp()
+        
         self.created_jars = []
     
     def create_simple_jar(self, name: str, java_files: Dict[str, str]) -> str:
@@ -115,16 +121,24 @@ public class {item.title().replace('_', '')} extends Item {{
         self.created_jars.clear()
 
 
-def create_test_mod_suite(output_dir: str = None) -> Dict[str, str]:
+def create_test_mod_suite(output_dir = None) -> Dict[str, str]:
     """Create a suite of test mods for comprehensive testing.
     
     Args:
-        output_dir: Directory to create JAR files in
+        output_dir: Directory to create JAR files in (Path or str)
         
     Returns:
         Dict mapping mod names to JAR file paths
     """
-    generator = TestJarGenerator(output_dir)
+    # Ensure output directory exists and convert to string
+    if output_dir is not None:
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        output_dir_str = str(output_path)
+    else:
+        output_dir_str = None
+    
+    generator = TestJarGenerator(output_dir_str)
     
     mod_suite = {}
     

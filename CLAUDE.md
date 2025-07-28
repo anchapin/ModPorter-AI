@@ -717,7 +717,7 @@ Claude Flow extends the base coordination with:
 ### 🚀 MODPORTER-AI OPTIMIZED SWARM PATTERNS
 
 #### Pattern 1: Full-Stack Feature Development
-```javascript
+```text
 // Example: "Add real-time conversion tracking"
 [BatchTool - Single Message]:
   mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 6, strategy: "specialized" }
@@ -730,7 +730,7 @@ Claude Flow extends the base coordination with:
 ```
 
 #### Pattern 2: AI Engine Enhancement
-```javascript
+```text
 // Example: "Improve Java analysis accuracy"
 [BatchTool - Single Message]:
   mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 5, strategy: "adaptive" }
@@ -742,7 +742,7 @@ Claude Flow extends the base coordination with:
 ```
 
 #### Pattern 3: Performance Optimization
-```javascript
+```text
 // Example: "Optimize conversion performance"
 [BatchTool - Single Message]:
   mcp__claude-flow__swarm_init { topology: "star", maxAgents: 4, strategy: "performance" }

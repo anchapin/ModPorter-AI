@@ -74,7 +74,7 @@ This project uses Prettier for code formatting. Please format your code before s
 pnpm format
 ```
 
-This will format all files in the project according to the Prettier configuration.
+This will format all files in the `frontend` directory according to the Prettier configuration.
 
 ### Coding Style Guide
 
