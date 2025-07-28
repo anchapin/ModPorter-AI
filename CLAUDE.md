@@ -603,4 +603,213 @@ Claude Flow extends the base coordination with:
 
 ---
 
+## 🎯 PROJECT-SPECIFIC AI DEVELOPMENT TEAM CONFIGURATION
+
+### 📊 ModPorter-AI Technology Stack Analysis
+
+**Detected Stack:**
+- **Frontend**: React 19 + TypeScript + Vite + Vitest + Storybook
+- **Backend**: FastAPI + Python + SQLAlchemy + PostgreSQL + Redis
+- **AI Engine**: CrewAI + LangChain + OpenAI/Anthropic APIs + ChromaDB
+- **Infrastructure**: Docker Compose + Nginx + Multi-service architecture
+- **Testing**: Pytest + Vitest + Integration testing framework
+- **Data**: PostgreSQL with pgvector + Redis caching + File storage
+
+### 🤖 SPECIALIZED AGENT ASSIGNMENTS
+
+#### 🎨 Frontend Development Team
+- **React Component Architect** → `@react-typescript-expert`
+  - Modern React 19 patterns, hooks, context
+  - Component design with Storybook integration
+  - TypeScript optimization and type safety
+  - Vite build optimization and performance
+
+- **Frontend Testing Specialist** → `@vitest-testing-expert` 
+  - Vitest test suites and coverage optimization
+  - Component testing with Testing Library
+  - Storybook story development
+  - E2E testing coordination
+
+#### 🔧 Backend Development Team
+- **FastAPI Architect** → `@fastapi-python-expert`
+  - RESTful API design and async patterns
+  - Pydantic models and validation
+  - SQLAlchemy ORM optimization
+  - Performance and security best practices
+
+- **Database Specialist** → `@postgresql-expert`
+  - PostgreSQL with pgvector optimization
+  - SQLAlchemy relationship design
+  - Migration strategies with Alembic
+  - Performance tuning and indexing
+
+#### 🧠 AI Engineering Team
+- **CrewAI Orchestrator** → `@crewai-langchain-expert`
+  - Multi-agent system design
+  - LangChain integration patterns
+  - Agent coordination and workflow optimization
+  - Vector database and RAG implementation
+
+- **AI Agent Developer** → `@minecraft-domain-expert`
+  - Minecraft Java/Bedrock conversion logic
+  - Domain-specific agent development
+  - Java code analysis and transformation
+  - Asset conversion algorithms
+
+#### 🏗️ Infrastructure Team  
+- **DevOps Architect** → `@docker-compose-expert`
+  - Multi-service orchestration
+  - Container optimization and health checks
+  - Volume management and networking
+  - CI/CD pipeline enhancement
+
+- **Performance Optimizer** → `@system-performance-expert`
+  - Cross-service performance optimization
+  - Caching strategies (Redis integration)
+  - Memory and resource management
+  - Load testing and benchmarking
+
+#### 🔍 Quality Assurance Team
+- **Testing Coordinator** → `@integration-testing-expert`
+  - Cross-service integration testing
+  - API testing and validation
+  - End-to-end workflow testing
+  - Quality metrics and reporting
+
+- **Code Reviewer** → `@code-quality-expert`
+  - Multi-language code review (Python/TypeScript)
+  - Architecture compliance validation
+  - Security audit and best practices
+  - Performance impact assessment
+
+### 🎯 TASK-BASED ROUTING EXAMPLES
+
+**For Frontend Work:**
+- "Build conversion progress component" → @react-typescript-expert
+- "Add real-time updates to dashboard" → @react-typescript-expert + @fastapi-python-expert
+- "Create component tests" → @vitest-testing-expert
+- "Design conversion report UI" → @react-typescript-expert
+
+**For Backend API Work:**
+- "Create conversion endpoints" → @fastapi-python-expert
+- "Optimize database queries" → @postgresql-expert  
+- "Add caching layer" → @fastapi-python-expert + @system-performance-expert
+- "Implement file upload handling" → @fastapi-python-expert
+
+**For AI Engine Work:**
+- "Enhance Java analyzer agent" → @minecraft-domain-expert
+- "Improve conversion accuracy" → @crewai-langchain-expert
+- "Add new conversion rules" → @minecraft-domain-expert
+- "Optimize RAG performance" → @crewai-langchain-expert
+
+**For Infrastructure Work:**
+- "Scale AI engine service" → @docker-compose-expert
+- "Optimize container resources" → @system-performance-expert
+- "Add monitoring" → @docker-compose-expert + @system-performance-expert
+- "Improve deployment pipeline" → @docker-compose-expert
+
+**For Testing & QA:**
+- "Test conversion workflow" → @integration-testing-expert
+- "Validate API responses" → @integration-testing-expert + @fastapi-python-expert
+- "Performance benchmarking" → @system-performance-expert
+- "Security audit" → @code-quality-expert
+
+### 🚀 MODPORTER-AI OPTIMIZED SWARM PATTERNS
+
+#### Pattern 1: Full-Stack Feature Development
+```javascript
+// Example: "Add real-time conversion tracking"
+[BatchTool - Single Message]:
+  mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 6, strategy: "specialized" }
+  mcp__claude-flow__agent_spawn { type: "architect", name: "Full-Stack Coordinator" }
+  mcp__claude-flow__agent_spawn { type: "coder", name: "React Component Expert" }
+  mcp__claude-flow__agent_spawn { type: "coder", name: "FastAPI Backend Expert" }
+  mcp__claude-flow__agent_spawn { type: "analyst", name: "Redis Integration Expert" }
+  mcp__claude-flow__agent_spawn { type: "tester", name: "Integration Test Expert" }
+  mcp__claude-flow__task_orchestrate { task: "Implement real-time conversion tracking", strategy: "parallel" }
+```
+
+#### Pattern 2: AI Engine Enhancement
+```javascript
+// Example: "Improve Java analysis accuracy"
+[BatchTool - Single Message]:
+  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 5, strategy: "adaptive" }
+  mcp__claude-flow__agent_spawn { type: "researcher", name: "Minecraft Domain Expert" }
+  mcp__claude-flow__agent_spawn { type: "coder", name: "CrewAI Agent Developer" }
+  mcp__claude-flow__agent_spawn { type: "analyst", name: "LangChain Optimizer" }
+  mcp__claude-flow__agent_spawn { type: "tester", name: "AI Testing Specialist" }
+  mcp__claude-flow__task_orchestrate { task: "Enhance Java analyzer accuracy", strategy: "adaptive" }
+```
+
+#### Pattern 3: Performance Optimization
+```javascript
+// Example: "Optimize conversion performance"
+[BatchTool - Single Message]:
+  mcp__claude-flow__swarm_init { topology: "star", maxAgents: 4, strategy: "performance" }
+  mcp__claude-flow__agent_spawn { type: "optimizer", name: "System Performance Lead" }
+  mcp__claude-flow__agent_spawn { type: "analyst", name: "Database Optimizer" }
+  mcp__claude-flow__agent_spawn { type: "coder", name: "Caching Specialist" }
+  mcp__claude-flow__task_orchestrate { task: "Optimize system performance", strategy: "sequential" }
+```
+
+### 🔧 MODPORTER-AI SPECIFIC WORKFLOWS
+
+#### Conversion Pipeline Enhancement
+1. **Agent Coordination**: Use CrewAI experts for agent logic improvements
+2. **API Integration**: FastAPI specialists for endpoint optimization
+3. **UI Updates**: React experts for user experience improvements
+4. **Testing**: Integration testing for end-to-end validation
+
+#### New Feature Development
+1. **Architecture Planning**: Full-stack coordinator designs approach
+2. **Parallel Implementation**: Frontend + Backend teams work simultaneously
+3. **AI Integration**: CrewAI experts implement intelligent features
+4. **Quality Assurance**: Testing team validates across all layers
+
+#### Bug Resolution
+1. **Problem Analysis**: Domain experts identify root cause
+2. **Fix Implementation**: Specialized agents address specific layers
+3. **Testing**: Comprehensive testing across affected services
+4. **Performance Validation**: Ensure no regression in conversion quality
+
+### 📊 PROJECT HEALTH MONITORING
+
+Use these commands to monitor your ModPorter-AI development:
+
+**System Health:**
+- `mcp__claude-flow__swarm_monitor` - Real-time development coordination
+- `mcp__claude-flow__agent_metrics` - Track specialist effectiveness
+- `mcp__claude-flow__memory_usage` - Monitor cross-service learning
+
+**Quality Metrics:**
+- Track conversion accuracy improvements
+- Monitor API performance metrics
+- Validate UI/UX enhancement progress
+- Measure test coverage across services
+
+### 🎯 QUICK START FOR MODPORTER-AI
+
+```bash
+# Initialize optimized swarm for ModPorter-AI development
+mcp__claude-flow__swarm_init { 
+  topology: "hierarchical", 
+  maxAgents: 8, 
+  strategy: "modporter-optimized" 
+}
+
+# Example task: "Enhance conversion accuracy and add progress tracking"
+mcp__claude-flow__task_orchestrate { 
+  task: "Improve conversion system with better tracking", 
+  strategy: "parallel" 
+}
+```
+
+Your ModPorter-AI development team is configured for:
+- **Multi-service coordination** (Frontend + Backend + AI Engine)
+- **Domain expertise** (Minecraft modding + AI/ML)
+- **Technology specialization** (React/FastAPI/CrewAI)
+- **Quality focus** (Testing + Performance + Security)
+
+---
+
 Remember: **Claude Flow coordinates, Claude Code creates!** Start with `mcp__claude-flow__swarm_init` to enhance your development workflow.
