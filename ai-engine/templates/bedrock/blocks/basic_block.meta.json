@@ -1,0 +1,32 @@
+{
+  "template_type": "basic_block",
+  "category": "blocks",
+  "description": "Basic block template for simple blocks with optional properties",
+  "required_parameters": [
+    "namespace",
+    "block_name",
+    "texture_name"
+  ],
+  "optional_parameters": [
+    "menu_category",
+    "destroy_time",
+    "explosion_resistance", 
+    "map_color",
+    "render_method",
+    "light_emission",
+    "flammable"
+  ],
+  "defaults": {
+    "menu_category": "construction",
+    "destroy_time": 3.0,
+    "explosion_resistance": 6.0,
+    "map_color": "#c67c5c",
+    "render_method": "opaque"
+  },
+  "validation_rules": [
+    "destroy_time must be positive number",
+    "explosion_resistance must be positive number",
+    "map_color must be valid hex color",
+    "light_emission must be integer 0-15"
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ entity_name }}",
+      "is_spawnable": {{ is_spawnable | default(true) | lower }},
+      "is_summonable": {{ is_summonable | default(true) | lower }},
+      "is_experimental": {{ is_experimental | default(false) | lower }}
+    },
+    "component_groups": {
+      "despawn": {
+        "minecraft:instant_despawn": {
+          "remove_child_entities": true
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": ["{{ entity_family | default('hostile') }}", "monster", "mob"]
+      },
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0
+      },
+      "minecraft:collision_box": {
+        "width": {{ collision_width | default(0.8) }},
+        "height": {{ collision_height | default(1.8) }}
+      },
+      "minecraft:health": {
+        "value": {{ max_health | default(20) }},
+        "max": {{ max_health | default(20) }}
+      },
+      "minecraft:attack": {
+        "damage": {{ attack_damage | default(3) }}
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": { "test": "in_lava", "subject": "self", "operator": "==", "value": true },
+            "cause": "lava",
+            "damage_per_tick": 4
+          }
+        ]
+      },
+      "minecraft:movement": {
+        "value": {{ movement_speed | default(0.23) }}
+      },
+      "minecraft:navigation.walk": {
+        "can_path_over_water": {{ can_path_over_water | default(false) | lower }},
+        "avoid_water": {{ avoid_water | default(false) | lower }},
+        "avoid_damage_blocks": {{ avoid_damage_blocks | default(true) | lower }}
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.hurt_by_target": {
+        "priority": 1
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "player"
+            },
+            "max_dist": {{ detection_range | default(16) }}
+          }{% if additional_targets %},
+          {% for target in additional_targets %}{
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "{{ target.family }}"
+            },
+            "max_dist": {{ target.range | default(16) }}
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}{% endif %}
+        ]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "speed_multiplier": {{ attack_speed_multiplier | default(1.2) }},
+        "track_target": true
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 8,
+        "speed_multiplier": 1.0
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 9,
+        "look_distance": 8.0,
+        "probability": 0.02
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 10
+      }{% if spawns_in_dark %},
+      "minecraft:spawn_entity": {
+        "entities": [
+          {
+            "min_wait_time": 300,
+            "max_wait_time": 600,
+            "spawn_sound": "mob.{{ entity_name }}.say",
+            "spawn_item": "{{ namespace }}:{{ entity_name }}_spawn_egg",
+            "filters": {
+              "test": "is_brightness",
+              "operator": "<=",
+              "value": 7
+            }
+          }
+        ]
+      }{% endif %}{% if drops_items %},
+      "minecraft:loot": {
+        "table": "loot_tables/entities/{{ entity_name }}.json"
+      }{% endif %}{% if burns_in_daylight %},
+      "minecraft:burns_in_daylight": {}{% endif %}
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "sequence": [
+          {% if spawn_sound %}{
+            "run_command": {
+              "command": "playsound {{ spawn_sound }} @a ~ ~ ~"
+            }
+          },{% endif %}
+          {
+            "filters": {
+              "test": "is_difficulty",
+              "operator": "!=",
+              "value": "peaceful"
+            }
+          }
+        ]
+      }{% if has_special_abilities %},
+      "special_attack": {
+        "sequence": [
+          {
+            "run_command": {
+              "command": "{{ special_attack_command }}"
+            }
+          }
+        ]
+      }{% endif %}
+    }
+  }
+}

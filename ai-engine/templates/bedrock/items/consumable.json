@@ -1,0 +1,60 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ item_name }}",
+      "menu_category": {
+        "category": "{{ menu_category | default('items') }}"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "{{ texture_name | default(item_name) }}"
+      },
+      "minecraft:display_name": {
+        "value": "{{ display_name | default(item_name | title) }}"
+      },
+      "minecraft:max_stack_size": {{ max_stack_size | default(64) }},
+      "minecraft:use_animation": "{{ use_animation | default('eat') }}",
+      "minecraft:use_duration": {{ use_duration | default(32) }}{% if nutrition %},
+      "minecraft:food": {
+        "nutrition": {{ nutrition.value | default(4) }},
+        "saturation_modifier": {{ nutrition.saturation | default(0.6) }}{% if nutrition.can_always_eat %},
+        "can_always_eat": {{ nutrition.can_always_eat | lower }}{% endif %}{% if nutrition.effects %},
+        "effects": [
+          {% for effect in nutrition.effects %}{
+            "name": "{{ effect.name }}",
+            "chance": {{ effect.chance | default(1.0) }},
+            "duration": {{ effect.duration | default(30) }},
+            "amplifier": {{ effect.amplifier | default(0) }}
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]{% endif %}
+      }{% endif %}{% if potion_effects %},
+      "minecraft:consumable": {
+        "consume_time": {{ consume_time | default(1.6) }},
+        "animation": "{{ consume_animation | default('drink') }}",
+        "sound": "{{ consume_sound | default('random.drink') }}",
+        "has_consume_effects": true,
+        "on_consume": {
+          "event": "consumed",
+          "target": "self"
+        }
+      }{% endif %}
+    }{% if potion_effects %},
+    "events": {
+      "consumed": {
+        "sequence": [
+          {% for effect in potion_effects %}{
+            "add_mob_effect": {
+              "effect": "{{ effect.name }}",
+              "duration": {{ effect.duration | default(30) }},
+              "amplifier": {{ effect.amplifier | default(0) }}
+            }
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }
+    }{% endif %}
+  }
+}

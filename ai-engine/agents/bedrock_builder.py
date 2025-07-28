@@ -17,6 +17,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from crewai.tools import tool
 
 from models.smart_assumptions import SmartAssumptionEngine
+from templates.template_engine import TemplateEngine, TemplateType
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,11 @@ class BedrockBuilderAgent:
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
         
-        # Initialize Jinja2 environment for templates
+        # Initialize enhanced template engine
         templates_dir = Path(__file__).parent.parent / 'templates' / 'bedrock'
+        self.template_engine = TemplateEngine(templates_dir)
+        
+        # Keep legacy Jinja2 environment for manifest templates
         self.jinja_env = Environment(loader=FileSystemLoader(str(templates_dir)))
         
         # Bedrock file structure templates
@@ -177,8 +181,13 @@ class BedrockBuilderAgent:
             "texture_name": block_name
         }
         
-        block_template = self.jinja_env.get_template('block_bp.json')
-        block_content = block_template.render(**block_data)
+        # Use enhanced template engine with smart selection
+        # For MVP, we'll use basic_block, but the engine can select more specific templates
+        block_content = self.template_engine.render_template(
+            feature_type="block",
+            properties={},  # In future, this will come from Java analysis
+            context=block_data
+        )
         
         block_file = blocks_dir / f"{block_name}.json"
         block_file.write_text(block_content)
@@ -217,8 +226,13 @@ class BedrockBuilderAgent:
             "texture_name": block_name
         }
         
-        block_template = self.jinja_env.get_template('block_rp.json')
-        block_content = block_template.render(**block_data)
+        # Use enhanced template engine for resource pack blocks
+        block_content = self.template_engine.render_template(
+            feature_type="block",
+            properties={},  # In future, this will come from Java analysis
+            context=block_data,
+            pack_type="rp"
+        )
         
         block_file = blocks_dir / f"{block_name}.json"
         block_file.write_text(block_content)
