@@ -1,0 +1,151 @@
+{
+  "machinery_logic_mod": {
+    "expected_bedrock_blocks": [
+      {
+        "identifier": "machinery_logic_mod:machine_block",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {"texture": "machine_block"}
+          },
+          "minecraft:block_state": {
+            "states": {
+              "powered": [false, true]
+            }
+          },
+          "minecraft:on_interact": {
+            "event": "toggle_power"
+          }
+        },
+        "events": {
+          "toggle_power": {
+            "sequence": [
+              {
+                "condition": "q.block_state('powered') == false",
+                "set_block_state": {"powered": true}
+              },
+              {
+                "condition": "q.block_state('powered') == true", 
+                "set_block_state": {"powered": false}
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "expected_conversion_challenges": [
+      "Complex tick-based processing logic",
+      "Block entity state management",
+      "Multi-step processing workflows",
+      "Power state synchronization"
+    ],
+    "smart_assumptions": [
+      "Convert tick-based processing to event-driven",
+      "Map complex state to block states",
+      "Approximate processing time with delays",
+      "Preserve core machine functionality"
+    ]
+  },
+  "multiblock_logic_mod": {
+    "expected_bedrock_approximation": {
+      "structure_recognition": "Limited Support",
+      "implementation_strategy": "Individual block validation",
+      "blocks": [
+        {
+          "identifier": "multiblock_logic_mod:multiblock_block",
+          "components": {
+            "minecraft:on_placed": {
+              "event": "check_multiblock_structure"
+            },
+            "minecraft:material_instances": {
+              "*": {"texture": "multiblock_block"}
+            }
+          }
+        }
+      ]
+    },
+    "expected_conversion_challenges": [
+      "No native multiblock structure support in Bedrock",
+      "Complex spatial relationship validation",
+      "Coordinated block behavior management",
+      "Structure formation detection algorithms"
+    ],
+    "smart_assumptions": [
+      "Convert to individual block validation system",
+      "Implement structure checking via block events",
+      "Approximate multiblock behavior with single blocks",
+      "Document structure requirements for manual building"
+    ]
+  },
+  "automation_logic_mod": {
+    "expected_bedrock_approximation": {
+      "item_transport": "Very Limited Support",
+      "implementation_strategy": "Manual item management",
+      "blocks": [
+        {
+          "identifier": "automation_logic_mod:automation_node",
+          "components": {
+            "minecraft:inventory": {
+              "inventory_size": 1,
+              "container_type": "container"
+            },
+            "minecraft:on_interact": {
+              "event": "manual_item_transfer"
+            }
+          }
+        }
+      ]
+    },
+    "expected_conversion_challenges": [
+      "No automatic item transport in Bedrock",
+      "Complex network topology management",
+      "Inter-block communication protocols",
+      "Dynamic item routing algorithms"
+    ],
+    "smart_assumptions": [
+      "Convert to manual item management system",
+      "Replace automation with player interaction",
+      "Document intended automation workflow",
+      "Preserve item storage functionality"
+    ]
+  },
+  "validation_criteria": {
+    "complexity_analysis": [
+      "Block entity complexity assessment",
+      "State management requirement identification",
+      "Inter-block communication detection",
+      "Processing logic complexity evaluation"
+    ],
+    "conversion_approximation": [
+      "Bedrock limitation acknowledgment",
+      "Functionality preservation assessment",
+      "Alternative implementation quality",
+      "User experience impact evaluation"
+    ],
+    "smart_assumption_effectiveness": [
+      "Assumption practicality",
+      "Core functionality preservation",
+      "Implementation feasibility",
+      "Documentation completeness"
+    ]
+  },
+  "general_bedrock_limitations": {
+    "complex_logic_constraints": [
+      "No custom tick-based processing",
+      "Limited block entity capabilities",
+      "No complex state machines",
+      "Restricted inter-block communication"
+    ],
+    "approximation_strategies": [
+      "Event-driven state changes instead of continuous processing",
+      "Block states for simple property tracking",
+      "Player interaction for complex operations",
+      "Command blocks for advanced logic (creative mode)"
+    ],
+    "documentation_requirements": [
+      "Clear explanation of original Java functionality",
+      "Description of Bedrock limitations",
+      "User guidance for equivalent behavior",
+      "Alternative usage patterns"
+    ]
+  }
+}
