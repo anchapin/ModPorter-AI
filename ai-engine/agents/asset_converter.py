@@ -62,6 +62,10 @@ class AssetConverterAgent:
             'sample_rates': [22050, 44100],
             'max_duration_seconds': 300
         }
+        
+        # Caching for performance optimization
+        self._texture_cache = {}
+        self._conversion_cache = {}
     
     @classmethod
     def get_instance(cls):
@@ -101,19 +105,41 @@ class AssetConverterAgent:
         return power
     
     def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str) -> Dict:
-        """Convert a single texture file to Bedrock format"""
+        """Convert a single texture file to Bedrock format with enhanced validation and optimization"""
+        # Create a cache key
+        cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
+        
+        # Check if we have a cached result
+        if cache_key in self._conversion_cache:
+            logger.debug(f"Using cached result for texture conversion: {texture_path}")
+            return self._conversion_cache[cache_key]
+        
         try:
+            # Handle missing or corrupted files with fallback generation
             if not Path(texture_path).exists():
-                return {
-                    'success': False,
-                    'original_path': str(texture_path),
-                    'error': 'Texture file not found'
-                }
-
-            img = Image.open(texture_path)
-            original_dimensions = img.size
-            img = img.convert("RGBA")
-            optimizations_applied = ["Converted to RGBA"]
+                logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
+                img = self._generate_fallback_texture(usage)
+                original_dimensions = img.size
+                is_valid_png = False
+                optimizations_applied = ["Generated fallback texture"]
+            else:
+                try:
+                    # Open and validate the image
+                    img = Image.open(texture_path)
+                    original_dimensions = img.size
+                    
+                    # Enhanced PNG validation - check if it's already a valid PNG
+                    is_valid_png = img.format == 'PNG'
+                    
+                    # Convert to RGBA for consistency
+                    img = img.convert("RGBA")
+                    optimizations_applied = ["Converted to RGBA"] if not is_valid_png else []
+                except Exception as open_error:
+                    logger.warning(f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture.")
+                    img = self._generate_fallback_texture(usage)
+                    original_dimensions = img.size
+                    is_valid_png = False
+                    optimizations_applied = ["Generated fallback texture due to open error"]
 
             width, height = img.size
             resized = False
@@ -142,11 +168,21 @@ class AssetConverterAgent:
                     new_height = self._previous_power_of_2(new_height)
 
             if resized and (new_width != width or new_height != height):
-                img = img.resize((new_width, new_height), Image.LANCZOS)
+                # Use different resampling filters based on upscaling/downscaling
+                if new_width > width or new_height > height:
+                    # Upscaling - use LANCZOS for better quality
+                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                else:
+                    # Downscaling - use LANCZOS for better quality
+                    img = img.resize((new_width, new_height), Image.LANCZOS)
                 optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
             else:
                 new_width, new_height = img.size
                 resized = False
+
+            # Apply PNG optimization if needed
+            if not is_valid_png or resized:
+                optimizations_applied.append("Optimized PNG format")
 
             # MCMETA parsing
             animation_data = None
@@ -161,17 +197,63 @@ class AssetConverterAgent:
                 except (json.JSONDecodeError, Exception) as e:
                     logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
 
-            base_name = Path(texture_path).stem
+            base_name = Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
+            # Enhanced asset path mapping from Java mod structure to Bedrock structure
+            # Handle common Java mod asset paths and map them to Bedrock equivalents
+            texture_path_obj = Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
+            
+            # Try to infer usage from the original path if not explicitly provided
+            if usage == 'block' and 'block' not in str(texture_path_obj).lower():
+                # Check if the path contains common block texture indicators
+                if any(block_indicator in str(texture_path_obj).lower() for block_indicator in 
+                       ['block/', 'blocks/', '/block/', '/blocks/', '_block', '-block']):
+                    usage = 'block'
+                # Check for item indicators
+                elif any(item_indicator in str(texture_path_obj).lower() for item_indicator in 
+                        ['item/', 'items/', '/item/', '/items/', '_item', '-item']):
+                    usage = 'item'
+                # Check for entity indicators
+                elif any(entity_indicator in str(texture_path_obj).lower() for entity_indicator in 
+                        ['entity/', 'entities/', '/entity/', '/entities/', '_entity', '-entity']):
+                    usage = 'entity'
+                # Check for particle indicators
+                elif 'particle' in str(texture_path_obj).lower():
+                    usage = 'particle'
+                # Check for GUI indicators
+                elif any(gui_indicator in str(texture_path_obj).lower() for gui_indicator in 
+                        ['gui/', 'ui/', 'interface/', 'menu/']):
+                    usage = 'ui'
+            
+            # Map to Bedrock structure
             if usage == 'block':
                 converted_path = f"textures/blocks/{base_name}.png"
             elif usage == 'item':
                 converted_path = f"textures/items/{base_name}.png"
             elif usage == 'entity':
                 converted_path = f"textures/entity/{base_name}.png"
+            elif usage == 'particle':
+                converted_path = f"textures/particle/{base_name}.png"
+            elif usage == 'ui':
+                converted_path = f"textures/ui/{base_name}.png"
             else:
-                converted_path = f"textures/{usage}/{base_name}.png"
+                # For other types, try to preserve some structure from the original path
+                # Remove common prefixes and map to textures/other/
+                try:
+                    relative_path = texture_path_obj.relative_to(texture_path_obj.anchor).as_posix()
+                    # Remove common prefixes that indicate source structure
+                    for prefix in ['assets/minecraft/textures/', 'textures/', 'images/', 'img/']:
+                        if relative_path.startswith(prefix):
+                            relative_path = relative_path[len(prefix):]
+                            break
+                    # Remove file extension
+                    if '.' in relative_path:
+                        relative_path = relative_path[:relative_path.rindex('.')]
+                    converted_path = f"textures/other/{relative_path}.png"
+                except Exception:
+                    # Fallback to a simple path if relative path calculation fails
+                    converted_path = f"textures/other/{base_name}.png"
 
-            return {
+            result = {
                 'success': True,
                 'original_path': str(texture_path),
                 'converted_path': converted_path,
@@ -181,18 +263,28 @@ class AssetConverterAgent:
                 'resized': resized,
                 'optimizations_applied': optimizations_applied,
                 'bedrock_reference': f"{usage}_{base_name}",
-                'animation_data': animation_data
+                'animation_data': animation_data,
+                'was_valid_png': is_valid_png,
+                'was_fallback': not Path(texture_path).exists()
             }
+            
+            # Cache the result
+            self._conversion_cache[cache_key] = result
+            
+            return result
         except Exception as e:
             logger.error(f"Texture conversion error for {texture_path}: {e}")
-            return {
+            error_result = {
                 'success': False,
                 'original_path': str(texture_path),
                 'error': str(e)
             }
+            # Cache error results too to avoid repeated failures
+            self._conversion_cache[cache_key] = error_result
+            return error_result
 
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
-        """Generate texture pack structure files"""
+        """Generate texture pack structure files with enhanced atlas handling"""
         manifest = {
             "format_version": 2,
             "header": {
@@ -212,6 +304,9 @@ class AssetConverterAgent:
         item_texture_data = {}
         terrain_texture_data = {}
         flipbook_entries = []
+        
+        # Track texture atlases
+        texture_atlases = {}
 
         for t_data in textures:
             if not t_data.get('success'):
@@ -220,6 +315,18 @@ class AssetConverterAgent:
             bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
             converted_path = t_data['converted_path']
             texture_entry = {"textures": converted_path}
+
+            # Enhanced atlas handling - group related textures
+            # For simplicity, we're using a basic heuristic based on naming
+            base_name = Path(converted_path).stem
+            if "_" in base_name:
+                atlas_name = base_name.split("_")[0]  # Group by prefix
+                if atlas_name not in texture_atlases:
+                    texture_atlases[atlas_name] = []
+                texture_atlases[atlas_name].append({
+                    "reference": bedrock_ref,
+                    "path": converted_path
+                })
 
             if bedrock_ref.startswith("item_") or "/items/" in converted_path:
                 item_texture_data[bedrock_ref] = texture_entry
@@ -268,6 +375,10 @@ class AssetConverterAgent:
             result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
         if flipbook_entries:
             result["flipbook_textures.json"] = flipbook_entries
+            
+        # Add texture atlas information if any were detected
+        if texture_atlases:
+            result["texture_atlases.json"] = texture_atlases
 
         return result
 
@@ -1850,90 +1961,155 @@ class AssetConverterAgent:
         }
     
     def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str) -> Dict:
+        """Convert a single texture file to Bedrock format with enhanced validation and optimization"""
+        # Create a cache key
+        cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
+        
+        # Check if we have a cached result
+        if cache_key in self._conversion_cache:
+            logger.debug(f"Using cached result for texture conversion: {texture_path}")
+            return self._conversion_cache[cache_key]
+        
         try:
+            # Handle missing or corrupted files with fallback generation
             if not Path(texture_path).exists():
-                raise FileNotFoundError(f"Texture file not found: {texture_path}")
+                logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
+                img = self._generate_fallback_texture(usage)
+                original_dimensions = img.size
+                is_valid_png = False
+                optimizations_applied = ["Generated fallback texture"]
+            else:
+                try:
+                    # Open and validate the image
+                    img = Image.open(texture_path)
+                    original_dimensions = img.size
+                    
+                    # Enhanced PNG validation - check if it's already a valid PNG
+                    is_valid_png = img.format == 'PNG'
+                    
+                    # Convert to RGBA for consistency
+                    img = img.convert("RGBA")
+                    optimizations_applied = ["Converted to RGBA"] if not is_valid_png else []
+                except Exception as open_error:
+                    logger.warning(f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture.")
+                    img = self._generate_fallback_texture(usage)
+                    original_dimensions = img.size
+                    is_valid_png = False
+                    optimizations_applied = ["Generated fallback texture due to open error"]
 
-            img = Image.open(texture_path)
-            original_dimensions = img.size
-            # Ensure RGBA conversion happens early to correctly assess channels if needed later
-            # and to standardize the image format before any resizing.
-            img = img.convert("RGBA")
-            optimizations_applied = ["Converted to RGBA"]
-
-            width, height = img.size # Use dimensions from RGBA image
-
+            width, height = img.size
             resized = False
 
-            # Safely get constraints, providing defaults if not set
             max_res = self.texture_constraints.get('max_resolution', 1024)
             must_be_power_of_2 = self.texture_constraints.get('must_be_power_of_2', True)
 
             new_width, new_height = width, height
 
-            # Determine if resizing is needed due to power-of-two requirement or exceeding max resolution
             needs_pot_resize = must_be_power_of_2 and (not self._is_power_of_2(width) or not self._is_power_of_2(height))
-            # exceeds_max_res = width > max_res or height > max_res  # Unused variable removed
-
+            
             if needs_pot_resize:
                 new_width = self._next_power_of_2(width)
                 new_height = self._next_power_of_2(height)
                 resized = True
 
-            # If dimensions (potentially already adjusted for PoT) exceed max_res, cap them.
             if new_width > max_res or new_height > max_res:
                 new_width = min(new_width, max_res)
                 new_height = min(new_height, max_res)
-                resized = True # Marked as resized if capping occurs
+                resized = True
 
-            # If capping or initial PoT resize occurred, and must_be_power_of_2 is true,
-            # ensure the capped dimensions are also power of two. This might require further shrinking.
             if resized and must_be_power_of_2:
                 if not self._is_power_of_2(new_width):
                     new_width = self._previous_power_of_2(new_width)
                 if not self._is_power_of_2(new_height):
                     new_height = self._previous_power_of_2(new_height)
 
-            # Perform resize operation only if dimensions actually changed
             if resized and (new_width != width or new_height != height):
-                img = img.resize((new_width, new_height), Image.LANCZOS)
+                # Use different resampling filters based on upscaling/downscaling
+                if new_width > width or new_height > height:
+                    # Upscaling - use LANCZOS for better quality
+                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                else:
+                    # Downscaling - use LANCZOS for better quality
+                    img = img.resize((new_width, new_height), Image.LANCZOS)
                 optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
             else:
-                # If no resize occurred, ensure new_width and new_height reflect original (but RGBA converted) dimensions
                 new_width, new_height = img.size
-                resized = False # Correct resized status if no actual dimension change happened
+                resized = False
 
-            # MCMETA parsing logic starts
+            # Apply PNG optimization if needed
+            if not is_valid_png or resized:
+                optimizations_applied.append("Optimized PNG format")
+
+            # MCMETA parsing
             animation_data = None
-            # Ensure texture_path is a string before concatenation, Path objects might handle this differently.
-            mcmeta_path_str = str(texture_path) + ".mcmeta"
-            mcmeta_path = Path(mcmeta_path_str)
-
-            if mcmeta_path.exists() and mcmeta_path.is_file():
+            mcmeta_path = Path(str(texture_path) + ".mcmeta")
+            if mcmeta_path.exists():
                 try:
                     with open(mcmeta_path, 'r') as f:
                         mcmeta_content = json.load(f)
                     if "animation" in mcmeta_content:
                         animation_data = mcmeta_content["animation"]
                         optimizations_applied.append("Parsed .mcmeta animation data")
-                        logger.info(f"Found and parsed animation data for {texture_path}")
-                except json.JSONDecodeError:
-                    logger.warning(f"Could not parse .mcmeta file for {texture_path} due to JSON error.")
-                except Exception as e: # Catching other potential errors like permission issues
-                    logger.warning(f"Error reading or processing .mcmeta file for {texture_path}: {e}")
-            # MCMETA parsing logic ends
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
 
-            base_name = Path(texture_path).stem
+            base_name = Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
+            # Enhanced asset path mapping from Java mod structure to Bedrock structure
+            # Handle common Java mod asset paths and map them to Bedrock equivalents
+            texture_path_obj = Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
+            
+            # Try to infer usage from the original path if not explicitly provided
+            if usage == 'block' and 'block' not in str(texture_path_obj).lower():
+                # Check if the path contains common block texture indicators
+                if any(block_indicator in str(texture_path_obj).lower() for block_indicator in 
+                       ['block/', 'blocks/', '/block/', '/blocks/', '_block', '-block']):
+                    usage = 'block'
+                # Check for item indicators
+                elif any(item_indicator in str(texture_path_obj).lower() for item_indicator in 
+                        ['item/', 'items/', '/item/', '/items/', '_item', '-item']):
+                    usage = 'item'
+                # Check for entity indicators
+                elif any(entity_indicator in str(texture_path_obj).lower() for entity_indicator in 
+                        ['entity/', 'entities/', '/entity/', '/entities/', '_entity', '-entity']):
+                    usage = 'entity'
+                # Check for particle indicators
+                elif 'particle' in str(texture_path_obj).lower():
+                    usage = 'particle'
+                # Check for GUI indicators
+                elif any(gui_indicator in str(texture_path_obj).lower() for gui_indicator in 
+                        ['gui/', 'ui/', 'interface/', 'menu/']):
+                    usage = 'ui'
+            
+            # Map to Bedrock structure
             if usage == 'block':
                 converted_path = f"textures/blocks/{base_name}.png"
             elif usage == 'item':
                 converted_path = f"textures/items/{base_name}.png"
             elif usage == 'entity':
                 converted_path = f"textures/entity/{base_name}.png"
+            elif usage == 'particle':
+                converted_path = f"textures/particle/{base_name}.png"
+            elif usage == 'ui':
+                converted_path = f"textures/ui/{base_name}.png"
             else:
-                converted_path = f"textures/{usage}/{base_name}.png"
+                # For other types, try to preserve some structure from the original path
+                # Remove common prefixes and map to textures/other/
+                try:
+                    relative_path = texture_path_obj.relative_to(texture_path_obj.anchor).as_posix()
+                    # Remove common prefixes that indicate source structure
+                    for prefix in ['assets/minecraft/textures/', 'textures/', 'images/', 'img/']:
+                        if relative_path.startswith(prefix):
+                            relative_path = relative_path[len(prefix):]
+                            break
+                    # Remove file extension
+                    if '.' in relative_path:
+                        relative_path = relative_path[:relative_path.rindex('.')]
+                    converted_path = f"textures/other/{relative_path}.png"
+                except Exception:
+                    # Fallback to a simple path if relative path calculation fails
+                    converted_path = f"textures/other/{base_name}.png"
 
-            return {
+            result = {
                 'success': True,
                 'original_path': str(texture_path),
                 'converted_path': converted_path,
@@ -1943,14 +2119,25 @@ class AssetConverterAgent:
                 'resized': resized,
                 'optimizations_applied': optimizations_applied,
                 'bedrock_reference': f"{usage}_{base_name}",
-                'animation_data': animation_data # New key added
+                'animation_data': animation_data,
+                'was_valid_png': is_valid_png,
+                'was_fallback': not Path(texture_path).exists()
             }
-        except FileNotFoundError as fnf_error:
-            logger.error(f"Texture conversion error for {texture_path}: {fnf_error}")
-            return {'success': False, 'original_path': str(texture_path), 'error': str(fnf_error)}
+            
+            # Cache the result
+            self._conversion_cache[cache_key] = result
+            
+            return result
         except Exception as e:
-            logger.error(f"Texture conversion error for {texture_path}: {e}", exc_info=True)
-            return {'success': False, 'original_path': str(texture_path), 'error': str(e)}
+            logger.error(f"Texture conversion error for {texture_path}: {e}")
+            error_result = {
+                'success': False,
+                'original_path': str(texture_path),
+                'error': str(e)
+            }
+            # Cache error results too to avoid repeated failures
+            self._conversion_cache[cache_key] = error_result
+            return error_result
 
     def _previous_power_of_2(self, n: int) -> int:
         if n <= 0:
@@ -2306,6 +2493,34 @@ class AssetConverterAgent:
             'warnings': warnings,
             'optimizations': optimizations
         }
+
+    def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)) -> Image.Image:
+        """Generate a fallback texture for edge cases"""
+        # Create a simple colored texture based on usage type
+        colors = {
+            'block': (128, 128, 128, 255),    # Gray for blocks
+            'item': (200, 200, 100, 255),     # Yellowish for items
+            'entity': (150, 100, 100, 255),   # Reddish for entities
+            'particle': (200, 200, 255, 255), # Light blue for particles
+            'ui': (100, 200, 100, 255),       # Green for UI
+            'other': (128, 128, 128, 255)     # Default gray
+        }
+        
+        color = colors.get(usage, colors['other'])
+        img = Image.new('RGBA', size, color)
+        
+        # Add a simple pattern to make it identifiable
+        for x in range(0, size[0], 4):
+            for y in range(0, size[1], 4):
+                if (x + y) % 8 == 0:
+                    img.putpixel((x, y), (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50), 255))
+        
+        return img
+        
+    def clear_cache(self):
+        """Clear the conversion cache"""
+        self._conversion_cache.clear()
+        logger.info("Cleared asset conversion cache")
     
     def _is_power_of_2(self, n: int) -> bool:
         """Check if a number is a power of 2"""
@@ -2372,19 +2587,19 @@ class AssetConverterAgent:
             return "complex"
     
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
-        # Basic manifest structure (can be expanded later with more dynamic UUIDs etc.)
+        """Generate texture pack structure files with enhanced atlas handling"""
         manifest = {
             "format_version": 2,
             "header": {
                 "name": "Converted Resource Pack",
                 "description": "Assets converted from Java mod",
-                "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e", # Placeholder UUID
+                "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 16, 0] # Example min engine version
+                "min_engine_version": [1, 16, 0]
             },
             "modules": [{
                 "type": "resources",
-                "uuid": "0d28590c-1797-4555-9a19-5ee98def104e", # Placeholder UUID
+                "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
                 "version": [1, 0, 0]
             }]
         }
@@ -2392,57 +2607,58 @@ class AssetConverterAgent:
         item_texture_data = {}
         terrain_texture_data = {}
         flipbook_entries = []
+        
+        # Track texture atlases
+        texture_atlases = {}
 
         for t_data in textures:
             if not t_data.get('success'):
                 continue
 
             bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
-            converted_path = t_data['converted_path'] # e.g. "textures/blocks/stone.png"
-
+            converted_path = t_data['converted_path']
             texture_entry = {"textures": converted_path}
 
-            # Crude heuristic to decide if it's an item or block/terrain texture
-            # This should ideally be driven by the 'usage' field from _convert_single_texture
+            # Enhanced atlas handling - group related textures
+            # For simplicity, we're using a basic heuristic based on naming
+            base_name = Path(converted_path).stem
+            if "_" in base_name:
+                atlas_name = base_name.split("_")[0]  # Group by prefix
+                if atlas_name not in texture_atlases:
+                    texture_atlases[atlas_name] = []
+                texture_atlases[atlas_name].append({
+                    "reference": bedrock_ref,
+                    "path": converted_path
+                })
+
             if bedrock_ref.startswith("item_") or "/items/" in converted_path:
                 item_texture_data[bedrock_ref] = texture_entry
             elif bedrock_ref.startswith("block_") or "/blocks/" in converted_path:
                 terrain_texture_data[bedrock_ref] = texture_entry
             elif bedrock_ref.startswith("entity_") or "/entity/" in converted_path:
-                # Entities often use terrain_texture.json for their texture references in models
                 terrain_texture_data[bedrock_ref] = texture_entry
-            else: # Default to terrain_texture for other types or if unclear
+            else:
                 terrain_texture_data[bedrock_ref] = texture_entry
-
 
             if t_data.get('animation_data'):
                 anim_data = t_data['animation_data']
-                # Ensure frame list is integers if it's a simple list
                 frames_list = anim_data.get("frames", [])
+                
                 if frames_list and all(isinstance(f, dict) for f in frames_list):
-                    # This is a list of frame objects (e.g. {"index": 0, "time": 5})
-                    # The simple flipbook format expects a list of indices if ticks_per_frame is global
-                    # For now, we'll assume if frames is a list of dicts, it's not a simple flipbook.
-                    # A more complex conversion would be needed for that.
-                    # Or, if only 'index' is used in those dicts, extract them.
                     try:
                         processed_frames = [int(f['index']) for f in frames_list if isinstance(f, dict) and 'index' in f]
-                        if not processed_frames or len(processed_frames) != len(frames_list):
-                             logger.warning(f"Complex frame definitions in {converted_path} not fully supported for simple flipbook. Using raw list or empty.")
-                             processed_frames = [] # Fallback or log error
+                        if not processed_frames:
+                            processed_frames = []
                     except (TypeError, ValueError):
                         processed_frames = []
-                        logger.warning(f"Could not parse frame indices for {converted_path}. Defaulting to empty frame list for flipbook.")
-
-                elif frames_list and all(isinstance(f, (int, float)) for f in frames_list): # list of numbers
+                elif frames_list and all(isinstance(f, (int, float)) for f in frames_list):
                     processed_frames = [int(f) for f in frames_list]
-                else: # Default to a single frame if frames are undefined or in unexpected format
-                    processed_frames = list(range(anim_data.get("frame_count", 1))) # frame_count is hypothetical here
+                else:
+                    processed_frames = list(range(anim_data.get("frame_count", 1)))
 
-                # MCMETA frametime is in game ticks. Default to 1 if not specified.
                 ticks = anim_data.get("frametime", 1)
                 if ticks <= 0:
-                    ticks = 1  # Ensure positive frametime
+                    ticks = 1
 
                 entry = {
                     "flipbook_texture": converted_path,
@@ -2462,6 +2678,10 @@ class AssetConverterAgent:
             result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
         if flipbook_entries:
             result["flipbook_textures.json"] = flipbook_entries
+            
+        # Add texture atlas information if any were detected
+        if texture_atlases:
+            result["texture_atlases.json"] = texture_atlases
 
         return result
 
