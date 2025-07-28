@@ -48,12 +48,32 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
 
-  // API Base URL - Use the same URL pattern as the other API service
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+  // API Base URL - Use proxy path for development, environment variable for production
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
   
-  // Debug logging
-  console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
-  console.log('DEBUG: API_BASE_URL =', API_BASE_URL);
+  // Debug logging (only in development)
+  if (import.meta.env.DEV) {
+    console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
+    console.log('DEBUG: API_BASE_URL =', API_BASE_URL);
+  }
+
+  // Centralized API error handling
+  const handleApiError = (error: any): Error => {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return new Error('Unable to connect to the server. Please check if the backend is running.');
+    }
+    return error instanceof Error ? error : new Error(String(error));
+  };
+
+  // Centralized fetch wrapper with error handling
+  const apiFetch = useCallback(async (url: string, options?: globalThis.RequestInit): Promise<Response> => {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }, []);
 
   // File validation
   const validateFile = (file: File): boolean => {
@@ -89,9 +109,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     formData.append('file', file);
 
     const uploadUrl = `${API_BASE_URL}/upload`;
-    console.log('DEBUG: Making upload request to:', uploadUrl);
+    if (import.meta.env.DEV) {
+      console.log('DEBUG: Making upload request to:', uploadUrl);
+    }
 
-    const response = await fetch(uploadUrl, {
+    const response = await apiFetch(uploadUrl, {
       method: 'POST',
       body: formData,
     });
@@ -106,7 +128,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
   // Start conversion
   const startConversion = async (fileId: string, filename: string): Promise<ConversionResponse> => {
-    const response = await fetch(`${API_BASE_URL}/convert`, {
+    const response = await apiFetch(`${API_BASE_URL}/convert`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +154,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
   // Get conversion status
   const getConversionStatus = useCallback(async (jobId: string): Promise<ConversionStatus> => {
-    const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
+    const response = await apiFetch(`${API_BASE_URL}/convert/${jobId}/status`);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Failed to get status' }));
@@ -140,7 +162,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     }
 
     return response.json();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, apiFetch]);
 
   // Polling for status updates (every 2 seconds as per issue #171)
   useEffect(() => {
@@ -253,15 +275,21 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     setCurrentStatus(null);
     
     try {
-      console.log('Starting real conversion...');
+      if (import.meta.env.DEV) {
+        console.log('Starting real conversion...');
+      }
       
       // Step 1: Upload file
       const uploadResponse = await uploadFile(selectedFile);
-      console.log('File uploaded:', uploadResponse);
+      if (import.meta.env.DEV) {
+        console.log('File uploaded:', uploadResponse);
+      }
       
       // Step 2: Start conversion
       const conversionResponse = await startConversion(uploadResponse.file_id, uploadResponse.original_filename);
-      console.log('Conversion started:', conversionResponse);
+      if (import.meta.env.DEV) {
+        console.log('Conversion started:', conversionResponse);
+      }
       
       setCurrentJobId(conversionResponse.job_id);
       setCurrentStatus({
@@ -286,10 +314,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     if (!currentJobId) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/convert/${currentJobId}/download`);
+      const response = await apiFetch(`${API_BASE_URL}/convert/${currentJobId}/download`);
       
       if (!response.ok) {
-        throw new Error('Download failed');
+        const errorData = await response.json().catch(() => ({ detail: 'Download failed' }));
+        throw new Error(errorData.detail || 'Download failed');
       }
 
       // Determine filename with priority: Content-Disposition > original filename > fallback
