@@ -16,6 +16,12 @@ import os
 import zipfile
 from pathlib import Path
 import time
+import javalang
+
+# Constants for file analysis limits
+FEATURE_ANALYSIS_FILE_LIMIT = 10
+METADATA_AST_FILE_LIMIT = 5
+DEPENDENCY_ANALYSIS_FILE_LIMIT = 10
 
 # Use enhanced agent logger
 logger = get_agent_logger("java_analyzer")
@@ -114,7 +120,23 @@ class JavaAnalyzerAgent:
             # Analyze the mod file based on type
             if mod_path.endswith(('.jar', '.zip')):
                 self.logger.info("Analyzing JAR/ZIP file", file_type="archive")
-                result = self._analyze_jar_file(mod_path, result)
+                # Use AST-based analysis for better feature extraction
+                ast_result = self.analyze_jar_with_ast(mod_path)
+                if ast_result['success']:
+                    # Merge AST results with existing structure
+                    result["mod_info"].update(ast_result["mod_info"])
+                    result["assets"] = ast_result["assets"]
+                    result["features"] = ast_result["features"]
+                    result["structure"] = {"files": ast_result.get("file_count", 0), "type": "jar"}
+                    if ast_result.get("dependencies"):
+                        result["dependencies"] = ast_result["dependencies"]
+                    if ast_result.get("framework"):
+                        result["mod_info"]["framework"] = ast_result["framework"]
+                    result["errors"].extend(ast_result.get("errors", []))
+                else:
+                    # Fallback to original analysis if AST analysis fails
+                    self.logger.warning("AST analysis failed, falling back to original analysis")
+                    result = self._analyze_jar_file(mod_path, result)
             elif os.path.isdir(mod_path):
                 self.logger.info("Analyzing source directory", file_type="directory")
                 result = self._analyze_source_directory(mod_path, result)
@@ -177,6 +199,104 @@ class JavaAnalyzerAgent:
             return 0
         except (OSError, IOError):
             return 0
+    
+    def analyze_jar_with_ast(self, jar_path: str) -> dict:
+        """
+        AST-focused analysis: Extract comprehensive mod information using Java AST parsing.
+        
+        Args:
+            jar_path: Path to the JAR file
+            
+        Returns:
+            Dict with analysis results including features, dependencies, and metadata
+        """
+        try:
+            logger.info(f"AST analysis of JAR: {jar_path}")
+            result = {
+                'success': False,
+                'mod_info': {},
+                'assets': {},
+                'features': {},
+                'dependencies': [],
+                'framework': 'unknown',
+                'errors': [],
+                'processing_time': 0
+            }
+            
+            start_time = time.time()
+            
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Handle empty JARs gracefully
+                if not file_list:
+                    logger.warning(f"Empty JAR file: {jar_path}")
+                    result['success'] = True  # Consider empty JAR as successfully analyzed
+                    result['mod_info'] = {'name': 'unknown', 'framework': 'unknown', 'version': '1.0.0'}
+                    result['errors'].append("JAR file is empty but analysis completed")
+                    result['processing_time'] = time.time() - start_time
+                    result['file_count'] = 0
+                    return result
+                
+                # Detect framework
+                framework = self._detect_framework_from_jar_files(file_list, jar)
+                result['framework'] = framework
+                result['mod_info']['framework'] = framework
+                
+                # Extract mod info from metadata files
+                mod_info = self._extract_mod_info_from_jar(jar, file_list)
+                result['mod_info'].update(mod_info)
+                
+                # Analyze assets
+                result['assets'] = self._analyze_assets_from_jar(file_list)
+                
+                # Extract Java source files and analyze with AST
+                java_sources = [f for f in file_list if f.endswith('.java')]
+                if java_sources:
+                    logger.info(f"Found {len(java_sources)} Java source files, analyzing with AST")
+                    result['features'] = self._analyze_features_from_sources(jar, java_sources)
+                    result['dependencies'] = self._analyze_dependencies_from_sources(jar, java_sources)
+                    
+                    # Extract metadata from AST
+                    metadata_from_ast = {}
+                    for source_path in java_sources[:METADATA_AST_FILE_LIMIT]:  # Check first 5 files for metadata
+                        try:
+                            source_code = jar.read(source_path).decode('utf-8')
+                            tree = self._parse_java_source(source_code)
+                            if tree:
+                                source_metadata = self._extract_mod_metadata_from_ast(tree)
+                                metadata_from_ast.update(source_metadata)
+                        except Exception as e:
+                            logger.warning(f"Error extracting metadata from {source_path}: {e}")
+                            continue
+                    
+                    result['mod_info'].update(metadata_from_ast)
+                else:
+                    logger.info("No Java source files found in JAR, using class-based analysis")
+                    # Extract features from class names (existing approach)
+                    result['features'] = self._extract_features_from_classes(file_list)
+                    result['dependencies'] = []  # No dependency analysis without sources
+                
+                # Mark as successful
+                result['success'] = True
+                result['file_count'] = len(file_list)
+                
+            result['processing_time'] = time.time() - start_time
+            logger.info(f"AST analysis completed successfully for {jar_path} in {result['processing_time']:.2f}s")
+            return result
+                
+        except Exception as e:
+            logger.error(f"AST analysis error: {e}")
+            return {
+                'success': False,
+                'mod_info': {},
+                'assets': {},
+                'features': {},
+                'dependencies': [],
+                'framework': 'unknown',
+                'errors': [f"JAR analysis failed: {str(e)}"],
+                'processing_time': 0
+            }
     
     def analyze_jar_for_mvp(self, jar_path: str) -> dict:
         """
@@ -401,6 +521,179 @@ class JavaAnalyzerAgent:
         # Ensure it's not empty after processing
         return name if name else 'unknown'
     
+    def _parse_java_source(self, source_code: str) -> javalang.ast.Node:
+        """
+        Parse Java source code into an AST using javalang.
+        
+        Args:
+            source_code: Java source code as string
+            
+        Returns:
+            Parsed AST or None if parsing fails
+        """
+        try:
+            tree = javalang.parse.parse(source_code)
+            return tree
+        except Exception as e:
+            logger.warning(f"Failed to parse Java source: {e}")
+            return None
+    
+    def _extract_features_from_ast(self, tree: javalang.ast.Node) -> Dict:
+        """
+        Extract features from parsed Java AST.
+        
+        Args:
+            tree: Parsed Java AST
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'dimensions': [],
+            'gui': [],
+            'machinery': [],
+            'commands': [],
+            'events': []
+        }
+        
+        try:
+            # Extract class declarations
+            for path, node in tree:
+                if isinstance(node, javalang.tree.ClassDeclaration):
+                    # Check if it's a block class
+                    if 'Block' in node.name and not node.name.startswith('Abstract'):
+                        features['blocks'].append({
+                            'name': node.name,
+                            'registry_name': self._class_name_to_registry_name(node.name),
+                            'methods': [method.name for method in node.methods]
+                        })
+                    
+                    # Check if it's an item class
+                    elif 'Item' in node.name and not node.name.startswith('Abstract'):
+                        features['items'].append({
+                            'name': node.name,
+                            'registry_name': self._class_name_to_registry_name(node.name),
+                            'methods': [method.name for method in node.methods]
+                        })
+                    
+                    # Check if it's an entity class
+                    elif 'Entity' in node.name and not node.name.startswith('Abstract'):
+                        features['entities'].append({
+                            'name': node.name,
+                            'registry_name': self._class_name_to_registry_name(node.name),
+                            'methods': [method.name for method in node.methods]
+                        })
+                
+                # Extract method declarations for recipes, commands, events
+                elif isinstance(node, javalang.tree.MethodDeclaration):
+                    method_name = node.name
+                    
+                    # Check for recipe-related methods
+                    if any(keyword in method_name.lower() for keyword in ['recipe', 'craft', 'smelt']):
+                        features['recipes'].append({
+                            'name': method_name,
+                            'parameters': [param.type.name for param in node.parameters] if node.parameters else []
+                        })
+                    
+                    # Check for command-related methods
+                    if any(keyword in method_name.lower() for keyword in ['command', 'execute']):
+                        features['commands'].append({
+                            'name': method_name,
+                            'parameters': [param.type.name for param in node.parameters] if node.parameters else []
+                        })
+                    
+                    # Check for event-related methods
+                    if any(keyword in method_name.lower() for keyword in ['event', 'trigger', 'handle']):
+                        features['events'].append({
+                            'name': method_name,
+                            'parameters': [param.type.name for param in node.parameters] if node.parameters else []
+                        })
+            
+            return features
+        except Exception as e:
+            logger.warning(f"Error extracting features from AST: {e}")
+            return features
+    
+    def _extract_mod_metadata_from_ast(self, tree: javalang.ast.Node) -> Dict:
+        """
+        Extract mod metadata from parsed Java AST.
+        
+        Args:
+            tree: Parsed Java AST
+            
+        Returns:
+            Dictionary with extracted metadata
+        """
+        metadata = {}
+        
+        try:
+            # Look for annotations that might indicate mod information
+            for path, node in tree:
+                if isinstance(node, javalang.tree.Annotation):
+                    # Check for common mod annotations
+                    if node.name in ['Mod', 'ModInstance', 'Instance']:
+                        # Extract the annotation element
+                        if hasattr(node, 'element') and node.element is not None:
+                            element = node.element
+                            # Handle Literal values correctly by extracting the actual value
+                            if hasattr(element, 'value'):
+                                # For string literals, also strip quotes
+                                if isinstance(element.value, str):
+                                    metadata['value'] = element.value.strip('"')
+                                else:
+                                    metadata['value'] = element.value
+                            else:
+                                metadata['value'] = str(element)
+            
+            return metadata
+        except Exception as e:
+            logger.warning(f"Error extracting metadata from AST: {e}")
+            return metadata
+    
+    def _analyze_dependencies_from_ast(self, tree: javalang.ast.Node) -> List[Dict]:
+        """
+        Analyze dependencies from parsed Java AST.
+        
+        Args:
+            tree: Parsed Java AST
+            
+        Returns:
+            List of dependency information
+        """
+        dependencies = []
+        
+        try:
+            # Extract import statements
+            if hasattr(tree, 'imports'):
+                for imp in tree.imports:
+                    if hasattr(imp, 'path'):
+                        dependencies.append({
+                            'import': imp.path,
+                            'type': 'explicit'
+                        })
+            
+            # Extract method calls that might indicate dependencies
+            for path, node in tree:
+                if isinstance(node, javalang.tree.MethodInvocation):
+                    if hasattr(node, 'qualifier') and node.qualifier:
+                        # Check if this is a call to a library
+                        qualifier_parts = node.qualifier.split('.')
+                        if len(qualifier_parts) > 1:
+                            dependencies.append({
+                                'import': node.qualifier,
+                                'type': 'implicit',
+                                'method': node.member
+                            })
+            
+            return dependencies
+        except Exception as e:
+            logger.warning(f"Error analyzing dependencies from AST: {e}")
+            return dependencies
+    
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
         try:
@@ -421,10 +714,168 @@ class JavaAnalyzerAgent:
                 # Analyze structure
                 result["structure"] = {"files": len(file_list), "type": "jar"}
                 
+                # Extract Java source files and analyze with AST
+                java_sources = [f for f in file_list if f.endswith('.java')]
+                if java_sources:
+                    logger.info(f"Found {len(java_sources)} Java source files, analyzing with AST")
+                    result["features"] = self._analyze_features_from_sources(jar, java_sources)
+                    
+                    # Analyze dependencies from AST
+                    result["dependencies"] = self._analyze_dependencies_from_sources(jar, java_sources)
+                else:
+                    logger.info("No Java source files found in JAR, using class-based analysis")
+                    # Extract features from class names (existing approach)
+                    result["features"] = self._extract_features_from_classes(file_list)
+                
         except Exception as e:
             result["errors"].append(f"Error analyzing JAR file: {str(e)}")
         
         return result
+    
+    def _analyze_features_from_sources(self, jar: zipfile.ZipFile, java_sources: List[str]) -> Dict:
+        """
+        Analyze features from Java source files using AST parsing.
+        
+        Args:
+            jar: Opened JAR file
+            java_sources: List of Java source file paths in the JAR
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'dimensions': [],
+            'gui': [],
+            'machinery': [],
+            'commands': [],
+            'events': []
+        }
+        
+        try:
+            for source_path in java_sources[:FEATURE_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
+                try:
+                    # Read source file
+                    source_code = jar.read(source_path).decode('utf-8')
+                    
+                    # Parse AST
+                    tree = self._parse_java_source(source_code)
+                    if tree:
+                        # Extract features from AST
+                        source_features = self._extract_features_from_ast(tree)
+                        
+                        # Merge with overall features
+                        for feature_type, feature_list in source_features.items():
+                            if feature_type in features:
+                                features[feature_type].extend(feature_list)
+                except Exception as e:
+                    logger.warning(f"Error analyzing source file {source_path}: {e}")
+                    continue
+            
+            # Remove duplicates
+            for feature_type in features:
+                seen = set()
+                unique_features = []
+                for feature in features[feature_type]:
+                    feature_key = f"{feature.get('name', '')}_{feature.get('registry_name', '')}"
+                    if feature_key not in seen:
+                        seen.add(feature_key)
+                        unique_features.append(feature)
+                features[feature_type] = unique_features
+            
+            return features
+        except Exception as e:
+            logger.warning(f"Error analyzing features from sources: {e}")
+            return features
+    
+    def _analyze_dependencies_from_sources(self, jar: zipfile.ZipFile, java_sources: List[str]) -> List[Dict]:
+        """
+        Analyze dependencies from Java source files using AST parsing.
+        
+        Args:
+            jar: Opened JAR file
+            java_sources: List of Java source file paths in the JAR
+            
+        Returns:
+            List of dependency information
+        """
+        all_dependencies = []
+        
+        try:
+            for source_path in java_sources[:DEPENDENCY_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
+                try:
+                    # Read source file
+                    source_code = jar.read(source_path).decode('utf-8')
+                    
+                    # Parse AST
+                    tree = self._parse_java_source(source_code)
+                    if tree:
+                        # Extract dependencies from AST
+                        dependencies = self._analyze_dependencies_from_ast(tree)
+                        all_dependencies.extend(dependencies)
+                except Exception as e:
+                    logger.warning(f"Error analyzing dependencies in {source_path}: {e}")
+                    continue
+            
+            # Remove duplicates
+            seen_imports = set()
+            unique_dependencies = []
+            for dep in all_dependencies:
+                import_path = dep.get('import', '')
+                if import_path not in seen_imports:
+                    seen_imports.add(import_path)
+                    unique_dependencies.append(dep)
+            
+            return unique_dependencies
+        except Exception as e:
+            logger.warning(f"Error analyzing dependencies from sources: {e}")
+            return []
+    
+    def _extract_features_from_classes(self, file_list: List[str]) -> Dict:
+        """
+        Extract features from class file names (fallback method).
+        
+        Args:
+            file_list: List of files in the JAR
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'dimensions': [],
+            'gui': [],
+            'machinery': [],
+            'commands': [],
+            'events': []
+        }
+        
+        try:
+            for file_path in file_list:
+                if file_path.endswith('.class'):
+                    class_name = Path(file_path).stem
+                    
+                    # Use existing pattern matching for feature detection
+                    for feature_type, patterns in self.feature_patterns.items():
+                        for pattern in patterns:
+                            if pattern.lower() in class_name.lower():
+                                feature_entry = {
+                                    'name': class_name,
+                                    'registry_name': self._class_name_to_registry_name(class_name)
+                                }
+                                features[feature_type].append(feature_entry)
+                                break  # Only add to first matching category
+            
+            return features
+        except Exception as e:
+            logger.warning(f"Error extracting features from classes: {e}")
+            return features
     
     def _detect_framework_from_jar_files(self, file_list: list, jar: zipfile.ZipFile) -> str:
         """Detect modding framework from JAR file contents"""
@@ -1232,9 +1683,27 @@ class JavaAnalyzerAgent:
                 'conversion_challenges': []
             }
             
-            # Extract features from different sources
+            # Use our enhanced analyzer for JAR files
             if mod_path.endswith(('.jar', '.zip')):
-                features = _extract_features_from_jar(mod_path, extraction_mode)
+                # Get a new instance of the analyzer to avoid state issues
+                analyzer_instance = JavaAnalyzerAgent.get_instance()
+                ast_result = analyzer_instance.analyze_jar_with_ast(mod_path)
+                if ast_result['success']:
+                    # Flatten the features from the AST result
+                    features = []
+                    for feature_type, feature_list in ast_result.get('features', {}).items():
+                        for feature in feature_list:
+                            features.append({
+                                'feature_id': f"{feature_type}_{feature.get('name', 'unknown').lower()}",
+                                'feature_type': feature_type,
+                                'name': feature.get('name', 'Unknown'),
+                                'source': 'ast_analysis',
+                                'confidence': 'high',
+                                'original_data': feature
+                            })
+                else:
+                    # Fallback to original approach
+                    features = _extract_features_from_jar(mod_path, extraction_mode)
             else:
                 features = _extract_features_from_source(mod_path, extraction_mode)
             
