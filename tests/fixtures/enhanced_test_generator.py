@@ -283,6 +283,7 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public class PassiveEntity extends AnimalEntity {{
@@ -345,6 +346,7 @@ import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 
 public class CustomAiEntity extends AnimalEntity {{
@@ -396,12 +398,14 @@ public class CustomAiEntity extends AnimalEntity {{
         # Block entity with inventory
         classes[f'com/example/{mod_name}/InventoryBlockEntity.java'] = f'''package com.example.{mod_name};
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
 
 public class InventoryBlockEntity extends BlockEntity implements Inventory {{
     private DefaultedList<ItemStack> items = DefaultedList.ofSize(9, ItemStack.EMPTY);
@@ -649,9 +653,11 @@ public class MachineBlock extends Block {{
         
         classes[f'com/example/{mod_name}/MachineBlockEntity.java'] = f'''package com.example.{mod_name};
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.math.BlockPos;
 
 public class MachineBlockEntity extends BlockEntity implements Tickable {{
     private boolean powered = false;
