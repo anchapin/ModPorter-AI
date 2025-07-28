@@ -18,6 +18,11 @@ from pathlib import Path
 import time
 import javalang
 
+# Constants for file analysis limits
+FEATURE_ANALYSIS_FILE_LIMIT = 10
+METADATA_AST_FILE_LIMIT = 5
+DEPENDENCY_ANALYSIS_FILE_LIMIT = 10
+
 # Use enhanced agent logger
 logger = get_agent_logger("java_analyzer")
 
@@ -122,7 +127,7 @@ class JavaAnalyzerAgent:
                     result["mod_info"].update(ast_result["mod_info"])
                     result["assets"] = ast_result["assets"]
                     result["features"] = ast_result["features"]
-                    result["structure"] = {"files": len(ast_result.get("assets", [])), "type": "jar"}
+                    result["structure"] = {"files": ast_result.get("file_count", 0), "type": "jar"}
                     if ast_result.get("dependencies"):
                         result["dependencies"] = ast_result["dependencies"]
                     if ast_result.get("framework"):
@@ -230,6 +235,7 @@ class JavaAnalyzerAgent:
                     result['mod_info'] = {'name': 'unknown', 'framework': 'unknown', 'version': '1.0.0'}
                     result['errors'].append("JAR file is empty but analysis completed")
                     result['processing_time'] = time.time() - start_time
+                    result['file_count'] = 0
                     return result
                 
                 # Detect framework
@@ -253,7 +259,7 @@ class JavaAnalyzerAgent:
                     
                     # Extract metadata from AST
                     metadata_from_ast = {}
-                    for source_path in java_sources[:5]:  # Check first 5 files for metadata
+                    for source_path in java_sources[:METADATA_AST_FILE_LIMIT]:  # Check first 5 files for metadata
                         try:
                             source_code = jar.read(source_path).decode('utf-8')
                             tree = self._parse_java_source(source_code)
@@ -273,6 +279,7 @@ class JavaAnalyzerAgent:
                 
                 # Mark as successful
                 result['success'] = True
+                result['file_count'] = len(file_list)
                 
             result['processing_time'] = time.time() - start_time
             logger.info(f"AST analysis completed successfully for {jar_path} in {result['processing_time']:.2f}s")
@@ -629,11 +636,18 @@ class JavaAnalyzerAgent:
                 if isinstance(node, javalang.tree.Annotation):
                     # Check for common mod annotations
                     if node.name in ['Mod', 'ModInstance', 'Instance']:
-                        # Extract parameters from the annotation
-                        if hasattr(node, 'elements') and node.elements:
-                            for element in node.elements:
-                                if hasattr(element, 'name') and hasattr(element, 'value'):
-                                    metadata[element.name] = str(element.value)
+                        # Extract the annotation element
+                        if hasattr(node, 'element') and node.element is not None:
+                            element = node.element
+                            # Handle Literal values correctly by extracting the actual value
+                            if hasattr(element, 'value'):
+                                # For string literals, also strip quotes
+                                if isinstance(element.value, str):
+                                    metadata['value'] = element.value.strip('"')
+                                else:
+                                    metadata['value'] = element.value
+                            else:
+                                metadata['value'] = str(element)
             
             return metadata
         except Exception as e:
@@ -742,7 +756,7 @@ class JavaAnalyzerAgent:
         }
         
         try:
-            for source_path in java_sources[:10]:  # Limit to first 10 files to prevent performance issues
+            for source_path in java_sources[:FEATURE_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
                 try:
                     # Read source file
                     source_code = jar.read(source_path).decode('utf-8')
@@ -791,7 +805,7 @@ class JavaAnalyzerAgent:
         all_dependencies = []
         
         try:
-            for source_path in java_sources[:10]:  # Limit to first 10 files to prevent performance issues
+            for source_path in java_sources[:DEPENDENCY_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
                 try:
                     # Read source file
                     source_code = jar.read(source_path).decode('utf-8')
@@ -1672,7 +1686,7 @@ class JavaAnalyzerAgent:
             # Use our enhanced analyzer for JAR files
             if mod_path.endswith(('.jar', '.zip')):
                 # Get a new instance of the analyzer to avoid state issues
-                analyzer_instance = JavaAnalyzerAgent()
+                analyzer_instance = JavaAnalyzerAgent.get_instance()
                 ast_result = analyzer_instance.analyze_jar_with_ast(mod_path)
                 if ast_result['success']:
                     # Flatten the features from the AST result

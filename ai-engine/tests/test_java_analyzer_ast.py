@@ -84,6 +84,70 @@ public class TestItem extends Item {
         # Cleanup
         os.unlink(jar_file.name)
     
+    @pytest.fixture
+    def jar_without_sources(self):
+        """Create a JAR without Java source files for fallback testing."""
+        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, 'w') as zf:
+                # Add fabric.mod.json
+                fabric_mod = {
+                    "schemaVersion": 1,
+                    "id": "test_mod",
+                    "version": "1.0.0",
+                    "name": "Test Mod"
+                }
+                zf.writestr('fabric.mod.json', json.dumps(fabric_mod))
+                
+                # Add only class files
+                zf.writestr('com/example/testmod/TestBlock.class', b'fake_class_data')
+                zf.writestr('com/example/testmod/TestItem.class', b'fake_class_data')
+                
+            yield jar_file.name
+            
+        # Cleanup
+        os.unlink(jar_file.name)
+    
+    @pytest.fixture
+    def empty_jar(self):
+        """Create an empty JAR file."""
+        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, 'w') as zf:
+                pass  # Create an empty JAR
+            yield jar_file.name
+            
+        # Cleanup
+        os.unlink(jar_file.name)
+    
+    @pytest.fixture
+    def jar_with_invalid_java(self):
+        """Create a JAR with syntactically incorrect Java source."""
+        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, 'w') as zf:
+                # Add fabric.mod.json
+                fabric_mod = {
+                    "schemaVersion": 1,
+                    "id": "test_mod",
+                    "version": "1.0.0",
+                    "name": "Test Mod"
+                }
+                zf.writestr('fabric.mod.json', json.dumps(fabric_mod))
+                
+                # Add invalid Java source
+                invalid_java = """
+public class TestBlock extends Block {
+    public TestBlock() 
+        // Missing opening brace
+        super(Material.STONE);
+    }
+}
+"""
+                zf.writestr('src/main/java/com/example/testmod/TestBlock.java', invalid_java)
+                
+            yield jar_file.name
+            
+        # Cleanup
+        os.unlink(jar_file.name)
+    
     def test_analyze_jar_with_ast_success(self, analyzer, jar_with_java_sources):
         """Test successful AST-based analysis."""
         result = analyzer.analyze_jar_with_ast(jar_with_java_sources)
@@ -94,6 +158,7 @@ public class TestItem extends Item {
         assert len(result["features"]["blocks"]) > 0
         assert len(result["features"]["items"]) > 0
         assert result["processing_time"] > 0
+        assert result["file_count"] > 0
     
     def test_parse_java_source(self, analyzer):
         """Test Java source parsing."""
@@ -199,9 +264,37 @@ public class TestMod {
         tree = analyzer._parse_java_source(java_code)
         metadata = analyzer._extract_mod_metadata_from_ast(tree)
         
-        # This is a simplified test - real annotations would be more complex
-        # We're just verifying the method doesn't crash
-        assert isinstance(metadata, dict)
+        # Verify that the annotation value is correctly extracted
+        # For @Mod("testmod"), the implicit key is 'value'
+        assert metadata.get('value') == 'testmod'
+    
+    def test_jar_without_sources_fallback(self, analyzer, jar_without_sources):
+        """Test fallback to class-based analysis when no Java sources are present."""
+        result_json = analyzer.analyze_mod_file(jar_without_sources)
+        result = json.loads(result_json)  # Parse the JSON string to dict
+        
+        # Should be successful
+        assert "mod_info" in result
+        # Should have detected features from class names
+        assert len(result["features"]["blocks"]) > 0 or len(result["features"]["items"]) > 0
+    
+    def test_empty_jar_handling(self, analyzer, empty_jar):
+        """Test handling of empty JAR files."""
+        result = analyzer.analyze_jar_with_ast(empty_jar)
+        
+        assert result["success"] is True  # Empty JAR is considered successfully analyzed
+        assert result["mod_info"]["name"] == "unknown"
+        assert result["file_count"] == 0
+        assert "JAR file is empty" in result["errors"][0]
+    
+    def test_invalid_java_source_handling(self, analyzer, jar_with_invalid_java):
+        """Test handling of syntactically incorrect Java source."""
+        result = analyzer.analyze_jar_with_ast(jar_with_invalid_java)
+        
+        # Should still be successful even with parsing errors
+        assert result["success"] is True
+        # Should have logged parsing errors
+        # Note: The exact behavior might depend on how we handle parsing errors in the implementation
 
 
 if __name__ == '__main__':
