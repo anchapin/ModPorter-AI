@@ -1,0 +1,39 @@
+{
+  "template_type": "tool",
+  "category": "items",
+  "description": "Tool template with durability, mining speeds, and enchantability",
+  "required_parameters": [
+    "namespace",
+    "item_name",
+    "texture_name"
+  ],
+  "optional_parameters": [
+    "display_name",
+    "menu_category",
+    "max_stack_size",
+    "max_durability",
+    "enchantment_slot",
+    "enchantment_value",
+    "mining_speeds",
+    "use_efficiency",
+    "tool_type",
+    "attack_damage",
+    "has_special_attack",
+    "tool_events"
+  ],
+  "defaults": {
+    "menu_category": "equipment",
+    "max_stack_size": 1,
+    "max_durability": 250,
+    "enchantment_slot": "none",
+    "enchantment_value": 10,
+    "use_efficiency": true,
+    "attack_damage": 4
+  },
+  "validation_rules": [
+    "max_durability must be positive integer",
+    "enchantment_value must be positive integer",
+    "attack_damage must be positive number",
+    "mining_speeds must be object with block types as keys"
+  ]
+}

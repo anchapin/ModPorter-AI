@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",  
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ recipe_name }}"
+    },
+    "tags": ["furnace", "blast_furnace", "smoker"],
+    "input": {
+      "item": "{{ input.item }}",
+      "data": {{ input.data | default(0) }}{% if input.count %},
+      "count": {{ input.count }}{% endif %}
+    },
+    "output": {
+      "item": "{{ output.item }}",
+      "data": {{ output.data | default(0) }},
+      "count": {{ output.count | default(1) }}
+    }{% if cooking_time %},
+    "cooking_time": {{ cooking_time }}{% endif %}{% if experience %},
+    "experience": {{ experience }}{% endif %}{% if unlock_context %},
+    "unlock": [
+      {% for unlock in unlock_context %}{
+        "item": "{{ unlock.item }}",
+        "data": {{ unlock.data | default(0) }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]{% endif %}
+  }
+}

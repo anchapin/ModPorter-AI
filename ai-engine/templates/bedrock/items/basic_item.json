@@ -1,0 +1,26 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ item_name }}",
+      "menu_category": {
+        "category": "{{ menu_category | default('items') }}"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "{{ texture_name | default(item_name) }}"
+      },
+      "minecraft:display_name": {
+        "value": "{{ display_name | default(item_name | title) }}"
+      }{% if max_stack_size %},
+      "minecraft:max_stack_size": {{ max_stack_size }}{% endif %}{% if use_duration %},
+      "minecraft:use_duration": {{ use_duration }}{% endif %}{% if rarity %},
+      "minecraft:rarity": "{{ rarity }}"{% endif %}{% if creative_category %},
+      "minecraft:creative_category": {
+        "parent": "{{ creative_category.parent | default('itemGroup.name.miscellaneous') }}",
+        "category": "{{ creative_category.category | default('items') }}"
+      }{% endif %}
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ block_name }}",
+      "menu_category": {
+        "category": "{{ menu_category | default('construction') }}"
+      }
+    },
+    "components": {
+      "minecraft:destroy_time": {{ destroy_time | default(3.0) }},
+      "minecraft:explosion_resistance": {{ explosion_resistance | default(6.0) }},
+      "minecraft:map_color": "{{ map_color | default('#c67c5c') }}",
+      "minecraft:unit_cube": {},
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "{{ texture_name }}",
+          "render_method": "{{ render_method | default('opaque') }}"
+        }
+      }{% if light_emission %},
+      "minecraft:light_emission": {{ light_emission }}{% endif %}{% if flammable %},
+      "minecraft:flammable": {
+        "catch_chance_modifier": {{ flammable.catch_chance | default(5) }},
+        "destroy_chance_modifier": {{ flammable.destroy_chance | default(20) }}
+      }{% endif %}
+    }
+  }
+}

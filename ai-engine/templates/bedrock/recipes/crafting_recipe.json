@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ recipe_name }}"
+    },
+    "tags": ["crafting_table"],
+    "pattern": [
+      {% for row in pattern %}"{{ row }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    "key": {
+      {% for key, item in recipe_keys.items() %}"{{ key }}": {
+        "item": "{{ item.item }}",
+        "data": {{ item.data | default(0) }}{% if item.count %},
+        "count": {{ item.count }}{% endif %}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    },
+    "result": {
+      "item": "{{ result.item }}",
+      "data": {{ result.data | default(0) }},
+      "count": {{ result.count | default(1) }}
+    }{% if unlock_context %},
+    "unlock": [
+      {% for unlock in unlock_context %}{
+        "item": "{{ unlock.item }}",
+        "data": {{ unlock.data | default(0) }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]{% endif %}
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ block_name }}",
+      "menu_category": {
+        "category": "{{ menu_category | default('equipment') }}"
+      }
+    },
+    "components": {
+      "minecraft:destroy_time": {{ destroy_time | default(3.5) }},
+      "minecraft:explosion_resistance": {{ explosion_resistance | default(7.0) }},
+      "minecraft:map_color": "{{ map_color | default('#4169E1') }}",
+      "minecraft:unit_cube": {},
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "{{ texture_name }}",
+          "render_method": "{{ render_method | default('opaque') }}"
+        }
+      }{% if has_states %},
+      "minecraft:block_state_group": {
+        "states": [
+          {% for state in block_states %}"{{ state }}"{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% endif %}{% if redstone_powered %},
+      "minecraft:redstone_conductivity": {
+        "redstone_conductor": {{ is_redstone_conductor | default(false) | lower }},
+        "allows_wire_to_step_down": {{ allows_wire_step_down | default(true) | lower }}
+      }{% endif %}
+    },
+    "events": {
+      "minecraft:on_interact": {
+        "sequence": [
+          {% if interaction_sound %}{
+            "run_command": {
+              "command": "playsound {{ interaction_sound }} @a ~ ~ ~"
+            }
+          },{% endif %}
+          {
+            "set_block_state": {
+              "{{ primary_state | default('active') }}": "{% raw %}{{ !q.block_state('{{ primary_state | default('active') }}') }}{% endraw %}"
+            }
+          }{% if custom_interaction %},
+          {
+            "run_command": {
+              "command": "{{ custom_command }}"
+            }
+          }{% endif %}
+        ]
+      }{% if has_redstone_events %},
+      "minecraft:on_redstone_on": {
+        "set_block_state": {
+          "powered": true
+        }
+      },
+      "minecraft:on_redstone_off": {
+        "set_block_state": {
+          "powered": false
+        }
+      }{% endif %}
+    }
+  }
+}
