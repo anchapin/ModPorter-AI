@@ -20,7 +20,7 @@ class TestTemplateEngine:
         """Test template engine initializes correctly."""
         assert self.engine is not None
         assert self.engine.templates_dir == self.templates_dir
-        assert self.engine.template_engine is not None
+        assert self.engine.jinja_env is not None
         assert self.engine.selector is not None
     
     def test_basic_block_template_rendering(self):
@@ -134,11 +134,8 @@ class TestTemplateEngine:
         
         # Test invalid context (missing required params)
         invalid_context = {"namespace": "test"}
-        # This might pass if no metadata is loaded, so we check both cases
-        result = template.validate_context(invalid_context)
-        # If metadata is loaded with required params, this should fail
-        # If no metadata, it should pass
-        assert isinstance(result, bool)
+        # With metadata loaded, this should fail
+        assert not template.validate_context(invalid_context)
 
 
 if __name__ == "__main__":

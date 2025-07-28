@@ -21,7 +21,7 @@
       "minecraft:enchantable": {
         "slot": "{{ enchantment_slot | default('none') }}",
         "value": {{ enchantment_value | default(10) }}
-      }{% if mining_speed %},
+      }{% if mining_speeds %},
       "minecraft:digger": {
         "use_efficiency": {{ use_efficiency | default(true) | lower }},
         "destroy_speeds": [

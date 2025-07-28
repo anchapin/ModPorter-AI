@@ -115,8 +115,9 @@ class TemplateType(Enum):
 
 Create the Jinja2 template file in the appropriate category directory:
 
+Create `templates/bedrock/blocks/magic_block.json`:
+
 ```json
-// templates/bedrock/blocks/magic_block.json
 {
   "format_version": "1.20.10",
   "minecraft:block": {
@@ -148,8 +149,9 @@ Create the Jinja2 template file in the appropriate category directory:
 
 Define template requirements and validation:
 
+Create the metadata file `templates/bedrock/blocks/magic_block.meta.json`:
+
 ```json
-// templates/bedrock/blocks/magic_block.meta.json
 {
   "template_type": "magic_block",
   "category": "blocks",

@@ -41,7 +41,7 @@
           "target": "self"
         }
       }{% endif %}
-    }{% if consumption_events %},
+    }{% if potion_effects %},
     "events": {
       "consumed": {
         "sequence": [
