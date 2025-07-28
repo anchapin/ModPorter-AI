@@ -57,6 +57,24 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     console.log('DEBUG: API_BASE_URL =', API_BASE_URL);
   }
 
+  // Centralized API error handling
+  const handleApiError = (error: any): Error => {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return new Error('Unable to connect to the server. Please check if the backend is running.');
+    }
+    return error instanceof Error ? error : new Error(String(error));
+  };
+
+  // Centralized fetch wrapper with error handling
+  const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  };
+
   // File validation
   const validateFile = (file: File): boolean => {
     const validTypes = ['application/java-archive', 'application/zip', 'application/x-zip-compressed'];
@@ -95,76 +113,55 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       console.log('DEBUG: Making upload request to:', uploadUrl);
     }
 
-    try {
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-      });
+    const response = await apiFetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
-        throw new Error(errorData.detail || 'File upload failed');
-      }
-
-      return response.json();
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to the server. Please check if the backend is running.');
-      }
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(errorData.detail || 'File upload failed');
     }
+
+    return response.json();
   };
 
   // Start conversion
   const startConversion = async (fileId: string, filename: string): Promise<ConversionResponse> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/convert`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    const response = await apiFetch(`${API_BASE_URL}/convert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        file_id: fileId,
+        original_filename: filename,
+        options: {
+          smartAssumptions,
+          includeDependencies,
+          ...(modUrl && { modUrl }),
         },
-        body: JSON.stringify({
-          file_id: fileId,
-          original_filename: filename,
-          options: {
-            smartAssumptions,
-            includeDependencies,
-            ...(modUrl && { modUrl }),
-          },
-        }),
-      });
+      }),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
-        throw new Error(errorData.detail || 'Conversion failed');
-      }
-
-      return response.json();
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to the server. Please check if the backend is running.');
-      }
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
+      throw new Error(errorData.detail || 'Conversion failed');
     }
+
+    return response.json();
   };
 
   // Get conversion status
   const getConversionStatus = useCallback(async (jobId: string): Promise<ConversionStatus> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Failed to get status' }));
-        throw new Error(errorData.detail || 'Failed to get status');
-      }
-
-      return response.json();
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to the server during status check.');
-      }
-      throw error;
+    const response = await apiFetch(`${API_BASE_URL}/convert/${jobId}/status`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to get status' }));
+      throw new Error(errorData.detail || 'Failed to get status');
     }
+
+    return response.json();
   }, [API_BASE_URL]);
 
   // Polling for status updates (every 2 seconds as per issue #171)
@@ -317,7 +314,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     if (!currentJobId) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/convert/${currentJobId}/download`);
+      const response = await apiFetch(`${API_BASE_URL}/convert/${currentJobId}/download`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Download failed' }));
@@ -348,11 +345,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err: any) {
-      if (err instanceof TypeError && err.message.includes('fetch')) {
-        setError('Unable to connect to the server for download. Please check if the backend is running.');
-      } else {
-        setError(err.message || 'Failed to download conversion result');
-      }
+      setError(err.message || 'Failed to download conversion result');
     }
   };
 

@@ -86,7 +86,7 @@ A lightweight test backend (`test_backend.py`) provides:
 
 ### Start Test Backend
 ```bash
-cd /home/anchapin/ModPorter-AI
+cd /path/to/ModPorter-AI
 python test_backend.py
 ```
 
