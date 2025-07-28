@@ -230,9 +230,14 @@ class JavaAnalyzerAgent:
                     logger.info(f"MVP analysis completed successfully for {jar_path}")
                     if not texture_path:
                         logger.warning("No texture found, will use default texture")
-                        result['errors'].append("Could not find block texture in JAR, using default")
+                        if 'warnings' not in result:
+                            result['warnings'] = []
+                        result['warnings'].append("Could not find block texture in JAR, using default")
                 else:
                     result['errors'].append("Could not determine block registry name")
+                    # Explicitly set success to False if not already set
+                    if 'success' not in result or not result['success']:
+                        result['success'] = False
                 
                 return result
                 

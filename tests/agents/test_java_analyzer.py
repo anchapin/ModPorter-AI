@@ -104,9 +104,8 @@ class TestJavaAnalyzerAgent(unittest.TestCase):
         # Create the fixture JAR
         jar_path = create_simple_copper_block_jar()
         
-        # Analyze it with the agent
-        report_str = self.agent.analyze_mod_file(str(jar_path))
-        report = json.loads(report_str)
+        # Analyze it with the agent's MVP method
+        report = self.agent.analyze_jar_for_mvp(str(jar_path))
         
         # Get expected result
         expected = get_expected_analysis_result()
