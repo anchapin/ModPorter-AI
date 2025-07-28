@@ -4,6 +4,14 @@ import random
 import time
 from typing import List, Dict, Tuple, Any, Optional
 
+# Integration with comprehensive testing framework
+try:
+    from .comprehensive_testing_framework import ComprehensiveTestingFramework
+    COMPREHENSIVE_TESTING_AVAILABLE = True
+except (ImportError, ValueError):
+    COMPREHENSIVE_TESTING_AVAILABLE = False
+    logging.info("Comprehensive testing framework not available - using basic QA framework only")
+
 logger = logging.getLogger(__name__)
 
 class TestScenarioGenerator:
