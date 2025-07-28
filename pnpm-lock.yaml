@@ -100,7 +100,7 @@ importers:
         specifier: ^0.4.20
         version: 0.4.20(eslint@9.32.0)
       eslint-plugin-storybook:
-        specifier: ^9.0.15
+        specifier: ^9.0.18
         version: 9.0.18(eslint@9.32.0)(storybook@9.0.18(@testing-library/dom@10.4.0)(prettier@3.6.2))(typescript@5.8.3)
       globals:
         specifier: ^16.3.0

@@ -511,7 +511,7 @@ jobs:
 
     - name: Install pnpm
       run: |
-        npm install -g pnpm@9 --registry https://registry.npmjs.org/
+        npm install -g pnpm@9.12.3 --registry https://registry.npmjs.org/
 
     - name: Install dependencies (optimized)
       run: |
