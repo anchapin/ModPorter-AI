@@ -54,17 +54,7 @@ LOG_BACKUP_COUNT=5  # Number of backup files
 ### Setup in Application
 
 ```python
-from src.utils.logging_config import setup_logging
-
-# Basic setup
-setup_logging()
-
-# Advanced setup
-setup_logging(
-    debug_mode=True,
-    enable_file_logging=True,
-    log_level="DEBUG"
-)
+from utils.logging_config import setup_logging
 ```
 
 ## Usage
@@ -72,7 +62,7 @@ setup_logging(
 ### Agent Logging
 
 ```python
-from src.utils.logging_config import get_agent_logger, log_performance
+from utils.logging_config import get_agent_logger, log_performance
 
 class MyAgent:
     def __init__(self):
@@ -109,7 +99,7 @@ class MyAgent:
 ### Performance Logging
 
 ```python
-from src.utils.logging_config import log_performance
+from utils.logging_config import log_performance
 
 class MyAgent:
     def __init__(self):
@@ -125,7 +115,7 @@ class MyAgent:
 ### Crew Logging
 
 ```python
-from src.utils.logging_config import get_crew_logger
+from utils.logging_config import get_crew_logger
 
 class MyConversionCrew:
     def __init__(self):
@@ -178,7 +168,7 @@ class MyConversionCrew:
 
 ### File Structure
 ```
-ai-engine/src/utils/
+ai-engine/utils/
 ├── logging_config.py          # Main logging configuration
 └── __init__.py               # Package initialization
 ```
@@ -231,7 +221,7 @@ python test_logging_simple.py
 
 # Test in Docker environment
 docker compose exec ai-engine python -c "
-from src.utils.logging_config import setup_logging, get_agent_logger
+from utils.logging_config import setup_logging, get_agent_logger
 setup_logging(debug_mode=True)
 logger = get_agent_logger('test')
 logger.info('Test successful')
@@ -282,10 +272,10 @@ pytest tests/test_crew_logging.py
 ### Debug Commands
 ```bash
 # Check logging configuration
-python -c "from src.utils.logging_config import setup_logging; setup_logging(debug_mode=True)"
+python -c "from utils.logging_config import setup_logging; setup_logging(debug_mode=True)"
 
 # Test agent logger
-python -c "from src.utils.logging_config import get_agent_logger; logger = get_agent_logger('test'); logger.info('Test')"
+python -c "from utils.logging_config import get_agent_logger; logger = get_agent_logger('test'); logger.info('Test')"
 
 # Verify log files
 ls -la /tmp/modporter-ai/logs/

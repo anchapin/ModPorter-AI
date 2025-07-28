@@ -5,7 +5,7 @@ import os
 from typing import List # Required for type hinting List[ScraperDocument]
 
 # Use lightweight chunker for document chunking
-from src.utils.chunker import Chunker
+from utils.chunker import Chunker
 
 # Adjust import paths based on the actual location relative to ai-engine/src/
 # Assuming 'from src.utils...' if running from parent directory of src,
@@ -14,8 +14,8 @@ from src.utils.chunker import Chunker
 # Let's try relative imports assuming it's run as a module for now,
 # e.g., python -m src.scripts.populate_kb
 try:
-    from src.utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
-    from src.utils.vector_db_client import VectorDBClient
+    from utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
+    from utils.vector_db_client import VectorDBClient
 except ImportError:
     # Fallback for running script directly for development, assuming PYTHONPATH is set or script is in a location
     # where src is discoverable. This might need adjustment based on execution environment.
@@ -25,8 +25,8 @@ except ImportError:
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
-    from src.utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
-    from src.utils.vector_db_client import VectorDBClient
+    from utils.bedrock_docs_scraper import BedrockDocsScraper, Document as ScraperDocument
+    from utils.vector_db_client import VectorDBClient
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

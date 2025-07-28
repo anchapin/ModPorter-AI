@@ -16,7 +16,7 @@ import logging
 from jinja2 import Environment, FileSystemLoader, Template
 from crewai.tools import tool
 
-from src.models.smart_assumptions import SmartAssumptionEngine
+from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
 

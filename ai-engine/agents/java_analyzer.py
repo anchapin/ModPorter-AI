@@ -7,11 +7,11 @@ import json
 import re
 from typing import List, Dict, Union
 from crewai.tools import tool
-from src.models.smart_assumptions import (
+from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from src.utils.embedding_generator import EmbeddingGenerator # Added import
-from src.utils.logging_config import get_agent_logger, log_performance
+from utils.embedding_generator import EmbeddingGenerator
+from utils.logging_config import get_agent_logger, log_performance
 import os
 import zipfile
 from pathlib import Path
@@ -224,15 +224,15 @@ class JavaAnalyzerAgent:
                     result['registry_name'] = registry_name
                     logger.info(f"Found registry name: {registry_name}")
                 
-                # Check if we have both texture and registry name for success
-                if texture_path and registry_name:
+                # For MVP, we need at least a registry name for success
+                if registry_name and registry_name != 'unknown:block':
                     result['success'] = True
                     logger.info(f"MVP analysis completed successfully for {jar_path}")
-                else:
                     if not texture_path:
-                        result['errors'].append("Could not find block texture in JAR")
-                    if not registry_name or registry_name == 'unknown:block':
-                        result['errors'].append("Could not determine block registry name")
+                        logger.warning("No texture found, will use default texture")
+                        result['errors'].append("Could not find block texture in JAR, using default")
+                else:
+                    result['errors'].append("Could not determine block registry name")
                 
                 return result
                 

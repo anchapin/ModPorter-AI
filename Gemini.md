@@ -1,64 +1,87 @@
 # Project Overview
 
-This project, "ModPorter-AI", is a multi-component application designed for AI-driven tasks, likely related to code conversion or analysis, given the "ai-engine" and "backend" components. It includes a React-based frontend, a Python backend, and a separate Python AI engine, all containerized with Docker.
-
-## Key Technologies
-
-*   **Frontend:** React, TypeScript, Vite, pnpm, ESLint, Prettier, Storybook.
-*   **Backend:** Python, FastAPI, SQLAlchemy, Alembic.
-*   **AI Engine:** Python (likely with various AI/ML libraries).
-*   **Database:** SQL (e.g., PostgreSQL).
-*   **Containerization:** Docker, Docker Compose.
-*   **Testing:** Pytest.
-*   **Linting/Formatting:** Ruff (Python), ESLint, Prettier (Frontend).
-*   **CI/CD:** GitHub Actions.
+This project is a full-stack web application with a React frontend, a Python backend, and a machine learning component.
 
 ## Project Structure
 
-*   `.github/workflows/`: GitHub Actions for CI/CD.
-*   `ai-engine/`: Contains the Python-based AI processing logic.
-*   `backend/`: Houses the Python FastAPI application, database interactions, and business logic.
-*   `frontend/`: The React/TypeScript web application.
-*   `database/`: SQL schema definitions.
-*   `docs/`: Project documentation.
-*   `tests/`: Integration and unit tests for various components.
-*   `docker compose*.yml`: Docker Compose configurations for development and production environments.
+The project is organized into the following directories:
 
-## How to Interact with the Project
+-   `.github/`: Contains GitHub Actions workflows for CI/CD.
+-   `ai-engine/`: Contains the Python-based AI processing logic.
+-   `backend/`: Contains the Python FastAPI backend application.
+-   `database/`: Contains database schema definitions and migration scripts.
+-   `docs/`: Contains project documentation.
+-   `frontend/`: Contains the React frontend application.
+-   `tests/`: Contains integration and end-to-end tests.
 
-### General Commands
+## Getting Started
 
-*   **List files:** `ls -F` or `find . -maxdepth 2`
-*   **Read file content:** `cat <file_path>` or `read_file <file_path>`
-*   **Search file content:** `grep -r "pattern" .` or `search_file_content "pattern"`
+1.  **Prerequisites:**
+    *   Docker
+    *   Node.js (for frontend development)
+    *   Python (for backend and AI development)
 
-### Docker Compose
+2.  **Installation:**
+    *   Clone the repository: `git clone https://github.com/your-username/your-repo.git`
+    *   Navigate to the project directory: `cd your-repo`
+    *   Install frontend dependencies: `cd frontend && pnpm install`
+    *   Install backend dependencies: `cd ../backend && pip install -r requirements.txt`
 
-The project uses Docker Compose for managing its services. You can use the following commands:
+3.  **Running the Application:**
+    *   Start the application with Docker Compose: `docker compose up --build`
+    *   The frontend will be available at `http://localhost:5173`
+    *   The backend will be available at `http://localhost:8000`
 
-*   **Build and start services (development):** `docker compose -f docker compose.dev.yml up --build`
-*   **Build and start services (production):** `docker compose -f docker compose.prod.yml up --build`
-*   **Stop services:** `docker compose down`
-*   **View logs:** `docker compose logs -f <service_name>`
+## Contribution Guidelines
 
-### Testing
+To ensure code quality and consistency, please follow these guidelines when contributing to the project.
 
-*   **Run all Python tests:** `pytest` (from the project root or within `ai-engine/` or `backend/`)
-*   **Run specific Python tests:** `pytest <path_to_test_file>`
-*   **Run frontend tests:** Refer to `frontend/package.json` for specific test commands (e.g., `pnpm test`).
+### Running Tests
 
-### Linting/Formatting
+Before submitting a pull request, please run the following tests to ensure that your changes do not break existing functionality.
 
-*   **Python (Ruff):** `ruff check .` (from project root or component directories)
-*   **Frontend (ESLint/Prettier):** Refer to `frontend/package.json` for specific commands (e.g., `pnpm lint`, `pnpm format`).
+*   **Frontend Tests:**
+    ```bash
+    cd frontend
+    pnpm test
+    ```
 
-### Building
+*   **Backend and AI Tests:**
+    ```bash
+    pytest
+    ```
 
-*   **Frontend:** `pnpm install` then `pnpm build` in `frontend/` directory.
-*   **Docker Images:** `docker compose build` or `docker build` within specific component directories (`ai-engine/`, `backend/`, `frontend/`).
+### Linting
 
-## Important Notes
+Please ensure that your code adheres to the project's linting rules.
 
-*   Always refer to the specific `Dockerfile` and `requirements.txt`/`package.json` files within each component directory for precise dependency and build information.
-*   Database migrations are handled via Alembic in the `backend/`.
-*   The `.env.example` files provide templates for environment variables.
+*   **Frontend Linting:**
+    ```bash
+    cd frontend
+    pnpm lint
+    ```
+
+*   **Backend and AI Linting:**
+    ```bash
+    ruff check .
+    ```
+
+### Code Formatting
+
+This project uses Prettier for code formatting. Please format your code before submitting a pull request.
+
+```bash
+pnpm format
+```
+
+This will format all files in the project according to the Prettier configuration.
+
+### Coding Style Guide
+
+*   **Variable Naming:**
+    *   Use `snake_case` for all variable names in Python files.
+    *   Use `camelCase` for all variable names in TypeScript/JavaScript files.
+*   **Functions:**
+    *   All new functions must include a JSDoc comment block explaining their purpose, parameters, and return value.
+*   **React Components:**
+    *   Use functional components with Hooks for all new React components.

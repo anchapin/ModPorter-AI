@@ -121,7 +121,5 @@ Repository = "https://github.com/your-org/ai-engine"
 Issues = "https://github.com/your-org/ai-engine/issues"
 
 [tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.setuptools.package-dir]
-"" = "src"

@@ -20,10 +20,11 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg15
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: modporter_test
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d modporter_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -86,6 +87,25 @@ jobs:
         cd frontend
         pnpm install --frozen-lockfile
 
+    # Install system dependencies for health checks
+    - name: Install system dependencies
+      run: |
+        echo "🔧 Installing system dependencies..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq netcat-traditional netcat-openbsd curl
+
+    - name: Wait for services to be ready
+      run: |
+        echo "🔍 Checking service connectivity..."
+        
+        echo "Testing Redis connectivity..."
+        timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
+        echo "✅ Redis is ready"
+        
+        echo "Testing PostgreSQL connectivity..."
+        timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'
+        echo "✅ PostgreSQL is ready"
+
     - name: Run backend tests
       env:
         DATABASE_URL: postgresql://postgres:test_password@localhost:5432/modporter_test
@@ -103,7 +123,7 @@ jobs:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       run: |
         cd ai-engine
-        python -m pytest tests/ -v --cov=src --cov-report=xml
+        python -m pytest tests/ -v --cov=. --cov-report=xml
 
     - name: Run frontend tests
       run: |
@@ -156,7 +176,7 @@ jobs:
 
     - name: Run Bandit security linter (AI Engine)
       run: |
-        bandit -r ai-engine/src/ -f json -o bandit-ai.json || true
+        bandit -r ai-engine/ -f json -o bandit-ai.json || true
 
   build:
     needs: [test, security]

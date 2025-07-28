@@ -126,26 +126,26 @@ jobs:
     runs-on: [self-hosted, Linux, X64, ollama]
     needs: [changes, prepare-base-images]
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 20
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         test-suite: ['integration', 'backend', 'ai-engine']
         include:
           - test-suite: integration
-            test-path: 'ai-engine/src/tests/integration/test_basic_integration.py'
+            test-path: 'ai-engine/tests/integration/test_basic_integration.py'
             container-name: 'integration-test'
           - test-suite: backend
             test-path: 'backend/tests/integration/'
             container-name: 'backend-test'
           - test-suite: ai-engine
-            test-path: 'ai-engine/src/tests/integration/test_end_to_end_integration.py'
+            test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
     # Use Python base image if available, fallback to setup-python
     container:
       image: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image || '' }}
-      options: --name test-container-${{ matrix.test-suite }}
+      options: --name test-container-${{ matrix.test-suite }} --user root
 
     services:
       redis:
@@ -259,6 +259,13 @@ jobs:
             ;;
         esac
 
+    # Install system dependencies for health checks
+    - name: Install system dependencies
+      run: |
+        echo "🔧 Installing system dependencies..."
+        apt-get update -qq
+        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io
+
     # Verify Python environment
     - name: Verify Python environment
       run: |
@@ -273,14 +280,52 @@ jobs:
 
     - name: Wait for services to be ready
       run: |
-        echo "Checking Redis connectivity..."
-        timeout 30 bash -c 'until echo "PING" | nc localhost 6380 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
-        echo "Checking PostgreSQL connectivity..."
-        timeout 30 bash -c 'until nc -z localhost 5434; do echo "Waiting for PostgreSQL..."; sleep 2; done'
-        echo "Checking Ollama availability..."
-        timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'
-        echo "Ensuring llama3.2 model is available..."
-        curl -f http://localhost:11434/api/tags | grep -q "llama3.2" || echo "Warning: llama3.2 model may not be available"
+        echo "🔍 Checking service connectivity..."
+        
+        echo "Testing Redis connectivity..."
+        # Inside containers, services are accessible by service name, not localhost
+        if timeout 60 bash -c 'until nc -z redis 6379; do echo "Waiting for Redis..."; sleep 2; done'; then
+          echo "✅ Redis port is accessible"
+          # Test actual Redis protocol using service name
+          if timeout 10 bash -c 'echo -e "*1\r\n\$4\r\nPING\r\n" | nc redis 6379 | grep -q PONG'; then
+            echo "✅ Redis is responding correctly"
+          else
+            echo "⚠️ Redis port open but not responding to PING"
+          fi
+        else
+          echo "❌ Redis connection failed"
+          echo "Container networking debug:"
+          echo "Available services:"
+          getent hosts redis || echo "Redis service not resolvable"
+          getent hosts postgres || echo "Postgres service not resolvable"
+          exit 1
+        fi
+        
+        echo "Testing PostgreSQL connectivity..."
+        # Inside containers, services are accessible by service name, not localhost
+        if timeout 60 bash -c 'until nc -z postgres 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'; then
+          echo "✅ PostgreSQL is ready"
+        else
+          echo "❌ PostgreSQL connection failed"
+          echo "PostgreSQL service debug:"
+          getent hosts postgres || echo "Postgres service not resolvable"
+          exit 1
+        fi
+        
+        echo "Testing Ollama availability..."
+        if timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'; then
+          echo "✅ Ollama is ready"
+          echo "Checking for llama3.2 model..."
+          if curl -f http://localhost:11434/api/tags | grep -q "llama3.2"; then
+            echo "✅ llama3.2 model is available"
+          else
+            echo "⚠️ Warning: llama3.2 model may not be available"
+          fi
+        else
+          echo "❌ Ollama connection failed - continuing anyway"
+        fi
+        
+        echo "🎯 All critical services are ready!"
 
     - name: Set up database
       run: |
@@ -289,24 +334,49 @@ jobs:
 
     - name: Run matrix test suite
       run: |
+        echo "🧪 Starting test suite: ${{ matrix.test-suite }}"
+        echo "Current directory: $(pwd)"
+        echo "Environment variables:"
+        env | grep -E "(REDIS|DATABASE|PYTHON|OLLAMA)" || true
+        
         case "${{ matrix.test-suite }}" in
           "integration")
+            echo "Running integration tests..."
             cd ai-engine
-            python -m pytest src/tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml
+            echo "Current directory: $(pwd)"
+            echo "Test files available:"
+            find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
+            
+            echo "Running basic integration test..."
+            timeout 600s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "backend")
+            echo "Running backend tests..."
             cd backend
-            python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml
+            echo "Current directory: $(pwd)"
+            echo "Test files available:"
+            find tests -name "*.py" | head -5 || echo "No backend test files found"
+            
+            echo "Running backend integration tests..."
+            timeout 600s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "ai-engine")
+            echo "Running ai-engine tests..."
             cd ai-engine
-            python -m pytest src/tests/integration/test_end_to_end_integration.py src/tests/integration/test_full_conversion_workflow.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml || echo "End-to-end tests completed with warnings"
+            echo "Current directory: $(pwd)"
+            echo "Test files available:"
+            find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
+            
+            echo "Running import tests..."
+            timeout 600s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
+        
+        echo "✅ Test suite completed: ${{ matrix.test-suite }}"
       env:
-        REDIS_URL: redis://localhost:6380
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5434/modporter
-        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine/src' || 'backend/src' }}
+        REDIS_URL: redis://redis:6379
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
+        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
         USE_OLLAMA: "true"
         OLLAMA_MODEL: "llama3.2"

@@ -4,7 +4,7 @@ import os
 import time
 import random
 
-from src.models.validation import (
+from models.validation import (
     ManifestValidationResult,
     SemanticAnalysisResult,
     BehaviorPredictionResult,

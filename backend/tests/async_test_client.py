@@ -5,12 +5,17 @@ This solves the common issue where FastAPI's TestClient runs synchronously
 but async database operations need an async context.
 """
 import asyncio
+import logging
 from typing import Any, Dict, Optional
 import httpx
 import pytest
+import pytest_asyncio
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class AsyncTestClient:
@@ -66,7 +71,7 @@ class AsyncTestClient:
         return await self._client.delete(url, **kwargs)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def async_test_db():
     """
     Create an async test database session.
@@ -84,26 +89,41 @@ async def async_test_db():
         connect_args={"check_same_thread": False},
     )
     
-    # Import and create tables
+    # Create a simple test table instead of importing complex models
+    # This avoids PostgreSQL-specific types like JSONB that don't work with SQLite
+    from sqlalchemy import MetaData, Table, Column, Integer, String, Text
+    metadata = MetaData()
+    
+    # Create a simple test table for testing
+    test_table = Table(
+        'test_items',
+        metadata,
+        Column('id', Integer, primary_key=True),
+        Column('name', String(100)),
+        Column('data', Text)  # Use Text instead of JSONB for SQLite compatibility
+    )
+    
     try:
-        from src.database.models import Base
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    except ImportError:
-        # Models might not exist yet, that's ok for basic tests
+            await conn.run_sync(metadata.create_all)
+    except Exception as e:
+        # If table creation fails, that's ok for basic tests
+        logger.warning(f"Failed to create test tables: {e}")
         pass
     
-    # Create session
-    from sqlalchemy.ext.asyncio import async_sessionmaker
+    # Create and return session directly
+    from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
     async_session = async_sessionmaker(engine, expire_on_commit=False)
     
-    async with async_session() as session:
+    session: AsyncSession = async_session()
+    try:
         yield session
-    
-    await engine.dispose()
+    finally:
+        await session.close()
+        await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_client():
     """
     Create an async test client with proper database setup.
@@ -111,7 +131,20 @@ async def async_client():
     This fixture provides the recommended way to test FastAPI apps with async databases.
     """
     try:
-        from src.main import app
+        # Try multiple import paths
+        try:
+            from src.main import app
+        except ImportError:
+            try:
+                from main import app
+            except ImportError:
+                # Try relative import from backend directory
+                import sys
+                import os
+                backend_path = os.path.join(os.path.dirname(__file__), '..')
+                if backend_path not in sys.path:
+                    sys.path.insert(0, backend_path)
+                from main import app
         
         async with AsyncTestClient(app) as client:
             yield client
@@ -120,7 +153,7 @@ async def async_client():
 
 
 # Alternative approach using pytest-asyncio and httpx directly
-@pytest.fixture
+@pytest_asyncio.fixture
 async def httpx_client():
     """
     Alternative async client using httpx directly.
@@ -128,7 +161,21 @@ async def httpx_client():
     This is useful when you need more control over the HTTP client configuration.
     """
     try:
-        from main import app
+        # Try multiple import paths
+        try:
+            from src.main import app
+        except ImportError:
+            try:
+                from main import app
+            except ImportError:
+                # Try relative import from backend directory
+                import sys
+                import os
+                backend_path = os.path.join(os.path.dirname(__file__), '..')
+                if backend_path not in sys.path:
+                    sys.path.insert(0, backend_path)
+                from main import app
+        
         from httpx import ASGITransport
         
         transport = ASGITransport(app=app)

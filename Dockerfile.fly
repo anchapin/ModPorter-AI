@@ -38,7 +38,7 @@ RUN apk add --no-cache python3 py3-pip curl postgresql-client redis \
     && ln -sf python3 /usr/bin/python
 
 # Copy Python packages from consolidated builder
-COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy application code

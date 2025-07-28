@@ -10,11 +10,14 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-# Add the parent directory to the path so we can import from src
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Add the ai-engine and root directories to the path
+ai_engine_root = Path(__file__).parent.parent.parent
+project_root = ai_engine_root.parent
+sys.path.insert(0, str(ai_engine_root))
+sys.path.insert(0, str(project_root))
 
-from src.cli.main import convert_mod
-from src.tests.fixtures.test_jar_generator import create_test_mod_suite
+from cli.main import convert_mod
+from tests.fixtures.test_jar_generator import create_test_mod_suite
 
 
 class ComprehensiveIntegrationTests(unittest.TestCase):
@@ -62,7 +65,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
             conversion_results[mod_name] = {
                 'success': result['success'],
                 'processing_time': processing_time,
-                'input_size': mod_path.stat().st_size,
+                'input_size': Path(mod_path).stat().st_size,
                 'output_size': result.get('file_size', 0),
                 'error': result.get('error', None)
             }
@@ -101,7 +104,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         print("\\n🔄 Testing Pipeline Consistency...")
         
         # Pick a representative mod
-        test_mod_name = "simple_fabric"
+        test_mod_name = "simple_blocks"
         test_mod_path = self.test_mods[test_mod_name]
         
         # Run conversion multiple times
@@ -193,7 +196,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         print("\\n✅ Testing Output Validation...")
         
         # Test with a complex mod
-        test_mod_name = "complex_fabric"
+        test_mod_name = "complex_mod"
         test_mod_path = self.test_mods[test_mod_name]
         
         output_dir = self.temp_path / "validation_output"
@@ -291,9 +294,9 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
                 namelist = zf.namelist()
                 validation['file_count'] = len(namelist)
                 
-                # Check for pack structures
-                validation['has_behavior_pack'] = any(name.startswith("behavior_pack/") for name in namelist)
-                validation['has_resource_pack'] = any(name.startswith("resource_pack/") for name in namelist)
+                # Check for pack structures (Bedrock uses plural forms)
+                validation['has_behavior_pack'] = any(name.startswith("behavior_packs/") for name in namelist)
+                validation['has_resource_pack'] = any(name.startswith("resource_packs/") for name in namelist)
                 
                 # Count and validate manifests
                 manifest_files = [name for name in namelist if "manifest.json" in name]
