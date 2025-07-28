@@ -116,9 +116,10 @@ class TestAssetConverterAgent:
             "block"
         )
         
-        # Verify the result
-        assert result["success"] is False
-        assert "not found" in result["error"]
+        # Verify the result now includes fallback generation
+        assert result["success"] is True
+        assert result["was_fallback"] is True
+        assert "Generated fallback texture" in result["optimizations_applied"]
         
     def test_generate_texture_pack_structure(self):
         """Test generation of texture pack structure files"""
@@ -228,3 +229,73 @@ class TestAssetConverterAgent:
         
         assert result["needs_conversion"] is False
         assert len(result["issues"]) == 0
+        
+    def test_generate_fallback_texture(self):
+        """Test fallback texture generation"""
+        # Test generating a fallback texture for a block
+        fallback_img = self.agent._generate_fallback_texture("block", (16, 16))
+        assert fallback_img.size == (16, 16)
+        assert fallback_img.mode == "RGBA"
+        
+        # Test generating a fallback texture for an item
+        fallback_img = self.agent._generate_fallback_texture("item", (32, 32))
+        assert fallback_img.size == (32, 32)
+        assert fallback_img.mode == "RGBA"
+        
+    def test_texture_conversion_with_fallback(self):
+        """Test texture conversion with fallback generation for missing files"""
+        # Try to convert a non-existent file (should generate fallback)
+        result = self.agent._convert_single_texture(
+            "/non/existent/file.png", 
+            {"width": 16, "height": 16}, 
+            "block"
+        )
+        
+        # Verify the result includes fallback generation
+        assert result["success"] is True
+        assert result["was_fallback"] is True
+        assert "Generated fallback texture" in result["optimizations_applied"]
+        
+    def test_caching(self):
+        """Test caching functionality"""
+        # Create a test image
+        img_path = self.create_test_image("test_texture.png", (32, 32))
+        
+        # Convert the texture twice
+        result1 = self.agent._convert_single_texture(
+            img_path, 
+            {"width": 32, "height": 32}, 
+            "block"
+        )
+        
+        result2 = self.agent._convert_single_texture(
+            img_path, 
+            {"width": 32, "height": 32}, 
+            "block"
+        )
+        
+        # Verify both results are successful
+        assert result1["success"] is True
+        assert result2["success"] is True
+        
+    def test_enhanced_path_mapping(self):
+        """Test enhanced asset path mapping"""
+        # Test block texture path mapping
+        img_path = self.create_test_image("stone.png", (16, 16))
+        result = self.agent._convert_single_texture(
+            img_path,
+            {"width": 16, "height": 16}, 
+            "block"
+        )
+        assert result["success"] is True
+        assert result["converted_path"] == "textures/blocks/stone.png"
+        
+        # Test item texture path mapping
+        img_path = self.create_test_image("diamond_sword.png", (16, 16))
+        result = self.agent._convert_single_texture(
+            img_path,
+            {"width": 16, "height": 16}, 
+            "item"
+        )
+        assert result["success"] is True
+        assert result["converted_path"] == "textures/items/diamond_sword.png"
