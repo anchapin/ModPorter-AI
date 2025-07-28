@@ -319,20 +319,27 @@ class ModPorterConversionCrew:
         )
         
         self.package_task = Task(
-            description="""Assemble all converted components into a valid .mcaddon:
-            1. From the analysis report (context from analyze_task), extract the original mod name, description, and version.
-            2. Create a temporary directory within /app/conversion_outputs to serve as the intermediate build directory. This temporary directory path is available as `inputs['temp_dir']`.
-            3. Use 'create_package_structure_tool' to create the necessary directory structure within this temporary directory. Pass `inputs['temp_dir']` as 'output_dir' and the extracted mod name as 'mod_name'. Store the 'behavior_pack_path' and 'resource_pack_path' returned by this tool.
-            4. Generate manifest files for both behavior and resource packs using the 'generate_manifests_tool'. Use the extracted mod name, description, and version. Ensure the manifests are written to BEHAVIOR_PACK_DIR/manifest.json and RESOURCE_PACK_DIR/manifest.json respectively.
-            5. Organize converted assets and translated logic into BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR. This step is implicit and assumed to be handled by prior asset conversion and logic translation.
-            6. Validate the package structure and contents within BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR using 'validate_package_tool'.
-            7. Create the final .mcaddon package using 'build_mcaddon_tool'. Provide the `output_path` (from initial inputs), and the paths to the BEHAVIOR_PACK_DIR and RESOURCE_PACK_DIR within the temporary directory (from step 3) as `source_directories` to this tool.
-            8. Generate installation instructions for users.
+            description="""Assemble all converted components into a valid .mcaddon using the enhanced Bedrock generation system:
             
-            Ensure the package meets all Bedrock add-on standards and is ready for distribution.
-            Use the packaging_agent tools for reliable packaging.""",
+            ENHANCED BEDROCK GENERATION WORKFLOW:
+            1. Extract mod metadata (name, description, version) from the analysis report.
+            2. Use 'generate_enhanced_manifests_tool' to create standards-compliant behavior and resource pack manifests with proper UUIDs, dependencies, and capabilities.
+            3. Use 'generate_blocks_and_items_tool' to convert Java blocks, items, and recipes to Bedrock format with proper components and creative menu integration.
+            4. Use 'generate_entities_tool' to convert Java entities to Bedrock format with behaviors, animations, and proper AI goals.
+            5. Create package structure and organize all components into proper Bedrock directory hierarchy.
+            6. Use 'package_enhanced_addon_tool' to create the final .mcaddon file with correct structure (behavior_packs/ and resource_packs/ directories).
+            7. Use 'validate_enhanced_addon_tool' to perform comprehensive validation including manifest schema validation, file structure checks, and compatibility analysis.
+            8. Generate detailed installation and usage instructions.
+            
+            The enhanced system provides:
+            - Standards-compliant manifest generation with proper UUIDs and dependencies
+            - Automatic block/item/entity conversion with Bedrock components
+            - Comprehensive validation with detailed scoring and feedback
+            - Proper .mcaddon file structure for Bedrock compatibility
+            
+            Return comprehensive results including validation scores, compatibility analysis, and any issues found.""",
             agent=self.packaging_agent,
-            expected_output="Complete .mcaddon package ready for installation with validation reports",
+            expected_output="Complete .mcaddon package with validation score, compatibility analysis, and detailed generation report",
             context=[self.analyze_task, self.plan_task, self.translate_task, self.convert_assets_task]
         )
         

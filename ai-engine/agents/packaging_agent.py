@@ -15,6 +15,11 @@ from crewai.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine
 )
+from agents.bedrock_manifest_generator import BedrockManifestGenerator
+from agents.block_item_generator import BlockItemGenerator
+from agents.entity_converter import EntityConverter
+from agents.file_packager import FilePackager
+from agents.addon_validator import AddonValidator
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,13 @@ class PackagingAgent:
     
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
+        
+        # Initialize enhanced Bedrock generation components
+        self.manifest_generator = BedrockManifestGenerator()
+        self.block_item_generator = BlockItemGenerator()
+        self.entity_converter = EntityConverter()
+        self.file_packager = FilePackager()
+        self.addon_validator = AddonValidator()
         
         # Bedrock package structure templates
         self.manifest_template = {
@@ -104,7 +116,13 @@ class PackagingAgent:
             PackagingAgent.create_package_structure_tool,
             PackagingAgent.generate_manifests_tool,
             PackagingAgent.validate_package_tool,
-            PackagingAgent.build_mcaddon_tool
+            PackagingAgent.build_mcaddon_tool,
+            # Enhanced Bedrock generation tools
+            PackagingAgent.generate_enhanced_manifests_tool,
+            PackagingAgent.generate_blocks_and_items_tool,
+            PackagingAgent.generate_entities_tool,
+            PackagingAgent.package_enhanced_addon_tool,
+            PackagingAgent.validate_enhanced_addon_tool
         ]
     
     def generate_manifest(self, mod_info: str, pack_type: str) -> str:
@@ -644,3 +662,166 @@ class PackagingAgent:
         """Build the final mcaddon package."""
         agent = PackagingAgent.get_instance()
         return agent.build_mcaddon(build_data)
+    
+    # Enhanced Bedrock Generation Tools
+    
+    @tool
+    @staticmethod
+    def generate_enhanced_manifests_tool(mod_data: str) -> str:
+        """Generate enhanced Bedrock manifests using the new manifest generator."""
+        try:
+            agent = PackagingAgent.get_instance()
+            
+            # Parse input data
+            if isinstance(mod_data, str):
+                data = json.loads(mod_data)
+            else:
+                data = mod_data
+            
+            # Use enhanced manifest generator
+            bp_manifest, rp_manifest = agent.manifest_generator.generate_manifests(data)
+            
+            result = {
+                "success": True,
+                "behavior_pack_manifest": bp_manifest,
+                "resource_pack_manifest": rp_manifest,
+                "message": "Enhanced manifests generated successfully"
+            }
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Enhanced manifest generation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+    
+    @tool
+    @staticmethod
+    def generate_blocks_and_items_tool(conversion_data: str) -> str:
+        """Generate Bedrock blocks and items from Java conversion data."""
+        try:
+            agent = PackagingAgent.get_instance()
+            
+            # Parse input data
+            if isinstance(conversion_data, str):
+                data = json.loads(conversion_data)
+            else:
+                data = conversion_data
+            
+            # Extract blocks, items, and recipes
+            java_blocks = data.get('blocks', [])
+            java_items = data.get('items', [])
+            java_recipes = data.get('recipes', [])
+            
+            # Generate Bedrock definitions
+            bedrock_blocks = agent.block_item_generator.generate_blocks(java_blocks)
+            bedrock_items = agent.block_item_generator.generate_items(java_items)
+            bedrock_recipes = agent.block_item_generator.generate_recipes(java_recipes)
+            
+            result = {
+                "success": True,
+                "blocks": bedrock_blocks,
+                "items": bedrock_items,
+                "recipes": bedrock_recipes,
+                "stats": {
+                    "blocks_generated": len(bedrock_blocks),
+                    "items_generated": len(bedrock_items),
+                    "recipes_generated": len(bedrock_recipes)
+                },
+                "message": "Blocks, items, and recipes generated successfully"
+            }
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Block/item generation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+    
+    @tool
+    @staticmethod
+    def generate_entities_tool(entity_data: str) -> str:
+        """Generate Bedrock entities from Java entity data."""
+        try:
+            agent = PackagingAgent.get_instance()
+            
+            # Parse input data
+            if isinstance(entity_data, str):
+                data = json.loads(entity_data)
+            else:
+                data = entity_data
+            
+            # Extract entities
+            java_entities = data.get('entities', [])
+            
+            # Generate Bedrock entities
+            bedrock_entities = agent.entity_converter.convert_entities(java_entities)
+            
+            result = {
+                "success": True,
+                "entities": bedrock_entities,
+                "stats": {
+                    "entities_generated": len(bedrock_entities)
+                },
+                "message": "Entities generated successfully"
+            }
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Entity generation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+    
+    @tool
+    @staticmethod
+    def package_enhanced_addon_tool(package_data: str) -> str:
+        """Package addon using the enhanced file packager."""
+        try:
+            agent = PackagingAgent.get_instance()
+            
+            # Parse input data
+            if isinstance(package_data, str):
+                data = json.loads(package_data)
+            else:
+                data = package_data
+            
+            # Use enhanced file packager
+            result = agent.file_packager.package_addon(data)
+            
+            if result['success']:
+                logger.info(f"Enhanced packaging successful: {result['output_path']}")
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Enhanced packaging error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+    
+    @tool
+    @staticmethod
+    def validate_enhanced_addon_tool(addon_path: str) -> str:
+        """Validate addon using the enhanced validator."""
+        try:
+            agent = PackagingAgent.get_instance()
+            
+            # Use enhanced addon validator
+            validation_result = agent.addon_validator.validate_addon(Path(addon_path))
+            
+            # Convert Path objects to strings for JSON serialization
+            def convert_paths(obj):
+                if isinstance(obj, Path):
+                    return str(obj)
+                elif isinstance(obj, dict):
+                    return {k: convert_paths(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_paths(item) for item in obj]
+                return obj
+            
+            result = convert_paths(validation_result)
+            result["addon_path"] = addon_path
+            
+            logger.info(f"Enhanced validation completed. Score: {result.get('overall_score', 0)}/100")
+            
+            return json.dumps(result)
+            
+        except Exception as e:
+            logger.error(f"Enhanced validation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
