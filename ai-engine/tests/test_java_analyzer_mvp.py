@@ -105,7 +105,7 @@ class TestJavaAnalyzerMVP:
         assert result["success"] is True
         assert result["registry_name"] is not None  # Should still extract mod ID
         assert result["texture_path"] is None
-        assert "Could not find block texture in JAR, using default" in result["errors"]
+        assert "Could not find block texture in JAR, using default" in result["warnings"]
     
     def test_analyze_jar_for_mvp_forge_metadata(self, analyzer, jar_with_forge_metadata):
         """Test MVP analysis with Forge-style metadata."""
