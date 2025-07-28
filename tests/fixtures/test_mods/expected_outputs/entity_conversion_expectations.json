@@ -1,0 +1,101 @@
+{
+  "passive_entity_mod": {
+    "expected_bedrock_entities": [
+      {
+        "identifier": "passive_entity_mod:passive_entity",
+        "type": "passive",
+        "spawn_category": "creature",
+        "components": {
+          "minecraft:health": {"value": 20, "max": 20},
+          "minecraft:movement": {"value": 0.25},
+          "minecraft:behavior.random_stroll": {"priority": 1, "speed_multiplier": 1.0},
+          "minecraft:behavior.look_at_player": {"priority": 2, "look_distance": 6.0},
+          "minecraft:behavior.random_look_around": {"priority": 3}
+        },
+        "expected_conversion_challenges": [
+          "Java AI goals to Bedrock behavior components",
+          "Entity spawn rules and biome restrictions",
+          "Entity model and texture format conversion",
+          "Custom entity properties mapping"
+        ]
+      }
+    ],
+    "expected_resource_pack": {
+      "entity_textures": ["textures/entity/passive_entity.png"],
+      "entity_models": ["models/entity/passive_entity.json"],
+      "client_entity_definitions": ["entity/passive_entity.json"]
+    },
+    "expected_behavior_pack": {
+      "entities": ["entities/passive_entity.json"],
+      "spawn_rules": ["spawn_rules/passive_entity.json"],
+      "loot_tables": ["loot_tables/entities/passive_entity.json"]
+    }
+  },
+  "hostile_entity_mod": {
+    "expected_bedrock_entities": [
+      {
+        "identifier": "hostile_entity_mod:hostile_entity",
+        "type": "hostile",
+        "spawn_category": "monster",
+        "components": {
+          "minecraft:health": {"value": 20, "max": 20},
+          "minecraft:attack": {"damage": 3},
+          "minecraft:behavior.melee_attack": {"priority": 0, "speed_multiplier": 1.0},
+          "minecraft:behavior.nearest_attackable_target": {
+            "priority": 1,
+            "entity_types": [{"filters": {"test": "is_family", "subject": "other", "value": "player"}}]
+          },
+          "minecraft:behavior.hurt_by_target": {"priority": 0}
+        },
+        "expected_conversion_challenges": [
+          "Hostile AI behavior to Bedrock targeting",
+          "Attack damage and mechanics conversion",
+          "Player targeting and aggression logic",
+          "Combat state management"
+        ]
+      }
+    ]
+  },
+  "custom_ai_entity_mod": {
+    "expected_bedrock_entities": [
+      {
+        "identifier": "custom_ai_entity_mod:custom_ai_entity",
+        "type": "custom",
+        "spawn_category": "creature",
+        "components": {
+          "minecraft:health": {"value": 20, "max": 20},
+          "minecraft:movement": {"value": 0.25},
+          "minecraft:behavior.random_stroll": {"priority": 1},
+          "minecraft:timer": {"looping": true, "time": 5.0, "time_down_event": {"event": "custom_jump"}},
+          "minecraft:jump.static": {}
+        },
+        "expected_conversion_challenges": [
+          "Custom AI goal classes to Bedrock components",
+          "Timer-based behavior implementation",
+          "Custom behavior state management",
+          "Complex AI logic simplification for Bedrock"
+        ]
+      }
+    ]
+  },
+  "validation_criteria": {
+    "entity_analysis": [
+      "Correct entity identifier extraction",
+      "AI behavior pattern recognition",
+      "Spawn group classification",
+      "Component requirement analysis"
+    ],
+    "conversion_accuracy": [
+      "Behavior component mapping correctness",
+      "Entity property preservation",
+      "Texture and model conversion",
+      "Spawn rule generation"
+    ],
+    "bedrock_compatibility": [
+      "Valid Bedrock entity definition format",
+      "Component syntax compliance",
+      "Resource pack structure correctness",
+      "Behavior pack integration"
+    ]
+  }
+}

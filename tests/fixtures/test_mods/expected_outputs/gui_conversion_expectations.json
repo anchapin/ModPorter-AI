@@ -1,0 +1,106 @@
+{
+  "inventory_gui_mod": {
+    "expected_conversion_strategy": "Limited Bedrock Support",
+    "conversion_notes": "Custom inventories have limited Bedrock equivalents",
+    "expected_bedrock_approximation": {
+      "blocks": [
+        {
+          "identifier": "inventory_gui_mod:inventory_block",
+          "components": {
+            "minecraft:inventory": {
+              "container_type": "container",
+              "inventory_size": 9
+            },
+            "minecraft:on_interact": {
+              "event": "open_inventory"
+            }
+          }
+        }
+      ],
+      "ui_approximations": [
+        "Block-based inventory interaction",
+        "Simplified slot layout",
+        "Standard Bedrock container UI"
+      ]
+    },
+    "expected_conversion_challenges": [
+      "Custom GUI layouts not directly supported in Bedrock",
+      "Complex inventory logic requires block entities",
+      "Custom slot positioning needs approximation",
+      "Screen handler logic must be simplified"
+    ],
+    "smart_assumptions": [
+      "Convert custom inventory to block-based container",
+      "Map complex slot logic to standard inventory",
+      "Approximate GUI layout with closest Bedrock equivalent",
+      "Preserve core inventory functionality"
+    ]
+  },
+  "config_gui_mod": {
+    "expected_conversion_strategy": "No Direct Conversion",
+    "conversion_notes": "Configuration screens not supported in Bedrock",
+    "expected_bedrock_approximation": {
+      "alternatives": [
+        "Command-based configuration",
+        "Block-based settings interface",
+        "Chat-based parameter adjustment"
+      ]
+    },
+    "expected_conversion_challenges": [
+      "No equivalent for configuration screens in Bedrock",
+      "Text input widgets not available",
+      "Client-side configuration storage limitations",
+      "Settings persistence across sessions"
+    ],
+    "smart_assumptions": [
+      "Convert to command-based configuration system",
+      "Document configuration options for manual setup",
+      "Suggest alternative interaction methods",
+      "Preserve essential configurable parameters"
+    ]
+  },
+  "hud_gui_mod": {
+    "expected_conversion_strategy": "No Direct Conversion",
+    "conversion_notes": "Custom HUD overlays not supported in Bedrock",
+    "expected_bedrock_approximation": {
+      "alternatives": [
+        "Actionbar text messages",
+        "Title/subtitle overlays",
+        "Scoreboard-based displays",
+        "Particle effects for visual feedback"
+      ]
+    },
+    "expected_conversion_challenges": [
+      "Custom HUD rendering not available in Bedrock",
+      "Limited overlay positioning options",
+      "No persistent UI element support",
+      "Client-side rendering restrictions"
+    ],
+    "smart_assumptions": [
+      "Convert to actionbar or title displays",
+      "Use scoreboard for persistent information",
+      "Map visual elements to available Bedrock features",
+      "Preserve core information display functionality"
+    ]
+  },
+  "validation_criteria": {
+    "gui_analysis": [
+      "Custom GUI component identification",
+      "Interaction pattern recognition",
+      "Client-side dependency detection",
+      "UI layout complexity assessment"
+    ],
+    "conversion_feasibility": [
+      "Bedrock equivalent availability",
+      "Functionality preservation potential",
+      "User experience impact assessment",
+      "Alternative implementation viability"
+    ],
+    "smart_assumption_quality": [
+      "Assumption reasonableness",
+      "Functionality preservation",
+      "User experience consideration",
+      "Implementation practicality"
+    ]
+  }
+}
