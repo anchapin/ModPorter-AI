@@ -229,12 +229,12 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
   return (
     <div className="conversion-progress-container">
-      <h4>Conversion Progress{jobId ? ` (ID: ${jobId})` : ''}</h4>
+      <h4>Conversion Progress</h4>
       
       {/* Connection Status Indicator */}
       <div className="connection-status">
         <div className={`connection-indicator ${usingWebSocket ? '' : 'polling'}${connectionError ? ' error' : ''}`}></div>
-        <span>{usingWebSocket ? 'Real-time updates active' : connectionError ? 'Connection issues' : 'Using fallback polling'}</span>
+        <span>{usingWebSocket ? 'Real-time updates' : connectionError ? 'Connection issues' : 'Polling updates'}</span>
       </div>
 
       {/* Progress Steps */}
@@ -270,30 +270,29 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
           aria-valuemax="100"
           style={{ width: `${Math.min(progressData.progress, 100)}%` }}
         >
-          {Math.round(Math.min(progressData.progress, 100))}%
         </div>
       </div>
 
       {/* Status Message */}
       <div className="status-message">
-        <strong>Status:</strong> {progressData.status}
+        {progressData.status}
       </div>
       
       {/* Stage Information */}
       {progressData.stage && (
         <div className="stage-message">
-          <strong>Stage:</strong> {progressData.stage}
+          {progressData.stage}
         </div>
       )}
 
       {/* Estimated Time Remaining */}
       <div className="time-remaining">
-        <strong>Estimated Time Remaining:</strong> {progressData.estimated_time_remaining || 'N/A'}
+        {progressData.estimated_time_remaining || 'N/A'}
       </div>
       
       {statusMessage && statusMessage !== progressData.status && progressData.status !== 'failed' && (
         <div className="additional-message">
-          <strong>Message:</strong> {statusMessage}
+          {statusMessage}
         </div>
       )}
 
@@ -315,9 +314,9 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       {/* Error Display */}
       {progressData.status === 'failed' && (
         <div className="error-message">
-          <p><strong>Error:</strong> {progressData.error || progressData.message || 'An unknown error occurred.'}</p>
+          <p><strong>Conversion Failed:</strong> {progressData.error || progressData.message || 'An unknown error occurred.'}</p>
           {progressData.message && progressData.message !== progressData.error && progressData.error && (
-            <p><strong>Details:</strong> {progressData.message}</p>
+            <p>{progressData.message}</p>
           )}
         </div>
       )}
