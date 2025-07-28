@@ -65,7 +65,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
             conversion_results[mod_name] = {
                 'success': result['success'],
                 'processing_time': processing_time,
-                'input_size': mod_path.stat().st_size,
+                'input_size': Path(mod_path).stat().st_size,
                 'output_size': result.get('file_size', 0),
                 'error': result.get('error', None)
             }
@@ -104,7 +104,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         print("\\n🔄 Testing Pipeline Consistency...")
         
         # Pick a representative mod
-        test_mod_name = "simple_fabric"
+        test_mod_name = "simple_blocks"
         test_mod_path = self.test_mods[test_mod_name]
         
         # Run conversion multiple times
@@ -294,9 +294,9 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
                 namelist = zf.namelist()
                 validation['file_count'] = len(namelist)
                 
-                # Check for pack structures
-                validation['has_behavior_pack'] = any(name.startswith("behavior_pack/") for name in namelist)
-                validation['has_resource_pack'] = any(name.startswith("resource_pack/") for name in namelist)
+                # Check for pack structures (Bedrock uses plural forms)
+                validation['has_behavior_pack'] = any(name.startswith("behavior_packs/") for name in namelist)
+                validation['has_resource_pack'] = any(name.startswith("resource_packs/") for name in namelist)
                 
                 # Count and validate manifests
                 manifest_files = [name for name in namelist if "manifest.json" in name]
