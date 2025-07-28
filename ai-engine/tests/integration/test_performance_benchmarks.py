@@ -28,7 +28,7 @@ class PerformanceBenchmarks(unittest.TestCase):
         """Set up performance testing environment."""
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
-        self.generator = TestJarGenerator()
+        self.generator = TestJarGenerator(self.temp_dir)
         self.results = []
     
     def tearDown(self):
@@ -85,11 +85,10 @@ class PerformanceBenchmarks(unittest.TestCase):
         ]
         
         for mod_id, blocks in mod_configs:
-            jar_path = self.temp_path / f"{mod_id}.jar"
-            self.generator.create_mod_jar(mod_id, blocks=blocks, items=[])
+            jar_path = self.generator.create_mod_jar(mod_id, blocks=blocks, items=[])
             
             # Measure performance
-            perf_data = self._measure_conversion_time(jar_path, iterations=3)
+            perf_data = self._measure_conversion_time(Path(jar_path), iterations=3)
             
             print(f"  📦 {mod_id}: {perf_data['avg_time']:.3f}s ± {perf_data['std_dev']:.3f}s")
             
@@ -114,11 +113,10 @@ class PerformanceBenchmarks(unittest.TestCase):
             mod_id = f"scaling_mod_{count}"
             blocks = [f"block_{i}" for i in range(count)]
             
-            jar_path = self.temp_path / f"{mod_id}.jar"
-            self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}"], items=[])
+            jar_path = self.generator.create_mod_jar(mod_id, blocks=blocks, items=[])
             
             # Single measurement for scaling test
-            perf_data = self._measure_conversion_time(jar_path, iterations=1)
+            perf_data = self._measure_conversion_time(Path(jar_path), iterations=1)
             
             throughput = count / perf_data['avg_time'] if perf_data['avg_time'] > 0 else 0
             
@@ -146,12 +144,11 @@ class PerformanceBenchmarks(unittest.TestCase):
         
         for framework_name, creator_func in frameworks:
             mod_id = f"{framework_name}_test"
-            jar_path = self.temp_path / f"{mod_id}.jar"
             
-            creator_func(mod_id, jar_path)
+            jar_path = creator_func(mod_id, None)
             
             # Measure performance
-            perf_data = self._measure_conversion_time(jar_path, iterations=2)
+            perf_data = self._measure_conversion_time(Path(jar_path), iterations=2)
             
             print(f"  🛠️  {framework_name:6s}: {perf_data['avg_time']:.3f}s")
             
@@ -170,20 +167,19 @@ class PerformanceBenchmarks(unittest.TestCase):
         
         for complexity in complexity_levels:
             mod_id = f"size_test_{complexity}"
-            jar_path = self.temp_path / f"{mod_id}.jar"
             
             if complexity == "simple":
-                self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(10)], items=[f"item_{i}" for i in range(5)])
+                jar_path = self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(10)], items=[f"item_{i}" for i in range(5)])
             elif complexity == "medium":
-                self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(50)], items=[f"item_{i}" for i in range(25)])
+                jar_path = self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(50)], items=[f"item_{i}" for i in range(25)])
             else:
-                self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(100)], items=[f"item_{i}" for i in range(50)])
+                jar_path = self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}" for i in range(100)], items=[f"item_{i}" for i in range(50)])
             
             # Get file size
-            jar_size = jar_path.stat().st_size
+            jar_size = Path(jar_path).stat().st_size
             
             # Measure performance
-            perf_data = self._measure_conversion_time(jar_path, iterations=1)
+            perf_data = self._measure_conversion_time(Path(jar_path), iterations=1)
             
             throughput_mbps = (jar_size / 1024 / 1024) / perf_data['avg_time'] if perf_data['avg_time'] > 0 else 0
             
@@ -207,9 +203,8 @@ class PerformanceBenchmarks(unittest.TestCase):
         
         for i in range(mod_count):
             mod_id = f"concurrent_mod_{i}"
-            jar_path = self.temp_path / f"{mod_id}.jar"
-            self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}"], items=[f"item_{i}"])
-            mods.append(jar_path)
+            jar_path = self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}"], items=[f"item_{i}"])
+            mods.append(Path(jar_path))
         
         # Sequential processing
         start_time = time.time()
@@ -253,11 +248,10 @@ class PerformanceBenchmarks(unittest.TestCase):
         
         # Create a larger mod for memory testing
         mod_id = "memory_test"
-        jar_path = self.temp_path / f"{mod_id}.jar"
         blocks = [f"block_{i}" for i in range(15)]  # 15 blocks
         items = [f"item_{i}" for i in range(10)]    # 10 items
         
-        self.generator.create_mod_jar(mod_id, blocks=blocks, items=items)
+        jar_path = self.generator.create_mod_jar(mod_id, blocks=blocks, items=items)
         
         # Measure memory usage
         memory_before = process.memory_info().rss
@@ -296,10 +290,9 @@ class PerformanceBenchmarks(unittest.TestCase):
         
         for i in range(stress_count):
             mod_id = f"stress_{i}"
-            jar_path = self.temp_path / f"{mod_id}.jar"
             
             # Create small mod
-            self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}"], items=[])
+            jar_path = self.generator.create_mod_jar(mod_id, blocks=[f"block_{i}"], items=[])
             
             # Quick conversion
             output_dir = self.temp_path / f"stress_output_{i}"
