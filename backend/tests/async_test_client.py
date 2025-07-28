@@ -8,6 +8,7 @@ import asyncio
 from typing import Any, Dict, Optional
 import httpx
 import pytest
+import pytest_asyncio
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -66,7 +67,7 @@ class AsyncTestClient:
         return await self._client.delete(url, **kwargs)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def async_test_db():
     """
     Create an async test database session.
@@ -117,7 +118,7 @@ async def async_test_db():
         await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_client():
     """
     Create an async test client with proper database setup.
@@ -147,7 +148,7 @@ async def async_client():
 
 
 # Alternative approach using pytest-asyncio and httpx directly
-@pytest.fixture
+@pytest_asyncio.fixture
 async def httpx_client():
     """
     Alternative async client using httpx directly.
