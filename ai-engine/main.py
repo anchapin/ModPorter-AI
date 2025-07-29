@@ -156,6 +156,7 @@ class ConversionRequest(BaseModel):
     job_id: str = Field(..., description="Unique job identifier")
     mod_file_path: str = Field(..., description="Path to the mod file")
     conversion_options: Optional[Dict[str, Any]] = Field(default={}, description="Conversion options")
+    experiment_variant: Optional[str] = Field(default=None, description="Experiment variant ID for A/B testing")
 
 class ConversionResponse(BaseModel):
     """Conversion response model"""
@@ -200,21 +201,8 @@ async def startup_event():
         assumption_engine = SmartAssumptionEngine()
         logger.info("SmartAssumptionEngine initialized")
         
-        # Initialize ConversionCrew with retry logic for Ollama
-        max_retries = 15
-        retry_delay = 10  # seconds
-        for i in range(max_retries):
-            logger.info(f"Attempt {i+1}/{max_retries} to initialize ModPorterConversionCrew...")
-            try:
-                conversion_crew = ModPorterConversionCrew()
-                logger.info("ModPorterConversionCrew initialized successfully.")
-                break  # Exit loop if successful
-            except RuntimeError as e:
-                logger.warning(f"Attempt {i+1}/{max_retries}: ModPorterConversionCrew initialization failed: {e}. Retrying in {retry_delay} seconds...")
-                await asyncio.sleep(retry_delay)
-        else:
-            logger.error(f"Failed to initialize ModPorterConversionCrew after {max_retries} retries. Raising error.")
-            raise RuntimeError(f"Failed to initialize ModPorterConversionCrew after {max_retries} retries.")
+        # Note: We now initialize the conversion crew per request to support variants
+        # The global conversion_crew will remain None
         
         logger.info("ModPorter AI Engine startup complete")
         
@@ -226,9 +214,10 @@ async def startup_event():
 async def health_check():
     """Check the health status of the AI Engine"""
     services = {
-        "conversion_crew": "healthy" if conversion_crew else "unavailable",
         "assumption_engine": "healthy" if assumption_engine else "unavailable",
     }
+    
+    # Conversion crew is now initialized per request, so we don't check it here
     
     return HealthResponse(
         status="healthy",
@@ -244,11 +233,11 @@ async def start_conversion(
 ):
     """Start a new mod conversion job"""
     
-    if not conversion_crew:
-        raise HTTPException(status_code=503, detail="Conversion crew not available")
-    
     if not job_manager or not job_manager.available:
         raise HTTPException(status_code=503, detail="Job state storage unavailable")
+    
+    # Initialize conversion crew with variant if specified
+    # The crew is now initialized in the background task to avoid blocking the request
     
     # Create job status
     job_status = ConversionStatus(
@@ -268,7 +257,8 @@ async def start_conversion(
         process_conversion,
         request.job_id,
         request.mod_file_path,
-        request.conversion_options
+        request.conversion_options,
+        request.experiment_variant  # Pass variant to process_conversion
     )
     
     logger.info(f"Started conversion job {request.job_id}")
@@ -277,7 +267,7 @@ async def start_conversion(
         job_id=request.job_id,
         status="queued",
         message="Conversion job started",
-        estimated_time=300  # 5 minutes estimate
+        estimated_time=120  # Placeholder - would be calculated based on mod size
     )
 
 @app.get("/api/v1/status/{job_id}", response_model=ConversionStatus, tags=["conversion"])
@@ -304,7 +294,7 @@ async def list_jobs():
     logger.warning("list_jobs endpoint returns empty - implement Redis SCAN for production")
     return []
 
-async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str, Any]):
+async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str, Any], experiment_variant: Optional[str] = None):
     """Process a conversion job using the AI crew"""
     
     try:
@@ -321,7 +311,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
         
-        logger.info(f"Processing conversion for job {job_id}")
+        logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
         
         # Prepare output path
         output_path = options.get("output_path")
@@ -334,6 +324,10 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         try:
+            # Initialize conversion crew with variant if specified
+            crew = ModPorterConversionCrew(variant_id=experiment_variant)
+            logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
+            
             # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)
             if job_status:
@@ -344,7 +338,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
             
             # Execute the actual AI conversion using the conversion crew
             from pathlib import Path
-            conversion_result = conversion_crew.convert_mod(
+            conversion_result = crew.convert_mod(
                 mod_path=Path(mod_file_path),
                 output_path=Path(output_path),
                 smart_assumptions=options.get("smart_assumptions", True),

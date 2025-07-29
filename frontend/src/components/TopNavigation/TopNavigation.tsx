@@ -20,6 +20,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
     { to: '/', label: 'Convert' },
     { to: '/comparison', label: 'Comparison' },
     { to: '/behavioral-test', label: 'Behavioral Test' },
+    { to: '/experiments', label: 'Experiments' },
+    { to: '/experiment-results', label: 'Results' },
     { to: '/docs', label: 'Documentation' }
   ];
 
