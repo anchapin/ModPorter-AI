@@ -24,6 +24,8 @@ javalang>=0.13.0
 # File processing
 Pillow
 pydub
+python-magic
+jsonschema
 
 # HTTP Client
 httpx==0.28.1
