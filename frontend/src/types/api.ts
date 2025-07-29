@@ -96,6 +96,10 @@ export interface SummaryReport {
   processing_time_seconds: number;
   download_url: string | null;
   quick_statistics: Record<string, any>;
+  total_files_processed?: number;
+  output_size_mb?: number;
+  conversion_quality_score?: number;
+  recommended_actions?: string[];
 }
 
 export interface FeatureConversionDetail {

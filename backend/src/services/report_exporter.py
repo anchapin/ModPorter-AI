@@ -6,6 +6,7 @@ Provides export functionality for conversion reports in multiple formats.
 import json
 import io
 import base64
+import html
 from typing import Dict, Any, Optional
 from datetime import datetime
 from ..types.report_types import InteractiveReport
@@ -30,16 +31,27 @@ class ReportExporter:
         """Export report to HTML format."""
         html_template = self._get_html_template()
         
-        # Prepare data for template
+        # Prepare data for template with proper HTML escaping
         context = {
-            "report": report.to_dict(),
-            "generation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "title": f"Conversion Report - {report.metadata.job_id}"
+            "report": self._escape_report_data(report.to_dict()),
+            "generation_date": html.escape(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            "title": html.escape(f"Conversion Report - {report.metadata.job_id}")
         }
         
-        # Simple template substitution (in production, use a proper template engine)
+        # Template substitution with escaped data
         html_content = html_template.format(**context)
         return html_content
+    
+    def _escape_report_data(self, data: Any) -> Any:
+        """Recursively escape HTML in report data."""
+        if isinstance(data, str):
+            return html.escape(data)
+        elif isinstance(data, dict):
+            return {key: self._escape_report_data(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._escape_report_data(item) for item in data]
+        else:
+            return data
     
     def export_to_csv(self, report: InteractiveReport) -> str:
         """Export report summary to CSV format."""

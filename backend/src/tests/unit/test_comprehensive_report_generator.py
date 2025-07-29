@@ -80,7 +80,7 @@ def sample_conversion_result():
         "developer_logs_data": {
             "code_translation_details": [
                 {
-                    "timestamp": datetime.datetime.now().isoformat(),
+                    "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Successfully translated CustomBlock.java",
                     "details": {"source": "CustomBlock.java", "target": "custom_block.json"}
@@ -88,7 +88,7 @@ def sample_conversion_result():
             ],
             "api_mapping_issues": [
                 {
-                    "timestamp": datetime.datetime.now().isoformat(),
+                    "timestamp": "2023-01-01T12:00:00Z",
                     "level": "WARNING",
                     "message": "Java API has no direct Bedrock equivalent",
                     "details": {"java_api": "getCustomProperty", "bedrock_equivalent": "none"}
@@ -96,7 +96,7 @@ def sample_conversion_result():
             ],
             "file_processing_log": [
                 {
-                    "timestamp": datetime.datetime.now().isoformat(),
+                    "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Processed texture file successfully",
                     "details": {"file": "block_texture.png", "status": "converted"}

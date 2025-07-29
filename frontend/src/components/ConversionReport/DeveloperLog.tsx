@@ -333,10 +333,10 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
 }) => {
   const totalLogEntries = useMemo(() => {
     return (
-      log.code_translation_details?.length || 0 +
-      log.api_mapping_issues?.length || 0 +
-      log.file_processing_log?.length || 0 +
-      log.error_details?.length || 0
+      (log.code_translation_details?.length || 0) +
+      (log.api_mapping_issues?.length || 0) +
+      (log.file_processing_log?.length || 0) +
+      (log.error_details?.length || 0)
     );
   }, [log]);
 
