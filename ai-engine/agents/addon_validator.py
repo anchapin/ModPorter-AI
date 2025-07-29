@@ -680,4 +680,7 @@ class AddonValidator:
         
         self._validate_single_manifest(manifest_data, "manifest.json", result)
         
+        # Set is_valid based on whether there are errors
+        result['is_valid'] = len(result['errors']) == 0
+        
         return result

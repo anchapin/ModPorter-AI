@@ -173,6 +173,16 @@ jobs:
           - 5434:5432
 
     steps:
+    - name: Fix file permissions
+      run: |
+        # Fix potential file permission issues from previous runs
+        if [ -f ".github/CACHING_STRATEGY.md" ]; then
+          chmod +w .github/CACHING_STRATEGY.md || true
+        fi
+        # Clean up any problematic files
+        find .github -type f -name "*.md" -exec chmod +w {} \; 2>/dev/null || true
+      continue-on-error: true
+      
     - name: Checkout code
       uses: actions/checkout@v4
 

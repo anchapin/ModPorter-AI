@@ -573,7 +573,7 @@ class TestAddonValidator:
         # Result with errors
         error_result = {'errors': ['error1', 'error2'], 'warnings': ['warning1'], 'stats': {}, 'compatibility': {}}
         score = self.validator._calculate_overall_score(error_result)
-        assert score == 67  # 100 - 30 (errors) - 3 (warning)
+        assert score == 72  # 100 - 30 (errors) - 3 (warnings) + 5 (no experimental features bonus)
 
 
 class TestIntegrationWorkflow:
