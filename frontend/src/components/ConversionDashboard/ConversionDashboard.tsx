@@ -6,19 +6,16 @@
 import React, { useState } from 'react';
 import { ConversionUpload } from '../ConversionUpload/ConversionUpload';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
-import { ConversionStatusEnum } from '../../types/api';
 
 type DashboardState = 'upload' | 'processing' | 'completed' | 'failed';
 
 export const ConversionDashboard: React.FC = () => {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [dashboardState, setDashboardState] = useState<DashboardState>('upload');
-  const [jobStatus, setJobStatus] = useState<string | null>(null);
 
   const handleConversionStart = (jobId: string) => {
     setCurrentJobId(jobId);
     setDashboardState('processing');
-    setJobStatus('processing');
   };
 
   const handleConversionComplete = (jobId: string) => {
@@ -26,13 +23,11 @@ export const ConversionDashboard: React.FC = () => {
     // Determine if it's completed or failed based on the final status
     // This could be enhanced by checking the actual status
     setDashboardState('completed');
-    setJobStatus('completed');
   };
 
   const handleStartNewConversion = () => {
     setCurrentJobId(null);
     setDashboardState('upload');
-    setJobStatus(null);
   };
 
   const renderContent = () => {

@@ -164,6 +164,7 @@ jobs:
         scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        version: 'latest'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3

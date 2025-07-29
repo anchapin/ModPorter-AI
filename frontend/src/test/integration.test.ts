@@ -7,8 +7,7 @@ import { describe, test, expect, beforeAll } from 'vitest';
 import { 
   uploadFile, 
   convertMod, 
-  getConversionStatus, 
-  downloadResult,
+  getConversionStatus,
   API_BASE_URL 
 } from '../services/api';
 
@@ -24,7 +23,7 @@ describe('Frontend-Backend Integration', () => {
       if (!response.ok) {
         throw new Error(`Backend health check failed: ${response.status}`);
       }
-    } catch (error) {
+    } catch {
       console.warn('Backend may not be running. Some tests may fail.');
       console.warn('Start backend with: docker-compose up -d backend');
     }
