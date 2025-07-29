@@ -335,20 +335,13 @@ class BlockItemGenerator:
         # Convert pattern to Bedrock format
         bedrock_pattern = []
         for row in pattern:
-            bedrock_row = []
-            for char in row:
-                if char == ' ':
-                    bedrock_row.append(' ')
-                else:
-                    ingredient = key.get(char, {})
-                    bedrock_row.append(ingredient.get('item', ' '))
-            bedrock_pattern.append(''.join(bedrock_row))
+            bedrock_pattern.append(row)  # Keep the original pattern with key characters
         
         # Build ingredient key
         bedrock_key = {}
         for char, ingredient in key.items():
             if char != ' ':
-                bedrock_key[ingredient.get('item', char)] = {
+                bedrock_key[char] = {
                     "item": ingredient.get('item', 'minecraft:air'),
                     "count": ingredient.get('count', 1)
                 }
@@ -464,80 +457,61 @@ class BlockItemGenerator:
         
         return properties
     
+    def _determine_category(self, java_data: Dict[str, Any], default_category: str, 
+                          category_rules: Dict[str, tuple]) -> Optional[str]:
+        """Helper method to determine creative menu category based on tags and type."""
+        tags = java_data.get('tags', [])
+        data_type = java_data.get('type', '').lower()
+        
+        for category, (tag_matches, type_matches) in category_rules.items():
+            if any(tag in tag_matches for tag in tags):
+                return self.creative_categories[category]
+            if any(match in data_type for match in type_matches):
+                return self.creative_categories[category]
+        
+        return self.creative_categories[default_category]
+    
     def _determine_block_category(self, java_block: Dict[str, Any]) -> Optional[str]:
         """Determine appropriate creative menu category for block."""
-        tags = java_block.get('tags', [])
-        block_type = java_block.get('type', '').lower()
-        
-        if any(tag in ['building', 'construction'] for tag in tags):
-            return self.creative_categories['building']
-        elif any(tag in ['decoration', 'decorative'] for tag in tags):
-            return self.creative_categories['decoration']
-        elif any(tag in ['redstone', 'power'] for tag in tags):
-            return self.creative_categories['redstone']
-        elif 'door' in block_type or 'gate' in block_type:
-            return self.creative_categories['decoration']
-        else:
-            return self.creative_categories['building']
+        block_category_rules = {
+            'building': (['building', 'construction'], []),
+            'decoration': (['decoration', 'decorative'], ['door', 'gate']),
+            'redstone': (['redstone', 'power'], [])
+        }
+        return self._determine_category(java_block, 'building', block_category_rules)
     
     def _determine_item_category(self, java_item: Dict[str, Any]) -> Optional[str]:
         """Determine appropriate creative menu category for item."""
-        tags = java_item.get('tags', [])
-        item_type = java_item.get('type', '').lower()
-        
-        if any(tag in ['tool', 'tools'] for tag in tags):
-            return self.creative_categories['tools']
-        elif any(tag in ['weapon', 'combat'] for tag in tags):
-            return self.creative_categories['combat']
-        elif any(tag in ['food', 'edible'] for tag in tags):
-            return self.creative_categories['food']
-        elif 'sword' in item_type or 'bow' in item_type:
-            return self.creative_categories['combat']
-        elif any(tool in item_type for tool in ['pickaxe', 'axe', 'shovel', 'hoe']):
-            return self.creative_categories['tools']
-        else:
-            return self.creative_categories['misc']
+        item_category_rules = {
+            'tools': (['tool', 'tools'], ['pickaxe', 'axe', 'shovel', 'hoe']),
+            'combat': (['weapon', 'combat'], ['sword', 'bow']),
+            'food': (['food', 'edible'], [])
+        }
+        return self._determine_category(java_item, 'misc', item_category_rules)
     
+    def _write_json_files(self, definitions: Dict[str, Any], directory: Path, written_files: List[Path]) -> None:
+        """Helper method to write JSON definitions to a directory."""
+        directory.mkdir(parents=True, exist_ok=True)
+        for item_id, definition in definitions.items():
+            file_path = directory / f"{item_id.split(':')[-1]}.json"
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(definition, f, indent=2, ensure_ascii=False)
+            written_files.append(file_path)
+
     def write_definitions_to_disk(self, blocks: Dict[str, Any], items: Dict[str, Any], 
                                 recipes: Dict[str, Any], bp_path: Path, rp_path: Path) -> Dict[str, List[Path]]:
-        """
-        Write block, item, and recipe definitions to disk.
-        
-        Args:
-            blocks: Bedrock block definitions
-            items: Bedrock item definitions
-            recipes: Bedrock recipe definitions
-            bp_path: Behavior pack path
-            rp_path: Resource pack path
-            
-        Returns:
-            Dictionary of written file paths
-        """
-        written_files = {
-            'blocks': [],
-            'items': [],
-            'recipes': []
-        }
+        """Write block, item, and recipe definitions to disk."""
+        written_files = {'blocks': [], 'items': [], 'recipes': []}
         
         # Write blocks to both packs
         if blocks:
             # Behavior pack blocks
-            bp_blocks_dir = bp_path / "blocks"
-            bp_blocks_dir.mkdir(parents=True, exist_ok=True)
+            self._write_json_files(blocks, bp_path / "blocks", written_files['blocks'])
             
+            # Resource pack blocks (simplified for textures and models)
+            rp_blocks = {}
             for block_id, block_def in blocks.items():
-                block_file = bp_blocks_dir / f"{block_id.split(':')[-1]}.json"
-                with open(block_file, 'w', encoding='utf-8') as f:
-                    json.dump(block_def, f, indent=2, ensure_ascii=False)
-                written_files['blocks'].append(block_file)
-            
-            # Resource pack blocks (for textures and models)
-            rp_blocks_dir = rp_path / "blocks"
-            rp_blocks_dir.mkdir(parents=True, exist_ok=True)
-            
-            for block_id, block_def in blocks.items():
-                # Create simplified definition for resource pack
-                rp_block_def = {
+                rp_blocks[block_id] = {
                     "format_version": "1.19.0",
                     "minecraft:block": {
                         "description": {
@@ -545,32 +519,14 @@ class BlockItemGenerator:
                         }
                     }
                 }
-                
-                block_file = rp_blocks_dir / f"{block_id.split(':')[-1]}.json"
-                with open(block_file, 'w', encoding='utf-8') as f:
-                    json.dump(rp_block_def, f, indent=2, ensure_ascii=False)
+            
+            self._write_json_files(rp_blocks, rp_path / "blocks", [])
         
-        # Write items to behavior pack
+        # Write items and recipes to behavior pack
         if items:
-            bp_items_dir = bp_path / "items"
-            bp_items_dir.mkdir(parents=True, exist_ok=True)
-            
-            for item_id, item_def in items.items():
-                item_file = bp_items_dir / f"{item_id.split(':')[-1]}.json"
-                with open(item_file, 'w', encoding='utf-8') as f:
-                    json.dump(item_def, f, indent=2, ensure_ascii=False)
-                written_files['items'].append(item_file)
-        
-        # Write recipes to behavior pack
+            self._write_json_files(items, bp_path / "items", written_files['items'])
         if recipes:
-            bp_recipes_dir = bp_path / "recipes"
-            bp_recipes_dir.mkdir(parents=True, exist_ok=True)
-            
-            for recipe_id, recipe_def in recipes.items():
-                recipe_file = bp_recipes_dir / f"{recipe_id.split(':')[-1]}.json"
-                with open(recipe_file, 'w', encoding='utf-8') as f:
-                    json.dump(recipe_def, f, indent=2, ensure_ascii=False)
-                written_files['recipes'].append(recipe_file)
+            self._write_json_files(recipes, bp_path / "recipes", written_files['recipes'])
         
         logger.info(f"Written {len(written_files['blocks'])} blocks, "
                    f"{len(written_files['items'])} items, "
