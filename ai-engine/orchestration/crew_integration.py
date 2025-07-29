@@ -13,12 +13,12 @@ from .strategy_selector import StrategySelector, OrchestrationStrategy
 from .task_graph import TaskGraph, TaskNode
 
 # Import existing agents (this will need to be adapted based on actual imports)
-from ..agents.java_analyzer import JavaAnalyzerAgent
-from ..agents.bedrock_architect import BedrockArchitectAgent  
-from ..agents.logic_translator import LogicTranslatorAgent
-from ..agents.asset_converter import AssetConverterAgent
-from ..agents.packaging_agent import PackagingAgent
-from ..agents.qa_validator import QAValidatorAgent
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.bedrock_architect import BedrockArchitectAgent  
+from agents.logic_translator import LogicTranslatorAgent
+from agents.asset_converter import AssetConverterAgent
+from agents.packaging_agent import PackagingAgent
+from agents.qa_validator import QAValidatorAgent
 
 logger = logging.getLogger(__name__)
 

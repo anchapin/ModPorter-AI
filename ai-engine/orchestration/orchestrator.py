@@ -480,7 +480,7 @@ class ParallelOrchestrator:
         results = {}
         active_futures: Dict[str, Future] = {}
         
-        while not task_graph.is_complete() and not task_graph.has_failed_tasks():
+        while not task_graph.is_complete() and not task_graph.has_permanently_failed_tasks():
             
             # Get ready tasks
             ready_tasks = task_graph.get_ready_tasks()

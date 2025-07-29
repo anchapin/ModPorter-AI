@@ -81,14 +81,16 @@ class TaskNode:
         self.status = TaskStatus.COMPLETED
         self.completed_at = time.time()
         self.result = result
-        logger.info(f"Task {self.task_id} ({self.agent_name}) completed in {self.duration:.2f}s")
+        duration_str = f"{self.duration:.2f}s" if self.duration is not None else "unknown duration"
+        logger.info(f"Task {self.task_id} ({self.agent_name}) completed in {duration_str}")
     
     def mark_failed(self, error: str):
         """Mark task as failed with error"""
         self.status = TaskStatus.FAILED
         self.completed_at = time.time()
         self.error = error
-        logger.error(f"Task {self.task_id} ({self.agent_name}) failed after {self.duration:.2f}s: {error}")
+        duration_str = f"{self.duration:.2f}s" if self.duration is not None else "unknown duration"
+        logger.error(f"Task {self.task_id} ({self.agent_name}) failed after {duration_str}: {error}")
     
     def can_retry(self) -> bool:
         """Check if task can be retried"""
@@ -323,6 +325,13 @@ class TaskGraph:
         return all(task.is_terminal for task in self.nodes.values())
     
     def has_failed_tasks(self) -> bool:
+        """Check if any tasks have failed"""
+        return any(
+            task.status == TaskStatus.FAILED
+            for task in self.nodes.values()
+        )
+    
+    def has_permanently_failed_tasks(self) -> bool:
         """Check if any tasks have failed and cannot be retried"""
         return any(
             task.status == TaskStatus.FAILED and not task.can_retry() 
@@ -377,7 +386,7 @@ class TaskGraph:
             }.get(task.status, "❓")
             
             deps_str = f" (deps: {', '.join(task.dependencies)})" if task.dependencies else ""
-            duration_str = f" ({task.duration:.2f}s)" if task.duration else ""
+            duration_str = f" ({task.duration:.2f}s)" if task.duration is not None else ""
             
             lines.append(f"{status_icon} {task.task_id}: {task.agent_name}{deps_str}{duration_str}")
         

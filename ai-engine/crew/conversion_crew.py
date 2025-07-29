@@ -4,7 +4,7 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 """
 
 from crewai import Agent, Task, Crew, Process
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import json
 import logging
 import os
@@ -709,90 +709,6 @@ class ModPorterConversionCrew:
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
     
 
-    def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
-                error_msg = f"Mod file not found: {mod_path}"
-                logger.error(error_msg)
-                return {
-                    'status': 'failed',
-                    'error': error_msg,
-                    'overall_success_rate': 0.0,
-                    'converted_mods': [],
-                    'failed_mods': [{'name': str(mod_path), 'reason': 'File not found', 'suggestions': ['Check file path']}],
-                    'smart_assumptions_applied': [],
-                    'download_url': None,
-                    'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [f'Mod file not found: {mod_path}']}
-                }
-            
-            # Resolve the output path relative to /app if it's a relative path
-            if not output_path.is_absolute():
-                output_path = Path("/app") / output_path
-                logger.debug(f"Resolved output path to: {output_path}")
-            
-            # Create a temporary directory for intermediate files 
-            # Use /tmp for local testing, /app/conversion_outputs for Docker
-            output_base_dir = os.getenv("CONVERSION_OUTPUT_DIR", "/tmp")
-            temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
-            logger.info(f"Created temporary directory for conversion: {temp_dir}")
-            # Prepare inputs for the crew
-            inputs = {
-                'mod_path': str(mod_path),
-                'output_path': str(output_path),
-                'temp_dir': str(temp_dir),  # Pass the temporary directory to the crew
-                'smart_assumptions_enabled': smart_assumptions,
-                'include_dependencies': include_dependencies
-                # --- INTEGRATION PLAN FOR QAAgent ---
-                # The 'inputs' dictionary might need to include the path to the .mcaddon file
-                # produced by self.package_task, so the comprehensive_testing_task knows what to test.
-                # Alternatively, the path could be passed through context from package_task's output.
-                # Also, the path to the scenario file for QAAgent could be an input here if it's dynamic.
-                # For now, assuming 'ai-engine/src/testing/scenarios/example_scenarios.json' is hardcoded in the tool/task.
-                # --- END INTEGRATION PLAN ---
-            }
-            logger.debug(f"Crew inputs: {inputs}")
-            
-            # Execute the crew workflow
-            try:
-                logger.info("Starting crew execution...")
-                result = self.crew.kickoff(inputs=inputs)
-                logger.info(f"Crew execution completed with result: {type(result)}")
-                
-                # Check if crew execution failed or returned invalid result
-                if result is None or (hasattr(result, 'raw') and not result.raw):
-                    logger.error("Crew execution failed - no valid result returned")
-                    raise RuntimeError("Crew execution failed - no valid result returned")
-                    
-            except Exception as crew_error:
-                logger.error(f"Crew execution failed: {crew_error}")
-                raise RuntimeError(f"Crew execution failed: {crew_error}")
-            
-            # Extract conversion plan components for assumption reporting
-            plan_components = self._extract_plan_components(result)
-            
-            # Generate comprehensive assumption report using enhanced engine
-            conversion_report = self._format_conversion_report(result, plan_components)
-            
-            logger.info("Conversion completed successfully")
-            return conversion_report
-
-        except Exception as e:
-            logger.error(f"Conversion failed: {str(e)}")
-            return {
-                'status': 'failed',
-                'error': str(e),
-                'overall_success_rate': 0.0,
-                'converted_mods': [],
-                'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
-                'smart_assumptions_applied': [],
-                'download_url': None,
-                'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
-            }
-        finally:
-            # Clean up temporary directory if it was created
-            if temp_dir and temp_dir.exists():
-                import shutil
-                shutil.rmtree(temp_dir)
-                logger.info(f"Cleaned up temporary directory: {temp_dir}")
-    
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
         """Extract conversion plan components from crew result for assumption reporting"""
