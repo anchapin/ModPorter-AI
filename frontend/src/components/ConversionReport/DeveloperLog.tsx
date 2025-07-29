@@ -56,7 +56,7 @@ const LogLevelBadge: React.FC<{ level: string }> = ({ level }) => {
   );
 };
 
-const LogEntry: React.FC<{ entry: LogEntry; showDetails?: boolean }> = ({ entry, showDetails = false }) => {
+const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -165,7 +165,7 @@ const LogSection: React.FC<LogSectionProps> = ({ title, logs, icon = '📋' }) =
 
           <div className={styles.logList}>
             {filteredLogs.map((log, index) => (
-              <LogEntry key={index} entry={log} />
+              <LogEntryComponent key={index} entry={log} />
             ))}
           </div>
 

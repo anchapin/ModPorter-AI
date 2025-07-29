@@ -129,7 +129,7 @@ const QuickNavigation: React.FC<{
 };
 
 const ReportMetadata: React.FC<{ reportData: InteractiveReport }> = ({ reportData }) => {
-  const { metadata, summary } = reportData;
+  const metadata = reportData.metadata;
 
   return (
     <div className={styles.reportMetadata}>
@@ -193,7 +193,6 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
     new Set(['summary']) // Start with summary expanded
   );
   const [activeSection, setActiveSection] = useState('summary');
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   // Determine overall status
   const overallStatus = useMemo(() => {
@@ -323,7 +322,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
       />
 
       {/* Global Search */}
-      <GlobalSearch onSearch={setGlobalSearchQuery} />
+      <GlobalSearch onSearch={() => {}} />
 
       {/* Export Controls */}
       <ExportControls reportData={reportData} />

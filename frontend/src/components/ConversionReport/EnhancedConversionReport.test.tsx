@@ -1,11 +1,11 @@
 /**
- * Tests for Enhanced Conversion Report Components
- * Tests implementation of Issue #10 - Conversion Report Generation System
+ * Test file for EnhancedConversionReport Component
+ * Implements tests for Issue #10 - Conversion Report Generation System
  */
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
+
 import { EnhancedConversionReport } from './EnhancedConversionReport';
 import { ReportSummary } from './ReportSummary';
 import { FeatureAnalysis } from './FeatureAnalysis';
@@ -175,7 +175,7 @@ const mockInteractiveReport: InteractiveReport = {
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {
-    writeText: jest.fn()
+    writeText: vi.fn()
   }
 });
 
@@ -388,24 +388,24 @@ describe('DeveloperLog Component', () => {
 
   it('handles export functionality', () => {
     // Mock URL.createObjectURL and other needed methods
-    global.URL.createObjectURL = jest.fn(() => 'mock-url');
-    global.URL.revokeObjectURL = jest.fn();
+    global.URL.createObjectURL = vi.fn(() => 'mock-url');
+    global.URL.revokeObjectURL = vi.fn();
     
     const mockLink = {
-      click: jest.fn(),
+      click: vi.fn(),
       download: '',
       href: ''
     };
     
-    jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+    vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       if (tagName === 'a') {
         return mockLink as any;
       }
       return document.createElement(tagName);
     });
     
-    jest.spyOn(document.body, 'appendChild').mockImplementation(() => {} as any);
-    jest.spyOn(document.body, 'removeChild').mockImplementation(() => {} as any);
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => { return null; });
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => { return null; });
     
     render(
       <DeveloperLog 
@@ -467,24 +467,24 @@ describe('EnhancedConversionReport Component', () => {
   });
 
   it('handles export functionality', () => {
-    global.URL.createObjectURL = jest.fn(() => 'mock-url');
-    global.URL.revokeObjectURL = jest.fn();
+    global.URL.createObjectURL = vi.fn(() => 'mock-url');
+    global.URL.revokeObjectURL = vi.fn();
     
     const mockLink = {
-      click: jest.fn(),
+      click: vi.fn(),
       download: '',
       href: ''
     };
     
-    jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+    vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       if (tagName === 'a') {
         return mockLink as any;
       }
       return document.createElement(tagName);
     });
     
-    jest.spyOn(document.body, 'appendChild').mockImplementation(() => {} as any);
-    jest.spyOn(document.body, 'removeChild').mockImplementation(() => {} as any);
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => { return null; });
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => { return null; });
     
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
     
@@ -498,7 +498,7 @@ describe('EnhancedConversionReport Component', () => {
   it('handles print functionality', () => {
     // Mock window.print
     Object.defineProperty(window, 'print', {
-      value: jest.fn(),
+      value: vi.fn(),
       writable: true
     });
     
@@ -513,7 +513,7 @@ describe('EnhancedConversionReport Component', () => {
   it('handles share functionality with navigator.share', async () => {
     // Mock navigator.share
     Object.defineProperty(navigator, 'share', {
-      value: jest.fn().mockResolvedValue(undefined),
+      value: vi.fn().mockResolvedValue(undefined),
       writable: true
     });
     
@@ -534,12 +534,12 @@ describe('EnhancedConversionReport Component', () => {
   it('handles share functionality without navigator.share', async () => {
     // Mock navigator.clipboard.writeText
     Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: jest.fn() },
+      value: { writeText: vi.fn() },
       writable: true
     });
     
     // Mock alert
-    jest.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
     
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
     
