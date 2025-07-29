@@ -30,11 +30,54 @@ CREATE TABLE qa_test_cases (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table to store A/B testing experiments
+CREATE TABLE experiments (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft', -- draft, active, paused, completed
+    traffic_allocation INTEGER NOT NULL DEFAULT 100, -- Percentage of traffic to allocate to experiment (0-100)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store variants within an experiment
+CREATE TABLE experiment_variants (
+    id UUID PRIMARY KEY,
+    experiment_id UUID REFERENCES experiments(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL, -- Name of the variant (e.g., 'control', 'new_strategy_v1')
+    description TEXT,
+    is_control BOOLEAN NOT NULL DEFAULT false, -- Whether this is the control group
+    strategy_config JSONB, -- Configuration for the agent strategy
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store results from A/B testing experiments
+CREATE TABLE experiment_results (
+    id UUID PRIMARY KEY,
+    variant_id UUID REFERENCES experiment_variants(id) ON DELETE CASCADE,
+    session_id UUID, -- Links to the conversion session
+    kpi_quality DECIMAL(5,2), -- Quality score (0.00 to 100.00)
+    kpi_speed INTEGER, -- Execution time in milliseconds
+    kpi_cost DECIMAL(10,2), -- Computational cost (e.g., token usage)
+    user_feedback_score DECIMAL(3,2), -- User feedback score (e.g., 1.0 to 5.0)
+    user_feedback_text TEXT, -- Optional text feedback from user
+    metadata JSONB, -- Additional metadata about the conversion
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Optional: Add indexes for frequently queried columns
 CREATE INDEX idx_qa_results_conversion_id ON qa_results(conversion_id);
 CREATE INDEX idx_qa_test_cases_qa_result_id ON qa_test_cases(qa_result_id);
 CREATE INDEX idx_qa_test_cases_category ON qa_test_cases(test_category);
 CREATE INDEX idx_qa_test_cases_status ON qa_test_cases(status);
+CREATE INDEX idx_experiments_status ON experiments(status);
+CREATE INDEX idx_experiment_variants_experiment_id ON experiment_variants(experiment_id);
+CREATE INDEX idx_experiment_results_variant_id ON experiment_results(variant_id);
+CREATE INDEX idx_experiment_results_session_id ON experiment_results(session_id);
 
 -- Comments on schema:
 -- - UUIDs are used for primary keys for global uniqueness.
@@ -44,3 +87,4 @@ CREATE INDEX idx_qa_test_cases_status ON qa_test_cases(status);
 -- - JSONB for performance_metrics allows flexible storage of various metrics.
 -- - `WITH TIME ZONE` for timestamps is generally good practice.
 -- - Added `ON DELETE CASCADE` for foreign keys so test cases are removed if the parent result is removed.
+-- - Added tables for A/B testing infrastructure with proper relationships and indexes.
