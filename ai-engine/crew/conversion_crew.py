@@ -18,6 +18,10 @@ from agents.asset_converter import AssetConverterAgent
 from agents.packaging_agent import PackagingAgent
 from agents.qa_validator import QAValidatorAgent
 from agents.variant_loader import variant_loader
+
+# Import enhanced orchestration system
+from orchestration.crew_integration import EnhancedConversionCrew
+from orchestration.strategy_selector import OrchestrationStrategy
 # --- INTEGRATION PLAN FOR QAAgent ---
 # The following comments outline where and how the new QAAgent
 # (for comprehensive QA testing) would be integrated into this crew.
@@ -43,6 +47,10 @@ class ModPorterConversionCrew:
     def __init__(self, model_name: str = "gpt-4", variant_id: str = None):
         # Store variant ID
         self.variant_id = variant_id
+        
+        # Initialize enhanced orchestration crew
+        self.enhanced_crew = None
+        self.use_enhanced_orchestration = self._should_use_enhanced_orchestration(variant_id)
         
         # Check for Ollama configuration first (for local testing)
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
@@ -73,6 +81,10 @@ class ModPorterConversionCrew:
         
         # Initialize agents with variant-specific configurations
         self._initialize_agents()
+        
+        # Initialize enhanced orchestration if enabled
+        if self.use_enhanced_orchestration:
+            self._initialize_enhanced_orchestration(model_name, variant_id)
     
     def _initialize_agents(self):
         """Initialize specialized agents as per PRD Feature 2 requirements"""
@@ -267,6 +279,71 @@ class ModPorterConversionCrew:
         #        comprehensive_qa_kwargs["memory"] = False
         #    self.comprehensive_qa_tester_agent = Agent(**comprehensive_qa_kwargs)
         # --- END INTEGRATION PLAN ---
+    
+    def _should_use_enhanced_orchestration(self, variant_id: Optional[str]) -> bool:
+        """
+        Determine whether to use the enhanced orchestration system
+        
+        Args:
+            variant_id: A/B testing variant identifier
+            
+        Returns:
+            True if enhanced orchestration should be used
+        """
+        
+        # Check environment variable override
+        env_override = os.getenv("USE_ENHANCED_ORCHESTRATION", "").lower()
+        if env_override in ["true", "1", "yes"]:
+            logger.info("Enhanced orchestration enabled via environment variable")
+            return True
+        elif env_override in ["false", "0", "no"]:
+            logger.info("Enhanced orchestration disabled via environment variable")
+            return False
+        
+        # Check variant configuration
+        if variant_id:
+            # Variants that should use enhanced orchestration
+            enhanced_variants = [
+                'parallel_basic',
+                'parallel_adaptive', 
+                'hybrid',
+                'enhanced_logic',
+                'variant_enhanced_logic'
+            ]
+            
+            # Check if variant matches enhanced patterns
+            variant_lower = variant_id.lower()
+            for enhanced_variant in enhanced_variants:
+                if enhanced_variant in variant_lower:
+                    logger.info(f"Enhanced orchestration enabled for variant: {variant_id}")
+                    return True
+            
+            # Control/sequential variants use original system
+            control_variants = ['control', 'sequential', 'baseline']
+            for control_variant in control_variants:
+                if control_variant in variant_lower:
+                    logger.info(f"Using original orchestration for control variant: {variant_id}")
+                    return False
+        
+        # Default: use enhanced orchestration for new features
+        # This can be changed to False for conservative rollout
+        default_enhanced = os.getenv("DEFAULT_ENHANCED_ORCHESTRATION", "true").lower() == "true"
+        logger.info(f"Using default enhanced orchestration setting: {default_enhanced}")
+        return default_enhanced
+    
+    def _initialize_enhanced_orchestration(self, model_name: str, variant_id: Optional[str]):
+        """Initialize the enhanced orchestration system"""
+        try:
+            self.enhanced_crew = EnhancedConversionCrew(
+                model_name=model_name,
+                variant_id=variant_id
+            )
+            logger.info("Enhanced orchestration crew initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize enhanced orchestration: {e}")
+            logger.warning("Falling back to original CrewAI system")
+            self.use_enhanced_orchestration = False
+            self.enhanced_crew = None
     
     def _setup_crew(self):
         """Setup the crew workflow following PRD conversion process"""
@@ -476,6 +553,71 @@ class ModPorterConversionCrew:
                                  smart_assumptions=smart_assumptions,
                                  include_dependencies=include_dependencies)
         
+        # Check if we should use enhanced orchestration
+        if self.use_enhanced_orchestration and self.enhanced_crew:
+            logger.info("Using enhanced orchestration system for conversion")
+            return self._convert_with_enhanced_orchestration(
+                mod_path, output_path, smart_assumptions, include_dependencies
+            )
+        else:
+            logger.info("Using original CrewAI system for conversion")
+            return self._convert_with_original_crew(
+                mod_path, output_path, smart_assumptions, include_dependencies
+            )
+    
+    def _convert_with_enhanced_orchestration(
+        self, 
+        mod_path: Path, 
+        output_path: Path,
+        smart_assumptions: bool,
+        include_dependencies: bool
+    ) -> Dict[str, Any]:
+        """Execute conversion using the enhanced orchestration system"""
+        try:
+            # Use the enhanced crew for conversion
+            result = self.enhanced_crew.convert_mod(
+                mod_path=mod_path,
+                output_path=output_path,
+                smart_assumptions=smart_assumptions,
+                include_dependencies=include_dependencies
+            )
+            
+            logger.info("Enhanced orchestration conversion completed")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Enhanced orchestration conversion failed: {e}")
+            logger.warning("Attempting fallback to original CrewAI system")
+            
+            # Fallback to original system
+            try:
+                return self._convert_with_original_crew(
+                    mod_path, output_path, smart_assumptions, include_dependencies
+                )
+            except Exception as fallback_error:
+                logger.error(f"Fallback conversion also failed: {fallback_error}")
+                return {
+                    'status': 'failed',
+                    'error': f"Both enhanced and original conversion failed. Enhanced: {e}, Original: {fallback_error}",
+                    'overall_success_rate': 0.0,
+                    'converted_mods': [],
+                    'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
+                    'smart_assumptions_applied': [],
+                    'download_url': None,
+                    'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
+                }
+    
+    def _convert_with_original_crew(
+        self, 
+        mod_path: Path, 
+        output_path: Path,
+        smart_assumptions: bool,
+        include_dependencies: bool
+    ) -> Dict[str, Any]:
+        """Execute conversion using the original CrewAI system"""
+        
+        temp_dir = None  # Initialize temp_dir to None
+        
         try:
             # Resolve the mod path relative to /app if it's a relative path
             if not mod_path.is_absolute():
@@ -485,6 +627,89 @@ class ModPorterConversionCrew:
             
             # Check if mod file exists
             if not mod_path.exists():
+                error_msg = f"Mod file not found: {mod_path}"
+                logger.error(error_msg)
+                return {
+                    'status': 'failed',
+                    'error': error_msg,
+                    'overall_success_rate': 0.0,
+                    'converted_mods': [],
+                    'failed_mods': [{'name': str(mod_path), 'reason': 'File not found', 'suggestions': ['Check file path']}],
+                    'smart_assumptions_applied': [],
+                    'download_url': None,
+                    'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [f'Mod file not found: {mod_path}']}
+                }
+            
+            # Resolve the output path relative to /app if it's a relative path
+            if not output_path.is_absolute():
+                output_path = Path("/app") / output_path
+                logger.debug(f"Resolved output path to: {output_path}")
+            
+            # Set up the original crew if not already done
+            if not hasattr(self, 'crew') or self.crew is None:
+                self._setup_crew()
+            
+            # Create a temporary directory for intermediate files 
+            # Use /tmp for local testing, /app/conversion_outputs for Docker
+            output_base_dir = os.getenv("CONVERSION_OUTPUT_DIR", "/tmp")
+            temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
+            logger.info(f"Created temporary directory for conversion: {temp_dir}")
+            
+            # Prepare inputs for the crew
+            inputs = {
+                'mod_path': str(mod_path),
+                'output_path': str(output_path),
+                'temp_dir': str(temp_dir),  # Pass the temporary directory to the crew
+                'smart_assumptions_enabled': smart_assumptions,
+                'include_dependencies': include_dependencies
+            }
+            logger.debug(f"Crew inputs: {inputs}")
+            
+            # Execute the crew workflow
+            try:
+                logger.info("Starting original crew execution...")
+                result = self.crew.kickoff(inputs=inputs)
+                logger.info(f"Crew execution completed with result: {type(result)}")
+                
+                # Check if crew execution failed or returned invalid result
+                if result is None or (hasattr(result, 'raw') and not result.raw):
+                    logger.error("Crew execution failed - no valid result returned")
+                    raise RuntimeError("Crew execution failed - no valid result returned")
+                    
+            except Exception as crew_error:
+                logger.error(f"Crew execution failed: {crew_error}")
+                raise RuntimeError(f"Crew execution failed: {crew_error}")
+            
+            # Extract conversion plan components for assumption reporting
+            plan_components = self._extract_plan_components(result)
+            
+            # Generate comprehensive assumption report using enhanced engine
+            conversion_report = self._format_conversion_report(result, plan_components)
+            
+            logger.info("Original crew conversion completed successfully")
+            return conversion_report
+
+        except Exception as e:
+            logger.error(f"Original crew conversion failed: {str(e)}")
+            return {
+                'status': 'failed',
+                'error': str(e),
+                'overall_success_rate': 0.0,
+                'converted_mods': [],
+                'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
+                'smart_assumptions_applied': [],
+                'download_url': None,
+                'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
+            }
+        finally:
+            # Clean up temporary directory if it was created
+            if temp_dir and temp_dir.exists():
+                import shutil
+                shutil.rmtree(temp_dir)
+                logger.info(f"Cleaned up temporary directory: {temp_dir}")
+    
+
+    def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
                 error_msg = f"Mod file not found: {mod_path}"
                 logger.error(error_msg)
                 return {
