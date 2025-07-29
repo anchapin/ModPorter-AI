@@ -4,15 +4,16 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { ConversionUploadReal } from '../components/ConversionUpload/ConversionUploadReal';
+import { ConversionUpload } from '../components/ConversionUpload/ConversionUpload';
+import { ConversionReportContainer } from '../components/ConversionReport/ConversionReportContainer';
 import { ConversionHistory, useConversionHistory } from '../components/ConversionHistory';
 import { PerformanceBenchmark } from '../components/PerformanceBenchmark';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'convert' | 'history' | 'performance'>('convert');
-  // const [recentConversions, setRecentConversions] = useState<number>(0);
-  // const [successRate, setSuccessRate] = useState<number>(0);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
   
   const { addConversion, updateConversion, setHistoryRef } = useConversionHistory();
 
@@ -46,8 +47,9 @@ export const Dashboard: React.FC = () => {
       completed_at: new Date().toISOString()
     });
 
-    // Update success rate (simplified calculation)
-    // setSuccessRate(prev => Math.min(prev + 5, 100));
+    // Show the report
+    setCurrentJobId(jobId);
+    setShowReport(true);
   }, [updateConversion]);
 
   // Update conversion file info
@@ -171,10 +173,45 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
             
-            <ConversionUploadReal
+            <ConversionUpload
               onConversionStart={handleConversionStart}
               onConversionComplete={handleConversionComplete}
             />
+            
+            {/* Show conversion report when available */}
+            {showReport && currentJobId && (
+              <div style={{ marginTop: '2rem' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  marginBottom: '1rem',
+                  padding: '1rem',
+                  backgroundColor: '#d4edda',
+                  borderRadius: '8px',
+                  border: '1px solid #c3e6cb'
+                }}>
+                  <h3 style={{ margin: 0, color: '#155724' }}>Conversion Complete!</h3>
+                  <button
+                    onClick={() => { setShowReport(false); setCurrentJobId(null); }}
+                    style={{
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Start New Conversion
+                  </button>
+                </div>
+                <ConversionReportContainer
+                  jobId={currentJobId}
+                  jobStatus="completed"
+                />
+              </div>
+            )}
             
             {/* Conversion Tips */}
             <div className="conversion-tips">

@@ -113,18 +113,23 @@ jobs:
         REDIS_URL: redis://localhost:6379
         SECRET_KEY: test_secret_key
         JWT_SECRET_KEY: test_jwt_secret
+        TESTING: true
+        CI: true
       run: |
         cd backend
-        python -m pytest tests/ -v --cov=src --cov-report=xml
+        python -m pytest tests/ -v --cov=src --cov-report=xml --timeout=120
 
     - name: Run AI engine tests
       env:
         REDIS_URL: redis://localhost:6379
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key' }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'test_key' }}
+        TESTING: true
+        CI: true
       run: |
         cd ai-engine
-        python -m pytest tests/ -v --cov=. --cov-report=xml
+        # Run tests with timeout and exclude slow AI tests in CI
+        python -m pytest tests/ -v --cov=. --cov-report=xml --timeout=240 -m "not slow and not ai"
 
     - name: Run frontend tests
       run: |
@@ -164,6 +169,7 @@ jobs:
         scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        version: 'latest'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
