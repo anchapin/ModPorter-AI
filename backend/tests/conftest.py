@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 import httpx
 
 # Add the src directory to the Python path
-src_dir = Path(__file__).parent.parent
+backend_dir = Path(__file__).parent.parent
+src_dir = backend_dir / "src"
 sys.path.insert(0, str(src_dir))
 
 # Set testing environment variable BEFORE importing main
