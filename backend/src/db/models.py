@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional
+import os
 from sqlalchemy import (
     Boolean,
     String,
@@ -16,9 +17,22 @@ from sqlalchemy import (
     TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
+from sqlalchemy.types import TypeDecorator
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from db.declarative_base import Base
+
+# Custom type that automatically chooses the right JSON type based on the database
+class JSONType(TypeDecorator):
+    impl = JSONB  # Default to JSONB for PostgreSQL
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'sqlite':
+            return dialect.type_descriptor(SQLiteJSON)
+        else:
+            return dialect.type_descriptor(JSONB)
 
 
 class ConversionJob(Base):
@@ -28,14 +42,14 @@ class ConversionJob(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         server_default=text("'queued'"),
     )
-    input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    input_data: Mapped[dict] = mapped_column(JSONType, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -72,14 +86,14 @@ class ConversionResult(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     job_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    output_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    output_data: Mapped[dict] = mapped_column(JSONType, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -96,7 +110,7 @@ class JobProgress(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     job_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
@@ -126,7 +140,7 @@ class Addon(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -156,13 +170,13 @@ class AddonBlock(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     addon_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
     )
     identifier: Mapped[str] = mapped_column(String, nullable=False)
-    properties: Mapped[dict] = mapped_column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    properties: Mapped[dict] = mapped_column(JSONType, nullable=True, default={})
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -187,7 +201,7 @@ class AddonAsset(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     addon_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
@@ -218,12 +232,12 @@ class AddonBehavior(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     block_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("addon_blocks.id", ondelete="CASCADE"), nullable=False, unique=True
     )
-    data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Behavior components, events, etc.
+    data: Mapped[dict] = mapped_column(JSONType, nullable=False, default={}) # Behavior components, events, etc.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -247,12 +261,12 @@ class AddonRecipe(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
+        default=uuid.uuid4,
     )
     addon_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
     )
-    data: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb")) # Crafting recipe definition
+    data: Mapped[dict] = mapped_column(JSONType, nullable=False, default={}) # Crafting recipe definition
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -301,11 +315,11 @@ class ComparisonResultDb(Base):
     conversion_id = Column(
         UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
     )
-    structural_diff = Column(JSONB)
-    code_diff = Column(JSONB)
-    asset_diff = Column(JSONB)
-    assumptions_applied = Column(JSONB)
-    confidence_scores = Column(JSONB)
+    structural_diff = Column(JSONType)
+    code_diff = Column(JSONType)
+    asset_diff = Column(JSONType)
+    assumptions_applied = Column(JSONType)
+    confidence_scores = Column(JSONType)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     feature_mappings = relationship(
@@ -386,7 +400,12 @@ class Experiment(Base):
         "ExperimentVariant", back_populates="experiment", cascade="all, delete-orphan"
     )
     results = relationship(
-        "ExperimentResult", back_populates="experiment", cascade="all, delete-orphan"
+        "ExperimentResult",
+        secondary="experiment_variants",
+        back_populates="experiment",
+        viewonly=True,
+        primaryjoin="Experiment.id == ExperimentVariant.experiment_id",
+        secondaryjoin="ExperimentVariant.id == ExperimentResult.variant_id"
     )
 
 
@@ -403,7 +422,7 @@ class ExperimentVariant(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_control: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    strategy_config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    strategy_config: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -447,7 +466,7 @@ class ExperimentResult(Base):
         DECIMAL(3, 2), nullable=True
     )  # User feedback score (1.0 to 5.0)
     user_feedback_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    result_metadata: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, name="metadata")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -459,4 +478,6 @@ class ExperimentResult(Base):
         secondary="experiment_variants",
         back_populates="results",
         viewonly=True,
+        primaryjoin="ExperimentResult.variant_id == ExperimentVariant.id",
+        secondaryjoin="ExperimentVariant.experiment_id == Experiment.id"
     )

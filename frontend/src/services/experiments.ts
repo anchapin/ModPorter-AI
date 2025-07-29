@@ -6,7 +6,7 @@ import { Experiment, ExperimentVariant, ExperimentResult } from '../types/experi
 const API_BASE_URL = '/api/v1/experiments';
 
 // Helper function for API requests
-const apiRequest = async (url: string, options: RequestInit = {}) => {
+const apiRequest = async (url: string, options: { [key: string]: any } = {}) => {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',

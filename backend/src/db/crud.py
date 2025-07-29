@@ -568,7 +568,7 @@ async def create_experiment_result(
     kpi_cost: Optional[float] = None,
     user_feedback_score: Optional[float] = None,
     user_feedback_text: Optional[str] = None,
-    metadata: Optional[dict] = None,
+    result_metadata: Optional[dict] = None,
     commit: bool = True,
 ) -> models.ExperimentResult:
     result = models.ExperimentResult(
@@ -579,7 +579,7 @@ async def create_experiment_result(
         kpi_cost=kpi_cost,
         user_feedback_score=user_feedback_score,
         user_feedback_text=user_feedback_text,
-        metadata=metadata,
+        result_metadata=result_metadata,
     )
     session.add(result)
     if commit:

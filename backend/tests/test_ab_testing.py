@@ -11,7 +11,7 @@ from db.models import Experiment, ExperimentVariant, ExperimentResult
 
 
 @pytest.mark.asyncio
-async def test_experiment_lifecycle(db_session: AsyncSession):
+async def test_experiment_lifecycle(db_session):
     """Test the full lifecycle of an experiment"""
     # Create experiment
     experiment = await crud.create_experiment(
@@ -56,7 +56,7 @@ async def test_experiment_lifecycle(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_experiment_variant_lifecycle(db_session: AsyncSession):
+async def test_experiment_variant_lifecycle(db_session):
     """Test the full lifecycle of an experiment variant"""
     # Create experiment first
     experiment = await crud.create_experiment(
@@ -115,7 +115,7 @@ async def test_experiment_variant_lifecycle(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_experiment_results(db_session: AsyncSession):
+async def test_experiment_results(db_session):
     """Test recording and retrieving experiment results"""
     # Create experiment and variant first
     experiment = await crud.create_experiment(
@@ -176,7 +176,7 @@ async def test_experiment_results(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_control_variant_uniqueness(db_session: AsyncSession):
+async def test_control_variant_uniqueness(db_session):
     """Test that only one control variant exists per experiment"""
     # Create experiment
     experiment = await crud.create_experiment(

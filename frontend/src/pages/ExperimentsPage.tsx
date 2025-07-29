@@ -12,7 +12,6 @@ import {
   DialogContent, 
   DialogContentText, 
   DialogTitle, 
-  Divider, 
   FormControl, 
   Grid, 
   IconButton, 
@@ -60,19 +59,6 @@ interface ExperimentVariant {
   strategy_config: Record<string, any> | null;
   created_at: string;
   updated_at: string;
-}
-
-interface ExperimentResult {
-  id: string;
-  variant_id: string;
-  session_id: string;
-  kpi_quality: number | null;
-  kpi_speed: number | null;
-  kpi_cost: number | null;
-  user_feedback_score: number | null;
-  user_feedback_text: string | null;
-  metadata: Record<string, any> | null;
-  created_at: string;
 }
 
 // Service functions (to be implemented in services/experiments.ts)
@@ -377,10 +363,10 @@ const ExperimentsPage: React.FC = () => {
   };
 
   // Format date for display
-  const formatDate = (dateString: string | null) => {
+  /* const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
-  };
+  }; */
 
   // Get status chip color
   const getStatusColor = (status: string) => {
