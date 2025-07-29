@@ -15,7 +15,7 @@ from collections import defaultdict, Counter
 import math
 from datetime import datetime
 
-from schemas.multimodal_schema import SearchQuery, SearchResult
+from schemas.multimodal_schema import SearchQuery, SearchResult, ContentType
 from agents.advanced_rag_agent import RAGResponse
 
 logger = logging.getLogger(__name__)

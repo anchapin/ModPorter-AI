@@ -366,7 +366,7 @@ class HybridSearchEngine:
                 keyword_score=candidate.keyword_score,
                 final_score=candidate.final_score,
                 rank=i + 1,
-                embedding_model_used=best_embedding_model or "sentence-transformers/all-MiniLM-L6-v2",
+                embedding_model_used="sentence-transformers/all-MiniLM-L6-v2",
                 matched_content=candidate.document.content_text[:200] if candidate.document.content_text else None,
                 match_explanation="; ".join(candidate.explanation)
             )
@@ -405,7 +405,9 @@ class HybridSearchEngine:
         query_vector = np.array(query_embedding)
         
         for embedding_data in doc_embeddings:
-            if hasattr(embedding_data, 'embedding_vector'):
+            if hasattr(embedding_data, 'embedding'):
+                doc_vector = np.array(embedding_data.embedding)
+            elif hasattr(embedding_data, 'embedding_vector'):
                 doc_vector = np.array(embedding_data.embedding_vector)
             else:
                 doc_vector = np.array(embedding_data)
