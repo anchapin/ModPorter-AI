@@ -361,7 +361,7 @@ class MultiModalEmbeddingGenerator:
         
         embeddings = await self.text_generator.generate_embeddings([text])
         
-        if not embeddings or embeddings[0] is None:
+        if embeddings is None or len(embeddings) == 0:
             logger.error("Failed to generate text embedding")
             return None
         

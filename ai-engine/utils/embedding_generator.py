@@ -175,7 +175,7 @@ class EmbeddingGenerator:
             try:
                 embeddings = self.model.encode(text_chunks, convert_to_numpy=True)
                 logger.info(f"Generated {len(embeddings)} embeddings using SentenceTransformers.")
-                return [np.array(e) for e in embeddings] # Ensure they are np.array
+                return embeddings if embeddings is not None else None # Already numpy arrays due to convert_to_numpy=True
             except Exception as e:
                 logger.error(f"Error generating SentenceTransformer embeddings: {e}")
                 return None
