@@ -193,7 +193,7 @@ export const Dashboard: React.FC = () => {
                 }}>
                   <h3 style={{ margin: 0, color: '#155724' }}>Conversion Complete!</h3>
                   <button
-                    onClick={() => setShowReport(false)}
+                    onClick={() => { setShowReport(false); setCurrentJobId(null); }}
                     style={{
                       backgroundColor: '#007bff',
                       color: 'white',

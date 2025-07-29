@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { ConversionUpload } from '../ConversionUpload/ConversionUpload';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
+import styles from './ConversionDashboard.module.css';
 
 type DashboardState = 'upload' | 'processing' | 'completed' | 'failed';
 
@@ -18,11 +19,9 @@ export const ConversionDashboard: React.FC = () => {
     setDashboardState('processing');
   };
 
-  const handleConversionComplete = (jobId: string) => {
+  const handleConversionComplete = (jobId: string, status: 'completed' | 'failed' = 'completed') => {
     setCurrentJobId(jobId);
-    // Determine if it's completed or failed based on the final status
-    // This could be enhanced by checking the actual status
-    setDashboardState('completed');
+    setDashboardState(status);
   };
 
   const handleStartNewConversion = () => {
@@ -42,38 +41,21 @@ export const ConversionDashboard: React.FC = () => {
       
       case 'processing':
         return (
-          <div>
-            <ConversionUpload
-              onConversionStart={handleConversionStart}
-              onConversionComplete={handleConversionComplete}
-            />
-          </div>
+          <ConversionUpload
+            onConversionStart={handleConversionStart}
+            onConversionComplete={handleConversionComplete}
+          />
         );
       
       case 'completed':
       case 'failed':
         return (
           <div>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: '2rem',
-              padding: '1rem',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px'
-            }}>
+            <div className={styles.statusHeader}>
               <h2>Conversion {dashboardState === 'completed' ? 'Complete' : 'Failed'}</h2>
               <button
                 onClick={handleStartNewConversion}
-                style={{
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
+                className={styles.startButton}
               >
                 Start New Conversion
               </button>
@@ -94,8 +76,8 @@ export const ConversionDashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+    <div className={styles.dashboard}>
+      <div className={styles.header}>
         <h1>ModPorter AI - Java to Bedrock Converter</h1>
         <p>Convert your Java Edition mods to Bedrock Edition add-ons with AI-powered smart assumptions</p>
       </div>
