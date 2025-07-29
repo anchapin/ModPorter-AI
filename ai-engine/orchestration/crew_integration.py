@@ -7,6 +7,9 @@ import logging
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 import time
+import tempfile
+import os
+import shutil
 
 from .orchestrator import ParallelOrchestrator
 from .strategy_selector import StrategySelector, OrchestrationStrategy
@@ -441,13 +444,13 @@ class EnhancedConversionCrew:
         
         try:
             # Create temporary directory
-            import tempfile
-            import os
-            
             output_base_dir = os.getenv("CONVERSION_OUTPUT_DIR", "/tmp")
             temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
             
             logger.info(f"Starting enhanced conversion for {mod_path}")
+            
+            # Measure wall-clock execution time
+            start_time = time.time()
             
             # Create workflow task graph
             task_graph = self.orchestrator.create_conversion_workflow(
@@ -462,12 +465,16 @@ class EnhancedConversionCrew:
             # Execute workflow
             execution_results = self.orchestrator.execute_workflow(task_graph)
             
+            end_time = time.time()
+            execution_time = end_time - start_time
+            
             # Format results according to PRD format
             formatted_results = self._format_results(
                 task_graph,
                 execution_results,
                 mod_path,
-                output_path
+                output_path,
+                execution_time
             )
             
             logger.info("Enhanced conversion completed successfully")
@@ -488,7 +495,6 @@ class EnhancedConversionCrew:
         finally:
             # Clean up temp directory
             if 'temp_dir' in locals() and temp_dir.exists():
-                import shutil
                 shutil.rmtree(temp_dir)
     
     def _format_results(
@@ -496,7 +502,8 @@ class EnhancedConversionCrew:
         task_graph: TaskGraph,
         execution_results: Dict[str, Any],
         mod_path: Path,
-        output_path: Path
+        output_path: Path,
+        execution_time: float
     ) -> Dict[str, Any]:
         """Format orchestrator results to match PRD format"""
         
@@ -565,22 +572,24 @@ class EnhancedConversionCrew:
             'detailed_report': detailed_report,
             'orchestration_metadata': {
                 'strategy_used': self.orchestrator.current_strategy.value if self.orchestrator.current_strategy else 'unknown',
-                'execution_time': stats['total_duration'],
-                'parallel_efficiency': self._calculate_parallel_efficiency(task_graph),
+                'execution_time': execution_time,
+                'parallel_efficiency': self._calculate_parallel_efficiency(task_graph, execution_time),
                 'dynamic_tasks_spawned': len([t for t in task_graph.nodes.values() if 'spawned' in t.task_id])
             }
         }
     
-    def _calculate_parallel_efficiency(self, task_graph: TaskGraph) -> float:
+    def _calculate_parallel_efficiency(self, task_graph: TaskGraph, execution_time: float) -> float:
         """Calculate parallel execution efficiency"""
         stats = task_graph.get_completion_stats()
         
-        # Simple efficiency calculation
-        # Perfect efficiency would be total_duration / max_task_duration
-        if stats['total_duration'] > 0 and stats['completed_tasks'] > 0:
-            sequential_time = stats['average_task_duration'] * stats['completed_tasks']
-            parallel_time = stats['total_duration']
-            return min(sequential_time / parallel_time, 1.0) if parallel_time > 0 else 0.0
+        # Calculate efficiency as speedup ratio
+        # T_serial is the sum of all task durations
+        # T_parallel is the wall-clock execution time
+        if execution_time > 0 and stats['total_duration'] > 0:
+            sequential_time = stats['total_duration']
+            parallel_time = execution_time
+            # Speedup = T_serial / T_parallel
+            return sequential_time / parallel_time
         
         return 0.0
     

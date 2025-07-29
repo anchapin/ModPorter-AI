@@ -10,6 +10,7 @@ import logging
 import os
 from pathlib import Path
 import tempfile
+import shutil
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_architect import BedrockArchitectAgent
@@ -22,6 +23,17 @@ from agents.variant_loader import variant_loader
 # Import enhanced orchestration system
 from orchestration.crew_integration import EnhancedConversionCrew
 from orchestration.strategy_selector import OrchestrationStrategy
+
+# Variant constants for enhanced orchestration selection
+ENHANCED_VARIANTS = {
+    'parallel_basic',
+    'parallel_adaptive', 
+    'hybrid',
+    'enhanced_logic',
+    'variant_enhanced_logic'
+}
+
+CONTROL_VARIANTS = {'control', 'sequential', 'baseline'}
 # --- INTEGRATION PLAN FOR QAAgent ---
 # The following comments outline where and how the new QAAgent
 # (for comprehensive QA testing) would be integrated into this crew.
@@ -302,25 +314,15 @@ class ModPorterConversionCrew:
         
         # Check variant configuration
         if variant_id:
-            # Variants that should use enhanced orchestration
-            enhanced_variants = [
-                'parallel_basic',
-                'parallel_adaptive', 
-                'hybrid',
-                'enhanced_logic',
-                'variant_enhanced_logic'
-            ]
-            
             # Check if variant matches enhanced patterns
             variant_lower = variant_id.lower()
-            for enhanced_variant in enhanced_variants:
+            for enhanced_variant in ENHANCED_VARIANTS:
                 if enhanced_variant in variant_lower:
                     logger.info(f"Enhanced orchestration enabled for variant: {variant_id}")
                     return True
             
             # Control/sequential variants use original system
-            control_variants = ['control', 'sequential', 'baseline']
-            for control_variant in control_variants:
+            for control_variant in CONTROL_VARIANTS:
                 if control_variant in variant_lower:
                     logger.info(f"Using original orchestration for control variant: {variant_id}")
                     return False
@@ -596,16 +598,10 @@ class ModPorterConversionCrew:
                 )
             except Exception as fallback_error:
                 logger.error(f"Fallback conversion also failed: {fallback_error}")
-                return {
-                    'status': 'failed',
-                    'error': f"Both enhanced and original conversion failed. Enhanced: {e}, Original: {fallback_error}",
-                    'overall_success_rate': 0.0,
-                    'converted_mods': [],
-                    'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
-                    'smart_assumptions_applied': [],
-                    'download_url': None,
-                    'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
-                }
+                return self._create_failure_response(
+                    f"Both enhanced and original conversion failed. Enhanced: {e}, Original: {fallback_error}",
+                    mod_path
+                )
     
     def _convert_with_original_crew(
         self, 
@@ -691,24 +687,25 @@ class ModPorterConversionCrew:
 
         except Exception as e:
             logger.error(f"Original crew conversion failed: {str(e)}")
-            return {
-                'status': 'failed',
-                'error': str(e),
-                'overall_success_rate': 0.0,
-                'converted_mods': [],
-                'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
-                'smart_assumptions_applied': [],
-                'download_url': None,
-                'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
-            }
+            return self._create_failure_response(str(e), mod_path)
         finally:
             # Clean up temporary directory if it was created
             if temp_dir and temp_dir.exists():
-                import shutil
                 shutil.rmtree(temp_dir)
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
     
-
+    def _create_failure_response(self, error_message: str, mod_path: Path) -> Dict[str, Any]:
+        """Create standardized failure response dictionary"""
+        return {
+            'status': 'failed',
+            'error': error_message,
+            'overall_success_rate': 0.0,
+            'converted_mods': [],
+            'failed_mods': [{'name': str(mod_path), 'reason': error_message, 'suggestions': []}],
+            'smart_assumptions_applied': [],
+            'download_url': None,
+            'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [error_message]}
+        }
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
         """Extract conversion plan components from crew result for assumption reporting"""

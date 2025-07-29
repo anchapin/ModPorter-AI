@@ -6,6 +6,8 @@ Part of Phase 2: Core Orchestration Engine Implementation
 import asyncio
 import time
 import logging
+import multiprocessing
+import os
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from concurrent.futures import Future, as_completed
 import json
@@ -302,7 +304,6 @@ class ParallelOrchestrator:
             try:
                 # Parse analysis result to determine what to spawn
                 if isinstance(analysis_result, str):
-                    import json
                     result_data = json.loads(analysis_result)
                 elif isinstance(analysis_result, dict):
                     result_data = analysis_result
@@ -496,17 +497,28 @@ class ParallelOrchestrator:
                 logger.warning("No active tasks and no ready tasks - workflow may be stuck")
                 break
             
-            # Wait for at least one task to complete
+            # Wait for at least one task to complete using as_completed with timeout
             completed_futures = []
-            for task_id, future in list(active_futures.items()):
-                if future.done():
-                    completed_futures.append((task_id, future))
-            
-            if not completed_futures:
-                # Wait a bit for tasks to complete
-                time.sleep(0.1)
+            try:
+                # Use as_completed with timeout to avoid busy waiting
+                for future in as_completed(active_futures.values(), timeout=0.1):
+                    task_id = None
+                    for t_id, fut in active_futures.items():
+                        if fut == future:
+                            task_id = t_id
+                            break
+                    
+                    if task_id is not None:
+                        completed_futures.append((task_id, future))
+                        # Break after first completion to allow submitting new ready tasks
+                        break
+            except TimeoutError:
+                # No tasks completed in timeout period, continue to check for new ready tasks
                 continue
             
+            if not completed_futures:
+                continue
+                
             # Process completed tasks
             for task_id, future in completed_futures:
                 del active_futures[task_id]
@@ -577,9 +589,6 @@ class ParallelOrchestrator:
     
     def _get_system_resources(self) -> Dict[str, Any]:
         """Get current system resource information"""
-        import multiprocessing
-        import os
-        
         return {
             'cpu_count': multiprocessing.cpu_count(),
             'memory_gb': 8,  # Default estimate - could use psutil if available

@@ -48,11 +48,6 @@ class TaskNode:
     # Dynamic spawning capability
     spawn_callback: Optional[Callable[[Any], List['TaskNode']]] = None
     
-    def __post_init__(self):
-        """Initialize computed fields"""
-        if not hasattr(self, 'dependencies'):
-            self.dependencies = set()
-    
     @property
     def duration(self) -> Optional[float]:
         """Calculate task execution duration if completed"""

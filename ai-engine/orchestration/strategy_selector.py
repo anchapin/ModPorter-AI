@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +267,7 @@ class StrategySelector:
             'success_rate': success_rate,
             'total_duration': total_duration,
             'task_count': task_count,
-            'timestamp': __import__('time').time(),
+            'timestamp': time.time(),
             **(additional_metrics or {})
         }
         
