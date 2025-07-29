@@ -19,7 +19,7 @@ import {
   TableRow,
   Paper
 } from '@mui/material';
-import { fetchExperiments, fetchExperimentResults } from '../services/experiments';
+import { fetchExperiments, fetchExperimentResults, fetchExperimentVariants } from '../services/experiments';
 import { Experiment, ExperimentResult } from '../types/experiment';
 
 const ExperimentResultsPage: React.FC = () => {
@@ -55,9 +55,17 @@ const ExperimentResultsPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const data = await fetchExperimentResults();
-        // Filter results by experiment (would be done on backend in a real implementation)
-        setResults(data);
+        // First, fetch variants for the selected experiment
+        const variants = await fetchExperimentVariants(selectedExperimentId);
+        
+        // Then fetch results for each variant
+        const allResults: ExperimentResult[] = [];
+        for (const variant of variants) {
+          const variantResults = await fetchExperimentResults(variant.id);
+          allResults.push(...variantResults);
+        }
+        
+        setResults(allResults);
       } catch (err) {
         setError('Failed to load experiment results');
         console.error(err);

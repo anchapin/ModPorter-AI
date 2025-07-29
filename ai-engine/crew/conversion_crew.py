@@ -118,13 +118,14 @@ class ModPorterConversionCrew:
         # Apply variant configuration if available
         if java_analyzer_config:
             if "model" in java_analyzer_config:
-                agent_kwargs["llm"] = create_rate_limited_llm(model=java_analyzer_config["model"])
-            if "temperature" in java_analyzer_config:
-                # Temperature needs to be set on the LLM directly
-                pass  # For now, we'll just note this limitation
-            if "max_tokens" in java_analyzer_config:
-                # Max tokens needs to be set on the LLM directly
-                pass  # For now, we'll just note this limitation
+                llm_params = {
+                    'model': java_analyzer_config["model"],
+                    'temperature': java_analyzer_config.get("temperature"),
+                    'max_tokens': java_analyzer_config.get("max_tokens")
+                }
+                # Filter out None values so defaults are used
+                llm_params = {k: v for k, v in llm_params.items() if v is not None}
+                agent_kwargs["llm"] = create_rate_limited_llm(**llm_params)
         
         # Disable memory when using Ollama to avoid validation issues
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
@@ -149,7 +150,14 @@ class ModPorterConversionCrew:
         # Apply variant configuration if available
         if bedrock_architect_config:
             if "model" in bedrock_architect_config:
-                architect_kwargs["llm"] = create_rate_limited_llm(model=bedrock_architect_config["model"])
+                llm_params = {
+                    'model': bedrock_architect_config["model"],
+                    'temperature': bedrock_architect_config.get("temperature"),
+                    'max_tokens': bedrock_architect_config.get("max_tokens")
+                }
+                # Filter out None values so defaults are used
+                llm_params = {k: v for k, v in llm_params.items() if v is not None}
+                architect_kwargs["llm"] = create_rate_limited_llm(**llm_params)
         
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             architect_kwargs["memory"] = False
@@ -172,7 +180,14 @@ class ModPorterConversionCrew:
         # Apply variant configuration if available
         if logic_translator_config:
             if "model" in logic_translator_config:
-                translator_kwargs["llm"] = create_rate_limited_llm(model=logic_translator_config["model"])
+                llm_params = {
+                    'model': logic_translator_config["model"],
+                    'temperature': logic_translator_config.get("temperature"),
+                    'max_tokens': logic_translator_config.get("max_tokens")
+                }
+                # Filter out None values so defaults are used
+                llm_params = {k: v for k, v in llm_params.items() if v is not None}
+                translator_kwargs["llm"] = create_rate_limited_llm(**llm_params)
         
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             translator_kwargs["memory"] = False

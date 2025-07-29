@@ -237,12 +237,7 @@ async def start_conversion(
         raise HTTPException(status_code=503, detail="Job state storage unavailable")
     
     # Initialize conversion crew with variant if specified
-    try:
-        crew = ModPorterConversionCrew(variant_id=request.experiment_variant)
-        logger.info(f"ModPorterConversionCrew initialized with variant: {request.experiment_variant}")
-    except Exception as e:
-        logger.error(f"Failed to initialize ModPorterConversionCrew: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Conversion crew initialization failed")
+    # The crew is now initialized in the background task to avoid blocking the request
     
     # Create job status
     job_status = ConversionStatus(

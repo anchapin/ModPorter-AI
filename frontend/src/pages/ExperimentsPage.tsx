@@ -36,121 +36,18 @@ import {
   Stop as StopIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import {
+  fetchExperiments,
+  createExperiment,
+  updateExperiment,
+  deleteExperiment,
+  fetchExperimentVariants,
+  createExperimentVariant,
+  updateExperimentVariant,
+  deleteExperimentVariant
+} from '../services/experiments';
+import { Experiment, ExperimentVariant } from '../types/experiment';
 
-// Types
-interface Experiment {
-  id: string;
-  name: string;
-  description: string;
-  start_date: string | null;
-  end_date: string | null;
-  status: 'draft' | 'active' | 'paused' | 'completed';
-  traffic_allocation: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ExperimentVariant {
-  id: string;
-  experiment_id: string;
-  name: string;
-  description: string;
-  is_control: boolean;
-  strategy_config: Record<string, any> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// Service functions (to be implemented in services/experiments.ts)
-const fetchExperiments = async (): Promise<Experiment[]> => {
-  const response = await fetch('/api/v1/experiments/experiments');
-  if (!response.ok) {
-    throw new Error('Failed to fetch experiments');
-  }
-  return response.json();
-};
-
-const createExperiment = async (experiment: Omit<Experiment, 'id' | 'created_at' | 'updated_at'>): Promise<Experiment> => {
-  const response = await fetch('/api/v1/experiments/experiments', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(experiment),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create experiment');
-  }
-  return response.json();
-};
-
-const updateExperiment = async (id: string, experiment: Partial<Experiment>): Promise<Experiment> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(experiment),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update experiment');
-  }
-  return response.json();
-};
-
-const deleteExperiment = async (id: string): Promise<void> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete experiment');
-  }
-};
-
-const fetchExperimentVariants = async (experimentId: string): Promise<ExperimentVariant[]> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${experimentId}/variants`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch experiment variants');
-  }
-  return response.json();
-};
-
-const createExperimentVariant = async (experimentId: string, variant: Omit<ExperimentVariant, 'id' | 'experiment_id' | 'created_at' | 'updated_at'>): Promise<ExperimentVariant> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${experimentId}/variants`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(variant),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create experiment variant');
-  }
-  return response.json();
-};
-
-const updateExperimentVariant = async (experimentId: string, variantId: string, variant: Partial<ExperimentVariant>): Promise<ExperimentVariant> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${experimentId}/variants/${variantId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(variant),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update experiment variant');
-  }
-  return response.json();
-};
-
-const deleteExperimentVariant = async (experimentId: string, variantId: string): Promise<void> => {
-  const response = await fetch(`/api/v1/experiments/experiments/${experimentId}/variants/${variantId}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete experiment variant');
-  }
-};
 
 const ExperimentsPage: React.FC = () => {
   // State

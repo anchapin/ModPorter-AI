@@ -87,34 +87,26 @@ async def update_job_progress(
     try:
         job_uuid = uuid.UUID(job_id)
     except ValueError:
-        return None
+        raise ValueError(f"Invalid job_id format: {job_id}")
 
-    # First, try to update existing progress record
+    # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
+    from sqlalchemy import func
+
     stmt = (
-        update(models.JobProgress)
-        .where(models.JobProgress.job_id == job_uuid)
-        .values(progress=progress)
+        pg_insert(models.JobProgress)
+        .values(job_id=job_uuid, progress=progress)
+        .on_conflict_do_update(
+            index_elements=["job_id"],
+            set_={"progress": progress, "last_update": func.now()},
+        )
+        .returning(models.JobProgress)
     )
+
     result = await session.execute(stmt)
-
-    # If no rows were affected, create a new progress record
-    if result.rowcount == 0:
-        progress_record = models.JobProgress(job_id=job_uuid, progress=progress)
-        session.add(progress_record)
-        if commit:
-            await session.commit()
-            await session.refresh(progress_record)
-        else:
-            await session.flush()
-        return progress_record
-
+    prog = result.scalar_one()
     if commit:
         await session.commit()
-
-    # Refresh the progress object
-    stmt = select(models.JobProgress).where(models.JobProgress.job_id == job_uuid)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    return prog
 
 
 async def get_job_progress(
@@ -436,10 +428,12 @@ async def create_experiment_variant(
 ) -> models.ExperimentVariant:
     # If this is a control variant, make sure no other control variant exists for this experiment
     if is_control:
+        # Use SELECT ... FOR UPDATE to prevent race conditions
+        from sqlalchemy import text
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == experiment_id,
             models.ExperimentVariant.is_control == True,
-        )
+        ).with_for_update()
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
         if existing_control:
@@ -503,11 +497,12 @@ async def update_experiment_variant(
 
     # If this is being set as a control variant, make sure no other control variant exists for this experiment
     if is_control and is_control != variant.is_control:
+        # Use SELECT ... FOR UPDATE to prevent race conditions
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == variant.experiment_id,
             models.ExperimentVariant.is_control == True,
             models.ExperimentVariant.id != variant_id,
-        )
+        ).with_for_update()
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
         if existing_control:

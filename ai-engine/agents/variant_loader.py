@@ -31,8 +31,14 @@ class VariantLoader:
         if variant_id in self.variant_configs:
             return self.variant_configs[variant_id]
         
+        # Sanitize variant_id to prevent path traversal
+        safe_variant_id = os.path.basename(variant_id)
+        if safe_variant_id != variant_id:
+            logger.error(f"Potential path traversal attempt with variant_id: {variant_id}")
+            return None
+        
         # Try to load from file
-        config_file = os.path.join(self.base_config_path, f"variant_{variant_id}.json")
+        config_file = os.path.join(self.base_config_path, f"variant_{safe_variant_id}.json")
         if os.path.exists(config_file):
             try:
                 with open(config_file, 'r') as f:
@@ -40,7 +46,7 @@ class VariantLoader:
                 self.variant_configs[variant_id] = config
                 logger.info(f"Loaded configuration for variant {variant_id}")
                 return config
-            except Exception as e:
+            except (IOError, json.JSONDecodeError) as e:
                 logger.error(f"Failed to load configuration for variant {variant_id}: {e}")
                 return None
         
@@ -52,7 +58,7 @@ class VariantLoader:
                 self.variant_configs[variant_id] = config
                 logger.info(f"Loaded configuration for variant {variant_id} from environment")
                 return config
-            except Exception as e:
+            except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse environment configuration for variant {variant_id}: {e}")
                 return None
         

@@ -399,14 +399,8 @@ class Experiment(Base):
     variants = relationship(
         "ExperimentVariant", back_populates="experiment", cascade="all, delete-orphan"
     )
-    results = relationship(
-        "ExperimentResult",
-        secondary="experiment_variants",
-        back_populates="experiment",
-        viewonly=True,
-        primaryjoin="Experiment.id == ExperimentVariant.experiment_id",
-        secondaryjoin="ExperimentVariant.id == ExperimentResult.variant_id"
-    )
+    # Note: Access to results can be achieved via experiment.variants
+    # then iterating through variant.results for each variant
 
 
 class ExperimentVariant(Base):
@@ -473,11 +467,4 @@ class ExperimentResult(Base):
 
     # Relationships
     variant = relationship("ExperimentVariant", back_populates="results")
-    experiment = relationship(
-        "Experiment",
-        secondary="experiment_variants",
-        back_populates="results",
-        viewonly=True,
-        primaryjoin="ExperimentResult.variant_id == ExperimentVariant.id",
-        secondaryjoin="ExperimentVariant.experiment_id == Experiment.id"
-    )
+    # Note: Access to experiment can be achieved via result.variant.experiment
