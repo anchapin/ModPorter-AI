@@ -1,8 +1,9 @@
 from typing import Optional, List
 from uuid import UUID as PyUUID # For type hinting UUID objects
 import uuid
+import os
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete # Added delete
+from sqlalchemy import select, update, delete, func # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
@@ -97,7 +98,7 @@ async def update_job_progress(
         .values(job_id=job_uuid, progress=progress)
         .on_conflict_do_update(
             index_elements=["job_id"],
-            set_={"progress": progress, "last_update": func.now()},
+            set_={"progress": progress, "last_update": datetime.datetime.now()},
         )
         .returning(models.JobProgress)
     )
@@ -609,3 +610,324 @@ async def list_experiment_results(
     stmt = stmt.offset(skip).limit(limit).order_by(models.ExperimentResult.created_at.desc())
     result = await session.execute(stmt)
     return result.scalars().all()
+
+# Addon Asset Management CRUD operations
+
+async def get_addon_asset(
+    session: AsyncSession, 
+    asset_id: PyUUID
+) -> Optional[models.AddonAsset]:
+    """Retrieve a specific addon asset by its ID."""
+    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_addon_asset(
+    session: AsyncSession,
+    *,
+    addon_id: PyUUID,
+    file,
+    asset_type: str,
+    commit: bool = True,
+) -> models.AddonAsset:
+    """Create a new addon asset entry in the database and save the file."""
+    # Generate a unique path for the asset file
+    asset_uuid = uuid.uuid4()
+    original_filename = getattr(file, 'filename', f"{asset_uuid}.{asset_type}")
+    
+    # Create the asset path: {asset_uuid}_{original_filename}
+    asset_path = f"{asset_uuid}_{original_filename}"
+    
+    # Create the database record
+    db_asset = models.AddonAsset(
+        addon_id=addon_id,
+        type=asset_type,
+        path=asset_path,
+        original_filename=original_filename,
+    )
+    
+    session.add(db_asset)
+    if commit:
+        await session.commit()
+        await session.refresh(db_asset)
+    else:
+        await session.flush()
+        
+    return db_asset
+
+
+async def update_addon_asset(
+    session: AsyncSession,
+    *,
+    asset_id: PyUUID,
+    file,
+    commit: bool = True,
+) -> Optional[models.AddonAsset]:
+    """Update an existing addon asset with a new file."""
+    # Get the existing asset
+    existing_asset = await get_addon_asset(session, asset_id)
+    if not existing_asset:
+        return None
+    
+    # Generate new path for the updated asset
+    asset_uuid = uuid.uuid4()
+    original_filename = getattr(file, 'filename', f"{asset_uuid}.{existing_asset.type}")
+    new_asset_path = f"{asset_uuid}_{original_filename}"
+    
+    # Update the database record
+    stmt = (
+        update(models.AddonAsset)
+        .where(models.AddonAsset.id == asset_id)
+        .values(
+            path=new_asset_path,
+            original_filename=original_filename,
+            updated_at=datetime.datetime.now(),
+        )
+    )
+    await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+    
+    # Refresh the asset object
+    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_addon_asset(
+    session: AsyncSession,
+    *,
+    asset_id: PyUUID,
+    commit: bool = True,
+) -> Optional[dict]:
+    """Delete an addon asset from the database and remove the file from storage."""
+    # Get the asset to retrieve its path before deletion
+    asset = await get_addon_asset(session, asset_id)
+    if not asset:
+        return None
+    
+    # Delete the database record
+    stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_id)
+    result = await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+    
+    # Return information about the deleted asset
+    return {
+        "id": str(asset.id),
+        "addon_id": str(asset.addon_id),
+        "path": asset.path,
+        "original_filename": asset.original_filename,
+    }
+
+
+async def create_addon_asset_from_local_path(
+    session: AsyncSession,
+    *,
+    addon_id: PyUUID,
+    source_file_path: str,
+    asset_type: str,
+    original_filename: Optional[str] = None,
+    commit: bool = True,
+) -> models.AddonAsset:
+    """Create an addon asset entry from a local file path."""
+    # Use the provided original filename or extract from the source path
+    if not original_filename:
+        original_filename = os.path.basename(source_file_path)
+    
+    # Generate a unique path for the asset
+    asset_uuid = uuid.uuid4()
+    asset_path = f"{asset_uuid}_{original_filename}"
+    
+    # Create the database record
+    db_asset = models.AddonAsset(
+        addon_id=addon_id,
+        type=asset_type,
+        path=asset_path,
+        original_filename=original_filename,
+    )
+    
+    session.add(db_asset)
+    if commit:
+        await session.commit()
+        await session.refresh(db_asset)
+    else:
+        await session.flush()
+        
+    return db_asset
+
+
+# Asset Management CRUD operations
+
+async def create_asset(
+    session: AsyncSession,
+    *,
+    conversion_id: str,
+    asset_type: str,
+    original_path: str,
+    original_filename: str,
+    file_size: Optional[int] = None,
+    mime_type: Optional[str] = None,
+    asset_metadata: Optional[dict] = None,
+    commit: bool = True,
+) -> models.Asset:
+    """Create a new asset associated with a conversion job."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError("Invalid conversion_id format")
+
+    asset = models.Asset(
+        conversion_id=conversion_uuid,
+        asset_type=asset_type,
+        original_path=original_path,
+        original_filename=original_filename,
+        file_size=file_size,
+        mime_type=mime_type,
+        asset_metadata=asset_metadata or {},
+        status="pending",
+    )
+    session.add(asset)
+    if commit:
+        await session.commit()
+        await session.refresh(asset)
+    else:
+        await session.flush()
+    return asset
+
+
+async def get_asset(session: AsyncSession, asset_id: str) -> Optional[models.Asset]:
+    """Retrieve a specific asset by its ID."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        return None
+    
+    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def list_assets_for_conversion(
+    session: AsyncSession, 
+    conversion_id: str,
+    asset_type: Optional[str] = None,
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100
+) -> List[models.Asset]:
+    """List all assets associated with a conversion job."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        return []
+
+    stmt = select(models.Asset).where(models.Asset.conversion_id == conversion_uuid)
+    
+    if asset_type:
+        stmt = stmt.where(models.Asset.asset_type == asset_type)
+    if status:
+        stmt = stmt.where(models.Asset.status == status)
+    
+    stmt = stmt.offset(skip).limit(limit).order_by(models.Asset.created_at.desc())
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_asset_status(
+    session: AsyncSession,
+    asset_id: str,
+    status: str,
+    converted_path: Optional[str] = None,
+    error_message: Optional[str] = None,
+    commit: bool = True,
+) -> Optional[models.Asset]:
+    """Update an asset's conversion status and paths."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        return None
+
+    update_data = {"status": status}
+    if converted_path:
+        update_data["converted_path"] = converted_path
+    if error_message:
+        update_data["error_message"] = error_message
+
+    stmt = (
+        update(models.Asset)
+        .where(models.Asset.id == asset_uuid)
+        .values(**update_data)
+    )
+    await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+
+    # Return the updated asset
+    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def update_asset_metadata(
+    session: AsyncSession,
+    asset_id: str,
+    metadata: dict,
+    commit: bool = True,
+) -> Optional[models.Asset]:
+    """Update an asset's metadata."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        return None
+
+    stmt = (
+        update(models.Asset)
+        .where(models.Asset.id == asset_uuid)
+        .values(asset_metadata=metadata)
+    )
+    await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+
+    # Return the updated asset
+    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_asset(
+    session: AsyncSession,
+    asset_id: str,
+    commit: bool = True,
+) -> Optional[dict]:
+    """Delete an asset from the database."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        return None
+
+    # Get the asset info before deletion
+    asset = await get_asset(session, asset_id)
+    if not asset:
+        return None
+
+    stmt = delete(models.Asset).where(models.Asset.id == asset_uuid)
+    await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+
+    # Return information about the deleted asset
+    return {
+        "id": str(asset.id),
+        "conversion_id": str(asset.conversion_id),
+        "original_path": asset.original_path,
+        "converted_path": asset.converted_path,
+        "original_filename": asset.original_filename,
+    }

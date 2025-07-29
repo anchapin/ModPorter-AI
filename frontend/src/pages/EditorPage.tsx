@@ -8,13 +8,14 @@ import { PropertiesPanel } from '../components/Editor/PropertiesPanel/Properties
 import { AssetManager } from '../components/Editor/AssetManager/AssetManager';
 import { RecipeManager } from '../components/Editor/RecipeManager/RecipeManager';
 import { PreviewWindow } from '../components/Editor/PreviewWindow/PreviewWindow'; // Added
+import { ConversionAssetsManager } from '../components/ConversionAssets';
 // import './EditorPage.css'; // We'll create this later if needed, or use App.css
 
 const EditorPageContent: React.FC = () => {
   const { addonId } = useParams<{ addonId: string }>();
   // Added setAddonData from context
   const { addonData, isLoading, error, loadAddon, setAddonData } = useEditorContext();
-  const [rightSidebarTab, setRightSidebarTab] = useState<'assets' | 'recipes' | 'preview'>('assets');
+  const [rightSidebarTab, setRightSidebarTab] = useState<'assets' | 'conversion-assets' | 'recipes' | 'preview'>('assets');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -99,7 +100,13 @@ const EditorPageContent: React.FC = () => {
             onClick={() => setRightSidebarTab('assets')}
             className={`sidebar-tab-button ${rightSidebarTab === 'assets' ? 'active' : ''}`}
           >
-            Assets
+            Addon Assets
+          </button>
+          <button
+            onClick={() => setRightSidebarTab('conversion-assets')}
+            className={`sidebar-tab-button ${rightSidebarTab === 'conversion-assets' ? 'active' : ''}`}
+          >
+            Conversion Assets
           </button>
           <button
             onClick={() => setRightSidebarTab('recipes')}
@@ -116,6 +123,7 @@ const EditorPageContent: React.FC = () => {
         </div>
         <div className="sidebar-tab-content">
           {rightSidebarTab === 'assets' && <AssetManager />}
+          {rightSidebarTab === 'conversion-assets' && addonId && <ConversionAssetsManager conversionId={addonId} />}
           {rightSidebarTab === 'recipes' && <RecipeManager />}
           {rightSidebarTab === 'preview' && <PreviewWindow />}
         </div>

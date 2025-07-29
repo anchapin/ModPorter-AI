@@ -25,7 +25,8 @@ from models import addon_models as pydantic_addon_models # For addon Pydantic mo
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, assets
+from services.asset_conversion_service import asset_conversion_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +77,10 @@ app = FastAPI(
         {
             "name": "addons",
             "description": "Addon data management",
+        },
+        {
+            "name": "assets",
+            "description": "Asset management for conversions",
         }
     ],
     docs_url="/docs",
@@ -99,6 +104,7 @@ app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["compar
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
+app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
@@ -362,6 +368,22 @@ async def simulate_ai_conversion(job_id: str):
                         original_filename=asset_info["original_filename"]
                     )
                 logger.info(f"Job {job_id}: {len(identified_assets_info)} assets processed and saved.")
+
+                # Asset conversion integration - convert uploaded assets using AI engine
+                try:
+                    logger.info(f"Job {job_id}: Starting asset conversion for conversion job")
+                    asset_conversion_result = await asset_conversion_service.convert_assets_for_conversion(job_id)
+                    
+                    if asset_conversion_result.get("success"):
+                        converted_count = asset_conversion_result.get("converted_count", 0)
+                        failed_count = asset_conversion_result.get("failed_count", 0)
+                        logger.info(f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed")
+                    else:
+                        logger.warning(f"Job {job_id}: Asset conversion batch had issues")
+                        
+                except Exception as asset_error:
+                    logger.error(f"Job {job_id}: Asset conversion error: {asset_error}")
+                    # Don't fail the entire job for asset conversion errors
 
                 # Original ZIP creation (can be retained or removed)
                 os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
