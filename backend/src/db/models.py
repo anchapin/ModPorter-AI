@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
+    Boolean,
     String,
     Integer,
     ForeignKey,
@@ -345,3 +346,117 @@ class DocumentEmbedding(Base):
     content_hash = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# A/B Testing Models
+
+class Experiment(Base):
+    __tablename__ = "experiments"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    start_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    end_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="draft"
+    )  # draft, active, paused, completed
+    traffic_allocation: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=100
+    )  # Percentage (0-100)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    variants = relationship(
+        "ExperimentVariant", back_populates="experiment", cascade="all, delete-orphan"
+    )
+    results = relationship(
+        "ExperimentResult", back_populates="experiment", cascade="all, delete-orphan"
+    )
+
+
+class ExperimentVariant(Base):
+    __tablename__ = "experiment_variants"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    experiment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("experiments.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_control: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    strategy_config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    experiment = relationship("Experiment", back_populates="variants")
+    results = relationship(
+        "ExperimentResult", back_populates="variant", cascade="all, delete-orphan"
+    )
+
+
+class ExperimentResult(Base):
+    __tablename__ = "experiment_results"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    variant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("experiment_variants.id", ondelete="CASCADE"), nullable=False
+    )
+    session_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    kpi_quality: Mapped[Optional[float]] = mapped_column(
+        DECIMAL(5, 2), nullable=True
+    )  # Quality score (0.00 to 100.00)
+    kpi_speed: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )  # Execution time in milliseconds
+    kpi_cost: Mapped[Optional[float]] = mapped_column(
+        DECIMAL(10, 2), nullable=True
+    )  # Computational cost
+    user_feedback_score: Mapped[Optional[float]] = mapped_column(
+        DECIMAL(3, 2), nullable=True
+    )  # User feedback score (1.0 to 5.0)
+    user_feedback_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    # Relationships
+    variant = relationship("ExperimentVariant", back_populates="results")
+    experiment = relationship(
+        "Experiment",
+        secondary="experiment_variants",
+        back_populates="results",
+        viewonly=True,
+    )

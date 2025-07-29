@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
 from db.models import DocumentEmbedding
+from datetime import datetime
 
 
 async def create_job(
@@ -48,32 +49,23 @@ async def get_job(session: AsyncSession, job_id: str) -> Optional[models.Convers
     stmt = (
         select(models.ConversionJob)
         .where(models.ConversionJob.id == job_uuid)
-        .options(selectinload(models.ConversionJob.progress))
+        .options(
+            selectinload(models.ConversionJob.results),
+            selectinload(models.ConversionJob.progress),
+        )
     )
     result = await session.execute(stmt)
-    job = result.scalar_one_or_none()
-    return job
-
-
-async def list_jobs(session: AsyncSession) -> List[models.ConversionJob]:
-    stmt = (
-        select(models.ConversionJob)
-        .options(selectinload(models.ConversionJob.progress))
-        .order_by(models.ConversionJob.created_at.desc())
-    )
-    result = await session.execute(stmt)
-    return result.scalars().all()
+    return result.scalar_one_or_none()
 
 
 async def update_job_status(
     session: AsyncSession, job_id: str, status: str, commit: bool = True
 ) -> Optional[models.ConversionJob]:
-    # Update status on ConversionJob
-    # Convert string job_id to UUID for database query
     try:
         job_uuid = uuid.UUID(job_id)
     except ValueError:
         return None
+
     stmt = (
         update(models.ConversionJob)
         .where(models.ConversionJob.id == job_uuid)
@@ -82,433 +74,179 @@ async def update_job_status(
     await session.execute(stmt)
     if commit:
         await session.commit()
-    job = await get_job(session, job_id)
-    return job
 
-
-async def upsert_progress(
-    session: AsyncSession, job_id: str, progress: int, commit: bool = True
-) -> models.JobProgress:
-    # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
-    from sqlalchemy import func
-
-    # Convert string job_id to UUID for database query
-    try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
-        raise ValueError(f"Invalid job_id format: {job_id}")
-    stmt = (
-        pg_insert(models.JobProgress)
-        .values(job_id=job_uuid, progress=progress)
-        .on_conflict_do_update(
-            index_elements=["job_id"],
-            set_={"progress": progress, "last_update": func.now()},
-        )
-        .returning(models.JobProgress)
-    )
-
-    result = await session.execute(stmt)
-    prog = result.scalar_one()
-    if commit:
-        await session.commit()
-    return prog
-
-# Addon Management CRUD functions
-
-from uuid import UUID as PyUUID
-from models import addon_models as pydantic_addon_models
-from sqlalchemy import delete
-import os
-import shutil
-import uuid as uuid_pkg # Renamed to avoid conflict with PyUUID
-from fastapi import UploadFile
-
-BASE_ASSET_PATH = "backend/addon_assets"
-
-async def get_addon_details(session: AsyncSession, addon_id: PyUUID) -> Optional[models.Addon]:
-    """
-    Retrieves an addon and its associated blocks, assets, behaviors, and recipes.
-    """
-    stmt = (
-        select(models.Addon)
-        .where(models.Addon.id == addon_id)
-        .options(
-            selectinload(models.Addon.blocks).selectinload(models.AddonBlock.behavior),
-            selectinload(models.Addon.assets),
-            selectinload(models.Addon.recipes),
-        )
-    )
+    # Refresh the job object
+    stmt = select(models.ConversionJob).where(models.ConversionJob.id == job_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
-async def update_addon_details(
+
+async def update_job_progress(
+    session: AsyncSession, job_id: str, progress: int, commit: bool = True
+) -> Optional[models.JobProgress]:
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        return None
+
+    # First, try to update existing progress record
+    stmt = (
+        update(models.JobProgress)
+        .where(models.JobProgress.job_id == job_uuid)
+        .values(progress=progress)
+    )
+    result = await session.execute(stmt)
+
+    # If no rows were affected, create a new progress record
+    if result.rowcount == 0:
+        progress_record = models.JobProgress(job_id=job_uuid, progress=progress)
+        session.add(progress_record)
+        if commit:
+            await session.commit()
+            await session.refresh(progress_record)
+        else:
+            await session.flush()
+        return progress_record
+
+    if commit:
+        await session.commit()
+
+    # Refresh the progress object
+    stmt = select(models.JobProgress).where(models.JobProgress.job_id == job_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_job_progress(
+    session: AsyncSession, job_id: str
+) -> Optional[models.JobProgress]:
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        return None
+
+    stmt = select(models.JobProgress).where(models.JobProgress.job_id == job_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_result(
     session: AsyncSession,
-    addon_id: PyUUID,
-    addon_data: pydantic_addon_models.AddonDataUpload,
-    # user_id: str # user_id is part of addon_data
-) -> models.Addon:
-    """
-    Updates an existing addon or creates a new one if it doesn't exist (upsert).
-    Manages the full state of the addon's components (blocks, assets, recipes).
-    """
-    # Try to fetch existing addon
-    existing_addon = await session.get(models.Addon, addon_id)
+    *,
+    job_id: str,
+    output_data: dict,
+    commit: bool = True,
+) -> models.ConversionResult:
+    try:
+        job_uuid = uuid.UUID(job_id)
+    except ValueError:
+        raise ValueError("Invalid job_id format")
 
-    if existing_addon:
-        # Update existing addon
-        existing_addon.name = addon_data.name
-        existing_addon.description = addon_data.description
-        existing_addon.user_id = addon_data.user_id # Allow user_id update
-
-        # Clear existing child collections for a full replacement strategy
-        # For blocks (and their behaviors)
-        await session.execute(delete(models.AddonBehavior).where(models.AddonBehavior.block_id.in_(
-            select(models.AddonBlock.id).where(models.AddonBlock.addon_id == addon_id)
-        )))
-        await session.execute(delete(models.AddonBlock).where(models.AddonBlock.addon_id == addon_id))
-        # For assets
-        await session.execute(delete(models.AddonAsset).where(models.AddonAsset.addon_id == addon_id))
-        # For recipes
-        await session.execute(delete(models.AddonRecipe).where(models.AddonRecipe.addon_id == addon_id))
-
-        # Flush deletions to make sure they are processed before additions,
-        # though SQLAlchemy usually handles order well.
-        await session.flush()
-
-        db_addon = existing_addon
+    result = models.ConversionResult(
+        job_id=job_uuid,
+        output_data=output_data,
+    )
+    session.add(result)
+    if commit:
+        await session.commit()
+        await session.refresh(result)
     else:
-        # Create new addon
-        db_addon = models.Addon(
-            id=addon_id, # Use provided addon_id for creation
-            name=addon_data.name,
-            description=addon_data.description,
-            user_id=addon_data.user_id,
-        )
-        session.add(db_addon)
-        # For a new addon, no need to delete children.
-
-    # (Re-)create child objects from addon_data
-    # Blocks and their Behaviors
-    for block_data in addon_data.blocks:
-        db_block = models.AddonBlock(
-            addon_id=db_addon.id,
-            identifier=block_data.identifier,
-            properties=block_data.properties if block_data.properties is not None else {},
-        )
-        session.add(db_block) # Add block first to get an ID if it's autogen (not in this case as we provide it)
-                               # Actually, block_id is UUID, so it's fine.
-                               # More importantly, need to associate with db_addon if not done via relationship directly.
-        db_addon.blocks.append(db_block) # Associate with parent
-
-        if block_data.behavior:
-            db_behavior = models.AddonBehavior(
-                # block_id will be set by relationship if back_populates is correct and block is added to session.
-                # However, explicit assignment is safer before commit.
-                data=block_data.behavior.data,
-            )
-            db_block.behavior = db_behavior # Associate with block
-            # session.add(db_behavior) # Not strictly necessary if cascade is set on AddonBlock.behavior relationship
-
-    # Assets
-    for asset_data in addon_data.assets:
-        db_asset = models.AddonAsset(
-            # addon_id=db_addon.id, # Will be set by relationship
-            type=asset_data.type,
-            path=asset_data.path,
-            original_filename=asset_data.original_filename,
-        )
-        db_addon.assets.append(db_asset) # Associate with parent
-
-    # Recipes
-    for recipe_data in addon_data.recipes:
-        db_recipe = models.AddonRecipe(
-            # addon_id=db_addon.id, # Will be set by relationship
-            data=recipe_data.data,
-        )
-        db_addon.recipes.append(db_recipe) # Associate with parent
-
-    # If we didn't add db_addon earlier (for existing case), add it now.
-    # However, it's already in the session if it was fetched with session.get().
-    # For new addons, it was added. So, this line might be redundant.
-    # session.add(db_addon)
-
-    await session.commit()
-    await session.refresh(db_addon) # Refresh to get all relationships and server-defaults correctly loaded
-
-    # Eager load relationships again for the returned object, similar to get_addon_details
-    # This is important because the refresh might not load them all, or not deeply.
-    refreshed_addon_with_relations = await get_addon_details(session, db_addon.id)
-    if refreshed_addon_with_relations is None:
-        # This should not happen if commit was successful
-        raise Exception("Failed to retrieve addon after upsert operation.")
-
-    return refreshed_addon_with_relations
+        await session.flush()
+    return result
 
 
-# Addon Asset Management CRUD functions
+# Feedback CRUD operations (enhanced for RL training)
 
-async def create_addon_asset(
+async def create_enhanced_feedback(
     session: AsyncSession,
-    addon_id: PyUUID,
-    file: UploadFile,
-    asset_type: str
-) -> models.AddonAsset:
-    """
-    Creates an AddonAsset record and saves the asset file to storage.
-    """
-    # Ensure the addon exists
-    addon = await session.get(models.Addon, addon_id)
-    if not addon:
-        # This case should ideally be caught by the endpoint before calling crud
-        raise ValueError(f"Addon with id {addon_id} not found.")
-
-    asset_id = uuid_pkg.uuid4()
-    # Sanitize filename slightly, though UploadFile.filename should be relatively safe
-    original_filename = file.filename if file.filename else "unknown_asset"
-
-    # Construct path: backend/addon_assets/{addon_id}/{asset_id}_{original_filename}
-    # Using asset_id in filename for uniqueness to avoid overwrites if original_filename is not unique
-    # and to make it easier to locate if only asset_id is known.
-    asset_filename = f"{asset_id}_{original_filename}"
-    addon_asset_dir = os.path.join(BASE_ASSET_PATH, str(addon_id))
-    os.makedirs(addon_asset_dir, exist_ok=True)
-
-    file_path = os.path.join(addon_asset_dir, asset_filename)
-
-    # Save the file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close() # Ensure the spooled temporary file is closed
-
-    # Relative path for DB storage
-    relative_path = os.path.join(str(addon_id), asset_filename)
-
-    db_asset = models.AddonAsset(
-        id=asset_id,
-        addon_id=addon_id,
-        type=asset_type,
-        path=relative_path, # Store relative path
-        original_filename=original_filename
-    )
-    session.add(db_asset)
-    await session.commit()
-    await session.refresh(db_asset)
-    return db_asset
-
-async def get_addon_asset(session: AsyncSession, asset_id: PyUUID) -> Optional[models.AddonAsset]:
-    """
-    Retrieves a specific addon asset by its ID.
-    """
-    return await session.get(models.AddonAsset, asset_id)
-
-async def update_addon_asset(
-    session: AsyncSession,
-    asset_id: PyUUID,
-    file: UploadFile
-) -> Optional[models.AddonAsset]:
-    """
-    Updates an existing asset's file and metadata.
-    The old file is replaced. Path might change if original_filename changes.
-    """
-    db_asset = await session.get(models.AddonAsset, asset_id)
-    if not db_asset:
-        return None
-
-    # Delete the old file
-    old_full_path = os.path.join(BASE_ASSET_PATH, db_asset.path)
-    if os.path.exists(old_full_path):
-        os.remove(old_full_path)
-
-    # Construct new path and save the new file
-    new_original_filename = file.filename if file.filename else "unknown_asset"
-    new_asset_filename = f"{db_asset.id}_{new_original_filename}" # Use existing asset_id
-    addon_asset_dir = os.path.join(BASE_ASSET_PATH, str(db_asset.addon_id))
-    os.makedirs(addon_asset_dir, exist_ok=True) # Ensure directory exists
-
-    new_file_path = os.path.join(addon_asset_dir, new_asset_filename)
-
-    try:
-        with open(new_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close()
-
-    # Update database record
-    db_asset.path = os.path.join(str(db_asset.addon_id), new_asset_filename) # New relative path
-    db_asset.original_filename = new_original_filename
-    # updated_at is handled by SQLAlchemy's onupdate
-
-    await session.commit()
-    await session.refresh(db_asset)
-    return db_asset
-
-async def delete_addon_asset(session: AsyncSession, asset_id: PyUUID) -> Optional[models.AddonAsset]:
-    """
-    Deletes an asset file from storage and its record from the database.
-    """
-    db_asset = await session.get(models.AddonAsset, asset_id)
-    if not db_asset:
-        return None
-
-    # Delete the file from storage
-    full_path = os.path.join(BASE_ASSET_PATH, db_asset.path)
-    if os.path.exists(full_path):
-        try:
-            os.remove(full_path)
-            # Consider removing parent directory if empty, but be careful
-            # For now, leave empty directories.
-        except OSError as e:
-            # Log error, but proceed to delete DB record if file deletion fails for some reason
-            print(f"Error deleting asset file {full_path}: {e}")
-
-
-    await session.delete(db_asset)
-    await session.commit()
-    return db_asset # Return the deleted asset's data for confirmation
-
-async def create_addon_asset_from_local_path(
-    session: AsyncSession,
-    addon_id: PyUUID,
-    source_file_path: str, # Local path to the source file
-    asset_type: str,
-    original_filename: str # The intended original filename for storage and reference
-) -> models.AddonAsset:
-    """
-    Creates an AddonAsset record from a local file path and saves the asset file to storage.
-    """
-    # Ensure the addon exists
-    addon = await session.get(models.Addon, addon_id)
-    if not addon:
-        raise ValueError(f"Addon with id {addon_id} not found.")
-
-    if not os.path.exists(source_file_path):
-        raise FileNotFoundError(f"Source asset file not found: {source_file_path}")
-
-    asset_id = uuid_pkg.uuid4()
-    # Use the provided original_filename, sanitize if necessary
-    sane_original_filename = original_filename if original_filename else "unknown_asset"
-
-    asset_filename = f"{asset_id}_{sane_original_filename}"
-    addon_asset_dir = os.path.join(BASE_ASSET_PATH, str(addon_id))
-    os.makedirs(addon_asset_dir, exist_ok=True)
-
-    destination_file_path = os.path.join(addon_asset_dir, asset_filename)
-
-    # Copy the file
-    shutil.copy(source_file_path, destination_file_path)
-
-    relative_path = os.path.join(str(addon_id), asset_filename)
-
-    db_asset = models.AddonAsset(
-        id=asset_id,
-        addon_id=addon_id,
-        type=asset_type,
-        path=relative_path,
-        original_filename=sane_original_filename
-    )
-    session.add(db_asset)
-    await session.commit()
-    await session.refresh(db_asset)
-    return db_asset
-
-
-# Feedback CRUD functions
-
-async def create_feedback(
-    session: AsyncSession,
-    job_id: uuid.UUID,
+    *,
+    job_id: PyUUID,
     feedback_type: str,
     user_id: Optional[str] = None,
     comment: Optional[str] = None,
+    quality_rating: Optional[int] = None,
+    specific_issues: Optional[List[str]] = None,
+    suggested_improvements: Optional[str] = None,
+    conversion_accuracy: Optional[int] = None,
+    visual_quality: Optional[int] = None,
+    performance_rating: Optional[int] = None,
+    ease_of_use: Optional[int] = None,
+    agent_specific_feedback: Optional[dict] = None,
+    commit: bool = True,
 ) -> models.ConversionFeedback:
-    """
-    Creates a new feedback entry for a given conversion job.
-    """
     feedback = models.ConversionFeedback(
         job_id=job_id,
         feedback_type=feedback_type,
         user_id=user_id,
         comment=comment,
+        quality_rating=quality_rating,
+        specific_issues=specific_issues,
+        suggested_improvements=suggested_improvements,
+        conversion_accuracy=conversion_accuracy,
+        visual_quality=visual_quality,
+        performance_rating=performance_rating,
+        ease_of_use=ease_of_use,
+        agent_specific_feedback=agent_specific_feedback,
     )
     session.add(feedback)
-    await session.commit()
-    await session.refresh(feedback)
+    if commit:
+        await session.commit()
+        await session.refresh(feedback)
+    else:
+        await session.flush()
     return feedback
 
 
-async def get_feedback_by_job_id(
-    session: AsyncSession, job_id: uuid.UUID
-) -> List[models.ConversionFeedback]:
-    """
-    Retrieves all feedback entries for a specific conversion job.
-    """
-    stmt = select(models.ConversionFeedback).where(
-        models.ConversionFeedback.job_id == job_id
-    ).order_by(models.ConversionFeedback.created_at.desc())
+async def get_feedback(session: AsyncSession, feedback_id: PyUUID) -> Optional[models.ConversionFeedback]:
+    stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.id == feedback_id)
     result = await session.execute(stmt)
-    return result.scalars().all()
+    return result.scalar_one_or_none()
 
 
 async def list_all_feedback(
     session: AsyncSession, skip: int = 0, limit: int = 100
 ) -> List[models.ConversionFeedback]:
-    """
-    Retrieves all feedback entries with pagination.
-    """
-    stmt = (
-        select(models.ConversionFeedback)
-        .order_by(models.ConversionFeedback.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(models.ConversionFeedback).offset(skip).limit(limit)
     result = await session.execute(stmt)
     return result.scalars().all()
 
 
-# CRUD operations for DocumentEmbedding
+# Document Embedding CRUD operations
 
 async def create_document_embedding(
     db: AsyncSession,
+    *,
     embedding: list[float],
     document_source: str,
     content_hash: str,
+    commit: bool = True,
 ) -> DocumentEmbedding:
-    """
-    Creates a new document embedding record.
-    """
     db_embedding = DocumentEmbedding(
         embedding=embedding,
         document_source=document_source,
         content_hash=content_hash,
     )
     db.add(db_embedding)
-    await db.commit()
-    await db.refresh(db_embedding)
+    if commit:
+        await db.commit()
+        await db.refresh(db_embedding)
+    else:
+        await db.flush()
     return db_embedding
-
-
-async def get_document_embedding_by_hash(
-    db: AsyncSession, content_hash: str
-) -> Optional[DocumentEmbedding]:
-    """
-    Retrieves a document embedding by its content hash.
-    """
-    stmt = select(DocumentEmbedding).where(
-        DocumentEmbedding.content_hash == content_hash
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
 
 
 async def get_document_embedding_by_id(
     db: AsyncSession, embedding_id: PyUUID
 ) -> Optional[DocumentEmbedding]:
-    """
-    Retrieves a document embedding by its ID.
-    """
     stmt = select(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_document_embedding_by_hash(
+    db: AsyncSession, content_hash: str
+) -> Optional[DocumentEmbedding]:
+    stmt = select(DocumentEmbedding).where(DocumentEmbedding.content_hash == content_hash)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -516,12 +254,10 @@ async def get_document_embedding_by_id(
 async def update_document_embedding(
     db: AsyncSession,
     embedding_id: PyUUID,
+    *,
     embedding: Optional[list[float]] = None,
     document_source: Optional[str] = None,
 ) -> Optional[DocumentEmbedding]:
-    """
-    Updates a document embedding. Only provided fields are updated.
-    """
     db_embedding = await get_document_embedding_by_id(db, embedding_id)
     if db_embedding is None:
         return None
@@ -573,4 +309,308 @@ async def find_similar_embeddings(
         .limit(limit)
     )
     result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+# A/B Testing CRUD operations
+
+async def create_experiment(
+    session: AsyncSession,
+    *,
+    name: str,
+    description: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    status: str = "draft",
+    traffic_allocation: int = 100,
+    commit: bool = True,
+) -> models.Experiment:
+    experiment = models.Experiment(
+        name=name,
+        description=description,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        traffic_allocation=traffic_allocation,
+    )
+    session.add(experiment)
+    if commit:
+        await session.commit()
+        await session.refresh(experiment)
+    else:
+        await session.flush()
+    return experiment
+
+
+async def get_experiment(
+    session: AsyncSession, experiment_id: PyUUID
+) -> Optional[models.Experiment]:
+    stmt = select(models.Experiment).where(models.Experiment.id == experiment_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def list_experiments(
+    session: AsyncSession,
+    *,
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> List[models.Experiment]:
+    stmt = select(models.Experiment)
+    if status:
+        stmt = stmt.where(models.Experiment.status == status)
+    stmt = stmt.offset(skip).limit(limit).order_by(models.Experiment.created_at.desc())
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_experiment(
+    session: AsyncSession,
+    experiment_id: PyUUID,
+    *,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    status: Optional[str] = None,
+    traffic_allocation: Optional[int] = None,
+    commit: bool = True,
+) -> Optional[models.Experiment]:
+    experiment = await get_experiment(session, experiment_id)
+    if not experiment:
+        return None
+
+    update_data = {}
+    if name is not None:
+        update_data["name"] = name
+    if description is not None:
+        update_data["description"] = description
+    if start_date is not None:
+        update_data["start_date"] = start_date
+    if end_date is not None:
+        update_data["end_date"] = end_date
+    if status is not None:
+        update_data["status"] = status
+    if traffic_allocation is not None:
+        update_data["traffic_allocation"] = traffic_allocation
+
+    if not update_data:  # Nothing to update
+        return experiment
+
+    stmt = (
+        update(models.Experiment)
+        .where(models.Experiment.id == experiment_id)
+        .values(**update_data)
+    )
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+
+    # Refresh the experiment object
+    stmt = select(models.Experiment).where(models.Experiment.id == experiment_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_experiment(session: AsyncSession, experiment_id: PyUUID) -> bool:
+    experiment = await get_experiment(session, experiment_id)
+    if not experiment:
+        return False
+
+    stmt = delete(models.Experiment).where(models.Experiment.id == experiment_id)
+    await session.execute(stmt)
+    await session.commit()
+    return True
+
+
+async def create_experiment_variant(
+    session: AsyncSession,
+    *,
+    experiment_id: PyUUID,
+    name: str,
+    description: Optional[str] = None,
+    is_control: bool = False,
+    strategy_config: Optional[dict] = None,
+    commit: bool = True,
+) -> models.ExperimentVariant:
+    # If this is a control variant, make sure no other control variant exists for this experiment
+    if is_control:
+        stmt = select(models.ExperimentVariant).where(
+            models.ExperimentVariant.experiment_id == experiment_id,
+            models.ExperimentVariant.is_control == True,
+        )
+        result = await session.execute(stmt)
+        existing_control = result.scalar_one_or_none()
+        if existing_control:
+            # Update the existing control variant to not be control
+            update_stmt = (
+                update(models.ExperimentVariant)
+                .where(models.ExperimentVariant.id == existing_control.id)
+                .values(is_control=False)
+            )
+            await session.execute(update_stmt)
+
+    variant = models.ExperimentVariant(
+        experiment_id=experiment_id,
+        name=name,
+        description=description,
+        is_control=is_control,
+        strategy_config=strategy_config,
+    )
+    session.add(variant)
+    if commit:
+        await session.commit()
+        await session.refresh(variant)
+    else:
+        await session.flush()
+    return variant
+
+
+async def get_experiment_variant(
+    session: AsyncSession, variant_id: PyUUID
+) -> Optional[models.ExperimentVariant]:
+    stmt = select(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def list_experiment_variants(
+    session: AsyncSession, experiment_id: PyUUID
+) -> List[models.ExperimentVariant]:
+    stmt = (
+        select(models.ExperimentVariant)
+        .where(models.ExperimentVariant.experiment_id == experiment_id)
+        .order_by(models.ExperimentVariant.created_at)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_experiment_variant(
+    session: AsyncSession,
+    variant_id: PyUUID,
+    *,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    is_control: Optional[bool] = None,
+    strategy_config: Optional[dict] = None,
+    commit: bool = True,
+) -> Optional[models.ExperimentVariant]:
+    variant = await get_experiment_variant(session, variant_id)
+    if not variant:
+        return None
+
+    # If this is being set as a control variant, make sure no other control variant exists for this experiment
+    if is_control and is_control != variant.is_control:
+        stmt = select(models.ExperimentVariant).where(
+            models.ExperimentVariant.experiment_id == variant.experiment_id,
+            models.ExperimentVariant.is_control == True,
+            models.ExperimentVariant.id != variant_id,
+        )
+        result = await session.execute(stmt)
+        existing_control = result.scalar_one_or_none()
+        if existing_control:
+            # Update the existing control variant to not be control
+            update_stmt = (
+                update(models.ExperimentVariant)
+                .where(models.ExperimentVariant.id == existing_control.id)
+                .values(is_control=False)
+            )
+            await session.execute(update_stmt)
+
+    update_data = {}
+    if name is not None:
+        update_data["name"] = name
+    if description is not None:
+        update_data["description"] = description
+    if is_control is not None:
+        update_data["is_control"] = is_control
+    if strategy_config is not None:
+        update_data["strategy_config"] = strategy_config
+
+    if not update_data:  # Nothing to update
+        return variant
+
+    stmt = (
+        update(models.ExperimentVariant)
+        .where(models.ExperimentVariant.id == variant_id)
+        .values(**update_data)
+    )
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+
+    # Refresh the variant object
+    stmt = select(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_experiment_variant(session: AsyncSession, variant_id: PyUUID) -> bool:
+    variant = await get_experiment_variant(session, variant_id)
+    if not variant:
+        return False
+
+    stmt = delete(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    await session.execute(stmt)
+    await session.commit()
+    return True
+
+
+async def create_experiment_result(
+    session: AsyncSession,
+    *,
+    variant_id: PyUUID,
+    session_id: PyUUID,
+    kpi_quality: Optional[float] = None,
+    kpi_speed: Optional[int] = None,
+    kpi_cost: Optional[float] = None,
+    user_feedback_score: Optional[float] = None,
+    user_feedback_text: Optional[str] = None,
+    metadata: Optional[dict] = None,
+    commit: bool = True,
+) -> models.ExperimentResult:
+    result = models.ExperimentResult(
+        variant_id=variant_id,
+        session_id=session_id,
+        kpi_quality=kpi_quality,
+        kpi_speed=kpi_speed,
+        kpi_cost=kpi_cost,
+        user_feedback_score=user_feedback_score,
+        user_feedback_text=user_feedback_text,
+        metadata=metadata,
+    )
+    session.add(result)
+    if commit:
+        await session.commit()
+        await session.refresh(result)
+    else:
+        await session.flush()
+    return result
+
+
+async def get_experiment_result(
+    session: AsyncSession, result_id: PyUUID
+) -> Optional[models.ExperimentResult]:
+    stmt = select(models.ExperimentResult).where(models.ExperimentResult.id == result_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def list_experiment_results(
+    session: AsyncSession,
+    *,
+    variant_id: Optional[PyUUID] = None,
+    session_id: Optional[PyUUID] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> List[models.ExperimentResult]:
+    stmt = select(models.ExperimentResult)
+    if variant_id:
+        stmt = stmt.where(models.ExperimentResult.variant_id == variant_id)
+    if session_id:
+        stmt = stmt.where(models.ExperimentResult.session_id == session_id)
+    stmt = stmt.offset(skip).limit(limit).order_by(models.ExperimentResult.created_at.desc())
+    result = await session.execute(stmt)
     return result.scalars().all()

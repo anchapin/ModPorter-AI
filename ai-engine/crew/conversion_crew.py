@@ -17,6 +17,7 @@ from agents.logic_translator import LogicTranslatorAgent
 from agents.asset_converter import AssetConverterAgent
 from agents.packaging_agent import PackagingAgent
 from agents.qa_validator import QAValidatorAgent
+from agents.variant_loader import variant_loader
 # --- INTEGRATION PLAN FOR QAAgent ---
 # The following comments outline where and how the new QAAgent
 # (for comprehensive QA testing) would be integrated into this crew.
@@ -39,7 +40,10 @@ class ModPorterConversionCrew:
     Following PRD Section 3.0.3: CrewAI framework implementation
     """
     
-    def __init__(self, model_name: str = "gpt-4"):
+    def __init__(self, model_name: str = "gpt-4", variant_id: str = None):
+        # Store variant ID
+        self.variant_id = variant_id
+        
         # Check for Ollama configuration first (for local testing)
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             try:
@@ -49,51 +53,28 @@ class ModPorterConversionCrew:
                 default_base_url = "http://ollama:11434" if os.getenv("DOCKER_ENVIRONMENT") else "http://localhost:11434"
                 base_url = os.getenv("OLLAMA_BASE_URL", default_base_url)
                 
-                self.llm = create_ollama_llm(
-                    model_name=ollama_model,
-                    base_url=base_url,
-                    temperature=0.1,
-                    max_tokens=1024,  # Further reduced for faster responses
-                    request_timeout=300,  # Extended timeout for complex analysis
-                    num_ctx=4096,  # Context window
-                    num_batch=512,  # Batch processing
-                    num_thread=8,  # Multi-threading
-                    streaming=False  # Disable streaming for crew consistency
-                )
-                
-                # Enable CrewAI compatibility mode if the wrapper supports it
-                if hasattr(self.llm, 'enable_crew_mode'):
-                    self.llm.enable_crew_mode()
-                
-                logger.info("Successfully initialized Ollama LLM")
+                # Create Ollama LLM with rate limiting
+                self.llm = create_ollama_llm(model=ollama_model, base_url=base_url)
             except Exception as e:
                 logger.error(f"Failed to initialize Ollama LLM: {e}")
-                raise RuntimeError(f"Ollama LLM initialization failed: {e}. Please ensure Ollama is running with model {os.getenv('OLLAMA_MODEL', 'llama3.2')}")
+                raise
         else:
-            try:
-                # Use OpenAI with rate limiting for production
-                self.llm = create_rate_limited_llm(
-                    model_name=model_name,
-                    temperature=0.1,  # Low temperature for consistent technical output
-                    max_tokens=4000
-                )
-                logger.info(f"Initialized OpenAI LLM with model: {model_name}")
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI LLM: {e}")
-                # In testing environments without API keys, fall back to mock LLM
-                if os.getenv("TESTING") == "true" or not os.getenv("OPENAI_API_KEY"):
-                    logger.warning("Falling back to mock LLM for testing environment")
-                    from unittest.mock import MagicMock
-                    self.llm = MagicMock()
-                    self.llm.invoke = MagicMock(return_value=MagicMock(content="Mock response"))
-                else:
-                    raise RuntimeError(f"OpenAI LLM initialization failed: {e}. Please check your API key and configuration.")
+            # Use OpenAI-compatible API with rate limiting
+            self.llm = create_rate_limited_llm(model=model_name)
         
-        self.smart_assumption_engine = SmartAssumptionEngine()
-        self._setup_agents()
-        self._setup_crew()
+        # Load variant configuration if provided
+        self.variant_config = None
+        if self.variant_id:
+            self.variant_config = variant_loader.load_variant_config(self.variant_id)
+            if self.variant_config:
+                logger.info(f"Using variant configuration: {self.variant_config.get('name', self.variant_id)}")
+            else:
+                logger.warning(f"Variant {self.variant_id} configuration not found, using default")
+        
+        # Initialize agents with variant-specific configurations
+        self._initialize_agents()
     
-    def _setup_agents(self):
+    def _initialize_agents(self):
         """Initialize specialized agents as per PRD Feature 2 requirements"""
         
         # Initialize agent instances
@@ -108,6 +89,19 @@ class ModPorterConversionCrew:
         #    self.actual_qa_agent = QAAgent() # Initialize the actual QAAgent
         # --- END INTEGRATION PLAN ---
         
+        # Get agent configurations from variant if available
+        java_analyzer_config = {}
+        bedrock_architect_config = {}
+        logic_translator_config = {}
+        asset_converter_config = {}
+        
+        if self.variant_config:
+            agents_config = self.variant_config.get("agents", {})
+            java_analyzer_config = agents_config.get("java_analyzer", {})
+            bedrock_architect_config = agents_config.get("bedrock_architect", {})
+            logic_translator_config = agents_config.get("logic_translator", {})
+            asset_converter_config = agents_config.get("asset_converter", {})
+        
         # PRD Feature 2: Analyzer Agent
         agent_kwargs = {
             "role": "Java Mod Analyzer",
@@ -120,6 +114,17 @@ class ModPorterConversionCrew:
             "llm": self.llm,
             "tools": self.java_analyzer_agent.get_tools()
         }
+        
+        # Apply variant configuration if available
+        if java_analyzer_config:
+            if "model" in java_analyzer_config:
+                agent_kwargs["llm"] = create_rate_limited_llm(model=java_analyzer_config["model"])
+            if "temperature" in java_analyzer_config:
+                # Temperature needs to be set on the LLM directly
+                pass  # For now, we'll just note this limitation
+            if "max_tokens" in java_analyzer_config:
+                # Max tokens needs to be set on the LLM directly
+                pass  # For now, we'll just note this limitation
         
         # Disable memory when using Ollama to avoid validation issues
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
@@ -141,6 +146,11 @@ class ModPorterConversionCrew:
             "tools": self.bedrock_architect_agent.get_tools()
         }
         
+        # Apply variant configuration if available
+        if bedrock_architect_config:
+            if "model" in bedrock_architect_config:
+                architect_kwargs["llm"] = create_rate_limited_llm(model=bedrock_architect_config["model"])
+        
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             architect_kwargs["memory"] = False
         
@@ -158,6 +168,11 @@ class ModPorterConversionCrew:
             "llm": self.llm,
             "tools": self.logic_translator_agent.get_tools()
         }
+        
+        # Apply variant configuration if available
+        if logic_translator_config:
+            if "model" in logic_translator_config:
+                translator_kwargs["llm"] = create_rate_limited_llm(model=logic_translator_config["model"])
         
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
             translator_kwargs["memory"] = False
