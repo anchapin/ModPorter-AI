@@ -98,7 +98,7 @@ class TestTaskNode:
         assert task_dict["task_id"] == "serialize_test"
         assert task_dict["agent_name"] == "test_agent"
         assert task_dict["status"] == "pending"
-        assert task_dict["dependencies"] == ["dep1", "dep2"]
+        assert sorted(task_dict["dependencies"]) == ["dep1", "dep2"]
         assert "created_at" in task_dict
 
 
