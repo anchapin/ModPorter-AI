@@ -609,3 +609,158 @@ async def list_experiment_results(
     stmt = stmt.offset(skip).limit(limit).order_by(models.ExperimentResult.created_at.desc())
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+# Behavior File CRUD operations for post-conversion editor
+
+async def create_behavior_file(
+    session: AsyncSession,
+    *,
+    conversion_id: str,
+    file_path: str,
+    file_type: str,
+    content: str,
+    commit: bool = True,
+) -> models.BehaviorFile:
+    """Create a new behavior file entry."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError("Invalid conversion_id format")
+
+    behavior_file = models.BehaviorFile(
+        conversion_id=conversion_uuid,
+        file_path=file_path,
+        file_type=file_type,
+        content=content,
+    )
+    session.add(behavior_file)
+    if commit:
+        await session.commit()
+        await session.refresh(behavior_file)
+    else:
+        await session.flush()
+    return behavior_file
+
+
+async def get_behavior_file(
+    session: AsyncSession, file_id: str
+) -> Optional[models.BehaviorFile]:
+    """Get a specific behavior file by ID."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        return None
+
+    stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_behavior_files_by_conversion(
+    session: AsyncSession, conversion_id: str
+) -> List[models.BehaviorFile]:
+    """Get all behavior files for a specific conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        return []
+
+    stmt = (
+        select(models.BehaviorFile)
+        .where(models.BehaviorFile.conversion_id == conversion_uuid)
+        .order_by(models.BehaviorFile.file_path)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_behavior_file_content(
+    session: AsyncSession,
+    file_id: str,
+    content: str,
+    commit: bool = True,
+) -> Optional[models.BehaviorFile]:
+    """Update the content of a behavior file."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        return None
+
+    stmt = (
+        update(models.BehaviorFile)
+        .where(models.BehaviorFile.id == file_uuid)
+        .values(content=content)
+    )
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+
+    # Return the updated file
+    stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
+    """Delete a behavior file by ID."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        return False
+
+    file_obj = await get_behavior_file(session, file_id)
+    if not file_obj:
+        return False
+
+    stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    await session.execute(stmt)
+    await session.commit()
+    return True
+
+
+async def get_behavior_files_by_type(
+    session: AsyncSession, conversion_id: str, file_type: str
+) -> List[models.BehaviorFile]:
+    """Get behavior files of a specific type for a conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        return []
+
+    stmt = (
+        select(models.BehaviorFile)
+        .where(
+            models.BehaviorFile.conversion_id == conversion_uuid,
+            models.BehaviorFile.file_type == file_type,
+        )
+        .order_by(models.BehaviorFile.file_path)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+# Alias for update_job_progress to maintain compatibility
+async def upsert_progress(
+    session: AsyncSession, job_id: str, progress: int, commit: bool = True
+) -> Optional[models.JobProgress]:
+    """Alias for update_job_progress to maintain backward compatibility."""
+    return await update_job_progress(session, job_id, progress, commit)
+
+
+async def list_jobs(
+    session: AsyncSession, skip: int = 0, limit: int = 100
+) -> List[models.ConversionJob]:
+    """List all conversion jobs with pagination."""
+    stmt = (
+        select(models.ConversionJob)
+        .options(
+            selectinload(models.ConversionJob.results),
+            selectinload(models.ConversionJob.progress),
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(models.ConversionJob.created_at.desc())
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()

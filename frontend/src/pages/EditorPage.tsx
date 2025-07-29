@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { EditorProvider, useEditorContext } from '../context/EditorContext';
 import * as api from '../services/api'; // Added api import
 import { AddonDataUpload, AddonBlockCreate, AddonAssetCreate, AddonRecipeCreate } from '../types/api'; // Added AddonDataUpload and create types
@@ -8,22 +8,27 @@ import { PropertiesPanel } from '../components/Editor/PropertiesPanel/Properties
 import { AssetManager } from '../components/Editor/AssetManager/AssetManager';
 import { RecipeManager } from '../components/Editor/RecipeManager/RecipeManager';
 import { PreviewWindow } from '../components/Editor/PreviewWindow/PreviewWindow'; // Added
-// import './EditorPage.css'; // We'll create this later if needed, or use App.css
+import { BehaviorEditor } from '../components/BehaviorEditor'; // Added for behavior editing
+import './EditorPage.css'; // EditorPage styles
 
 const EditorPageContent: React.FC = () => {
-  const { addonId } = useParams<{ addonId: string }>();
+  const { addonId, conversionId } = useParams<{ addonId?: string; conversionId?: string }>();
+  const location = useLocation();
   // Added setAddonData from context
   const { addonData, isLoading, error, loadAddon, setAddonData } = useEditorContext();
   const [rightSidebarTab, setRightSidebarTab] = useState<'assets' | 'recipes' | 'preview'>('assets');
+  
+  // Determine if we're in behavior editor mode
+  const isBehaviorEditorMode = location.pathname.includes('/behavior-editor/') || !!conversionId;
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (addonId) {
+    if (addonId && !isBehaviorEditorMode) {
       console.log(`EditorPage: useEffect detected addonId: ${addonId}, calling loadAddon.`);
       loadAddon(addonId);
     }
-  }, [addonId, loadAddon]);
+  }, [addonId, loadAddon, isBehaviorEditorMode]);
 
   const handleSaveChanges = useCallback(async () => {
     if (!addonId || !addonData) {
@@ -74,12 +79,17 @@ const EditorPageContent: React.FC = () => {
     }
   }, [addonId, addonData, setAddonData]);
 
-  if (isLoading) {
+  if (isLoading && !isBehaviorEditorMode) {
     return <div className="editor-status">Loading addon data for {addonId}...</div>;
   }
 
-  if (error) {
+  if (error && !isBehaviorEditorMode) {
     return <div className="editor-status editor-error">Error loading addon: {error}</div>;
+  }
+  
+  // If we're in behavior editor mode, render the behavior editor directly
+  if (isBehaviorEditorMode && conversionId) {
+    return <BehaviorEditor conversionId={conversionId} className="full-screen-editor" />;
   }
 
   return (

@@ -52,6 +52,7 @@ function App() {
                 <Route path="/behavioral-test/:conversionId" element={<div className="page-wrapper"><BehavioralTestWrapper /></div>} />
                 <Route path="/docs" element={<DocumentationSimple />} />
                 <Route path="/editor/:addonId" element={<EditorPage />} /> {/* Added Editor Route */}
+                <Route path="/behavior-editor/:conversionId" element={<EditorPage />} /> {/* Added Behavior Editor Route */}
               </Routes>
             </main>
           </div>
