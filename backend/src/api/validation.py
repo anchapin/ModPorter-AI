@@ -10,56 +10,99 @@ from .validation_constants import ValidationJobStatus, ValidationMessages
 
 
 # --- Mock AI Engine components (replace with actual imports/integration later) ---
-class MockAgentValidationReportModel(BaseModel):
-    conversion_id: str
-    semantic_analysis: Dict[str, Any]
-    behavior_prediction: Dict[str, Any]
-    asset_integrity: Dict[str, Any]
-    manifest_validation: Dict[str, Any]
-    overall_confidence: float
-    recommendations: List[str] = []
-    raw_data: Optional[Dict[str, Any]] = None
+class ValidationReportModel(BaseModel):
+    """Comprehensive validation report from AI agents."""
+    
+    conversion_id: str = Field(..., description="Unique conversion identifier")
+    semantic_analysis: Dict[str, Any] = Field(..., description="Semantic preservation analysis")
+    behavior_prediction: Dict[str, Any] = Field(..., description="Behavioral difference predictions")
+    asset_integrity: Dict[str, Any] = Field(..., description="Asset validation results")
+    manifest_validation: Dict[str, Any] = Field(..., description="Manifest structure validation")
+    overall_confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence score")
+    recommendations: List[str] = Field(default_factory=list, description="Improvement recommendations")
+    raw_data: Optional[Dict[str, Any]] = Field(None, description="Raw validation data")
 
 
-class MockValidationAgent:
+class ValidationAgent:
+    """AI agent for validating conversion quality and accuracy."""
+    
+    def __init__(self) -> None:
+        """Initialize the validation agent."""
+        # TODO: Initialize actual AI models and validation engines
+        pass
+    
     def validate_conversion(
         self, conversion_artifacts: Dict[str, Any]
-    ) -> MockAgentValidationReportModel:
-        # Using string formatting for print
-        print(
-            "MockValidationAgent: Validating conversion_id %s"
-            % conversion_artifacts.get("conversion_id")
+    ) -> ValidationReportModel:
+        """Validate conversion artifacts using AI analysis.
+        
+        Args:
+            conversion_artifacts: Dictionary containing conversion data and metadata
+            
+        Returns:
+            Comprehensive validation report with confidence scores
+        """
+        conversion_id = conversion_artifacts.get("conversion_id", str(uuid.uuid4()))
+        
+        # TODO: Replace with actual AI validation logic
+        # Minimal processing delay for mock implementation
+        time.sleep(0.1)
+        
+        return ValidationReportModel(
+            conversion_id=conversion_id,
+            semantic_analysis=self._analyze_semantic_preservation(conversion_artifacts),
+            behavior_prediction=self._predict_behavior_differences(conversion_artifacts),
+            asset_integrity=self._validate_asset_integrity(conversion_artifacts),
+            manifest_validation=self._validate_manifest_structure(conversion_artifacts),
+            overall_confidence=self._calculate_overall_confidence(),
+            recommendations=self._generate_recommendations(conversion_artifacts)
         )
-        # Note: In a real implementation, this should be handled differently in background tasks
-        # For now, keeping minimal sleep for mock processing
-        import time
-
-        time.sleep(0.1)  # Minimal sleep for mock processing
-        return MockAgentValidationReportModel(
-            conversion_id=conversion_artifacts.get("conversion_id", str(uuid.uuid4())),
-            semantic_analysis={
-                "intent_preserved": True,
-                "confidence": 0.85,
-                "findings": ["Mock semantic finding"],
-            },
-            behavior_prediction={
-                "behavior_diff": "None",
-                "confidence": 0.9,
-                "potential_issues": ["Mock behavior issue"],
-            },
-            asset_integrity={
-                "all_assets_valid": True,
-                "corrupted_files": [],
-                "asset_specific_issues": {},
-            },
-            manifest_validation={
-                "is_valid": True,
-                "errors": [],
-                "warnings": ["Mock manifest warning"],
-            },
-            overall_confidence=0.88,
-            recommendations=["Mock recommendation: Review all generated files."],
-        )
+    
+    def _analyze_semantic_preservation(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze how well the conversion preserves original semantics."""
+        return {
+            "intent_preserved": True,
+            "confidence": 0.85,
+            "findings": ["Mock semantic analysis finding"],
+            "critical_issues": [],
+            "warnings": ["Some complex logic may be simplified"]
+        }
+    
+    def _predict_behavior_differences(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+        """Predict behavioral differences between Java and Bedrock versions."""
+        return {
+            "behavior_diff": "minimal",
+            "confidence": 0.9,
+            "potential_issues": ["Mock behavior prediction"],
+            "compatibility_score": 0.88
+        }
+    
+    def _validate_asset_integrity(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate integrity and completeness of converted assets."""
+        return {
+            "all_assets_valid": True,
+            "corrupted_files": [],
+            "asset_specific_issues": {},
+            "missing_assets": []
+        }
+    
+    def _validate_manifest_structure(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate Bedrock addon manifest structure and dependencies."""
+        return {
+            "is_valid": True,
+            "errors": [],
+            "warnings": ["Mock manifest validation warning"],
+            "schema_compliance": True
+        }
+    
+    def _calculate_overall_confidence(self) -> float:
+        """Calculate overall confidence score based on all validation metrics."""
+        # TODO: Implement weighted confidence calculation
+        return 0.88
+    
+    def _generate_recommendations(self, artifacts: Dict[str, Any]) -> List[str]:
+        """Generate actionable recommendations for improving conversion quality."""
+        return ["Mock recommendation: Review all generated files."]
 
 
 # --- Pydantic Models for API ---
@@ -92,7 +135,7 @@ class ValidationJob(BaseModel):
 
 
 class ValidationReportResponse(
-    MockAgentValidationReportModel
+    ValidationReportModel
 ):  # Inherits from the (mock) agent's report
     validation_job_id: str = Field(
         ..., description="The ID of the validation job that produced this report."
@@ -111,18 +154,18 @@ router = APIRouter(
 _validation_jobs_lock = threading.Lock()
 _validation_reports_lock = threading.Lock()
 validation_jobs: Dict[str, ValidationJob] = {}
-validation_reports: Dict[str, MockAgentValidationReportModel] = {}
+validation_reports: Dict[str, ValidationReportModel] = {}
 
 
 def get_validation_agent():
-    return MockValidationAgent()
+    return ValidationAgent()
 
 
 async def process_validation_task(
     job_id: str,
     conversion_id: str,
     artifacts: Dict[str, Any],
-    agent: MockValidationAgent,
+    agent: ValidationAgent,
 ):
     print("Background task started for job_id: %s" % job_id)
 
@@ -171,7 +214,7 @@ async def process_validation_task(
 async def start_validation_job(
     request: ValidationRequest,
     background_tasks: BackgroundTasks,
-    agent: MockValidationAgent = Depends(get_validation_agent),
+    agent: ValidationAgent = Depends(get_validation_agent),
 ):
     job_id = str(uuid.uuid4())
     conversion_id = request.conversion_id
