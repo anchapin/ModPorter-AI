@@ -31,6 +31,8 @@ agents:
       is properly synthesized and presented to users in a clear, actionable format.
     tools:
       - "SearchTool"
+      - "WebSearchTool"
+      - "BedrockScraperTool"
     verbose: True
     allow_delegation: False
 
