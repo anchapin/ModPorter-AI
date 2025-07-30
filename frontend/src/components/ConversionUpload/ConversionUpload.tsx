@@ -66,7 +66,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       return { isValid: false, error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` };
     }
     
-    const hasValidType = SUPPORTED_FILE_TYPES.includes(file.type as any);
+    const hasValidType = SUPPORTED_FILE_TYPES.some(type => type === file.type);
     const hasValidExtension = SUPPORTED_EXTENSIONS.some(ext => 
       file.name.toLowerCase().endsWith(ext)
     );
