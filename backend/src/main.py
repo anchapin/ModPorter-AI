@@ -25,7 +25,7 @@ from models import addon_models as pydantic_addon_models # For addon Pydantic mo
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +76,10 @@ app = FastAPI(
         {
             "name": "addons",
             "description": "Addon data management",
+        },
+        {
+            "name": "behavior-files",
+            "description": "Post-conversion behavior file editing",
         }
     ],
     docs_url="/docs",
@@ -99,6 +103,7 @@ app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["compar
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
+app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-files"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
