@@ -1,49 +1,66 @@
-"""
-Bedrock Architect Agent for conversion planning and smart assumption application
+"""Bedrock Architect Agent for conversion planning and smart assumption application.
+
+This module provides the BedrockArchitectAgent class which orchestrates conversion
+strategies using smart assumptions as specified in PRD Feature 2.
 """
 
-from typing import Dict, List, Any
+from __future__ import annotations
 
-import logging
 import json
+import logging
+from typing import Any, Dict, List
+
 from crewai.tools import tool
 from models.smart_assumptions import (
-    SmartAssumptionEngine, FeatureContext, AssumptionResult
+    AssumptionResult,
+    FeatureContext,
+    SmartAssumptionEngine,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class BedrockArchitectAgent:
-    """
-    Bedrock Architect Agent responsible for designing optimal conversion strategies
-    using smart assumptions as specified in PRD Feature 2.
+    """Bedrock Architect Agent for optimal conversion strategies.
+    
+    Responsible for designing conversion strategies using smart assumptions
+    as specified in PRD Feature 2. Implements singleton pattern for consistent
+    state management across the conversion pipeline.
     """
     
-    _instance = None
+    _instance: BedrockArchitectAgent | None = None
     
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the Bedrock Architect Agent."""
         self.smart_assumption_engine = SmartAssumptionEngine()
     
     @classmethod
-    def get_instance(cls):
-        """Get singleton instance of BedrockArchitectAgent"""
+    def get_instance(cls) -> BedrockArchitectAgent:
+        """Get singleton instance of BedrockArchitectAgent.
+        
+        Returns:
+            The singleton instance of BedrockArchitectAgent
+        """
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
         
-    def get_tools(self) -> List:
-        """Get tools available to this agent"""
+    def get_tools(self) -> List[Any]:
+        """Get tools available to this agent.
+        
+        Returns:
+            List of available agent tools for conversion planning
+        """
         return [
-            BedrockArchitectAgent.analyze_java_feature_tool,
-            BedrockArchitectAgent.apply_smart_assumption_tool,
-            BedrockArchitectAgent.create_conversion_plan_tool,
-            BedrockArchitectAgent.get_assumption_conflicts_tool,
-            BedrockArchitectAgent.validate_bedrock_compatibility_tool,
-            BedrockArchitectAgent.generate_block_definitions_tool,
-            BedrockArchitectAgent.generate_item_definitions_tool,
-            BedrockArchitectAgent.generate_recipe_definitions_tool,
-            BedrockArchitectAgent.generate_entity_definitions_tool
+            self.analyze_java_feature_tool,
+            self.apply_smart_assumption_tool,
+            self.create_conversion_plan_tool,
+            self.get_assumption_conflicts_tool,
+            self.validate_bedrock_compatibility_tool,
+            self.generate_block_definitions_tool,
+            self.generate_item_definitions_tool,
+            self.generate_recipe_definitions_tool,
+            self.generate_entity_definitions_tool,
         ]
     
     @tool

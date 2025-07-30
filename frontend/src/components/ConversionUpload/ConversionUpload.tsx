@@ -15,13 +15,31 @@ import {
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import './ConversionUpload.css';
 
-// Move constant outside component as suggested by Copilot
+// Configuration constants
 const MAX_POLLING_ATTEMPTS = 30; // Poll for 30 * 2s = 1 minute
+const POLLING_INTERVAL_MS = 2000;
+const MAX_FILE_SIZE_MB = 500;
 
 interface ConversionUploadProps {
   onConversionStart?: (jobId: string) => void;
   onConversionComplete?: (jobId: string) => void;
 }
+
+// Supported file types and extensions
+const SUPPORTED_FILE_TYPES = [
+  'application/java-archive',
+  'application/zip', 
+  'application/x-zip-compressed'
+] as const;
+
+const SUPPORTED_EXTENSIONS = ['.jar', '.zip'] as const;
+
+const SUPPORTED_DOMAINS = [
+  'curseforge.com',
+  'www.curseforge.com',
+  'modrinth.com',
+  'www.modrinth.com'
+] as const;
 
 export const ConversionUpload: React.FC<ConversionUploadProps> = ({ 
   onConversionStart,
@@ -42,35 +60,43 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollingAttempts, setPollingAttempts] = useState<number>(0);
 
-  // PRD Feature 1: File validation
-  const validateFile = (file: File): boolean => {
-    const validTypes = ['application/java-archive', 'application/zip', 'application/x-zip-compressed'];
-    const validExtensions = ['.jar', '.zip'];
+  // File validation with size check
+  const validateFile = useCallback((file: File): { isValid: boolean; error?: string } => {
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      return { isValid: false, error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` };
+    }
     
-    const hasValidType = validTypes.includes(file.type);
-    const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    const hasValidType = SUPPORTED_FILE_TYPES.includes(file.type as any);
+    const hasValidExtension = SUPPORTED_EXTENSIONS.some(ext => 
+      file.name.toLowerCase().endsWith(ext)
+    );
     
-    return hasValidType || hasValidExtension;
-  };
+    const isValid = hasValidType || hasValidExtension;
+    return {
+      isValid,
+      error: isValid ? undefined : 'Unsupported file type. Please upload .jar or .zip files only.'
+    };
+  }, []);
 
-  // PRD Feature 1: URL validation for CurseForge and Modrinth
-  const validateUrl = (url: string): boolean => {
-    const validDomains = [
-      'curseforge.com',
-      'www.curseforge.com',
-      'modrinth.com',
-      'www.modrinth.com'
-    ];
+  // URL validation for supported mod platforms
+  const validateUrl = useCallback((url: string): { isValid: boolean; error?: string } => {
+    if (!url.trim()) {
+      return { isValid: false, error: 'URL cannot be empty.' };
+    }
     
     try {
       const urlObj = new URL(url);
-      return validDomains.some(domain => urlObj.hostname === domain);
+      const isValid = SUPPORTED_DOMAINS.some(domain => urlObj.hostname === domain);
+      return {
+        isValid,
+        error: isValid ? undefined : 'Please enter a valid CurseForge or Modrinth URL.'
+      };
     } catch {
-      return false;
+      return { isValid: false, error: 'Please enter a valid URL.' };
     }
-  };
+  }, []);
 
-  const resetConversionState = () => {
+  const resetConversionState = useCallback(() => {
     setSelectedFile(null);
     setModUrl('');
     setCurrentConversionId(null);
@@ -80,34 +106,25 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     setPollingAttempts(0);
     setIsConverting(false);
     setError(null);
-  };
+  }, []);
 
-  const getStatusMessage = () => {
+  const getStatusMessage = useCallback((): string => {
     if (!currentStatus) return 'Ready to convert';
     
-    switch (currentStatus.status) {
-      case ConversionStatusEnum.PENDING:
-        return 'Queued for processing...';
-      case ConversionStatusEnum.UPLOADING:
-        return 'Uploading file...';
-      case ConversionStatusEnum.IN_PROGRESS:
-        return 'Processing...';
-      case ConversionStatusEnum.ANALYZING:
-        return 'Analyzing mod structure...';
-      case ConversionStatusEnum.CONVERTING:
-        return 'Converting to Bedrock...';
-      case ConversionStatusEnum.PACKAGING:
-        return 'Packaging add-on...';
-      case ConversionStatusEnum.COMPLETED:
-        return 'Conversion completed!';
-      case ConversionStatusEnum.FAILED:
-        return 'Conversion failed';
-      case ConversionStatusEnum.CANCELLED:
-        return 'Conversion cancelled';
-      default:
-        return currentStatus.message || 'Processing...';
-    }
-  };
+    const statusMessages: Record<ConversionStatusEnum, string> = {
+      [ConversionStatusEnum.PENDING]: 'Queued for processing...',
+      [ConversionStatusEnum.UPLOADING]: 'Uploading file...',
+      [ConversionStatusEnum.IN_PROGRESS]: 'Processing...',
+      [ConversionStatusEnum.ANALYZING]: 'Analyzing mod structure...',
+      [ConversionStatusEnum.CONVERTING]: 'Converting to Bedrock...',
+      [ConversionStatusEnum.PACKAGING]: 'Packaging add-on...',
+      [ConversionStatusEnum.COMPLETED]: 'Conversion completed!',
+      [ConversionStatusEnum.FAILED]: 'Conversion failed',
+      [ConversionStatusEnum.CANCELLED]: 'Conversion cancelled'
+    };
+    
+    return statusMessages[currentStatus.status] || currentStatus.message || 'Processing...';
+  }, [currentStatus]);
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files first
@@ -117,22 +134,23 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
     
     const file = acceptedFiles[0];
-    
     if (!file) return;
     
-    if (!validateFile(file)) {
-      setError('Unsupported file type. Please upload .jar or .zip files only.');
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      setError(validation.error!);
       return;
     }
     
     setSelectedFile(file);
     setModUrl(''); // Clear URL if file is selected
     setError(null);
+    
     // Reset conversion state when new file is selected
     if (currentConversionId) {
       resetConversionState();
     }
-  }, [currentConversionId]);
+  }, [currentConversionId, validateFile, resetConversionState]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -145,7 +163,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     multiple: false
   });
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
     setModUrl(url);
     
@@ -157,12 +175,13 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
     
     // Validate URL on input
-    if (url && !validateUrl(url)) {
-      setError('Please enter a valid CurseForge or Modrinth URL.');
+    if (url) {
+      const validation = validateUrl(url);
+      setError(validation.isValid ? null : validation.error!);
     } else {
       setError(null);
     }
-  };
+  }, [currentConversionId, validateUrl, resetConversionState]);
 
   const handleCancel = async () => {
     if (!currentConversionId) return;
@@ -203,9 +222,12 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       return;
     }
     
-    if (modUrl && !validateUrl(modUrl)) {
-      setError('Please enter a valid CurseForge or Modrinth URL.');
-      return;
+    if (modUrl) {
+      const urlValidation = validateUrl(modUrl);
+      if (!urlValidation.isValid) {
+        setError(urlValidation.error!);
+        return;
+      }
     }
     
     setIsConverting(true);
@@ -235,9 +257,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
   };
 
-  // Polling effect with proper dependency array as suggested by Copilot
+  // Polling effect with proper dependency array
   useEffect(() => {
-    let intervalId: number | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
     if (currentConversionId && isPolling) {
       if (pollingAttempts >= MAX_POLLING_ATTEMPTS) {
@@ -276,7 +298,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
             setIsConverting(false);
           }
         }
-      }, 2000); // Poll every 2 seconds
+      }, POLLING_INTERVAL_MS);
     }
 
     return () => {
