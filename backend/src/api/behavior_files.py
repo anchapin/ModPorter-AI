@@ -4,7 +4,6 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
-from db.models import BehaviorFile
 import uuid
 
 router = APIRouter()
@@ -250,15 +249,10 @@ async def delete_behavior_file(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid file ID format")
     
-    # Check if file exists
-    existing_file = await crud.get_behavior_file(db, file_id)
-    if not existing_file:
-        raise HTTPException(status_code=404, detail="Behavior file not found")
-    
     # Delete the file
     success = await crud.delete_behavior_file(db, file_id)
     if not success:
-        raise HTTPException(status_code=500, detail="Failed to delete behavior file")
+        raise HTTPException(status_code=404, detail="Behavior file not found")
     
     # Return 204 No Content (no response body)
     return

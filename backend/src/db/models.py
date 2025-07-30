@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-import os
 from sqlalchemy import (
     Boolean,
     String,
@@ -289,12 +288,12 @@ class BehaviorFile(Base):
     __tablename__ = "behavior_files"
     __table_args__ = {'extend_existing': True}
 
-    id: Mapped[str] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
-    conversion_id: Mapped[str] = mapped_column(
+    conversion_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
         nullable=False,

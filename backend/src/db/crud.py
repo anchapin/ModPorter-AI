@@ -429,10 +429,9 @@ async def create_experiment_variant(
     # If this is a control variant, make sure no other control variant exists for this experiment
     if is_control:
         # Use SELECT ... FOR UPDATE to prevent race conditions
-        from sqlalchemy import text
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == experiment_id,
-            models.ExperimentVariant.is_control == True,
+            models.ExperimentVariant.is_control,
         ).with_for_update()
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
@@ -500,7 +499,7 @@ async def update_experiment_variant(
         # Use SELECT ... FOR UPDATE to prevent race conditions
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == variant.experiment_id,
-            models.ExperimentVariant.is_control == True,
+            models.ExperimentVariant.is_control,
             models.ExperimentVariant.id != variant_id,
         ).with_for_update()
         result = await session.execute(stmt)
@@ -691,15 +690,15 @@ async def update_behavior_file_content(
         update(models.BehaviorFile)
         .where(models.BehaviorFile.id == file_uuid)
         .values(content=content)
+        .returning(models.BehaviorFile)
     )
-    await session.execute(stmt)
-    if commit:
+    result = await session.execute(stmt)
+    updated_file = result.scalar_one_or_none()
+
+    if commit and updated_file:
         await session.commit()
 
-    # Return the updated file
-    stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    return updated_file
 
 
 async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
@@ -709,14 +708,10 @@ async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
     except ValueError:
         return False
 
-    file_obj = await get_behavior_file(session, file_id)
-    if not file_obj:
-        return False
-
     stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
-    await session.execute(stmt)
+    result = await session.execute(stmt)
     await session.commit()
-    return True
+    return result.rowcount > 0
 
 
 async def get_behavior_files_by_type(
