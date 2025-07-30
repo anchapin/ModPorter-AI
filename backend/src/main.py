@@ -368,6 +368,22 @@ async def simulate_ai_conversion(job_id: str):
                     )
                 logger.info(f"Job {job_id}: {len(identified_assets_info)} assets processed and saved.")
 
+                # Asset conversion integration - convert uploaded assets using AI engine
+                try:
+                    logger.info(f"Job {job_id}: Starting asset conversion for conversion job")
+                    asset_conversion_result = await asset_conversion_service.convert_assets_for_conversion(job_id)
+                    
+                    if asset_conversion_result.get("success"):
+                        converted_count = asset_conversion_result.get("converted_count", 0)
+                        failed_count = asset_conversion_result.get("failed_count", 0)
+                        logger.info(f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed")
+                    else:
+                        logger.warning(f"Job {job_id}: Asset conversion batch had issues")
+                        
+                except Exception as asset_error:
+                    logger.error(f"Job {job_id}: Asset conversion error: {asset_error}")
+                    # Don't fail the entire job for asset conversion errors
+
                 # Original ZIP creation (can be retained or removed)
                 os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
                 mock_output_filename_internal = f"{job.id}_converted.zip" # Original ZIP name

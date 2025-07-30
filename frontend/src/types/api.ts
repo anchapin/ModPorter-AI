@@ -309,3 +309,41 @@ export interface AddonDataUpload { // Matches backend Pydantic AddonDataUpload
   assets: AddonAssetCreate[];
   recipes: AddonRecipeCreate[];
 }
+
+// --- Conversion Asset Management Types ---
+
+export interface ConversionAsset {
+  id: string; // UUID
+  conversion_id: string; // UUID
+  asset_type: string; // 'texture', 'model', 'sound', 'script', etc.
+  original_path: string;
+  converted_path?: string | null;
+  status: 'pending' | 'processing' | 'converted' | 'failed';
+  asset_metadata?: Record<string, any> | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  original_filename: string;
+  error_message?: string | null;
+  created_at: string; // ISO datetime string
+  updated_at: string; // ISO datetime string
+}
+
+export interface ConversionAssetUpload {
+  asset_type: string;
+  metadata?: Record<string, any> | null;
+}
+
+export interface ConversionAssetStatusUpdate {
+  status: 'pending' | 'processing' | 'converted' | 'failed';
+  converted_path?: string | null;
+  error_message?: string | null;
+}
+
+export interface ConversionAssetBatchResult {
+  message: string;
+  conversion_id: string;
+  total_assets: number;
+  converted_count: number;
+  failed_count: number;
+  success: boolean;
+}

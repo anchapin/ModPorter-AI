@@ -8,12 +8,34 @@ import datetime
 from typing import Dict, Any
 from unittest.mock import Mock, patch
 
-from ...types.report_types import (
-    InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
-    AssumptionsReport, AssumptionReportItem, DeveloperLog, ReportMetadata,
-    ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
-)
-from ...services.comprehensive_report_generator import ConversionReportGenerator
+import sys
+import importlib.util
+from pathlib import Path
+
+# Get the src directory and load modules directly
+src_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(src_dir))
+
+# Load report_types module directly to avoid conflict with built-in types
+spec = importlib.util.spec_from_file_location("report_types", src_dir / "types" / "report_types.py")
+report_types = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(report_types)
+
+# Import from the loaded module
+InteractiveReport = report_types.InteractiveReport
+SummaryReport = report_types.SummaryReport
+FeatureAnalysis = report_types.FeatureAnalysis
+FeatureAnalysisItem = report_types.FeatureAnalysisItem
+AssumptionsReport = report_types.AssumptionsReport
+AssumptionReportItem = report_types.AssumptionReportItem
+DeveloperLog = report_types.DeveloperLog
+ReportMetadata = report_types.ReportMetadata
+ConversionStatus = report_types.ConversionStatus
+ImpactLevel = report_types.ImpactLevel
+create_report_metadata = report_types.create_report_metadata
+calculate_quality_score = report_types.calculate_quality_score
+
+from services.comprehensive_report_generator import ConversionReportGenerator
 
 
 @pytest.fixture
