@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-import os
 from sqlalchemy import (
     Boolean,
     String,
@@ -285,6 +284,43 @@ class AddonRecipe(Base):
 
     # Relationship
     addon = relationship("Addon", back_populates="recipes")
+
+
+# Behavior File Model for Post-Conversion Editor
+
+class BehaviorFile(Base):
+    __tablename__ = "behavior_files"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    conversion_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    file_path: Mapped[str] = mapped_column(String, nullable=False)
+    file_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'entity_behavior', 'block_behavior', 'script', 'recipe', etc.
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    conversion = relationship("ConversionJob", backref="behavior_files")
 
 
 # Feedback Models

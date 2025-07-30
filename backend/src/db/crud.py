@@ -430,10 +430,9 @@ async def create_experiment_variant(
     # If this is a control variant, make sure no other control variant exists for this experiment
     if is_control:
         # Use SELECT ... FOR UPDATE to prevent race conditions
-        from sqlalchemy import text
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == experiment_id,
-            models.ExperimentVariant.is_control == True,
+            models.ExperimentVariant.is_control,
         ).with_for_update()
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
@@ -501,7 +500,7 @@ async def update_experiment_variant(
         # Use SELECT ... FOR UPDATE to prevent race conditions
         stmt = select(models.ExperimentVariant).where(
             models.ExperimentVariant.experiment_id == variant.experiment_id,
-            models.ExperimentVariant.is_control == True,
+            models.ExperimentVariant.is_control,
             models.ExperimentVariant.id != variant_id,
         ).with_for_update()
         result = await session.execute(stmt)
@@ -611,371 +610,152 @@ async def list_experiment_results(
     result = await session.execute(stmt)
     return result.scalars().all()
 
-# Addon Asset Management CRUD operations
+# Behavior File CRUD operations for post-conversion editor
 
-async def get_addon_asset(
-    session: AsyncSession, 
-    asset_id: str
-) -> Optional[models.AddonAsset]:
-    """Retrieve a specific addon asset by its ID."""
-    try:
-        asset_uuid = uuid.UUID(asset_id)
-    except ValueError:
-        raise ValueError("Invalid asset_id format")
-    
-    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def create_addon_asset(
-    session: AsyncSession,
-    *,
-    addon_id: str,
-    file,
-    asset_type: str,
-    commit: bool = True,
-) -> models.AddonAsset:
-    """Create a new addon asset entry in the database and save the file."""
-    try:
-        addon_uuid = uuid.UUID(addon_id)
-    except ValueError:
-        raise ValueError("Invalid addon_id format")
-    
-    # Generate a unique path for the asset file
-    asset_uuid = uuid.uuid4()
-    original_filename = getattr(file, 'filename', f"{asset_uuid}.{asset_type}")
-    
-    # Create the asset path: {asset_uuid}_{original_filename}
-    # Sanitize filename to prevent path traversal attacks
-    safe_filename = os.path.basename(original_filename)
-    asset_path = f"{asset_uuid}_{safe_filename}"
-    
-    # Create the database record
-    db_asset = models.AddonAsset(
-        addon_id=addon_uuid,
-        type=asset_type,
-        path=asset_path,
-        original_filename=original_filename,
-    )
-    
-    session.add(db_asset)
-    if commit:
-        await session.commit()
-        await session.refresh(db_asset)
-    else:
-        await session.flush()
-        
-    return db_asset
-
-
-async def update_addon_asset(
-    session: AsyncSession,
-    *,
-    asset_id: str,
-    file,
-    commit: bool = True,
-) -> Optional[models.AddonAsset]:
-    """Update an existing addon asset with a new file."""
-    # Get the existing asset
-    existing_asset = await get_addon_asset(session, asset_id)
-    if not existing_asset:
-        return None
-    
-    # Generate new path for the updated asset
-    asset_uuid = uuid.uuid4()
-    original_filename = getattr(file, 'filename', f"{asset_uuid}.{existing_asset.type}")
-    # Sanitize filename to prevent path traversal attacks
-    safe_filename = os.path.basename(original_filename)
-    new_asset_path = f"{asset_uuid}_{safe_filename}"
-    
-    # Update the database record
-    stmt = (
-        update(models.AddonAsset)
-        .where(models.AddonAsset.id == asset_id)
-        .values(
-            path=new_asset_path,
-            original_filename=original_filename,
-            updated_at=datetime.datetime.now(),
-        )
-    )
-    await session.execute(stmt)
-    
-    if commit:
-        await session.commit()
-    
-    # Refresh the asset object
-    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_id)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def delete_addon_asset(
-    session: AsyncSession,
-    asset_id: str,
-    commit: bool = True,
-) -> Optional[dict]:
-    """Delete an addon asset from the database and remove the file from storage."""
-    # Get the asset to retrieve its path before deletion
-    asset = await get_addon_asset(session, asset_id)
-    if not asset:
-        return None
-    
-    # Delete the database record
-    try:
-        asset_uuid = uuid.UUID(asset_id)
-    except ValueError:
-        raise ValueError("Invalid asset_id format")
-    
-    stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
-    result = await session.execute(stmt)
-    
-    if commit:
-        await session.commit()
-    
-    # Return information about the deleted asset
-    return {
-        "id": str(asset.id),
-        "addon_id": str(asset.addon_id),
-        "path": asset.path,
-        "original_filename": asset.original_filename,
-    }
-
-
-async def create_addon_asset_from_local_path(
-    session: AsyncSession,
-    *,
-    addon_id: str,
-    source_file_path: str,
-    asset_type: str,
-    original_filename: Optional[str] = None,
-    commit: bool = True,
-) -> models.AddonAsset:
-    """Create an addon asset entry from a local file path."""
-    try:
-        addon_uuid = uuid.UUID(addon_id)
-    except ValueError:
-        raise ValueError("Invalid addon_id format")
-    
-    # Use the provided original filename or extract from the source path
-    if not original_filename:
-        original_filename = os.path.basename(source_file_path)
-    
-    # Generate a unique path for the asset
-    asset_uuid = uuid.uuid4()
-    # Sanitize filename to prevent path traversal attacks
-    safe_filename = os.path.basename(original_filename)
-    asset_path = f"{asset_uuid}_{safe_filename}"
-    
-    # Create the database record
-    db_asset = models.AddonAsset(
-        addon_id=addon_uuid,
-        type=asset_type,
-        path=asset_path,
-        original_filename=original_filename,
-    )
-    
-    session.add(db_asset)
-    if commit:
-        await session.commit()
-        await session.refresh(db_asset)
-    else:
-        await session.flush()
-        
-    return db_asset
-
-
-async def list_addon_assets(
-    session: AsyncSession,
-    addon_id: str,
-    asset_type: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
-) -> List[models.AddonAsset]:
-    """List addon assets for a specific addon."""
-    try:
-        addon_uuid = uuid.UUID(addon_id)
-    except ValueError:
-        raise ValueError("Invalid addon_id format")
-
-    stmt = select(models.AddonAsset).where(models.AddonAsset.addon_id == addon_uuid)
-    
-    if asset_type:
-        stmt = stmt.where(models.AddonAsset.type == asset_type)
-    
-    stmt = stmt.offset(skip).limit(limit).order_by(models.AddonAsset.created_at.desc())
-    result = await session.execute(stmt)
-    return result.scalars().all()
-
-
-# Asset Management CRUD operations
-
-async def create_asset(
+async def create_behavior_file(
     session: AsyncSession,
     *,
     conversion_id: str,
-    asset_type: str,
-    original_path: str,
-    original_filename: str,
-    file_size: Optional[int] = None,
-    mime_type: Optional[str] = None,
-    asset_metadata: Optional[dict] = None,
+    file_path: str,
+    file_type: str,
+    content: str,
     commit: bool = True,
-) -> models.Asset:
-    """Create a new asset associated with a conversion job."""
+) -> models.BehaviorFile:
+    """Create a new behavior file entry."""
     try:
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError("Invalid conversion_id format")
 
-    asset = models.Asset(
+    behavior_file = models.BehaviorFile(
         conversion_id=conversion_uuid,
-        asset_type=asset_type,
-        original_path=original_path,
-        original_filename=original_filename,
-        file_size=file_size,
-        mime_type=mime_type,
-        asset_metadata=asset_metadata or {},
-        status="pending",
+        file_path=file_path,
+        file_type=file_type,
+        content=content,
     )
-    session.add(asset)
+    session.add(behavior_file)
     if commit:
         await session.commit()
-        await session.refresh(asset)
+        await session.refresh(behavior_file)
     else:
         await session.flush()
-    return asset
+    return behavior_file
 
 
-async def get_asset(session: AsyncSession, asset_id: str) -> Optional[models.Asset]:
-    """Retrieve a specific asset by its ID."""
+async def get_behavior_file(
+    session: AsyncSession, file_id: str
+) -> Optional[models.BehaviorFile]:
+    """Get a specific behavior file by ID."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        file_uuid = uuid.UUID(file_id)
     except ValueError:
         return None
-    
-    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
+
+    stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def list_assets_for_conversion(
-    session: AsyncSession, 
-    conversion_id: str,
-    asset_type: Optional[str] = None,
-    status: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100
-) -> List[models.Asset]:
-    """List all assets associated with a conversion job."""
+async def get_behavior_files_by_conversion(
+    session: AsyncSession, conversion_id: str
+) -> List[models.BehaviorFile]:
+    """Get all behavior files for a specific conversion."""
     try:
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         return []
 
-    stmt = select(models.Asset).where(models.Asset.conversion_id == conversion_uuid)
-    
-    if asset_type:
-        stmt = stmt.where(models.Asset.asset_type == asset_type)
-    if status:
-        stmt = stmt.where(models.Asset.status == status)
-    
-    stmt = stmt.offset(skip).limit(limit).order_by(models.Asset.created_at.desc())
+    stmt = (
+        select(models.BehaviorFile)
+        .where(models.BehaviorFile.conversion_id == conversion_uuid)
+        .order_by(models.BehaviorFile.file_path)
+    )
     result = await session.execute(stmt)
     return result.scalars().all()
 
 
-async def update_asset_status(
+async def update_behavior_file_content(
     session: AsyncSession,
-    asset_id: str,
-    status: str,
-    converted_path: Optional[str] = None,
-    error_message: Optional[str] = None,
+    file_id: str,
+    content: str,
     commit: bool = True,
-) -> Optional[models.Asset]:
-    """Update an asset's conversion status and paths."""
+) -> Optional[models.BehaviorFile]:
+    """Update the content of a behavior file."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
-    except ValueError:
-        return None
-
-    update_data = {"status": status}
-    if converted_path:
-        update_data["converted_path"] = converted_path
-    if error_message:
-        update_data["error_message"] = error_message
-
-    stmt = (
-        update(models.Asset)
-        .where(models.Asset.id == asset_uuid)
-        .values(**update_data)
-    )
-    await session.execute(stmt)
-    
-    if commit:
-        await session.commit()
-
-    # Return the updated asset
-    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def update_asset_metadata(
-    session: AsyncSession,
-    asset_id: str,
-    metadata: dict,
-    commit: bool = True,
-) -> Optional[models.Asset]:
-    """Update an asset's metadata."""
-    try:
-        asset_uuid = uuid.UUID(asset_id)
+        file_uuid = uuid.UUID(file_id)
     except ValueError:
         return None
 
     stmt = (
-        update(models.Asset)
-        .where(models.Asset.id == asset_uuid)
-        .values(asset_metadata=metadata)
+        update(models.BehaviorFile)
+        .where(models.BehaviorFile.id == file_uuid)
+        .values(content=content)
+        .returning(models.BehaviorFile)
     )
-    await session.execute(stmt)
-    
-    if commit:
-        await session.commit()
-
-    # Return the updated asset
-    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
     result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    updated_file = result.scalar_one_or_none()
 
-
-async def delete_asset(
-    session: AsyncSession,
-    asset_id: str,
-    commit: bool = True,
-) -> Optional[dict]:
-    """Delete an asset from the database."""
-    try:
-        asset_uuid = uuid.UUID(asset_id)
-    except ValueError:
-        return None
-
-    # Get the asset info before deletion
-    asset = await get_asset(session, asset_id)
-    if not asset:
-        return None
-
-    stmt = delete(models.Asset).where(models.Asset.id == asset_uuid)
-    await session.execute(stmt)
-    
-    if commit:
+    if commit and updated_file:
         await session.commit()
 
-    # Return information about the deleted asset
-    return {
-        "id": str(asset.id),
-        "conversion_id": str(asset.conversion_id),
-        "original_path": asset.original_path,
-        "converted_path": asset.converted_path,
-        "original_filename": asset.original_filename,
-    }
+    return updated_file
+
+
+async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
+    """Delete a behavior file by ID."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        return False
+
+    stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount > 0
+
+
+async def get_behavior_files_by_type(
+    session: AsyncSession, conversion_id: str, file_type: str
+) -> List[models.BehaviorFile]:
+    """Get behavior files of a specific type for a conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        return []
+
+    stmt = (
+        select(models.BehaviorFile)
+        .where(
+            models.BehaviorFile.conversion_id == conversion_uuid,
+            models.BehaviorFile.file_type == file_type,
+        )
+        .order_by(models.BehaviorFile.file_path)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+# Alias for update_job_progress to maintain compatibility
+async def upsert_progress(
+    session: AsyncSession, job_id: str, progress: int, commit: bool = True
+) -> Optional[models.JobProgress]:
+    """Alias for update_job_progress to maintain backward compatibility."""
+    return await update_job_progress(session, job_id, progress, commit)
+
+
+async def list_jobs(
+    session: AsyncSession, skip: int = 0, limit: int = 100
+) -> List[models.ConversionJob]:
+    """List all conversion jobs with pagination."""
+    stmt = (
+        select(models.ConversionJob)
+        .options(
+            selectinload(models.ConversionJob.results),
+            selectinload(models.ConversionJob.progress),
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(models.ConversionJob.created_at.desc())
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()

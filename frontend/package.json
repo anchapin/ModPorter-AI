@@ -18,8 +18,10 @@
     "storybook:build": "storybook build --output-dir dist-storybook"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "axios": "^1.11.0",
     "mermaid": "^11.9.0",
+    "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
