@@ -3,6 +3,9 @@ Unit tests for Conversion Asset CRUD operations
 """
 
 import pytest
+
+# Mark all tests in this module as asyncio
+pytestmark = pytest.mark.asyncio
 import uuid
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession

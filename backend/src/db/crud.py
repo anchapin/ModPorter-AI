@@ -98,7 +98,7 @@ async def update_job_progress(
         .values(job_id=job_uuid, progress=progress)
         .on_conflict_do_update(
             index_elements=["job_id"],
-            set_={"progress": progress, "last_update": datetime.datetime.now()},
+            set_={"progress": progress, "last_update": func.now()},
         )
         .returning(models.JobProgress)
     )
@@ -615,10 +615,15 @@ async def list_experiment_results(
 
 async def get_addon_asset(
     session: AsyncSession, 
-    asset_id: PyUUID
+    asset_id: str
 ) -> Optional[models.AddonAsset]:
     """Retrieve a specific addon asset by its ID."""
-    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_id)
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError("Invalid asset_id format")
+    
+    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -626,22 +631,29 @@ async def get_addon_asset(
 async def create_addon_asset(
     session: AsyncSession,
     *,
-    addon_id: PyUUID,
+    addon_id: str,
     file,
     asset_type: str,
     commit: bool = True,
 ) -> models.AddonAsset:
     """Create a new addon asset entry in the database and save the file."""
+    try:
+        addon_uuid = uuid.UUID(addon_id)
+    except ValueError:
+        raise ValueError("Invalid addon_id format")
+    
     # Generate a unique path for the asset file
     asset_uuid = uuid.uuid4()
     original_filename = getattr(file, 'filename', f"{asset_uuid}.{asset_type}")
     
     # Create the asset path: {asset_uuid}_{original_filename}
-    asset_path = f"{asset_uuid}_{original_filename}"
+    # Sanitize filename to prevent path traversal attacks
+    safe_filename = os.path.basename(original_filename)
+    asset_path = f"{asset_uuid}_{safe_filename}"
     
     # Create the database record
     db_asset = models.AddonAsset(
-        addon_id=addon_id,
+        addon_id=addon_uuid,
         type=asset_type,
         path=asset_path,
         original_filename=original_filename,
@@ -660,7 +672,7 @@ async def create_addon_asset(
 async def update_addon_asset(
     session: AsyncSession,
     *,
-    asset_id: PyUUID,
+    asset_id: str,
     file,
     commit: bool = True,
 ) -> Optional[models.AddonAsset]:
@@ -673,7 +685,9 @@ async def update_addon_asset(
     # Generate new path for the updated asset
     asset_uuid = uuid.uuid4()
     original_filename = getattr(file, 'filename', f"{asset_uuid}.{existing_asset.type}")
-    new_asset_path = f"{asset_uuid}_{original_filename}"
+    # Sanitize filename to prevent path traversal attacks
+    safe_filename = os.path.basename(original_filename)
+    new_asset_path = f"{asset_uuid}_{safe_filename}"
     
     # Update the database record
     stmt = (
@@ -698,8 +712,7 @@ async def update_addon_asset(
 
 async def delete_addon_asset(
     session: AsyncSession,
-    *,
-    asset_id: PyUUID,
+    asset_id: str,
     commit: bool = True,
 ) -> Optional[dict]:
     """Delete an addon asset from the database and remove the file from storage."""
@@ -709,7 +722,12 @@ async def delete_addon_asset(
         return None
     
     # Delete the database record
-    stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_id)
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError("Invalid asset_id format")
+    
+    stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
     result = await session.execute(stmt)
     
     if commit:
@@ -727,24 +745,31 @@ async def delete_addon_asset(
 async def create_addon_asset_from_local_path(
     session: AsyncSession,
     *,
-    addon_id: PyUUID,
+    addon_id: str,
     source_file_path: str,
     asset_type: str,
     original_filename: Optional[str] = None,
     commit: bool = True,
 ) -> models.AddonAsset:
     """Create an addon asset entry from a local file path."""
+    try:
+        addon_uuid = uuid.UUID(addon_id)
+    except ValueError:
+        raise ValueError("Invalid addon_id format")
+    
     # Use the provided original filename or extract from the source path
     if not original_filename:
         original_filename = os.path.basename(source_file_path)
     
     # Generate a unique path for the asset
     asset_uuid = uuid.uuid4()
-    asset_path = f"{asset_uuid}_{original_filename}"
+    # Sanitize filename to prevent path traversal attacks
+    safe_filename = os.path.basename(original_filename)
+    asset_path = f"{asset_uuid}_{safe_filename}"
     
     # Create the database record
     db_asset = models.AddonAsset(
-        addon_id=addon_id,
+        addon_id=addon_uuid,
         type=asset_type,
         path=asset_path,
         original_filename=original_filename,
@@ -758,6 +783,29 @@ async def create_addon_asset_from_local_path(
         await session.flush()
         
     return db_asset
+
+
+async def list_addon_assets(
+    session: AsyncSession,
+    addon_id: str,
+    asset_type: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> List[models.AddonAsset]:
+    """List addon assets for a specific addon."""
+    try:
+        addon_uuid = uuid.UUID(addon_id)
+    except ValueError:
+        raise ValueError("Invalid addon_id format")
+
+    stmt = select(models.AddonAsset).where(models.AddonAsset.addon_id == addon_uuid)
+    
+    if asset_type:
+        stmt = stmt.where(models.AddonAsset.type == asset_type)
+    
+    stmt = stmt.offset(skip).limit(limit).order_by(models.AddonAsset.created_at.desc())
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 # Asset Management CRUD operations
