@@ -575,7 +575,7 @@ async def create_experiment_result(
         kpi_cost=kpi_cost,
         user_feedback_score=user_feedback_score,
         user_feedback_text=user_feedback_text,
-        result_metadata=result_metadata,
+        result_asset_metadata=result_metadata,
     )
     session.add(result)
     if commit:

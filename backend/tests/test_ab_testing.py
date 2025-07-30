@@ -154,7 +154,7 @@ async def test_experiment_results(db_session):
     assert result.kpi_cost == 0.5
     assert result.user_feedback_score == 4.5
     assert result.user_feedback_text == "Great conversion!"
-    assert result.result_metadata == {"test": "data"}
+    assert result.result_asset_metadata == {"test": "data"}
     
     # Get result
     retrieved_result = await crud.get_experiment_result(db_session, result.id)
