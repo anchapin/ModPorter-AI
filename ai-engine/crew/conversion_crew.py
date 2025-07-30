@@ -4,12 +4,13 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 """
 
 from crewai import Agent, Task, Crew, Process
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import json
 import logging
 import os
 from pathlib import Path
 import tempfile
+import shutil
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_architect import BedrockArchitectAgent
@@ -18,6 +19,21 @@ from agents.asset_converter import AssetConverterAgent
 from agents.packaging_agent import PackagingAgent
 from agents.qa_validator import QAValidatorAgent
 from agents.variant_loader import variant_loader
+
+# Import enhanced orchestration system
+from orchestration.crew_integration import EnhancedConversionCrew
+from orchestration.strategy_selector import OrchestrationStrategy
+
+# Variant constants for enhanced orchestration selection
+ENHANCED_VARIANTS = {
+    'parallel_basic',
+    'parallel_adaptive', 
+    'hybrid',
+    'enhanced_logic',
+    'variant_enhanced_logic'
+}
+
+CONTROL_VARIANTS = {'control', 'sequential', 'baseline'}
 # --- INTEGRATION PLAN FOR QAAgent ---
 # The following comments outline where and how the new QAAgent
 # (for comprehensive QA testing) would be integrated into this crew.
@@ -43,6 +59,10 @@ class ModPorterConversionCrew:
     def __init__(self, model_name: str = "gpt-4", variant_id: str = None):
         # Store variant ID
         self.variant_id = variant_id
+        
+        # Initialize enhanced orchestration crew
+        self.enhanced_crew = None
+        self.use_enhanced_orchestration = self._should_use_enhanced_orchestration(variant_id)
         
         # Check for Ollama configuration first (for local testing)
         if os.getenv("USE_OLLAMA", "false").lower() == "true":
@@ -73,6 +93,10 @@ class ModPorterConversionCrew:
         
         # Initialize agents with variant-specific configurations
         self._initialize_agents()
+        
+        # Initialize enhanced orchestration if enabled
+        if self.use_enhanced_orchestration:
+            self._initialize_enhanced_orchestration(model_name, variant_id)
     
     def _initialize_agents(self):
         """Initialize specialized agents as per PRD Feature 2 requirements"""
@@ -267,6 +291,61 @@ class ModPorterConversionCrew:
         #        comprehensive_qa_kwargs["memory"] = False
         #    self.comprehensive_qa_tester_agent = Agent(**comprehensive_qa_kwargs)
         # --- END INTEGRATION PLAN ---
+    
+    def _should_use_enhanced_orchestration(self, variant_id: Optional[str]) -> bool:
+        """
+        Determine whether to use the enhanced orchestration system
+        
+        Args:
+            variant_id: A/B testing variant identifier
+            
+        Returns:
+            True if enhanced orchestration should be used
+        """
+        
+        # Check environment variable override
+        env_override = os.getenv("USE_ENHANCED_ORCHESTRATION", "").lower()
+        if env_override in ["true", "1", "yes"]:
+            logger.info("Enhanced orchestration enabled via environment variable")
+            return True
+        elif env_override in ["false", "0", "no"]:
+            logger.info("Enhanced orchestration disabled via environment variable")
+            return False
+        
+        # Check variant configuration
+        if variant_id:
+            # Check if variant matches enhanced patterns
+            variant_lower = variant_id.lower()
+            for enhanced_variant in ENHANCED_VARIANTS:
+                if enhanced_variant in variant_lower:
+                    logger.info(f"Enhanced orchestration enabled for variant: {variant_id}")
+                    return True
+            
+            # Control/sequential variants use original system
+            for control_variant in CONTROL_VARIANTS:
+                if control_variant in variant_lower:
+                    logger.info(f"Using original orchestration for control variant: {variant_id}")
+                    return False
+        
+        # Default: use enhanced orchestration for new features
+        # This can be changed to False for conservative rollout
+        default_enhanced = os.getenv("DEFAULT_ENHANCED_ORCHESTRATION", "true").lower() == "true"
+        logger.info(f"Using default enhanced orchestration setting: {default_enhanced}")
+        return default_enhanced
+    
+    def _initialize_enhanced_orchestration(self, model_name: str, variant_id: Optional[str]):
+        """Initialize the enhanced orchestration system"""
+        try:
+            self.enhanced_crew = EnhancedConversionCrew(
+                model_name=model_name,
+                variant_id=variant_id
+            )
+            logger.info("Enhanced orchestration crew initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize enhanced orchestration: {e}")
+            logger.warning("Falling back to original CrewAI system")
+            self.use_enhanced_orchestration = False
+            self.enhanced_crew = None
     
     def _setup_crew(self):
         """Setup the crew workflow following PRD conversion process"""
@@ -476,6 +555,65 @@ class ModPorterConversionCrew:
                                  smart_assumptions=smart_assumptions,
                                  include_dependencies=include_dependencies)
         
+        # Check if we should use enhanced orchestration
+        if self.use_enhanced_orchestration and self.enhanced_crew:
+            logger.info("Using enhanced orchestration system for conversion")
+            return self._convert_with_enhanced_orchestration(
+                mod_path, output_path, smart_assumptions, include_dependencies
+            )
+        else:
+            logger.info("Using original CrewAI system for conversion")
+            return self._convert_with_original_crew(
+                mod_path, output_path, smart_assumptions, include_dependencies
+            )
+    
+    def _convert_with_enhanced_orchestration(
+        self, 
+        mod_path: Path, 
+        output_path: Path,
+        smart_assumptions: bool,
+        include_dependencies: bool
+    ) -> Dict[str, Any]:
+        """Execute conversion using the enhanced orchestration system"""
+        try:
+            # Use the enhanced crew for conversion
+            result = self.enhanced_crew.convert_mod(
+                mod_path=mod_path,
+                output_path=output_path,
+                smart_assumptions=smart_assumptions,
+                include_dependencies=include_dependencies
+            )
+            
+            logger.info("Enhanced orchestration conversion completed")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Enhanced orchestration conversion failed: {e}")
+            logger.warning("Attempting fallback to original CrewAI system")
+            
+            # Fallback to original system
+            try:
+                return self._convert_with_original_crew(
+                    mod_path, output_path, smart_assumptions, include_dependencies
+                )
+            except Exception as fallback_error:
+                logger.error(f"Fallback conversion also failed: {fallback_error}")
+                return self._create_failure_response(
+                    f"Both enhanced and original conversion failed. Enhanced: {e}, Original: {fallback_error}",
+                    mod_path
+                )
+    
+    def _convert_with_original_crew(
+        self, 
+        mod_path: Path, 
+        output_path: Path,
+        smart_assumptions: bool,
+        include_dependencies: bool
+    ) -> Dict[str, Any]:
+        """Execute conversion using the original CrewAI system"""
+        
+        temp_dir = None  # Initialize temp_dir to None
+        
         try:
             # Resolve the mod path relative to /app if it's a relative path
             if not mod_path.is_absolute():
@@ -503,11 +641,16 @@ class ModPorterConversionCrew:
                 output_path = Path("/app") / output_path
                 logger.debug(f"Resolved output path to: {output_path}")
             
+            # Set up the original crew if not already done
+            if not hasattr(self, 'crew') or self.crew is None:
+                self._setup_crew()
+            
             # Create a temporary directory for intermediate files 
             # Use /tmp for local testing, /app/conversion_outputs for Docker
             output_base_dir = os.getenv("CONVERSION_OUTPUT_DIR", "/tmp")
             temp_dir = Path(tempfile.mkdtemp(dir=output_base_dir))
             logger.info(f"Created temporary directory for conversion: {temp_dir}")
+            
             # Prepare inputs for the crew
             inputs = {
                 'mod_path': str(mod_path),
@@ -515,19 +658,12 @@ class ModPorterConversionCrew:
                 'temp_dir': str(temp_dir),  # Pass the temporary directory to the crew
                 'smart_assumptions_enabled': smart_assumptions,
                 'include_dependencies': include_dependencies
-                # --- INTEGRATION PLAN FOR QAAgent ---
-                # The 'inputs' dictionary might need to include the path to the .mcaddon file
-                # produced by self.package_task, so the comprehensive_testing_task knows what to test.
-                # Alternatively, the path could be passed through context from package_task's output.
-                # Also, the path to the scenario file for QAAgent could be an input here if it's dynamic.
-                # For now, assuming 'ai-engine/src/testing/scenarios/example_scenarios.json' is hardcoded in the tool/task.
-                # --- END INTEGRATION PLAN ---
             }
             logger.debug(f"Crew inputs: {inputs}")
             
             # Execute the crew workflow
             try:
-                logger.info("Starting crew execution...")
+                logger.info("Starting original crew execution...")
                 result = self.crew.kickoff(inputs=inputs)
                 logger.info(f"Crew execution completed with result: {type(result)}")
                 
@@ -546,28 +682,30 @@ class ModPorterConversionCrew:
             # Generate comprehensive assumption report using enhanced engine
             conversion_report = self._format_conversion_report(result, plan_components)
             
-            logger.info("Conversion completed successfully")
+            logger.info("Original crew conversion completed successfully")
             return conversion_report
 
         except Exception as e:
-            logger.error(f"Conversion failed: {str(e)}")
-            return {
-                'status': 'failed',
-                'error': str(e),
-                'overall_success_rate': 0.0,
-                'converted_mods': [],
-                'failed_mods': [{'name': str(mod_path), 'reason': str(e), 'suggestions': []}],
-                'smart_assumptions_applied': [],
-                'download_url': None,
-                'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [str(e)]}
-            }
+            logger.error(f"Original crew conversion failed: {str(e)}")
+            return self._create_failure_response(str(e), mod_path)
         finally:
             # Clean up temporary directory if it was created
             if temp_dir and temp_dir.exists():
-                import shutil
                 shutil.rmtree(temp_dir)
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
     
+    def _create_failure_response(self, error_message: str, mod_path: Path) -> Dict[str, Any]:
+        """Create standardized failure response dictionary"""
+        return {
+            'status': 'failed',
+            'error': error_message,
+            'overall_success_rate': 0.0,
+            'converted_mods': [],
+            'failed_mods': [{'name': str(mod_path), 'reason': error_message, 'suggestions': []}],
+            'smart_assumptions_applied': [],
+            'download_url': None,
+            'detailed_report': {'stage': 'error', 'progress': 0, 'logs': [error_message]}
+        }
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
         """Extract conversion plan components from crew result for assumption reporting"""
