@@ -17,19 +17,28 @@ os.environ["TESTING"] = "true"
 
 # Set up async engine for tests
 from config import settings
-test_engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_size=1,
-    max_overflow=0,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    connect_args={
-        "server_settings": {
-            "application_name": "modporter_test",
+
+# Configuration depends on database type
+db_url = settings.database_url
+engine_kwargs = {
+    "echo": False,
+}
+
+# Only add pooling parameters for PostgreSQL
+if not db_url.startswith("sqlite"):
+    engine_kwargs.update({
+        "pool_size": 1,
+        "max_overflow": 0,
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+        "connect_args": {
+            "server_settings": {
+                "application_name": "modporter_test",
+            }
         }
-    }
-)
+    })
+
+test_engine = create_async_engine(db_url, **engine_kwargs)
 
 TestAsyncSessionLocal = async_sessionmaker(
     bind=test_engine, expire_on_commit=False, class_=AsyncSession

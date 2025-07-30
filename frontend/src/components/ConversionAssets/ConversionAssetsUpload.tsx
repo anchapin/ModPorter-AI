@@ -199,7 +199,7 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
                 Uploading...
               </>
             ) : (
-              `Upload ${selectedFiles ? selectedFiles.length : 0} Asset${selectedFiles && selectedFiles.length !== 1 ? 's' : '')`
+              `Upload ${selectedFiles?.length || 0} Asset${selectedFiles && selectedFiles.length !== 1 ? 's' : ''}`
             )}
           </button>
         </div>

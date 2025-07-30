@@ -208,8 +208,8 @@ async def get_asset(
 
 @router.put("/assets/{asset_id}/status", response_model=AssetResponse, tags=["assets"])
 async def update_asset_status(
-    asset_id: str = Path(..., description="ID of the asset"),
     status_update: AssetStatusUpdate,
+    asset_id: str = Path(..., description="ID of the asset"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -236,8 +236,8 @@ async def update_asset_status(
 
 @router.put("/assets/{asset_id}/metadata", response_model=AssetResponse, tags=["assets"])
 async def update_asset_metadata(
-    asset_id: str = Path(..., description="ID of the asset"),
     metadata: Dict[str, Any],
+    asset_id: str = Path(..., description="ID of the asset"),
     db: AsyncSession = Depends(get_db)
 ):
     """

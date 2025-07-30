@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ConversionAsset } from '../../types/api';
 import * as api from '../../services/api';
 import './ConversionAssets.css';
@@ -25,7 +25,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     status: ''
   });
 
-  const loadAssets = async () => {
+  const loadAssets = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -42,13 +42,13 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [conversionId, filter.assetType, filter.status]);
 
   useEffect(() => {
     if (conversionId) {
       loadAssets();
     }
-  }, [conversionId, filter.assetType, filter.status]);
+  }, [conversionId, loadAssets]);
 
   const handleDeleteAsset = async (assetId: string) => {
     if (!window.confirm('Are you sure you want to delete this asset?')) {
