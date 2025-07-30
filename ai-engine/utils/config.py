@@ -36,10 +36,10 @@ class Config:
 
     # Search Tool Fallback Configuration
     # Enable/disable fallback mechanism when primary search returns insufficient results
-    SEARCH_FALLBACK_ENABLED: bool = os.getenv("SEARCH_FALLBACK_ENABLED", "false").lower() == "true"
+    SEARCH_FALLBACK_ENABLED: bool = os.getenv("SEARCH_FALLBACK_ENABLED", "true").lower() == "true"
     
     # Specifies which fallback tool to use (e.g., 'web_search_tool', 'api_search_tool')
-    # The tool name should match the filename without extension in src/tools/
+    # The tool name should match the filename without extension in tools/
     FALLBACK_SEARCH_TOOL: str = os.getenv("FALLBACK_SEARCH_TOOL", "web_search_tool")
     
     # Redis Configuration

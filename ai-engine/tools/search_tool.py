@@ -444,7 +444,7 @@ class SearchTool:
         
         try:
             # Construct module and class names
-            module_path = f"src.tools.{tool_name}"
+            module_path = f"tools.{tool_name}"
             class_name_parts = [part.capitalize() for part in tool_name.split('_')]
             class_name = "".join(class_name_parts)
             
@@ -454,7 +454,7 @@ class SearchTool:
             fallback_tool_instance = FallbackToolClass()
             
             # Execute fallback search
-            fallback_result = fallback_tool_instance._run(query=query)
+            fallback_result = fallback_tool_instance._run(query)
             
             # Convert fallback result to expected format
             if isinstance(fallback_result, str):
