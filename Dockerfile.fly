@@ -14,7 +14,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm run build
 
 # Python dependencies build stage (consolidates all Python deps)
-FROM python:3.13-slim AS python-builder
+FROM python:3.13.7-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
