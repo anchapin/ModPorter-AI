@@ -34,7 +34,7 @@ jobs:
       docker: ${{ steps.changes.outputs.docker }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: changes
         with:
@@ -71,7 +71,7 @@ jobs:
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -184,12 +184,12 @@ jobs:
       continue-on-error: true
       
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
@@ -426,7 +426,7 @@ jobs:
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Calculate Node dependencies hash
       id: deps-hash
@@ -478,10 +478,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Node.js 20
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '20'
 
@@ -599,7 +599,7 @@ jobs:
     needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Calculate performance metrics
       id: metrics
