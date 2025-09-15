@@ -34,9 +34,9 @@
   "author": "ModPorter AI Team",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^9.32.0",
+    "@eslint/js": "^9.35.0",
     "@types/jest": "^30.0.0",
-    "concurrently": "^9.2.0"
+    "concurrently": "^9.2.1"
   },
   "overrides": {
     "form-data@>=4.0.0 <4.0.4": ">=4.0.4"
