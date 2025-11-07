@@ -121,7 +121,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             'validation': package_result['validation']
         }
         
-        logger.info(f"✅ Conversion complete!")
+        logger.info("✅ Conversion complete!")
         logger.info(f"📦 Output: {result['output_file']}")
         logger.info(f"📏 Size: {result['file_size']:,} bytes")
         

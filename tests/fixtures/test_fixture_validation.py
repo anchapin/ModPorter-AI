@@ -11,7 +11,6 @@ This test ensures Issue #174 requirements are met:
 import json
 import zipfile
 from pathlib import Path
-import pytest
 
 # Import the fixture creation utilities
 from simple_copper_block import get_expected_analysis_result, get_expected_bedrock_block

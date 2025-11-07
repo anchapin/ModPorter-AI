@@ -6,10 +6,9 @@ queries with additional context and related terms before processing.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Set, Tuple
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
-import re
 from collections import defaultdict, Counter
 
 from schemas.multimodal_schema import SearchQuery
@@ -511,7 +510,7 @@ class ContextualExpander:
                     term=topic,
                     expansion_type=ExpansionStrategy.CONTEXTUAL_EXPANSION,
                     confidence=0.7,
-                    source=f"user_profile:favorite_topic",
+                    source="user_profile:favorite_topic",
                     weight=0.6
                 ))
         

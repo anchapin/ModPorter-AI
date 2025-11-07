@@ -3,7 +3,6 @@ Worker Pool implementation for parallel agent execution.
 Part of Phase 2: Core Orchestration Engine Implementation
 """
 
-import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed, Future
 from typing import Dict, List, Any, Optional, Callable, Union
@@ -15,9 +14,8 @@ from enum import Enum
 import queue
 import signal
 import sys
-from pathlib import Path
 
-from .task_graph import TaskNode, TaskStatus
+from .task_graph import TaskNode
 
 logger = logging.getLogger(__name__)
 
@@ -329,8 +327,8 @@ class WorkerPool:
                           f"{stats['success_rate']:.2%} success rate")
                 
                 # Check for stuck tasks (running longer than 2x timeout)
-                current_time = time.time()
-                stuck_threshold = self.task_timeout * 2
+                time.time()
+                self.task_timeout * 2
                 
                 stuck_tasks = []
                 for task_id, future in list(self.active_futures.items()):

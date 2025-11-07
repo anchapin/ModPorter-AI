@@ -1,5 +1,4 @@
 from crewai import Agent
-from langchain_openai import ChatOpenAI # Or any other LLM you plan to use
 import os
 
 # Initialize LLM using the same logic as conversion_crew.py

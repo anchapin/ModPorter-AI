@@ -13,7 +13,6 @@ For Issue #174: Add sample .jar fixture for testing
 
 import zipfile
 import json
-import os
 from pathlib import Path
 
 
@@ -211,7 +210,7 @@ if __name__ == "__main__":
     print("TEST FIXTURE CREATED SUCCESSFULLY")
     print("="*60)
     print(f"Location: {jar_path}")
-    print(f"Use this fixture in tests to validate:")
+    print("Use this fixture in tests to validate:")
     print("1. JavaAnalyzerAgent registry name and texture extraction")
     print("2. End-to-end conversion pipeline")
     print("3. .mcaddon package generation")

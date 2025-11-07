@@ -4,9 +4,7 @@ Automatically detects and configures GPU settings based on GPU_TYPE environment 
 """
 
 import os
-import sys
-import warnings
-from typing import Optional, Dict, Any, Tuple
+from typing import Dict, Any, Tuple
 from enum import Enum
 
 

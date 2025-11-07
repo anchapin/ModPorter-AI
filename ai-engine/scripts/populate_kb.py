@@ -107,7 +107,7 @@ async def main():
                 successfully_indexed_docs +=1
             logger.info(f"Indexed {doc_chunks_indexed}/{len(text_chunks)} chunks for document {doc.source}.")
 
-        logger.info(f"Knowledge base population completed.")
+        logger.info("Knowledge base population completed.")
         logger.info(f"Successfully processed and attempted indexing for {successfully_indexed_docs}/{len(scraped_documents)} documents.")
         logger.info(f"Total chunks indexed: {total_chunks_indexed}")
 

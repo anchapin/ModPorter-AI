@@ -8,7 +8,7 @@ Implements Issue #213: Test Mod Validation Requirements
 import json
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 
@@ -344,7 +344,7 @@ class TestModValidator:
                         for category_results in results.values())
         
         report_lines.extend([
-            f"📊 SUMMARY:",
+            "📊 SUMMARY:",
             f"   Total test mods: {total_mods}",
             f"   Valid mods: {valid_mods}",
             f"   Invalid mods: {total_mods - valid_mods}",

@@ -1,7 +1,6 @@
 import httpx
 import os
 import json
-import time
 import logging
 from typing import List, Optional, TypedDict
 
@@ -156,7 +155,7 @@ async def train_model_with_feedback(training_data: List[AITrainingDataItem]):
                     logger.info("      Action: Positive reinforcement applied - increasing action probability")
                     
                 if feedback_data.get('comment'):
-                    logger.info(f"      Action: Processing feedback comment for contextual learning")
+                    logger.info("      Action: Processing feedback comment for contextual learning")
                 
                 successful_episodes += 1
                 
@@ -170,7 +169,7 @@ async def train_model_with_feedback(training_data: List[AITrainingDataItem]):
             training_metrics = await training_loop.run_training_cycle()
             
             avg_reward = total_reward / successful_episodes
-            logger.info(f"Training cycle completed:")
+            logger.info("Training cycle completed:")
             logger.info(f"  - Episodes processed: {successful_episodes}")
             logger.info(f"  - Average reward: {avg_reward:.3f}")
             logger.info(f"  - Overall improvement rate: {training_metrics.improvement_rate:.3f}")

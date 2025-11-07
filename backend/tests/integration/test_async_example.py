@@ -5,7 +5,7 @@ This demonstrates the recommended patterns for testing FastAPI applications
 with async database operations.
 """
 import pytest
-from tests.async_test_client import AsyncTestClient, async_test_db, async_client
+from tests.async_test_client import AsyncTestClient
 
 
 @pytest.mark.asyncio

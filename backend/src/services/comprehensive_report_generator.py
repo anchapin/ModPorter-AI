@@ -14,29 +14,11 @@ from typing import List, Dict, Any, Optional
 import time
 import logging
 from datetime import datetime
-import importlib.util
-from pathlib import Path
 
-# Load report_types module directly to avoid conflict with built-in types
-current_dir = Path(__file__).parent
-src_dir = current_dir.parent
-spec = importlib.util.spec_from_file_location("report_types", src_dir / "types" / "report_types.py")
-report_types = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(report_types)
-
-# Import from the loaded module
-InteractiveReport = report_types.InteractiveReport
-SummaryReport = report_types.SummaryReport
-FeatureAnalysis = report_types.FeatureAnalysis
-FeatureAnalysisItem = report_types.FeatureAnalysisItem
-AssumptionsReport = report_types.AssumptionsReport
-AssumptionReportItem = report_types.AssumptionReportItem
-DeveloperLog = report_types.DeveloperLog
-ReportMetadata = report_types.ReportMetadata
-ConversionStatus = report_types.ConversionStatus
-ImpactLevel = report_types.ImpactLevel
-create_report_metadata = report_types.create_report_metadata
-calculate_quality_score = report_types.calculate_quality_score
+from ..types.report_types import (
+    InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
+    AssumptionsReport, AssumptionReportItem, DeveloperLog, ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
+)
 
 logger = logging.getLogger(__name__)
 

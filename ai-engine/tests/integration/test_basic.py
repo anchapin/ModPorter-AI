@@ -7,7 +7,7 @@ def test_integration_basic():
     """Basic integration test that can be skipped if dependencies missing."""
     try:
         from main import app
-        client = TestClient(app)
+        TestClient(app)
         
         # Test if we can import the app
         assert app is not None
