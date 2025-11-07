@@ -570,8 +570,11 @@ jobs:
         # Clear npm cache to avoid 'Cannot read properties of null' error
         npm cache clean --force
         
-        # Use npm ci for reliable CI installs, skipping optional platform-specific deps
-        npm ci --prefer-offline --no-audit --no-fund --omit=optional
+        # Remove platform-specific package-lock and regenerate for Linux
+        rm -f package-lock.json
+        
+        # Use npm install with platform-specific filtering
+        npm install --prefer-offline --no-audit --no-fund --force
         
         echo "✅ Dependencies installed successfully"
 
