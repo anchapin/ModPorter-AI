@@ -529,14 +529,14 @@ jobs:
         node-version: '20'
 
     # Multi-level caching for Node.js
-    - name: Cache Node.js packages (L1 - pnpm store)
+    - name: Cache Node.js packages (L1 - npm cache)
       uses: actions/cache@v4
       with:
-        path: ~/.local/share/pnpm/store
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
+          ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-
+          ${{ runner.os }}-npm-cache-
 
     - name: Cache Node.js packages (L2 - node_modules)
       uses: actions/cache@v4
@@ -545,7 +545,7 @@ jobs:
           node_modules
           frontend/node_modules
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-frontend-
@@ -562,21 +562,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-
 
-    - name: Install pnpm
-      run: |
-        npm install -g pnpm@9.12.3 --registry https://registry.npmjs.org/
-
     - name: Install dependencies (optimized)
       run: |
         echo "⚡ Installing frontend dependencies with optimizations..."
         
-        # Use pnpm with performance optimizations
-        pnpm config set store-dir ~/.local/share/pnpm/store
-        pnpm config set verify-store-integrity false  # Disabled for performance; assumes trusted cache
-        pnpm config set package-import-method copy
-        
         # Install with frozen lockfile for faster, deterministic installs
-        pnpm install --no-frozen-lockfile --prefer-offline
+        npm install --frozen-lockfile --prefer-offline
         
         echo "✅ Dependencies installed successfully"
 
@@ -588,17 +579,17 @@ jobs:
         case "${{ matrix.test-type }}" in
           "unit")
             # Run tests with coverage in CI mode
-            pnpm run test:ci --reporter=verbose
+            npm run test:ci
             ;;
           "build")
             # Build with production optimizations
-            NODE_ENV=production pnpm run build
+            NODE_ENV=production npm run build
             echo "Build size analysis:"
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
-            # Run linting with caching
-            pnpm run lint --cache --cache-location node_modules/.cache/eslint
+            # Run linting
+            npm run lint
             ;;
         esac
 

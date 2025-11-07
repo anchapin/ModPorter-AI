@@ -64,12 +64,8 @@ jobs:
     - name: Cache Node dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-    - name: Install pnpm
-      run: |
-        npm install -g pnpm@9.12.3
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
 
     - name: Install backend dependencies
       run: |
@@ -86,7 +82,7 @@ jobs:
     - name: Install frontend dependencies
       run: |
         cd frontend
-        pnpm install --frozen-lockfile
+        npm install --frozen-lockfile
 
     # Install system dependencies for health checks
     - name: Install system dependencies
@@ -134,7 +130,7 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        pnpm test:ci
+        npm run test:ci
 
     - name: Frontend type check
       run: |
@@ -144,12 +140,12 @@ jobs:
     - name: Frontend lint check
       run: |
         cd frontend
-        pnpm lint
+        npm run lint
 
     - name: Build frontend
       run: |
         cd frontend
-        pnpm build
+        npm run build
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v5
