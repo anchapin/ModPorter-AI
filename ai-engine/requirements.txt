@@ -34,7 +34,7 @@ aiofiles>=23.0.0     # For async file operations (potentially in scraper or othe
 validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 
 # Web Search
-duckduckgo-search>=5.3.0  # For actual web search functionality
+ddgs>=5.3.0              # For actual web search functionality (replaces duckduckgo-search)
 
 # Redis for job management
 redis>=4.5.0

@@ -9,8 +9,11 @@ RUN npm install -g pnpm
 # Create app directory
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+# Copy workspace package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy frontend package.json for workspace
+COPY frontend/package.json ./frontend/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile && pnpm store prune

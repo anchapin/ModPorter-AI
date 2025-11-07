@@ -7,7 +7,7 @@ import logging
 import asyncio
 from typing import Dict, List, Any, Optional
 from crewai.tools import BaseTool
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 import json
 from pydantic import Field
 
@@ -113,42 +113,30 @@ class WebSearchTool(BaseTool):
         """
         import time
         
-        # Try multiple backends in order of preference
-        backends = ["html", "lite", "api"]
+        try:
+            logger.info(f"Attempting DuckDuckGo search")
+            
+            results = list(self.ddgs.text(
+                query,
+                max_results=self.max_results
+            ))
+            
+            if results:
+                logger.info(f"DuckDuckGo search succeeded, found {len(results)} results")
+                return results
+            else:
+                logger.warning(f"DuckDuckGo search returned no results")
+                return []
+                
+        except Exception as e:
+            logger.warning(f"DuckDuckGo search failed: {str(e)}")
+            if "rate" in str(e).lower() or "202" in str(e):
+                logger.info("Rate limit detected, waiting before retry...")
+                time.sleep(5)
+                return []
         
-        for i, backend in enumerate(backends):
-            try:
-                logger.info(f"Attempting DuckDuckGo search with {backend} backend")
-                
-                # Add delay between attempts to avoid rate limiting
-                if i > 0:
-                    time.sleep(2)
-                
-                # Adjust max_results based on backend capabilities
-                max_results = min(self.max_results, 5) if backend == "lite" else self.max_results
-                
-                results = list(self.ddgs.text(
-                    keywords=query,
-                    max_results=max_results,
-                    backend=backend,
-                    safesearch="moderate"
-                ))
-                
-                if results:
-                    logger.info(f"DuckDuckGo search succeeded with {backend} backend, found {len(results)} results")
-                    return results
-                else:
-                    logger.warning(f"DuckDuckGo search with {backend} backend returned no results")
-                    
-            except Exception as e:
-                logger.warning(f"DuckDuckGo search with {backend} backend failed: {str(e)}")
-                if "rate" in str(e).lower() or "202" in str(e):
-                    logger.info("Rate limit detected, waiting before next attempt...")
-                    time.sleep(5)
-                continue
-        
-        # If all backends fail, return mock data for testing
-        logger.warning("All DuckDuckGo backends failed, returning mock results for testing")
+        # If search fails, return mock data for testing
+        logger.warning("DuckDuckGo search failed, returning mock results for testing")
         return [
             {
                 "title": f"Mock Search Result for: {query}",
