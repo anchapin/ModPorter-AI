@@ -18,8 +18,14 @@
     "storybook:build": "storybook build --output-dir dist-storybook"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
+    "@rollup/rollup-win32-x64-msvc": "^4.53.0",
     "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "mermaid": "^11.12.1",
     "monaco-editor": "^0.54.0",
     "react": "^19.2.0",
@@ -41,7 +47,6 @@
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
     "@vitejs/plugin-react": "^4.3.3",
-    "@rollup/rollup-win32-x64-msvc": "^4.53.0",
     "@vitest/coverage-v8": "^4.0.7",
     "@vitest/ui": "^4.0.7",
     "eslint": "^9.39.1",

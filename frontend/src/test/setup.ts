@@ -1,5 +1,17 @@
+// Polyfills first
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Comprehensive Web Stream API polyfills for Node.js compatibility
+const { TransformStream, WritableStream } = require('node:stream/web');
+global.TransformStream = TransformStream;
+global.WritableStream = WritableStream;
+
 import '@testing-library/jest-dom';
-import { setupServer } from 'msw/node';
+
+// Temporarily disable MSW due to Node.js compatibility issues
+// import { setupServer } from 'msw/node';
 import { handlers, resetConversionState } from './msw-handlers'; // Assuming handlers are in this path
 import { beforeAll, afterEach, afterAll } from 'vitest';
 
@@ -22,7 +34,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Establish API mocking before all tests.
-beforeAll(() => server.listen());
+// beforeAll(() => server.listen());
 
 // Reset any request handlers that we may add during the tests,
 // so they don't affect other tests.
@@ -32,4 +44,4 @@ afterEach(() => {
 });
 
 // Clean up after the tests are finished.
-afterAll(() => server.close());
+// afterAll(() => server.close());
