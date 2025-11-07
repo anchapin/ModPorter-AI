@@ -23,7 +23,6 @@
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
-    "@rollup/rollup-win32-x64-msvc": "^4.53.0",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "mermaid": "^11.12.1",
