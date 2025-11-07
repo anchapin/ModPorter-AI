@@ -656,14 +656,14 @@ jobs:
         echo "📊 Cache Strategy Analysis"
         echo "=========================="
         echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)"
         
         echo ""
         echo "Cache Keys (v2 optimized):"
         echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
         echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- pnpm-store: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}"
         
         echo ""
         echo "🎯 Optimization Results"
