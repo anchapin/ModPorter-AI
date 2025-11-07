@@ -41,7 +41,7 @@ async def demo_basic_functionality():
             content_types=[ContentType.DOCUMENTATION]
         )
         
-        logger.info(f"Query processed successfully!")
+        logger.info("Query processed successfully!")
         logger.info(f"Answer length: {len(response.answer)} characters")
         logger.info(f"Confidence: {response.confidence:.2f}")
         logger.info(f"Processing time: {response.processing_time_ms:.1f}ms")
@@ -99,7 +99,7 @@ async def demo_contextual_awareness():
         
         # First query to establish context
         logger.info("First query: Establishing context about Minecraft blocks")
-        response1 = await rag_agent.query(
+        await rag_agent.query(
             query_text="What are Minecraft blocks?",
             session_id=session_id
         )
@@ -145,10 +145,10 @@ async def demo_evaluation_system():
             
             result = await evaluator.evaluate_single_query(rag_agent, golden_item)
             
-            logger.info(f"Evaluation completed:")
+            logger.info("Evaluation completed:")
             logger.info(f"  Tests passed: {len(result.passed_tests)}")
             logger.info(f"  Tests failed: {len(result.failed_tests)}")
-            logger.info(f"  Key metrics:")
+            logger.info("  Key metrics:")
             
             for metric_name, value in result.metrics.items():
                 if isinstance(value, (int, float)) and metric_name not in ['error']:
@@ -266,15 +266,15 @@ async def main():
     logger.info(f"Successful demonstrations: {successful_demos}/{total_demos}")
     
     if results['basic']:
-        logger.info(f"✅ Basic RAG functionality working")
+        logger.info("✅ Basic RAG functionality working")
     if results['expansion']:
-        logger.info(f"✅ Query expansion working")
+        logger.info("✅ Query expansion working")
     if results['contextual']:
-        logger.info(f"✅ Contextual awareness working")
+        logger.info("✅ Contextual awareness working")
     if results['evaluation']:
-        logger.info(f"✅ Evaluation system working")
+        logger.info("✅ Evaluation system working")
     if results['capabilities']:
-        logger.info(f"✅ Agent capabilities reporting working")
+        logger.info("✅ Agent capabilities reporting working")
     if results['query_types']:
         logger.info(f"✅ Multiple query types handled ({len(results['query_types'])} tested)")
     

@@ -4,7 +4,6 @@ Provides export functionality for conversion reports in multiple formats.
 """
 
 import json
-import io
 import base64
 import html
 from typing import Dict, Any, Optional

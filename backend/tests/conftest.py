@@ -1,12 +1,10 @@
 import os
 import sys
 import pytest
-import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-import httpx
 
 # Add the src directory to the Python path
 backend_dir = Path(__file__).parent.parent
@@ -116,7 +114,7 @@ async def db_session():
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
-    with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
+    with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
         from main import app
         from db.base import get_db
@@ -147,3 +145,48 @@ def client():
         
         # Clean up dependency override
         app.dependency_overrides.clear()
+
+@pytest.fixture(scope="function")  
+async def async_client():
+    """Create an async test client for FastAPI app."""
+    # Mock init_db function to prevent re-initialization during TestClient startup
+    with patch('db.init_db.init_db', new_callable=AsyncMock):
+        from main import app
+        from db.base import get_db
+        
+        # Create a fresh session maker per test to avoid connection sharing
+        test_session_maker = async_sessionmaker(
+            bind=test_engine, 
+            expire_on_commit=False, 
+            class_=AsyncSession
+        )
+        
+        # Override database dependency to use isolated sessions
+        async def override_get_db():
+            async with test_session_maker() as session:
+                try:
+                    yield session
+                except Exception:
+                    await session.rollback()
+                    raise
+                finally:
+                    await session.close()
+        
+        app.dependency_overrides[get_db] = override_get_db
+        
+        # Create AsyncClient using the newer API
+        import httpx
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:
+            yield test_client
+        
+        # Clean up dependency override
+        app.dependency_overrides.clear()
+
+@pytest.fixture(scope="function")
+async def async_test_db():
+    """Create an async database session for tests."""
+    async with TestAsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

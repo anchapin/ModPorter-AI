@@ -1,7 +1,10 @@
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, ws } from 'msw';
 import { ConversionStatusEnum } from '../types/api';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1'; // Assuming this is the base URL
+
+// Create server instance for WebSocket handling
+let globalServer: any = null;
 
 let conversionState: {
   status: ConversionStatusEnum;
@@ -157,4 +160,50 @@ export const handlers = [
     }
     return HttpResponse.json({ message: 'Feedback submitted successfully' }, { status: 200 });
   }),
+
+  // WebSocket handlers for conversion progress
+  ws.link('ws://localhost:8080/ws/v1/convert/:jobId/progress', async ({ data, clientId }) => {
+    const jobId = data.url.match(/\/ws\/v1\/convert\/(.+?)\/progress/)?.[1];
+    if (!jobId) return;
+    
+    // Simulate progress updates
+    const sendData = () => {
+      const currentProgress = conversionState.progress + 10;
+      if (currentProgress <= 100) {
+        conversionState.progress = currentProgress;
+        conversionState.status = currentProgress >= 100 ? ConversionStatusEnum.COMPLETED : ConversionStatusEnum.RUNNING;
+        
+        globalServer.send(clientId, {
+          type: 'progress_update',
+          data: {
+            job_id: jobId,
+            status: conversionState.status,
+            progress: conversionState.progress,
+            message: conversionState.status === ConversionStatusEnum.COMPLETED ? 'Conversion completed!' : 'Processing...',
+            stage: conversionState.status === ConversionStatusEnum.COMPLETED ? 'Completed' : 'Processing',
+          },
+        });
+        
+        if (conversionState.status === ConversionStatusEnum.COMPLETED) {
+          setTimeout(() => globalServer.close(clientId), 100);
+          return;
+        }
+      }
+    };
+
+    // Send initial progress
+    sendData();
+    
+    // Continue sending progress updates
+    const interval = setInterval(sendData, 1000);
+    
+    // Store interval for cleanup
+    (conversionState as any).interval = interval;
+  }),
 ];
+
+// Store server reference globally for WebSocket handlers
+(global as any).server = globalServer;
+
+// Export server for use in setup
+export { globalServer as server };

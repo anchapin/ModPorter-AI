@@ -12,7 +12,9 @@ import {
   AddonAsset,    // Added for Asset Management
   AddonDataUpload, // Added for saving addon details
   FeedbackCreatePayload, // Added
-  FeedbackResponse // Added
+  FeedbackResponse, // Added
+  ConversionAsset, // Added for Conversion Asset Management
+  ConversionAssetBatchResult // Added for Conversion Asset Management
 } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
@@ -344,6 +346,153 @@ export const submitFeedback = async (payload: FeedbackCreatePayload): Promise<Fe
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error submitting feedback' }));
     throw new ApiError(errorData.detail || 'Failed to submit feedback', response.status);
+  }
+
+  return response.json();
+};
+
+// --- Conversion Asset Management API Functions ---
+
+export const listConversionAssets = async (
+  conversionId: string,
+  assetType?: string,
+  status?: string,
+  skip: number = 0,
+  limit: number = 100
+): Promise<ConversionAsset[]> => {
+  const params = new URLSearchParams({
+    skip: skip.toString(),
+    limit: limit.toString(),
+  });
+  
+  if (assetType) params.append('asset_type', assetType);
+  if (status) params.append('status', status);
+
+  const response = await fetch(
+    `${API_BASE_URL}/conversions/${conversionId}/assets?${params.toString()}`
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Failed to list assets' }));
+    throw new ApiError(errorData.detail || 'Failed to list conversion assets', response.status);
+  }
+
+  return response.json();
+};
+
+export const uploadConversionAsset = async (
+  conversionId: string,
+  file: File,
+  assetType: string
+): Promise<ConversionAsset> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('asset_type', assetType);
+
+  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}/assets`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new ApiError(errorData.detail || 'Failed to upload asset', response.status);
+  }
+
+  return response.json();
+};
+
+export const getConversionAsset = async (assetId: string): Promise<ConversionAsset> => {
+  const response = await fetch(`${API_BASE_URL}/assets/${assetId}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Asset not found' }));
+    throw new ApiError(errorData.detail || 'Failed to get asset', response.status);
+  }
+
+  return response.json();
+};
+
+export const updateConversionAssetStatus = async (
+  assetId: string,
+  status: string,
+  convertedPath?: string,
+  errorMessage?: string
+): Promise<ConversionAsset> => {
+  const response = await fetch(`${API_BASE_URL}/assets/${assetId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      status,
+      converted_path: convertedPath,
+      error_message: errorMessage,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Update failed' }));
+    throw new ApiError(errorData.detail || 'Failed to update asset status', response.status);
+  }
+
+  return response.json();
+};
+
+export const updateConversionAssetMetadata = async (
+  assetId: string,
+  metadata: Record<string, any>
+): Promise<ConversionAsset> => {
+  const response = await fetch(`${API_BASE_URL}/assets/${assetId}/metadata`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(metadata),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Update failed' }));
+    throw new ApiError(errorData.detail || 'Failed to update asset metadata', response.status);
+  }
+
+  return response.json();
+};
+
+export const deleteConversionAsset = async (assetId: string): Promise<{ message: string }> => {
+  const response = await fetch(`${API_BASE_URL}/assets/${assetId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Delete failed' }));
+    throw new ApiError(errorData.detail || 'Failed to delete asset', response.status);
+  }
+
+  return response.json();
+};
+
+export const convertConversionAsset = async (assetId: string): Promise<ConversionAsset> => {
+  const response = await fetch(`${API_BASE_URL}/assets/${assetId}/convert`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
+    throw new ApiError(errorData.detail || 'Failed to convert asset', response.status);
+  }
+
+  return response.json();
+};
+
+export const convertAllConversionAssets = async (conversionId: string): Promise<ConversionAssetBatchResult> => {
+  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}/assets/convert-all`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Batch conversion failed' }));
+    throw new ApiError(errorData.detail || 'Failed to convert assets', response.status);
   }
 
   return response.json();

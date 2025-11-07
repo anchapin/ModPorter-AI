@@ -3,7 +3,6 @@ import hashlib
 import os
 import logging # Using standard logging
 from typing import Optional, List, Dict, Any # Added List, Dict, Any
-from models.document import Document
 from utils.embedding_generator import EmbeddingGenerator
 
 logger = logging.getLogger(__name__)

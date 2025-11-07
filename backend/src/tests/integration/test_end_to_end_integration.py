@@ -8,7 +8,6 @@ Issue #170: https://github.com/anchapin/ModPorter-AI/issues/170
 
 import pytest
 import time
-from pathlib import Path
 
 # Polling configuration constants
 POLL_MAX_ATTEMPTS = 30  # 30 attempts * 2 seconds = 1 minute max wait
@@ -118,7 +117,7 @@ class TestEndToEndIntegration:
         assert mcaddon_content.startswith(b'PK'), "Downloaded file is not a valid ZIP/mcaddon format"
         
         # Log success metrics for debugging
-        print(f"✅ Integration test passed:")
+        print("✅ Integration test passed:")
         print(f"   - Job ID: {job_id}")
         print(f"   - Final status: {final_status}")
         print(f"   - .mcaddon size: {len(mcaddon_content):,} bytes")

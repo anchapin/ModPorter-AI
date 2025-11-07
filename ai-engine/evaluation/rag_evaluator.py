@@ -7,15 +7,15 @@ the performance of the advanced RAG system across multiple dimensions.
 
 import json
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 from enum import Enum
 import numpy as np
-from collections import defaultdict, Counter
+from collections import defaultdict
 import math
 from datetime import datetime
 
-from schemas.multimodal_schema import SearchQuery, SearchResult, ContentType
+from schemas.multimodal_schema import SearchResult, ContentType
 from agents.advanced_rag_agent import RAGResponse
 
 logger = logging.getLogger(__name__)
@@ -645,7 +645,6 @@ class RAGEvaluator:
         generation_metrics = ['keyword_coverage', 'keyword_prohibition_compliance', 
                             'answer_length_appropriateness', 'source_citation_quality', 'coherence_score']
         diversity_metrics = ['content_type_diversity', 'source_diversity', 'topic_diversity']
-        efficiency_metrics = ['response_time_ms', 'confidence_score']
         
         category_scores = {}
         

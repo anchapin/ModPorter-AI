@@ -109,7 +109,7 @@ const EditorPageContent: React.FC = () => {
             onClick={() => setRightSidebarTab('assets')}
             className={`sidebar-tab-button ${rightSidebarTab === 'assets' ? 'active' : ''}`}
           >
-            Assets
+            Addon Assets
           </button>
           <button
             onClick={() => setRightSidebarTab('recipes')}

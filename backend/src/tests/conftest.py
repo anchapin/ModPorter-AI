@@ -1,12 +1,10 @@
 import os
 import sys
 import pytest
-import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-import httpx
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -17,19 +15,28 @@ os.environ["TESTING"] = "true"
 
 # Set up async engine for tests
 from config import settings
-test_engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_size=1,
-    max_overflow=0,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    connect_args={
-        "server_settings": {
-            "application_name": "modporter_test",
+
+# Configuration depends on database type
+db_url = settings.database_url
+engine_kwargs = {
+    "echo": False,
+}
+
+# Only add pooling parameters for PostgreSQL
+if not db_url.startswith("sqlite"):
+    engine_kwargs.update({
+        "pool_size": 1,
+        "max_overflow": 0,
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+        "connect_args": {
+            "server_settings": {
+                "application_name": "modporter_test",
+            }
         }
-    }
-)
+    })
+
+test_engine = create_async_engine(db_url, **engine_kwargs)
 
 TestAsyncSessionLocal = async_sessionmaker(
     bind=test_engine, expire_on_commit=False, class_=AsyncSession
@@ -91,7 +98,7 @@ async def db_session():
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
-    with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
+    with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
         from main import app
         from db.base import get_db

@@ -9,7 +9,7 @@ import time
 import statistics
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict
 
 # Add the ai-engine and root directories to the path
 ai_engine_root = Path(__file__).parent.parent.parent
@@ -18,7 +18,7 @@ sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
 
 from cli.main import convert_mod
-from tests.fixtures.test_jar_generator import TestJarGenerator, create_test_mod_suite
+from tests.fixtures.test_jar_generator import JarGenerator
 
 
 class PerformanceBenchmarks(unittest.TestCase):
@@ -28,7 +28,7 @@ class PerformanceBenchmarks(unittest.TestCase):
         """Set up performance testing environment."""
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
-        self.generator = TestJarGenerator(self.temp_dir)
+        self.generator = JarGenerator(self.temp_dir)
         self.results = []
     
     def tearDown(self):
@@ -130,7 +130,7 @@ class PerformanceBenchmarks(unittest.TestCase):
             })
             
             # Performance assertions - adjusted for CI environment
-            self.assertLess(perf_data['avg_time'], count * 75.0, f"Should scale better than 75.0s per block")
+            self.assertLess(perf_data['avg_time'], count * 75.0, "Should scale better than 75.0s per block")
     
     def test_mod_framework_comparison(self):
         """Compare performance across different mod frameworks."""
@@ -380,7 +380,7 @@ class PerformanceBenchmarks(unittest.TestCase):
         all_success_rates = [r['success_rate'] for r in self.results if 'success_rate' in r]
         
         if all_times:
-            print(f"\\n🎯 OVERALL METRICS:")
+            print("\\n🎯 OVERALL METRICS:")
             print(f"  ⚡ Fastest conversion: {min(all_times):.3f}s")
             print(f"  🐌 Slowest conversion: {max(all_times):.3f}s")
             print(f"  📊 Average conversion: {statistics.mean(all_times):.3f}s")

@@ -4,7 +4,7 @@ Part of Phase 3: Agent and Crew Integration
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from pathlib import Path
 import time
 import tempfile
@@ -13,7 +13,7 @@ import shutil
 
 from .orchestrator import ParallelOrchestrator
 from .strategy_selector import StrategySelector, OrchestrationStrategy
-from .task_graph import TaskGraph, TaskNode
+from .task_graph import TaskGraph
 
 # Import existing agents (this will need to be adapted based on actual imports)
 from agents.java_analyzer import JavaAnalyzerAgent
@@ -308,8 +308,8 @@ class EnhancedConversionCrew:
             """Execute packaging task"""
             try:
                 # Get all previous results
-                analysis_context = task_data.get('analysis_result', {})
-                planning_context = task_data.get('planning_result', {})
+                task_data.get('analysis_result', {})
+                task_data.get('planning_result', {})
                 translation_context = task_data.get('translation_result', {})
                 asset_context = task_data.get('asset_result', {})
                 

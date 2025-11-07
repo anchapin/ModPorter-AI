@@ -3,7 +3,7 @@ Comprehensive report data types for the ModPorter AI conversion report system.
 Implements Issue #10 - Conversion Report Generation System
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from typing_extensions import TypedDict
 from dataclasses import dataclass
 from datetime import datetime

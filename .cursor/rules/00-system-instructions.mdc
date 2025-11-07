@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<important-instruction-reminders>
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+</important-instruction-reminders>
+
+<task-management-reminders>
+
+If TodoRead/TodoWrite tools are unavailable, IGNORE ALL TODO RULES and proceed normally.
+Do NOT attempt to run any other commands or tools.
+
+BEFORE responding to ANY request, you MUST:
+1. Call TodoRead() to check current task status
+2. Plan work based on existing todos  
+3. Update progress with TodoWrite() when starting/completing tasks
+4. NEVER work without consulting the todo system first
+
+CRITICAL TODO SYSTEM RULES:
+- Only ONE task can have status "in_progress" at a time
+- Mark tasks "in_progress" BEFORE starting work
+- Complete tasks IMMEDIATELY when finished (don't batch completions)
+- Break complex requests into specific, actionable todos
+- Reference existing todos when planning new work
+
+MANDATORY VISUAL DISPLAY:
+- ALWAYS display the complete todo list AFTER every TodoRead() or TodoWrite()
+- Use format: ✅ = completed, 🔄 = in_progress, ⏳ = pending
+- NEVER just say "updated todos" - show the full list every time
+- User must see current state after every todo operation
+
+Every response should acknowledge todo status with "Checked todos: [brief status]" - but only when TodoRead/TodoWrite tools are available.
+</task-management-reminders>

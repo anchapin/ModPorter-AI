@@ -1,8 +1,9 @@
 from typing import Optional, List
 from uuid import UUID as PyUUID # For type hinting UUID objects
 import uuid
+import os
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete # Added delete
+from sqlalchemy import select, update, delete, func # Added delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
@@ -573,7 +574,7 @@ async def create_experiment_result(
         kpi_cost=kpi_cost,
         user_feedback_score=user_feedback_score,
         user_feedback_text=user_feedback_text,
-        result_metadata=result_metadata,
+        result_asset_metadata=result_metadata,
     )
     session.add(result)
     if commit:
@@ -608,7 +609,6 @@ async def list_experiment_results(
     stmt = stmt.offset(skip).limit(limit).order_by(models.ExperimentResult.created_at.desc())
     result = await session.execute(stmt)
     return result.scalars().all()
-
 
 # Behavior File CRUD operations for post-conversion editor
 

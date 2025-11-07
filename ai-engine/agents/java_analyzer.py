@@ -2,7 +2,6 @@
 Java Analyzer Agent for analyzing Java mod structure and extracting features
 """
 
-import logging
 import json
 import re
 from typing import List, Dict, Union
@@ -512,7 +511,6 @@ class JavaAnalyzerAgent:
             name = name[5:]  # Remove 'Block' from the start if it's a prefix like BlockOfCopper
         
         # Convert CamelCase to snake_case
-        import re
         name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name).lower()
         
         # Clean up any double underscores or leading/trailing underscores

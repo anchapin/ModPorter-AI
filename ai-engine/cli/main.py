@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Dict, Any
 
 # Import our agents
-import sys
-from pathlib import Path
 
 # Add the parent directory to the path so we can import from src
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -112,7 +110,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             'validation': package_result['validation']
         }
         
-        logger.info(f"✅ Conversion complete!")
+        logger.info("✅ Conversion complete!")
         logger.info(f"📦 Output: {result['output_file']}")
         logger.info(f"📏 Size: {result['file_size']:,} bytes")
         

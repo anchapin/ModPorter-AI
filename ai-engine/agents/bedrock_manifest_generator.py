@@ -127,7 +127,7 @@ class BedrockManifestGenerator:
         
         # Extract mod information
         mod_name = mod_data.get('name', 'Converted Mod')
-        mod_description = mod_data.get('description', f'Converted from Java mod')
+        mod_description = mod_data.get('description', 'Converted from Java mod')
         mod_version = self._parse_version(mod_data.get('version', '1.0.0'))
         
         # Generate unique UUIDs for each pack

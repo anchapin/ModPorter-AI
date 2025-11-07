@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 
-class TestJarGenerator:
+class JarGenerator:
     """Utility class for generating test JAR files for mod conversion testing."""
     
     def __init__(self, temp_dir: Optional[str] = None):
@@ -138,7 +138,7 @@ def create_test_mod_suite(output_dir = None) -> Dict[str, str]:
     else:
         output_dir_str = None
     
-    generator = TestJarGenerator(output_dir_str)
+    generator = JarGenerator(output_dir_str)
     
     mod_suite = {}
     
@@ -176,7 +176,7 @@ def create_test_jar(name: str = "test_mod") -> str:
     Returns:
         Path to the created JAR file
     """
-    generator = TestJarGenerator()
+    generator = JarGenerator()
     return generator.create_mod_jar(name)
 
 

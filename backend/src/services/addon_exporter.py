@@ -4,7 +4,6 @@ import io
 import zipfile
 from typing import Dict, Any, List
 
-from db.models import Addon, AddonBlock, AddonAsset, AddonBehavior, AddonRecipe # For type hinting if passing SQLAlchemy models
 from models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
 
 # Constants for manifest versions, can be updated as needed
@@ -193,7 +192,6 @@ def generate_terrain_texture_json(addon_assets: List[pydantic_addon_models.Addon
             # The value is the path to the texture file (without .png) relative to RP root.
 
             # Let's assume the key is the filename without extension:
-            key_name = texture_name # e.g. "my_block_texture"
 
             # Path in terrain_texture.json needs to be like "textures/blocks/my_block_texture"
             # if the file is textures/blocks/my_block_texture.png in RP

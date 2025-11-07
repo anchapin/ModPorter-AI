@@ -76,6 +76,10 @@ class ConversionJob(Base):
     feedback = relationship(
         "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
     )
+    # Relationship to assets
+    assets = relationship(
+        "Asset", back_populates="conversion", cascade="all, delete-orphan"
+    )
 
 
 class ConversionResult(Base):
@@ -341,6 +345,53 @@ class ConversionFeedback(Base):
     job = relationship("ConversionJob", back_populates="feedback")
 
 
+# Asset Management Models
+
+class Asset(Base):
+    __tablename__ = "assets"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    conversion_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("conversion_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    asset_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'texture', 'model', 'sound', 'script', etc.
+    original_path: Mapped[str] = mapped_column(String, nullable=False)
+    converted_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'pending'"),
+    )  # 'pending', 'processing', 'converted', 'failed'
+    asset_metadata: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, default={})
+    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    original_filename: Mapped[str] = mapped_column(String, nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    conversion = relationship("ConversionJob", back_populates="assets")
+
+
 # Comparison Models
 
 class ComparisonResultDb(Base):
@@ -496,7 +547,7 @@ class ExperimentResult(Base):
         DECIMAL(3, 2), nullable=True
     )  # User feedback score (1.0 to 5.0)
     user_feedback_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    result_metadata: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, name="metadata")
+    result_asset_metadata: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, name="result_metadata")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

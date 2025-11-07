@@ -8,8 +8,6 @@ import tempfile
 import zipfile
 import json
 import os
-from pathlib import Path
-from unittest.mock import Mock, patch
 
 from agents.java_analyzer import JavaAnalyzerAgent
 
@@ -111,7 +109,7 @@ public class TestItem extends Item {
     def empty_jar(self):
         """Create an empty JAR file."""
         with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
-            with zipfile.ZipFile(jar_file.name, 'w') as zf:
+            with zipfile.ZipFile(jar_file.name, 'w'):
                 pass  # Create an empty JAR
             yield jar_file.name
             
