@@ -90,7 +90,7 @@ jobs:
         echo ""
         echo "Node.js Dependencies:"
         echo "- Key: ${{ runner.os }}-frontend-20-<hash>"
-        echo "- Hash: ${{ hashFiles('frontend/pnpm-lock.yaml') }}"
+        echo "- Hash: ${{ hashFiles('frontend/package-lock.json') }}"
         echo "- Size: ~300MB"
         echo ""
         echo "Docker Build Cache:"
