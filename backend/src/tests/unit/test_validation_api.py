@@ -10,7 +10,6 @@ import time
 
 from main import app
 from api.validation import (
-    ValidationAgent,
     ValidationRequest,
     ValidationJob,
     validation_jobs,
@@ -19,6 +18,23 @@ from api.validation import (
     _validation_reports_lock,
 )
 from api.validation_constants import ValidationJobStatus, ValidationMessages
+
+
+class MockValidationAgent:
+    """Mock validation agent for testing"""
+    def __init__(self):
+        self.name = "Mock Validation Agent"
+        self.version = "1.0.0"
+    
+    def validate_conversion(self, conversion_id: str, **kwargs):
+        return {
+            "conversion_id": conversion_id,
+            "status": "completed",
+            "validation_score": 0.95,
+            "issues": [],
+            "recommendations": ["Mock recommendation"],
+            "timestamp": time.time()
+        }
 
 
 @pytest.fixture

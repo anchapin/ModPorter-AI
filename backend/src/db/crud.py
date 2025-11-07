@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
 from db.models import DocumentEmbedding
 from datetime import datetime
+from typing import List
 
 
 async def create_job(
@@ -172,14 +173,6 @@ async def create_enhanced_feedback(
         feedback_type=feedback_type,
         user_id=user_id,
         comment=comment,
-        quality_rating=quality_rating,
-        specific_issues=specific_issues,
-        suggested_improvements=suggested_improvements,
-        conversion_accuracy=conversion_accuracy,
-        visual_quality=visual_quality,
-        performance_rating=performance_rating,
-        ease_of_use=ease_of_use,
-        agent_specific_feedback=agent_specific_feedback,
     )
     session.add(feedback)
     if commit:
@@ -194,6 +187,11 @@ async def get_feedback(session: AsyncSession, feedback_id: PyUUID) -> Optional[m
     stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.id == feedback_id)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
+
+async def get_feedback_by_job_id(session: AsyncSession, job_id: PyUUID) -> List[models.ConversionFeedback]:
+    stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.job_id == job_id)
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 async def list_all_feedback(
@@ -757,5 +755,146 @@ async def list_jobs(
         .limit(limit)
         .order_by(models.ConversionJob.created_at.desc())
     )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+# Addon Asset CRUD operations
+async def get_addon_asset(session: AsyncSession, asset_id: str) -> Optional[models.AddonAsset]:
+    """Get an addon asset by ID."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_addon_asset(
+    session: AsyncSession,
+    *,
+    addon_id: str,
+    asset_type: str,
+    file_path: str,
+    original_filename: str,
+    commit: bool = True,
+) -> models.AddonAsset:
+    """Create a new addon asset."""
+    try:
+        addon_uuid = uuid.UUID(addon_id)
+    except ValueError:
+        raise ValueError(f"Invalid addon ID format: {addon_id}")
+    
+    # Prevent path traversal attacks
+    if ".." in file_path or file_path.startswith("/"):
+        raise ValueError("Invalid file path: path traversal detected")
+    
+    asset = models.AddonAsset(
+        addon_id=addon_uuid,
+        type=asset_type,
+        path=file_path,
+        original_filename=original_filename,
+    )
+    session.add(asset)
+    if commit:
+        await session.commit()
+        await session.refresh(asset)
+    else:
+        await session.flush()
+    return asset
+
+
+async def update_addon_asset(
+    session: AsyncSession,
+    asset_id: str,
+    *,
+    asset_type: Optional[str] = None,
+    file_path: Optional[str] = None,
+    original_filename: Optional[str] = None,
+    commit: bool = True,
+) -> Optional[models.AddonAsset]:
+    """Update an addon asset."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    # Check if asset exists
+    asset = await get_addon_asset(session, asset_id)
+    if not asset:
+        return None
+    
+    # Update fields if provided
+    update_data = {}
+    if asset_type is not None:
+        update_data["type"] = asset_type
+    if file_path is not None:
+        # Prevent path traversal attacks
+        if ".." in file_path or file_path.startswith("/"):
+            raise ValueError("Invalid file path: path traversal detected")
+        update_data["path"] = file_path
+    if original_filename is not None:
+        update_data["original_filename"] = original_filename
+    
+    if update_data:
+        stmt = (
+            update(models.AddonAsset)
+            .where(models.AddonAsset.id == asset_uuid)
+            .values(**update_data)
+            .returning(models.AddonAsset)
+        )
+        result = await session.execute(stmt)
+        if commit:
+            await session.commit()
+        asset = result.scalar_one_or_none()
+    
+    return asset
+
+
+async def delete_addon_asset(session: AsyncSession, asset_id: str) -> bool:
+    """Delete an addon asset."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    # Check if asset exists
+    asset = await get_addon_asset(session, asset_id)
+    if not asset:
+        return False
+    
+    stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount > 0
+
+
+async def list_addon_assets(
+    session: AsyncSession,
+    addon_id: str,
+    *,
+    asset_type: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> List[models.AddonAsset]:
+    """List addon assets for a given addon."""
+    try:
+        addon_uuid = uuid.UUID(addon_id)
+    except ValueError:
+        raise ValueError(f"Invalid addon ID format: {addon_id}")
+    
+    stmt = (
+        select(models.AddonAsset)
+        .where(models.AddonAsset.addon_id == addon_uuid)
+        .offset(skip)
+        .limit(limit)
+        .order_by(models.AddonAsset.created_at.desc())
+    )
+    
+    if asset_type:
+        stmt = stmt.where(models.AddonAsset.type == asset_type)
+    
     result = await session.execute(stmt)
     return result.scalars().all()

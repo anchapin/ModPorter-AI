@@ -57,8 +57,10 @@ def pytest_sessionstart(session):
                 from db.declarative_base import Base
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                    # Only add extensions for PostgreSQL
+                    if not db_url.startswith("sqlite"):
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                     await conn.run_sync(Base.metadata.create_all)
             
             # Create a new event loop for this operation

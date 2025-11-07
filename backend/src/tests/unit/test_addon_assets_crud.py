@@ -55,8 +55,8 @@ class TestGetAddonAsset:
         """Test successful addon asset retrieval"""
         # Setup
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = sample_addon_asset_model
-        mock_session.execute.return_value = mock_result
+        mock_result.scalar_one_or_none = AsyncMock(return_value=sample_addon_asset_model)
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.get_addon_asset(mock_session, str(sample_addon_asset_model.id))
@@ -75,8 +75,8 @@ class TestGetAddonAsset:
         """Test addon asset retrieval when asset doesn't exist"""
         # Setup
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = None
-        mock_session.execute.return_value = mock_result
+        mock_result.scalar_one_or_none = AsyncMock(return_value=None)
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.get_addon_asset(mock_session, str(uuid.uuid4()))
@@ -303,7 +303,7 @@ class TestListAddonAssets:
         mock_assets = [AsyncMock(), AsyncMock()]
         mock_result = AsyncMock()
         mock_result.scalars.return_value.all.return_value = mock_assets
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.list_addon_assets(mock_session, sample_addon_id)
@@ -323,7 +323,7 @@ class TestListAddonAssets:
         # Setup
         mock_result = AsyncMock()
         mock_result.scalars.return_value.all.return_value = []
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.list_addon_assets(
