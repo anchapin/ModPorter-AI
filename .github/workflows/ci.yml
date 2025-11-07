@@ -17,6 +17,12 @@ on:
       - 'docs/**'
       - '.gitignore'
       - 'LICENSE'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for triggering workflow'
+        required: false
+        default: 'Manual trigger for testing'
 
 env:
   REGISTRY: ghcr.io
