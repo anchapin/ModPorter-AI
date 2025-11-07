@@ -20,6 +20,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  CACHE_VERSION: v2
 
 jobs:
   build-python-base:
@@ -29,6 +30,32 @@ jobs:
       packages: write
     
     steps:
+    - name: Free up disk space
+      run: |
+        echo "🧹 Cleaning up disk space before Docker build"
+        echo "Initial disk usage:"
+        df -h
+        
+        # Remove unnecessary packages and files
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        
+        # Clean Docker cache if exists
+        docker system prune -af --volumes || true
+        
+        # Clean package manager caches
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+        
+        # Remove large directories we don't need
+        sudo rm -rf /usr/share/doc
+        sudo rm -rf /usr/share/man
+        
+        echo "Disk usage after cleanup:"
+        df -h
+    
     - name: Checkout repository
       uses: actions/checkout@v5
     
@@ -77,9 +104,13 @@ jobs:
         tags: |
           ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/python-base:${{ steps.deps-hash.outputs.hash }}
           ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/python-base:latest
-        cache-from: type=gha,scope=python-base
-        cache-to: type=gha,mode=max,scope=python-base
+        cache-from: type=gha,scope=python-base-${{ env.CACHE_VERSION }}
+        cache-to: type=gha,mode=max,scope=python-base-${{ env.CACHE_VERSION }}
         platforms: linux/amd64
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+          DOCKER_BUILDKIT=1
+        no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
 
   build-node-base:
     runs-on: ubuntu-latest
@@ -88,6 +119,32 @@ jobs:
       packages: write
     
     steps:
+    - name: Free up disk space
+      run: |
+        echo "🧹 Cleaning up disk space before Docker build"
+        echo "Initial disk usage:"
+        df -h
+        
+        # Remove unnecessary packages and files
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        
+        # Clean Docker cache if exists
+        docker system prune -af --volumes || true
+        
+        # Clean package manager caches
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+        
+        # Remove large directories we don't need
+        sudo rm -rf /usr/share/doc
+        sudo rm -rf /usr/share/man
+        
+        echo "Disk usage after cleanup:"
+        df -h
+    
     - name: Checkout repository
       uses: actions/checkout@v5
     
@@ -133,6 +190,10 @@ jobs:
         tags: |
           ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/node-base:${{ steps.deps-hash.outputs.hash }}
           ${{ env.REGISTRY }}/${{ steps.repo-name.outputs.lowercase }}/node-base:latest
-        cache-from: type=gha,scope=node-base
-        cache-to: type=gha,mode=max,scope=node-base
+        cache-from: type=gha,scope=node-base-${{ env.CACHE_VERSION }}
+        cache-to: type=gha,mode=max,scope=node-base-${{ env.CACHE_VERSION }}
         platforms: linux/amd64
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+          DOCKER_BUILDKIT=1
+        no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
