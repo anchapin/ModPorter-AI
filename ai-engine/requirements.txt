@@ -12,7 +12,7 @@ openai>=1.0.0
 sentence-transformers>=2.2.0
 
 # Vector Database (pin version for embedchain compatibility)
-chromadb<1.1.0
+chromadb<1.2.0
 
 # Data Processing
 numpy
