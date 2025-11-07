@@ -45,7 +45,7 @@ jobs:
             frontend:
               - 'frontend/**'
               - 'frontend/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ai-engine:
               - 'ai-engine/**'
               - 'ai-engine/requirements*.txt'
@@ -55,7 +55,7 @@ jobs:
             dependencies:
               - '**/requirements*.txt'
               - '**/package.json'
-              - '**/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
 
   # Pre-build base images if dependencies changed
   prepare-base-images:
@@ -431,7 +431,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -490,7 +490,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.local/share/pnpm/store
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-pnpm-store-
@@ -502,7 +502,7 @@ jobs:
           node_modules
           frontend/node_modules
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-frontend-
@@ -534,6 +534,7 @@ jobs:
         
         # Install with frozen lockfile for faster, deterministic installs
         pnpm install --frozen-lockfile --prefer-offline
+        cd frontend && pnpm install --frozen-lockfile --prefer-offline
         
         echo "✅ Dependencies installed successfully"
 
