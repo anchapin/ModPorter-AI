@@ -33,6 +33,7 @@ const ComparisonView: React.FC = () => {
 
   useEffect(() => {
     if (comparisonId) {
+      // Start loading immediately
       setLoading(true);
       fetch(`/api/v1/comparisons/${comparisonId}`) // Use the actual API endpoint
         .then(res => {
