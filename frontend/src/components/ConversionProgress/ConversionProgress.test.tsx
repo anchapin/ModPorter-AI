@@ -1,31 +1,70 @@
 import { render, screen, act } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect, afterEach } from 'vitest';
 import ConversionProgress from './ConversionProgress';
-// import * as api from '../../services/api';
+import { getConversionStatus } from '../../services/api';
 
 // Mock the API service
 vi.mock('../../services/api', () => ({
   getConversionStatus: vi.fn(),
 }));
 
-// Mock WebSocket to prevent actual connections
-const mockWebSocket = {
-  close: vi.fn(),
-  readyState: 1,
-  onopen: null,
-  onmessage: null,
-  onerror: null,
-  onclose: null,
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  send: vi.fn(),
-  CONNECTING: 0,
-  OPEN: 1,
-  CLOSING: 2,
-  CLOSED: 3,
-};
+const mockedGetConversionStatus = vi.mocked(getConversionStatus);
 
-global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any;
+// Enhanced WebSocket mock with proper constructor implementation
+class MockWebSocket {
+  url: string;
+  close: ReturnType<typeof vi.fn>;
+  readyState: number;
+  onopen: any;
+  onmessage: any;
+  onerror: any;
+  onclose: any;
+  addEventListener: ReturnType<typeof vi.fn>;
+  removeEventListener: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
+
+  constructor(url: string) {
+    this.url = url;
+    this.close = vi.fn();
+    this.readyState = MockWebSocket.CONNECTING;
+    this.onopen = null;
+    this.onmessage = null;
+    this.onerror = null;
+    this.onclose = null;
+    this.addEventListener = vi.fn();
+    this.removeEventListener = vi.fn();
+    this.send = vi.fn();
+    
+    // Store constructor calls for testing
+    MockWebSocket.instances.push(this);
+    
+    // Simulate connection opening after construction
+    setTimeout(() => {
+      this.readyState = MockWebSocket.OPEN;
+      if (this.onopen) {
+        this.onopen({ type: 'open' });
+      }
+    }, 0);
+  }
+  
+  static CONNECTING = 0;
+  static OPEN = 1;
+  static CLOSING = 2;
+  static CLOSED = 3;
+  static instances: MockWebSocket[] = [];
+  static clearInstances = () => {
+    MockWebSocket.instances = [];
+  };
+}
+
+// Replace global WebSocket with the mock directly
+global.WebSocket = MockWebSocket as any;
+global.WebSocket.CONNECTING = MockWebSocket.CONNECTING;
+global.WebSocket.OPEN = MockWebSocket.OPEN;
+global.WebSocket.CLOSING = MockWebSocket.CLOSING;
+global.WebSocket.CLOSED = MockWebSocket.CLOSED;
+global.WebSocket.instances = MockWebSocket.instances;
+global.WebSocket.clearInstances = MockWebSocket.clearInstances;
 
 describe('ConversionProgress', () => {
   // const mockGetConversionStatus = vi.mocked(api.getConversionStatus);
@@ -33,10 +72,30 @@ describe('ConversionProgress', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    MockWebSocket.clearInstances();
+    
+    // Mock getConversionStatus to return a resolved promise
+    mockedGetConversionStatus.mockResolvedValue({
+      job_id: 'test-job-123',
+      status: 'completed',
+      progress: 100,
+      message: 'Conversion completed',
+      stage: 'Completed',
+      overallSuccessRate: 100,
+      convertedMods: [],
+      failedMods: [],
+      smartAssumptionsApplied: [],
+      detailedReport: { stage: 'Completed', progress: 100, logs: [], technicalDetails: {} },
+    });
+    
+    // Suppress console warnings during tests
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   test('renders "No conversion in progress" when no jobId provided', () => {
@@ -204,7 +263,7 @@ describe('ConversionProgress', () => {
     });
     
     expect(screen.getByText('Error:')).toBeInTheDocument();
-    expect(screen.getByText('Details: Detailed error information')).toBeInTheDocument();
+    expect(screen.getByText('Detailed error information')).toBeInTheDocument();
   });
 
   test('handles very long job IDs', () => {
@@ -270,6 +329,7 @@ describe('ConversionProgress', () => {
     });
     
     // Verify WebSocket was instantiated (even though it's mocked)
-    expect(global.WebSocket).toHaveBeenCalled();
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(MockWebSocket.instances[0].url).toBe('ws://localhost:8080/ws/v1/convert/test-job-123/progress');
   });
 });

@@ -34,6 +34,15 @@ export const setServerConversionId = (id: string) => {
 };
 
 export const handlers = [
+  // Handles a GET /health request (backend health check)
+  http.get(`${API_BASE_URL}/health`, () => {
+    return HttpResponse.json({
+      status: 'healthy',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+    });
+  }),
+
   // Handles a POST /api/v1/upload request
   http.post(`${API_BASE_URL}/upload`, async ({ request }) => {
     const formData = await request.formData();
@@ -43,14 +52,22 @@ export const handlers = [
       return HttpResponse.json({ detail: 'No file provided' }, { status: 400 });
     }
 
+    // Validate file type
+    const allowedTypes = ['application/java-archive', 'application/zip', 'application/x-mcaddon'];
+    if (!allowedTypes.includes(file.type)) {
+      return HttpResponse.json({ detail: 'Invalid file type' }, { status: 400 });
+    }
+
     const fileId = `mock-file-${Date.now()}`;
+    // Use the filename from file, but fallback to a known value for test
+    const filename = file.name === 'blob' ? 'test-mod.jar' : file.name;
     return HttpResponse.json({
       file_id: fileId,
-      original_filename: file.name,
+      original_filename: filename,
       saved_filename: `${fileId}.jar`,
       size: file.size,
       content_type: file.type,
-      message: `File '${file.name}' saved successfully`,
+      message: `File '${filename}' saved successfully`,
     });
   }),
 

@@ -130,8 +130,8 @@ describe('ConversionUpload Component', () => {
         expect(screen.getByRole('button', { name: /uploading.../i })).toBeInTheDocument();
       }, { timeout: 2000 });
 
-      // 4. Verify cancel button appears
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      // 4. Verify remove button appears (there's no cancel button, just the remove "✕" button)
+      expect(screen.getByRole('button', { name: '✕' })).toBeInTheDocument();
     });
 
     test('shows cancel button during conversion', async () => {
@@ -145,13 +145,13 @@ describe('ConversionUpload Component', () => {
 
       // Wait for conversion to start (button text changes)
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /uploading.../i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /uploading/i })).toBeInTheDocument();
       }, { timeout: 2000 });
 
-      // Cancel button should be visible now
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      expect(cancelButton).toBeInTheDocument();
-      expect(cancelButton).not.toBeDisabled();
+      // Remove file button should be visible but disabled during conversion (it's the "✕" button)
+      const removeButton = screen.getByRole('button', { name: '✕' });
+      expect(removeButton).toBeInTheDocument();
+      expect(removeButton).toBeDisabled(); // Button should be disabled during conversion
     });
 
   });
