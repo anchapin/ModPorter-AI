@@ -388,7 +388,17 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
         PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
-        USE_OLLAMA: "true"
+        # Z.AI Configuration (Primary LLM backend)
+        USE_Z_AI: "${{ secrets.Z_AI_API_KEY != '' && 'true' || 'false' }}"
+        Z_AI_API_KEY: "${{ secrets.Z_AI_API_KEY }}"
+        Z_AI_MODEL: "${{ vars.Z_AI_MODEL || 'glm-4-plus' }}"
+        Z_AI_BASE_URL: "${{ vars.Z_AI_BASE_URL || 'https://api.z.ai/v1' }}"
+        Z_AI_MAX_RETRIES: "${{ vars.Z_AI_MAX_RETRIES || '3' }}"
+        Z_AI_TIMEOUT: "${{ vars.Z_AI_TIMEOUT || '300' }}"
+        Z_AI_TEMPERATURE: "${{ vars.Z_AI_TEMPERATURE || '0.1' }}"
+        Z_AI_MAX_TOKENS: "${{ vars.Z_AI_MAX_TOKENS || '4000' }}"
+        # Ollama Configuration (Fallback)
+        USE_OLLAMA: "${{ secrets.Z_AI_API_KEY == '' && 'true' || 'false' }}"
         OLLAMA_MODEL: "llama3.2"
         OLLAMA_BASE_URL: "http://localhost:11434"
         TESTING: "true"
