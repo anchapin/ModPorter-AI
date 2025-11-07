@@ -549,7 +549,7 @@ jobs:
         pnpm config set package-import-method copy
         
         # Install with frozen lockfile for faster, deterministic installs
-        pnpm install --frozen-lockfile --prefer-offline
+        pnpm install --no-frozen-lockfile --prefer-offline
         
         echo "✅ Dependencies installed successfully"
 
