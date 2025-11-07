@@ -33,35 +33,33 @@ const ComparisonView: React.FC = () => {
 
   useEffect(() => {
     if (comparisonId) {
-      setLoading(true);
-      fetch(`/api/v1/comparisons/${comparisonId}`) // Use the actual API endpoint
-        .then(res => {
-          if (!res.ok) {
-            return res.text().then(text => {
-              let detail = text;
-              try {
-                const errJson = JSON.parse(text);
-                detail = errJson.detail || text;
-              } catch {
-                /* ignore parsing error, use text */
-              }
-              throw new Error(`Failed to fetch comparison data: ${res.status} ${res.statusText} - ${detail}`);
-            });
+      const fetchComparison = async () => {
+        try {
+          const response = await fetch(`/api/v1/comparisons/${comparisonId}`); // Use the actual API endpoint
+          if (!response.ok) {
+            const text = await response.text();
+            let detail = text;
+            try {
+              const errJson = JSON.parse(text);
+              detail = errJson.detail || text;
+            } catch {
+              /* ignore parsing error, use text */
+            }
+            throw new Error(`Failed to fetch comparison data: ${response.status} ${response.statusText} - ${detail}`);
           }
-          return res.json();
-        })
-        .then((fetchedData: ComparisonData) => { // Type the fetched data
+          const fetchedData: ComparisonData = await response.json(); // Type the fetched data
           setData(fetchedData);
           setError(null);
-        })
-        .catch(err => {
+        } catch (err: any) {
           console.error("Error fetching comparison data:", err);
           setError(err.message);
           setData(null);
-        })
-        .finally(() => {
+        } finally {
           setLoading(false);
-        });
+        }
+      };
+
+      fetchComparison();
     } else {
       setError("No comparison ID provided in the URL.");
       setLoading(false);
