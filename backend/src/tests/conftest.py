@@ -1,12 +1,10 @@
 import os
 import sys
 import pytest
-import asyncio
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-import httpx
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -91,7 +89,7 @@ async def db_session():
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
-    with patch('db.init_db.init_db', new_callable=AsyncMock) as mock_init_db:
+    with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
         from main import app
         from db.base import get_db

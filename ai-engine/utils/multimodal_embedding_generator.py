@@ -5,9 +5,7 @@ This module provides enhanced embedding generation capabilities for different
 content types including text, code, images, and multi-modal combinations.
 """
 
-import os
 import logging
-import hashlib
 from typing import List, Dict, Any, Optional, Union, Tuple
 from dataclasses import dataclass
 from enum import Enum

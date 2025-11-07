@@ -9,23 +9,27 @@ from pydantic import BaseModel, Field
 from services import addon_exporter # For .mcaddon export
 from services import conversion_parser # For parsing converted pack output
 import shutil # For directory operations
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from datetime import datetime
 import uvicorn
 import os
 import uuid
 import asyncio # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
+import json  # For JSON operations
 from dotenv import load_dotenv
-from dateutil.parser import parse as parse_datetime
 import logging
 from db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
 from models import addon_models as pydantic_addon_models # For addon Pydantic models
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
+from services.report_generator import ReportGenerator
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files
+
+# Import mock data from report_generator
+from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +49,9 @@ conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 
 # Cache service instance
 cache = CacheService()
+
+# Report generator instance
+report_generator = ReportGenerator()
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -343,7 +350,8 @@ async def simulate_ai_conversion(job_id: str):
                     json.dump({"minecraft:recipe_shaped": {"description": {"identifier": "sim:simulated_recipe"}, "tags": ["crafting_table"], "pattern": ["#"], "key": {"#": {"item": "minecraft:stick"}}, "result": {"item": "sim:simulated_block"}}}, f)
                 # Dummy texture
                 dummy_texture_path = os.path.join(rp_dir, "textures", "blocks", "simulated_block_tex.png")
-                with open(dummy_texture_path, "w") as f: f.write("dummy png content")
+                with open(dummy_texture_path, "w") as f:
+                    f.write("dummy png content")
                 # --- End of pack simulation ---
 
                 addon_data_upload, identified_assets_info = conversion_parser.transform_pack_to_addon_data(
@@ -537,69 +545,6 @@ async def call_ai_engine_conversion(job_id: str):
 
         except Exception as e:
             print(f"Error during AI Engine conversion for job {job_id}: {e}")
-            job = await crud.update_job_status(session, job_id, "failed")
-            mirror = mirror_dict_from_job(job, 0, None, str(e))
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 0)
-            print(f"Job {job_id}: Status updated to FAILED due to error.")
-
-# Keep the simulation for fallback if AI Engine is not available
-async def simulate_ai_conversion(job_id: str):
-    """Fallback simulation if AI Engine is not available"""
-    print(f"Starting AI simulation fallback for job_id: {job_id}")
-    async with AsyncSessionLocal() as session:
-        job = await crud.get_job(session, job_id)
-        if not job:
-            print(f"Error: Job {job_id} not found for AI simulation.")
-            return
-
-        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-            return ConversionJob(
-                job_id=str(job.id),
-                file_id=job.input_data.get("file_id"),
-                original_filename=job.input_data.get("original_filename"),
-                status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
-                target_version=job.input_data.get("target_version"),
-                options=job.input_data.get("options"),
-                result_url=result_url if result_url is not None else None,
-                error_message=error_message,
-                created_at=job.created_at,
-                updated_at=job.updated_at
-            )
-
-        try:
-            # Quick simulation stages
-            await asyncio.sleep(5)
-            job = await crud.update_job_status(session, job_id, "processing")
-            await crud.upsert_progress(session, job_id, 50)
-            mirror = mirror_dict_from_job(job, 50)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 50)
-
-            await asyncio.sleep(5)
-            job = await crud.update_job_status(session, job_id, "completed")
-            await crud.upsert_progress(session, job_id, 100)
-            
-            # Create simple mock file
-            os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
-            mock_output_filename_internal = f"{job.id}_converted.mcaddon"
-            mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
-            result_url = f"/api/v1/convert/{job.id}/download"
-
-            with open(mock_output_filepath, "w") as f:
-                f.write(f"Mock converted file for job {job.id}.\n")
-
-            mirror = mirror_dict_from_job(job, 100, result_url)
-            conversion_jobs_db[job_id] = mirror
-            await cache.set_job_status(job_id, mirror.model_dump())
-            await cache.set_progress(job_id, 100)
-            print(f"Job {job_id}: Simulation completed.")
-
-        except Exception as e:
-            print(f"Error during simulation for job {job_id}: {e}")
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
             conversion_jobs_db[job_id] = mirror
@@ -924,18 +869,9 @@ async def try_ai_engine_or_fallback(job_id: str):
                 await call_ai_engine_conversion(job_id)
                 return
     except Exception as e:
-        # This catches errors during the accept() or if the loop breaks unexpectedly without disconnect
-        logger.error(f"Outer exception in WebSocket handler for {conversion_id}: {str(e)}")
-    finally:
-        # Ensure connection is closed if not already
-        try:
-            await websocket.close()
-            logger.info(f"WebSocket connection explicitly closed for {conversion_id}")
-        except RuntimeError as e:
-            # This can happen if the connection is already closed (e.g. client disconnects abruptly)
-            logger.warning(f"Error closing WebSocket for {conversion_id} (possibly already closed): {str(e)}")
-        except Exception as e:
-            logger.error(f"Unexpected error during WebSocket close for {conversion_id}: {str(e)}")
+        # This catches errors when trying to connect to AI Engine
+        logger.error(f"Failed to connect to AI Engine for job {job_id}: {str(e)}")
+        # Fallback to simulation will be handled by the caller
 
 
 @app.get("/api/v1/jobs/{job_id}/report", response_model=InteractiveReport, tags=["conversion"])

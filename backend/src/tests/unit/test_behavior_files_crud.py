@@ -1,7 +1,7 @@
 import pytest
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import crud, models
+from db import crud
 from db.base import AsyncSessionLocal
 
 

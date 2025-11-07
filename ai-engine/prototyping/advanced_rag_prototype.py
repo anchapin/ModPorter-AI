@@ -9,9 +9,8 @@ import os
 import sys
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 from pathlib import Path
-import json
 import hashlib
 from datetime import datetime
 
@@ -452,7 +451,7 @@ class AdvancedRAGPrototype:
         results = await self.vector_db.search(query, self.hybrid_config)
         search_time = time.time() - start_time
         
-        logger.info(f"Performance Benchmarks:")
+        logger.info("Performance Benchmarks:")
         logger.info(f"  - Indexing time: {indexing_time:.3f}s")
         logger.info(f"  - Search time: {search_time:.3f}s")
         logger.info(f"  - Documents indexed: {len(self.vector_db.documents)}")

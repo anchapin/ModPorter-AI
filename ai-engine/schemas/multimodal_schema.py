@@ -6,10 +6,9 @@ multi-modal embeddings and metadata in the advanced RAG system.
 """
 
 from enum import Enum
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
-import numpy as np
 
 
 class ContentType(str, Enum):

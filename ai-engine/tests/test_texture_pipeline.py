@@ -6,9 +6,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
-import pytest
 from PIL import Image
 
 # Add the parent directory to the path to allow imports
@@ -187,7 +185,7 @@ class TestTexturePipeline:
         assert result2["success"] is True
         
         # Test that cache clearing works
-        cache_size_before = len(self.agent._conversion_cache)
+        len(self.agent._conversion_cache)
         self.agent.clear_cache()
         cache_size_after = len(self.agent._conversion_cache)
         # After clearing, the cache should be empty

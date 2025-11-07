@@ -5,10 +5,7 @@ import json
 import os
 import sys
 import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
-import pytest
 from PIL import Image
 
 # Add the parent directory to the path to allow imports
@@ -92,7 +89,7 @@ class TestAssetConverterAgent:
         """Test texture conversion with animation data"""
         # Create a test image and mcmeta file
         img_path = self.create_test_image("test_animated_texture.png", (16, 16))
-        mcmeta_path = self.create_test_mcmeta("test_animated_texture.png.mcmeta")
+        self.create_test_mcmeta("test_animated_texture.png.mcmeta")
         
         # Convert the texture
         result = self.agent._convert_single_texture(

@@ -9,14 +9,23 @@ vi.mock('../../services/api', () => ({
 }));
 
 // Mock WebSocket to prevent actual connections
-global.WebSocket = vi.fn().mockImplementation(() => ({
+const mockWebSocket = {
   close: vi.fn(),
   readyState: 1,
   onopen: null,
   onmessage: null,
   onerror: null,
   onclose: null,
-})) as any;
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  send: vi.fn(),
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+};
+
+global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any;
 
 describe('ConversionProgress', () => {
   // const mockGetConversionStatus = vi.mocked(api.getConversionStatus);

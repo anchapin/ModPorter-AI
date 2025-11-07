@@ -8,20 +8,18 @@ Tests the main components introduced in Issue #159:
 - ComprehensiveTestingFramework
 """
 
-import asyncio
 import json
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import patch
 
 from testing.comprehensive_testing_framework import (
     ComprehensiveTestingFramework,
     MinecraftBedrockValidator,
     PerformanceBenchmarker,
     RegressionTestManager,
-    PerformanceMetrics,
-    ComprehensiveTestResult
+    PerformanceMetrics
 )
 
 
@@ -435,6 +433,6 @@ async def test_framework_integration():
         assert 'execution_time_ms' in result
         
         # Verify results are saved (summary file should exist)
-        summary_file = Path(temp_dir) / 'latest_test_summary.json'
+        Path(temp_dir) / 'latest_test_summary.json'
         # Note: Summary file creation might be skipped if no results to save
         # This test just ensures the framework doesn't crash

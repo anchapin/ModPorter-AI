@@ -4,7 +4,6 @@ Create a real texture for the simple copper block JAR.
 
 import zipfile
 import json
-import os
 from pathlib import Path
 from PIL import Image
 import io

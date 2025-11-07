@@ -5,7 +5,7 @@ Tests for the enhanced template engine.
 import pytest
 import json
 from pathlib import Path
-from templates.template_engine import TemplateEngine, TemplateType, TemplateCategory
+from templates.template_engine import TemplateEngine, TemplateType
 
 
 class TestTemplateEngine:

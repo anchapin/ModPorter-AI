@@ -57,7 +57,7 @@ class TestCLIIntegration:
                 assert header.startswith(b'PK'), f"Generated file is not a valid ZIP/mcaddon format: {header}"
             
             # Log success metrics for debugging
-            print(f"✅ CLI Integration test passed:")
+            print("✅ CLI Integration test passed:")
             print(f"   - Output file: {mcaddon_file.name}")
             print(f"   - .mcaddon size: {mcaddon_size:,} bytes")
             print(f"   - CLI output: {result.stdout.strip()}")

@@ -8,7 +8,7 @@ including code-aware chunking, semantic chunking, and multi-modal content proces
 import ast
 import re
 import logging
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 import hashlib
@@ -73,7 +73,7 @@ class JavaCodeChunker:
             List of chunks representing different parts of the code
         """
         chunks = []
-        lines = code.split('\n')
+        code.split('\n')
         
         # Extract package and imports
         package_match = self.package_pattern.search(code)
@@ -107,7 +107,7 @@ class JavaCodeChunker:
         
         # Find class boundaries
         try:
-            tree = ast.parse(code)  # This won't work for Java, but shows the concept
+            ast.parse(code)  # This won't work for Java, but shows the concept
         except:
             # Fallback to regex-based chunking for Java
             chunks.extend(self._chunk_java_with_regex(code, file_path))
@@ -117,7 +117,7 @@ class JavaCodeChunker:
     def _chunk_java_with_regex(self, code: str, file_path: str) -> List[Chunk]:
         """Fallback regex-based chunking for Java code."""
         chunks = []
-        lines = code.split('\n')
+        code.split('\n')
         
         # Find classes
         for class_match in self.class_pattern.finditer(code):
@@ -148,12 +148,10 @@ class JavaCodeChunker:
         """Extract the complete class body including nested braces."""
         brace_count = 0
         in_class = False
-        class_start = None
         
         for i, char in enumerate(code[start_pos:], start_pos):
             if char == '{':
                 if not in_class:
-                    class_start = i
                     in_class = True
                 brace_count += 1
             elif char == '}':
@@ -192,12 +190,10 @@ class JavaCodeChunker:
         """Extract the complete method body."""
         brace_count = 0
         in_method = False
-        method_start = None
         
         for i, char in enumerate(content[start_pos:], start_pos):
             if char == '{':
                 if not in_method:
-                    method_start = i
                     in_method = True
                 brace_count += 1
             elif char == '}':

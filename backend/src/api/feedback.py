@@ -105,7 +105,7 @@ async def submit_feedback(
     # Validate job ID format
     try:
         job_uuid = uuid.UUID(feedback.job_id)
-    except ValueError as e:
+    except ValueError:
         logger.warning(f"Invalid job ID format: {feedback.job_id}")
         raise HTTPException(status_code=400, detail="Invalid job ID format")
     

@@ -11,11 +11,9 @@ from datetime import datetime
 from enum import Enum
 import uvicorn
 import os
-import logging
 import json
 from dotenv import load_dotenv
 import redis.asyncio as aioredis
-import asyncio
 
 # Configure logging using centralized configuration
 from utils.logging_config import setup_logging, get_agent_logger

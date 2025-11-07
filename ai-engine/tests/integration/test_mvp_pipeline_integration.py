@@ -10,7 +10,6 @@ import json
 import time
 import sys
 from pathlib import Path
-from typing import Dict, Any
 
 # Add the ai-engine and root directories to the path
 ai_engine_root = Path(__file__).parent.parent.parent
@@ -274,7 +273,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         self.assertTrue(package_result['validation']['is_valid'])
         
         # Performance summary
-        print(f"📊 Pipeline Performance:")
+        print("📊 Pipeline Performance:")
         print(f"  ⚡ Analysis: {analysis_time:.3f}s")
         print(f"  🏗️  Build: {build_time:.3f}s")
         print(f"  📦 Package: {package_time:.3f}s")
@@ -389,7 +388,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         avg_time = sum(r['processing_time'] for r in results) / len(results)
         avg_size = sum(r['file_size'] for r in results) / len(results)
         
-        print(f"📊 Multi-Mod Summary:")
+        print("📊 Multi-Mod Summary:")
         print(f"  ⚡ Average time: {avg_time:.3f}s")
         print(f"  📦 Average size: {avg_size:,.0f} bytes")
         
@@ -416,7 +415,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         
         # Test 3: Empty JAR
         empty_jar = self.temp_path / "empty.jar"
-        with zipfile.ZipFile(empty_jar, 'w') as jar:
+        with zipfile.ZipFile(empty_jar, 'w'):
             pass  # Create empty JAR
         
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
@@ -488,7 +487,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
             print(f"    ⏱️  {processing_time:.3f}s ({block_count/processing_time:.1f} blocks/sec)")
         
         # Performance summary
-        print(f"\n📊 Performance Benchmark Results:")
+        print("\n📊 Performance Benchmark Results:")
         for result in benchmark_results:
             print(f"  {result['description']}: {result['processing_time']:.3f}s, {result['throughput']:.1f} blocks/sec")
         
@@ -523,7 +522,7 @@ if __name__ == '__main__':
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     
-    print(f"\n🎯 Integration Test Results:")
+    print("\n🎯 Integration Test Results:")
     print(f"  ✅ Tests passed: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"  ❌ Tests failed: {len(result.failures)}")
     print(f"  🚨 Tests errored: {len(result.errors)}")
