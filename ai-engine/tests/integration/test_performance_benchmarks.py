@@ -18,7 +18,7 @@ sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
 
 from cli.main import convert_mod
-from tests.fixtures.test_jar_generator import TestJarGenerator
+from tests.fixtures.test_jar_generator import JarGenerator
 
 
 class PerformanceBenchmarks(unittest.TestCase):
@@ -28,7 +28,7 @@ class PerformanceBenchmarks(unittest.TestCase):
         """Set up performance testing environment."""
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
-        self.generator = TestJarGenerator(self.temp_dir)
+        self.generator = JarGenerator(self.temp_dir)
         self.results = []
     
     def tearDown(self):

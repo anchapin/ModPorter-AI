@@ -125,11 +125,16 @@ class TestPerformanceBenchmarker:
         assert benchmarker.baseline_file == Path('./custom_baseline.json')
         assert benchmarker.benchmark_history == Path('./custom_history.json')
     
+    @patch('testing.comprehensive_testing_framework.time')
     @patch('testing.comprehensive_testing_framework.random')
-    def test_benchmark_conversion_performance(self, mock_random):
+    def test_benchmark_conversion_performance(self, mock_random, mock_time):
         """Test performance benchmarking with deterministic results"""
-        # Mock random values for deterministic testing
-        mock_random.uniform.side_effect = [128.5, 45.2, 0.95, 2.5]  # memory, cpu, accuracy, throughput
+        # Mock time to avoid actual sleep calls
+        mock_time.perf_counter.side_effect = lambda: 0.1  # Fixed timestamp
+        mock_time.sleep.return_value = None
+        
+        # Mock random values for deterministic results
+        mock_random.uniform.side_effect = [128.5, 45.2, 0.95, 2.5, 0.05] * 20  # Plenty of values
         mock_random.randint.return_value = 1000  # execution time
         
         with tempfile.TemporaryDirectory() as temp_dir:
