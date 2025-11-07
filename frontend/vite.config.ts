@@ -26,5 +26,15 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        maxThreads: 2,
+        minThreads: 1,
+        isolate: false,
+      },
+    },
+    hookTimeout: 30000,
+    testTimeout: 10000,
   },
 })

@@ -23,7 +23,7 @@ from db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
 from models import addon_models as pydantic_addon_models # For addon Pydantic models
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
-from services.report_generator import ReportGenerator
+from services.report_generator import ConversionReportGenerator
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files
@@ -51,7 +51,7 @@ conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 cache = CacheService()
 
 # Report generator instance
-report_generator = ReportGenerator()
+report_generator = ConversionReportGenerator()
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(

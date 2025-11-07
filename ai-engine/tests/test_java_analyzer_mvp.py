@@ -139,18 +139,21 @@ class TestJavaAnalyzerMVP:
     
     def test_extract_mod_id_from_metadata_fabric(self, analyzer):
         """Test mod ID extraction from Fabric metadata."""
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
-            with zipfile.ZipFile(jar_file.name, 'w') as zf:
-                fabric_mod = {"id": "test_fabric_mod", "version": "1.0.0"}
-                zf.writestr('fabric.mod.json', json.dumps(fabric_mod))
-                
-            try:
-                with zipfile.ZipFile(jar_file.name, 'r') as jar:
-                    file_list = jar.namelist()
-                    mod_id = analyzer._extract_mod_id_from_metadata(jar, file_list)
-                    assert mod_id == "test_fabric_mod"
-            finally:
-                os.unlink(jar_file.name)
+        jar_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+                jar_file_path = jar_file.name
+                with zipfile.ZipFile(jar_file.name, 'w') as zf:
+                    fabric_mod = {"id": "test_fabric_mod", "version": "1.0.0"}
+                    zf.writestr('fabric.mod.json', json.dumps(fabric_mod))
+                    
+            with zipfile.ZipFile(jar_file_path, 'r') as jar:
+                file_list = jar.namelist()
+                mod_id = analyzer._extract_mod_id_from_metadata(jar, file_list)
+                assert mod_id == "test_fabric_mod"
+        finally:
+            if jar_file_path and os.path.exists(jar_file_path):
+                os.unlink(jar_file_path)
     
     def test_find_block_class_name(self, analyzer):
         """Test block class name extraction."""
@@ -181,17 +184,20 @@ class TestJavaAnalyzerMVP:
     
     def test_invalid_jar_file(self, analyzer):
         """Test handling of invalid JAR files."""
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
-            jar_file.write(b'not a valid jar file')
-            jar_file.flush()
-            
-            try:
-                result = analyzer.analyze_jar_for_mvp(jar_file.name)
-                assert result["success"] is False
-                assert len(result["errors"]) > 0
-                assert "JAR analysis failed" in result["errors"][0]
-            finally:
-                os.unlink(jar_file.name)
+        jar_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+                jar_file_path = jar_file.name
+                jar_file.write(b'not a valid jar file')
+                jar_file.flush()
+                
+            result = analyzer.analyze_jar_for_mvp(jar_file_path)
+            assert result["success"] is False
+            assert len(result["errors"]) > 0
+            assert "JAR analysis failed" in result["errors"][0]
+        finally:
+            if jar_file_path and os.path.exists(jar_file_path):
+                os.unlink(jar_file_path)
     
     def test_nonexistent_file(self, analyzer):
         """Test handling of nonexistent files."""

@@ -67,11 +67,11 @@ def pytest_sessionstart(session):
             try:
                 loop.run_until_complete(init_test_db())
                 _db_initialized = True
-                print("✅ Test database initialized successfully")
+                print("Test database initialized successfully")
             finally:
                 loop.close()
         except Exception as e:
-            print(f"⚠️ Warning: Database initialization failed: {e}")
+            print(f"Warning: Database initialization failed: {e}")
             _db_initialized = False
 
 @pytest.fixture

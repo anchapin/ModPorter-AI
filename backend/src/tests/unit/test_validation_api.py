@@ -10,7 +10,7 @@ import time
 
 from main import app
 from api.validation import (
-    MockValidationAgent,
+    ValidationAgent,
     ValidationRequest,
     ValidationJob,
     validation_jobs,
