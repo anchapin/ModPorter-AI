@@ -1,5 +1,9 @@
 # AGENTS.md - ModPorter AI Development Guide
 
+> **IMPORTANT**: This file should always be named `AGENTS.md` (with a lowercase `.md` extension). 
+> There should only ever be one AGENTS file in this repository. The correct naming convention 
+> follows the standard established at https://agents.md/ and ensures proper tool recognition.
+
 <!-- TODO_MANAGEMENT_INSTRUCTIONS -->
 
 ## CRITICAL: Task Management System
@@ -168,30 +172,32 @@ All contributions **must** follow a Test-Driven Development (TDD) or Spec-Driven
 #### Compliance Requirements
 - **Audit Trail**: Complete audit logs for all operations
 - **Data Protection**: PII anonymization and secure memory handling
-- **Regulatory Compliance**: Framework for financial regulations (SOX, MiFID II, GDPR)
+- **Regulatory Compliance**: Adherence to relevant data protection regulations (e.g., GDPR)
+- **Content Licensing**: Respect for Minecraft EULA and mod licensing terms
+- **IP Protection**: Safeguarding intellectual property in conversion processes
 
 ### Performance Guidelines
 
 #### Performance Benchmarks
-- **Decision Latency**: < 500ms for standard operations
+- **Conversion Latency**: < 500ms for standard operations
 - **Memory Usage**: < 2GB per agent instance
 - **CPU Utilization**: < 80% sustained
-- **Throughput**: > 100 decisions/minute per agent
+- **Throughput**: > 100 conversions/minute per agent
 
 #### Caching Architecture
 - **Multi-Level Cache**: L1 (in-memory), L2 (Redis), L3 (database)
-- **Market-State-Aware Caching**: Minimize LLM inference calls
+- **Conversion-Aware Caching**: Minimize LLM inference calls
 - **Resource Management**: Dynamic resource allocation based on availability
 
 ### Monitoring and Observability
 
 #### Required Metrics
-- **Agent Performance**: Decision accuracy, response time, resource utilization
-- **Business Metrics**: Success rate, error rates, cost per decision
+- **Agent Performance**: Conversion accuracy, response time, resource utilization
+- **Business Metrics**: Success rate, error rates, cost per conversion
 - **System Health**: Memory usage, CPU utilization, cache hit rates
 
 #### Logging Standards
-- **Required Fields**: correlation_id, agent_id, decision_type, confidence_score
+- **Required Fields**: correlation_id, agent_id, conversion_type, confidence_score
 - **Structured Logging**: JSON format with correlation IDs
 - **Log Aggregation**: Centralized logging with search capabilities
 
@@ -202,12 +208,12 @@ All contributions **must** follow a Test-Driven Development (TDD) or Spec-Driven
 ### Error Handling and Recovery
 
 #### Error Classification
-- **Critical Errors**: Data feed failures, LLM service unavailability, trading execution failures
-- **Non-Critical Errors**: Individual decision failures, optional timeouts
+- **Critical Errors**: File conversion failures, LLM service unavailability, database connectivity issues
+- **Non-Critical Errors**: Individual conversion failures, optional timeouts
 
 #### Resilience Patterns
 - **Circuit Breaker**: Automatic failure detection and recovery
-- **Graceful Degradation**: Fallback to rule-based decisions
+- **Graceful Degradation**: Fallback to rule-based conversions
 - **Retry with Exponential Backoff**: Handle transient failures
 
 ### Git Workflow and Branching Strategy
@@ -240,16 +246,18 @@ All contributions **must** follow a Test-Driven Development (TDD) or Spec-Driven
 ### Project Structure
 
 ```
-/quantchain/
-├── /agents/        # Agent implementations
-├── /tools/         # Tool and data library components
-├── /connectors/    # Data feed connectors
-├── /backtesting/   # Backtesting engine
-├── /core/          # Core agent engine and shared utilities
-/specs/             # Specification files for components and agents
-/tests/             # Test suites, including unit, integration, and backtests
-/docs/              # Documentation, including deployment guides
-/examples/          # Sample agents and configurations
+ModPorter-AI/
+├── /frontend/          # React+TypeScript UI (port 3000), Nginx proxy
+├── /backend/           # FastAPI+SQLAlchemy API (port 8080), file/db orchestration
+├── /ai-engine/         # CrewAI+LangChain multi-agent system (port 8001)
+├── /database/          # Database schemas, migrations, and models
+├── /docker/            # Dockerfiles, base images, compose configs
+├── /docs/              # Documentation, deployment guides, PRD references
+├── /modporter/         # Core conversion logic and utilities
+├── /scripts/           # Utility scripts for setup, migration, etc.
+├── /tests/             # Unit/integration tests for all services
+├── /monitoring/        # Logging, metrics, and health checks
+└── /logs/              # Application logs and output files
 ```
 
 ### CI/CD Integration
