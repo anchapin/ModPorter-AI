@@ -565,9 +565,13 @@ jobs:
     - name: Install dependencies (optimized)
       run: |
         echo "⚡ Installing frontend dependencies with optimizations..."
+        cd frontend
         
-        # Install with frozen lockfile for faster, deterministic installs
-        npm install --frozen-lockfile --prefer-offline
+        # Clear npm cache to avoid 'Cannot read properties of null' error
+        npm cache clean --force
+        
+        # Use npm ci for reliable CI installs
+        npm ci --prefer-offline --no-audit --no-fund
         
         echo "✅ Dependencies installed successfully"
 
