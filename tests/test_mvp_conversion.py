@@ -4,7 +4,6 @@ import pytest
 def test_mvp_java_block_conversion():
     """Test complete pipeline: Java block -> Bedrock files"""
     # Arrange
-    java_file = "tests/fixtures/SimpleStoneBlock.java"
 
     # Act
     # This function will be implemented later as part of the conversion pipeline
@@ -13,7 +12,7 @@ def test_mvp_java_block_conversion():
     result = type('obj', (object,), {'success': False, 'generated_files': [], 'files': {}})() # Mock result
 
     # Assert
-    assert result.success == True
+    assert result.success
     assert "blocks/custom_stone.json" in result.generated_files
     # assert validate_bedrock_block_json(result.files["blocks/custom_stone.json"]) # This will be implemented later
 

@@ -4,10 +4,8 @@ Test suite for A/B testing infrastructure
 
 import pytest
 import uuid
-from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import crud
-from db.models import Experiment, ExperimentVariant, ExperimentResult
 
 
 @pytest.mark.asyncio

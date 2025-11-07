@@ -9,7 +9,6 @@ import json
 import tempfile
 import zipfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 import uuid
 
 from agents.bedrock_manifest_generator import BedrockManifestGenerator, PackType
@@ -235,8 +234,8 @@ class TestBlockItemGenerator:
         
         assert properties.hardness == 5.0
         assert properties.light_emission == 15
-        assert properties.flammable == True
-        assert properties.is_solid == False
+        assert properties.flammable
+        assert not properties.is_solid
     
     def test_creative_category_determination(self):
         """Test creative menu category determination."""
@@ -422,7 +421,7 @@ class TestFilePackager:
             
             result = self.packager.package_addon(addon_data)
             
-            assert result['success'] == True
+            assert result['success']
             assert Path(result['output_path']).exists()
             assert result['file_size'] > 0
     
@@ -440,8 +439,8 @@ class TestFilePackager:
             with open(bp_dir / 'manifest.json', 'w') as f:
                 json.dump(bp_manifest, f)
             
-            assert self.packager._is_behavior_pack(bp_dir) == True
-            assert self.packager._is_resource_pack(bp_dir) == False
+            assert self.packager._is_behavior_pack(bp_dir)
+            assert not self.packager._is_resource_pack(bp_dir)
     
     def test_file_validation(self):
         """Test file validation during packaging."""
@@ -449,11 +448,11 @@ class TestFilePackager:
             temp_path = Path(temp_file.name)
             
             # Should validate normal files
-            assert self.packager._validate_file(temp_path) == True
+            assert self.packager._validate_file(temp_path)
         
         # Test forbidden extensions
         forbidden_file = Path('/tmp/test.exe')
-        assert self.packager._validate_file(forbidden_file) == False
+        assert not self.packager._validate_file(forbidden_file)
     
     def test_validate_mcaddon_file(self):
         """Test validation of existing .mcaddon files."""
@@ -471,7 +470,7 @@ class TestFilePackager:
             
             validation = self.packager.validate_mcaddon_file(mcaddon_path)
             
-            assert validation['is_valid'] == True
+            assert validation['is_valid']
             assert len(validation['stats']['behavior_packs']) == 1
 
 
@@ -527,7 +526,7 @@ class TestAddonValidator:
         
         result = self.validator.validate_manifest_only(valid_manifest)
         
-        assert result['is_valid'] == True
+        assert result['is_valid']
         assert len(result['errors']) == 0
     
     def test_invalid_manifest_detection(self):
@@ -639,7 +638,7 @@ class TestIntegrationWorkflow:
                 'source_directories': [str(bp_path), str(rp_path)]
             })
             
-            assert package_result['success'] == True
+            assert package_result['success']
             assert Path(package_result['output_path']).exists()
             
             # Step 5: Validate the result

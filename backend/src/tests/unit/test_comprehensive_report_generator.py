@@ -5,13 +5,10 @@ Tests implementation of Issue #10 - Conversion Report Generation System
 
 import pytest
 import datetime
-from typing import Dict, Any
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from ...types.report_types import (
-    InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
-    AssumptionsReport, AssumptionReportItem, DeveloperLog, ReportMetadata,
-    ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
+    InteractiveReport, SummaryReport, FeatureAnalysis, AssumptionsReport, DeveloperLog, create_report_metadata, calculate_quality_score
 )
 from ...services.comprehensive_report_generator import ConversionReportGenerator
 
@@ -412,7 +409,7 @@ class TestInteractiveReportGeneration:
         # Check navigation structure
         assert "sections" in report.navigation_structure
         assert "expandable" in report.navigation_structure
-        assert report.navigation_structure["expandable"] == True
+        assert report.navigation_structure["expandable"]
         
         # Check export formats
         assert "pdf" in report.export_formats

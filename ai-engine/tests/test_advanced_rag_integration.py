@@ -8,7 +8,6 @@ the advanced RAG system functionality.
 import pytest
 import asyncio
 import logging
-from typing import Dict, Any
 
 # Import components
 from agents.advanced_rag_agent import AdvancedRAGAgent
@@ -324,7 +323,6 @@ class TestAdvancedRAGIntegration:
         # Create sample evaluation results
         from evaluation.rag_evaluator import EvaluationResult
         from agents.advanced_rag_agent import RAGResponse
-        from schemas.multimodal_schema import SearchResult, MultiModalDocument
         
         # Mock response
         mock_response = RAGResponse(

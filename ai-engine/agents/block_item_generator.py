@@ -398,7 +398,7 @@ class BlockItemGenerator:
         """Convert smelting recipe."""
         ingredient = java_recipe.get('ingredient', {})
         result = java_recipe.get('result', {})
-        experience = java_recipe.get('experience', 0.0)
+        java_recipe.get('experience', 0.0)
         cooking_time = java_recipe.get('cookingtime', 200)
         
         return {

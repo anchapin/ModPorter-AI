@@ -6,13 +6,12 @@ Monitors individual agent performance and provides optimization recommendations.
 import logging
 import json
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Tuple
 from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import statistics
 
-from .reward_system import RewardSignal
 from .training_loop import TrainingEpisode
 
 logger = logging.getLogger(__name__)

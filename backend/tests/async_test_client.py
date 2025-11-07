@@ -4,9 +4,8 @@ Async test client for FastAPI applications with async database support.
 This solves the common issue where FastAPI's TestClient runs synchronously
 but async database operations need an async context.
 """
-import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 import httpx
 import pytest
 import pytest_asyncio
@@ -95,7 +94,7 @@ async def async_test_db():
     metadata = MetaData()
     
     # Create a simple test table for testing
-    test_table = Table(
+    Table(
         'test_items',
         metadata,
         Column('id', Integer, primary_key=True),
@@ -112,7 +111,7 @@ async def async_test_db():
         pass
     
     # Create and return session directly
-    from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+    from sqlalchemy.ext.asyncio import async_sessionmaker
     async_session = async_sessionmaker(engine, expire_on_commit=False)
     
     session: AsyncSession = async_session()

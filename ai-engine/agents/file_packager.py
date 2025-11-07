@@ -3,7 +3,6 @@ File Packager for creating .mcaddon packages from Bedrock add-on components
 Part of the Bedrock Add-on Generation System (Issue #6)
 """
 
-import os
 import zipfile
 import logging
 import shutil

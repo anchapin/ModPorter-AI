@@ -4,7 +4,6 @@ Logic Translator Agent for Java to JavaScript code conversion
 
 from typing import List
 
-import logging
 import json
 from crewai.tools import tool
 import javalang  # Added javalang
@@ -12,8 +11,7 @@ from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 from agents.java_analyzer import JavaAnalyzerAgent
-from utils.logging_config import get_agent_logger, log_performance
-import time
+from utils.logging_config import get_agent_logger
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")

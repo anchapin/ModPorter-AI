@@ -52,6 +52,9 @@ Dockerfile.dev
 # Documentation temp files
 *.md:Zone.Identifier
 
+# Zone.Identifier files (Windows)
+*:Zone.Identifier
+
 # Setup scripts
 setup-*.sh
 
@@ -153,3 +156,6 @@ claude-flow.bat
 claude-flow.ps1
 memory/
 bin/
+
+# MCP todo list
+.mcp-todos.json

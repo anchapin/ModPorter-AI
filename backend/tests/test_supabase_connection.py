@@ -49,7 +49,6 @@ async def test_database_connection_logic():
     Unit test for basic database connection logic in test environment.
     This test verifies that the database configuration and connection works.
     """
-    import os
     from sqlalchemy.ext.asyncio import create_async_engine
     from sqlalchemy.pool import StaticPool
     

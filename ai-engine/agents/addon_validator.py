@@ -7,10 +7,9 @@ import json
 import logging
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 import jsonschema
 import uuid
-import re
 
 logger = logging.getLogger(__name__)
 

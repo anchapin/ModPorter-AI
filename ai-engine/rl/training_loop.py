@@ -3,17 +3,15 @@ Reinforcement Learning Training Loop for AI Agents
 Implements the core RL training pipeline with feedback integration.
 """
 
-import asyncio
 import logging
 import json
 import os
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
-import httpx
+from datetime import datetime
 from pathlib import Path
 
-from .quality_scorer import ConversionQualityScorer, QualityMetrics
+from .quality_scorer import ConversionQualityScorer
 from .reward_system import RewardSignalGenerator, RewardSignal
 # Note: This will be imported dynamically to avoid circular imports
 # from ..training_manager import fetch_training_data_from_backend

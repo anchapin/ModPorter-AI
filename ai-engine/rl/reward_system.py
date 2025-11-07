@@ -5,7 +5,7 @@ Converts quality assessments and user feedback into training signals.
 
 import logging
 import json
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import numpy as np

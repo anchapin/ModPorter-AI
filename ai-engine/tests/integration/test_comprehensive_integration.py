@@ -8,7 +8,7 @@ import tempfile
 import time
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 # Add the ai-engine and root directories to the path
 ai_engine_root = Path(__file__).parent.parent.parent
@@ -32,9 +32,9 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         # Create test mod suite
         self.test_mods = create_test_mod_suite(self.temp_path / "test_mods")
         
-        print(f"\\n🧪 Comprehensive Integration Test Suite")
+        print("\\n🧪 Comprehensive Integration Test Suite")
         print(f"📁 Test mods: {len(self.test_mods)}")
-        print(f"🎯 Test scenarios: Complete MVP pipeline validation")
+        print("🎯 Test scenarios: Complete MVP pipeline validation")
     
     def tearDown(self):
         """Clean up and summarize results."""
@@ -81,7 +81,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         success_rate = len(successful_conversions) / len(conversion_results)
         avg_time = sum(r['processing_time'] for r in successful_conversions) / len(successful_conversions) if successful_conversions else 0
         
-        print(f"\\n📊 Conversion Summary:")
+        print("\\n📊 Conversion Summary:")
         print(f"  ✅ Success rate: {success_rate:.1%}")
         print(f"  ⚡ Average time: {avg_time:.3f}s")
         
@@ -350,7 +350,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         # Print detailed summary
         total_tests = len(self.results)
         
-        print(f"\\n📊 OVERALL STATISTICS:")
+        print("\\n📊 OVERALL STATISTICS:")
         print(f"  🧪 Total test scenarios: {total_tests}")
         print(f"  🎮 Test mods processed: {len(self.test_mods)}")
         
@@ -361,7 +361,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
             success_rate = successful / len(mod_results) if mod_results else 0
             avg_time = sum(r['processing_time'] for r in mod_results if r['success']) / successful if successful > 0 else 0
             
-            print(f"\\n🎮 MOD TYPE CONVERSION:")
+            print("\\n🎮 MOD TYPE CONVERSION:")
             print(f"  ✅ Success rate: {success_rate:.1%} ({successful}/{len(mod_results)})")
             print(f"  ⚡ Average time: {avg_time:.3f}s")
             
@@ -373,14 +373,14 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         # Consistency summary
         if 'consistency' in test_groups:
             consistency = test_groups['consistency'][0]
-            print(f"\\n🔄 CONSISTENCY TEST:")
+            print("\\n🔄 CONSISTENCY TEST:")
             print(f"  ✅ Runs successful: {consistency['success_count']}/{consistency['runs']}")
             print(f"  📏 Output consistent: {'Yes' if consistency['consistent_output'] else 'No'}")
         
         # Edge cases summary
         if 'edge_cases' in test_groups:
             edge_results = test_groups['edge_cases']
-            print(f"\\n🚨 EDGE CASE HANDLING:")
+            print("\\n🚨 EDGE CASE HANDLING:")
             for result in edge_results:
                 status = "✅" if not result['success'] else "⚠️"  # Failure expected for edge cases
                 print(f"    {status} {result['case_name']}: {result['expected_behavior']}")
@@ -388,7 +388,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         # Output validation summary
         if 'output_validation' in test_groups:
             validation = test_groups['output_validation'][0]
-            print(f"\\n✅ OUTPUT VALIDATION:")
+            print("\\n✅ OUTPUT VALIDATION:")
             print(f"    📦 Structure valid: {'Yes' if validation['valid_structure'] else 'No'}")
             print(f"    📋 Manifests found: {validation['manifest_count']}")
             print(f"    📁 Total files: {validation['file_count']}")
@@ -396,7 +396,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
         # Performance summary
         if 'performance_load' in test_groups:
             perf = test_groups['performance_load'][0]
-            print(f"\\n⚡ PERFORMANCE UNDER LOAD:")
+            print("\\n⚡ PERFORMANCE UNDER LOAD:")
             print(f"    🚀 Throughput: {perf['throughput']:.1f} mods/sec")
             print(f"    ⚡ Average time: {perf['avg_time']:.3f}s per mod")
             print(f"    ✅ Success rate: {perf['successful_mods']}/{perf['total_mods']}")

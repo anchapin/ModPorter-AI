@@ -6,7 +6,6 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 from crewai import Agent, Task, Crew, Process
 from typing import Dict, List, Any, Optional
 import json
-import logging
 import os
 from pathlib import Path
 import tempfile
@@ -22,7 +21,6 @@ from agents.variant_loader import variant_loader
 
 # Import enhanced orchestration system
 from orchestration.crew_integration import EnhancedConversionCrew
-from orchestration.strategy_selector import OrchestrationStrategy
 
 # Variant constants for enhanced orchestration selection
 ENHANCED_VARIANTS = {
@@ -42,7 +40,7 @@ CONTROL_VARIANTS = {'control', 'sequential', 'baseline'}
 # 1. Import QAAgent:
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
-from models.smart_assumptions import SmartAssumptionEngine, ConversionPlanComponent, AssumptionReport
+from models.smart_assumptions import ConversionPlanComponent, AssumptionReport
 from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
 from utils.logging_config import get_crew_logger, log_performance
 
@@ -117,14 +115,13 @@ class ModPorterConversionCrew:
         java_analyzer_config = {}
         bedrock_architect_config = {}
         logic_translator_config = {}
-        asset_converter_config = {}
         
         if self.variant_config:
             agents_config = self.variant_config.get("agents", {})
             java_analyzer_config = agents_config.get("java_analyzer", {})
             bedrock_architect_config = agents_config.get("bedrock_architect", {})
             logic_translator_config = agents_config.get("logic_translator", {})
-            asset_converter_config = agents_config.get("asset_converter", {})
+            agents_config.get("asset_converter", {})
         
         # PRD Feature 2: Analyzer Agent
         agent_kwargs = {
@@ -546,7 +543,6 @@ class ModPorterConversionCrew:
         Returns:
             Conversion result following PRD Feature 3 format
         """
-        temp_dir = None  # Initialize temp_dir to None
         
         # Log conversion start with context
         logger.log_operation_start("mod_conversion", 

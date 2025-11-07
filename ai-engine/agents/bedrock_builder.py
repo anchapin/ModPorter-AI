@@ -8,16 +8,15 @@ import zipfile
 import json
 import tempfile
 import uuid
-import shutil
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from PIL import Image
 import logging
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 from crewai.tools import tool
 
 from models.smart_assumptions import SmartAssumptionEngine
-from templates.template_engine import TemplateEngine, TemplateType
+from templates.template_engine import TemplateEngine
 
 logger = logging.getLogger(__name__)
 
