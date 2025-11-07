@@ -129,10 +129,10 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: [self-hosted, Linux, X64, ollama]
+    runs-on: ubuntu-latest
     needs: [changes, prepare-base-images]
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -282,6 +282,25 @@ jobs:
         apt-get update -qq
         apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io
 
+    # Install Ollama for AI model testing
+    - name: Install Ollama
+      run: |
+        echo "🤖 Installing Ollama..."
+        curl -fsSL https://ollama.com/install.sh | sh
+        
+        # Install and start Ollama service
+        ollama serve &
+        
+        # Wait for Ollama to start
+        sleep 10
+        
+        # Pull the required model
+        echo "📥 Pulling llama3.2 model..."
+        ollama pull llama3.2
+        
+        # Verify installation
+        ollama list
+
     # Verify Python environment
     - name: Verify Python environment
       run: |
@@ -329,13 +348,21 @@ jobs:
         fi
         
         echo "Testing Ollama availability..."
+        # Make sure Ollama is running
+        if ! pgrep -f "ollama serve" > /dev/null; then
+          echo "Starting Ollama service..."
+          ollama serve &
+          sleep 15
+        fi
+        
         if timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'; then
           echo "✅ Ollama is ready"
           echo "Checking for llama3.2 model..."
           if curl -f http://localhost:11434/api/tags | grep -q "llama3.2"; then
             echo "✅ llama3.2 model is available"
           else
-            echo "⚠️ Warning: llama3.2 model may not be available"
+            echo "⚠️ Warning: llama3.2 model may not be available - pulling now..."
+            ollama pull llama3.2
           fi
         else
           echo "❌ Ollama connection failed - continuing anyway"
@@ -364,7 +391,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
             
             echo "Running basic integration test..."
-            timeout 600s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "backend")
             echo "Running backend tests..."
@@ -374,7 +401,7 @@ jobs:
             find tests -name "*.py" | head -5 || echo "No backend test files found"
             
             echo "Running backend integration tests..."
-            timeout 600s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "ai-engine")
             echo "Running ai-engine tests..."
@@ -384,7 +411,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
             
             echo "Running import tests..."
-            timeout 600s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
         
