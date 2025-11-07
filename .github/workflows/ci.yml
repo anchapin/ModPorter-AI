@@ -474,7 +474,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
