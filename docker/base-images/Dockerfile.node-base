@@ -3,9 +3,6 @@
 
 FROM node:20-slim
 
-# Install pnpm globally
-RUN npm install -g pnpm
-
 # Create app directory
 WORKDIR /app
 
@@ -13,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile && pnpm store prune
+RUN npm install -g pnpm && pnpm install --prod && pnpm store prune
 
 # Create app user
 RUN adduser --disabled-password --gecos '' appuser && \
