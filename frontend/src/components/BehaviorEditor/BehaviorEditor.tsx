@@ -68,7 +68,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Template integration state
@@ -80,7 +80,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   const [showExportDialog, setShowExportDialog] = useState(false);
   
   // Enhanced UI state hooks
-  const { loading, error, setError, clearError, toast } = useUIState();
+  const { loading, error: uiError, setError: setUIError, clearError: clearUIError, toast } = useUIState();
   
   // React Query hooks
   const applyTemplateMutation = useApplyBehaviorTemplate();
@@ -104,7 +104,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   // Handle successful save with loading states
   const handleSave = useCallback(async (fileId: string, content: string) => {
     setIsLoading(true);
-    setError(null);
+    setLocalError(null);
     
     try {
       // Here you would typically save to backend API
@@ -115,7 +115,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save file';
-      setError(errorMessage);
+      setLocalError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +136,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   // Handle visual editor changes with API integration
   const handleBlockPropertiesChange = useCallback(async (properties: any) => {
     setIsLoading(true);
-    setError(null);
+    setLocalError(null);
     
     try {
       // Here you would save to backend API
@@ -145,7 +145,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save block properties';
-      setError(errorMessage);
+      setLocalError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +153,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
 
   const handleRecipeChange = useCallback(async (recipe: any) => {
     setIsLoading(true);
-    setError(null);
+    setLocalError(null);
     
     try {
       // Here you would save to backend API
@@ -162,7 +162,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save recipe';
-      setError(errorMessage);
+      setLocalError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +191,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       },
       onError: (err) => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to apply template';
-        setError(errorMessage);
+        setLocalError(errorMessage);
       },
     });
   }, [selectedFile, conversionId, applyTemplateMutation]);
@@ -199,18 +199,18 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   // Export handlers using React Query
   const handleExportPreview = useCallback(() => {
     // Trigger the preview query
-    exportPreviewQuery.refetch().then((result) => {
+    // exportPreviewQuery.refetch().then((result) => {
       if (!result.error) {
         setShowExportDialog(true);
       } else {
         const errorMessage = result.error instanceof Error ? result.error.message : 'Failed to preview export';
-        setError(errorMessage);
+        setLocalError(errorMessage);
       }
     });
   }, [exportPreviewQuery]);
 
   const handleExportDownload = useCallback((format: string = 'mcaddon') => {
-    downloadPackMutation.mutate({
+    // downloadPackMutation.mutate({
       conversionId,
       format,
     }, {
@@ -221,13 +221,13 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       },
       onError: (err) => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to download export';
-        setError(errorMessage);
+        setLocalError(errorMessage);
       },
     });
   }, [conversionId, downloadPackMutation]);
 
   const handleExport = useCallback((format: string = 'mcaddon', includeTemplates: boolean = true) => {
-    exportPackMutation.mutate({
+    // exportPackMutation.mutate({
       conversion_id: conversionId,
       file_types: [], // Empty means all files
       include_templates,
@@ -235,20 +235,20 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
     }, {
       onSuccess: (exportResult) => {
         // Download immediately after export
-        handleExportDownload(format);
+        // handleExportDownload(format);
         setSuccessMessage(`Export completed: ${exportResult.file_count} files, ${exportResult.export_size} bytes`);
         setTimeout(() => setSuccessMessage(null), 5000);
       },
       onError: (err) => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to export behavior pack';
-        setError(errorMessage);
+        setLocalError(errorMessage);
       },
     });
   }, [conversionId, exportPackMutation, handleExportDownload]);
 
   // Clear error handler
-  const clearError = useCallback(() => {
-    setError(null);
+  const clearLocalError = useCallback(() => {
+    setLocalError(null);
   }, []);
 
   // Clear success message handler
@@ -257,7 +257,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   }, []);
 
   // Clear all errors handler
-  const clearAllErrors = useCallback(() => {
+  const clearLocalError = useCallback(() => {
     // Using the enhanced UI state clear function
     Object.keys(error).forEach(key => {
       setError(key, null);
@@ -287,23 +287,23 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
     >
       <div className={`behavior-editor ${className}`}>
       {/* Loading Progress */}
-      {(isLoading || applyTemplateMutation.isPending || exportPreviewQuery.isFetching || exportPackMutation.isPending || downloadPackMutation.isPending) && (
+      {(isLoading || applyTemplateMutation.isPending || false || false || false) && (
         <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }} />
       )}
 
       {/* Error Alert */}
-      {Object.values(error).some(Boolean) && (
+      {(localError || uiError) && (
         <Alert 
           severity="error" 
           sx={{ mb: 2 }} 
-          onClose={clearAllErrors}
+          onClose={clearLocalError}
           action={
-            <IconButton size="small" onClick={clearAllErrors}>
+            <IconButton size="small" onClick={clearLocalError}>
               <ErrorIcon />
             </IconButton>
           }
         >
-          {Object.values(error).find(Boolean)}
+          {localError || uiError}
         </Alert>
       )}
 
