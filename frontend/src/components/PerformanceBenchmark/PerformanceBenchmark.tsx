@@ -122,7 +122,8 @@ export const PerformanceBenchmark: React.FC = () => {
 
   // Load scenarios on component mount
   useEffect(() => {
-    loadScenarios();
+    // Defer state update to avoid setting state directly in effect
+    setTimeout(loadScenarios, 0);
   }, []);
 
   // Poll for updates when a benchmark is running

@@ -4,7 +4,7 @@ Rate limiting utility for OpenAI API calls and LLM interactions
 
 import time
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from functools import wraps
 from dataclasses import dataclass
 import os
@@ -22,6 +22,18 @@ class RateLimitConfig:
     base_delay: float = 1.0
     max_delay: float = 60.0
     backoff_factor: float = 2.0
+
+
+@dataclass
+class ZAIConfig:
+    """Configuration for Z.AI LLM backend"""
+    api_key: str = ""
+    model: str = "glm-4-plus"
+    base_url: str = "https://api.z.ai/v1"
+    max_retries: int = 3
+    timeout: int = 300
+    temperature: float = 0.1
+    max_tokens: int = 4000
 
 
 class RateLimiter:
@@ -358,6 +370,223 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = None, **kwar
         raise e
 
 
+
+
+class RateLimitedZAI:
+    """
+    A rate-limited wrapper for Z.AI LLM backend
+    """
+    def __init__(self, config: ZAIConfig = None):
+        self.config = config or ZAIConfig()
+        
+        # Load configuration from environment variables
+        if os.getenv("Z_AI_API_KEY"):
+            self.config.api_key = os.getenv("Z_AI_API_KEY")
+        if os.getenv("Z_AI_MODEL"):
+            self.config.model = os.getenv("Z_AI_MODEL")
+        if os.getenv("Z_AI_BASE_URL"):
+            self.config.base_url = os.getenv("Z_AI_BASE_URL")
+        if os.getenv("Z_AI_MAX_RETRIES"):
+            self.config.max_retries = int(os.getenv("Z_AI_MAX_RETRIES"))
+        if os.getenv("Z_AI_TIMEOUT"):
+            self.config.timeout = int(os.getenv("Z_AI_TIMEOUT"))
+        if os.getenv("Z_AI_TEMPERATURE"):
+            self.config.temperature = float(os.getenv("Z_AI_TEMPERATURE"))
+        if os.getenv("Z_AI_MAX_TOKENS"):
+            self.config.max_tokens = int(os.getenv("Z_AI_MAX_TOKENS"))
+        
+        if not self.config.api_key:
+            raise ValueError("Z.AI API key is required. Set Z_AI_API_KEY environment variable.")
+        
+        # Initialize rate limiter
+        self.rate_config = RateLimitConfig(
+            requests_per_minute=50,  # Conservative limit for Z.AI
+            tokens_per_minute=40000,
+            max_retries=self.config.max_retries,
+            base_delay=1.0,
+            max_delay=60.0,
+            backoff_factor=2.0
+        )
+        
+        self.rate_limiter = RateLimiter(self.rate_config)
+        
+        # Import OpenAI client for Z.AI compatibility (Z.AI uses OpenAI-compatible API)
+        try:
+            from openai import OpenAI
+            self._client = OpenAI(
+                api_key=self.config.api_key,
+                base_url=self.config.base_url,
+                timeout=self.config.timeout
+            )
+        except ImportError:
+            raise ImportError("openai package is required for Z.AI support")
+        
+        logger.info(f"Z.AI LLM initialized with model: {self.config.model}")
+    
+    def invoke(self, input_data, **kwargs):
+        """Invoke the Z.AI model with rate limiting"""
+        return self._execute_with_rate_limit(self._invoke_internal, input_data, **kwargs)
+    
+    def generate(self, messages, **kwargs):
+        """Generate response using Z.AI model with rate limiting"""
+        return self._execute_with_rate_limit(self._generate_internal, messages, **kwargs)
+    
+    def predict(self, text, **kwargs):
+        """Predict using Z.AI model with rate limiting"""
+        return self._execute_with_rate_limit(self._predict_internal, text, **kwargs)
+    
+    def _execute_with_rate_limit(self, func, *args, **kwargs):
+        """Execute function with rate limiting and retry logic"""
+        return _execute_with_retry(func, self.rate_limiter, self.rate_config, *args, **kwargs)
+    
+    def _invoke_internal(self, input_data, **kwargs):
+        """Internal invoke implementation"""
+        # Convert input_data to messages format
+        messages = self._convert_to_messages(input_data)
+        
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get('temperature', self.config.temperature),
+            max_tokens=kwargs.get('max_tokens', self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
+        )
+        
+        # Create LangChain-compatible response
+        from langchain_core.messages import AIMessage
+        return AIMessage(
+            content=response.choices[0].message.content,
+            response_metadata={
+                'model': self.config.model,
+                'finish_reason': response.choices[0].finish_reason,
+                'usage': response.usage.model_dump() if response.usage else {}
+            }
+        )
+    
+    def _generate_internal(self, messages, **kwargs):
+        """Internal generate implementation"""
+        if isinstance(messages, str):
+            messages = [{"role": "user", "content": messages}]
+        elif hasattr(messages, 'content'):
+            messages = [{"role": "user", "content": messages.content}]
+        elif isinstance(messages, list) and len(messages) > 0:
+            if hasattr(messages[0], 'content'):
+                messages = [{"role": msg.type if hasattr(msg, 'type') else "user", 
+                           "content": msg.content} for msg in messages]
+        
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get('temperature', self.config.temperature),
+            max_tokens=kwargs.get('max_tokens', self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
+        )
+        
+        from langchain_core.messages import AIMessage
+        return AIMessage(
+            content=response.choices[0].message.content,
+            response_metadata={
+                'model': self.config.model,
+                'finish_reason': response.choices[0].finish_reason,
+                'usage': response.usage.model_dump() if response.usage else {}
+            }
+        )
+    
+    def _predict_internal(self, text, **kwargs):
+        """Internal predict implementation"""
+        messages = [{"role": "user", "content": text}]
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get('temperature', self.config.temperature),
+            max_tokens=kwargs.get('max_tokens', self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
+        )
+        
+        return response.choices[0].message.content
+    
+    def _convert_to_messages(self, input_data):
+        """Convert various input formats to messages list"""
+        if isinstance(input_data, str):
+            return [{"role": "user", "content": input_data}]
+        elif hasattr(input_data, 'content'):
+            return [{"role": "user", "content": input_data.content}]
+        elif isinstance(input_data, list) and len(input_data) > 0:
+            if hasattr(input_data[0], 'content'):
+                return [{"role": msg.type if hasattr(msg, 'type') else "user", 
+                        "content": msg.content} for msg in input_data]
+        return [{"role": "user", "content": str(input_data)}]
+    
+    def __call__(self, *args, **kwargs):
+        """Make the instance callable"""
+        return self.invoke(*args, **kwargs)
+    
+    def enable_crew_mode(self):
+        """Enable CrewAI compatibility mode"""
+        logger.info(f"CrewAI mode enabled for Z.AI - model: {self.config.model}")
+        
+    def disable_crew_mode(self):
+        """Disable CrewAI compatibility mode"""
+        logger.info(f"CrewAI mode disabled for Z.AI - model: {self.config.model}")
+
+
+def create_z_ai_llm(config: ZAIConfig = None):
+    """
+    Factory function to create a rate-limited Z.AI LLM instance
+    
+    Args:
+        config: ZAIConfig instance. If None, loads from environment variables.
+    
+    Returns:
+        RateLimitedZAI instance
+    """
+    return RateLimitedZAI(config)
+
+
+def get_llm_backend():
+    """
+    Get the best available LLM backend based on configuration and availability
+    Priority order: Z.AI > Ollama > OpenAI
+    
+    Returns:
+        LLM instance for use with CrewAI
+    """
+    # Check if Z.AI is enabled and configured
+    if os.getenv("USE_Z_AI", "false").lower() == "true":
+        try:
+            logger.info("Attempting to initialize Z.AI LLM backend...")
+            z_ai_llm = create_z_ai_llm()
+            logger.info("Z.AI LLM backend initialized successfully")
+            return z_ai_llm
+        except Exception as e:
+            logger.warning(f"Failed to initialize Z.AI backend: {e}")
+    
+    # Check if Ollama is enabled
+    if os.getenv("USE_OLLAMA", "true").lower() == "true":
+        try:
+            logger.info("Attempting to initialize Ollama LLM backend...")
+            ollama_llm = create_ollama_llm()
+            logger.info("Ollama LLM backend initialized successfully")
+            return ollama_llm
+        except Exception as e:
+            logger.warning(f"Failed to initialize Ollama backend: {e}")
+    
+    # Fallback to OpenAI if available
+    try:
+        logger.info("Attempting to initialize OpenAI LLM backend...")
+        openai_llm = create_rate_limited_llm()
+        logger.info("OpenAI LLM backend initialized successfully")
+        return openai_llm
+    except Exception as e:
+        logger.warning(f"Failed to initialize OpenAI backend: {e}")
+    
+    # If all backends fail, raise an error
+    raise RuntimeError(
+        "No LLM backend available. Please configure one of the following:\n"
+        "- Z.AI: Set USE_Z_AI=true and Z_AI_API_KEY environment variable\n"
+        "- Ollama: Set USE_OLLAMA=true and ensure Ollama service is running\n"
+        "- OpenAI: Set OPENAI_API_KEY environment variable"
+    )
 
 
 def get_fallback_llm():

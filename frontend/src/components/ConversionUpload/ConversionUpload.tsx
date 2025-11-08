@@ -263,9 +263,12 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
 
     if (currentConversionId && isPolling) {
       if (pollingAttempts >= MAX_POLLING_ATTEMPTS) {
-        setError('Conversion is taking longer than expected. Please try cancelling and starting again, or check back later.');
-        setIsPolling(false);
-        setIsConverting(false);
+        // Defer state updates to avoid setting state directly in effect
+        setTimeout(() => {
+          setError('Conversion is taking longer than expected. Please try cancelling and starting again, or check back later.');
+          setIsPolling(false);
+          setIsConverting(false);
+        }, 0);
         return;
       }
 

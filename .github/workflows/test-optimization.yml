@@ -51,7 +51,7 @@ jobs:
       id: hashes
       run: |
         PYTHON_HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
         echo "python-hash=$PYTHON_HASH" >> $GITHUB_OUTPUT
         echo "node-hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Python deps hash: $PYTHON_HASH"
@@ -71,7 +71,7 @@ jobs:
         
         # Build Node base
         echo "Building Node base image..."
-        docker build -f docker/base-images/Dockerfile.node-base -t test-node-base frontend/
+        docker build -f docker/base-images/Dockerfile.node-base -t test-node-base .
         
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))

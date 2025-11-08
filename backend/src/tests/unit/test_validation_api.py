@@ -10,7 +10,6 @@ import time
 
 from main import app
 from api.validation import (
-    MockValidationAgent,
     ValidationRequest,
     ValidationJob,
     validation_jobs,
@@ -19,6 +18,29 @@ from api.validation import (
     _validation_reports_lock,
 )
 from api.validation_constants import ValidationJobStatus, ValidationMessages
+
+
+class MockValidationResult:
+        """Mock validation result object"""
+        def __init__(self, conversion_id: str):
+            self.conversion_id = conversion_id
+            self.overall_confidence = 0.95
+            self.issues = []
+            self.recommendations = ["Mock recommendation"]
+            self.semantic_analysis = {"test": "analysis"}
+            self.behavior_prediction = {"test": "prediction"}
+            self.asset_integrity = {"test": "integrity"}
+            self.manifest_validation = {"test": "validation"}
+
+class MockValidationAgent:
+    """Mock validation agent for testing"""
+    def __init__(self):
+        self.name = "Mock Validation Agent"
+        self.version = "1.0.0"
+    
+    def validate_conversion(self, artifacts, **kwargs):
+        conversion_id = artifacts.get("conversion_id", str(uuid.uuid4()))
+        return MockValidationResult(conversion_id)
 
 
 @pytest.fixture
@@ -207,35 +229,37 @@ class TestValidationAPI:
         assert response.status_code == 404
         assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
 
-    @patch("src.api.validation.process_validation_task")
+    @patch("fastapi.BackgroundTasks.add_task")
     def test_get_validation_report_job_not_completed(
-        self, mock_process_task, client, sample_validation_request
+        self, mock_add_task, client, sample_validation_request
     ):
         """Test getting report for job that's not completed"""
-        # Mock the process task to not complete immediately
-        mock_process_task.return_value = None
+        # Clear the validation_jobs dict to ensure clean state
+        validation_jobs.clear()
+        validation_reports.clear()
 
-        # Create a job
+        # Create a job (background task won't execute due to mocking)
         create_response = client.post(
             "/api/v1/validation/", json=sample_validation_request
         )
         job_id = create_response.json()["job_id"]
 
-        # Immediately try to get report (should fail)
+        # Immediately try to get report (should fail because job is still queued)
         response = client.get(f"/api/v1/validation/{job_id}/report")
 
         assert response.status_code == 400
         assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["detail"]
 
-    @patch("src.api.validation.process_validation_task")
+    @patch("fastapi.BackgroundTasks.add_task")
     def test_validation_job_status_transitions(
-        self, mock_process_task, client, sample_validation_request
+        self, mock_add_task, client, sample_validation_request
     ):
         """Test that validation job status transitions correctly"""
-        # Mock the process task to not complete immediately
-        mock_process_task.return_value = None
+        # Clear the validation_jobs dict to ensure clean state
+        validation_jobs.clear()
+        validation_reports.clear()
 
-        # Create a job
+        # Create a job (background task won't execute due to mocking)
         create_response = client.post(
             "/api/v1/validation/", json=sample_validation_request
         )

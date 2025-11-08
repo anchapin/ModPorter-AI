@@ -9,7 +9,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from db.base import get_db
 from db import crud
@@ -35,35 +35,26 @@ class FeedbackRequest(BaseModel):
     ease_of_use: Optional[int] = None  # 1-5 scale
     agent_specific_feedback: Optional[Dict[str, Any]] = None  # Agent-specific ratings
     
-    class Config:
-        # Enable better serialization
-        json_encoders = {
+    model_config = ConfigDict(
+        validate_assignment=True,
+        json_schema_extra={
             # Handle UUID serialization
-            uuid.UUID: str
-        }
-        
-        # Validate assignment to prevent None values where not expected
-        validate_assignment = True
-        
-        # Example schema for documentation
-        schema_extra = {
-            "example": {
-                "job_id": "123e4567-e89b-12d3-a456-426614174000",
-                "feedback_type": "detailed",
-                "user_id": "user123",
-                "comment": "Great conversion quality!",
-                "quality_rating": 4,
-                "specific_issues": ["Minor texture issue"],
-                "conversion_accuracy": 5,
-                "visual_quality": 4,
-                "performance_rating": 5,
-                "ease_of_use": 4,
-                "agent_specific_feedback": {
-                    "java_analyzer": {"accuracy": 5, "speed": 4},
-                    "asset_converter": {"quality": 4, "completeness": 5}
+            "examples": [
+                {
+                    "job_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "feedback_type": "thumbs_up",
+                    "user_id": "user123",
+                    "comment": "Great conversion!",
+                    "quality_rating": 5,
+                    "specific_issues": [],
+                    "visual_quality": 5,
+                    "performance_rating": 5,
+                    "ease_of_use": 5,
+                    "agent_specific_feedback": {}
                 }
-            }
+            ]
         }
+    )
 
 
 class FeedbackResponse(BaseModel):

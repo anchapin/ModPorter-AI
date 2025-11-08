@@ -246,24 +246,27 @@ class TestBedrockBuilderMVP:
     def test_invalid_jar_file(self, builder, output_dir):
         """Test handling of invalid JAR files."""
         # Create invalid JAR file
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
-            jar_file.write(b'not a valid jar file')
-            jar_file.flush()
+        jar_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as jar_file:
+                jar_file_path = jar_file.name
+                jar_file.write(b'not a valid jar file')
+                jar_file.flush()
+                
+            result = builder.build_block_addon_mvp(
+                registry_name="test:block",
+                texture_path="assets/test/texture.png",
+                jar_path=jar_file_path,
+                output_dir=output_dir
+            )
             
-            try:
-                result = builder.build_block_addon_mvp(
-                    registry_name="test:block",
-                    texture_path="assets/test/texture.png",
-                    jar_path=jar_file.name,
-                    output_dir=output_dir
-                )
-                
-                assert result["success"] is False
-                assert len(result["errors"]) > 0
-                assert "Build failed" in result["errors"][0]
-                
-            finally:
-                os.unlink(jar_file.name)
+            assert result["success"] is False
+            assert len(result["errors"]) > 0
+            assert "Build failed" in result["errors"][0]
+            
+        finally:
+            if jar_file_path and os.path.exists(jar_file_path):
+                os.unlink(jar_file_path)
     
     def test_nonexistent_jar_file(self, builder, output_dir):
         """Test handling of nonexistent JAR files."""

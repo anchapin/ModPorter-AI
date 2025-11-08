@@ -223,7 +223,7 @@ async def run_benchmark_endpoint(request: BenchmarkRunRequest, background_tasks:
         "scenario_id": request.scenario_id,
         "device_type": request.device_type,
         "conversion_id": request.conversion_id,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(datetime.UTC).isoformat(),
         "progress": 0.0,
         "current_stage": "pending"
     }
@@ -320,7 +320,7 @@ async def create_custom_scenario_endpoint(request: CustomScenarioRequest):
         "duration_seconds": request.duration_seconds,
         "parameters": request.parameters,
         "thresholds": request.thresholds,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(datetime.UTC).isoformat(),
         "custom": True
     }
     

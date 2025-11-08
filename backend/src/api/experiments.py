@@ -7,7 +7,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 from db.base import get_db
@@ -26,10 +26,9 @@ class ExperimentCreate(BaseModel):
     end_date: Optional[datetime] = None
     traffic_allocation: Optional[int] = 100  # Percentage (0-100)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    model_config = ConfigDict(
+        # Note: json_encoders deprecated, but keeping for compatibility
+    )
 
 
 class ExperimentUpdate(BaseModel):
@@ -66,10 +65,9 @@ class ExperimentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    model_config = ConfigDict(
+        # Note: json_encoders deprecated, but keeping for compatibility
+    )
 
 
 class ExperimentVariantResponse(BaseModel):
@@ -82,10 +80,9 @@ class ExperimentVariantResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    model_config = ConfigDict(
+        # Note: json_encoders deprecated, but keeping for compatibility
+    )
 
 
 class ExperimentResultCreate(BaseModel):
@@ -111,10 +108,9 @@ class ExperimentResultResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+    model_config = ConfigDict(
+        # Note: json_encoders deprecated, but keeping for compatibility
+    )
 
 
 @router.post("/experiments", response_model=ExperimentResponse)

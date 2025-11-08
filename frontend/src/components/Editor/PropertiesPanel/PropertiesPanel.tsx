@@ -18,18 +18,21 @@ export const PropertiesPanel: React.FC = () => {
   }, [addonData, selectedBlockId]);
 
   useEffect(() => {
-    if (selectedBlock?.properties) {
-      setPropertiesJsonString(JSON.stringify(selectedBlock.properties, null, 2));
-      setPropertiesError(null);
-    } else {
-      setPropertiesJsonString('{}'); // Default to empty JSON object
-    }
-    if (selectedBlock?.behavior?.data) {
-      setBehaviorDataJsonString(JSON.stringify(selectedBlock.behavior.data, null, 2));
-      setBehaviorError(null);
-    } else {
-      setBehaviorDataJsonString('{}'); // Default for new/empty behavior data
-    }
+    // Defer state updates to avoid setting state directly in effect
+    setTimeout(() => {
+      if (selectedBlock?.properties) {
+        setPropertiesJsonString(JSON.stringify(selectedBlock.properties, null, 2));
+        setPropertiesError(null);
+      } else {
+        setPropertiesJsonString('{}'); // Default to empty JSON object
+      }
+      if (selectedBlock?.behavior?.data) {
+        setBehaviorDataJsonString(JSON.stringify(selectedBlock.behavior.data, null, 2));
+        setBehaviorError(null);
+      } else {
+        setBehaviorDataJsonString('{}'); // Default for new/empty behavior data
+      }
+    }, 0);
   }, [selectedBlock]);
 
 

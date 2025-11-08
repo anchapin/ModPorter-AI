@@ -1,6 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional, IO
-import magic  # type: ignore
+
+# Try to import magic with fallback for Windows
+try:
+    import magic  # type: ignore
+    MAGIC_AVAILABLE = True
+except (ImportError, OSError):
+    MAGIC_AVAILABLE = False
+    magic = None
 
 
 @dataclass
@@ -79,7 +86,19 @@ class ValidationFramework:
         file_chunk = file.read(2048)  # Read the first 2048 bytes
         file.seek(0)  # Reset cursor to the beginning
 
-        mime_type = magic.from_buffer(file_chunk, mime=True)
+        if MAGIC_AVAILABLE:
+            mime_type = magic.from_buffer(file_chunk, mime=True)
+        else:
+            # Fallback: Basic file type detection based on file headers
+            # This is a simplified version for Windows without libmagic
+            if file_chunk.startswith(b'PK\x03\x04'):
+                mime_type = "application/zip"
+            elif file_chunk.startswith(b'PK\x05\x06') or file_chunk.startswith(b'PK\x07\x08'):
+                mime_type = "application/zip"
+            else:
+                # For unknown file types, we should be more restrictive
+                # Don't accept generic files as valid archives
+                mime_type = "application/x-unknown"
         
         # Debug logging to see what MIME type is detected
         print(f"DEBUG: File '{filename}' detected MIME type: '{mime_type}'")

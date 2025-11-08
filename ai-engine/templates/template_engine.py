@@ -214,7 +214,8 @@ class JinjaTemplate(BaseTemplate):
         # Calculate relative path from templates directory for Jinja2
         if templates_dir and template_path.is_relative_to(templates_dir):
             relative_path = template_path.relative_to(templates_dir)
-            template_name = str(relative_path)
+            # Convert to forward slashes for Jinja2 compatibility
+            template_name = str(relative_path).replace('\\', '/')
         else:
             template_name = template_path.name
             
