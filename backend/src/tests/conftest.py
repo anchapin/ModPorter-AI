@@ -55,6 +55,8 @@ def pytest_sessionstart(session):
             
             async def init_test_db():
                 from db.declarative_base import Base
+                from db import models
+                from db import models as db_models  # Ensure this imports models.py
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL

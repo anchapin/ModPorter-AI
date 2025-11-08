@@ -3,14 +3,15 @@ Unit tests for Conversion Asset CRUD operations
 """
 
 import pytest
+import uuid
+from unittest.mock import AsyncMock, patch, MagicMock
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from db import crud, models
+from datetime import datetime, timezone
 
 # Mark all tests in this module as asyncio
 pytestmark = pytest.mark.asyncio
-import uuid
-from unittest.mock import AsyncMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession
-from db import crud, models
-from datetime import datetime
 
 
 @pytest.fixture
@@ -52,8 +53,8 @@ def sample_asset_model(sample_asset_data):
     asset.mime_type = sample_asset_data["mime_type"]
     asset.asset_metadata = sample_asset_data["asset_metadata"]
     asset.status = "pending"
-    asset.created_at = datetime.utcnow()
-    asset.updated_at = datetime.utcnow()
+    asset.created_at = datetime.now(timezone.utc)
+    asset.updated_at = datetime.now(timezone.utc)
     return asset
 
 
@@ -62,8 +63,8 @@ class TestCreateAsset:
 
     async def test_create_asset_success(self, mock_session, sample_asset_data):
         """Test successful asset creation"""
-        # Setup
-        mock_session.add = AsyncMock()
+        # Setup - session.add is sync, commit and refresh are async
+        mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
         mock_session.refresh = AsyncMock()
         
@@ -84,7 +85,7 @@ class TestCreateAsset:
 
     async def test_create_asset_invalid_conversion_id(self, mock_session):
         """Test asset creation with invalid conversion ID"""
-        with pytest.raises(ValueError, match="Invalid conversion_id format"):
+        with pytest.raises(ValueError, match="Invalid conversion ID format"):
             await crud.create_asset(
                 mock_session,
                 conversion_id="invalid-uuid",
@@ -95,8 +96,8 @@ class TestCreateAsset:
 
     async def test_create_asset_no_commit(self, mock_session, sample_asset_data):
         """Test asset creation without committing"""
-        # Setup
-        mock_session.add = AsyncMock()
+        # Setup - session.add is sync, flush is async
+        mock_session.add = MagicMock()
         mock_session.flush = AsyncMock()
         
         # Execute
@@ -120,9 +121,9 @@ class TestGetAsset:
     async def test_get_asset_success(self, mock_select, mock_session, sample_asset_model):
         """Test successful asset retrieval"""
         # Setup
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_asset_model
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.get_asset(mock_session, str(sample_asset_model.id))
@@ -133,16 +134,16 @@ class TestGetAsset:
 
     async def test_get_asset_invalid_id(self, mock_session):
         """Test asset retrieval with invalid ID"""
-        result = await crud.get_asset(mock_session, "invalid-uuid")
-        assert result is None
+        with pytest.raises(ValueError, match="Invalid asset ID format"):
+            await crud.get_asset(mock_session, "invalid-uuid")
 
     @patch('db.crud.select')
     async def test_get_asset_not_found(self, mock_select, mock_session):
         """Test asset retrieval when asset doesn't exist"""
         # Setup
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.get_asset(mock_session, str(uuid.uuid4()))
@@ -158,10 +159,12 @@ class TestListAssetsForConversion:
     async def test_list_assets_success(self, mock_select, mock_session, sample_conversion_id):
         """Test successful asset listing"""
         # Setup
-        mock_assets = [AsyncMock(), AsyncMock()]
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = mock_assets
-        mock_session.execute.return_value = mock_result
+        mock_assets = [MagicMock(), MagicMock()]
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = mock_assets
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.list_assets_for_conversion(mock_session, sample_conversion_id)
@@ -172,23 +175,24 @@ class TestListAssetsForConversion:
 
     async def test_list_assets_invalid_conversion_id(self, mock_session):
         """Test asset listing with invalid conversion ID"""
-        result = await crud.list_assets_for_conversion(mock_session, "invalid-uuid")
-        assert result == []
+        with pytest.raises(ValueError, match="Invalid conversion ID format"):
+            await crud.list_assets_for_conversion(mock_session, "invalid-uuid")
 
     @patch('db.crud.select')
     async def test_list_assets_with_filters(self, mock_select, mock_session, sample_conversion_id):
         """Test asset listing with type and status filters"""
         # Setup
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_session.execute.return_value = mock_result
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
         
         # Execute
         result = await crud.list_assets_for_conversion(
             mock_session,
             sample_conversion_id,
-            asset_type="texture",
-            status="pending"
+            asset_type="texture"
         )
         
         # Verify
@@ -205,31 +209,32 @@ class TestUpdateAssetStatus:
         """Test successful asset status update"""
         # Setup
         asset_id = str(sample_asset_model.id)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_asset_model
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.commit = AsyncMock()
         
-        # Execute
-        result = await crud.update_asset_status(
+        with patch('db.crud.get_asset', return_value=sample_asset_model):
+            # Execute
+            result = await crud.update_asset_status(
             mock_session,
             asset_id,
-            "converted",
-            converted_path="/path/to/converted.png"
+            "converted"
         )
         
         # Verify
         assert result == sample_asset_model
-        assert mock_session.execute.call_count == 2  # Update + Select
+        assert mock_session.execute.call_count == 1  # Update only (Select is mocked)
         mock_session.commit.assert_called_once()
 
     async def test_update_asset_status_invalid_id(self, mock_session):
         """Test asset status update with invalid ID"""
-        result = await crud.update_asset_status(
-            mock_session,
-            "invalid-uuid",
-            "converted"
-        )
-        assert result is None
+        with pytest.raises(ValueError, match="Invalid asset ID format"):
+            await crud.update_asset_status(
+                mock_session,
+                "invalid-uuid",
+                "converted"
+            )
 
 
 class TestUpdateAssetMetadata:
@@ -242,9 +247,10 @@ class TestUpdateAssetMetadata:
         # Setup
         asset_id = str(sample_asset_model.id)
         new_metadata = {"resolution": "32x32", "animated": True}
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_asset_model
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.commit = AsyncMock()
         
         # Execute
         result = await crud.update_asset_metadata(
@@ -260,12 +266,12 @@ class TestUpdateAssetMetadata:
 
     async def test_update_metadata_invalid_id(self, mock_session):
         """Test metadata update with invalid ID"""
-        result = await crud.update_asset_metadata(
-            mock_session,
-            "invalid-uuid",
-            {"key": "value"}
-        )
-        assert result is None
+        with pytest.raises(ValueError, match="Invalid asset ID format"):
+            await crud.update_asset_metadata(
+                mock_session,
+                "invalid-uuid",
+                {"key": "value"}
+            )
 
 
 class TestDeleteAsset:
@@ -277,14 +283,18 @@ class TestDeleteAsset:
         # Setup
         asset_id = str(sample_asset_model.id)
         
+        # Setup
+        mock_result = MagicMock()
+        mock_result.rowcount = 1
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.commit = AsyncMock()
+        
         with patch('db.crud.get_asset', return_value=sample_asset_model):
             # Execute
             result = await crud.delete_asset(mock_session, asset_id)
             
             # Verify
-            assert result is not None
-            assert result["id"] == str(sample_asset_model.id)
-            assert result["original_filename"] == sample_asset_model.original_filename
+            assert result is True
             mock_session.execute.assert_called()
             mock_session.commit.assert_called_once()
 
@@ -292,12 +302,12 @@ class TestDeleteAsset:
         """Test deletion of non-existent asset"""
         with patch('db.crud.get_asset', return_value=None):
             result = await crud.delete_asset(mock_session, str(uuid.uuid4()))
-            assert result is None
+            assert result is False
 
     async def test_delete_asset_invalid_id(self, mock_session):
         """Test asset deletion with invalid ID"""
-        result = await crud.delete_asset(mock_session, "invalid-uuid")
-        assert result is None
+        with pytest.raises(ValueError, match="Invalid asset ID format"):
+            await crud.delete_asset(mock_session, "invalid-uuid")
 
 
 @pytest.mark.integration

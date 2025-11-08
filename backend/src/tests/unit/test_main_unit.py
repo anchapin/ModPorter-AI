@@ -95,7 +95,8 @@ class TestConversionEndpoints:
     @patch("db.crud.update_job_status")
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_start_conversion(self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient):
+    @pytest.mark.asyncio
+    async def test_start_conversion(self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient):
         """Test starting a conversion job."""
         # Mock the database calls
         mock_job = AsyncMock()
@@ -104,7 +105,7 @@ class TestConversionEndpoints:
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
         
-        # Make sure create_job returns mock job directly (not as a coroutine)
+        # Make sure create_job and update_job return coroutines that resolve to mock job
         mock_create_job.return_value = mock_job
         mock_update_job.return_value = mock_job
         

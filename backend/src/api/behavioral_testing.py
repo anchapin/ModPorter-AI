@@ -148,7 +148,7 @@ async def create_behavioral_test(
             failed_scenarios=0,
             behavioral_score=None,
             execution_time_ms=0,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(datetime.UTC),
         )
 
     except Exception as e:
@@ -178,7 +178,7 @@ async def get_behavioral_test(test_id: UUID):
             failed_scenarios=1,
             behavioral_score=0.75,
             execution_time_ms=15000,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(datetime.UTC),
         )
 
     except Exception as e:
@@ -253,7 +253,7 @@ async def get_test_report(test_id: UUID, format: str = "json"):
             "scenarios_failed_or_with_issues": 1,
             "total_execution_time_ms": 15000,
             "total_issues_detected": 1,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(datetime.UTC).isoformat(),
         }
 
         return mock_report

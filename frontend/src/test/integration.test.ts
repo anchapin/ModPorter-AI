@@ -3,7 +3,7 @@
  * Tests the real API endpoints to ensure proper integration
  */
 
-import { describe, test, expect, beforeAll, describe as context } from 'vitest';
+import { describe, test, expect, beforeAll } from 'vitest';
 import { 
   uploadFile, 
   convertMod, 

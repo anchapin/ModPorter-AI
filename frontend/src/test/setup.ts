@@ -1,38 +1,13 @@
-// Apply polyfills immediately before any other imports
-(() => {
-  const { TextEncoder, TextDecoder } = require('util');
-  global.TextEncoder = TextEncoder;
-  global.TextDecoder = TextDecoder;
+import { vi } from 'vitest';
+import { TextEncoder, TextDecoder } from 'util';
+import { TransformStream, WritableStream, ReadableStream } from 'web-streams-polyfill';
 
-  // Use web-streams-polyfill for better MSW compatibility
-  try {
-    const { TransformStream, WritableStream, ReadableStream } = require('web-streams-polyfill');
-    global.TransformStream = TransformStream;
-    global.WritableStream = WritableStream;
-    global.ReadableStream = ReadableStream;
-  } catch (e) {
-    console.warn('web-streams-polyfill not available, trying node:stream/web:', e);
-    // Fallback to Node.js native implementation
-    try {
-      const { TransformStream, WritableStream, ReadableStream } = require('node:stream/web');
-      global.TransformStream = TransformStream;
-      global.WritableStream = WritableStream;
-      global.ReadableStream = ReadableStream;
-    } catch (nodeError) {
-      console.warn('Both polyfills failed, using minimal implementations:', nodeError);
-      // Minimal fallback implementations
-      global.TransformStream = class TransformStream {
-        constructor() {}
-      };
-      global.WritableStream = class WritableStream {
-        constructor() {}
-      };
-      global.ReadableStream = class ReadableStream {
-        constructor() {}
-      };
-    }
-  }
-})();
+// Apply polyfills
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+global.TransformStream = TransformStream;
+global.WritableStream = WritableStream;
+global.ReadableStream = ReadableStream;
 
 import '@testing-library/jest-dom';
 
@@ -52,9 +27,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock fetch implementation to replace MSW
-const mockResponses = new Map<string, any>();
-
-const mockFetch = vi.fn((url: string, options?: RequestInit) => {
+const mockFetch = vi.fn((url: string, options?: any) => {
   console.log('Mock fetch called:', url, options?.method);
   
   // Store request for debugging

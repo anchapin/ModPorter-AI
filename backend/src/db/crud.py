@@ -895,3 +895,298 @@ async def list_addon_assets(
     
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+# Asset CRUD operations
+async def get_asset(session: AsyncSession, asset_id: str) -> Optional[models.Asset]:
+    """Get an asset by ID."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_asset(
+    session: AsyncSession,
+    *,
+    conversion_id: str,
+    asset_type: str,
+    original_path: str,
+    original_filename: str,
+    file_size: Optional[int] = None,
+    mime_type: Optional[str] = None,
+    asset_metadata: Optional[dict] = None,
+    commit: bool = True,
+) -> models.Asset:
+    """Create a new asset."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError(f"Invalid conversion ID format: {conversion_id}")
+    
+    asset = models.Asset(
+        conversion_id=conversion_uuid,
+        asset_type=asset_type,
+        original_path=original_path,
+        original_filename=original_filename,
+        file_size=file_size,
+        mime_type=mime_type,
+        asset_metadata=asset_metadata or {},
+        status="pending",
+    )
+    session.add(asset)
+    if commit:
+        await session.commit()
+        await session.refresh(asset)
+    else:
+        await session.flush()
+    return asset
+
+
+async def update_asset_status(
+    session: AsyncSession,
+    asset_id: str,
+    status: str,
+    commit: bool = True,
+) -> Optional[models.Asset]:
+    """Update asset status."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    # Check if asset exists
+    asset = await get_asset(session, asset_id)
+    if not asset:
+        return None
+    
+    stmt = (
+        update(models.Asset)
+        .where(models.Asset.id == asset_uuid)
+        .values(status=status)
+        .returning(models.Asset)
+    )
+    result = await session.execute(stmt)
+    if commit:
+        await session.commit()
+    return result.scalar_one_or_none()
+
+
+async def update_asset_metadata(
+    session: AsyncSession,
+    asset_id: str,
+    asset_metadata: dict,
+    commit: bool = True,
+) -> Optional[models.Asset]:
+    """Update asset metadata."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    # Check if asset exists
+    asset = await get_asset(session, asset_id)
+    if not asset:
+        return None
+    
+    stmt = (
+        update(models.Asset)
+        .where(models.Asset.id == asset_uuid)
+        .values(asset_metadata=asset_metadata)
+        .returning(models.Asset)
+    )
+    result = await session.execute(stmt)
+    if commit:
+        await session.commit()
+    return result.scalar_one_or_none()
+
+
+async def delete_asset(session: AsyncSession, asset_id: str) -> bool:
+    """Delete an asset."""
+    try:
+        asset_uuid = uuid.UUID(asset_id)
+    except ValueError:
+        raise ValueError(f"Invalid asset ID format: {asset_id}")
+    
+    # Check if asset exists
+    asset = await get_asset(session, asset_id)
+    if not asset:
+        return False
+    
+    stmt = delete(models.Asset).where(models.Asset.id == asset_uuid)
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount > 0
+
+
+async def list_assets_for_conversion(
+    session: AsyncSession,
+    conversion_id: str,
+    *,
+    asset_type: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> List[models.Asset]:
+    """List assets for a given conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError(f"Invalid conversion ID format: {conversion_id}")
+    
+    stmt = (
+        select(models.Asset)
+        .where(models.Asset.conversion_id == conversion_uuid)
+        .offset(skip)
+        .limit(limit)
+        .order_by(models.Asset.created_at.desc())
+    )
+    
+    if asset_type:
+        stmt = stmt.where(models.Asset.asset_type == asset_type)
+    
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+# Behavior Files CRUD Operations
+
+async def create_behavior_file(
+    session: AsyncSession,
+    *,
+    conversion_id: str,
+    file_path: str,
+    file_type: str,
+    content: str,
+    commit: bool = True,
+) -> models.BehaviorFile:
+    """Create a new behavior file."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError(f"Invalid conversion ID format: {conversion_id}")
+    
+    behavior_file = models.BehaviorFile(
+        conversion_id=conversion_uuid,
+        file_path=file_path,
+        file_type=file_type,
+        content=content,
+    )
+    
+    session.add(behavior_file)
+    if commit:
+        await session.commit()
+        await session.refresh(behavior_file)
+    
+    return behavior_file
+
+
+async def get_behavior_file(
+    session: AsyncSession,
+    file_id: str,
+) -> Optional[models.BehaviorFile]:
+    """Get a behavior file by ID."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        raise ValueError(f"Invalid file ID format: {file_id}")
+    
+    stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_behavior_files_by_conversion(
+    session: AsyncSession,
+    conversion_id: str,
+) -> List[models.BehaviorFile]:
+    """Get all behavior files for a conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError(f"Invalid conversion ID format: {conversion_id}")
+    
+    stmt = (
+        select(models.BehaviorFile)
+        .where(models.BehaviorFile.conversion_id == conversion_uuid)
+        .order_by(models.BehaviorFile.file_path)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_behavior_file_content(
+    session: AsyncSession,
+    file_id: str,
+    content: str,
+    commit: bool = True,
+) -> Optional[models.BehaviorFile]:
+    """Update the content of a behavior file."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        raise ValueError(f"Invalid file ID format: {file_id}")
+    
+    stmt = (
+        update(models.BehaviorFile)
+        .where(models.BehaviorFile.id == file_uuid)
+        .values(content=content, updated_at=datetime.now(datetime.UTC))
+        .returning(models.BehaviorFile)
+    )
+    result = await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+    
+    return result.scalar_one_or_none()
+
+
+async def delete_behavior_file(
+    session: AsyncSession,
+    file_id: str,
+    commit: bool = True,
+) -> bool:
+    """Delete a behavior file."""
+    try:
+        file_uuid = uuid.UUID(file_id)
+    except ValueError:
+        raise ValueError(f"Invalid file ID format: {file_id}")
+    
+    # Check if file exists
+    existing_file = await get_behavior_file(session, file_id)
+    if not existing_file:
+        return False
+    
+    stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
+    result = await session.execute(stmt)
+    
+    if commit:
+        await session.commit()
+    
+    return result.rowcount > 0
+
+
+async def get_behavior_files_by_type(
+    session: AsyncSession,
+    conversion_id: str,
+    file_type: str,
+) -> List[models.BehaviorFile]:
+    """Get behavior files by type for a conversion."""
+    try:
+        conversion_uuid = uuid.UUID(conversion_id)
+    except ValueError:
+        raise ValueError(f"Invalid conversion ID format: {conversion_id}")
+    
+    stmt = (
+        select(models.BehaviorFile)
+        .where(
+            models.BehaviorFile.conversion_id == conversion_uuid,
+            models.BehaviorFile.file_type == file_type
+        )
+        .order_by(models.BehaviorFile.file_path)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()

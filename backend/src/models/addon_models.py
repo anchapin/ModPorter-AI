@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 from uuid import UUID as PyUUID
 import datetime
@@ -8,8 +8,7 @@ class TimestampsModel(BaseModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # AddonBehavior
 class AddonBehaviorBase(BaseModel):
@@ -110,8 +109,7 @@ class AddonDataUpload(AddonBase): # Reuses AddonBase for top-level fields
     assets: List[AddonAssetCreate] = Field(default_factory=list)
     recipes: List[AddonRecipeCreate] = Field(default_factory=list)
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         # Example for PUT data (client doesn't send IDs for new items)
         # {
         #   "name": "My Awesome Addon",
@@ -133,5 +131,4 @@ class AddonResponse(BaseModel):
     id: PyUUID
     message: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
