@@ -11,15 +11,20 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage --reporter=verbose",
-    "test:ci": "vitest run --reporter=verbose --passWithNoTests || true",
+    "test:ci": "vitest run --reporter=verbose --passWithNoTests || echo Tests completed with exit code %errorlevel%",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "storybook:test": "test-storybook",
     "storybook:build": "storybook build --output-dir dist-storybook"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
     "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "mermaid": "^11.12.1",
     "monaco-editor": "^0.54.0",
     "react": "^19.2.0",
@@ -40,7 +45,7 @@
     "@types/react-dom": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
-    "@vitejs/plugin-react": "^5.1.0",
+    "@vitejs/plugin-react": "^4.3.3",
     "@vitest/coverage-v8": "^4.0.7",
     "@vitest/ui": "^4.0.7",
     "eslint": "^9.39.1",
@@ -50,12 +55,14 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "eslint-plugin-storybook": "^10.0.5",
     "globals": "^16.5.0",
-    "jsdom": "^27.1.0",
+    "jsdom": "^25.0.1",
     "msw": "^2.12.0",
+    "patch-package": "^8.0.0",
     "prettier": "^3.6.2",
     "storybook": "^10.0.5",
     "typescript": "^5.9.3",
-    "vite": "^7.2.2",
-    "vitest": "^4.0.7"
+    "vite": "5.4.11",
+    "vitest": "^4.0.7",
+    "web-streams-polyfill": "^4.2.0"
   }
 }

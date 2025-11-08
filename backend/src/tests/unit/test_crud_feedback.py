@@ -32,7 +32,7 @@ async def test_create_feedback():
     
     mock_session.refresh.side_effect = mock_refresh_side_effect
 
-    feedback = await crud.create_feedback(
+    feedback = await crud.create_enhanced_feedback(
         session=mock_session,
         job_id=job_id,
         feedback_type=feedback_type,

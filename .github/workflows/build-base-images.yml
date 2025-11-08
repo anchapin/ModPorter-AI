@@ -166,7 +166,7 @@ jobs:
     - name: Extract Node dependencies hash
       id: deps-hash
       run: |
-        HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Node deps hash: $HASH"
     
@@ -184,7 +184,7 @@ jobs:
       if: steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: frontend
         file: docker/base-images/Dockerfile.node-base
         push: true
         tags: |

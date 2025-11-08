@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
@@ -8,6 +9,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from services import addon_exporter # For .mcaddon export
 from services import conversion_parser # For parsing converted pack output
+from services.asset_conversion_service import asset_conversion_service
 import shutil # For directory operations
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -23,7 +25,7 @@ from db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
 from models import addon_models as pydantic_addon_models # For addon Pydantic models
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
-from services.report_generator import ReportGenerator
+from services.report_generator import ConversionReportGenerator
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files
@@ -47,17 +49,29 @@ MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
 conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    testing_env = os.getenv("TESTING", "false").lower()
+    if testing_env != "true":
+        await init_db()
+        logger.info("Database initialized")
+    yield
+    # Shutdown
+    logger.info("Application shutdown")
+
 # Cache service instance
 cache = CacheService()
 
 # Report generator instance
-report_generator = ReportGenerator()
+report_generator = ConversionReportGenerator()
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
     title="ModPorter AI Backend",
     description="AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
     version="1.0.0",
+    lifespan=lifespan,
     contact={
         "name": "ModPorter AI Team",
         "url": "https://github.com/anchapin/ModPorter-AI",
@@ -186,7 +200,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=datetime.now(datetime.UTC).isoformat()
     )
 
 # File upload endpoint
@@ -680,7 +694,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=cached.get("created_at", datetime.utcnow()) if cached else datetime.utcnow()
+            created_at=cached.get("created_at", datetime.now(datetime.UTC)) if cached else datetime.now(datetime.UTC)
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
@@ -852,13 +866,7 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         filename=download_filename
     )
 
-@app.on_event("startup")
-async def on_startup():
-    # Skip database initialization during tests to avoid startup failures
-    testing_env = os.getenv("TESTING", "false").lower()
-    if testing_env == "true":
-        logger.info("Skipping database initialization during tests")
-        return
+
     
     try:
         await init_db()

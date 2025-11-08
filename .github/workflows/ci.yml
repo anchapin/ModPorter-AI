@@ -17,6 +17,12 @@ on:
       - 'docs/**'
       - '.gitignore'
       - 'LICENSE'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for triggering workflow'
+        required: false
+        default: 'Manual trigger for testing'
 
 env:
   REGISTRY: ghcr.io
@@ -123,10 +129,10 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: [self-hosted, Linux, X64, ollama]
+    runs-on: ubuntu-latest
     needs: [changes, prepare-base-images]
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -276,6 +282,25 @@ jobs:
         apt-get update -qq
         apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io
 
+    # Install Ollama for AI model testing
+    - name: Install Ollama
+      run: |
+        echo "🤖 Installing Ollama..."
+        curl -fsSL https://ollama.com/install.sh | sh
+        
+        # Install and start Ollama service
+        ollama serve &
+        
+        # Wait for Ollama to start
+        sleep 10
+        
+        # Pull the required model
+        echo "📥 Pulling llama3.2 model..."
+        ollama pull llama3.2
+        
+        # Verify installation
+        ollama list
+
     # Verify Python environment
     - name: Verify Python environment
       run: |
@@ -323,13 +348,21 @@ jobs:
         fi
         
         echo "Testing Ollama availability..."
+        # Make sure Ollama is running
+        if ! pgrep -f "ollama serve" > /dev/null; then
+          echo "Starting Ollama service..."
+          ollama serve &
+          sleep 15
+        fi
+        
         if timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'; then
           echo "✅ Ollama is ready"
           echo "Checking for llama3.2 model..."
           if curl -f http://localhost:11434/api/tags | grep -q "llama3.2"; then
             echo "✅ llama3.2 model is available"
           else
-            echo "⚠️ Warning: llama3.2 model may not be available"
+            echo "⚠️ Warning: llama3.2 model may not be available - pulling now..."
+            ollama pull llama3.2
           fi
         else
           echo "❌ Ollama connection failed - continuing anyway"
@@ -358,7 +391,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
             
             echo "Running basic integration test..."
-            timeout 600s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "backend")
             echo "Running backend tests..."
@@ -368,7 +401,7 @@ jobs:
             find tests -name "*.py" | head -5 || echo "No backend test files found"
             
             echo "Running backend integration tests..."
-            timeout 600s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "ai-engine")
             echo "Running ai-engine tests..."
@@ -378,7 +411,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
             
             echo "Running import tests..."
-            timeout 600s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+            timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
         
@@ -388,7 +421,17 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
         PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
         LOG_LEVEL: INFO
-        USE_OLLAMA: "true"
+        # Z.AI Configuration (Primary LLM backend)
+        USE_Z_AI: "${{ secrets.Z_AI_API_KEY != '' && 'true' || 'false' }}"
+        Z_AI_API_KEY: "${{ secrets.Z_AI_API_KEY }}"
+        Z_AI_MODEL: "${{ vars.Z_AI_MODEL || 'glm-4-plus' }}"
+        Z_AI_BASE_URL: "${{ vars.Z_AI_BASE_URL || 'https://api.z.ai/v1' }}"
+        Z_AI_MAX_RETRIES: "${{ vars.Z_AI_MAX_RETRIES || '3' }}"
+        Z_AI_TIMEOUT: "${{ vars.Z_AI_TIMEOUT || '300' }}"
+        Z_AI_TEMPERATURE: "${{ vars.Z_AI_TEMPERATURE || '0.1' }}"
+        Z_AI_MAX_TOKENS: "${{ vars.Z_AI_MAX_TOKENS || '4000' }}"
+        # Ollama Configuration (Fallback)
+        USE_OLLAMA: "${{ secrets.Z_AI_API_KEY == '' && 'true' || 'false' }}"
         OLLAMA_MODEL: "llama3.2"
         OLLAMA_BASE_URL: "http://localhost:11434"
         TESTING: "true"
@@ -431,7 +474,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -486,14 +529,14 @@ jobs:
         node-version: '20.19.0'
 
     # Multi-level caching for Node.js
-    - name: Cache Node.js packages (L1 - pnpm store)
+    - name: Cache Node.js packages (L1 - npm cache)
       uses: actions/cache@v4
       with:
-        path: ~/.local/share/pnpm/store
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
+          ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-
+          ${{ runner.os }}-npm-cache-
 
     - name: Cache Node.js packages (L2 - node_modules)
       uses: actions/cache@v4
@@ -502,7 +545,7 @@ jobs:
           node_modules
           frontend/node_modules
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-frontend-
@@ -519,21 +562,19 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-
 
-    - name: Install pnpm
-      run: |
-        npm install -g pnpm@9.12.3 --registry https://registry.npmjs.org/
-
     - name: Install dependencies (optimized)
       run: |
         echo "⚡ Installing frontend dependencies with optimizations..."
+        cd frontend
         
-        # Use pnpm with performance optimizations
-        pnpm config set store-dir ~/.local/share/pnpm/store
-        pnpm config set verify-store-integrity false  # Disabled for performance; assumes trusted cache
-        pnpm config set package-import-method copy
+        # Clear npm cache to avoid 'Cannot read properties of null' error
+        npm cache clean --force
         
-        # Install with frozen lockfile for faster, deterministic installs
-        pnpm install --frozen-lockfile --prefer-offline
+        # Remove platform-specific package-lock and regenerate for Linux
+        rm -f package-lock.json
+        
+        # Use npm install with platform-specific filtering
+        npm install --prefer-offline --no-audit --no-fund --force
         
         echo "✅ Dependencies installed successfully"
 
@@ -545,17 +586,17 @@ jobs:
         case "${{ matrix.test-type }}" in
           "unit")
             # Run tests with coverage in CI mode
-            pnpm run test:ci --reporter=verbose
+            npm run test:ci
             ;;
           "build")
             # Build with production optimizations
-            NODE_ENV=production pnpm run build
+            NODE_ENV=production npm run build
             echo "Build size analysis:"
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
-            # Run linting with caching
-            pnpm run lint --cache --cache-location node_modules/.cache/eslint
+            # Run linting
+            npm run lint
             ;;
         esac
 
@@ -622,14 +663,14 @@ jobs:
         echo "📊 Cache Strategy Analysis"
         echo "=========================="
         echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)"
         
         echo ""
         echo "Cache Keys (v2 optimized):"
         echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
         echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- pnpm-store: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}"
         
         echo ""
         echo "🎯 Optimization Results"

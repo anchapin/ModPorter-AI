@@ -1,18 +1,19 @@
 import pytest
+import pytest_asyncio
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import crud
 from db.base import AsyncSessionLocal
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_session():
     """Create an async database session for testing."""
     async with AsyncSessionLocal() as session:
         yield session
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_conversion_job(async_session: AsyncSession):
     """Create a sample conversion job for testing."""
     job = await crud.create_job(
@@ -32,6 +33,7 @@ async def sample_conversion_job(async_session: AsyncSession):
         pass  # Job might already be deleted
 
 
+@pytest.mark.asyncio
 class TestBehaviorFilesCRUD:
     """Test behavior files CRUD operations."""
     

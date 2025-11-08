@@ -3,12 +3,10 @@ Asset Conversion Service - Handles integration with AI Engine for asset conversi
 """
 
 import os
-import uuid
 import asyncio
 import httpx
 import logging
-from typing import Dict, List, Optional, Any
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, Any
 
 from db import crud
 from db.base import AsyncSessionLocal

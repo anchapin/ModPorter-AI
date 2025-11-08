@@ -9,7 +9,10 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import tempfile
-import magic
+try:
+    import magic
+except ImportError:
+    magic = None
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +53,15 @@ class FilePackager:
         }
         
         # Initialize magic for file type detection
-        try:
-            self.magic = magic.Magic(mime=True)
-        except Exception as e:
-            logger.warning(f"Could not initialize python-magic: {e}")
+        if magic is None:
+            logger.warning("python-magic not available - file type validation will be limited")
             self.magic = None
+        else:
+            try:
+                self.magic = magic.Magic(mime=True)
+            except Exception as e:
+                logger.warning(f"Could not initialize python-magic: {e}")
+                self.magic = None
     
     def package_addon(self, addon_data: Dict[str, Any]) -> Dict[str, Any]:
         """

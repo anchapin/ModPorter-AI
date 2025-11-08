@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timezone
 import uvicorn
 import os
 import uuid
@@ -148,7 +148,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=datetime.now(timezone.utc).isoformat()
     )
 
 # File upload endpoint
@@ -176,7 +176,7 @@ async def upload_file(file: UploadFile = File(...)):
     file_ext = os.path.splitext(original_filename)[1].lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(
-            status_code=400,
+            status_code=415,
             detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
         )
 
@@ -506,7 +506,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=cached.get("created_at", datetime.utcnow()) if cached else datetime.utcnow()
+            created_at=cached.get("created_at", datetime.now(timezone.utc)) if cached else datetime.now(timezone.utc)
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)

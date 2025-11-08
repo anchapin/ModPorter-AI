@@ -55,10 +55,14 @@ def pytest_sessionstart(session):
             
             async def init_test_db():
                 from db.declarative_base import Base
+                from db import models
+                from db import models as db_models  # Ensure this imports models.py
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                    # Only add extensions for PostgreSQL
+                    if not db_url.startswith("sqlite"):
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                     await conn.run_sync(Base.metadata.create_all)
             
             # Create a new event loop for this operation
@@ -67,11 +71,11 @@ def pytest_sessionstart(session):
             try:
                 loop.run_until_complete(init_test_db())
                 _db_initialized = True
-                print("✅ Test database initialized successfully")
+                print("Test database initialized successfully")
             finally:
                 loop.close()
         except Exception as e:
-            print(f"⚠️ Warning: Database initialization failed: {e}")
+            print(f"Warning: Database initialization failed: {e}")
             _db_initialized = False
 
 @pytest.fixture

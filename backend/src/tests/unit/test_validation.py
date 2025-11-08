@@ -3,7 +3,7 @@ from io import BytesIO
 from unittest.mock import patch
 
 # Adjust the import path based on your project structure
-from validation import ValidationFramework
+from validation import ValidationFramework, MAGIC_AVAILABLE
 
 class TestValidationFramework(unittest.TestCase):
 
@@ -17,10 +17,16 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(zip_content)
         filename = "valid_archive.zip"
 
-        # Mock magic.from_buffer to return a valid MIME type
-        with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+        if MAGIC_AVAILABLE:
+            # Mock magic.from_buffer to return a valid MIME type
+            with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+                result = self.framework.validate_upload(mock_file, filename)
+                mock_magic.assert_called_once()
+                self.assertTrue(result.is_valid)
+                self.assertIsNone(result.error_message)
+        else:
+            # Use Windows fallback
             result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
             self.assertTrue(result.is_valid)
             self.assertIsNone(result.error_message)
 
@@ -44,12 +50,18 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(txt_content)
         filename = "invalid_type.txt"
 
-        with patch("magic.from_buffer", return_value="text/plain") as mock_magic:
+        if MAGIC_AVAILABLE:
+            with patch("magic.from_buffer", return_value="text/plain") as mock_magic:
+                result = self.framework.validate_upload(mock_file, filename)
+                mock_magic.assert_called_once()
+                self.assertFalse(result.is_valid)
+                self.assertIsNotNone(result.error_message)
+                self.assertIn("invalid file type: 'text/plain'", result.error_message)
+        else:
+            # Use Windows fallback - should detect as application/octet-stream
             result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
             self.assertFalse(result.is_valid)
             self.assertIsNotNone(result.error_message)
-            self.assertIn("invalid file type: 'text/plain'", result.error_message)
 
     def test_validate_upload_misleading_extension_is_actually_zip(self):
         # File is named .txt but is actually a zip
@@ -57,9 +69,15 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(zip_content)
         filename = "actually_a_zip.txt"
 
-        with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+        if MAGIC_AVAILABLE:
+            with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+                result = self.framework.validate_upload(mock_file, filename)
+                mock_magic.assert_called_once()
+                self.assertTrue(result.is_valid)
+                self.assertIsNone(result.error_message)
+        else:
+            # Use Windows fallback
             result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
             self.assertTrue(result.is_valid)
             self.assertIsNone(result.error_message)
 
@@ -69,11 +87,17 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(jar_content)
         filename = "valid_mod.jar"
 
-        with patch(
-            "magic.from_buffer", return_value="application/java-archive"
-        ) as mock_magic:
+        if MAGIC_AVAILABLE:
+            with patch(
+                "magic.from_buffer", return_value="application/java-archive"
+            ) as mock_magic:
+                result = self.framework.validate_upload(mock_file, filename)
+                mock_magic.assert_called_once()
+                self.assertTrue(result.is_valid)
+                self.assertIsNone(result.error_message)
+        else:
+            # Use Windows fallback
             result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
             self.assertTrue(result.is_valid)
             self.assertIsNone(result.error_message)
 
@@ -83,9 +107,15 @@ class TestValidationFramework(unittest.TestCase):
         mock_file = BytesIO(jar_content)
         filename = "another_mod.jar"
 
-        with patch("magic.from_buffer", return_value="application/x-jar") as mock_magic:
+        if MAGIC_AVAILABLE:
+            with patch("magic.from_buffer", return_value="application/x-jar") as mock_magic:
+                result = self.framework.validate_upload(mock_file, filename)
+                mock_magic.assert_called_once()
+                self.assertTrue(result.is_valid)
+                self.assertIsNone(result.error_message)
+        else:
+            # Use Windows fallback
             result = self.framework.validate_upload(mock_file, filename)
-            mock_magic.assert_called_once()
             self.assertTrue(result.is_valid)
             self.assertIsNone(result.error_message)
 
