@@ -575,7 +575,6 @@ class BehaviorTemplate(Base):
     version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0.0")
     created_by: Mapped[Optional[str]] = mapped_column(
         UUID(as_uuid=True), 
-        ForeignKey("users.id", ondelete="SET NULL"), 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
