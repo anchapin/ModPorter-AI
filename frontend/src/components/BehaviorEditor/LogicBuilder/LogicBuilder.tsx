@@ -1,45 +1,28 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
   Paper,
   Typography,
   Button,
-  IconButton,
-  Tooltip,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Divider,
   Alert,
   Menu,
-  MenuList,
   MenuItem as MenuItemComponent,
+  Card,
+  CardContent,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Divider
 } from '@mui/material';
 import {
   Add,
-  Delete,
   PlayArrow,
   Save,
-  Settings,
-  Hub,
-  AccountTree,
-  Functions,
-  DataObject,
   CompareArrows,
-  Close,
-  OpenWith
+  AccountTree,
+  DataObject,
+  Settings,
+  Functions,
+  Hub
 } from '@mui/icons-material';
 
 // Node and connection interfaces
@@ -189,7 +172,11 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
   onTest,
   readOnly = false
 }) => {
-  const [flow, setFlow] = useState<LogicFlow>(
+  // Generate unique ID using counter instead of Date.now() for purity
+  const idCounter = useRef(0);
+  const generateId = useCallback((prefix: string) => `${prefix}_${++idCounter.current}`, []);
+  
+  const [flow, setFlow] = useState<LogicFlow>(() => 
     initialFlow || {
       id: `flow_${Date.now()}`,
       name: 'New Logic Flow',
@@ -201,12 +188,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
     }
   );
   const [selectedNode, setSelectedNode] = useState<LogicNode | null>(null);
-  const [selectedConnection, setSelectedConnection] = useState<NodeConnection | null>(null);
   const [nodeMenuAnchor, setNodeMenuAnchor] = useState<null | HTMLElement>(null);
-  const [nodeDialogOpen, setNodeDialogOpen] = useState(false);
-  const [variableDialogOpen, setVariableDialogOpen] = useState(false);
-  const [editingNode, setEditingNode] = useState<LogicNode | null>(null);
-  const [editingVariable, setEditingVariable] = useState<LogicVariable | null>(null);
   const [connecting, setConnecting] = useState<{ nodeId: string; portId: string; type: 'source' | 'target' } | null>(null);
   
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -223,7 +205,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
   const addNode = useCallback((templateKey: string, position: { x: number; y: number }) => {
     const template = nodeTemplates[templateKey];
     const newNode: LogicNode = {
-      id: `node_${Date.now()}`,
+      id: generateId('node'),
       type: templateKey.includes('on_') ? 'trigger' : 
             templateKey.includes('if_') || templateKey.includes('check_') ? 'condition' : 
             templateKey.includes('math_') || templateKey.includes('string_') || templateKey.includes('get_') ? 'function' : 'action',
@@ -248,19 +230,9 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
 
     updateFlow(updatedFlow);
     setNodeMenuAnchor(null);
-  }, [flow, updateFlow]);
+  }, [flow, updateFlow, generateId]);
 
-  // Delete node
-  const deleteNode = useCallback((nodeId: string) => {
-    const updatedFlow = {
-      ...flow,
-      nodes: flow.nodes.filter(n => n.id !== nodeId),
-      connections: flow.connections.filter(c => c.sourceNodeId !== nodeId && c.targetNodeId !== nodeId),
-      triggers: flow.triggers.filter(t => t !== nodeId)
-    };
-    updateFlow(updatedFlow);
-    setSelectedNode(null);
-  }, [flow, updateFlow]);
+
 
   // Update node
   const updateNode = useCallback((nodeId: string, updates: Partial<LogicNode>) => {
@@ -273,7 +245,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
   // Add connection
   const addConnection = useCallback((sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string) => {
     const newConnection: NodeConnection = {
-      id: `conn_${Date.now()}`,
+      id: generateId('conn'),
       sourceNodeId,
       sourcePortId,
       targetNodeId,
@@ -283,22 +255,14 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
       ...flow,
       connections: [...flow.connections, newConnection]
     });
-  }, [flow, updateFlow]);
+  }, [flow, updateFlow, generateId]);
 
-  // Delete connection
-  const deleteConnection = useCallback((connectionId: string) => {
-    updateFlow({
-      ...flow,
-      connections: flow.connections.filter(c => c.id !== connectionId)
-    });
-    setSelectedConnection(null);
-  }, [flow, updateFlow]);
+
 
   // Handle canvas mouse events for dragging
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
       setSelectedNode(null);
-      setSelectedConnection(null);
     }
   }, []);
 

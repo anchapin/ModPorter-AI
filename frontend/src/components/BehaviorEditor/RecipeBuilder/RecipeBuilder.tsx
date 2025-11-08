@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  IconButton,
   Button,
   Grid,
   FormControl,
@@ -11,15 +10,10 @@ import {
   Select,
   MenuItem,
   TextField,
-  Alert,
-  Tooltip
+  Alert
 } from '@mui/material';
 import {
-  Add,
-  Delete,
-  Save,
-  Undo,
-  Redo
+  Save
 } from '@mui/icons-material';
 import { RecipeGrid } from './RecipeGrid';
 import { ItemLibrary } from './ItemLibrary';
@@ -91,8 +85,6 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
 
   const [selectedItem, setSelectedItem] = useState<RecipeItem | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [history, setHistory] = useState<Recipe[]>([currentRecipe]);
-  const [historyIndex, setHistoryIndex] = useState(0);
 
   // Grid size based on recipe type
   const getGridSize = () => {
@@ -128,7 +120,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
       }
       setCurrentRecipe(prev => ({ ...prev, pattern: emptyPattern }));
     }
-  }, [currentRecipe.type]);
+  }, [currentRecipe.type, currentRecipe.pattern]);
 
   // Handle recipe field changes
   const handleFieldChange = useCallback((field: keyof Recipe, value: any) => {
@@ -147,7 +139,6 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const updatedRecipe = { ...currentRecipe, pattern: newPattern };
     setCurrentRecipe(updatedRecipe);
     onRecipeChange(updatedRecipe);
-    addToHistory(updatedRecipe);
   }, [currentRecipe, onRecipeChange]);
 
   // Handle item removal from grid
@@ -160,32 +151,11 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const updatedRecipe = { ...currentRecipe, pattern: newPattern };
     setCurrentRecipe(updatedRecipe);
     onRecipeChange(updatedRecipe);
-    addToHistory(updatedRecipe);
   }, [currentRecipe, onRecipeChange]);
 
-  // History management
-  const addToHistory = useCallback((recipe: Recipe) => {
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), recipe]);
-    setHistoryIndex(prev => prev + 1);
-  }, [historyIndex]);
 
-  const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setCurrentRecipe(history[newIndex]);
-      onRecipeChange(history[newIndex]);
-    }
-  }, [history, historyIndex, onRecipeChange]);
 
-  const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setCurrentRecipe(history[newIndex]);
-      onRecipeChange(history[newIndex]);
-    }
-  }, [history, historyIndex, onRecipeChange]);
+  // History functionality is disabled - undo/redo functions removed
 
   // Validate recipe
   useEffect(() => {
@@ -195,7 +165,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   }, [currentRecipe, availableItems]);
 
   const gridSize = getGridSize();
-  const hasUnsavedChanges = JSON.stringify(currentRecipe) !== JSON.stringify(history[historyIndex]);
+  const hasUnsavedChanges = JSON.stringify(currentRecipe) !== JSON.stringify(initialRecipe);
 
   return (
     <Box className="recipe-builder">
@@ -205,16 +175,8 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
             Recipe Builder
           </Typography>
           <Box display="flex" gap={1}>
-            <Tooltip title="Undo">
-              <IconButton onClick={undo} disabled={historyIndex <= 0 || readOnly}>
-                <Undo />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Redo">
-              <IconButton onClick={redo} disabled={historyIndex >= history.length - 1 || readOnly}>
-                <Redo />
-              </IconButton>
-            </Tooltip>
+            {/* Undo/Redo functionality temporarily disabled */}
+          </Box>
             {onRecipeSave && (
               <Button
                 variant="contained"
@@ -226,7 +188,6 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
               </Button>
             )}
           </Box>
-        </Box>
       </Paper>
 
       <Grid container spacing={2}>

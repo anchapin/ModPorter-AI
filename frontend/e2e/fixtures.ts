@@ -1,7 +1,11 @@
 import { test as base, expect } from '@playwright/test';
 
-// Extend the base test with fixtures
-export const test = base.extend({
+// Extend the base test with fixtures following Playwright naming conventions
+export const test = base.extend<{
+  page: void; // Type annotation for page fixture override
+  authenticatedPage: void; // Type annotation for authenticated page fixture
+  testJarFile: string; // Type annotation for testJarFile fixture
+}>({
   // Custom page fixture with common setup
   page: async ({ page }, use) => {
     // Set up common page configurations
@@ -32,7 +36,7 @@ export const test = base.extend({
   },
   
   // Test data fixtures
-  testJarFile: async ({}, use) => {
+  testJarFile: async (_params, use) => {
     // Create or load a test JAR file for conversion testing
     const testFilePath = './e2e/fixtures/test-mod.jar';
     await use(testFilePath);

@@ -40,6 +40,7 @@ interface ToastProps {
   position?: SnackbarProps['anchorOrigin'];
 }
 
+// Toast Component
 const Toast: React.FC<ToastProps> = ({
   toast,
   onClose,
@@ -162,7 +163,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
   const visibleToasts = toasts.slice(-maxToasts);
 
   // Calculate positioning for multiple toasts
-  const getToastStyle = (index: number, total: number) => {
+  const getToastStyle = (index: number) => {
     const spacing = 8; // Space between toasts
     const offset = index * (80 + spacing); // Approximate height of toast + spacing
     return {
