@@ -1,4 +1,10 @@
 export { BehaviorEditor } from './BehaviorEditor';
 export { BehaviorFileTree } from './BehaviorFileTree';
 export { CodeEditor } from './CodeEditor';
+export { VisualEditor, FormBuilder, ValidationEngine } from './VisualEditor';
+export { BlockPropertyEditor, Preview3D } from './BlockEditor';
+export { RecipeBuilder, RecipeGrid, ItemLibrary, RecipeValidation } from './RecipeBuilder';
 export type { BehaviorFileTreeNode } from './BehaviorFileTree';
+export type { FormField, ValidationRule } from './VisualEditor';
+export type { BlockProperties } from './BlockEditor';
+export type { Recipe, RecipeItem, RecipeSlot } from './RecipeBuilder';
