@@ -114,7 +114,10 @@ class UploadResponse(BaseModel):
     """Response model for file upload"""
     file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
     original_filename: str = Field(..., description="The original name of the uploaded file.")
-    saved_filename: str = Field(..., description="The name under which the file is saved on the server (job_id + extension).")
+    saved_filename: str = Field(
+        ..., 
+        description="The name under which the file is saved on the server (job_id + extension)."
+    )
     size: int = Field(..., description="Size of the uploaded file in bytes.")
     content_type: Optional[str] = Field(default=None, description="Detected content type of the uploaded file.")
     message: str = Field(..., description="Status message confirming the upload.")
