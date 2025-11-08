@@ -27,14 +27,6 @@ interface LoadingWrapperProps {
   spinnerColor?: 'primary' | 'secondary' | 'inherit';
 }
 
-interface SkeletonProps {
-  width?: number | string;
-  height?: number | string;
-  variant?: 'text' | 'rectangular' | 'circular';
-  animation?: 'pulse' | 'wave' | false;
-  sx?: any;
-}
-
 export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   loading,
   children,
@@ -54,12 +46,7 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
     }
   };
 
-  const renderSpinner = () => (
-    <CircularProgress
-      size={getSizeValue(size)}
-      color={spinnerColor}
-    />
-  );
+
 
   const renderCustomIcon = () => {
     if (React.isValidElement(icon)) {

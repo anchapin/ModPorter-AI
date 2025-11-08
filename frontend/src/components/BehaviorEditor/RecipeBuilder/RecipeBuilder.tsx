@@ -87,7 +87,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Grid size based on recipe type
-  const getGridSize = () => {
+  const getGridSize = useCallback(() => {
     switch (currentRecipe.type) {
       case 'shaped':
       case 'shapeless':
@@ -104,7 +104,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
       default:
         return { width: 3, height: 3 };
     }
-  };
+  }, [currentRecipe.type]);
 
   // Initialize empty pattern if needed
   useEffect(() => {
@@ -120,7 +120,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
       }
       setCurrentRecipe(prev => ({ ...prev, pattern: emptyPattern }));
     }
-  }, [currentRecipe.type, currentRecipe.pattern]);
+  }, [currentRecipe.type, currentRecipe.pattern, getGridSize]);
 
   // Handle recipe field changes
   const handleFieldChange = useCallback((field: keyof Recipe, value: any) => {
@@ -162,7 +162,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const validator = new RecipeValidation();
     const errors = validator.validate(currentRecipe, availableItems);
     setValidationErrors(errors);
-  }, [currentRecipe, availableItems]);
+  }, [currentRecipe, availableItems, getGridSize]);
 
   const gridSize = getGridSize();
   const hasUnsavedChanges = JSON.stringify(currentRecipe) !== JSON.stringify(initialRecipe);

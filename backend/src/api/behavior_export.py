@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
@@ -167,7 +167,6 @@ async def export_behavior_pack(
     
     else:  # mcaddon (default)
         # Use existing addon exporter
-        from db import crud
         
         try:
             # Get asset base path

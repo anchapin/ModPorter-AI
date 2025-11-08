@@ -23,7 +23,9 @@ test.describe('ModPorter AI - UI Interactions', () => {
           
           // Check if navigation worked
           const currentUrl = page.url();
-          expect(currentUrl).toContain(href) || expect(currentUrl).toContain(text?.toLowerCase() || '');
+          const containsHref = currentUrl.includes(href);
+          const containsText = text?.toLowerCase() ? currentUrl.includes(text.toLowerCase()) : false;
+          expect(containsHref || containsText).toBeTruthy();
           
           // Go back to home
           await page.goto('/');
@@ -73,17 +75,17 @@ test.describe('ModPorter AI - UI Interactions', () => {
     
     if (await dropzone.isVisible()) {
       // Create test data
-      const testFile = Buffer.from('test jar content');
+      // const testFile = Buffer.from('test jar content');
       
       // Test drag over
       await dropzone.dispatchEvent('dragover', { dataTransfer: {} });
       
       // Check if dropzone highlights on drag over
-      const isHighlighted = await dropzone.evaluate((el) => {
-        return el.classList.contains('drag-over') || 
-               el.classList.contains('dragover') ||
-               getComputedStyle(el).backgroundColor !== '';
-      });
+      // const isHighlighted = await dropzone.evaluate((el) => {
+      //   return el.classList.contains('drag-over') || 
+      //          el.classList.contains('dragover') ||
+      //          getComputedStyle(el).backgroundColor !== '';
+      // });
       
       // Test drop
       const dataTransfer = await page.evaluateHandle(() => {

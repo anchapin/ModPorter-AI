@@ -1,6 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 
 // Extend the base test with fixtures following Playwright naming conventions
+/* eslint-disable react-hooks/rules-of-hooks */
 export const test = base.extend<{
   page: void; // Type annotation for page fixture override
   authenticatedPage: void; // Type annotation for authenticated page fixture

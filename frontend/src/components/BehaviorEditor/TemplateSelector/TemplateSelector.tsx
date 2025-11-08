@@ -13,7 +13,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Pagination,
   IconButton,
   Tooltip,
   Dialog,
@@ -30,11 +29,9 @@ import {
   Info,
   Close,
   CheckCircle,
-  ExpandMore,
-  ExpandLess,
 } from '@mui/icons-material';
 import { useTemplates } from '../../../contexts/BehaviorTemplatesContext';
-import { BehaviorTemplate, BehaviorTemplateCategory } from '../../../services/api';
+import { BehaviorTemplate } from '../../../services/api';
 
 interface TemplateSelectorProps {
   onTemplateSelect: (template: BehaviorTemplate) => void;
@@ -108,9 +105,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   };
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    actions.loadTemplates();
-  };
+
 
   const getCategoryDisplayName = (categoryName: string) => {
     const category = state.categories.find(cat => cat.name === categoryName);

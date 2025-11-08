@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from db.base import get_db
-from db import behavior_templates_crud as templates_crud
+from db import behavior_templates_crud
 import uuid
 from datetime import datetime
 
@@ -130,7 +130,7 @@ async def get_behavior_templates(
         tag_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
     
     # Get templates from database
-    templates = await templates_crud.get_behavior_templates(
+    templates = await behavior_templates_crud.get_behavior_templates(
         db,
         category=category,
         template_type=template_type,
@@ -174,7 +174,7 @@ async def get_behavior_template(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid template ID format")
 
-    template = await templates_crud.get_behavior_template(db, template_id)
+    template = await behavior_templates_crud.get_behavior_template(db, template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
 
@@ -217,7 +217,7 @@ async def create_behavior_template(
 
     # Create template
     try:
-        template = await templates_crud.create_behavior_template(
+        template = await behavior_templates_crud.create_behavior_template(
             db,
             name=request.name,
             description=request.description,

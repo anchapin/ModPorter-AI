@@ -3,15 +3,14 @@ import {
   Box,
   Paper,
   Typography,
-  IconButton,
-  Tooltip
+  IconButton
 } from '@mui/material';
 import {
   Delete,
   Add
 } from '@mui/icons-material';
 import { RecipeSlot, RecipeItem } from './RecipeBuilder';
-import './RecipeGrid.css';
+
 
 export interface RecipeGridProps {
   pattern: RecipeSlot[][];

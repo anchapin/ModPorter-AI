@@ -39,7 +39,7 @@ This project offers multiple deployment options:
 ### Prerequisites
 - **Docker & Docker Compose** (recommended - handles all dependencies)
 - OR for local development:
-  - Node.js 18+
+  - Node.js 22.12+ LTS (recommended for Vite 7.2.2+)
   - Python 3.9+
   - PostgreSQL 15+
   - Redis 7+

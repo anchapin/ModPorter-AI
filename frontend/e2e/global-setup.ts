@@ -1,6 +1,6 @@
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium } from '@playwright/test';
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup() {
   console.log('🚀 Starting E2E test setup...');
   
   // Set up any global test data here

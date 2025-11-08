@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Tabs,
@@ -13,21 +13,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Divider,
-  Chip,
+
 } from '@mui/material';
 import {
-  ViewCode,
-  ViewQuilt,
-  Settings,
-  Download,
-  Save,
+
   Refresh,
   Add,
   CheckCircle,
   Error as ErrorIcon,
-, Close } from '@mui/icons-material';
+  Close
+} from '@mui/icons-material';
 import { BehaviorFileTree } from './BehaviorFileTree';
 import { CodeEditor } from './CodeEditor';
 import { BlockPropertyEditor } from './BlockEditor';
@@ -35,14 +30,14 @@ import { RecipeBuilder } from './RecipeBuilder';
 import { LootTableEditor } from './LootTableEditor';
 import { LogicBuilder } from './LogicBuilder';
 import { TemplateSelector } from './TemplateSelector/TemplateSelector';
-import { behaviorExportAPI } from '../../services/api';
+
 import { BehaviorTemplate } from '../../services/api';
 import {
   useApplyBehaviorTemplate,
 } from '../../hooks/useBehaviorQueries';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import { LoadingWrapper, SaveLoading } from '../common/LoadingWrapper';
-import { useUIState, useAsyncOperation } from '../../hooks/useUIState';
+
+import { useUIState } from '../../hooks/useUIState';
 import ExportManager from '../ExportManager/ExportManager';
 import './BehaviorEditor.css';
 
@@ -74,13 +69,12 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   // Template integration state
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateDialogTab, setTemplateDialogTab] = useState(0);
-  const [currentTemplate, setCurrentTemplate] = useState<BehaviorTemplate | null>(null);
   
   // State management
   const [showExportDialog, setShowExportDialog] = useState(false);
   
   // Enhanced UI state hooks
-  const { loading, error: uiError, setError: setUIError, clearError: clearUIError, toast } = useUIState();
+  const { error: uiError, setError: setUIError, toast } = useUIState();
   
   // React Query hooks
   const applyTemplateMutation = useApplyBehaviorTemplate();
@@ -102,7 +96,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   }, []);
 
   // Handle successful save with loading states
-  const handleSave = useCallback(async (fileId: string, content: string) => {
+  const handleSave = useCallback(async (fileId: string) => {
     setIsLoading(true);
     setLocalError(null);
     
@@ -169,13 +163,13 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   }, []);
 
   // Template handlers
-  const handleTemplateSelect = useCallback((template: BehaviorTemplate) => {
-    setCurrentTemplate(template);
+  const handleTemplateSelect = useCallback(() => {
+    // Template selected, no state needed currently
   }, []);
 
   const handleTemplateApply = useCallback((template: BehaviorTemplate) => {
     if (!selectedFile) {
-      setError('Please select a file before applying a template');
+      setUIError('Please select a file before applying a template');
       return;
     }
 
@@ -194,75 +188,14 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
         setLocalError(errorMessage);
       },
     });
-  }, [selectedFile, conversionId, applyTemplateMutation]);
+  }, [selectedFile, conversionId, applyTemplateMutation, setUIError]);
 
   // Export handlers using React Query
-  const handleExportPreview = useCallback(() => {
-    // Trigger the preview query
-    // exportPreviewQuery.refetch().then((result) => {
-      if (!result.error) {
-        setShowExportDialog(true);
-      } else {
-        const errorMessage = result.error instanceof Error ? result.error.message : 'Failed to preview export';
-        setLocalError(errorMessage);
-      }
-    });
-  }, [exportPreviewQuery]);
 
-  const handleExportDownload = useCallback((format: string = 'mcaddon') => {
-    // downloadPackMutation.mutate({
-      conversionId,
-      format,
-    }, {
-      onSuccess: ({ filename }) => {
-        setSuccessMessage(`Export downloaded as ${filename}`);
-        setTimeout(() => setSuccessMessage(null), 3000);
-        setShowExportDialog(false);
-      },
-      onError: (err) => {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to download export';
-        setLocalError(errorMessage);
-      },
-    });
-  }, [conversionId, downloadPackMutation]);
 
-  const handleExport = useCallback((format: string = 'mcaddon', includeTemplates: boolean = true) => {
-    // exportPackMutation.mutate({
-      conversion_id: conversionId,
-      file_types: [], // Empty means all files
-      include_templates,
-      export_format: format as 'mcaddon' | 'zip' | 'json',
-    }, {
-      onSuccess: (exportResult) => {
-        // Download immediately after export
-        // handleExportDownload(format);
-        setSuccessMessage(`Export completed: ${exportResult.file_count} files, ${exportResult.export_size} bytes`);
-        setTimeout(() => setSuccessMessage(null), 5000);
-      },
-      onError: (err) => {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to export behavior pack';
-        setLocalError(errorMessage);
-      },
-    });
-  }, [conversionId, exportPackMutation, handleExportDownload]);
 
-  // Clear error handler
-  const clearLocalError = useCallback(() => {
-    setLocalError(null);
-  }, []);
 
-  // Clear success message handler
-  const clearSuccess = useCallback(() => {
-    setSuccessMessage(null);
-  }, []);
 
-  // Clear all errors handler
-  const clearLocalError = useCallback(() => {
-    // Using the enhanced UI state clear function
-    Object.keys(error).forEach(key => {
-      setError(key, null);
-    });
-  }, [error, setError]);
 
   // Determine if visual editing is available for current file
   const isVisualEditingAvailable = () => {
@@ -296,9 +229,9 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
         <Alert 
           severity="error" 
           sx={{ mb: 2 }} 
-          onClose={clearLocalError}
+          onClose={() => setUIError(null)}
           action={
-            <IconButton size="small" onClick={clearLocalError}>
+            <IconButton size="small" onClick={() => setUIError(null)}>
               <ErrorIcon />
             </IconButton>
           }
@@ -328,8 +261,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
             )}
             <Button
               variant="outlined"
-              startIcon={<Download />}
-              onClick={handleExportClick}
+              onClick={() => setShowExportDialog(true)}
               size="small"
               disabled={isLoading}
             >
@@ -350,7 +282,6 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
           <Box className="mode-toggle-buttons">
             <Button
               variant={editorMode === 'code' ? 'contained' : 'outlined'}
-              startIcon={<ViewCode />}
               onClick={() => setEditorMode('code')}
               size="small"
             >
@@ -358,7 +289,6 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
             </Button>
             <Button
               variant={editorMode === 'visual' ? 'contained' : 'outlined'}
-              startIcon={<ViewQuilt />}
               onClick={() => setEditorMode('visual')}
               size="small"
             >
@@ -496,7 +426,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
             <span className="status-visual-hint">
               <Tooltip title="Visual editing available for this file type">
                 <IconButton size="small">
-                  <ViewQuilt fontSize="small" />
+                  <span style={{ fontSize: 'small' }}>🎨</span>
                 </IconButton>
               </Tooltip>
             </span>
@@ -579,11 +509,9 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
       <Snackbar
         open={!!successMessage}
         autoHideDuration={3000}
-        onClose={clearSuccess}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert 
-          onClose={clearSuccess} 
           severity="success" 
           sx={{ width: '100%' }}
           icon={<CheckCircle />}

@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Card, CardContent, Typography, Grid, IconButton, Tooltip } from '@mui/material';
+import React, { useState, useCallback } from 'react';
+import { Box, Card, CardContent, Typography, Grid } from '@mui/material';
 import { 
   VisualEditor, 
   FormField, 
   ValidationRule 
 } from '../VisualEditor';
+import { ValidationEngine } from '../VisualEditor/ValidationEngine';
 import { Preview3D } from './BlockPreview';
 import './BlockPropertyEditor.css';
 

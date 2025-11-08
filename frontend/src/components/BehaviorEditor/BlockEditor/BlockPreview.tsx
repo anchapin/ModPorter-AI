@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   IconButton,
   Tooltip,
@@ -17,7 +16,7 @@ import {
   LocalFireDepartment
 } from '@mui/icons-material';
 import { BlockProperties } from './BlockPropertyEditor';
-import './BlockPreview.css';
+
 
 export interface Preview3DProps {
   properties: BlockProperties;
@@ -27,15 +26,14 @@ export interface Preview3DProps {
 
 export const Preview3D: React.FC<Preview3DProps> = ({
   properties,
-  onPropertyChange,
   readOnly = false
 }) => {
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
   // Handle rotation for 3D preview
-  const handleRotation = (axis: 'x' | 'y', value: number) => {
-    setRotation(prev => ({ ...prev, [axis]: value }));
-  };
+  // const handleRotation = (axis: 'x' | 'y', value: number) => {
+  //   setRotation(prev => ({ ...prev, [axis]: value }));
+  // };
 
   // Generate preview style based on properties
   const getBlockStyle = () => {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -17,31 +17,22 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Switch,
   FormControlLabel
 } from '@mui/material';
 import {
-  Add,
   Delete,
   Edit,
   ExpandMore,
-  Casino,
   Inventory2,
-  functions,
   Save,
-  Preview
+  Preview,
+  Add
 } from '@mui/icons-material';
-import { VisualEditor, FormField, ValidationRule } from '../VisualEditor';
 
 // Loot table interfaces
 export interface LootPool {
@@ -118,33 +109,14 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
     }
   );
   const [expandedPool, setExpandedPool] = useState<string | false>(false);
-  const [expandedEntry, setExpandedEntry] = useState<string | false>(false);
   const [conditionDialogOpen, setConditionDialogOpen] = useState(false);
   const [functionDialogOpen, setFunctionDialogOpen] = useState(false);
-  const [currentTarget, setCurrentTarget] = useState<{ type: 'pool' | 'entry'; id: string; poolId?: string } | null>(null);
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Common Minecraft conditions
-  const commonConditions = [
-    'minecraft:killed_by_player',
-    'minecraft:random_chance',
-    'minecraft:entity_properties',
-    'minecraft:location_check',
-    'minecraft:weather_check',
-    'minecraft:time_check'
-  ];
 
-  // Common Minecraft functions
-  const commonFunctions = [
-    'minecraft:set_count',
-    'minecraft:set_nbt',
-    'minecraft:set_name',
-    'minecraft:set_lore',
-    'minecraft:set_attributes',
-    'minecraft:enchant_randomly',
-    'minecraft:enchant_with_levels'
-  ];
+
+
 
   // Update loot table and notify parent
   const updateLootTable = useCallback((newLootTable: LootTable) => {
@@ -221,10 +193,9 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
   const addCondition = useCallback((target: { type: 'pool' | 'entry'; id: string; poolId?: string }) => {
     const newCondition: LootCondition = {
       id: `condition_${Date.now()}`,
-      condition: commonConditions[0],
+      condition: 'minecraft:killed_by_player',
       parameters: {}
     };
-    setCurrentTarget(target);
     setConditionDialogOpen(true);
     
     // Apply condition after dialog closes
@@ -239,16 +210,15 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
         });
       }
     }, 100);
-  }, [lootTable, updatePool, updateEntry, commonConditions]);
+  }, [lootTable, updatePool, updateEntry]);
 
   // Add function to pool or entry
   const addFunction = useCallback((target: { type: 'pool' | 'entry'; id: string; poolId?: string }) => {
     const newFunction: LootFunction = {
       id: `function_${Date.now()}`,
-      function: commonFunctions[0],
+      function: 'minecraft:set_count',
       parameters: {}
     };
-    setCurrentTarget(target);
     setFunctionDialogOpen(true);
     
     // Apply function after dialog closes
@@ -263,7 +233,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
         });
       }
     }, 100);
-  }, [lootTable, updatePool, updateEntry, commonFunctions]);
+  }, [lootTable, updatePool, updateEntry]);
 
   // Generate preview data
   const generatePreview = useCallback(() => {
@@ -387,7 +357,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
             </CardContent>
           </Card>
         ) : (
-          lootTable.pools.map((pool, poolIndex) => (
+          lootTable.pools.map((pool) => (
             <Accordion
               key={pool.id}
               expanded={expandedPool === pool.id}

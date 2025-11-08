@@ -283,7 +283,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Load templates when filters change
   useEffect(() => {
     loadTemplates(true);
-  }, [state.filters, loadTemplates]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.filters, loadTemplates]);
 
   const actions = {
     loadCategories,
@@ -306,6 +306,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 };
 
 // Hook to use the context
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTemplates = () => {
   const context = useContext(TemplatesContext);
   if (!context) {

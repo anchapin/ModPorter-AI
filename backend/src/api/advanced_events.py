@@ -349,7 +349,7 @@ async def create_event_system(
 
     # Store in behavior files (as JSON)
     try:
-        behavior_file = await crud.create_behavior_file(
+        await crud.create_behavior_file(
             db,
             conversion_id=conversion_id,
             file_path=f"events/{event_system.id}.json",

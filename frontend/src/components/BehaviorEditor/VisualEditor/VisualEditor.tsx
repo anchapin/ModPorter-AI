@@ -157,7 +157,7 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
           onChange={(_, newValue) => setActiveTab(newValue)}
           sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
         >
-          {tabContent.map((category, index) => (
+          {tabContent.map((category) => (
             <Tab key={category.id} label={category.label} />
           ))}
         </Tabs>

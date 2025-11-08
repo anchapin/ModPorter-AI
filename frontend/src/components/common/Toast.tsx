@@ -204,7 +204,7 @@ export interface UseToastReturn {
   clearAll: () => void;
 }
 
-export const useToast = (): UseToastReturn => {
+const useToastHook = (): UseToastReturn => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = useCallback((
@@ -266,5 +266,8 @@ export const useToast = (): UseToastReturn => {
     clearAll,
   };
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export { useToastHook as useToast };
 
 export default Toast;

@@ -245,8 +245,7 @@ export const usePrefetchBehaviorTemplates = () => {
 
 // Utility hook for getting combined templates (predefined + custom)
 export const useCombinedBehaviorTemplates = (
-  filters?: any,
-  options?: UseQueryOptions<BehaviorTemplate[]>
+  filters?: any
 ) => {
   const predefined = usePredefinedBehaviorTemplates();
   const custom = useBehaviorTemplates(filters);

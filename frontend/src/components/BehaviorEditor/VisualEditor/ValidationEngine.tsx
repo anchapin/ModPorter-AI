@@ -81,7 +81,7 @@ export class ValidationEngine {
         }
         break;
 
-      case 'text':
+      case 'text': {
         const strValue = String(value);
         if (field.validation?.minLength && strValue.length < field.validation.minLength) {
           errors.push({
@@ -108,8 +108,9 @@ export class ValidationEngine {
           });
         }
         break;
+      }
 
-      case 'select':
+      case 'select': {
         const validOptions = field.options?.map(opt => opt.value) || [];
         if (!validOptions.includes(value)) {
           errors.push({
@@ -120,6 +121,7 @@ export class ValidationEngine {
           });
         }
         break;
+      }
     }
 
     // Custom validation
@@ -138,7 +140,7 @@ export class ValidationEngine {
     return errors;
   }
 
-  private shouldApplyRule(rule: ValidationRule, value: any, allData: Record<string, any>): boolean {
+  private shouldApplyRule(rule: ValidationRule, value: any): boolean {
     // This is a simplified implementation - you can extend this with more complex logic
     switch (rule.rule) {
       case 'required':

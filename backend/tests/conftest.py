@@ -3,7 +3,6 @@ import sys
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Add the src directory to the Python path

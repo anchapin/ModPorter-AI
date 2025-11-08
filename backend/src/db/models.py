@@ -14,6 +14,7 @@ from sqlalchemy import (
     VARCHAR,
     DECIMAL,
     TIMESTAMP,
+    TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
@@ -573,8 +574,9 @@ class BehaviorTemplate(Base):
     tags: Mapped[list] = mapped_column(JSONType, nullable=False, default=list)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0.0")
-    created_by: Mapped[Optional[str]] = mapped_column(
-        UUID(as_uuid=True), 
+    created_by: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    ) 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

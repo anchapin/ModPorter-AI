@@ -20,7 +20,8 @@ test.describe('ModPorter AI - API Integration', () => {
       expect(status).toBe(200);
       
       const body = await response.text();
-      expect(body).toContain('healthy') || expect(body).toContain('ok');
+      const isHealthy = body.includes('healthy') || body.includes('ok');
+      expect(isHealthy).toBe(true);
     }
   });
 

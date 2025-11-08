@@ -10,7 +10,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Chip,
   Divider,
   Switch,
@@ -20,7 +19,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  LinearProgress,
   Alert,
   Accordion,
   AccordionSummary,
@@ -29,18 +27,13 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Tooltip,
 } from '@mui/material';
 import {
   Download,
   Close,
-  Settings,
-  Info,
   CheckCircle,
-  Error as ErrorIcon,
   ExpandMore,
   CloudDownload,
-  Description,
   Archive,
   Code,
 } from '@mui/icons-material';
@@ -98,26 +91,26 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
       });
 
       // Download immediately after export
-      const { blob, filename } = await downloadPackMutation.mutateAsync({
+      await downloadPackMutation.mutateAsync({
         conversionId,
         format: exportOptions.format,
       });
 
       toast.success(`Export completed: ${exportResult.file_count} files`);
       onClose();
-    } catch (error) {
+    } catch {
       // Error is handled by the mutations
     }
   };
 
   const handleDownloadOnly = async () => {
     try {
-      const { blob, filename } = await downloadPackMutation.mutateAsync({
+      await downloadPackMutation.mutateAsync({
         conversionId,
         format: exportOptions.format,
       });
-      toast.success(`Downloaded: ${filename}`);
-    } catch (error) {
+      toast.success(`Downloaded successfully`);
+    } catch {
       // Error is handled by the mutation
     }
   };
