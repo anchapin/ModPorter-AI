@@ -20,12 +20,25 @@ import sys
 import os
 import psutil
 import subprocess
+import logging
+import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import requests
 from dataclasses import dataclass
 import statistics
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('performance_analysis.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Add backend to path for imports
 sys.path.append(str(Path(__file__).parent.parent / "backend" / "src"))
@@ -69,10 +82,58 @@ class PerformanceReport:
         }
 
 class PerformanceAnalyzer:
-    def __init__(self):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.metrics: List[PerformanceMetric] = []
-        self.api_base_url = "http://localhost:8080/api"
-        self.frontend_url = "http://localhost:3000"
+        
+        # Configuration with validation and defaults
+        if config:
+            self.api_base_url = config.get("api_base_url", "http://localhost:8080/api")
+            self.frontend_url = config.get("frontend_url", "http://localhost:3000")
+            self.timeout = config.get("timeout", 10)
+            self.retry_attempts = config.get("retry_attempts", 3)
+            self.retry_delay = config.get("retry_delay", 1)
+        else:
+            # Load from environment or use defaults
+            self.api_base_url = os.getenv("API_BASE_URL", "http://localhost:8080/api")
+            self.frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            self.timeout = int(os.getenv("PERFORMANCE_TIMEOUT", "10"))
+            self.retry_attempts = int(os.getenv("PERFORMANCE_RETRY_ATTEMPTS", "3"))
+            self.retry_delay = int(os.getenv("PERFORMANCE_RETRY_DELAY", "1"))
+        
+        # Validate configuration
+        self._validate_config()
+        
+        logger.info(f"PerformanceAnalyzer initialized with API: {self.api_base_url}, Timeout: {self.timeout}s")
+    
+    def _validate_config(self) -> None:
+        """Validate analyzer configuration"""
+        if not self.api_base_url.startswith(('http://', 'https://')):
+            raise ValueError("API base URL must start with http:// or https://")
+        
+        if self.timeout <= 0:
+            raise ValueError("Timeout must be greater than 0")
+        
+        if self.retry_attempts < 1:
+            raise ValueError("Retry attempts must be at least 1")
+        
+        if self.retry_delay < 0:
+            raise ValueError("Retry delay must be non-negative")
+    
+    async def _retry_request(self, request_func, *args, **kwargs) -> Any:
+        """Execute request with retry mechanism"""
+        last_exception = None
+        
+        for attempt in range(self.retry_attempts):
+            try:
+                return await request_func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                if attempt < self.retry_attempts - 1:
+                    logger.warning(f"Request failed (attempt {attempt + 1}/{self.retry_attempts}), retrying in {self.retry_delay}s: {str(e)}")
+                    await asyncio.sleep(self.retry_delay)
+        
+        logger.error(f"Request failed after {self.retry_attempts} attempts: {str(last_exception)}")
+        raise last_exception
         
     async def analyze_system_resources(self) -> Dict[str, Any]:
         """Analyze system resource usage"""
@@ -96,7 +157,7 @@ class PerformanceAnalyzer:
         }
     
     async def test_api_performance(self) -> List[PerformanceMetric]:
-        """Test API endpoint performance"""
+        """Test API endpoint performance with comprehensive error handling"""
         print("🚀 Testing API performance...")
         metrics = []
         
@@ -109,19 +170,32 @@ class PerformanceAnalyzer:
         
         for endpoint, name, threshold in endpoints:
             try:
+                logger.info(f"Testing API endpoint: {self.api_base_url}{endpoint}")
                 start_time = time.time()
-                response = requests.get(f"{self.api_base_url}{endpoint}", timeout=10)
-                end_time = time.time()
                 
+                # Add comprehensive request options
+                response = requests.get(
+                    f"{self.api_base_url}{endpoint}", 
+                    timeout=10,
+                    headers={'User-Agent': 'ModPorter-Performance-Analysis/1.0'},
+                    verify=False  # Handle SSL issues gracefully
+                )
+                
+                end_time = time.time()
                 response_time_ms = (end_time - start_time) * 1000
                 
+                # Detailed status classification
                 status = "good"
                 if response_time_ms > threshold * 2:
                     status = "critical"
                 elif response_time_ms > threshold:
                     status = "warning"
                 
-                details = f"HTTP {response.status_code}" if response.status_code < 400 else f"Error {response.status_code}"
+                # Enhanced error details
+                if response.status_code < 400:
+                    details = f"HTTP {response.status_code} ({response.reason})"
+                else:
+                    details = f"Error {response.status_code}: {response.text[:100]}"
                 
                 metrics.append(PerformanceMetric(
                     name=f"API {name} Response Time",
@@ -133,7 +207,10 @@ class PerformanceAnalyzer:
                     details=details
                 ))
                 
-            except Exception as e:
+                logger.info(f"API {name} - {status}: {response_time_ms:.2f}ms")
+                
+            except requests.exceptions.Timeout as e:
+                logger.error(f"API timeout for {name}: {str(e)}")
                 metrics.append(PerformanceMetric(
                     name=f"API {name} Response Time",
                     category="api",
@@ -141,7 +218,41 @@ class PerformanceAnalyzer:
                     unit="ms",
                     threshold=threshold,
                     status="critical",
-                    details=f"Failed: {str(e)}"
+                    details=f"Timeout: {str(e)}"
+                ))
+            except requests.exceptions.ConnectionError as e:
+                logger.error(f"API connection error for {name}: {str(e)}")
+                metrics.append(PerformanceMetric(
+                    name=f"API {name} Response Time",
+                    category="api",
+                    value=9999,
+                    unit="ms",
+                    threshold=threshold,
+                    status="critical",
+                    details=f"Connection Error: {str(e)}"
+                ))
+            except requests.exceptions.RequestException as e:
+                logger.error(f"API request exception for {name}: {str(e)}")
+                metrics.append(PerformanceMetric(
+                    name=f"API {name} Response Time",
+                    category="api",
+                    value=9999,
+                    unit="ms",
+                    threshold=threshold,
+                    status="critical",
+                    details=f"Request Error: {str(e)}"
+                ))
+            except Exception as e:
+                logger.error(f"Unexpected error testing API {name}: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                metrics.append(PerformanceMetric(
+                    name=f"API {name} Response Time",
+                    category="api",
+                    value=9999,
+                    unit="ms",
+                    threshold=threshold,
+                    status="critical",
+                    details=f"Unexpected Error: {str(e)}"
                 ))
         
         return metrics
@@ -622,18 +733,61 @@ class PerformanceAnalyzer:
         print(f"📄 HTML report generated: {output_path}")
 
 async def main():
-    """Main function"""
+    """Main function with comprehensive error handling"""
     output_report = "performance_report.html"
     
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ["-h", "--help"]:
-            print("Usage: python performance-analysis.py [--output-report performance_report.html]")
-            return
-        if sys.argv[1] == "--output-report" and len(sys.argv) > 2:
-            output_report = sys.argv[2]
+    # Parse command line arguments with validation
+    try:
+        if len(sys.argv) > 1:
+            if sys.argv[1] in ["-h", "--help"]:
+                print("Usage: python performance-analysis.py [--output-report performance_report.html] [--config config.json]")
+                print("\nConfiguration Options:")
+                print("  --config config.json    Load configuration from JSON file")
+                print("  --output-report file    Specify HTML report output file")
+                print("\nEnvironment Variables:")
+                print("  API_BASE_URL          Base URL for API testing")
+                print("  FRONTEND_URL          Base URL for frontend testing")
+                print("  PERFORMANCE_TIMEOUT     Request timeout in seconds")
+                print("  PERFORMANCE_RETRY_ATTEMPTS  Number of retry attempts")
+                print("  PERFORMANCE_RETRY_DELAY   Delay between retries in seconds")
+                return
+            if sys.argv[1] == "--output-report" and len(sys.argv) > 2:
+                output_report = sys.argv[2]
+            elif sys.argv[1] == "--config" and len(sys.argv) > 2:
+                config_path = sys.argv[2]
+                try:
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                    logger.info(f"Loaded configuration from {config_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load config from {config_path}: {str(e)}")
+                    sys.exit(1)
+            else:
+                logger.warning(f"Unknown argument: {sys.argv[1]}")
+    except Exception as e:
+        logger.error(f"Error parsing arguments: {str(e)}")
+        sys.exit(1)
     
-    analyzer = PerformanceAnalyzer()
-    report = await analyzer.run_analysis()
+    # Initialize analyzer with configuration or environment variables
+    try:
+        if 'config' in locals():
+            analyzer = PerformanceAnalyzer(config)
+        else:
+            analyzer = PerformanceAnalyzer()
+        
+        logger.info("Starting performance analysis with improved error handling")
+        report = await analyzer.run_analysis()
+        
+    except ValueError as e:
+        logger.error(f"Configuration error: {str(e)}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        logger.info("Analysis interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Unexpected error during analysis: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        sys.exit(1)
     
     # Save JSON report
     json_report_path = f"performance_report_{int(time.time())}.json"
