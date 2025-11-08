@@ -497,3 +497,288 @@ export const convertAllConversionAssets = async (conversionId: string): Promise<
 
   return response.json();
 };
+
+// --- Behavior Templates API Functions ---
+
+export interface BehaviorTemplateCategory {
+  name: string;
+  display_name: string;
+  description: string;
+  icon?: string;
+}
+
+export interface BehaviorTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  template_type: string;
+  template_data: Record<string, any>;
+  tags: string[];
+  is_public: boolean;
+  version: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BehaviorTemplateCreate {
+  name: string;
+  description: string;
+  category: string;
+  template_type: string;
+  template_data: Record<string, any>;
+  tags?: string[];
+  is_public?: boolean;
+  version?: string;
+}
+
+export interface BehaviorTemplateUpdate {
+  name?: string;
+  description?: string;
+  category?: string;
+  template_type?: string;
+  template_data?: Record<string, any>;
+  tags?: string[];
+  is_public?: boolean;
+  version?: string;
+}
+
+export interface TemplateApplyRequest {
+  template_id: string;
+  conversion_id: string;
+  file_path?: string;
+}
+
+export interface TemplateApplyResult {
+  template_id: string;
+  conversion_id: string;
+  generated_content?: any;
+  file_path?: string;
+  file_type?: string;
+  applied_at: string;
+}
+
+export interface BehaviorPackExportRequest {
+  conversion_id: string;
+  file_types?: string[];
+  include_templates?: boolean;
+  export_format?: 'mcaddon' | 'zip' | 'json';
+}
+
+export interface BehaviorPackExportResponse {
+  conversion_id: string;
+  export_format: string;
+  file_count: number;
+  template_count: number;
+  export_size: number;
+  exported_at: string;
+}
+
+export const behaviorTemplatesAPI = {
+  // Get template categories
+  getCategories: async (): Promise<BehaviorTemplateCategory[]> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates/categories`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch categories' }));
+      throw new ApiError(errorData.detail || 'Failed to get template categories', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get templates with filtering
+  getTemplates: async (params?: {
+    category?: string;
+    template_type?: string;
+    tags?: string[];
+    search?: string;
+    is_public?: boolean;
+    skip?: number;
+    limit?: number;
+  }): Promise<BehaviorTemplate[]> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.template_type) searchParams.append('template_type', params.template_type);
+    if (params?.tags?.length) searchParams.append('tags', params.tags.join(','));
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.is_public !== undefined) searchParams.append('is_public', params.is_public.toString());
+    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates?${searchParams.toString()}`
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch templates' }));
+      throw new ApiError(errorData.detail || 'Failed to get templates', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get specific template
+  getTemplate: async (templateId: string): Promise<BehaviorTemplate> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Template not found' }));
+      throw new ApiError(errorData.detail || 'Failed to get template', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Create template
+  createTemplate: async (template: BehaviorTemplateCreate): Promise<BehaviorTemplate> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(template),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to create template' }));
+      throw new ApiError(errorData.detail || 'Failed to create template', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Update template
+  updateTemplate: async (templateId: string, updates: BehaviorTemplateUpdate): Promise<BehaviorTemplate> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to update template' }));
+      throw new ApiError(errorData.detail || 'Failed to update template', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Delete template
+  deleteTemplate: async (templateId: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to delete template' }));
+      throw new ApiError(errorData.detail || 'Failed to delete template', response.status);
+    }
+  },
+
+  // Apply template to conversion
+  applyTemplate: async (request: TemplateApplyRequest): Promise<TemplateApplyResult> => {
+    const searchParams = new URLSearchParams();
+    if (request.file_path) searchParams.append('file_path', request.file_path);
+    if (request.conversion_id) searchParams.append('conversion_id', request.conversion_id);
+
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/${request.template_id}/apply?${searchParams.toString()}`,
+      {
+        method: 'GET',
+      }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to apply template' }));
+      throw new ApiError(errorData.detail || 'Failed to apply template', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get predefined templates
+  getPredefinedTemplates: async (): Promise<BehaviorTemplate[]> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/templates/predefined`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch predefined templates' }));
+      throw new ApiError(errorData.detail || 'Failed to get predefined templates', response.status);
+    }
+    
+    return response.json();
+  },
+};
+
+// --- Behavior Export API Functions ---
+
+export const behaviorExportAPI = {
+  // Export behavior pack
+  exportBehaviorPack: async (request: BehaviorPackExportRequest): Promise<BehaviorPackExportResponse> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/export/behavior-pack`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to export behavior pack' }));
+      throw new ApiError(errorData.detail || 'Failed to export behavior pack', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Download exported pack
+  downloadPack: async (conversionId: string, format: string = 'mcaddon'): Promise<{ blob: Blob; filename: string }> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/export/behavior-pack/${conversionId}/download?format=${format}`);
+    
+    if (!response.ok) {
+      throw new ApiError('Download failed', response.status);
+    }
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+    let filename = `behavior_pack_${conversionId}.${format}`;
+    
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+      if (fileNameMatch) {
+        filename = fileNameMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    return { blob, filename };
+  },
+
+  // Get export formats
+  getExportFormats: async (): Promise<Array<{ format: string; name: string; description: string; extension: string }>> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/export/formats`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch export formats' }));
+      throw new ApiError(errorData.detail || 'Failed to get export formats', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Preview export
+  previewExport: async (conversionId: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/behavior/export/preview/${conversionId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to preview export' }));
+      throw new ApiError(errorData.detail || 'Failed to preview export', response.status);
+    }
+    
+    return response.json();
+  },
+};

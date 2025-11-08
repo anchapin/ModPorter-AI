@@ -131,10 +131,12 @@ def client():
     os.environ["TESTING"] = "true"
 
     # Patch test engine into db.base before main.py imports it
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch
 
-    # Create mock modules for patching
-    mock_base = MagicMock()
+    # Store original database configuration
+    from db import base
+    original_engine = getattr(base, 'async_engine', None)
+    original_session_local = getattr(base, 'AsyncSessionLocal', None)
 
     # Import dependencies with the patched database
     with patch.dict('sys.modules'):
@@ -176,8 +178,8 @@ def client():
                     with TestClient(app) as test_client:
                         yield test_client
             # Restore original database configuration
-            db.base.async_engine = original_engine
-            db.base.AsyncSessionLocal = original_session_local
+            base.async_engine = original_engine
+            base.AsyncSessionLocal = original_session_local
 
 @pytest.fixture(scope="function")
 async def async_client():

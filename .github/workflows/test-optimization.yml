@@ -71,7 +71,7 @@ jobs:
         
         # Build Node base
         echo "Building Node base image..."
-        docker build -f docker/base-images/Dockerfile.node-base -t test-node-base .
+        docker build -f docker/base-images/Dockerfile.node-base -t test-node-base frontend/
         
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))

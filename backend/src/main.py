@@ -28,7 +28,7 @@ from services.report_models import InteractiveReport, FullConversionReport # For
 from services.report_generator import ConversionReportGenerator
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
@@ -125,6 +125,9 @@ app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embedd
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
 app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-files"])
+app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
+app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
+app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):

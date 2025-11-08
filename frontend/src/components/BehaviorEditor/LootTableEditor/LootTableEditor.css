@@ -1,0 +1,190 @@
+.loot-table-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.loot-table-editor .editor-header {
+  flex-shrink: 0;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.loot-table-editor .editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.loot-table-editor .pool-card {
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.loot-table-editor .pool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.loot-table-editor .pool-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.loot-table-editor .pool-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.loot-table-editor .entry-item {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.loot-table-editor .entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.loot-table-editor .entry-info {
+  flex: 1;
+}
+
+.loot-table-editor .entry-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #fff;
+}
+
+.loot-table-editor .entry-details {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+.loot-table-editor .entry-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.loot-table-editor .condition-tag,
+.loot-table-editor .function-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+.loot-table-editor .condition-tag {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #64b5f6;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.loot-table-editor .function-tag {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.loot-table-editor .empty-state {
+  text-align: center;
+  padding: 32px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.loot-table-editor .empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.loot-table-editor .action-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0;
+  flex-wrap: wrap;
+}
+
+.loot-table-editor .weight-input {
+  width: 80px;
+}
+
+.loot-table-editor .quality-input {
+  width: 80px;
+}
+
+.loot-table-editor .rolls-input {
+  width: 100px;
+}
+
+.loot-table-editor .preview-dialog pre {
+  background-color: #1e1e1e;
+  padding: 16px;
+  border-radius: 4px;
+  overflow-x: auto;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.loot-table-editor .accordion-details {
+  padding: 16px;
+}
+
+.loot-table-editor .form-section {
+  margin-bottom: 16px;
+}
+
+.loot-table-editor .form-section-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .loot-table-editor .pool-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .loot-table-editor .entry-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .loot-table-editor .entry-actions {
+    align-self: flex-end;
+  }
+  
+  .loot-table-editor .action-bar {
+    flex-direction: column;
+  }
+  
+  .loot-table-editor .action-bar button {
+    width: 100%;
+  }
+}

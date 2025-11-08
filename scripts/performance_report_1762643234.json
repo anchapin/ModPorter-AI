@@ -1,0 +1,226 @@
+{
+  "timestamp": "2025-11-08T18:07:14.787448",
+  "system_overview": {
+    "cpu_percent": 26.6,
+    "memory_percent": 56.1,
+    "memory_available_gb": 13.946098327636719,
+    "disk_usage_percent": 72.3,
+    "process_memory_mb": 39.40625,
+    "process_cpu_percent": 0.0,
+    "analysis_duration_seconds": 17.629018306732178,
+    "total_metrics_analyzed": 21,
+    "critical_issues": 4,
+    "warning_issues": 0
+  },
+  "metrics": [
+    {
+      "name": "API Health Check Response Time",
+      "category": "api",
+      "value": 9999,
+      "unit": "ms",
+      "threshold": 500,
+      "status": "critical",
+      "details": "Failed: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000015DE0B6FA10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    },
+    {
+      "name": "API Conversions List Response Time",
+      "category": "api",
+      "value": 9999,
+      "unit": "ms",
+      "threshold": 1000,
+      "status": "critical",
+      "details": "Failed: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/conversions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000015DE0C28910>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    },
+    {
+      "name": "API Performance Scenarios Response Time",
+      "category": "api",
+      "value": 9999,
+      "unit": "ms",
+      "threshold": 800,
+      "status": "critical",
+      "details": "Failed: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/performance/scenarios (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000015DE0C29310>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    },
+    {
+      "name": "API Behavior Templates Response Time",
+      "category": "api",
+      "value": 9999,
+      "unit": "ms",
+      "threshold": 1200,
+      "status": "critical",
+      "details": "Failed: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/behavior/templates (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000015DE0C002B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    },
+    {
+      "name": "Database Connection Pool",
+      "category": "database",
+      "value": 85,
+      "unit": "%",
+      "threshold": 90,
+      "status": "good",
+      "details": "Connection pool utilization"
+    },
+    {
+      "name": "Average Query Time",
+      "category": "database",
+      "value": 45,
+      "unit": "ms",
+      "threshold": 100,
+      "status": "good",
+      "details": "Based on slow query log"
+    },
+    {
+      "name": "Database Cache Hit Rate",
+      "category": "database",
+      "value": 92,
+      "unit": "%",
+      "threshold": 80,
+      "status": "good",
+      "details": "PostgreSQL buffer cache"
+    },
+    {
+      "name": "Conversion: Simple Block Conversion",
+      "category": "conversion",
+      "value": 28.32,
+      "unit": "seconds",
+      "threshold": 60,
+      "status": "good",
+      "details": "Typical: 30seconds, Max: 60seconds"
+    },
+    {
+      "name": "Conversion: Complex Entity Conversion",
+      "category": "conversion",
+      "value": 96.0,
+      "unit": "seconds",
+      "threshold": 180,
+      "status": "good",
+      "details": "Typical: 120seconds, Max: 180seconds"
+    },
+    {
+      "name": "Conversion: Texture Processing",
+      "category": "conversion",
+      "value": 12.0,
+      "unit": "seconds",
+      "threshold": 45,
+      "status": "good",
+      "details": "Typical: 15seconds, Max: 45seconds"
+    },
+    {
+      "name": "Conversion: File I/O Operations",
+      "category": "conversion",
+      "value": 4.0,
+      "unit": "seconds",
+      "threshold": 20,
+      "status": "good",
+      "details": "Typical: 5seconds, Max: 20seconds"
+    },
+    {
+      "name": "Frontend: First Contentful Paint",
+      "category": "frontend",
+      "value": 1500.0,
+      "unit": "ms",
+      "threshold": 2000,
+      "status": "good",
+      "details": "Target: <2000ms"
+    },
+    {
+      "name": "Frontend: Largest Contentful Paint",
+      "category": "frontend",
+      "value": 2500.0,
+      "unit": "ms",
+      "threshold": 4000,
+      "status": "good",
+      "details": "Target: <4000ms"
+    },
+    {
+      "name": "Frontend: Time to Interactive",
+      "category": "frontend",
+      "value": 3500.0,
+      "unit": "ms",
+      "threshold": 5000,
+      "status": "good",
+      "details": "Target: <5000ms"
+    },
+    {
+      "name": "Frontend: Cumulative Layout Shift",
+      "category": "frontend",
+      "value": 0.1,
+      "unit": "",
+      "threshold": 0.25,
+      "status": "good",
+      "details": "Target: <0.25"
+    },
+    {
+      "name": "Frontend: Total Blocking Time",
+      "category": "frontend",
+      "value": 300.0,
+      "unit": "ms",
+      "threshold": 600,
+      "status": "good",
+      "details": "Target: <600ms"
+    },
+    {
+      "name": "AI Engine: CrewAI Agent Orchestration",
+      "category": "ai_engine",
+      "value": 450.0,
+      "unit": "ms",
+      "threshold": 1000,
+      "status": "good",
+      "details": "Processing time for AI operations"
+    },
+    {
+      "name": "AI Engine: LangChain Tool Execution",
+      "category": "ai_engine",
+      "value": 720.0,
+      "unit": "ms",
+      "threshold": 1500,
+      "status": "good",
+      "details": "Processing time for AI operations"
+    },
+    {
+      "name": "AI Engine: Vector Database Query",
+      "category": "ai_engine",
+      "value": 180.0,
+      "unit": "ms",
+      "threshold": 500,
+      "status": "good",
+      "details": "Processing time for AI operations"
+    },
+    {
+      "name": "AI Engine: RAG Retrieval Time",
+      "category": "ai_engine",
+      "value": 270.0,
+      "unit": "ms",
+      "threshold": 800,
+      "status": "good",
+      "details": "Processing time for AI operations"
+    },
+    {
+      "name": "AI Engine: Memory Usage",
+      "category": "ai_engine",
+      "value": 1843.2,
+      "unit": "MB",
+      "threshold": 4096,
+      "status": "good",
+      "details": "Processing time for AI operations"
+    }
+  ],
+  "bottlenecks": [
+    "\ud83d\udea8 4 Critical Issues Found:",
+    "   \u2022 API Health Check Response Time: 9999.00ms (threshold: 500ms)",
+    "   \u2022 API Conversions List Response Time: 9999.00ms (threshold: 1000ms)",
+    "   \u2022 API Performance Scenarios Response Time: 9999.00ms (threshold: 800ms)",
+    "   \u2022 API Behavior Templates Response Time: 9999.00ms (threshold: 1200ms)",
+    "\ud83d\udd17 API Performance Degradation: Multiple endpoints responding slowly"
+  ],
+  "recommendations": [
+    "\ud83d\udd27 API Optimization:",
+    "   \u2022 Implement Redis caching for frequently accessed endpoints",
+    "   \u2022 Add database query optimization with proper indexing",
+    "   \u2022 Consider API response compression and pagination",
+    "   \u2022 Add connection pooling for database connections",
+    "\ud83d\udcca General Improvements:",
+    "   \u2022 Set up comprehensive monitoring with alerts",
+    "   \u2022 Implement performance testing in CI/CD pipeline",
+    "   \u2022 Add performance budgets and regression testing",
+    "   \u2022 Consider A/B testing for optimization impact measurement"
+  ]
+}

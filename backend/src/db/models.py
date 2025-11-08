@@ -14,10 +14,10 @@ from sqlalchemy import (
     VARCHAR,
     DECIMAL,
     TIMESTAMP,
+    TypeDecorator,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
-from sqlalchemy.types import TypeDecorator
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from db.declarative_base import Base
@@ -555,3 +555,36 @@ class ExperimentResult(Base):
     # Relationships
     variant = relationship("ExperimentVariant", back_populates="results")
     # Note: Access to experiment can be achieved via result.variant.experiment
+
+
+class BehaviorTemplate(Base):
+    __tablename__ = "behavior_templates"
+    __table_args__ = {'extend_existing': True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    template_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    template_data: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    tags: Mapped[list] = mapped_column(JSONType, nullable=False, default=list)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0.0")
+    created_by: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    ) 
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
