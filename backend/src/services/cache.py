@@ -215,3 +215,49 @@ class CacheService:
                 total_size_bytes=0,
             )
         return stats
+
+    async def set_export_data(self, conversion_id: str, export_data: bytes, ttl_seconds: int = 3600) -> None:
+        """
+        Store exported behavior pack data in cache.
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+        try:
+            # Store binary data as base64 string
+            encoded_data = base64.b64encode(export_data).decode('utf-8')
+            await self._client.setex(
+                f"export:{conversion_id}:data",
+                ttl_seconds,
+                encoded_data
+            )
+        except Exception as e:
+            logger.warning(f"Redis operation failed for set_export_data: {e}")
+            self._redis_available = False
+
+    async def get_export_data(self, conversion_id: str) -> Optional[bytes]:
+        """
+        Retrieve exported behavior pack data from cache.
+        """
+        if not self._redis_available or self._redis_disabled:
+            return None
+        try:
+            encoded_data = await self._client.get(f"export:{conversion_id}:data")
+            if encoded_data:
+                return base64.b64decode(encoded_data.encode('utf-8'))
+            return None
+        except Exception as e:
+            logger.warning(f"Redis operation failed for get_export_data: {e}")
+            self._redis_available = False
+            return None
+
+    async def delete_export_data(self, conversion_id: str) -> None:
+        """
+        Delete exported behavior pack data from cache.
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+        try:
+            await self._client.delete(f"export:{conversion_id}:data")
+        except Exception as e:
+            logger.warning(f"Redis operation failed for delete_export_data: {e}")
+            self._redis_available = False
