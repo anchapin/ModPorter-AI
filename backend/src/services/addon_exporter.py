@@ -2,6 +2,8 @@ import json
 import uuid
 import io
 import zipfile
+import os
+import datetime
 from typing import Dict, Any, List
 
 from models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
@@ -233,9 +235,6 @@ def generate_recipe_json(recipe: pydantic_addon_models.AddonRecipe) -> Dict[str,
         return {"error": "Recipe data is not a valid dictionary"}
     return recipe.data
 
-
-import os
-import datetime # For example usage in __main__
 
 # --- End of imports ---
 

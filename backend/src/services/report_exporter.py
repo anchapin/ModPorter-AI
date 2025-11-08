@@ -289,8 +289,9 @@ class PDFExporter:
     def _check_dependencies(self) -> bool:
         """Check if PDF export dependencies are available."""
         try:
-            import weasyprint  # or reportlab
-            return True
+            import importlib.util
+            spec = importlib.util.find_spec("weasyprint")  # or reportlab
+            return spec is not None
         except ImportError:
             return False
     

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from services import addon_exporter # For .mcaddon export
 from services import conversion_parser # For parsing converted pack output
+from services.asset_conversion_service import asset_conversion_service
 import shutil # For directory operations
 from typing import List, Optional, Dict
 from datetime import datetime

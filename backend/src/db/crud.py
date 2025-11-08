@@ -1,15 +1,13 @@
 from typing import Optional, List
 from uuid import UUID as PyUUID # For type hinting UUID objects
 import uuid
-import os
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, func # Added delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
 from db.models import DocumentEmbedding
 from datetime import datetime
-from typing import List
 
 
 async def create_job(
@@ -92,7 +90,6 @@ async def update_job_progress(
         raise ValueError(f"Invalid job_id format: {job_id}")
 
     # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
-    from sqlalchemy import func
 
     stmt = (
         pg_insert(models.JobProgress)
