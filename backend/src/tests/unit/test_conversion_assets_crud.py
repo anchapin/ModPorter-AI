@@ -67,13 +67,13 @@ class TestCreateAsset:
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
         mock_session.refresh = AsyncMock()
-        
+
         # Execute
         result = await crud.create_asset(
             mock_session,
             **sample_asset_data
         )
-        
+
         # Verify
         assert isinstance(result, models.Asset)
         assert result.asset_type == sample_asset_data["asset_type"]
@@ -99,14 +99,14 @@ class TestCreateAsset:
         # Setup - session.add is sync, flush is async
         mock_session.add = MagicMock()
         mock_session.flush = AsyncMock()
-        
+
         # Execute
         result = await crud.create_asset(
             mock_session,
             commit=False,
             **sample_asset_data
         )
-        
+
         # Verify
         assert isinstance(result, models.Asset)
         mock_session.add.assert_called_once()
@@ -124,10 +124,10 @@ class TestGetAsset:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_asset_model
         mock_session.execute = AsyncMock(return_value=mock_result)
-        
+
         # Execute
         result = await crud.get_asset(mock_session, str(sample_asset_model.id))
-        
+
         # Verify
         assert result == sample_asset_model
         mock_session.execute.assert_called_once()
@@ -144,10 +144,10 @@ class TestGetAsset:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute = AsyncMock(return_value=mock_result)
-        
+
         # Execute
         result = await crud.get_asset(mock_session, str(uuid.uuid4()))
-        
+
         # Verify
         assert result is None
 
@@ -165,10 +165,10 @@ class TestListAssetsForConversion:
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute = AsyncMock(return_value=mock_result)
-        
+
         # Execute
         result = await crud.list_assets_for_conversion(mock_session, sample_conversion_id)
-        
+
         # Verify
         assert result == mock_assets
         mock_session.execute.assert_called_once()
@@ -187,14 +187,14 @@ class TestListAssetsForConversion:
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute = AsyncMock(return_value=mock_result)
-        
+
         # Execute
         result = await crud.list_assets_for_conversion(
             mock_session,
             sample_conversion_id,
             asset_type="texture"
         )
-        
+
         # Verify
         assert result == []
         mock_session.execute.assert_called_once()
@@ -213,7 +213,7 @@ class TestUpdateAssetStatus:
         mock_result.scalar_one_or_none.return_value = sample_asset_model
         mock_session.execute = AsyncMock(return_value=mock_result)
         mock_session.commit = AsyncMock()
-        
+
         with patch('db.crud.get_asset', return_value=sample_asset_model):
             # Execute
             result = await crud.update_asset_status(
@@ -221,7 +221,7 @@ class TestUpdateAssetStatus:
             asset_id,
             "converted"
         )
-        
+
         # Verify
         assert result == sample_asset_model
         assert mock_session.execute.call_count == 1  # Update only (Select is mocked)
@@ -251,14 +251,14 @@ class TestUpdateAssetMetadata:
         mock_result.scalar_one_or_none.return_value = sample_asset_model
         mock_session.execute = AsyncMock(return_value=mock_result)
         mock_session.commit = AsyncMock()
-        
+
         # Execute
         result = await crud.update_asset_metadata(
             mock_session,
             asset_id,
             new_metadata
         )
-        
+
         # Verify
         assert result == sample_asset_model
         mock_session.execute.assert_called()
@@ -282,17 +282,17 @@ class TestDeleteAsset:
         """Test successful asset deletion"""
         # Setup
         asset_id = str(sample_asset_model.id)
-        
+
         # Setup
         mock_result = MagicMock()
         mock_result.rowcount = 1
         mock_session.execute = AsyncMock(return_value=mock_result)
         mock_session.commit = AsyncMock()
-        
+
         with patch('db.crud.get_asset', return_value=sample_asset_model):
             # Execute
             result = await crud.delete_asset(mock_session, asset_id)
-            
+
             # Verify
             assert result is True
             mock_session.execute.assert_called()
@@ -318,43 +318,43 @@ class TestAssetCRUDIntegration:
         """Test creating an asset and then retrieving it"""
         # This would be a more comprehensive test with a real database
         # For now, we'll simulate the flow with mocks
-        
+
         # Create asset
         with patch('db.crud.create_asset') as mock_create:
             mock_asset = models.Asset()
             mock_asset.id = uuid.uuid4()
             mock_create.return_value = mock_asset
-            
+
             created_asset = await crud.create_asset(mock_session, **sample_asset_data)
             assert created_asset == mock_asset
-        
+
         # Retrieve asset
         with patch('db.crud.get_asset') as mock_get:
             mock_get.return_value = mock_asset
-            
+
             retrieved_asset = await crud.get_asset(mock_session, str(mock_asset.id))
             assert retrieved_asset == mock_asset
 
     async def test_asset_status_workflow(self, mock_session, sample_asset_model):
         """Test typical asset status workflow: pending -> processing -> converted"""
         asset_id = str(sample_asset_model.id)
-        
+
         # Mock the update functions
         with patch('db.crud.update_asset_status') as mock_update:
             # Set to processing
             sample_asset_model.status = "processing"
             mock_update.return_value = sample_asset_model
-            
+
             result = await crud.update_asset_status(mock_session, asset_id, "processing")
             assert result.status == "processing"
-            
+
             # Set to converted
             sample_asset_model.status = "converted"
             sample_asset_model.converted_path = "/path/to/converted.png"
-            
+
             result = await crud.update_asset_status(
-                mock_session, 
-                asset_id, 
+                mock_session,
+                asset_id,
                 "converted",
                 converted_path="/path/to/converted.png"
             )

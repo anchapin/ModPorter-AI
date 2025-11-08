@@ -52,7 +52,7 @@ def pytest_sessionstart(session):
         try:
             # Run database initialization synchronously
             import asyncio
-            
+
             async def init_test_db():
                 from db.declarative_base import Base
                 from db import models
@@ -64,7 +64,7 @@ def pytest_sessionstart(session):
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                     await conn.run_sync(Base.metadata.create_all)
-            
+
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -106,14 +106,14 @@ def client():
         # Import dependencies
         from main import app
         from db.base import get_db
-        
+
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(
-            bind=test_engine, 
-            expire_on_commit=False, 
+            bind=test_engine,
+            expire_on_commit=False,
             class_=AsyncSession
         )
-        
+
         # Override the database dependency to use isolated sessions
         async def override_get_db():
             async with test_session_maker() as session:
@@ -124,12 +124,12 @@ def client():
                     raise
                 finally:
                     await session.close()
-        
+
         app.dependency_overrides[get_db] = override_get_db
-        
+
         # Create TestClient - init_db will be mocked since we already initialized it
         with TestClient(app) as test_client:
             yield test_client
-        
+
         # Clean up dependency override
         app.dependency_overrides.clear()

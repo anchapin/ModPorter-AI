@@ -118,9 +118,9 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
-app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"]) 
+app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
 app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
-app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"]) 
+app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"])
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
@@ -255,7 +255,7 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
-    
+
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
@@ -394,14 +394,14 @@ async def simulate_ai_conversion(job_id: str):
                 try:
                     logger.info(f"Job {job_id}: Starting asset conversion for conversion job")
                     asset_conversion_result = await asset_conversion_service.convert_assets_for_conversion(job_id)
-                    
+
                     if asset_conversion_result.get("success"):
                         converted_count = asset_conversion_result.get("converted_count", 0)
                         failed_count = asset_conversion_result.get("failed_count", 0)
                         logger.info(f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed")
                     else:
                         logger.warning(f"Job {job_id}: Asset conversion batch had issues")
-                        
+
                 except Exception as asset_error:
                     logger.error(f"Job {job_id}: Asset conversion error: {asset_error}")
                     # Don't fail the entire job for asset conversion errors
@@ -492,51 +492,51 @@ async def call_ai_engine_conversion(job_id: str):
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             output_filename = f"{job.id}_converted.mcaddon"
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
-            
+
             # Get the input file path
             input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
-            
+
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
             conversion_options["output_path"] = output_path
-            
+
             ai_request = {
                 "job_id": job_id,
                 "mod_file_path": input_file_path,
                 "conversion_options": conversion_options
             }
-            
+
             print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
-            
+
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
-                
+
                 if response.status_code != 200:
                     raise Exception(f"AI Engine failed to start conversion: {response.status_code} - {response.text}")
-                
+
                 print(f"AI Engine conversion started for job {job_id}")
-                
+
                 # Poll AI Engine for status updates
                 while True:
                     await asyncio.sleep(2)
-                    
+
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
                         print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
                         return
-                    
+
                     # Get status from AI Engine
                     status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
-                    
+
                     if status_response.status_code != 200:
                         print(f"Failed to get AI Engine status: {status_response.status_code}")
                         continue
-                    
+
                     ai_status = status_response.json()
                     print(f"AI Engine status for {job_id}: {ai_status}")
-                    
+
                     # Map AI Engine status to backend status
                     backend_status = ai_status["status"]
                     if backend_status == "processing":
@@ -545,26 +545,26 @@ async def call_ai_engine_conversion(job_id: str):
                         backend_status = "completed"
                     elif backend_status == "failed":
                         backend_status = "failed"
-                    
+
                     # Update database and cache
                     progress = ai_status.get("progress", 0)
                     job = await crud.update_job_status(session, job_id, backend_status)
                     await crud.upsert_progress(session, job_id, progress)
-                    
+
                     # Update in-memory mirror and cache
                     if backend_status == "completed":
                         result_url = f"/api/v1/convert/{job.id}/download"
                         mirror = mirror_dict_from_job(job, progress, result_url)
                     else:
                         mirror = mirror_dict_from_job(job, progress)
-                    
+
                     conversion_jobs_db[job_id] = mirror
                     await cache.set_job_status(job_id, mirror.model_dump())
                     await cache.set_progress(job_id, progress)
-                    
+
                     if backend_status in ["completed", "failed"]:
                         break
-                
+
                 if backend_status == "completed":
                     print(f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}")
                     # Verify the file exists
@@ -646,7 +646,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     await cache.set_progress(str(job.id), 0)
 
     print(f"Job {job.id}: Queued. Starting AI Engine conversion in background.")
-    
+
     # Try AI Engine first, fallback to simulation if it fails
     background_tasks.add_task(try_ai_engine_or_fallback, str(job.id))
 
@@ -867,7 +867,7 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
     )
 
 
-    
+
     try:
         await init_db()
     except Exception as e:

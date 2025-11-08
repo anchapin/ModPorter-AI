@@ -12,7 +12,7 @@ from .validation_constants import ValidationJobStatus, ValidationMessages
 # --- Mock AI Engine components (replace with actual imports/integration later) ---
 class ValidationReportModel(BaseModel):
     """Comprehensive validation report from AI agents."""
-    
+
     conversion_id: str = Field(..., description="Unique conversion identifier")
     semantic_analysis: Dict[str, Any] = Field(..., description="Semantic preservation analysis")
     behavior_prediction: Dict[str, Any] = Field(..., description="Behavioral difference predictions")
@@ -25,29 +25,29 @@ class ValidationReportModel(BaseModel):
 
 class ValidationAgent:
     """AI agent for validating conversion quality and accuracy."""
-    
+
     def __init__(self) -> None:
         """Initialize the validation agent."""
         # TODO: Initialize actual AI models and validation engines
         pass
-    
+
     def validate_conversion(
         self, conversion_artifacts: Dict[str, Any]
     ) -> ValidationReportModel:
         """Validate conversion artifacts using AI analysis.
-        
+
         Args:
             conversion_artifacts: Dictionary containing conversion data and metadata
-            
+
         Returns:
             Comprehensive validation report with confidence scores
         """
         conversion_id = conversion_artifacts.get("conversion_id", str(uuid.uuid4()))
-        
+
         # TODO: Replace with actual AI validation logic
         # Minimal processing delay for mock implementation
         time.sleep(0.1)
-        
+
         return ValidationReportModel(
             conversion_id=conversion_id,
             semantic_analysis=self._analyze_semantic_preservation(conversion_artifacts),
@@ -57,7 +57,7 @@ class ValidationAgent:
             overall_confidence=self._calculate_overall_confidence(),
             recommendations=self._generate_recommendations(conversion_artifacts)
         )
-    
+
     def _analyze_semantic_preservation(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze how well the conversion preserves original semantics."""
         return {
@@ -67,7 +67,7 @@ class ValidationAgent:
             "critical_issues": [],
             "warnings": ["Some complex logic may be simplified"]
         }
-    
+
     def _predict_behavior_differences(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         """Predict behavioral differences between Java and Bedrock versions."""
         return {
@@ -76,7 +76,7 @@ class ValidationAgent:
             "potential_issues": ["Mock behavior prediction"],
             "compatibility_score": 0.88
         }
-    
+
     def _validate_asset_integrity(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         """Validate integrity and completeness of converted assets."""
         return {
@@ -85,7 +85,7 @@ class ValidationAgent:
             "asset_specific_issues": {},
             "missing_assets": []
         }
-    
+
     def _validate_manifest_structure(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         """Validate Bedrock addon manifest structure and dependencies."""
         return {
@@ -94,12 +94,12 @@ class ValidationAgent:
             "warnings": ["Mock manifest validation warning"],
             "schema_compliance": True
         }
-    
+
     def _calculate_overall_confidence(self) -> float:
         """Calculate overall confidence score based on all validation metrics."""
         # TODO: Implement weighted confidence calculation
         return 0.88
-    
+
     def _generate_recommendations(self, artifacts: Dict[str, Any]) -> List[str]:
         """Generate actionable recommendations for improving conversion quality."""
         return ["Mock recommendation: Review all generated files."]

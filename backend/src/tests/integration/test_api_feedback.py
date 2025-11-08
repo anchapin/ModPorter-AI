@@ -20,7 +20,7 @@ def test_submit_feedback_missing_fields(client):
     }
     response = client.post("/api/v1/feedback", json=feedback_payload)
     assert response.status_code == 422
-    
+
     data = response.json()
     assert any(err["type"] == "missing" and err["loc"] == ["body", "feedback_type"] for err in data["detail"])
 

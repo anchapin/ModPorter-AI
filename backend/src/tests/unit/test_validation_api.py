@@ -37,7 +37,7 @@ class MockValidationAgent:
     def __init__(self):
         self.name = "Mock Validation Agent"
         self.version = "1.0.0"
-    
+
     def validate_conversion(self, artifacts, **kwargs):
         conversion_id = artifacts.get("conversion_id", str(uuid.uuid4()))
         return MockValidationResult(conversion_id)

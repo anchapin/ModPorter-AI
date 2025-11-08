@@ -13,7 +13,7 @@ import json
 # Core Status Types
 class ConversionStatus:
     SUCCESS = "success"
-    PARTIAL = "partial" 
+    PARTIAL = "partial"
     FAILED = "failed"
     PROCESSING = "processing"
 
@@ -36,7 +36,7 @@ class ReportMetadata:
     report_type: str = "comprehensive"
 
 
-@dataclass 
+@dataclass
 class SummaryReport:
     """Enhanced summary report with additional statistics."""
     overall_success_rate: float
@@ -48,7 +48,7 @@ class SummaryReport:
     processing_time_seconds: float
     download_url: Optional[str] = None
     quick_statistics: Dict[str, Any] = None
-    
+
     # New enhanced fields
     total_files_processed: int = 0
     output_size_mb: float = 0.0
@@ -96,7 +96,7 @@ class FeatureAnalysis:
     compatibility_mapping_summary: str
     visual_comparisons_overview: Optional[str] = None
     impact_assessment_summary: str = ""
-    
+
     # New enhanced fields
     total_compatibility_score: float = 0.0
     feature_categories: Dict[str, List[str]] = None
@@ -164,7 +164,7 @@ class DeveloperLog:
     file_processing_log: List[Dict[str, Any]]
     performance_metrics: Dict[str, Any]
     error_details: List[Dict[str, Any]]
-    
+
     # New enhanced fields
     optimization_opportunities: List[str] = None
     technical_debt_notes: List[str] = None
@@ -187,7 +187,7 @@ class InteractiveReport:
     feature_analysis: FeatureAnalysis
     assumptions_report: AssumptionsReport
     developer_log: DeveloperLog
-    
+
     # Enhanced interactive features
     navigation_structure: Dict[str, Any] = None
     export_formats: List[str] = None
@@ -314,7 +314,7 @@ def create_report_metadata(job_id: str, report_id: Optional[str] = None) -> Repo
     """Create report metadata with current timestamp."""
     if report_id is None:
         report_id = f"report_{job_id}_{int(datetime.now().timestamp())}"
-    
+
     return ReportMetadata(
         report_id=report_id,
         job_id=job_id,
@@ -328,15 +328,15 @@ def calculate_quality_score(summary: SummaryReport) -> float:
     """Calculate overall conversion quality score."""
     if summary.total_features == 0:
         return 0.0
-    
+
     success_weight = 1.0
     partial_weight = 0.6
     failed_weight = 0.0
-    
+
     weighted_score = (
         (summary.converted_features * success_weight) +
         (summary.partially_converted_features * partial_weight) +
         (summary.failed_features * failed_weight)
     ) / summary.total_features
-    
+
     return round(weighted_score * 100, 1)

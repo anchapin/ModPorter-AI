@@ -92,7 +92,7 @@ async def list_conversion_assets(
 ):
     """
     List all assets for a given conversion job.
-    
+
     - **conversion_id**: ID of the conversion job
     - **asset_type**: Filter by asset type (e.g., 'texture', 'model', 'sound')
     - **status**: Filter by status (e.g., 'pending', 'processing', 'converted', 'failed')
@@ -101,7 +101,7 @@ async def list_conversion_assets(
     """
     try:
         assets = await crud.list_assets_for_conversion(
-            db, 
+            db,
             conversion_id=conversion_id,
             asset_type=asset_type,
             status=status,
@@ -123,7 +123,7 @@ async def upload_asset(
 ):
     """
     Upload a new asset for a conversion job.
-    
+
     - **conversion_id**: ID of the conversion job
     - **asset_type**: Type of asset being uploaded
     - **file**: The asset file to upload
@@ -196,13 +196,13 @@ async def get_asset(
 ):
     """
     Get details of a specific asset.
-    
+
     - **asset_id**: ID of the asset to retrieve
     """
     asset = await crud.get_asset(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     return _asset_to_response(asset)
 
 
@@ -214,7 +214,7 @@ async def update_asset_status(
 ):
     """
     Update the conversion status of an asset.
-    
+
     - **asset_id**: ID of the asset to update
     - **status**: New status ('pending', 'processing', 'converted', 'failed')
     - **converted_path**: Path to converted file (if status is 'converted')
@@ -227,10 +227,10 @@ async def update_asset_status(
         converted_path=status_update.converted_path,
         error_message=status_update.error_message
     )
-    
+
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     return _asset_to_response(asset)
 
 
@@ -242,15 +242,15 @@ async def update_asset_metadata(
 ):
     """
     Update the metadata of an asset.
-    
+
     - **asset_id**: ID of the asset to update
     - **metadata**: New metadata dictionary
     """
     asset = await crud.update_asset_metadata(db, asset_id=asset_id, metadata=metadata)
-    
+
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     return _asset_to_response(asset)
 
 
@@ -261,19 +261,19 @@ async def delete_asset(
 ):
     """
     Delete an asset and its associated file.
-    
+
     - **asset_id**: ID of the asset to delete
     """
     # Get asset info before deletion
     asset = await crud.get_asset(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     # Delete the database record
     deleted_info = await crud.delete_asset(db, asset_id)
     if not deleted_info:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     # Clean up the physical file
     if asset.original_path and os.path.exists(asset.original_path):
         try:
@@ -281,14 +281,14 @@ async def delete_asset(
             logger.info(f"Deleted asset file: {asset.original_path}")
         except Exception as e:
             logger.warning(f"Could not delete asset file {asset.original_path}: {e}")
-    
+
     if asset.converted_path and os.path.exists(asset.converted_path):
         try:
             os.remove(asset.converted_path)
             logger.info(f"Deleted converted asset file: {asset.converted_path}")
         except Exception as e:
             logger.warning(f"Could not delete converted asset file {asset.converted_path}: {e}")
-    
+
     return {"message": f"Asset {asset_id} deleted successfully"}
 
 
@@ -300,25 +300,25 @@ async def trigger_asset_conversion(
 ):
     """
     Trigger conversion for a specific asset.
-    
+
     This endpoint initiates AI-powered conversion for a specific asset,
     integrating with the AI engine for intelligent asset transformation.
-    
+
     - **asset_id**: ID of the asset to convert
     """
     # Verify asset exists
     asset = await crud.get_asset(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    
+
     if asset.status == "converted":
         # Return already converted asset
         return _asset_to_response(asset)
-    
+
     try:
         # Trigger conversion through the service
         result = await asset_conversion_service.convert_asset(asset_id)
-        
+
         if result.get("success"):
             # Get updated asset
             updated_asset = await crud.get_asset(db, asset_id)
@@ -328,7 +328,7 @@ async def trigger_asset_conversion(
             error_msg = result.get("error", "Conversion failed")
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
-            
+
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
@@ -342,16 +342,16 @@ async def convert_all_conversion_assets(
 ):
     """
     Trigger conversion for all pending assets in a conversion job.
-    
+
     This endpoint processes all pending assets for a conversion job through
     the AI engine, providing batch asset conversion capabilities.
-    
+
     - **conversion_id**: ID of the conversion job
     """
     try:
         # Trigger batch conversion through the service
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
-        
+
         return {
             "message": "Asset conversion batch completed",
             "conversion_id": conversion_id,
@@ -360,7 +360,7 @@ async def convert_all_conversion_assets(
             "failed_count": result.get("failed_count", 0),
             "success": result.get("success", False)
         }
-        
+
     except Exception as e:
         logger.error(f"Error in batch asset conversion: {e}")
         raise HTTPException(status_code=500, detail="Failed to convert assets")

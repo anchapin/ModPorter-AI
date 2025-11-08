@@ -12,7 +12,7 @@ def should_skip_supabase_test():
     # Skip if using SQLite (test environment) or placeholder credentials
     return (
         os.getenv("TESTING") == "true" or
-        db_url.startswith("sqlite") or 
+        db_url.startswith("sqlite") or
         "supabase_project_id" in db_url or
         "localhost" in db_url
     )
@@ -51,10 +51,10 @@ async def test_database_connection_logic():
     """
     from sqlalchemy.ext.asyncio import create_async_engine
     from sqlalchemy.pool import StaticPool
-    
+
     # Use SQLite in-memory for this test (same as conftest.py)
     test_db_url = "sqlite+aiosqlite:///:memory:"
-    
+
     try:
         engine = create_async_engine(
             test_db_url,
@@ -62,13 +62,13 @@ async def test_database_connection_logic():
             poolclass=StaticPool,
             connect_args={"check_same_thread": False},
         )
-        
+
         async with engine.connect() as connection:
             result = await connection.execute(text("SELECT 1"))
             assert result.scalar_one() == 1
-        
+
         await engine.dispose()
         print("Successfully tested database connection logic.")
-        
+
     except Exception as e:
         pytest.fail(f"Failed to test database connection logic: {e}")
