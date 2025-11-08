@@ -41,16 +41,16 @@ def pytest_sessionstart(session):
         try:
             # Run database initialization synchronously
             import asyncio
-            
+
             async def init_test_db():
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
+                # from db import models  # Import all models to ensure they're registered
                 from sqlalchemy import text
                 print(f"Database URL: {test_engine.url}")
                 print("Available models:")
                 for table_name in Base.metadata.tables.keys():
                     print(f"  - {table_name}")
-                
+
                 async with test_engine.begin() as conn:
                     print("Connection established")
                     # Check if we're using SQLite
@@ -59,7 +59,7 @@ def pytest_sessionstart(session):
                         # SQLite doesn't support extensions, so we skip them
                         await conn.run_sync(Base.metadata.create_all)
                         print("Tables created successfully")
-                        
+
                         # Verify tables were created
                         result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
                         tables = [row[0] for row in result.fetchall()]
@@ -71,7 +71,7 @@ def pytest_sessionstart(session):
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                         await conn.run_sync(Base.metadata.create_all)
                         print("Extensions and tables created successfully")
-            
+
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -101,7 +101,7 @@ def project_root():
 async def db_session():
     """Create a database session for each test with transaction rollback."""
     # Ensure models are imported
-    from db import models
+    # from db import models
     # Ensure tables are created
     from db.declarative_base import Base
     async with test_engine.begin() as conn:
@@ -115,7 +115,7 @@ async def db_session():
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
             await conn.run_sync(Base.metadata.create_all)
-    
+
     async with test_engine.begin() as connection:
         session = AsyncSession(bind=connection, expire_on_commit=False)
         try:
@@ -129,28 +129,27 @@ def client():
     # Set up environment variable for testing BEFORE importing modules
     import os
     os.environ["TESTING"] = "true"
-    
+
     # Patch test engine into db.base before main.py imports it
-    import sys
     from unittest.mock import patch, MagicMock
-    
+
     # Create mock modules for patching
     mock_base = MagicMock()
-    
+
     # Import dependencies with the patched database
     with patch.dict('sys.modules'):
         # Patch database engine before any module imports
         with patch('db.base.async_engine', test_engine):
             with patch('db.base.AsyncSessionLocal', async_sessionmaker(
-                bind=test_engine, 
-                expire_on_commit=False, 
+                bind=test_engine,
+                expire_on_commit=False,
                 class_=AsyncSession
             )):
                 # Import after patching
                 from main import app
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
-                
+                # from db import models  # Import all models to ensure they're registered
+
                 # Ensure tables are created for this test engine
                 import asyncio
                 async def ensure_tables():
@@ -162,7 +161,7 @@ def client():
                             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                             await conn.run_sync(Base.metadata.create_all)
-                
+
                 # Run table creation synchronously
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -170,7 +169,7 @@ def client():
                     loop.run_until_complete(ensure_tables())
                 finally:
                     loop.close()
-                
+
                 # Mock the init_db function to prevent re-initialization during TestClient startup
                 with patch('db.init_db.init_db', new_callable=AsyncMock):
                     # Create TestClient - init_db will be mocked since we already initialized it
@@ -180,7 +179,7 @@ def client():
             db.base.async_engine = original_engine
             db.base.AsyncSessionLocal = original_session_local
 
-@pytest.fixture(scope="function")  
+@pytest.fixture(scope="function")
 async def async_client():
     """Create an async test client for FastAPI app."""
     # Mock init_db function to prevent re-initialization during TestClient startup
@@ -188,9 +187,9 @@ async def async_client():
         # Import dependencies and models
         from main import app
         from db.base import get_db
-        from db import models  # Import all models to ensure they're registered
+        # from db import models  # Import all models to ensure they're registered
         from db.declarative_base import Base
-        
+
         # Ensure tables are created for this test engine
         async def ensure_tables():
             async with test_engine.begin() as conn:
@@ -201,16 +200,16 @@ async def async_client():
                     await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                     await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                     await conn.run_sync(Base.metadata.create_all)
-        
+
         await ensure_tables()
-        
+
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(
-            bind=test_engine, 
-            expire_on_commit=False, 
+            bind=test_engine,
+            expire_on_commit=False,
             class_=AsyncSession
         )
-        
+
         # Override database dependency to use isolated sessions
         async def override_get_db():
             async with test_session_maker() as session:
@@ -221,14 +220,14 @@ async def async_client():
                     raise
                 finally:
                     await session.close()
-        
+
         app.dependency_overrides[get_db] = override_get_db
-        
+
         # Create AsyncClient using the newer API
         import httpx
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:
             yield test_client
-        
+
         # Clean up dependency override
         app.dependency_overrides.clear()
 

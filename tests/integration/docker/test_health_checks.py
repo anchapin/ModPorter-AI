@@ -1,6 +1,7 @@
 import pytest
 import requests
 
+
 @pytest.mark.integration_docker
 class TestServiceHealth:
     """

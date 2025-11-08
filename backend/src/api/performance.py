@@ -28,7 +28,7 @@ def load_scenarios_from_files():
     """Load benchmark scenarios from JSON files in ai-engine/src/benchmarking/scenarios/"""
     scenarios = {}
     scenarios_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src', 'benchmarking', 'scenarios')
-    
+
     if os.path.exists(scenarios_dir):
         for filename in os.listdir(scenarios_dir):
             if filename.endswith('.json'):
@@ -40,7 +40,7 @@ def load_scenarios_from_files():
                         scenarios[scenario_id] = scenario_data
                 except Exception as e:
                     print(f"Error loading scenario from {filepath}: {e}")
-    
+
     # Fallback scenarios if files don't exist
     if not scenarios:
         scenarios = {
@@ -63,7 +63,7 @@ def load_scenarios_from_files():
                 "thresholds": {"cpu": 80, "memory": 500, "fps": 30}
             }
         }
-    
+
     return scenarios
 
 mock_scenarios = load_scenarios_from_files()
@@ -74,10 +74,10 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
     Currently simulates execution but includes proper integration structure.
     """
     print(f"Starting benchmark run {run_id} for scenario {scenario_id} on {device_type}...")
-    
+
     # Update status to running
     mock_benchmark_runs[run_id].update({
-        "status": "running", 
+        "status": "running",
         "progress": 0.0,
         "current_stage": "initializing"
     })
@@ -86,11 +86,11 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
         # TODO: Import and integrate with actual PerformanceBenchmarkingSystem
         # from ai_engine.src.benchmarking.performance_system import PerformanceBenchmarkingSystem
         # benchmark_system = PerformanceBenchmarkingSystem()
-        
+
         scenario = mock_scenarios.get(scenario_id)
         if not scenario:
             raise ValueError(f"Scenario {scenario_id} not found")
-            
+
         # Simulate the benchmark execution stages
         stages = [
             ("initializing", 10),
@@ -99,14 +99,14 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
             ("analyzing_results", 80),
             ("generating_report", 100)
         ]
-        
+
         for stage_name, progress in stages:
             mock_benchmark_runs[run_id].update({
                 "progress": progress,
                 "current_stage": stage_name
             })
             time.sleep(1)  # Simulate work
-        
+
         # Simulate successful completion with detailed results
         benchmark_result = PerformanceBenchmark(
             id=run_id,
@@ -119,7 +119,7 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
             network_score=88.0,
             status="completed"
         )
-        
+
         # Mock performance metrics
         metrics = [
             PerformanceMetric(
@@ -141,12 +141,12 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
                 improvement_percentage=-10.0
             )
         ]
-        
+
         analysis = {
             "identified_issues": ["No major performance issues detected"],
             "optimization_suggestions": ["Performance appears within acceptable limits"]
         }
-        
+
         comparison_results = {
             "cpu": {
                 "cpu_usage_percent": {
@@ -163,7 +163,7 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
                 }
             }
         }
-        
+
         report_text = f"""
 Performance Benchmark Report for {scenario.get('scenario_name', 'Unknown')}
 ================================================================
@@ -184,13 +184,13 @@ Key Improvements:
 Analysis: {analysis['identified_issues'][0]}
 Recommendations: {analysis['optimization_suggestions'][0]}
 """
-        
+
         mock_benchmark_runs[run_id].update({
             "status": "completed",
             "progress": 100.0,
             "current_stage": "completed"
         })
-        
+
         mock_benchmark_reports[run_id] = {
             "benchmark": benchmark_result.model_dump(),
             "metrics": [m.model_dump() for m in metrics],
@@ -198,9 +198,9 @@ Recommendations: {analysis['optimization_suggestions'][0]}
             "comparison_results": comparison_results,
             "report_text": report_text
         }
-        
+
         print(f"Benchmark run {run_id} completed successfully.")
-        
+
     except Exception as e:
         print(f"Benchmark run {run_id} failed: {e}")
         mock_benchmark_runs[run_id].update({
@@ -219,7 +219,7 @@ async def run_benchmark_endpoint(request: BenchmarkRunRequest, background_tasks:
 
     run_id = str(uuid.uuid4())
     mock_benchmark_runs[run_id] = {
-        "status": "pending", 
+        "status": "pending",
         "scenario_id": request.scenario_id,
         "device_type": request.device_type,
         "conversion_id": request.conversion_id,
@@ -246,8 +246,8 @@ async def get_benchmark_status_endpoint(run_id: str):
         raise HTTPException(status_code=404, detail=f"Benchmark run ID '{run_id}' not found.")
 
     return BenchmarkStatusResponse(
-        run_id=run_id, 
-        status=run_info["status"], 
+        run_id=run_id,
+        status=run_info["status"],
         progress=run_info.get("progress", 0.0),
         current_stage=run_info.get("current_stage", "unknown"),
         estimated_completion=None  # TODO: Calculate based on progress
@@ -311,7 +311,7 @@ async def create_custom_scenario_endpoint(request: CustomScenarioRequest):
     Creates a custom benchmark scenario.
     """
     scenario_id = f"custom_{str(uuid.uuid4()).replace('-', '')[:8]}"
-    
+
     scenario_data = {
         "scenario_id": scenario_id,
         "scenario_name": request.scenario_name,
@@ -323,9 +323,9 @@ async def create_custom_scenario_endpoint(request: CustomScenarioRequest):
         "created_at": datetime.now(datetime.UTC).isoformat(),
         "custom": True
     }
-    
+
     mock_scenarios[scenario_id] = scenario_data
-    
+
     return ScenarioDefinition(**scenario_data)
 
 @router.get("/history", response_model=List[Dict[str, Any]])
@@ -348,9 +348,9 @@ async def get_benchmark_history_endpoint(limit: int = 50, offset: int = 0):
                 "memory_score": report_data.get("benchmark", {}).get("memory_score", 0),
                 "network_score": report_data.get("benchmark", {}).get("network_score", 0)
             })
-    
+
     # Sort by creation time (newest first)
     all_runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    
+
     # Apply pagination
     return all_runs[offset:offset + limit]

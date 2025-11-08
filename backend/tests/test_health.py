@@ -9,10 +9,10 @@ def test_health_check():
     try:
         from src.main import app
         client = TestClient(app)
-        
+
         # Test if we can import the app
         assert app is not None
-        
+
         # If health endpoint exists, test it
         try:
             response = client.get("/health")
@@ -20,6 +20,6 @@ def test_health_check():
         except Exception:
             # Health endpoint might not exist yet, that's ok
             pass
-            
+
     except ImportError as e:
         pytest.skip(f"Cannot import main app: {e}")

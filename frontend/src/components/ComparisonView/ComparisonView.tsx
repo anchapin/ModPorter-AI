@@ -35,6 +35,7 @@ const ComparisonView: React.FC = () => {
     if (comparisonId) {
       const fetchComparison = async () => {
         try {
+          setLoading(true);
           const response = await fetch(`/api/v1/comparisons/${comparisonId}`); // Use the actual API endpoint
           if (!response.ok) {
             const text = await response.text();

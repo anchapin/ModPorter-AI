@@ -12,6 +12,7 @@ from models.validation import (
     ValidationReport as AgentValidationReport
 )
 
+
 class LLMSemanticAnalyzer:
     def __init__(self, api_key: str = "MOCK_API_KEY"):
         self.api_key = api_key
@@ -57,6 +58,7 @@ class LLMSemanticAnalyzer:
             findings.append("Mock analysis complete.")
         print("LLMSemanticAnalyzer: Analysis complete. Intent preserved: %s, Confidence: %.2f" % (intent_preserved, confidence))
         return {"intent_preserved": intent_preserved, "confidence": round(confidence, 2), "findings": findings}
+
 
 class BehaviorAnalysisEngine:
     def __init__(self):
@@ -123,6 +125,7 @@ class BehaviorAnalysisEngine:
             "potential_issues": potential_issues
         }
 
+
 class AssetIntegrityChecker:
     def __init__(self):
         self.supported_image_extensions = {".png", ".jpg", ".jpeg", ".tga"}
@@ -164,6 +167,7 @@ class AssetIntegrityChecker:
                 corrupted_files.append(asset_path)
                 asset_specific_issues.setdefault(asset_path, []).extend(issues)
         return {"all_assets_valid": not corrupted_files, "corrupted_files": list(set(corrupted_files)), "asset_specific_issues": asset_specific_issues}
+
 
 class ManifestValidator:
     def __init__(self):
@@ -234,6 +238,7 @@ class ManifestValidator:
                 if mt in ["script", "javascript"] and "entry" not in m:
                     warn.append("Module %d type '%s' missing 'entry'." % (i, mt))
         return ManifestValidationResult(is_valid=not err, errors=err, warnings=warn)
+
 
 class ValidationAgent:
     def __init__(self):

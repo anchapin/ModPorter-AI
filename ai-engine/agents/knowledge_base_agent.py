@@ -2,6 +2,7 @@ from typing import List
 from crewai.tools import BaseTool
 from tools.search_tool import SearchTool
 
+
 class KnowledgeBaseAgent:
     """
     An agent specialized in retrieving information from a knowledge base

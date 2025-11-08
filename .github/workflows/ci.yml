@@ -61,7 +61,7 @@ jobs:
             dependencies:
               - '**/requirements*.txt'
               - '**/package.json'
-              - '**/pnpm-lock.yaml'
+              - 'frontend/pnpm-lock.yaml'
 
   # Pre-build base images if dependencies changed
   prepare-base-images:

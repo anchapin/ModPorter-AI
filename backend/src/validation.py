@@ -99,7 +99,7 @@ class ValidationFramework:
                 # For unknown file types, we should be more restrictive
                 # Don't accept generic files as valid archives
                 mime_type = "application/x-unknown"
-        
+
         # Debug logging to see what MIME type is detected
         print(f"DEBUG: File '{filename}' detected MIME type: '{mime_type}'")
         print(f"DEBUG: Allowed MIME types: {self.ALLOWED_MIME_TYPES}")

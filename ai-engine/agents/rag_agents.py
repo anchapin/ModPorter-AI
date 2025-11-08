@@ -1,6 +1,7 @@
 from crewai import Agent
 import os
 
+
 # Initialize LLM using the same logic as conversion_crew.py
 def get_llm():
     from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
@@ -39,6 +40,7 @@ def get_llm():
             temperature=0.7,
             max_tokens=2048
         )
+
 
 class RAGAgents:
     def search_agent(self, llm, tools):

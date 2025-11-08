@@ -13,34 +13,34 @@ from ..types.report_types import InteractiveReport
 
 class ReportExporter:
     """Service for exporting conversion reports in various formats."""
-    
+
     def __init__(self):
         self.supported_formats = ["json", "html", "csv"]
-    
+
     def export_to_json(self, report: InteractiveReport, pretty: bool = True) -> str:
         """Export report to JSON format."""
         report_dict = report.to_dict()
-        
+
         if pretty:
             return json.dumps(report_dict, indent=2, default=str)
         else:
             return json.dumps(report_dict, default=str)
-    
+
     def export_to_html(self, report: InteractiveReport) -> str:
         """Export report to HTML format."""
         html_template = self._get_html_template()
-        
+
         # Prepare data for template with proper HTML escaping
         context = {
             "report": self._escape_report_data(report.to_dict()),
             "generation_date": html.escape(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
             "title": html.escape(f"Conversion Report - {report.metadata.job_id}")
         }
-        
+
         # Template substitution with escaped data
         html_content = html_template.format(**context)
         return html_content
-    
+
     def _escape_report_data(self, data: Any) -> Any:
         """Recursively escape HTML in report data."""
         if isinstance(data, str):
@@ -51,14 +51,14 @@ class ReportExporter:
             return [self._escape_report_data(item) for item in data]
         else:
             return data
-    
+
     def export_to_csv(self, report: InteractiveReport) -> str:
         """Export report summary to CSV format."""
         csv_content = []
-        
+
         # Header
         csv_content.append("Section,Metric,Value")
-        
+
         # Summary data
         summary = report.summary
         csv_content.append(f"Summary,Overall Success Rate,{summary.overall_success_rate}%")
@@ -69,38 +69,38 @@ class ReportExporter:
         csv_content.append(f"Summary,Assumptions Applied,{summary.assumptions_applied_count}")
         csv_content.append(f"Summary,Processing Time (s),{summary.processing_time_seconds}")
         csv_content.append(f"Summary,Quality Score,{summary.conversion_quality_score}")
-        
+
         # Feature analysis
         for feature in report.feature_analysis.features:
             csv_content.append(f"Features,{feature.name},{feature.status}")
             csv_content.append(f"Features,{feature.name} Compatibility,{feature.compatibility_score}%")
-        
+
         # Assumptions
         for assumption in report.assumptions_report.assumptions:
             csv_content.append(f"Assumptions,{assumption.original_feature},{assumption.impact_level}")
-        
+
         return "\n".join(csv_content)
-    
+
     def create_shareable_link(self, report_id: str, base_url: str = "") -> str:
         """Create a shareable link for the report."""
         if not base_url:
             base_url = "https://modporter.ai"  # Default base URL
-        
+
         return f"{base_url}/reports/{report_id}"
-    
+
     def generate_download_package(self, report: InteractiveReport) -> Dict[str, str]:
         """Generate a complete download package with all formats."""
         package = {}
-        
+
         # JSON export
         package["report.json"] = self.export_to_json(report)
-        
+
         # HTML export
         package["report.html"] = self.export_to_html(report)
-        
+
         # CSV export
         package["summary.csv"] = self.export_to_csv(report)
-        
+
         # Metadata file
         metadata = {
             "report_id": report.metadata.report_id,
@@ -110,9 +110,9 @@ class ReportExporter:
             "export_formats": list(package.keys())
         }
         package["metadata.json"] = json.dumps(metadata, indent=2)
-        
+
         return package
-    
+
     def _get_html_template(self) -> str:
         """Get HTML template for report export."""
         return """
@@ -244,7 +244,7 @@ class ReportExporter:
         <h2 class="section-title">Feature Analysis</h2>
         <p><strong>Compatibility Summary:</strong> {report[feature_analysis][compatibility_mapping_summary]}</p>
         <p><strong>Impact Assessment:</strong> {report[feature_analysis][impact_assessment_summary]}</p>
-        
+
         <h3>Features by Category</h3>
         <div id="features-content">
             <!-- Features would be dynamically populated here -->
@@ -265,7 +265,7 @@ class ReportExporter:
         <div class="technical-log">
             <!-- Performance metrics would be shown here -->
         </div>
-        
+
         <h3>Optimization Opportunities</h3>
         <ul id="optimizations-list">
             <!-- Optimization suggestions would be listed here -->
@@ -282,10 +282,10 @@ class ReportExporter:
 
 class PDFExporter:
     """PDF export functionality (requires additional dependencies)."""
-    
+
     def __init__(self):
         self.available = self._check_dependencies()
-    
+
     def _check_dependencies(self) -> bool:
         """Check if PDF export dependencies are available."""
         try:
@@ -294,29 +294,29 @@ class PDFExporter:
             return spec is not None
         except ImportError:
             return False
-    
+
     def export_to_pdf(self, report: InteractiveReport) -> Optional[bytes]:
         """Export report to PDF format."""
         if not self.available:
             return None
-        
+
         try:
             import weasyprint
-            
+
             # Get HTML content
             exporter = ReportExporter()
             html_content = exporter.export_to_html(report)
-            
+
             # Convert to PDF
             pdf_document = weasyprint.HTML(string=html_content)
             pdf_bytes = pdf_document.write_pdf()
-            
+
             return pdf_bytes
-        
+
         except Exception as e:
             print(f"PDF export failed: {e}")
             return None
-    
+
     def export_to_pdf_base64(self, report: InteractiveReport) -> Optional[str]:
         """Export report to PDF and return as base64 string."""
         pdf_bytes = self.export_to_pdf(report)

@@ -15,13 +15,13 @@ async def test_create_feedback():
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
     mock_session.refresh = AsyncMock()
-    
+
     # Test data
     job_id = uuid.uuid4()
     feedback_type = "thumbs_up"
     comment = "Great conversion!"
     user_id = "user123"
-    
+
     # Mock the feedback refresh behavior
     def mock_refresh_side_effect(feedback):
         feedback.id = uuid.uuid4()
@@ -29,7 +29,7 @@ async def test_create_feedback():
         from datetime import datetime
         feedback.created_at = datetime.now()
         return None
-    
+
     mock_session.refresh.side_effect = mock_refresh_side_effect
 
     feedback = await crud.create_enhanced_feedback(
@@ -47,7 +47,7 @@ async def test_create_feedback():
     assert feedback.comment == comment
     assert feedback.user_id == user_id
     assert feedback.created_at is not None
-    
+
     # Verify session methods were called
     mock_session.add.assert_called_once()
     mock_session.commit.assert_called_once()
@@ -61,9 +61,9 @@ async def test_get_feedback_by_job_id():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_result = AsyncMock()
     mock_scalars = MagicMock()  # Don't make this async
-    
+
     job_id = uuid.uuid4()
-    
+
     # Create mock feedback objects
     feedback1 = MagicMock(spec=ConversionFeedback)
     feedback1.id = uuid.uuid4()
@@ -71,14 +71,14 @@ async def test_get_feedback_by_job_id():
     feedback1.feedback_type = "thumbs_up"
     feedback1.comment = "Excellent"
     feedback1.created_at = "2023-01-01T10:00:00"
-    
+
     feedback2 = MagicMock(spec=ConversionFeedback)
     feedback2.id = uuid.uuid4()
     feedback2.job_id = job_id
     feedback2.feedback_type = "thumbs_down"
     feedback2.comment = "Could be better"
     feedback2.created_at = "2023-01-01T09:00:00"
-    
+
     mock_scalars.all.return_value = [feedback1, feedback2]
     # Mock the scalars() method to return the mock_scalars object
     mock_result.scalars = MagicMock(return_value=mock_scalars)
@@ -91,7 +91,7 @@ async def test_get_feedback_by_job_id():
     feedback_comments = {f.comment for f in feedbacks}
     assert "Excellent" in feedback_comments
     assert "Could be better" in feedback_comments
-    
+
     # Verify session.execute was called
     mock_session.execute.assert_called_once()
 
@@ -103,28 +103,28 @@ async def test_list_all_feedback():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_result = AsyncMock()
     mock_scalars = MagicMock()  # Don't make this async
-    
+
     # Create mock feedback objects
     fb1 = MagicMock(spec=ConversionFeedback)
     fb1.id = uuid.uuid4()
     fb1.comment = "Job1 Feedback1"
     fb1.created_at = "2023-01-01T09:00:00"
-    
+
     fb2 = MagicMock(spec=ConversionFeedback)
     fb2.id = uuid.uuid4()
     fb2.comment = "Job2 Feedback1"
     fb2.created_at = "2023-01-01T10:00:00"
-    
+
     fb3 = MagicMock(spec=ConversionFeedback)
     fb3.id = uuid.uuid4()
     fb3.comment = "Job1 Feedback2"
     fb3.created_at = "2023-01-01T11:00:00"
-    
+
     fb4 = MagicMock(spec=ConversionFeedback)
     fb4.id = uuid.uuid4()
     fb4.comment = "Job2 Feedback2"
     fb4.created_at = "2023-01-01T12:00:00"
-    
+
     # Mock returning all feedback in descending order
     all_feedback = [fb4, fb3, fb2, fb1]
     mock_scalars.all.return_value = all_feedback
@@ -136,10 +136,10 @@ async def test_list_all_feedback():
     feedbacks_all = await crud.list_all_feedback(session=mock_session, skip=0, limit=10)
     assert len(feedbacks_all) == 4
     assert [f.id for f in feedbacks_all] == [fb4.id, fb3.id, fb2.id, fb1.id]
-    
+
     # Verify session.execute was called
     mock_session.execute.assert_called_once()
-    
+
     # Test pagination case
     mock_session.execute.reset_mock()
     mock_scalars.all.return_value = [fb3, fb2]  # Skip 1, limit 2
@@ -147,7 +147,7 @@ async def test_list_all_feedback():
     feedbacks_paginated = await crud.list_all_feedback(session=mock_session, skip=1, limit=2)
     assert len(feedbacks_paginated) == 2
     assert [f.id for f in feedbacks_paginated] == [fb3.id, fb2.id]
-    
+
     # Test empty case
     mock_session.execute.reset_mock()
     mock_scalars.all.return_value = []
