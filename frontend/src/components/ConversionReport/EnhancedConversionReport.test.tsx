@@ -179,6 +179,26 @@ Object.assign(navigator, {
   }
 });
 
+// Helper function to set up common DOM mocks for export functionality
+const setupDOMMocks = () => {
+  global.URL.createObjectURL = vi.fn(() => 'mock-url');
+  global.URL.revokeObjectURL = vi.fn();
+  
+  // Mock scrollIntoView for all DOM elements
+  Element.prototype.scrollIntoView = vi.fn();
+  
+  const appendSpy = vi.spyOn(document.body, 'appendChild');
+  const removeSpy = vi.spyOn(document.body, 'removeChild');
+  
+  const cleanup = () => {
+    appendSpy.mockRestore();
+    removeSpy.mockRestore();
+    vi.restoreAllMocks();
+  };
+  
+  return { cleanup, appendSpy, removeSpy };
+};
+
 describe('ReportSummary Component', () => {
   it('renders summary information correctly', () => {
     render(<ReportSummary summary={mockSummaryReport} />);
@@ -407,33 +427,19 @@ describe('DeveloperLog Component', () => {
   });
 
   it('handles export functionality', () => {
-    // Mock URL.createObjectURL and other needed methods
-    global.URL.createObjectURL = vi.fn(() => 'mock-url');
-    global.URL.revokeObjectURL = vi.fn();
+    const { cleanup } = setupDOMMocks();
     
-    // Create a mock element with proper DOM methods
-    const mockElement = {
-      click: vi.fn(),
-      download: '',
-      href: '',
-      style: {},
-      setAttribute: vi.fn(),
-      appendChild: vi.fn(),
-      removeChild: vi.fn()
-    };
-    
-    // Mock document.createElement properly
+    // Create a mock that will capture the createElement call and return a spy element
     const originalCreateElement = document.createElement;
+    let createdElement: HTMLAnchorElement | null = null;
+    
     vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
       if (tagName === 'a') {
-        return mockElement as any;
+        createdElement = originalCreateElement.call(document, tagName);
+        return createdElement;
       }
-      return originalCreateElement(tagName);
+      return originalCreateElement.call(document, tagName);
     });
-    
-    // Mock body methods
-    vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockElement as any);
-    vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockElement as any);
     
     render(
       <DeveloperLog 
@@ -446,8 +452,14 @@ describe('DeveloperLog Component', () => {
     const exportButton = screen.getByText('📥 Export Technical Data');
     fireEvent.click(exportButton);
     
-    expect(mockElement.click).toHaveBeenCalled();
+    // Verify the operations occurred
+    expect(document.createElement).toHaveBeenCalledWith('a');
+    expect(createdElement).not.toBeNull();
     expect(global.URL.createObjectURL).toHaveBeenCalled();
+    expect(global.URL.revokeObjectURL).toHaveBeenCalled();
+    
+    // Clean up
+    cleanup();
   });
 });
 
@@ -620,29 +632,7 @@ describe('Integration Tests', () => {
   });
 
   it('handles complete user workflow', async () => {
-    // Mock URL.createObjectURL for export functionality
-    global.URL.createObjectURL = vi.fn(() => 'mock-url');
-    global.URL.revokeObjectURL = vi.fn();
-    
-    // Create a mock element with proper DOM methods
-    const mockElement = {
-      click: vi.fn(),
-      download: '',
-      href: '',
-      style: {},
-      setAttribute: vi.fn(),
-      appendChild: vi.fn(),
-      removeChild: vi.fn()
-    };
-    
-    // Mock document.createElement properly
-    const originalCreateElement = document.createElement;
-    vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-      if (tagName === 'a') {
-        return mockElement as any;
-      }
-      return originalCreateElement(tagName);
-    });
+    const { cleanup } = setupDOMMocks();
     
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
     
@@ -659,11 +649,15 @@ describe('Integration Tests', () => {
       fireEvent.change(searchInput, { target: { value: 'CustomBlock' } });
     });
     
-    // 4. User expands a feature for details
+    // 4. User expands a feature for details (use getAllByText to handle multiple instances)
     await waitFor(() => {
-      const customBlockElement = screen.getByText('CustomBlock');
-      const featureHeader = customBlockElement.closest('.featureHeader');
-      if (featureHeader) {
+      const customBlockElements = screen.getAllByText('CustomBlock');
+      // Use the first CustomBlock element in the feature analysis section
+      const featureElement = customBlockElements.find(el => 
+        el.closest('[class*="featureCard"]')
+      );
+      if (featureElement) {
+        const featureHeader = featureElement.closest('[class*="featureHeader"]') || featureElement;
         fireEvent.click(featureHeader);
       }
     });
@@ -678,6 +672,10 @@ describe('Integration Tests', () => {
     
     // Verify the workflow completed without errors
     expect(screen.getByText('ModPorter AI Conversion Report')).toBeInTheDocument();
-    expect(mockElement.click).toHaveBeenCalled();
+    expect(global.URL.createObjectURL).toHaveBeenCalled();
+    expect(global.URL.revokeObjectURL).toHaveBeenCalled();
+    
+    // Clean up
+    cleanup();
   });
 });

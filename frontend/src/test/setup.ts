@@ -83,8 +83,8 @@ const mockFetch = vi.fn((url: string, options?: RequestInit) => {
     const mockBody = options.body as FormData;
     const file = mockBody?.get('file') as File;
     
-    // Reject invalid file types
-    if (file && !file.name.endsWith('.jar')) {
+    // Reject invalid file types - accept both .jar and .zip files
+    if (file && !file.name.endsWith('.jar') && !file.name.endsWith('.zip')) {
       return Promise.resolve({
         ok: false,
         status: 400,
