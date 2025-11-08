@@ -3,20 +3,14 @@
 
 FROM node:20-slim
 
-# Install pnpm globally
-RUN npm install -g pnpm
-
 # Create app directory
 WORKDIR /app
 
-# Copy workspace package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy frontend package.json for workspace (when building with frontend context)
-COPY package.json ./frontend/
+# Copy package files
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile && pnpm store prune
+RUN npm ci --only=production && npm cache clean --force
 
 # Create app user
 RUN adduser --disabled-password --gecos '' appuser && \
