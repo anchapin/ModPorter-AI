@@ -27,7 +27,7 @@ import {
   Add,
   CheckCircle,
   Error as ErrorIcon,
-} from '@mui/icons-material';
+, Close } from '@mui/icons-material';
 import { BehaviorFileTree } from './BehaviorFileTree';
 import { CodeEditor } from './CodeEditor';
 import { BlockPropertyEditor } from './BlockEditor';

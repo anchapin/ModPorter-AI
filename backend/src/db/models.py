@@ -17,7 +17,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
-from sqlalchemy.types import TypeDecorator
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from db.declarative_base import Base
@@ -577,8 +576,6 @@ class BehaviorTemplate(Base):
     created_by: Mapped[Optional[str]] = mapped_column(
         UUID(as_uuid=True), 
         ForeignKey("users.id", ondelete="SET NULL"), 
-        nullable=True
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
