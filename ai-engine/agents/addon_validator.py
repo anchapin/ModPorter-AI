@@ -7,7 +7,7 @@ import json
 import logging
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import jsonschema
 import uuid
 

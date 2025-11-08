@@ -7,7 +7,7 @@ import importlib
 import importlib.util
 import inspect
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pathlib import Path
 import json
 
