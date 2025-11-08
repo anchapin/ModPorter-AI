@@ -3,15 +3,12 @@ Tool utility functions and registry system for dynamic tool discovery and manage
 Provides a centralized system for managing AI agent tools with validation and discovery.
 """
 
-import os
-import sys
 import importlib
 import importlib.util
 import inspect
 import logging
-from typing import Dict, List, Any, Optional, Type, Callable
+from typing import Dict, List, Any
 from pathlib import Path
-from crewai.tools import BaseTool, tool
 import json
 
 logger = logging.getLogger(__name__)

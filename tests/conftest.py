@@ -10,6 +10,8 @@ from pathlib import Path
 os.environ["TESTING"] = "true"
 
 # Define project root fixture for consistent path resolution
+
+
 @pytest.fixture(scope="session")
 def project_root():
     """Provide project root path for consistent fixture paths."""

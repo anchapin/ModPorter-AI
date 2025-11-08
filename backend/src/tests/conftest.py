@@ -55,8 +55,8 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
-                from db import models
-                from db import models as db_models  # Ensure this imports models.py
+                # from db import models
+                # from db import models as db_models  # Ensure this imports models.py
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
@@ -106,6 +106,7 @@ def client():
         # Import dependencies
         from main import app
         from db.base import get_db
+        # from db import models
 
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(

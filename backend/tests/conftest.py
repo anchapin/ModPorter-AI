@@ -3,7 +3,7 @@ import sys
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Add the src directory to the Python path
@@ -44,9 +44,9 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
-                # Import the models.py file directly to ensure all models are registered
-                import db.models
+                # from db import models  # Import all models to ensure they're registered
+                # # Import the models.py file directly to ensure all models are registered
+                # import db.models
                 from sqlalchemy import text
                 print(f"Database URL: {test_engine.url}")
                 print("Available models:")
@@ -103,7 +103,7 @@ def project_root():
 async def db_session():
     """Create a database session for each test with transaction rollback."""
     # Ensure models are imported
-    from db import models
+    # from db import models
     # Ensure tables are created
     from db.declarative_base import Base
     async with test_engine.begin() as conn:
@@ -153,7 +153,7 @@ def client():
     # Ensure tables are created
     import asyncio
     from db.declarative_base import Base
-    from db import models
+    # from db import models
 
     async def ensure_tables():
         async with test_engine.begin() as conn:
@@ -191,7 +191,7 @@ async def async_client():
 
     # Ensure tables are created
     from db.declarative_base import Base
-    from db import models
+    # from db import models
 
     async def ensure_tables():
         async with test_engine.begin() as conn:

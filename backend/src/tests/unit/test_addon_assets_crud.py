@@ -6,7 +6,7 @@ import pytest
 import uuid
 from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+# from sqlalchemy import select
 from db import crud, models
 from datetime import datetime, timezone
 

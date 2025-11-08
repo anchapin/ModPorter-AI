@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any
 
+
 def add_ai_engine_to_path():
     """Setup sys.path to import ai-engine modules (addresses review comment)."""
     import sys

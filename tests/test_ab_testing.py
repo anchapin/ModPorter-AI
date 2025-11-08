@@ -80,7 +80,9 @@ async def test_experiment_variant_lifecycle(db_session: AsyncSession):
     assert variant.strategy_config == {"test": "config"}
     
     # Get variant
-    retrieved_variant = await crud.get_experiment_variant(db_session, variant.id)
+    retrieved_variant = await crud.get_experiment_variant(
+        db_session, variant.id
+    )
     assert retrieved_variant is not None
     assert retrieved_variant.name == "Test Variant"
     

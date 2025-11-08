@@ -44,7 +44,7 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
+                # from db import models  # Import all models to ensure they're registered
                 from sqlalchemy import text
                 print(f"Database URL: {test_engine.url}")
                 print("Available models:")
@@ -101,7 +101,7 @@ def project_root():
 async def db_session():
     """Create a database session for each test with transaction rollback."""
     # Ensure models are imported
-    from db import models
+    # from db import models
     # Ensure tables are created
     from db.declarative_base import Base
     async with test_engine.begin() as conn:
@@ -131,7 +131,6 @@ def client():
     os.environ["TESTING"] = "true"
 
     # Patch test engine into db.base before main.py imports it
-    import sys
     from unittest.mock import patch, MagicMock
 
     # Create mock modules for patching
@@ -149,7 +148,7 @@ def client():
                 # Import after patching
                 from main import app
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
+                # from db import models  # Import all models to ensure they're registered
 
                 # Ensure tables are created for this test engine
                 import asyncio
@@ -188,7 +187,7 @@ async def async_client():
         # Import dependencies and models
         from main import app
         from db.base import get_db
-        from db import models  # Import all models to ensure they're registered
+        # from db import models  # Import all models to ensure they're registered
         from db.declarative_base import Base
 
         # Ensure tables are created for this test engine

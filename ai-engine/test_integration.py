@@ -10,7 +10,6 @@ Tests the complete integration of all three phases:
 import sys
 import json
 import logging
-import asyncio
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
