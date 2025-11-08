@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
@@ -11,11 +12,15 @@ from datetime import datetime, timezone
 import uvicorn
 import os
 import uuid
-import asyncio # Added for simulated AI conversion
+import asyncio  # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
 from dotenv import load_dotenv
 from db.init_db import init_db
 from api.feedback import router as feedback_router
+
+
+# AI Engine settings
+
 
 load_dotenv()
 
@@ -23,7 +28,7 @@ load_dotenv()
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://localhost:8001")
 
 TEMP_UPLOADS_DIR = "temp_uploads"
-CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
+CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
@@ -31,6 +36,14 @@ conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 
 # Cache service instance
 cache = CacheService()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan"""
+    # Startup
+    await init_db()
+    yield
+    # Shutdown (cleanup if needed)
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -59,7 +72,8 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
-    ]
+    ],
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -75,6 +89,8 @@ app.add_middleware(
 app.include_router(feedback_router, prefix="/api/v1")
 
 # Pydantic models for API documentation
+
+
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
     # Legacy
@@ -98,7 +114,10 @@ class UploadResponse(BaseModel):
     """Response model for file upload"""
     file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
     original_filename: str = Field(..., description="The original name of the uploaded file.")
-    saved_filename: str = Field(..., description="The name under which the file is saved on the server (job_id + extension).")
+    saved_filename: str = Field(
+        ..., 
+        description="The name under which the file is saved on the server (job_id + extension)."
+    )
     size: int = Field(..., description="Size of the uploaded file in bytes.")
     content_type: Optional[str] = Field(default=None, description="Detected content type of the uploaded file.")
     message: str = Field(..., description="Status message confirming the upload.")
@@ -177,7 +196,10 @@ async def upload_file(file: UploadFile = File(...)):
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=415,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
+            detail=(
+                f"File type {file_ext} not supported. "
+                f"Allowed: {', '.join(allowed_extensions)}"
+            )
         )
 
     # Generate unique file identifier
@@ -203,11 +225,12 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
-    
+
+
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
-        saved_filename=saved_filename, # The name with job_id and extension
+        saved_filename=saved_filename,  # The name with job_id and extension
         size=real_file_size,  # Use the actual size we read
         content_type=file.content_type,
         message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
@@ -245,51 +268,51 @@ async def call_ai_engine_conversion(job_id: str):
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             output_filename = f"{job.id}_converted.mcaddon"
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
-            
+
             # Get the input file path
             input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
-            
+
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
             conversion_options["output_path"] = output_path
-            
+
             ai_request = {
                 "job_id": job_id,
                 "mod_file_path": input_file_path,
                 "conversion_options": conversion_options
             }
-            
+
             print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
-            
+
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
-                
+
                 if response.status_code != 200:
                     raise Exception(f"AI Engine failed to start conversion: {response.status_code} - {response.text}")
-                
+
                 print(f"AI Engine conversion started for job {job_id}")
-                
+
                 # Poll AI Engine for status updates
                 while True:
                     await asyncio.sleep(2)
-                    
+
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
                         print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
                         return
-                    
+
                     # Get status from AI Engine
                     status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
-                    
+
                     if status_response.status_code != 200:
                         print(f"Failed to get AI Engine status: {status_response.status_code}")
                         continue
-                    
+
                     ai_status = status_response.json()
                     print(f"AI Engine status for {job_id}: {ai_status}")
-                    
+
                     # Map AI Engine status to backend status
                     backend_status = ai_status["status"]
                     if backend_status == "processing":
@@ -298,26 +321,26 @@ async def call_ai_engine_conversion(job_id: str):
                         backend_status = "completed"
                     elif backend_status == "failed":
                         backend_status = "failed"
-                    
+
                     # Update database and cache
                     progress = ai_status.get("progress", 0)
                     job = await crud.update_job_status(session, job_id, backend_status)
                     await crud.upsert_progress(session, job_id, progress)
-                    
+
                     # Update in-memory mirror and cache
                     if backend_status == "completed":
                         result_url = f"/api/v1/convert/{job.id}/download"
                         mirror = mirror_dict_from_job(job, progress, result_url)
                     else:
                         mirror = mirror_dict_from_job(job, progress)
-                    
+
                     conversion_jobs_db[job_id] = mirror
                     await cache.set_job_status(job_id, mirror.model_dump())
                     await cache.set_progress(job_id, progress)
-                    
+
                     if backend_status in ["completed", "failed"]:
                         break
-                
+
                 if backend_status == "completed":
                     print(f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}")
                     # Verify the file exists
@@ -373,7 +396,7 @@ async def simulate_ai_conversion(job_id: str):
             await asyncio.sleep(5)
             job = await crud.update_job_status(session, job_id, "completed")
             await crud.upsert_progress(session, job_id, 100)
-            
+
             # Create simple mock file
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.mcaddon"
@@ -458,7 +481,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
     await cache.set_progress(str(job.id), 0)
 
     print(f"Job {job.id}: Queued. Starting AI Engine conversion in background.")
-    
+
     # Try AI Engine first, fallback to simulation if it fails
     background_tasks.add_task(try_ai_engine_or_fallback, str(job.id))
 
@@ -528,7 +551,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
     elif status == "completed":
         descriptive_message = "Conversion completed successfully."
         # Only set result_url if job is completed
-        result_url = f"/api/v1/convert/{job_id}/download" # Updated result_url
+        result_url = f"/api/v1/convert/{job_id}/download"  # Updated result_url
     elif status == "failed":
         error_message = "Conversion failed."
         descriptive_message = error_message
@@ -653,7 +676,7 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
     if job.status != "completed":
         raise HTTPException(status_code=400, detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.")
 
-    if not job.result_url: # Should be set if status is completed and file was made
+    if not job.result_url:  # Should be set if status is completed and file was made
         print(f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed.")
         # This indicates an internal inconsistency if the job is 'completed'.
         raise HTTPException(status_code=404, detail=f"Result for job '{job_id}' not available or URL is missing.")
@@ -678,9 +701,7 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         filename=download_filename
     )
 
-@app.on_event("startup")
-async def on_startup():
-    await init_db()
+# Database initialization is now handled by lifespan
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -702,6 +723,6 @@ async def try_ai_engine_or_fallback(job_id: str):
                 return
     except Exception as e:
         print(f"AI Engine not available ({e}), falling back to simulation for job {job_id}")
-    
+
     # Fallback to simulation
     await simulate_ai_conversion(job_id)

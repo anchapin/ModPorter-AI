@@ -25,7 +25,7 @@ class ExperimentCreate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     traffic_allocation: Optional[int] = 100  # Percentage (0-100)
-    
+
     model_config = ConfigDict(
         # Note: json_encoders deprecated, but keeping for compatibility
     )
@@ -64,7 +64,7 @@ class ExperimentResponse(BaseModel):
     traffic_allocation: int
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(
         # Note: json_encoders deprecated, but keeping for compatibility
     )
@@ -79,7 +79,7 @@ class ExperimentVariantResponse(BaseModel):
     strategy_config: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(
         # Note: json_encoders deprecated, but keeping for compatibility
     )
@@ -107,7 +107,7 @@ class ExperimentResultResponse(BaseModel):
     user_feedback_text: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
-    
+
     model_config = ConfigDict(
         # Note: json_encoders deprecated, but keeping for compatibility
     )
@@ -120,7 +120,7 @@ async def create_experiment(
 ):
     """Create a new A/B testing experiment."""
     logger.info(f"Creating new experiment: {experiment.name}")
-    
+
     # Validate traffic allocation
     if experiment.traffic_allocation is not None:
         if experiment.traffic_allocation < 0 or experiment.traffic_allocation > 100:
@@ -128,7 +128,7 @@ async def create_experiment(
                 status_code=400,
                 detail="Traffic allocation must be between 0 and 100"
             )
-    
+
     try:
         db_experiment = await crud.create_experiment(
             db,
@@ -138,7 +138,7 @@ async def create_experiment(
             end_date=experiment.end_date,
             traffic_allocation=experiment.traffic_allocation or 100
         )
-        
+
         return ExperimentResponse(
             id=str(db_experiment.id),
             name=db_experiment.name,
@@ -167,16 +167,16 @@ async def list_experiments(
 ):
     """List all A/B testing experiments."""
     logger.info(f"Listing experiments: status={status}, skip={skip}, limit={limit}")
-    
+
     # Validate parameters
     if skip < 0:
         raise HTTPException(status_code=400, detail="skip must be non-negative")
     if limit <= 0 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
-    
+
     try:
         experiments = await crud.list_experiments(db, status=status, skip=skip, limit=limit)
-        
+
         return [
             ExperimentResponse(
                 id=str(exp.id),
@@ -206,17 +206,17 @@ async def get_experiment(
 ):
     """Get details of a specific A/B testing experiment."""
     logger.info(f"Getting experiment: {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid experiment ID format")
-    
+
     try:
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         return ExperimentResponse(
             id=str(db_experiment.id),
             name=db_experiment.name,
@@ -246,12 +246,12 @@ async def update_experiment(
 ):
     """Update an A/B testing experiment."""
     logger.info(f"Updating experiment: {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid experiment ID format")
-    
+
     # Validate status if provided
     if experiment.status:
         valid_statuses = ['draft', 'active', 'paused', 'completed']
@@ -260,7 +260,7 @@ async def update_experiment(
                 status_code=400,
                 detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
             )
-    
+
     # Validate traffic allocation if provided
     if experiment.traffic_allocation is not None:
         if experiment.traffic_allocation < 0 or experiment.traffic_allocation > 100:
@@ -268,12 +268,12 @@ async def update_experiment(
                 status_code=400,
                 detail="Traffic allocation must be between 0 and 100"
             )
-    
+
     try:
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         updated_experiment = await crud.update_experiment(
             db,
             experiment_uuid,
@@ -284,7 +284,7 @@ async def update_experiment(
             status=experiment.status,
             traffic_allocation=experiment.traffic_allocation
         )
-        
+
         return ExperimentResponse(
             id=str(updated_experiment.id),
             name=updated_experiment.name,
@@ -313,19 +313,19 @@ async def delete_experiment(
 ):
     """Delete an A/B testing experiment."""
     logger.info(f"Deleting experiment: {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid experiment ID format")
-    
+
     try:
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         await crud.delete_experiment(db, experiment_uuid)
-        
+
         return {"message": "Experiment deleted successfully"}
     except HTTPException:
         raise
@@ -345,18 +345,18 @@ async def create_experiment_variant(
 ):
     """Create a new variant for an A/B testing experiment."""
     logger.info(f"Creating variant for experiment {experiment_id}: {variant.name}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid experiment ID format")
-    
+
     try:
         # Check if experiment exists
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         db_variant = await crud.create_experiment_variant(
             db,
             experiment_id=experiment_uuid,
@@ -365,7 +365,7 @@ async def create_experiment_variant(
             is_control=variant.is_control or False,
             strategy_config=variant.strategy_config
         )
-        
+
         return ExperimentVariantResponse(
             id=str(db_variant.id),
             experiment_id=str(db_variant.experiment_id),
@@ -393,20 +393,20 @@ async def list_experiment_variants(
 ):
     """List all variants for an A/B testing experiment."""
     logger.info(f"Listing variants for experiment: {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid experiment ID format")
-    
+
     try:
         # Check if experiment exists
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         variants = await crud.list_experiment_variants(db, experiment_uuid)
-        
+
         return [
             ExperimentVariantResponse(
                 id=str(variant.id),
@@ -438,27 +438,27 @@ async def get_experiment_variant(
 ):
     """Get details of a specific variant in an A/B testing experiment."""
     logger.info(f"Getting variant {variant_id} for experiment {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
         variant_uuid = uuid.UUID(variant_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
+
     try:
         # Check if experiment exists
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         db_variant = await crud.get_experiment_variant(db, variant_uuid)
         if not db_variant:
             raise HTTPException(status_code=404, detail="Variant not found")
-            
+
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
             raise HTTPException(status_code=404, detail="Variant not found in this experiment")
-            
+
         return ExperimentVariantResponse(
             id=str(db_variant.id),
             experiment_id=str(db_variant.experiment_id),
@@ -488,27 +488,27 @@ async def update_experiment_variant(
 ):
     """Update a variant in an A/B testing experiment."""
     logger.info(f"Updating variant {variant_id} for experiment {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
         variant_uuid = uuid.UUID(variant_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
+
     try:
         # Check if experiment exists
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         db_variant = await crud.get_experiment_variant(db, variant_uuid)
         if not db_variant:
             raise HTTPException(status_code=404, detail="Variant not found")
-            
+
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
             raise HTTPException(status_code=404, detail="Variant not found in this experiment")
-            
+
         updated_variant = await crud.update_experiment_variant(
             db,
             variant_uuid,
@@ -517,7 +517,7 @@ async def update_experiment_variant(
             is_control=variant.is_control,
             strategy_config=variant.strategy_config
         )
-        
+
         return ExperimentVariantResponse(
             id=str(updated_variant.id),
             experiment_id=str(updated_variant.experiment_id),
@@ -546,29 +546,29 @@ async def delete_experiment_variant(
 ):
     """Delete a variant from an A/B testing experiment."""
     logger.info(f"Deleting variant {variant_id} from experiment {experiment_id}")
-    
+
     try:
         experiment_uuid = uuid.UUID(experiment_id)
         variant_uuid = uuid.UUID(variant_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
+
     try:
         # Check if experiment exists
         db_experiment = await crud.get_experiment(db, experiment_uuid)
         if not db_experiment:
             raise HTTPException(status_code=404, detail="Experiment not found")
-            
+
         db_variant = await crud.get_experiment_variant(db, variant_uuid)
         if not db_variant:
             raise HTTPException(status_code=404, detail="Variant not found")
-            
+
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
             raise HTTPException(status_code=404, detail="Variant not found in this experiment")
-            
+
         await crud.delete_experiment_variant(db, variant_uuid)
-        
+
         return {"message": "Variant deleted successfully"}
     except HTTPException:
         raise
@@ -587,26 +587,26 @@ async def create_experiment_result(
 ):
     """Record results from an A/B testing experiment."""
     logger.info(f"Recording experiment result for variant {result.variant_id}")
-    
+
     try:
         variant_uuid = uuid.UUID(result.variant_id)
         session_uuid = uuid.UUID(result.session_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
+
     # Validate KPI values
     if result.kpi_quality is not None and (result.kpi_quality < 0 or result.kpi_quality > 100):
         raise HTTPException(status_code=400, detail="kpi_quality must be between 0 and 100")
-    
+
     if result.user_feedback_score is not None and (result.user_feedback_score < 1 or result.user_feedback_score > 5):
         raise HTTPException(status_code=400, detail="user_feedback_score must be between 1 and 5")
-    
+
     try:
         # Check if variant exists
         db_variant = await crud.get_experiment_variant(db, variant_uuid)
         if not db_variant:
             raise HTTPException(status_code=404, detail="Variant not found")
-            
+
         db_result = await crud.create_experiment_result(
             db,
             variant_id=variant_uuid,
@@ -618,7 +618,7 @@ async def create_experiment_result(
             user_feedback_text=result.user_feedback_text,
             metadata=result.metadata
         )
-        
+
         return ExperimentResultResponse(
             id=str(db_result.id),
             variant_id=str(db_result.variant_id),
@@ -651,19 +651,19 @@ async def list_experiment_results(
 ):
     """List experiment results."""
     logger.info(f"Listing experiment results: variant_id={variant_id}, session_id={session_id}, skip={skip}, limit={limit}")
-    
+
     # Validate parameters
     if skip < 0:
         raise HTTPException(status_code=400, detail="skip must be non-negative")
     if limit <= 0 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
-    
+
     try:
         variant_uuid = uuid.UUID(variant_id) if variant_id else None
         session_uuid = uuid.UUID(session_id) if session_id else None
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
+
     try:
         results = await crud.list_experiment_results(
             db,
@@ -672,7 +672,7 @@ async def list_experiment_results(
             skip=skip,
             limit=limit
         )
-        
+
         return [
             ExperimentResultResponse(
                 id=str(result.id),

@@ -3,7 +3,7 @@ import sys
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Add the src directory to the Python path
@@ -41,18 +41,18 @@ def pytest_sessionstart(session):
         try:
             # Run database initialization synchronously
             import asyncio
-            
+
             async def init_test_db():
                 from db.declarative_base import Base
-                from db import models  # Import all models to ensure they're registered
-                # Import the models.py file directly to ensure all models are registered
-                import db.models
+                # from db import models  # Import all models to ensure they're registered
+                # # Import the models.py file directly to ensure all models are registered
+                # import db.models
                 from sqlalchemy import text
                 print(f"Database URL: {test_engine.url}")
                 print("Available models:")
                 for table_name in Base.metadata.tables.keys():
                     print(f"  - {table_name}")
-                
+
                 async with test_engine.begin() as conn:
                     print("Connection established")
                     # Check if we're using SQLite
@@ -61,7 +61,7 @@ def pytest_sessionstart(session):
                         # SQLite doesn't support extensions, so we skip them
                         await conn.run_sync(Base.metadata.create_all)
                         print("Tables created successfully")
-                        
+
                         # Verify tables were created
                         result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
                         tables = [row[0] for row in result.fetchall()]
@@ -73,7 +73,7 @@ def pytest_sessionstart(session):
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                         await conn.run_sync(Base.metadata.create_all)
                         print("Extensions and tables created successfully")
-            
+
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -103,7 +103,7 @@ def project_root():
 async def db_session():
     """Create a database session for each test with transaction rollback."""
     # Ensure models are imported
-    from db import models
+    # from db import models
     # Ensure tables are created
     from db.declarative_base import Base
     async with test_engine.begin() as conn:
@@ -117,7 +117,7 @@ async def db_session():
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
             await conn.run_sync(Base.metadata.create_all)
-    
+
     async with test_engine.begin() as connection:
         session = AsyncSession(bind=connection, expire_on_commit=False)
         try:
@@ -130,18 +130,18 @@ def client():
     """Create a test client for the FastAPI app with proper test database."""
     # Set testing environment variable
     os.environ["TESTING"] = "true"
-    
+
     # Import app and database dependencies
     from main import app
     from db.base import get_db
-    
+
     # Override the database dependency to use our test engine
     test_session_maker = async_sessionmaker(
-        bind=test_engine, 
-        expire_on_commit=False, 
+        bind=test_engine,
+        expire_on_commit=False,
         class_=AsyncSession
     )
-    
+
     def override_get_db():
         # Create a new session for each request
         session = test_session_maker()
@@ -149,12 +149,12 @@ def client():
             yield session
         finally:
             asyncio.create_task(session.close())
-    
+
     # Ensure tables are created
     import asyncio
     from db.declarative_base import Base
-    from db import models
-    
+    # from db import models
+
     async def ensure_tables():
         async with test_engine.begin() as conn:
             if "sqlite" in str(test_engine.url).lower():
@@ -164,7 +164,7 @@ def client():
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                 await conn.run_sync(Base.metadata.create_all)
-    
+
     # Run table creation synchronously
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -172,27 +172,27 @@ def client():
         loop.run_until_complete(ensure_tables())
     finally:
         loop.close()
-    
+
     # Override the dependency
     app.dependency_overrides[get_db] = override_get_db
-    
+
     # Create TestClient
     with TestClient(app) as test_client:
         yield test_client
-    
+
     # Clean up
     app.dependency_overrides.clear()
 
-@pytest.fixture(scope="function")  
+@pytest.fixture(scope="function")
 async def async_client():
     """Create an async test client for the FastAPI app."""
     # Import app
     from main import app
-    
+
     # Ensure tables are created
     from db.declarative_base import Base
-    from db import models
-    
+    # from db import models
+
     async def ensure_tables():
         async with test_engine.begin() as conn:
             if "sqlite" in str(test_engine.url).lower():
@@ -202,9 +202,9 @@ async def async_client():
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                 await conn.run_sync(Base.metadata.create_all)
-    
+
     await ensure_tables()
-    
+
     # Create AsyncClient using the newer API
     import httpx
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:

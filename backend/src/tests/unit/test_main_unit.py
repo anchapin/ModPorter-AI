@@ -104,14 +104,14 @@ class TestConversionEndpoints:
         mock_job.status = "queued"
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
-        
+
         # Make sure create_job and update_job return coroutines that resolve to mock job
         mock_create_job.return_value = mock_job
         mock_update_job.return_value = mock_job
-        
+
         # Mock get_job to return same mock job for background tasks
         mock_get_job.return_value = mock_job
-        
+
         request_data = {
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
@@ -144,12 +144,12 @@ class TestConversionEndpoints:
             "target_version": "1.20.0",
             "options": {}
         }
-        
+
         # Make sure mocks return the mock job directly (not as coroutines)
         mock_create_job.return_value = mock_job
         mock_update_job.return_value = mock_job
         mock_get_job.return_value = mock_job
-        
+
         # First create a conversion job
         request_data = {
             "file_id": "mock-file-id",
@@ -178,12 +178,12 @@ class TestConversionEndpoints:
         """Test listing all conversion jobs."""
         # Mock database call
         mock_list_jobs.return_value = []
-        
+
         # Create a mock job for when create_job is called
         mock_job = AsyncMock()
         mock_job.id = "test-job-123"
         mock_create_job.return_value = mock_job
-        
+
         response = client.get("/api/v1/conversions")  # Changed path
         assert response.status_code == 200
 
@@ -210,13 +210,13 @@ class TestConversionEndpoints:
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
         # Remove problematic mock attributes that cause background task issues
-        
+
         # Make sure mocks return the mock job directly (not as coroutines)
         mock_create_job.return_value = mock_job
         mock_get_job.return_value = mock_job
         mock_update_job.return_value = mock_job  # Return mock job instead of None
         mock_upsert_progress.return_value = None  # Mock the upsert_progress call
-        
+
         # First create a conversion job
         request_data = {
             "file_id": "mock-file-id",
@@ -256,11 +256,11 @@ class TestConversionRequestValidation:
         mock_job.id = "test-job-123"
         mock_job.status = "queued"
         # Remove problematic mock attributes that cause background task issues
-        
+
         # Make sure create_job and update_job_status return the mock job
         mock_create_job.return_value = mock_job
         mock_update_job.return_value = mock_job
-        
+
         request_data = {
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
@@ -293,11 +293,11 @@ class TestConversionRequestValidation:
         mock_job = AsyncMock()
         mock_job.id = "test-job-123"
         mock_job.status = "queued"
-        
+
         # Make sure create_job and update_job_status return the mock job
         mock_create_job.return_value = mock_job
         mock_update_job.return_value = mock_job
-        
+
         request_data = {"file_id": "mock-file-id", "original_filename": "test-mod.jar"}
 
         response = client.post("/api/v1/convert", json=request_data)

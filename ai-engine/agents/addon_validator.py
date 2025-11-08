@@ -7,7 +7,7 @@ import json
 import logging
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import jsonschema
 import uuid
 
@@ -105,10 +105,14 @@ class AddonValidator:
                 self._generate_recommendations(validation_result)
             
             # Calculate final score
-            validation_result['overall_score'] = self._calculate_overall_score(validation_result)
+            validation_result['overall_score'] = self._calculate_overall_score(
+                validation_result
+            )
             validation_result['is_valid'] = len(validation_result['errors']) == 0
             
-            logger.info(f"Validation completed. Score: {validation_result['overall_score']}/100")
+            logger.info(
+                f"Validation completed. Score: {validation_result['overall_score']}/100"
+            )
             
         except Exception as e:
             logger.error(f"Validation failed: {e}")
@@ -118,7 +122,11 @@ class AddonValidator:
         
         return validation_result
     
-    def _validate_basic_file(self, addon_path: Path, result: Dict[str, Any]) -> bool:
+    def _validate_basic_file(
+        self, 
+        addon_path: Path, 
+        result: Dict[str, Any]
+    ) -> bool:
         """Validate basic file properties."""
         # Check if file exists
         if not addon_path.exists():
@@ -160,8 +168,12 @@ class AddonValidator:
         """Analyze basic statistics of the add-on."""
         stats = {
             'total_files': len(zipf.namelist()),
-            'total_size_compressed': sum(info.compress_size for info in zipf.infolist()),
-            'total_size_uncompressed': sum(info.file_size for info in zipf.infolist()),
+            'total_size_compressed': sum(
+                info.compress_size for info in zipf.infolist()
+            ),
+            'total_size_uncompressed': sum(
+                info.file_size for info in zipf.infolist()
+            ),
             'behavior_packs': set(),
             'resource_packs': set(),
             'file_types': {},
@@ -202,17 +214,26 @@ class AddonValidator:
         
         return stats
     
-    def _validate_addon_structure(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+    def _validate_addon_structure(
+        self, 
+        zipf: zipfile.ZipFile, 
+        result: Dict[str, Any]
+    ):
         """Validate the add-on directory structure."""
         namelist = zipf.namelist()
         
         # Check for required top-level directories
-        has_behavior_packs = any(name.startswith('behavior_packs/') for name in namelist)
-        has_resource_packs = any(name.startswith('resource_packs/') for name in namelist)
+        has_behavior_packs = any(
+            name.startswith('behavior_packs/') for name in namelist
+        )
+        has_resource_packs = any(
+            name.startswith('resource_packs/') for name in namelist
+        )
         
         if not has_behavior_packs and not has_resource_packs:
             result['errors'].append(
-                "Add-on must contain at least one behavior_packs/ or resource_packs/ directory"
+                "Add-on must contain at least one behavior_packs/ or "
+                "resource_packs/ directory"
             )
             return
         
@@ -226,9 +247,17 @@ class AddonValidator:
         # Check for common structural issues
         self._check_common_structure_issues(namelist, result)
     
-    def _validate_pack_structure(self, namelist: List[str], pack_type: str, result: Dict[str, Any]):
+    def _validate_pack_structure(
+        self, 
+        namelist: List[str], 
+        pack_type: str, 
+        result: Dict[str, Any]
+    ):
         """Validate structure of individual pack type."""
-        pack_files = [name for name in namelist if name.startswith(f'{pack_type}/')]
+        pack_files = [
+            name for name in namelist 
+            if name.startswith(f'{pack_type}/')
+        ]
         
         # Find all pack directories
         pack_dirs = set()
@@ -240,21 +269,35 @@ class AddonValidator:
         # Validate each pack
         for pack_dir in pack_dirs:
             pack_prefix = f'{pack_type}/{pack_dir}/'
-            pack_specific_files = [name for name in namelist if name.startswith(pack_prefix)]
+            pack_specific_files = [
+                name for name in namelist 
+                if name.startswith(pack_prefix)
+            ]
             
             # Check for manifest.json
             manifest_path = f'{pack_prefix}manifest.json'
             if manifest_path not in namelist:
-                result['errors'].append(f"Missing manifest.json in {pack_type}/{pack_dir}")
+                result['errors'].append(
+                    f"Missing manifest.json in {pack_type}/{pack_dir}"
+                )
                 continue
             
             # Validate pack-specific structure
             if pack_type == 'behavior_packs':
-                self._validate_behavior_pack_structure(pack_specific_files, pack_dir, result)
+                self._validate_behavior_pack_structure(
+                    pack_specific_files, pack_dir, result
+                )
             elif pack_type == 'resource_packs':
-                self._validate_resource_pack_structure(pack_specific_files, pack_dir, result)
+                self._validate_resource_pack_structure(
+                    pack_specific_files, pack_dir, result
+                )
     
-    def _validate_behavior_pack_structure(self, files: List[str], pack_name: str, result: Dict[str, Any]):
+    def _validate_behavior_pack_structure(
+        self, 
+        files: List[str], 
+        pack_name: str, 
+        result: Dict[str, Any]
+    ):
         """Validate behavior pack specific structure."""
         allowed_dirs = [
             'animations', 'animation_controllers', 'blocks', 'entities',
@@ -269,10 +312,16 @@ class AddonValidator:
                     dir_name = parts[2]
                     if dir_name not in allowed_dirs and not file_path.endswith('.json'):
                         result['warnings'].append(
-                            f"Unexpected directory '{dir_name}' in behavior pack '{pack_name}'"
+                            f"Unexpected directory '{dir_name}' in "
+                            f"behavior pack '{pack_name}'"
                         )
     
-    def _validate_resource_pack_structure(self, files: List[str], pack_name: str, result: Dict[str, Any]):
+    def _validate_resource_pack_structure(
+        self, 
+        files: List[str], 
+        pack_name: str, 
+        result: Dict[str, Any]
+    ):
         """Validate resource pack specific structure."""
         allowed_dirs = [
             'animations', 'animation_controllers', 'attachables', 'blocks',
@@ -287,13 +336,21 @@ class AddonValidator:
                     dir_name = parts[2]
                     if dir_name not in allowed_dirs and not file_path.endswith('.json'):
                         result['warnings'].append(
-                            f"Unexpected directory '{dir_name}' in resource pack '{pack_name}'"
+                            f"Unexpected directory '{dir_name}' in "
+                            f"resource pack '{pack_name}'"
                         )
     
-    def _check_common_structure_issues(self, namelist: List[str], result: Dict[str, Any]):
+    def _check_common_structure_issues(
+        self, 
+        namelist: List[str], 
+        result: Dict[str, Any]
+    ):
         """Check for common structural issues."""
         # Check for files in root directory
-        root_files = [name for name in namelist if '/' not in name.strip('/')]
+        root_files = [
+            name for name in namelist 
+            if '/' not in name.strip('/')
+        ]
         if root_files:
             result['warnings'].append(
                 f"Files found in root directory: {', '.join(root_files[:3])}"
@@ -307,7 +364,8 @@ class AddonValidator:
         ]
         if incorrect_names:
             result['errors'].append(
-                "Found directories with incorrect names. Use 'behavior_packs' and 'resource_packs' (plural)"
+                "Found directories with incorrect names. Use "
+                "'behavior_packs' and 'resource_packs' (plural)"
             )
         
         # Check for empty directories
@@ -324,12 +382,20 @@ class AddonValidator:
         empty_dirs = dirs - files_dirs
         if empty_dirs:
             result['info'].append(
-                f"Found {len(empty_dirs)} empty directories that could be removed"
+                f"Found {len(empty_dirs)} empty directories "
+                f"that could be removed"
             )
     
-    def _validate_manifests(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+    def _validate_manifests(
+        self, 
+        zipf: zipfile.ZipFile, 
+        result: Dict[str, Any]
+    ):
         """Validate all manifest.json files in the add-on."""
-        manifest_files = [name for name in zipf.namelist() if name.endswith('manifest.json')]
+        manifest_files = [
+            name for name in zipf.namelist() 
+            if name.endswith('manifest.json')
+        ]
         
         if not manifest_files:
             result['errors'].append("No manifest.json files found")
@@ -340,20 +406,31 @@ class AddonValidator:
                 with zipf.open(manifest_path) as f:
                     manifest_data = json.load(f)
                 
-                self._validate_single_manifest(manifest_data, manifest_path, result)
+                self._validate_single_manifest(
+                    manifest_data, manifest_path, result
+                )
                 
             except json.JSONDecodeError as e:
-                result['errors'].append(f"Invalid JSON in {manifest_path}: {e}")
+                result['errors'].append(
+                    f"Invalid JSON in {manifest_path}: {e}"
+                )
             except Exception as e:
                 result['errors'].append(f"Error reading {manifest_path}: {e}")
     
-    def _validate_single_manifest(self, manifest: Dict[str, Any], path: str, result: Dict[str, Any]):
+    def _validate_single_manifest(
+        self, 
+        manifest: Dict[str, Any], 
+        path: str, 
+        result: Dict[str, Any]
+    ):
         """Validate a single manifest file."""
         # Schema validation
         try:
             jsonschema.validate(manifest, self.manifest_schema)
         except jsonschema.ValidationError as e:
-            result['errors'].append(f"Manifest schema error in {path}: {e.message}")
+            result['errors'].append(
+                f"Manifest schema error in {path}: {e.message}"
+            )
             return
         
         # UUID validation

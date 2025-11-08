@@ -68,5 +68,11 @@ export default [
       },
     },
   },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
+    },
+  },
   ...storybook.configs["flat/recommended"],
 ];

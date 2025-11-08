@@ -763,7 +763,7 @@ async def get_addon_asset(session: AsyncSession, asset_id: str) -> Optional[mode
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     stmt = select(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
@@ -783,11 +783,11 @@ async def create_addon_asset(
         addon_uuid = uuid.UUID(addon_id)
     except ValueError:
         raise ValueError(f"Invalid addon ID format: {addon_id}")
-    
+
     # Prevent path traversal attacks
     if ".." in file_path or file_path.startswith("/"):
         raise ValueError("Invalid file path: path traversal detected")
-    
+
     asset = models.AddonAsset(
         addon_id=addon_uuid,
         type=asset_type,
@@ -817,12 +817,12 @@ async def update_addon_asset(
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     # Check if asset exists
     asset = await get_addon_asset(session, asset_id)
     if not asset:
         return None
-    
+
     # Update fields if provided
     update_data = {}
     if asset_type is not None:
@@ -834,7 +834,7 @@ async def update_addon_asset(
         update_data["path"] = file_path
     if original_filename is not None:
         update_data["original_filename"] = original_filename
-    
+
     if update_data:
         stmt = (
             update(models.AddonAsset)
@@ -846,7 +846,7 @@ async def update_addon_asset(
         if commit:
             await session.commit()
         asset = result.scalar_one_or_none()
-    
+
     return asset
 
 
@@ -856,12 +856,12 @@ async def delete_addon_asset(session: AsyncSession, asset_id: str) -> bool:
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     # Check if asset exists
     asset = await get_addon_asset(session, asset_id)
     if not asset:
         return False
-    
+
     stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
     result = await session.execute(stmt)
     await session.commit()
@@ -881,7 +881,7 @@ async def list_addon_assets(
         addon_uuid = uuid.UUID(addon_id)
     except ValueError:
         raise ValueError(f"Invalid addon ID format: {addon_id}")
-    
+
     stmt = (
         select(models.AddonAsset)
         .where(models.AddonAsset.addon_id == addon_uuid)
@@ -889,10 +889,10 @@ async def list_addon_assets(
         .limit(limit)
         .order_by(models.AddonAsset.created_at.desc())
     )
-    
+
     if asset_type:
         stmt = stmt.where(models.AddonAsset.type == asset_type)
-    
+
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -904,7 +904,7 @@ async def get_asset(session: AsyncSession, asset_id: str) -> Optional[models.Ass
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     stmt = select(models.Asset).where(models.Asset.id == asset_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
@@ -927,7 +927,7 @@ async def create_asset(
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
-    
+
     asset = models.Asset(
         conversion_id=conversion_uuid,
         asset_type=asset_type,
@@ -958,12 +958,12 @@ async def update_asset_status(
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     # Check if asset exists
     asset = await get_asset(session, asset_id)
     if not asset:
         return None
-    
+
     stmt = (
         update(models.Asset)
         .where(models.Asset.id == asset_uuid)
@@ -987,12 +987,12 @@ async def update_asset_metadata(
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     # Check if asset exists
     asset = await get_asset(session, asset_id)
     if not asset:
         return None
-    
+
     stmt = (
         update(models.Asset)
         .where(models.Asset.id == asset_uuid)
@@ -1011,12 +1011,12 @@ async def delete_asset(session: AsyncSession, asset_id: str) -> bool:
         asset_uuid = uuid.UUID(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
-    
+
     # Check if asset exists
     asset = await get_asset(session, asset_id)
     if not asset:
         return False
-    
+
     stmt = delete(models.Asset).where(models.Asset.id == asset_uuid)
     result = await session.execute(stmt)
     await session.commit()
@@ -1036,7 +1036,7 @@ async def list_assets_for_conversion(
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
-    
+
     stmt = (
         select(models.Asset)
         .where(models.Asset.conversion_id == conversion_uuid)
@@ -1044,10 +1044,10 @@ async def list_assets_for_conversion(
         .limit(limit)
         .order_by(models.Asset.created_at.desc())
     )
-    
+
     if asset_type:
         stmt = stmt.where(models.Asset.asset_type == asset_type)
-    
+
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -1068,19 +1068,19 @@ async def create_behavior_file(
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
-    
+
     behavior_file = models.BehaviorFile(
         conversion_id=conversion_uuid,
         file_path=file_path,
         file_type=file_type,
         content=content,
     )
-    
+
     session.add(behavior_file)
     if commit:
         await session.commit()
         await session.refresh(behavior_file)
-    
+
     return behavior_file
 
 
@@ -1093,7 +1093,7 @@ async def get_behavior_file(
         file_uuid = uuid.UUID(file_id)
     except ValueError:
         raise ValueError(f"Invalid file ID format: {file_id}")
-    
+
     stmt = select(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
@@ -1108,7 +1108,7 @@ async def get_behavior_files_by_conversion(
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
-    
+
     stmt = (
         select(models.BehaviorFile)
         .where(models.BehaviorFile.conversion_id == conversion_uuid)
@@ -1129,7 +1129,7 @@ async def update_behavior_file_content(
         file_uuid = uuid.UUID(file_id)
     except ValueError:
         raise ValueError(f"Invalid file ID format: {file_id}")
-    
+
     stmt = (
         update(models.BehaviorFile)
         .where(models.BehaviorFile.id == file_uuid)
@@ -1137,10 +1137,10 @@ async def update_behavior_file_content(
         .returning(models.BehaviorFile)
     )
     result = await session.execute(stmt)
-    
+
     if commit:
         await session.commit()
-    
+
     return result.scalar_one_or_none()
 
 
@@ -1154,18 +1154,18 @@ async def delete_behavior_file(
         file_uuid = uuid.UUID(file_id)
     except ValueError:
         raise ValueError(f"Invalid file ID format: {file_id}")
-    
+
     # Check if file exists
     existing_file = await get_behavior_file(session, file_id)
     if not existing_file:
         return False
-    
+
     stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
     result = await session.execute(stmt)
-    
+
     if commit:
         await session.commit()
-    
+
     return result.rowcount > 0
 
 
@@ -1179,7 +1179,7 @@ async def get_behavior_files_by_type(
         conversion_uuid = uuid.UUID(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
-    
+
     stmt = (
         select(models.BehaviorFile)
         .where(

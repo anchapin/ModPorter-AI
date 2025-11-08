@@ -2,13 +2,21 @@ from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 import os
 import yaml
+import logging
 
-# Import the actual SearchTool
+logger = logging.getLogger(__name__)
+
+# Import the actual SearchTool and tool utilities
 from tools.search_tool import SearchTool
+from tools.tool_utils import get_tool_registry
+from tools.web_search_tool import WebSearchTool
+from tools.bedrock_scraper_tool import BedrockScraperTool
 
 # Mapping tool names from YAML to actual tool classes/functions
 AVAILABLE_TOOLS = {
-    "SearchTool": SearchTool
+    "SearchTool": SearchTool,
+    "WebSearchTool": WebSearchTool,
+    "BedrockScraperTool": BedrockScraperTool
 }
 
 # Placeholder for LLM initialization (similar to rag_agents.py or conversion_crew.py)
@@ -46,9 +54,18 @@ class RAGTasks:
 
 
 class RAGCrew:
-    def __init__(self, model_name: str = "gpt-4", llm=None):
+    def __init__(self, model_name: str = "gpt-4", llm=None, use_tool_registry: bool = True):
         # Allow passing a custom LLM instance for testing
         self.llm = llm if llm else ChatOpenAI(model_name=model_name, temperature=0.1)
+        self.use_tool_registry = use_tool_registry
+        
+        # Initialize tool registry if enabled
+        if self.use_tool_registry:
+            self.tool_registry = get_tool_registry()
+            logger.info(f"Tool registry initialized with {len(self.tool_registry.list_available_tools())} tools")
+        else:
+            self.tool_registry = None
+            
         self._load_agent_configs()
         self._setup_agents()
         self._setup_crew()
@@ -116,20 +133,64 @@ class RAGCrew:
             self.researcher_config = self.agent_configs['agents']['researcher']
             self.writer_config = self.agent_configs['agents']['writer']
     def _get_tools_from_config(self, tool_names: list) -> list:
+        """
+        Enhanced tool loading with registry support and fallback handling.
+        """
         tools_instances = []
+        
         for tool_name in tool_names:
-            if tool_name in AVAILABLE_TOOLS:
-                # Get the SearchTool instance and its available tools
-                tool_class = AVAILABLE_TOOLS[tool_name]
-                if tool_name == "SearchTool":
-                    # For SearchTool, get the instance and its available tools
-                    search_tool_instance = tool_class.get_instance()
-                    tools_instances.extend(search_tool_instance.get_tools())
+            try:
+                # First try the tool registry if enabled
+                if self.use_tool_registry and self.tool_registry:
+                    tool_instance = self.tool_registry.get_tool_by_name(tool_name)
+                    if tool_instance:
+                        # Handle different tool types
+                        if tool_name == "search_tool":
+                            # Get the SearchTool instance and its available tools
+                            if hasattr(tool_instance, 'get_tools'):
+                                tools_instances.extend(tool_instance.get_tools())
+                            else:
+                                tools_instances.append(tool_instance)
+                        elif tool_name == "web_search_tool":
+                            # Web search tool instance
+                            tools_instances.append(tool_instance)
+                        elif tool_name == "bedrock_scraper_tool":
+                            # Bedrock scraper tool instance
+                            tools_instances.append(tool_instance)
+                        else:
+                            tools_instances.append(tool_instance)
+                        
+                        logger.debug(f"Loaded tool '{tool_name}' from registry")
+                        continue
+                
+                # Fallback to legacy AVAILABLE_TOOLS mapping
+                if tool_name in AVAILABLE_TOOLS:
+                    tool_class = AVAILABLE_TOOLS[tool_name]
+                    if tool_name == "SearchTool":
+                        # For SearchTool, get the instance and its available tools
+                        search_tool_instance = tool_class.get_instance()
+                        tools_instances.extend(search_tool_instance.get_tools())
+                    elif tool_name == "WebSearchTool":
+                        # For WebSearchTool, instantiate with default settings
+                        web_search_instance = tool_class(max_results=10, timeout=30)
+                        tools_instances.append(web_search_instance)
+                    elif tool_name == "BedrockScraperTool":
+                        # For BedrockScraperTool, instantiate with default settings
+                        scraper_instance = tool_class(max_depth=2, rate_limit=1.0)
+                        tools_instances.append(scraper_instance)
+                    else:
+                        # For other tools, instantiate normally
+                        tools_instances.append(tool_class())
+                    
+                    logger.debug(f"Loaded tool '{tool_name}' from AVAILABLE_TOOLS")
                 else:
-                    # For other tools, instantiate normally
-                    tools_instances.append(tool_class())
-            else:
-                print(f"Warning: Tool '{tool_name}' not found in AVAILABLE_TOOLS.")
+                    logger.warning(f"Tool '{tool_name}' not found in registry or AVAILABLE_TOOLS")
+                    
+            except Exception as e:
+                logger.error(f"Failed to load tool '{tool_name}': {str(e)}")
+                continue
+        
+        logger.info(f"Successfully loaded {len(tools_instances)} tool instances")
         return tools_instances
 
     def _setup_agents(self):
@@ -192,6 +253,113 @@ class RAGCrew:
         Takes a user query and executes the RAG workflow.
         """
         return self.run(query)
+    
+    def get_available_tools(self) -> list:
+        """
+        Get list of available tools for the RAG crew.
+        """
+        if self.tool_registry:
+            return self.tool_registry.list_available_tools()
+        else:
+            return list(AVAILABLE_TOOLS.keys())
+    
+    def validate_tool_configuration(self) -> dict:
+        """
+        Validate the configuration of all loaded tools.
+        """
+        validation_results = {
+            "valid_tools": [],
+            "invalid_tools": [],
+            "warnings": []
+        }
+        
+        if self.tool_registry:
+            for tool_info in self.tool_registry.list_available_tools():
+                tool_name = tool_info["name"]
+                validation = self.tool_registry.validate_tool_configuration(tool_name)
+                
+                if validation["valid"]:
+                    validation_results["valid_tools"].append({
+                        "name": tool_name,
+                        "description": tool_info["description"],
+                        "version": tool_info["version"]
+                    })
+                else:
+                    validation_results["invalid_tools"].append({
+                        "name": tool_name,
+                        "errors": validation["errors"],
+                        "warnings": validation["warnings"]
+                    })
+                
+                validation_results["warnings"].extend(validation["warnings"])
+        
+        return validation_results
+    
+    def get_tool_registry_export(self, output_file: str = None) -> dict:
+        """
+        Export tool registry data for analysis or backup.
+        """
+        if self.tool_registry:
+            return self.tool_registry.export_registry(output_file)
+        else:
+            return {"error": "Tool registry not enabled"}
+    
+    def test_web_search_integration(self, test_query: str = "Minecraft Bedrock Edition scripting API") -> dict:
+        """
+        Test web search integration with a sample query.
+        """
+        try:
+            # Test if WebSearchTool is available
+            web_search_tool = None
+            for tool in self.researcher.tools:
+                if hasattr(tool, '__class__') and 'WebSearchTool' in tool.__class__.__name__:
+                    web_search_tool = tool
+                    break
+            
+            if not web_search_tool:
+                return {
+                    "status": "error",
+                    "message": "WebSearchTool not found in researcher tools"
+                }
+            
+            # Perform test search
+            result = web_search_tool._run(test_query)
+            
+            return {
+                "status": "success",
+                "test_query": test_query,
+                "result_preview": result[:500] + "..." if len(result) > 500 else result,
+                "full_result_length": len(result)
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Web search test failed: {str(e)}"
+            }
+    
+    def get_system_status(self) -> dict:
+        """
+        Get comprehensive system status including tools and configuration.
+        """
+        status = {
+            "llm_model": getattr(self.llm, 'model_name', 'unknown'),
+            "tool_registry_enabled": self.use_tool_registry,
+            "total_agents": len(self.crew.agents) if hasattr(self, 'crew') and self.crew else 0,
+            "researcher_tools": len(self.researcher.tools) if hasattr(self, 'researcher') else 0,
+            "writer_tools": len(self.writer.tools) if hasattr(self, 'writer') else 0,
+            "tool_validation": self.validate_tool_configuration(),
+            "web_search_available": False
+        }
+        
+        # Check for web search availability
+        if hasattr(self, 'researcher') and self.researcher:
+            for tool in self.researcher.tools:
+                if hasattr(tool, '__class__') and 'WebSearchTool' in tool.__class__.__name__:
+                    status["web_search_available"] = True
+                    break
+        
+        return status
 
 
 if __name__ == '__main__':

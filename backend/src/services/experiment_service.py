@@ -11,42 +11,42 @@ from db import crud, models
 
 class ExperimentService:
     """Service for managing A/B testing experiments."""
-    
+
     def __init__(self, db_session: AsyncSession):
         self.db = db_session
-    
+
     async def get_active_experiments(self) -> List[models.Experiment]:
         """Get all active experiments."""
         return await crud.list_experiments(self.db, status="active")
-    
+
     async def get_experiment_variants(self, experiment_id: uuid.UUID) -> List[models.ExperimentVariant]:
         """Get all variants for an experiment."""
         return await crud.list_experiment_variants(self.db, experiment_id)
-    
+
     async def allocate_variant(self, experiment_id: uuid.UUID) -> Optional[models.ExperimentVariant]:
         """
         Allocate a variant for the given experiment based on traffic allocation settings.
-        
+
         Returns the allocated variant, or None if no variant could be allocated.
         """
         # Get the experiment
         experiment = await crud.get_experiment(self.db, experiment_id)
         if not experiment or experiment.status != "active":
             return None
-        
+
         # Get all variants for this experiment
         variants = await self.get_experiment_variants(experiment_id)
         if not variants:
             return None
-        
+
         # Check if we should allocate to this experiment based on traffic allocation
         if random.randint(1, 100) > experiment.traffic_allocation:
             return None
-        
+
         # Allocate to a variant based on equal distribution
         # In a more advanced implementation, we could implement weighted distribution
         return random.choice(variants)
-    
+
     async def get_control_variant(self, experiment_id: uuid.UUID) -> Optional[models.ExperimentVariant]:
         """Get the control variant for an experiment."""
         variants = await self.get_experiment_variants(experiment_id)
@@ -54,7 +54,7 @@ class ExperimentService:
             if variant.is_control:
                 return variant
         return None
-    
+
     async def record_experiment_result(
         self,
         variant_id: uuid.UUID,

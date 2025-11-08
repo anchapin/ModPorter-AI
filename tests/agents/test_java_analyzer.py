@@ -9,6 +9,7 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent / "fixtures"))
 from simple_copper_block import create_simple_copper_block_jar, get_expected_analysis_result
 
+
 def setup_ai_engine_imports():
     """Setup sys.path to import ai-engine modules."""
     project_root = Path(__file__).resolve().parent.parent.parent

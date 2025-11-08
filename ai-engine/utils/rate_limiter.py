@@ -4,7 +4,7 @@ Rate limiting utility for OpenAI API calls and LLM interactions
 
 import time
 import logging
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 from functools import wraps
 from dataclasses import dataclass
 import os
