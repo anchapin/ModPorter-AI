@@ -360,9 +360,7 @@ class AddonValidator:
         # Check for incorrect pack directory names
         incorrect_names = [
             name for name in namelist 
-            if name.startswith(
-                ('behavior_pack/', 'resource_pack/')
-            ):  # Singular form
+            if name.startswith(('behavior_pack/', 'resource_pack/'))  # Singular form
         ]
         if incorrect_names:
             result['errors'].append(
