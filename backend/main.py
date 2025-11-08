@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
 from contextlib import asynccontextmanager
-from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
