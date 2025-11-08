@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
+from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
@@ -11,11 +13,14 @@ from datetime import datetime, timezone
 import uvicorn
 import os
 import uuid
-import asyncio # Added for simulated AI conversion
+import asyncio  # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
 from dotenv import load_dotenv
 from db.init_db import init_db
 from api.feedback import router as feedback_router
+
+
+# AI Engine settings
 
 load_dotenv()
 
@@ -23,7 +28,7 @@ load_dotenv()
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://localhost:8001")
 
 TEMP_UPLOADS_DIR = "temp_uploads"
-CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
+CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
@@ -31,6 +36,14 @@ conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
 
 # Cache service instance
 cache = CacheService()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan"""
+    # Startup
+    await init_db()
+    yield
+    # Shutdown (cleanup if needed)
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -59,7 +72,8 @@ app = FastAPI(
             "name": "health",
             "description": "Health check endpoints",
         },
-    ]
+    ],
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -177,7 +191,10 @@ async def upload_file(file: UploadFile = File(...)):
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=415,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
+            detail=(
+                f"File type {file_ext} not supported. "
+                f"Allowed: {', '.join(allowed_extensions)}"
+            )
         )
 
     # Generate unique file identifier
@@ -678,9 +695,7 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         filename=download_filename
     )
 
-@app.on_event("startup")
-async def on_startup():
-    await init_db()
+# Database initialization is now handled by lifespan
 
 if __name__ == "__main__":
     uvicorn.run(

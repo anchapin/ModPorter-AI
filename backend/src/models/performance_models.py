@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class PerformanceBenchmark(BaseModel):
@@ -13,7 +13,7 @@ class PerformanceBenchmark(BaseModel):
     cpu_score: float = 0.0
     memory_score: float = 0.0
     network_score: float = 0.0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     scenario_id: str
     scenario_name: str
     status: str = "pending"  # pending, running, completed, failed
