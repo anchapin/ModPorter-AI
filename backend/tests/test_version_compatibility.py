@@ -40,9 +40,10 @@ class TestVersionCompatibilityAPI:
         }
         
         response = await async_client.post("/api/v1/version-compatibility/entries/", json=compatibility_data)
-        assert response.status_code == 201
         
         data = response.json()
+        assert response.status_code == 201
+        
         assert data["source_version"] == "1.18.2"
         assert data["target_version"] == "1.19.2"
         assert data["compatibility_score"] == 0.85
