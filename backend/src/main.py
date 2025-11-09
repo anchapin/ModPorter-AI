@@ -53,6 +53,13 @@ try:
 except Exception as e:
     print(f"Error importing knowledge_graph_fixed: {e}")
 
+# Debug: Check if version compatibility routes are loaded
+try:
+    from api import version_compatibility_fixed
+    print(f"Version compatibility routes: {[route.path for route in version_compatibility_fixed.router.routes]}")
+except Exception as e:
+    print(f"Error importing version_compatibility_fixed: {e}")
+
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 

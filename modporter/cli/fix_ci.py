@@ -83,17 +83,17 @@ class CIFixer:
     def get_failing_jobs(self, pr_number: int) -> List[Dict[str, Any]]:
         """Get list of failing CI jobs for the PR."""
         try:
-            result = self.run_command(["gh", "pr", "checks", "--json", "name,conclusion,detailsUrl,status,workflowName"])
+            result = self.run_command(["gh", "pr", "checks", "--json", "name,state,link,workflow"])
             checks = json.loads(result.stdout)
             
             failing_jobs = []
             for check in checks:
-                if check.get('conclusion') == 'failure' or check.get('status') == 'failure':
+                if check.get('state') == 'failure':
                     failing_jobs.append(check)
             
             logger.info(f"Found {len(failing_jobs)} failing jobs")
             for job in failing_jobs:
-                logger.info(f"  - {job.get('workflowName', 'Unknown')}: {job.get('name', 'Unknown')} - {job.get('conclusion', 'Unknown')}")
+                logger.info(f"  - {job.get('workflow', 'Unknown')}: {job.get('name', 'Unknown')} - {job.get('state', 'Unknown')}")
             
             return failing_jobs
             
@@ -111,9 +111,9 @@ class CIFixer:
         
         try:
             # Get the workflow run URL
-            details_url = job.get('detailsUrl')
+            details_url = job.get('link')
             if not details_url:
-                logger.warning(f"No details URL found for job {job.get('name')}")
+                logger.warning(f"No link URL found for job {job.get('name')}")
                 return ""
             
             # Use gh CLI to get logs

@@ -39,7 +39,7 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        response = await async_client.post("/api/version-compatibility/entries/", json=compatibility_data)
+        response = await async_client.post("/api/v1/version-compatibility/entries/", json=compatibility_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -51,7 +51,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_get_compatibility_matrix(self, async_client: AsyncClient):
         """Test getting the full compatibility matrix"""
-        response = await async_client.get("/api/version-compatibility/matrix/")
+        response = await async_client.get("/api/v1/version-compatibility/matrix/")
         assert response.status_code == 200
         
         data = response.json()
@@ -71,10 +71,10 @@ class TestVersionCompatibilityAPI:
             "conversion_complexity": "high"
         }
         
-        await async_client.post("/api/version-compatibility/entries/", json=compatibility_data)
+        await async_client.post("/api/v1/version-compatibility/entries/", json=compatibility_data)
         
         # Get compatibility info
-        response = await async_client.get("/api/version-compatibility/compatibility/1.17.1/1.18.2")
+        response = await async_client.get("/api/v1/version-compatibility/compatibility/1.17.1/1.18.2")
         assert response.status_code == 200
         
         data = response.json()
@@ -85,7 +85,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_find_migration_paths(self, async_client: AsyncClient):
         """Test finding migration paths between versions"""
-        response = await async_client.get("/api/version-compatibility/paths/1.16.5/1.19.2")
+        response = await async_client.get("/api/v1/version-compatibility/paths/1.16.5/1.19.2")
         assert response.status_code == 200
         
         data = response.json()
@@ -135,10 +135,10 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        await async_client.post("/api/version-compatibility/entries/", json=guide_data)
+        await async_client.post("/api/v1/version-compatibility/entries/", json=guide_data)
         
         # Get migration guide
-        response = await async_client.get("/api/version-compatibility/migration-guide/1.18.1/1.19.2")
+        response = await async_client.get("/api/v1/version-compatibility/migration-guide/1.18.1/1.19.2")
         assert response.status_code == 200
         
         data = response.json()
@@ -151,7 +151,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_get_version_statistics(self, async_client: AsyncClient):
         """Test getting version compatibility statistics"""
-        response = await async_client.get("/api/version-compatibility/statistics/")
+        response = await async_client.get("/api/v1/version-compatibility/statistics/")
         assert response.status_code == 200
         
         data = response.json()
@@ -178,7 +178,7 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        response = await async_client.post("/api/version-compatibility/validate/", json=validation_data)
+        response = await async_client.post("/api/v1/version-compatibility/validate/", json=validation_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -197,7 +197,7 @@ class TestVersionCompatibilityAPI:
             "compatibility_score": 0.7
         }
         
-        create_response = await async_client.post("/api/version-compatibility/entries/", json=create_data)
+        create_response = await async_client.post("/api/v1/version-compatibility/entries/", json=create_data)
         entry_id = create_response.json()["id"]
         
         # Update entry
@@ -213,7 +213,7 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        response = await async_client.put(f"/api/version-compatibility/entries/{entry_id}", json=update_data)
+        response = await async_client.put(f"/api/v1/version-compatibility/entries/{entry_id}", json=update_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -230,15 +230,15 @@ class TestVersionCompatibilityAPI:
             "compatibility_score": 0.6
         }
         
-        create_response = await async_client.post("/api/version-compatibility/entries/", json=create_data)
+        create_response = await async_client.post("/api/v1/version-compatibility/entries/", json=create_data)
         entry_id = create_response.json()["id"]
         
         # Delete entry
-        response = await async_client.delete(f"/api/version-compatibility/entries/{entry_id}")
+        response = await async_client.delete(f"/api/v1/version-compatibility/entries/{entry_id}")
         assert response.status_code == 204
         
         # Verify deletion
-        get_response = await async_client.get(f"/api/version-compatibility/entries/{entry_id}")
+        get_response = await async_client.get(f"/api/v1/version-compatibility/entries/{entry_id}")
         assert get_response.status_code == 404
 
     @pytest.mark.asyncio
@@ -272,7 +272,7 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        response = await async_client.post("/api/version-compatibility/batch-import/", json=batch_data)
+        response = await async_client.post("/api/v1/version-compatibility/batch-import/", json=batch_data)
         assert response.status_code == 202  # Accepted for processing
         
         data = response.json()
@@ -283,7 +283,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_get_compatibility_trends(self, async_client: AsyncClient):
         """Test getting compatibility trends over time"""
-        response = await async_client.get("/api/version-compatibility/trends/", params={
+        response = await async_client.get("/api/v1/version-compatibility/trends/", params={
             "start_version": "1.15.2",
             "end_version": "1.19.2",
             "metric": "compatibility_score"
@@ -299,7 +299,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_get_version_family_info(self, async_client: AsyncClient):
         """Test getting information about a version family"""
-        response = await async_client.get("/api/version-compatibility/family/1.19")
+        response = await async_client.get("/api/v1/version-compatibility/family/1.19")
         assert response.status_code == 200
         
         data = response.json()
@@ -322,7 +322,7 @@ class TestVersionCompatibilityAPI:
             }
         }
         
-        response = await async_client.post("/api/version-compatibility/predict/", json=prediction_data)
+        response = await async_client.post("/api/v1/version-compatibility/predict/", json=prediction_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -334,7 +334,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_export_compatibility_data(self, async_client: AsyncClient):
         """Test exporting compatibility data"""
-        response = await async_client.get("/api/version-compatibility/export/", params={
+        response = await async_client.get("/api/v1/version-compatibility/export/", params={
             "format": "csv",
             "include_migration_guides": True,
             "version_range": "1.17.0-1.19.2"
@@ -347,7 +347,7 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_get_complexity_analysis(self, async_client: AsyncClient):
         """Test getting complexity analysis for version migration"""
-        response = await async_client.get("/api/version-compatibility/complexity/1.18.2/1.19.2")
+        response = await async_client.get("/api/v1/version-compatibility/complexity/1.18.2/1.19.2")
         assert response.status_code == 200
         
         data = response.json()
@@ -366,5 +366,5 @@ class TestVersionCompatibilityAPI:
             "compatibility_score": 1.5  # Invalid score > 1.0
         }
         
-        response = await async_client.post("/api/version-compatibility/entries/", json=invalid_data)
+        response = await async_client.post("/api/v1/version-compatibility/entries/", json=invalid_data)
         assert response.status_code == 422  # Validation error
