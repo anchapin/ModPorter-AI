@@ -1,0 +1,202 @@
+# Production Alertmanager Configuration
+# Routes alerts to various notification channels
+
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@modporter.ai'
+  smtp_auth_username: 'alerts@modporter.ai'
+  smtp_auth_password: 'your-smtp-password'
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+# Route configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts to all channels
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 5m
+    
+    # Infrastructure alerts to infra team
+    - match:
+        team: infrastructure
+      receiver: 'infra-team'
+      group_wait: 15s
+      repeat_interval: 2h
+    
+    # Backend alerts to backend team
+    - match:
+        team: backend
+      receiver: 'backend-team'
+      group_wait: 15s
+      repeat_interval: 1h
+    
+    # Database alerts to database team
+    - match:
+        team: database
+      receiver: 'database-team'
+      group_wait: 10s
+      repeat_interval: 30m
+    
+    # ML alerts to ML team
+    - match:
+        team: ml
+      receiver: 'ml-team'
+      group_wait: 20s
+      repeat_interval: 1h
+    
+    # Security alerts to security team
+    - match:
+        team: security
+      receiver: 'security-team'
+      group_wait: 5s
+      repeat_interval: 15m
+    
+    # Business alerts to business team
+    - match:
+        team: business
+      receiver: 'business-team'
+      group_wait: 30s
+      repeat_interval: 2h
+
+# Inhibit rules
+inhibit_rules:
+  # Inhibit non-critical alerts when critical alerts fire
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']
+  
+  # Inhibit node alerts if the whole instance is down
+  - source_match:
+      alertname: 'InstanceDown'
+    target_match_re:
+      alertname: '(NodeFilesystem|NodeMemory|NodeCPU)'
+    equal: ['instance']
+
+# Receivers
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'admin@modporter.ai'
+        subject: '[ModPorter-AI] Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+  
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@modporter.ai,admin@modporter.ai'
+        subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+    
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🚨 Critical Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+  
+  - name: 'infra-team'
+    email_configs:
+      - to: 'infra@modporter.ai'
+        subject: '[INFRA] {{ .GroupLabels.alertname }}'
+        body: |
+          Infrastructure Alert: {{ .GroupLabels.alertname }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+    
+    slack_configs:
+      - channel: '#infrastructure'
+        title: 'Infrastructure Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          {{ end }}
+  
+  - name: 'backend-team'
+    email_configs:
+      - to: 'backend@modporter.ai'
+        subject: '[BACKEND] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#backend'
+        title: 'Backend Alert'
+  
+  - name: 'database-team'
+    email_configs:
+      - to: 'database@modporter.ai'
+        subject: '[DATABASE] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#database'
+        title: 'Database Alert'
+  
+  - name: 'ml-team'
+    email_configs:
+      - to: 'ml@modporter.ai'
+        subject: '[ML] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#machine-learning'
+        title: 'ML Alert'
+  
+  - name: 'security-team'
+    email_configs:
+      - to: 'security@modporter.ai'
+        subject: '[SECURITY] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#security'
+        title: 'Security Alert'
+        color: 'danger'
+  
+  - name: 'business-team'
+    email_configs:
+      - to: 'business@modporter.ai'
+        subject: '[BUSINESS] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#business-metrics'
+        title: 'Business Alert'
+
+# Time intervals
+time_intervals:
+  - name: 'business-hours'
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '17:00'
+        weekdays: ['monday:friday']
+  
+  - name: 'after-hours'
+    time_intervals:
+      - times:
+          - start_time: '17:01'
+            end_time: '08:59'
+        weekdays: ['monday:friday']
+      - weekdays: ['saturday', 'sunday']

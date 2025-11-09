@@ -1,59 +1,172 @@
-# Prometheus Configuration for ModPorter AI
-# Day 6: Production monitoring setup
+# Production Prometheus Configuration for ModPorter-AI
+# Comprehensive monitoring and alerting system
 
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: 'modporter-production'
+    region: 'us-west-2'
 
-rule_files:
-  - "alert_rules.yml"
-
+# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
           - alertmanager:9093
+      timeout: 10s
+      api_version: v2
 
+# Rule files for alerting
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# Scrape configurations
 scrape_configs:
   # Prometheus itself
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
 
-  # ModPorter Backend API
-  - job_name: 'modporter-backend'
+  # NGINX metrics
+  - job_name: 'nginx'
     static_configs:
-      - targets: ['backend:8000']
-    metrics_path: '/api/v1/metrics'
-    scrape_interval: 10s
+      - targets: ['nginx:9113']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    params:
+      format: ['prometheus']
 
-  # ModPorter AI Engine
-  - job_name: 'modporter-ai-engine'
-    static_configs:
-      - targets: ['ai-engine:8001']
-    metrics_path: '/api/v1/metrics'
-    scrape_interval: 10s
-
-  # Redis metrics (via redis-exporter)
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-    metrics_path: '/metrics'
+  # Backend services
+  - job_name: 'backend'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - modporter
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: backend
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: ${1}:8000
     scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
 
-  # PostgreSQL metrics (via postgres-exporter)
+  # AI Engine services
+  - job_name: 'ai-engine'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - modporter
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: ai-engine
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: ${1}:8001
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Frontend services
+  - job_name: 'frontend'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - modporter
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: frontend
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: ${1}:3000
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # PostgreSQL exporter
   - job_name: 'postgres'
     static_configs:
       - targets: ['postgres-exporter:9187']
-    metrics_path: '/metrics'
-    scrape_interval: 15s
+    scrape_interval: 30s
+    metrics_path: /metrics
 
-  # Node exporter for system metrics
+  # Redis exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Node exporter (system metrics)
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    metrics_path: /metrics
 
-  # Docker container metrics
+  # cAdvisor (container metrics)
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Blackbox exporter (endpoint monitoring)
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://frontend/api/v1/health
+        - http://backend/api/v1/health
+        - http://ai-engine/api/v1/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Kafka exporter (if using Kafka)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Elasticsearch exporter (if using ES)
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch-exporter:9114']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+# Remote write configuration (for long-term storage)
+remote_write:
+  - url: "https://prometheus-remote-write.grafana.net/api/v1/write"
+    basic_auth:
+      username: "your-username"
+      password: "your-password"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+# Remote read configuration
+remote_read:
+  - url: "https://prometheus-remote-read.grafana.net/api/v1/read"
+    read_recent: true
+    basic_auth:
+      username: "your-username"
+      password: "your-password"

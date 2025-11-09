@@ -1,0 +1,106 @@
+# Blackbox Exporter Configuration
+# Monitors external and internal endpoints
+
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions:
+        - HTTP/1.1
+        - HTTP/2
+      valid_status_codes: [200, 201, 202, 204]
+      method: GET
+      follow_redirects: true
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+      preferred_ip_protocol: "ip4"
+
+  http_2xx_with_headers:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions:
+        - HTTP/1.1
+        - HTTP/2
+      valid_status_codes: [200, 201, 202, 204]
+      method: GET
+      headers:
+        User-Agent: "ModPorter-AI-Monitor/1.0"
+        Accept: "application/json"
+      follow_redirects: true
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+
+  http_api_health:
+    prober: http
+    timeout: 15s
+    http:
+      valid_http_versions:
+        - HTTP/1.1
+        - HTTP/2
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        User-Agent: "ModPorter-AI-HealthCheck/1.0"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "failed"
+      fail_if_body_not_matches_regexp:
+        - "healthy"
+        - "ok"
+      follow_redirects: true
+
+  http_post_2xx:
+    prober: http
+    timeout: 15s
+    http:
+      valid_http_versions:
+        - HTTP/1.1
+        - HTTP/2
+      valid_status_codes: [200, 201, 202, 204]
+      method: POST
+      headers:
+        Content-Type: "application/json"
+        User-Agent: "ModPorter-AI-Monitor/1.0"
+      body: '{"health_check": true}'
+      follow_redirects: true
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+
+  icmp_ping:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  dns_resolve:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: "modporter.ai"
+      query_type: "A"
+      valid_rcodes:
+        - NOERROR
+      validate_answer_rrs:
+        fail_if_matches_regexp:
+          - ".*127.0.0.1"
+        fail_if_not_matches_regexp:
+          - ".*"
+
+  ssl_cert_expiry:
+    prober: tcp
+    timeout: 10s
+    tcp:
+      tls: true
+      tls_config:
+        insecure_skip_verify: false

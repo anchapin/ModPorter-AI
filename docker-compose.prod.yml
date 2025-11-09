@@ -1,32 +1,76 @@
 services:
+  # Load balancer and reverse proxy
+  nginx:
+    build: 
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   frontend:
     image: anchapin/modporter-ai-frontend:latest
-    ports:
-      - "3000:80"
+    expose:
+      - "80"
+    environment:
+      - VITE_API_URL=https://api.modporter.ai/api/v1
+      - VITE_WS_URL=wss://api.modporter.ai/ws
+      - VITE_ENV=production
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - modporter-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
 
   backend:
     image: anchapin/modporter-ai-backend:latest
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/modporter
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/modporter
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ORIGINS=https://modporter.ai,https://www.modporter.ai
+      - RATE_LIMIT_ENABLED=true
+      - MAX_CONNECTIONS=100
+      - METRICS_ENABLED=true
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     volumes:
-      - conversion-cache:/app/cache # Or use a managed cloud storage service
+      - conversion-cache:/app/cache
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
     networks:
       - modporter-network
     restart: unless-stopped
@@ -36,21 +80,157 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
-  ai-engine:
-    image: anchapin/modporter-ai-ai-engine:latest
+  backend-2:
+    image: anchapin/modporter-ai-backend:latest
+    expose:
+      - "8000"
     environment:
       - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY} # Must be provided in the environment
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} # Must be provided in the environment
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/modporter
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ORIGINS=https://modporter.ai,https://www.modporter.ai
+      - RATE_LIMIT_ENABLED=true
+      - MAX_CONNECTIONS=100
+      - METRICS_ENABLED=true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - conversion-cache:/app/cache
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  backend-3:
+    image: anchapin/modporter-ai-backend:latest
+    expose:
+      - "8000"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/modporter
+      - LOG_LEVEL=INFO
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ORIGINS=https://modporter.ai,https://www.modporter.ai
+      - RATE_LIMIT_ENABLED=true
+      - MAX_CONNECTIONS=100
+      - METRICS_ENABLED=true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - conversion-cache:/app/cache
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  ai-engine:
+    image: anchapin/modporter-ai-ai-engine:latest
+    expose:
+      - "8001"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=INFO
+      - MAX_CONCURRENT_REQUESTS=10
+      - MODEL_CACHE_TTL=3600
+      - METRICS_ENABLED=true
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - model-cache:/app/models # Or use a managed cloud storage service
+      - model-cache:/app/models
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  ai-engine-2:
+    image: anchapin/modporter-ai-ai-engine:latest
+    expose:
+      - "8001"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=INFO
+      - MAX_CONCURRENT_REQUESTS=10
+      - MODEL_CACHE_TTL=3600
+      - METRICS_ENABLED=true
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - model-cache:/app/models
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
     networks:
       - modporter-network
     restart: unless-stopped
@@ -64,8 +244,10 @@ services:
       resources:
         limits:
           memory: 2G
+          cpus: '1.0'
         reservations:
           memory: 1G
+          cpus: '0.5'
 
   redis:
     image: redis:7-alpine
@@ -204,11 +386,82 @@ services:
     devices:
       - /dev/kmsg
 
+  # Additional monitoring services
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+
+  # Blackbox exporter for endpoint monitoring
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+
+  # Promtail for log collection
+  promtail:
+    image: grafana/promtail:latest
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+      - "6831:6831/udp"  # UDP collector
+      - "6832:6832/udp"  # UDP collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+    networks:
+      - modporter-network
+    restart: unless-stopped
+
 volumes:
   redis-data:
-    driver: local # Consider using managed Redis in production
+    driver: local
   postgres-data:
-    driver: local # Consider using managed PostgreSQL in production
+    driver: local
   conversion-cache:
     driver: local
   model-cache:
@@ -216,6 +469,16 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  loki-data:
+    driver: local
+  nginx-logs:
+    driver: local
+  conversion-outputs:
+    driver: local
+  temp-uploads:
     driver: local
 
 networks:

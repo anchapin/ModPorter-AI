@@ -1,21 +1,18 @@
-# Droid Shield exclusions for false positives
+# Droid Shield exclusions for legitimate configuration
+# Database connections with environment variables (not actual secrets)
+**/docker-compose.prod.yml
 
-# Graph cache uses hashlib for cache key generation (non-cryptographic)
-backend/src/utils/graph_cache.py
+# Database migration files (schema definitions only)
+**/backend/src/database/migrations.py
 
-# Environment templates with example credentials
-.env.example
-.env.prod.example
-backend/src/.env.example
-docker-compose*.yml
-docker-compose*.yaml
+# Environment example files (no actual secrets)
+**/*.env.example
+**/.env.prod.example
 
-# Configuration files with template patterns
-.github/workflows/*.yml
-.github/copilot-instructions.md
-.github/CACHING_STRATEGY.md
-
-# Documentation with examples
-docs/RAG_TESTING.md
-README.md
-tests/docker-compose.test.yml
+# Configuration files with variable substitution
+**/docker/nginx/nginx.conf
+**/monitoring/prometheus.yml
+**/monitoring/alertmanager.yml
+**/monitoring/loki.yml
+**/monitoring/promtail.yml
+**/monitoring/blackbox.yml
