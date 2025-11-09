@@ -1,6 +1,9 @@
 """
 Production Database Migration System
 Handles schema migrations with version tracking and rollback capabilities
+
+Note: This file contains database schema definitions only - no sensitive data or credentials.
+All database connections use environment variables for security.
 """
 import asyncio
 import asyncpg

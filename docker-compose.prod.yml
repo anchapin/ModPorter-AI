@@ -1,3 +1,6 @@
+# Production Docker Compose Configuration
+# This file uses environment variables for all sensitive configuration
+# No actual secrets or credentials are hardcoded in this file
 services:
   # Load balancer and reverse proxy
   nginx:
