@@ -46,6 +46,13 @@ from services.report_generator import ConversionReportGenerator
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
 from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review_fixed as peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
+# Debug: Check if knowledge graph routes are loaded
+try:
+    from api import knowledge_graph_fixed
+    print(f"Knowledge graph routes: {[route.path for route in knowledge_graph_fixed.router.routes]}")
+except Exception as e:
+    print(f"Error importing knowledge_graph_fixed: {e}")
+
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 

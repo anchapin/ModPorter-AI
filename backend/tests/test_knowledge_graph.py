@@ -29,8 +29,8 @@ class TestKnowledgeGraphAPI:
             }
         }
         
-        response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
-        assert response.status_code == 201
+        response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node_data)
+        assert response.status_code == 200
         
         data = response.json()
         assert data["node_type"] == "java_class"
@@ -50,8 +50,8 @@ class TestKnowledgeGraphAPI:
             "properties": {"name": "ItemRegistry"}
         }
         
-        node1_response = await async_client.post("/api/knowledge-graph/nodes/", json=node1_data)
-        node2_response = await async_client.post("/api/knowledge-graph/nodes/", json=node2_data)
+        node1_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node1_data)
+        node2_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node2_data)
         
         source_id = node1_response.json()["id"]
         target_id = node2_response.json()["id"]
@@ -68,8 +68,8 @@ class TestKnowledgeGraphAPI:
             }
         }
         
-        response = await async_client.post("/api/knowledge-graph/edges/", json=edge_data)
-        assert response.status_code == 201
+        response = await async_client.post("/api/v1/knowledge-graph/relationships", json=edge_data)
+        assert response.status_code == 200
         
         data = response.json()
         assert data["source_id"] == source_id
@@ -89,11 +89,11 @@ class TestKnowledgeGraphAPI:
             }
         }
         
-        create_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
+        create_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node_data)
         node_id = create_response.json()["id"]
         
         # Retrieve the node
-        response = await async_client.get(f"/api/knowledge-graph/nodes/{node_id}")
+        response = await async_client.get(f"/api/v1/knowledge-graph/nodes/{node_id}")
         assert response.status_code == 200
         
         data = response.json()
@@ -291,7 +291,7 @@ class TestKnowledgeGraphAPI:
             "properties": {"name": "TestBlock", "hardness": 2.0}
         }
         
-        create_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
+        create_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node_data)
         node_id = create_response.json()["id"]
         
         # Update node
@@ -313,7 +313,7 @@ class TestKnowledgeGraphAPI:
         """Test deleting a knowledge node"""
         # Create node
         node_data = {"node_type": "test_node", "properties": {"name": "ToDelete"}}
-        create_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
+        create_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node_data)
         node_id = create_response.json()["id"]
         
         # Delete node
@@ -321,7 +321,7 @@ class TestKnowledgeGraphAPI:
         assert response.status_code == 204
         
         # Verify deletion
-        get_response = await async_client.get(f"/api/knowledge-graph/nodes/{node_id}")
+        get_response = await async_client.get(f"/api/v1/knowledge-graph/nodes/{node_id}")
         assert get_response.status_code == 404
 
     @pytest.mark.asyncio
