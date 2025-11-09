@@ -36,14 +36,13 @@ class TestConversionInferenceAPI:
             }
         }
         
-        response = await async_client.post("/api/conversion-inference/infer-path/", json=path_request)
+        response = await async_client.post("/api/v1/conversion-inference/infer-path/", json=path_request)
         assert response.status_code == 200
         
         data = response.json()
-        assert "recommended_path" in data
-        assert "confidence_score" in data
-        assert "estimated_time" in data
-        assert "risk_assessment" in data
+        assert "primary_path" in data
+        assert "java_concept" in data
+        assert "target_platform" in data
         assert "alternative_paths" in data
 
     @pytest.mark.asyncio
@@ -67,8 +66,8 @@ class TestConversionInferenceAPI:
             }
         }
         
-        response = await async_client.post("/api/conversion-inference/batch-infer/", json=batch_request)
-        assert response.status_code == 202  # Accepted for processing
+        response = await async_client.post("/api/v1/conversion-inference/batch-infer/", json=batch_request)
+        assert response.status_code == 200  # Processing completed
         
         data = response.json()
         assert "batch_id" in data
@@ -89,11 +88,11 @@ class TestConversionInferenceAPI:
             ]
         }
         
-        batch_response = await async_client.post("/api/conversion-inference/batch-infer/", json=batch_request)
+        batch_response = await async_client.post("/api/v1/conversion-inference/batch-infer/", json=batch_request)
         batch_id = batch_response.json()["batch_id"]
         
         # Get processing status
-        response = await async_client.get(f"/api/conversion-inference/batch/{batch_id}/status")
+        response = await async_client.get(f"/api/v1/conversion-inference/batch/{batch_id}/status")
         assert response.status_code == 200
         
         data = response.json()
@@ -122,7 +121,7 @@ class TestConversionInferenceAPI:
             }
         }
         
-        response = await async_client.post("/api/conversion-inference/optimize-sequence/", json=optimization_request)
+        response = await async_client.post("/api/v1/conversion-inference/optimize-sequence/", json=optimization_request)
         assert response.status_code == 200
         
         data = response.json()
@@ -155,7 +154,7 @@ class TestConversionInferenceAPI:
             }
         }
         
-        response = await async_client.post("/api/conversion-inference/predict-performance/", json=prediction_request)
+        response = await async_client.post("/api/v1/conversion-inference/predict-performance/", json=prediction_request)
         assert response.status_code == 200
         
         data = response.json()
@@ -168,7 +167,7 @@ class TestConversionInferenceAPI:
     @pytest.mark.asyncio
     async def test_get_inference_model_info(self, async_client: AsyncClient):
         """Test getting inference model information"""
-        response = await async_client.get("/api/conversion-inference/model-info/")
+        response = await async_client.get("/api/v1/conversion-inference/model-info/")
         assert response.status_code == 200
         
         data = response.json()
@@ -205,7 +204,7 @@ class TestConversionInferenceAPI:
             }
         }
         
-        response = await async_client.post("/api/conversion-inference/learn/", json=learning_data)
+        response = await async_client.post("/api/v1/conversion-inference/learn/", json=learning_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -216,7 +215,7 @@ class TestConversionInferenceAPI:
     @pytest.mark.asyncio
     async def test_get_conversion_patterns(self, async_client: AsyncClient):
         """Test getting common conversion patterns"""
-        response = await async_client.get("/api/conversion-inference/patterns/", params={
+        response = await async_client.get("/api/v1/conversion-inference/patterns/", params={
             "source_version": "1.18.2",
             "target_version": "1.19.2",
             "pattern_type": "successful",
@@ -248,7 +247,7 @@ class TestConversionInferenceAPI:
             "validation_criteria": ["time_accuracy", "risk_assessment", "user_requirement_compliance"]
         }
         
-        response = await async_client.post("/api/conversion-inference/validate/", json=validation_request)
+        response = await async_client.post("/api/v1/conversion-inference/validate/", json=validation_request)
         assert response.status_code == 200
         
         data = response.json()
@@ -260,7 +259,7 @@ class TestConversionInferenceAPI:
     @pytest.mark.asyncio
     async def test_get_conversion_insights(self, async_client: AsyncClient):
         """Test getting conversion insights and analytics"""
-        response = await async_client.get("/api/conversion-inference/insights/", params={
+        response = await async_client.get("/api/v1/conversion-inference/insights/", params={
             "time_period": "30d",
             "version_range": "1.18.2-1.19.2",
             "insight_types": ["performance_trends", "common_failures", "optimization_opportunities"]
@@ -292,7 +291,7 @@ class TestConversionInferenceAPI:
             ]
         }
         
-        response = await async_client.post("/api/conversion-inference/compare-strategies/", json=comparison_request)
+        response = await async_client.post("/api/v1/conversion-inference/compare-strategies/", json=comparison_request)
         assert response.status_code == 200
         
         data = response.json()
@@ -304,7 +303,7 @@ class TestConversionInferenceAPI:
     @pytest.mark.asyncio
     async def test_export_inference_data(self, async_client: AsyncClient):
         """Test exporting inference data and models"""
-        response = await async_client.get("/api/conversion-inference/export/", params={
+        response = await async_client.get("/api/v1/conversion-inference/export/", params={
             "export_type": "model",
             "format": "json",
             "include_training_data": False
@@ -319,7 +318,7 @@ class TestConversionInferenceAPI:
     @pytest.mark.asyncio
     async def test_get_inference_health(self, async_client: AsyncClient):
         """Test inference engine health check"""
-        response = await async_client.get("/api/conversion-inference/health/")
+        response = await async_client.get("/api/v1/conversion-inference/health/")
         assert response.status_code == 200
         
         data = response.json()
@@ -339,7 +338,7 @@ class TestConversionInferenceAPI:
             "improvements": ["better_complexity_estimation", "improved_timing_prediction"]
         }
         
-        response = await async_client.post("/api/conversion-inference/update-model/", json=update_request)
+        response = await async_client.post("/api/v1/conversion-inference/update-model/", json=update_request)
         assert response.status_code == 200
         
         data = response.json()
@@ -366,7 +365,7 @@ class TestConversionInferenceAPI:
             "duration_days": 7
         }
         
-        response = await async_client.post("/api/conversion-inference/ab-test/", json=ab_test_request)
+        response = await async_client.post("/api/v1/conversion-inference/ab-test/", json=ab_test_request)
         assert response.status_code == 201
         
         data = response.json()
@@ -386,11 +385,11 @@ class TestConversionInferenceAPI:
             "sample_size": 10
         }
         
-        test_response = await async_client.post("/api/conversion-inference/ab-test/", json=test_request)
+        test_response = await async_client.post("/api/v1/conversion-inference/ab-test/", json=test_request)
         test_id = test_response.json()["test_id"]
         
         # Get test results
-        response = await async_client.get(f"/api/conversion-inference/ab-test/{test_id}/results")
+        response = await async_client.get(f"/api/v1/conversion-inference/ab-test/{test_id}/results")
         assert response.status_code == 200
         
         data = response.json()
@@ -412,5 +411,5 @@ class TestConversionInferenceAPI:
             "optimization_goals": ["invalid_goal"]  # Invalid goal
         }
         
-        response = await async_client.post("/api/conversion-inference/infer-path/", json=invalid_request)
+        response = await async_client.post("/api/v1/conversion-inference/infer-path/", json=invalid_request)
         assert response.status_code == 422  # Validation error

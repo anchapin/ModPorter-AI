@@ -23,7 +23,7 @@ class TestPeerReviewAPI:
             "recommendation": "approve"
         }
         
-        response = await async_client.post("/api/peer-review/reviews/", json=review_data)
+        response = await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -42,11 +42,11 @@ class TestPeerReviewAPI:
             "recommendation": "request_changes"
         }
         
-        create_response = await async_client.post("/api/peer-review/reviews/", json=review_data)
+        create_response = await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         review_id = create_response.json()["id"]
         
         # Retrieve the review
-        response = await async_client.get(f"/api/peer-review/reviews/{review_id}")
+        response = await async_client.get(f"/api/v1/peer-review/reviews/{review_id}")
         assert response.status_code == 200
         
         data = response.json()
@@ -64,10 +64,10 @@ class TestPeerReviewAPI:
                 "content_analysis": {"score": 70 + i * 5},
                 "recommendation": "approve" if i > 0 else "request_changes"
             }
-            await async_client.post("/api/peer-review/reviews/", json=review_data)
+            await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         
         # List all reviews
-        response = await async_client.get("/api/peer-review/reviews/")
+        response = await async_client.get("/api/v1/peer-review/reviews/")
         assert response.status_code == 200
         
         data = response.json()
@@ -88,7 +88,7 @@ class TestPeerReviewAPI:
             "auto_assign": True
         }
         
-        response = await async_client.post("/api/peer-review/workflows/", json=workflow_data)
+        response = await async_client.post("/api/v1/peer-review/workflows/", json=workflow_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -109,7 +109,7 @@ class TestPeerReviewAPI:
             ]
         }
         
-        create_response = await async_client.post("/api/peer-review/workflows/", json=workflow_data)
+        create_response = await async_client.post("/api/v1/peer-review/workflows/", json=workflow_data)
         workflow_id = create_response.json()["id"]
         
         # Advance to next stage
@@ -119,7 +119,7 @@ class TestPeerReviewAPI:
         }
         
         response = await async_client.post(
-            f"/api/peer-review/workflows/{workflow_id}/advance", 
+            f"/api/v1/peer-review/workflows/{workflow_id}/advance", 
             json=advance_data
         )
         assert response.status_code == 200
@@ -139,7 +139,7 @@ class TestPeerReviewAPI:
             "verified": True
         }
         
-        response = await async_client.post("/api/peer-review/expertise/", json=expertise_data)
+        response = await async_client.post("/api/v1/peer-review/expertise/", json=expertise_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -166,7 +166,7 @@ class TestPeerReviewAPI:
             }
         }
         
-        response = await async_client.post("/api/peer-review/templates/", json=template_data)
+        response = await async_client.post("/api/v1/peer-review/templates/", json=template_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -177,7 +177,7 @@ class TestPeerReviewAPI:
     @pytest.mark.asyncio
     async def test_get_review_analytics(self, async_client: AsyncClient):
         """Test retrieving review analytics"""
-        response = await async_client.get("/api/peer-review/analytics/")
+        response = await async_client.get("/api/v1/peer-review/analytics/")
         assert response.status_code == 200
         
         data = response.json()
@@ -197,7 +197,7 @@ class TestPeerReviewAPI:
             "deadline": (datetime.now() + timedelta(days=7)).isoformat()
         }
         
-        response = await async_client.post("/api/peer-review/assign/", json=assignment_data)
+        response = await async_client.post("/api/v1/peer-review/assign/", json=assignment_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -208,7 +208,7 @@ class TestPeerReviewAPI:
     async def test_get_reviewer_workload(self, async_client: AsyncClient):
         """Test getting reviewer workload information"""
         reviewer_id = str(uuid4())
-        response = await async_client.get(f"/api/peer-review/reviewers/{reviewer_id}/workload")
+        response = await async_client.get(f"/api/v1/peer-review/reviewers/{reviewer_id}/workload")
         assert response.status_code == 200
         
         data = response.json()
@@ -227,7 +227,7 @@ class TestPeerReviewAPI:
             "recommendation": "approve"
         }
         
-        create_response = await async_client.post("/api/peer-review/reviews/", json=review_data)
+        create_response = await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         review_id = create_response.json()["id"]
         
         # Submit feedback
@@ -239,7 +239,7 @@ class TestPeerReviewAPI:
             "anonymous": False
         }
         
-        response = await async_client.post("/api/peer-review/feedback/", json=feedback_data)
+        response = await async_client.post("/api/v1/peer-review/feedback/", json=feedback_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -259,7 +259,7 @@ class TestPeerReviewAPI:
                 "recommendation": "approve" if i > 0 else "request_changes",
                 "tags": [f"tag{i}", "common"]
             }
-            await async_client.post("/api/peer-review/reviews/", json=review_data)
+            await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         
         # Search for reviews
         search_params = {
@@ -268,7 +268,7 @@ class TestPeerReviewAPI:
             "limit": 10
         }
         
-        response = await async_client.get("/api/peer-review/search/", params=search_params)
+        response = await async_client.get("/api/v1/peer-review/search/", params=search_params)
         assert response.status_code == 200
         
         data = response.json()
@@ -286,7 +286,7 @@ class TestPeerReviewAPI:
             "recommendation": "invalid_status"
         }
         
-        response = await async_client.post("/api/peer-review/reviews/", json=invalid_data)
+        response = await async_client.post("/api/v1/peer-review/reviews/", json=invalid_data)
         assert response.status_code == 422  # Validation error
 
     @pytest.mark.asyncio
@@ -303,7 +303,7 @@ class TestPeerReviewAPI:
             ]
         }
         
-        create_response = await async_client.post("/api/peer-review/workflows/", json=workflow_data)
+        create_response = await async_client.post("/api/v1/peer-review/workflows/", json=workflow_data)
         workflow_id = create_response.json()["id"]
         
         # Try to advance beyond next stage (should fail)
@@ -313,7 +313,7 @@ class TestPeerReviewAPI:
         }
         
         response = await async_client.post(
-            f"/api/peer-review/workflows/{workflow_id}/advance",
+            f"/api/v1/peer-review/workflows/{workflow_id}/advance",
             json=invalid_advance
         )
         assert response.status_code == 400  # Bad request
@@ -329,14 +329,14 @@ class TestPeerReviewAPI:
             "recommendation": "approve"
         }
         
-        await async_client.post("/api/peer-review/reviews/", json=review_data)
+        await async_client.post("/api/v1/peer-review/reviews/", json=review_data)
         
         # Export as JSON
-        response = await async_client.get("/api/peer-review/export/?format=json")
+        response = await async_client.get("/api/v1/peer-review/export/?format=json")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
         
         # Export as CSV
-        response = await async_client.get("/api/peer-review/export/?format=csv")
+        response = await async_client.get("/api/v1/peer-review/export/?format=csv")
         assert response.status_code == 200
         assert "text/csv" in response.headers["content-type"]

@@ -111,7 +111,7 @@ class TestKnowledgeGraphAPI:
         ]
         
         for node in nodes:
-            await async_client.post("/api/knowledge-graph/nodes/", json=node)
+            await async_client.post("/api/v1/knowledge-graph/nodes/", json=node)
         
         # Search for nodes
         search_params = {
@@ -120,7 +120,7 @@ class TestKnowledgeGraphAPI:
             "limit": 10
         }
         
-        response = await async_client.get("/api/knowledge-graph/search/", params=search_params)
+        response = await async_client.get("/api/v1/knowledge-graph/search/", params=search_params)
         assert response.status_code == 200
         
         data = response.json()
@@ -135,8 +135,8 @@ class TestKnowledgeGraphAPI:
         center_node_data = {"node_type": "java_class", "properties": {"name": "MainClass"}}
         neighbor_data = {"node_type": "java_class", "properties": {"name": "HelperClass"}}
         
-        center_response = await async_client.post("/api/knowledge-graph/nodes/", json=center_node_data)
-        neighbor_response = await async_client.post("/api/knowledge-graph/nodes/", json=neighbor_data)
+        center_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=center_node_data)
+        neighbor_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=neighbor_data)
         
         center_id = center_response.json()["id"]
         neighbor_id = neighbor_response.json()["id"]
@@ -147,10 +147,10 @@ class TestKnowledgeGraphAPI:
             "target_id": neighbor_id,
             "relationship_type": "uses"
         }
-        await async_client.post("/api/knowledge-graph/edges/", json=edge_data)
+        await async_client.post("/api/v1/knowledge-graph/edges/", json=edge_data)
         
         # Get neighbors
-        response = await async_client.get(f"/api/knowledge-graph/nodes/{center_id}/neighbors")
+        response = await async_client.get(f"/api/v1/knowledge-graph/nodes/{center_id}/neighbors")
         assert response.status_code == 200
         
         data = response.json()
@@ -161,7 +161,7 @@ class TestKnowledgeGraphAPI:
     @pytest.mark.asyncio
     async def test_get_graph_statistics(self, async_client: AsyncClient):
         """Test getting knowledge graph statistics"""
-        response = await async_client.get("/api/knowledge-graph/statistics/")
+        response = await async_client.get("/api/v1/knowledge-graph/statistics/")
         assert response.status_code == 200
         
         data = response.json()
@@ -178,25 +178,25 @@ class TestKnowledgeGraphAPI:
         node_b = {"node_type": "java_class", "properties": {"name": "ClassB"}}
         node_c = {"node_type": "java_class", "properties": {"name": "ClassC"}}
         
-        a_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_a)
-        b_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_b)
-        c_response = await async_client.post("/api/knowledge-graph/nodes/", json=node_c)
+        a_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=node_a)
+        b_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=node_b)
+        c_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=node_c)
         
         a_id = a_response.json()["id"]
         b_id = b_response.json()["id"]
         c_id = c_response.json()["id"]
         
         # Create edges
-        await async_client.post("/api/knowledge-graph/edges/", json={
+        await async_client.post("/api/v1/knowledge-graph/edges/", json={
             "source_id": a_id, "target_id": b_id, "relationship_type": "calls"
         })
-        await async_client.post("/api/knowledge-graph/edges/", json={
+        await async_client.post("/api/v1/knowledge-graph/edges/", json={
             "source_id": b_id, "target_id": c_id, "relationship_type": "calls"
         })
         
         # Find path
         response = await async_client.get(
-            f"/api/knowledge-graph/path/{a_id}/{c_id}",
+            f"/api/v1/knowledge-graph/path/{a_id}/{c_id}",
             params={"max_depth": 5}
         )
         assert response.status_code == 200
@@ -210,19 +210,19 @@ class TestKnowledgeGraphAPI:
         """Test extracting subgraph around a node"""
         # Create central node and neighbors
         center_data = {"node_type": "java_class", "properties": {"name": "CentralClass"}}
-        center_response = await async_client.post("/api/knowledge-graph/nodes/", json=center_data)
+        center_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=center_data)
         center_id = center_response.json()["id"]
         
         # Create neighbors
         neighbor_ids = []
         for i in range(3):
             neighbor_data = {"node_type": "java_class", "properties": {"name": f"Neighbor{i}"}}
-            neighbor_response = await async_client.post("/api/knowledge-graph/nodes/", json=neighbor_data)
+            neighbor_response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=neighbor_data)
             neighbor_id = neighbor_response.json()["id"]
             neighbor_ids.append(neighbor_id)
             
             # Connect to center
-            await async_client.post("/api/knowledge-graph/edges/", json={
+            await async_client.post("/api/v1/knowledge-graph/edges/", json={
                 "source_id": center_id,
                 "target_id": neighbor_id,
                 "relationship_type": "depends_on"
@@ -230,7 +230,7 @@ class TestKnowledgeGraphAPI:
         
         # Extract subgraph
         response = await async_client.get(
-            f"/api/knowledge-graph/subgraph/{center_id}",
+            f"/api/v1/knowledge-graph/subgraph/{center_id}",
             params={"depth": 1}
         )
         assert response.status_code == 200
@@ -254,12 +254,12 @@ class TestKnowledgeGraphAPI:
                     "modifiers": ["public", "final"]
                 }
             }
-            response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
+            response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=node_data)
             java_nodes.append(response.json())
         
         # Create relationships
         for i in range(len(java_nodes) - 1):
-            await async_client.post("/api/knowledge-graph/edges/", json={
+            await async_client.post("/api/v1/knowledge-graph/edges/", json={
                 "source_id": java_nodes[i]["id"],
                 "target_id": java_nodes[i + 1]["id"],
                 "relationship_type": "extends"
@@ -275,7 +275,7 @@ class TestKnowledgeGraphAPI:
             "parameters": {}
         }
         
-        response = await async_client.post("/api/knowledge-graph/query/", json=query_data)
+        response = await async_client.post("/api/v1/knowledge-graph/query/", json=query_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -300,7 +300,7 @@ class TestKnowledgeGraphAPI:
             "metadata": {"updated": True}
         }
         
-        response = await async_client.put(f"/api/knowledge-graph/nodes/{node_id}", json=update_data)
+        response = await async_client.put(f"/api/v1/knowledge-graph/nodes/{node_id}", json=update_data)
         assert response.status_code == 200
         
         data = response.json()
@@ -317,7 +317,7 @@ class TestKnowledgeGraphAPI:
         node_id = create_response.json()["id"]
         
         # Delete node
-        response = await async_client.delete(f"/api/knowledge-graph/nodes/{node_id}")
+        response = await async_client.delete(f"/api/v1/knowledge-graph/nodes/{node_id}")
         assert response.status_code == 204
         
         # Verify deletion
@@ -336,7 +336,7 @@ class TestKnowledgeGraphAPI:
             ]
         }
         
-        response = await async_client.post("/api/knowledge-graph/nodes/batch", json=batch_data)
+        response = await async_client.post("/api/v1/knowledge-graph/nodes/batch", json=batch_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -350,19 +350,19 @@ class TestKnowledgeGraphAPI:
         nodes = []
         for i in range(5):
             node_data = {"node_type": "java_class", "properties": {"name": f"VisClass{i}"}}
-            response = await async_client.post("/api/knowledge-graph/nodes/", json=node_data)
+            response = await async_client.post("/api/v1/knowledge-graph/nodes/", json=node_data)
             nodes.append(response.json())
         
         # Create some edges
         for i in range(4):
-            await async_client.post("/api/knowledge-graph/edges/", json={
+            await async_client.post("/api/v1/knowledge-graph/edges/", json={
                 "source_id": nodes[i]["id"],
                 "target_id": nodes[i + 1]["id"],
                 "relationship_type": "references"
             })
         
         # Get visualization data
-        response = await async_client.get("/api/knowledge-graph/visualization/", params={
+        response = await async_client.get("/api/v1/knowledge-graph/visualization/", params={
             "layout": "force_directed",
             "limit": 10
         })
