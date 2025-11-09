@@ -139,6 +139,33 @@ class CIFixer:
             logger.error(f"Failed to download logs for {job.get('name')}: {e}")
             return ""
     
+    def _clean_log_directory(self, log_dir: Path) -> None:
+        """Remove existing log files from the logs directory."""
+        try:
+            # Remove all .log files in the directory
+            for log_file in log_dir.glob("*.log"):
+                log_file.unlink()
+                logger.info(f"Removed existing log file: {log_file}")
+            
+            # Also remove any subdirectories that might contain old logs
+            for subdir in log_dir.iterdir():
+                if subdir.is_dir():
+                    try:
+                        # Remove all .log files in subdirectory
+                        for log_file in subdir.glob("*.log"):
+                            log_file.unlink()
+                            logger.info(f"Removed existing log file: {log_file}")
+                        
+                        # If subdirectory is now empty, remove it
+                        if not any(subdir.iterdir()):
+                            subdir.rmdir()
+                            logger.info(f"Removed empty subdirectory: {subdir}")
+                    except OSError as e:
+                        logger.warning(f"Could not clean subdirectory {subdir}: {e}")
+                        
+        except OSError as e:
+            logger.warning(f"Could not clean log directory {log_dir}: {e}")
+    
     def analyze_failure_patterns(self, log_files: List[str]) -> Dict[str, List[str]]:
         """Analyze failure patterns from log files."""
         patterns = {
@@ -422,7 +449,13 @@ class CIFixer:
             logger.info("✅ No failing jobs found. CI is already passing!")
             return True
         
-        # Step 3: Download failure logs
+        # Step 3: Clean existing log directory
+        log_dir = self.repo_path / "logs"
+        if log_dir.exists():
+            logger.info("🧹 Cleaning existing log files...")
+            self._clean_log_directory(log_dir)
+        
+        # Step 4: Download failure logs
         log_files = []
         for job in failing_jobs:
             log_file = self.download_job_logs(job)
@@ -433,7 +466,7 @@ class CIFixer:
             logger.error("Could not download any job logs")
             return False
         
-        # Step 4: Analyze failure patterns
+        # Step 5: Analyze failure patterns
         patterns = self.analyze_failure_patterns(log_files)
         
         logger.info("\n📊 Failure Analysis:")
@@ -441,13 +474,13 @@ class CIFixer:
             if errors:
                 logger.info(f"  {pattern_type}: {len(errors)} issues")
         
-        # Step 5: Create backup branch
+        # Step 6: Create backup branch
         backup_branch = self.create_backup_branch()
         if not backup_branch:
             logger.error("Failed to create backup branch, aborting")
             return False
         
-        # Step 6: Apply fixes
+        # Step 7: Apply fixes
         fixes_applied = []
         
         # Fix linting errors
@@ -472,7 +505,7 @@ class CIFixer:
             logger.info("No automatic fixes applicable")
             return True
         
-        # Step 7: Commit changes
+        # Step 8: Commit changes
         commit_message = f"fix(ci): automated fixes for PR #{pr['number']}\\n\\n"
         commit_message += "\\n".join(f"- {fix}" for fix in fixes_applied)
         
@@ -480,11 +513,11 @@ class CIFixer:
             logger.error("Failed to commit changes")
             return False
         
-        # Step 8: Verify fixes
+        # Step 9: Verify fixes
         logger.info("\n🧪 Running verification tests...")
         verification_passed = self.run_verification_tests()
         
-        # Step 9: Rollback if verification failed
+        # Step 10: Rollback if verification failed
         if not self.rollback_if_needed(verification_passed):
             logger.error("Verification failed and rollback failed")
             return False
