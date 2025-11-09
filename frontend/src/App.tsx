@@ -15,6 +15,8 @@ const BehavioralTestWrapper = lazy(() => import('./components/BehavioralTest/Beh
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ExperimentsPage = lazy(() => import('./pages/ExperimentsPage'));
 const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage'));
+const CommunityContributionDashboardPage = lazy(() => import('./pages/CommunityContributionDashboardPage'));
+const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -91,6 +93,16 @@ function App() {
                     <EditorPage />
                   </Suspense>
                 } /> {/* Added Behavior Editor Route */}
+                <Route path="/community" element={
+                  <Suspense fallback={<div>Loading Community Dashboard...</div>}>
+                    <CommunityContributionDashboardPage />
+                  </Suspense>
+                } />
+                <Route path="/knowledge-graph" element={
+                  <Suspense fallback={<div>Loading Knowledge Graph...</div>}>
+                    <KnowledgeGraphPage />
+                  </Suspense>
+                } />
               </Routes>
             </main>
           </div>

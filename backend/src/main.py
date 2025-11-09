@@ -1,4 +1,19 @@
 from contextlib import asynccontextmanager
+import sys
+import os
+from pathlib import Path
+
+# Add src to path if not already there
+if Path(__file__).parent.name == "src":
+    # Running from within src directory
+    current_dir = Path(__file__).parent
+else:
+    # Running from backend directory
+    current_dir = Path(__file__).parent
+
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
@@ -29,6 +44,7 @@ from services.report_generator import ConversionReportGenerator
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
+from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review_fixed as peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
@@ -128,6 +144,11 @@ app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-file
 app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
 app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
+app.include_router(knowledge_graph.router, prefix="/api/v1/knowledge-graph", tags=["knowledge-graph"])
+app.include_router(expert_knowledge.router, prefix="/api/v1/expert", tags=["expert-knowledge"])
+app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
+app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
+app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):

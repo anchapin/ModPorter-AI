@@ -22,6 +22,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
     { to: '/behavioral-test', label: 'Behavioral Test' },
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
+    { to: '/community', label: 'Community' },
+    { to: '/knowledge-graph', label: 'Knowledge Graph' },
     { to: '/docs', label: 'Documentation' }
   ];
 
