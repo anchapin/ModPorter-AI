@@ -172,7 +172,7 @@ const CommunityContributionDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [tabValue]);
+  }, [API_BASE]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);

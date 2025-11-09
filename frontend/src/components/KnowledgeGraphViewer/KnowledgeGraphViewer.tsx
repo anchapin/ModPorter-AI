@@ -29,7 +29,7 @@ import {
   EditOutlined
 } from '@mui/icons-material';
 import * as d3 from 'd3';
-import { debounce } from 'lodash';
+import { } from 'lodash';
 import { useApi } from '../../hooks/useApi';
 
 interface GraphNode {
@@ -116,13 +116,18 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     }
   }, [minecraftVersion, nodeTypeFilter, searchTerm, api]);
 
-  // Debounced search
-  const debouncedSearch = useCallback(
-    debounce((term: string) => {
+  // Debounced search - using setTimeout instead of debounce to avoid ESLint warning
+  const debouncedSearch = useCallback((term: string) => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
       setSearchTerm(term);
-    }, 500),
-    []
-  );
+    }, 500);
+  }, [setSearchTerm]);
+
+  // Timer ref for debounce
+  const debounceTimer = useRef<number | null>(null);
 
   // Draw graph using D3.js
   useEffect(() => {
