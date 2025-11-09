@@ -28,9 +28,9 @@ async def health_check():
 
 class CompatibilityEntry(BaseModel):
     """Model for compatibility entries."""
-    source_version: str
-    target_version: str
-    compatibility_score: float
+    source_version: str = None
+    target_version: str = None
+    compatibility_score: Optional[float] = None
     conversion_complexity: Optional[str] = None
     breaking_changes: Optional[List[Dict[str, Any]]] = None
     migration_guide: Optional[Dict[str, Any]] = None
@@ -48,7 +48,7 @@ async def create_compatibility_entry(
 ):
     """Create a new compatibility entry."""
     entry_id = str(uuid4())
-    entry_dict = entry.dict()
+    entry_dict = entry.model_dump()
     entry_dict["id"] = entry_id
     entry_dict["created_at"] = "2025-11-09T00:00:00Z"
     entry_dict["updated_at"] = "2025-11-09T00:00:00Z"
@@ -88,12 +88,18 @@ async def update_compatibility_entry(
     if entry_id not in compatibility_entries:
         raise HTTPException(status_code=404, detail="Entry not found")
     
-    entry_dict = entry.dict()
-    entry_dict["id"] = entry_id
-    entry_dict["updated_at"] = "2025-11-09T00:00:00Z"
-    compatibility_entries[entry_id] = entry_dict
+    # Get existing entry
+    existing_entry = compatibility_entries[entry_id].copy()
     
-    return entry_dict
+    # Update with new values, keeping existing ones if not provided
+    update_data = entry.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        existing_entry[key] = value
+    
+    existing_entry["updated_at"] = "2025-11-09T00:00:00Z"
+    compatibility_entries[entry_id] = existing_entry
+    
+    return existing_entry
 
 
 @router.delete("/entries/{entry_id}", status_code=204)
