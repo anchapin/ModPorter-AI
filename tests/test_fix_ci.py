@@ -31,6 +31,40 @@ class TestCIFixer(unittest.TestCase):
         self.assertIsNone(self.fixer.backup_branch)
         self.assertIsNone(self.fixer.original_branch)
     
+    def test_clean_log_directory(self):
+        """Test log directory cleaning."""
+        # Create some test log files
+        logs_dir = self.test_dir / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        
+        # Create some test log files
+        test_log1 = logs_dir / "test1.log"
+        test_log2 = logs_dir / "test2.log"
+        test_subdir = logs_dir / "subdir"
+        test_subdir.mkdir(exist_ok=True)
+        test_log3 = test_subdir / "test3.log"
+        
+        test_log1.write_text("test log 1")
+        test_log2.write_text("test log 2")
+        test_log3.write_text("test log 3")
+        
+        # Verify files exist
+        self.assertTrue(test_log1.exists())
+        self.assertTrue(test_log2.exists())
+        self.assertTrue(test_log3.exists())
+        self.assertTrue(test_subdir.exists())
+        
+        # Clean the directory
+        self.fixer._clean_log_directory(logs_dir)
+        
+        # Verify log files are removed
+        self.assertFalse(test_log1.exists())
+        self.assertFalse(test_log2.exists())
+        self.assertFalse(test_log3.exists())
+        
+        # Verify empty subdirectory is removed
+        self.assertFalse(test_subdir.exists())
+    
     @patch('subprocess.run')
     def test_run_command_success(self, mock_run):
         """Test successful command execution."""
