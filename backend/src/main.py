@@ -46,6 +46,14 @@ from services.report_generator import ConversionReportGenerator
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
 from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review_fixed as peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
+# Debug: Check if version compatibility routes are loaded
+try:
+    from api import version_compatibility_fixed
+    print(f"Version compatibility routes: {[route.path for route in version_compatibility_fixed.router.routes]}")
+    print(f"TESTING env: {os.getenv('TESTING')}")
+except Exception as e:
+    print(f"Error importing version_compatibility_fixed: {e}")
+
 # Debug: Check if knowledge graph routes are loaded
 try:
     from api import knowledge_graph_fixed

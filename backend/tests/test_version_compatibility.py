@@ -14,6 +14,14 @@ class TestVersionCompatibilityAPI:
     @pytest.mark.asyncio
     async def test_create_compatibility_entry(self, async_client: AsyncClient):
         """Test creating a new compatibility entry"""
+        print("DEBUG: test_create_compatibility_entry called!")
+        print(f"DEBUG: async_client type: {type(async_client)}")
+        print(f"DEBUG: async_client base_url: {async_client.base_url}")
+        
+        # Try a simple request first
+        health_response = await async_client.get("/api/v1/version-compatibility/health/")
+        print(f"DEBUG: Health response status: {health_response.status_code}")
+        
         compatibility_data = {
             "source_version": "1.18.2",
             "target_version": "1.19.2",
