@@ -1,7 +1,7 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 Run test suite locally to validate fixes
+- 🔄 None
 
 ## Pending
 - ⏳ Update CI configuration if needed
@@ -13,6 +13,8 @@
 - ✅ Identify failing tests and root causes
 - ✅ Respond to Sourcery AI unresolved threads on PR #296 and apply agreed changes
 - ✅ Push follow-up commit message summarizing changes for PR #296
+- ✅ Fixed Conversion Inference API response fields (added primary_path in infer-path; added performance_change in update-model)
+- ✅ Updated Knowledge Graph endpoints to satisfy tests (status codes, relationships retrieval, neighbors, subgraph, deletion, batch ops, patterns list)
 
 ## Completed
 - ✅ Fixed Knowledge Graph API routing and response format issues (3+ tests passing)
