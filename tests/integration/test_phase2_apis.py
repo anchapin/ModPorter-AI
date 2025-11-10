@@ -134,6 +134,9 @@ class TestPhase2Integration:
         }
         
         contribution_response = await async_client.post("/api/expert-knowledge/contributions/", json=compatibility_contribution)
+        if contribution_response.status_code != 201:
+            print(f"Error response: {contribution_response.status_code}")
+            print(f"Response body: {contribution_response.text}")
         assert contribution_response.status_code == 201
         contribution_id = contribution_response.json()["id"]
         

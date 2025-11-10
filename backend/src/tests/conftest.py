@@ -55,8 +55,7 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
-                # from db import models
-                # from db import models as db_models  # Ensure this imports models.py
+                from db import models  # Ensure this imports models.py to create all tables
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
@@ -106,7 +105,7 @@ def client():
         # Import dependencies
         from main import app
         from db.base import get_db
-        # from db import models
+        from db import models  # Ensure models are imported
 
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(
@@ -132,5 +131,44 @@ def client():
         with TestClient(app) as test_client:
             yield test_client
 
+        # Clean up dependency override
+        app.dependency_overrides.clear()
+
+@pytest.fixture
+async def async_client():
+    """Create an async test client for the FastAPI app with clean database per test."""
+    from httpx import AsyncClient
+    
+    # Mock the init_db function to prevent re-initialization during test startup
+    with patch('db.init_db.init_db', new_callable=AsyncMock):
+        # Import dependencies
+        from main import app
+        from db.base import get_db
+        from db import models  # Ensure models are imported
+        
+        # Create a fresh session maker per test to avoid connection sharing
+        test_session_maker = async_sessionmaker(
+            bind=test_engine,
+            expire_on_commit=False,
+            class_=AsyncSession
+        )
+        
+        # Override the database dependency to use isolated sessions
+        async def override_get_db():
+            async with test_session_maker() as session:
+                try:
+                    yield session
+                except Exception:
+                    await session.rollback()
+                    raise
+                finally:
+                    await session.close()
+        
+        app.dependency_overrides[get_db] = override_get_db
+        
+        # Create AsyncClient for async testing
+        async with AsyncClient(app=app, base_url="http://test") as test_client:
+            yield test_client
+        
         # Clean up dependency override
         app.dependency_overrides.clear()

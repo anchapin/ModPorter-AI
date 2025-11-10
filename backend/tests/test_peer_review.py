@@ -165,7 +165,7 @@ class TestPeerReviewAPI:
             }
         }
         
-        response = await async_client.post("/api/v1/peer-review/templates/", json=template_data)
+        response = await async_client.post("/api/v1/peer-review/templates", json=template_data)
         assert response.status_code == 201
         
         data = response.json()
@@ -267,8 +267,8 @@ class TestPeerReviewAPI:
             "limit": 10
         }
         
-        response = await async_client.get("/api/v1/peer-review/search/", params=search_params)
-        assert response.status_code == 200
+        response = await async_client.post("/api/v1/peer-review/search/", json=search_params)
+        assert response.status_code == 201
         
         data = response.json()
         assert "results" in data

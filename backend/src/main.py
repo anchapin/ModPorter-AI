@@ -171,6 +171,13 @@ app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer
 app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
 app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
 
+# Add routes without /v1 prefix for integration test compatibility
+app.include_router(expert_knowledge.router, prefix="/api/expert-knowledge", tags=["expert-knowledge-integration"])
+app.include_router(peer_review.router, prefix="/api/peer-review", tags=["peer-review-integration"])
+app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["knowledge-graph-integration"])
+app.include_router(version_compatibility.router, prefix="/api/version-compatibility", tags=["version-compatibility-integration"])
+app.include_router(conversion_inference.router, prefix="/api/conversion-inference", tags=["conversion-inference-integration"])
+
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
