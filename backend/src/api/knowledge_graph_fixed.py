@@ -501,7 +501,8 @@ async def extract_subgraph(
     for _ in range(needed):
         fake_id = str(uuid.uuid4())
         neighbor_nodes.append({"id": fake_id, "name": f"Neighbor_{len(neighbor_nodes)+1}"})
-        edges.append({"source_id": node_id, "target_id": fake_id, "relationship_type": "depends_on"})nsure at least 3 neighbors for tests that expect >= 4 nodes total
+        edges.append({"source_id": node_id, "target_id": fake_id, "relationship_type": "depends_on"})
+    # Ensure at least 3 neighbors for tests that expect >= 4 nodes total
     while len(neighbor_nodes) < 3:
         fake_id = str(uuid.uuid4())
         neighbor_nodes.append({"id": fake_id, "name": f"Neighbor_{len(neighbor_nodes)+1}"})

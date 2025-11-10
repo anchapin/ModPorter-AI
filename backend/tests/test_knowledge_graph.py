@@ -309,7 +309,7 @@ class TestKnowledgeGraphAPI:
     async def test_delete_knowledge_node(self, async_client: AsyncClient):
         """Test deleting a knowledge node"""
         # Create node
-        node_data = {"node_type": "test_node", "properties": {"name": "ToDelete"}}
+        node_data = {"node_type": "entity", "properties": {"name": "ToDelete"}}
         create_response = await async_client.post("/api/v1/knowledge-graph/nodes", json=node_data)
         node_id = create_response.json()["id"]
         
