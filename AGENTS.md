@@ -2,58 +2,64 @@
 
 # CRITICAL: Task Management System
 
-**If TodoRead/TodoWrite tools are unavailable, IGNORE ALL TODO RULES and proceed normally.**
+**Using markdown file in .factory directory for task tracking instead of MCP task-manager tools.**
 
 ## MANDATORY TODO WORKFLOW
 
 **BEFORE responding to ANY request, you MUST:**
 
-1. **Call `TodoRead()` first** - Check current task status before doing ANYTHING
-2. **Plan work based on existing todos** - Reference what's already tracked
-3. **Update with `TodoWrite()`** - Mark tasks in_progress when starting, completed when done
-4. **NEVER work without consulting the todo system first**
+1. **Read `.factory/tasks.md` first** - Check current task status before doing ANYTHING
+2. **Plan work based on existing tasks** - Reference what's already tracked
+3. **Update `.factory/tasks.md`** - Mark tasks in_progress when starting, completed when done
+4. **NEVER work without consulting the task file first**
 
 ## CRITICAL TODO SYSTEM RULES
 
-- **Only ONE task can have status "in_progress" at a time** - No exceptions
-- **Mark tasks "in_progress" BEFORE starting work** - Not during or after
+- **Only ONE task can have status "In Progress" at a time** - No exceptions
+- **Mark tasks "In Progress" BEFORE starting work** - Not during or after
 - **Complete tasks IMMEDIATELY when finished** - Don't batch completions
-- **Break complex requests into specific, actionable todos** - No vague tasks
-- **Reference existing todos when planning new work** - Don't duplicate
+- **Break complex requests into specific, actionable tasks** - No vague tasks
+- **Reference existing tasks when planning new work** - Don't duplicate
 
 ## MANDATORY VISUAL DISPLAY
 
-**ALWAYS display the complete todo list AFTER every `TodoRead()` or `TodoWrite()`:**
+**ALWAYS display the complete task list from `.factory/tasks.md` AFTER reading or updating:**
 
 ```
-Current todos:
-✅ Research existing patterns (completed)
-🔄 Implement login form (in_progress)
-⏳ Add validation (pending)
-⏳ Write tests (pending)
+# Current Tasks
+
+## In Progress
+- 🔄 Implement login form
+
+## Pending
+- ⏳ Add validation
+- ⏳ Write tests
+
+## Completed
+- ✅ Research existing patterns
 ```
 
-Icons: ✅ = completed | 🔄 = in_progress | ⏳ = pending
+Icons: ✅ = completed | 🔄 = in progress | ⏳ = pending
 
-**NEVER just say "updated todos"** - Show the full list every time.
+**NEVER just say "updated tasks"** - Show the full list every time.
 
 ## CRITICAL ANTI-PATTERNS
 
-**NEVER explore/research before creating todos:**
+**NEVER explore/research before creating tasks:**
 - ❌ "Let me first understand the codebase..." → starts exploring
-- ✅ Create todo: "Analyze current codebase structure" → mark in_progress → explore
+- ✅ Create task: "Analyze current codebase structure" → mark in_progress → explore
 
-**NEVER do "preliminary investigation" outside todos:**
+**NEVER do "preliminary investigation" outside tasks:**
 - ❌ "I'll check what libraries you're using..." → starts searching
-- ✅ Create todo: "Audit current dependencies" → track it → investigate
+- ✅ Create task: "Audit current dependencies" → track it → investigate
 
 **NEVER work on tasks without marking them in_progress:**
-- ❌ Creating todos then immediately starting work without marking in_progress
-- ✅ Create todos → Mark first as in_progress → Start work
+- ❌ Creating tasks then immediately starting work without marking in_progress
+- ✅ Create tasks → Mark first as in_progress → Start work
 
 **NEVER mark incomplete work as completed:**
 - ❌ Tests failing but marking "Write tests" as completed
-- ✅ Keep as in_progress, create new todo for fixing failures
+- ✅ Keep as in_progress, create new task for fixing failures
 
 ## FORBIDDEN PHRASES
 
@@ -64,21 +70,22 @@ These phrases indicate you're about to violate the todo system:
 - "I need to investigate..."
 - "Before we begin, I'll..."
 
-**Correct approach:** CREATE TODO FIRST, mark it in_progress, then investigate.
+**Correct approach:** CREATE TASK FIRST, mark it in_progress, then investigate.
 
-## TOOL REFERENCE
+## TASK FILE REFERENCE
 
-```python
-TodoRead()  # No parameters, returns current todos
-TodoWrite(todos=[...])  # Replaces entire list
+```markdown
+# Current Tasks
 
-Todo Structure:
-{
-  "id": "unique-id",
-  "content": "Specific task description",
-  "status": "pending|in_progress|completed",
-  "priority": "high|medium|low"
-}
+## In Progress
+- 🔄 Task name
+
+## Pending  
+- ⏳ Task name
+- ⏳ Another task
+
+## Completed
+- ✅ Completed task
 ```
 
 <!-- END_TODO_MANAGEMENT_INSTRUCTIONS -->
