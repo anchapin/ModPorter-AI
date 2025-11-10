@@ -7,6 +7,7 @@ including reviews, workflows, reviewer expertise, templates, and analytics.
 
 from typing import Dict, List, Optional, Any
 from datetime import date
+from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,7 +39,7 @@ async def get_pending_reviews(
     }
 
 
-@router.post("/reviews/")
+@router.post("/reviews/", status_code=201)
 async def create_peer_review(
     review_data: Dict[str, Any],
     background_tasks: BackgroundTasks,
@@ -47,8 +48,14 @@ async def create_peer_review(
     """Create a new peer review."""
     # Mock implementation for now
     return {
-        "message": "Peer review created successfully",
-        "review_data": review_data
+        "id": str(uuid4()),
+        "submission_id": review_data["submission_id"],
+        "reviewer_id": review_data["reviewer_id"],
+        "content_analysis": review_data["content_analysis"],
+        "technical_review": review_data["technical_review"],
+        "recommendation": review_data["recommendation"],
+        "status": "pending",
+        "created_at": "2025-01-01T00:00:00Z"
     }
 
 
@@ -65,7 +72,7 @@ async def get_active_workflows(
     }
 
 
-@router.post("/workflows/")
+@router.post("/workflows/", status_code=201)
 async def create_review_workflow(
     workflow_data: Dict[str, Any],
     background_tasks: BackgroundTasks,
@@ -74,8 +81,14 @@ async def create_review_workflow(
     """Create a new review workflow."""
     # Mock implementation for now
     return {
-        "message": "Review workflow created successfully",
-        "workflow_data": workflow_data
+        "id": str(uuid4()),
+        "submission_id": workflow_data["submission_id"],
+        "workflow_type": workflow_data["workflow_type"],
+        "stages": workflow_data["stages"],
+        "auto_assign": workflow_data["auto_assign"],
+        "current_stage": "initial_review",
+        "status": "active",
+        "created_at": "2025-01-01T00:00:00Z"
     }
 
 
@@ -111,7 +124,7 @@ async def get_review_templates(
     }
 
 
-@router.post("/templates/")
+@router.post("/templates/", status_code=201)
 async def create_review_template(
     template_data: Dict[str, Any],
     db: AsyncSession = Depends(get_db)

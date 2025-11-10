@@ -84,6 +84,8 @@ async def batch_infer_paths(
         }
     
     return {
+        "batch_id": f"batch_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+        "status": "processing_started",
         "message": "Batch inference completed successfully",
         "total_concepts": len(java_concepts),
         "successful_paths": len(java_concepts),
@@ -96,7 +98,23 @@ async def batch_infer_paths(
         "batch_metadata": {
             "processing_time": len(java_concepts) * 0.18,
             "cache_hit_rate": 0.6
-        }
+        },
+        "processing_started_at": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/batch/{batch_id}/status")
+async def get_batch_inference_status(
+    batch_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get batch inference status."""
+    return {
+        "batch_id": batch_id,
+        "status": "processing",
+        "progress": 0.75,
+        "started_at": datetime.utcnow().isoformat(),
+        "estimated_completion": datetime.utcnow().isoformat()
     }
 
 
@@ -107,28 +125,37 @@ async def optimize_conversion_sequence(
 ):
     """Optimize conversion sequence based on dependencies and patterns."""
     # Mock implementation for now
-    java_concepts = request.get("java_concepts", [])
-    conversion_dependencies = request.get("conversion_dependencies", {})
-    target_platform = request.get("target_platform", "bedrock")
-    minecraft_version = request.get("minecraft_version", "latest")
+    initial_sequence = request.get("initial_sequence", [])
+    optimization_criteria = request.get("optimization_criteria", [])
+    constraints = request.get("constraints", {})
+    
+    # Generate optimized sequence (mock implementation)
+    optimized_sequence = [
+        {"step": "update_dependencies", "optimized_time": 8},
+        {"step": "migrate_blocks", "optimized_time": 25},
+        {"step": "update_entities", "optimized_time": 20},
+        {"step": "migrate_networking", "optimized_time": 18},
+        {"step": "update_assets", "optimized_time": 12}
+    ]
     
     return {
         "message": "Conversion sequence optimized successfully",
-        "total_concepts": len(java_concepts),
-        "optimization_algorithm": "dependency_graph",
-        "processing_sequence": java_concepts,  # Simplified
-        "validation_steps": [
-            {"step": i + 1, "concept": concept, "validation": "syntax_check"}
-            for i, concept in enumerate(java_concepts)
-        ],
-        "total_estimated_time": len(java_concepts) * 0.25,
-        "optimization_savings": {
-            "time_saved": len(java_concepts) * 0.05,
-            "resource_saved": "15%"
+        "optimized_sequence": optimized_sequence,
+        "improvements": {
+            "total_time_reduction": 15,
+            "parallel_steps_added": 2,
+            "resource_optimization": "20%"
         },
+        "time_reduction": 15.0,
+        "parallel_opportunities": [
+            {"steps": ["update_dependencies", "update_assets"], "can_run_parallel": True},
+            {"steps": ["migrate_blocks", "update_entities"], "can_run_parallel": False}
+        ],
+        "optimization_algorithm": "dependency_graph",
         "metadata": {
-            "dependencies_resolved": len(conversion_dependencies),
-            "parallel_groups_identified": 1
+            "original_time": 100,
+            "optimized_time": 85,
+            "constraints_met": True
         }
     }
 

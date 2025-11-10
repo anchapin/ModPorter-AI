@@ -202,8 +202,10 @@ async def async_client():
     from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review_fixed as peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
     from sqlalchemy.ext.asyncio import AsyncSession
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi import FastAPI
     import os
     from dotenv import load_dotenv
+    from datetime import datetime
     
     # Load environment variables
     load_dotenv()
@@ -233,10 +235,28 @@ async def async_client():
     app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
     app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
     app.include_router(knowledge_graph.router, prefix="/api/v1/knowledge-graph", tags=["knowledge-graph"])
-    app.include_router(expert_knowledge.router, prefix="/api/v1/expert", tags=["expert-knowledge"])
+    app.include_router(expert_knowledge.router, prefix="/api/v1/expert-knowledge", tags=["expert-knowledge"])
     app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
     app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
     app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
+    
+    # Add main health endpoint
+    from pydantic import BaseModel
+    
+    class HealthResponse(BaseModel):
+        """Health check response model"""
+        status: str
+        version: str
+        timestamp: str
+    
+    @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
+    async def health_check():
+        """Check the health status of the API"""
+        return HealthResponse(
+            status="healthy",
+            version="1.0.0",
+            timestamp=datetime.utcnow().isoformat()
+        )
     
     # Override database dependency to use our test engine
     test_session_maker = async_sessionmaker(

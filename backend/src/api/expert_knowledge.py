@@ -59,6 +59,25 @@ async def capture_expert_contribution(
     
     Extracts structured knowledge, validates it, and integrates into knowledge graph.
     """
+    # Basic input validation
+    errors = []
+    if not request.content or not request.content.strip():
+        errors.append("content cannot be empty")
+    if not request.content_type or request.content_type not in ["text", "code", "documentation", "forum_post"]:
+        errors.append("content_type must be valid")
+    if not request.contributor_id or not request.contributor_id.strip():
+        errors.append("contributor_id cannot be empty")
+    if not request.title or not request.title.strip():
+        errors.append("title cannot be empty")
+    if not request.description or not request.description.strip():
+        errors.append("description cannot be empty")
+    
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"errors": errors}
+        )
+    
     try:
         result = await expert_capture_service.process_expert_contribution(
             content=request.content,
@@ -178,7 +197,7 @@ async def batch_capture_contributions(
     """
     try:
         # Convert to list of dictionaries
-        contributions = [c.dict() for c in request.contributions]
+        contributions = [c.model_dump() for c in request.contributions]
         
         results = await expert_capture_service.batch_process_contributions(
             contributions=contributions,
