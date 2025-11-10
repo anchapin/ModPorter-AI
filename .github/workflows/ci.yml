@@ -1,4 +1,4 @@
-name: CI - Integration Tests (Optimized)
+﻿name: CI - Integration Tests (Optimized)
 
 on:
   pull_request:
@@ -310,25 +310,49 @@ jobs:
         apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io zstd
 
     # Install Ollama for AI model testing
+    # Install Ollama for AI model testing
     - name: Install Ollama
       run: |
-        echo "🤖 Installing Ollama..."
+        echo "🤖 Installing Ollama with retry logic..."
         curl -fsSL https://ollama.com/install.sh | sh
-        
         # Install and start Ollama service
         ollama serve &
-        
         # Wait for Ollama to start
-        sleep 10
-        
-        # Pull the required model
-        echo "📥 Pulling llama3.2 model..."
-        ollama pull llama3.2
-        
+        sleep 15
+        # Pull model with retry logic
+        echo "📥 Pulling llama3.2 model with retry logic..."
+        MAX_RETRIES=3
+        RETRY_DELAY=30
+        MODEL_PULLED=false
+        for i in $(seq 1 $MAX_RETRIES); do
+          echo "Attempt $i of $MAX_RETRIES to pull llama3.2..."
+          # Use timeout and background process (20 minutes)
+          timeout 1200 ollama pull llama3.2 &&
+          {
+            echo "✅ Model pull successful!"
+            MODEL_PULLED=true
+            break
+          } ||
+          {
+            echo "❌ Model pull failed (attempt $i)"
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "🚨 All retry attempts failed"
+              echo "⚠️ Continuing without llama3.2 model - tests will skip model-dependent features"
+              break
+            fi
+            echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
+            sleep $RETRY_DELAY
+          }
+        done
         # Verify installation
-        ollama list
-
-    # Verify Python environment
+        echo "Final Ollama status:"
+        ollama list || echo "⚠️ Cannot list models - model may not be available"
+        # Set environment variable for tests
+        if [ "$MODEL_PULLED" = "true" ]; then
+          echo "MODEL_AVAILABLE=true" >> $GITHUB_ENV
+        else
+          echo "MODEL_AVAILABLE=false" >> $GITHUB_ENV
+        fi
     - name: Verify Python environment
       run: |
         echo "🔍 Python environment verification..."
