@@ -1,16 +1,15 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 Run test suite locally to validate fixes
+- 🔄 Respond to Sourcery AI unresolved threads on PR #296 and apply agreed changes
 
 ## Pending
+- ⏳ Run test suite locally to validate fixes
 - ⏳ Update CI configuration if needed
 - ⏳ Document changes and update tasks
 
 ## Completed
 - ✅ Implement fixes in backend services and routes
-
-## Completed
 - ✅ Analyze GitHub Actions CI logs for PR #296 run 19237805581/job 54992314911
 - ✅ Identify failing tests and root causes
 

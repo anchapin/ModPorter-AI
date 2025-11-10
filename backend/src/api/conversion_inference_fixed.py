@@ -741,7 +741,6 @@ async def compare_inference_strategies(
                 "resource_difference": 0.15
             }
         },
-        "recommended_strategy": "balanced",
         "trade_offs": {
             "speed_vs_accuracy": "moderate",
             "resource_usage_vs_success": "balanced",
@@ -897,11 +896,6 @@ async def update_inference_model(
             "Refined time estimation weights",
             "Added new pattern recognition rules"
         ],
-        "performance_change": {
-            "accuracy_increase": 0.03,
-            "speed_improvement": 0.12,
-            "memory_efficiency": 0.08
-        },
         "performance_improvement": {
             "accuracy_increase": 0.03,
             "speed_improvement": 0.12,
