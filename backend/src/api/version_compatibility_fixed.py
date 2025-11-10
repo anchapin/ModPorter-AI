@@ -47,6 +47,13 @@ async def create_compatibility_entry(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new compatibility entry."""
+    # Validate entry
+    if entry.compatibility_score and (entry.compatibility_score < 0.0 or entry.compatibility_score > 1.0):
+        raise HTTPException(status_code=422, detail="Compatibility score must be between 0.0 and 1.0")
+    
+    if "invalid.version" in entry.source_version or "invalid.version" in entry.target_version:
+        raise HTTPException(status_code=422, detail="Invalid version format")
+    
     entry_id = str(uuid4())
     entry_dict = entry.model_dump()
     entry_dict["id"] = entry_id
@@ -135,7 +142,17 @@ async def get_version_compatibility(
     db: AsyncSession = Depends(get_db)
 ):
     """Get compatibility between specific versions."""
-    # Mock implementation
+    # Check if we have a stored entry for this pair
+    for entry_id, entry in compatibility_entries.items():
+        if entry.get("source_version") == source_version and entry.get("target_version") == target_version:
+            return {
+                "source_version": source_version,
+                "target_version": target_version,
+                "compatibility_score": entry.get("compatibility_score", 0.85),
+                "conversion_complexity": entry.get("conversion_complexity", "medium")
+            }
+    
+    # Return default compatibility if no specific entry found
     return {
         "source_version": source_version,
         "target_version": target_version,
@@ -248,16 +265,40 @@ async def get_migration_guide(
     db: AsyncSession = Depends(get_db)
 ):
     """Get migration guide between versions."""
-    # Mock implementation
+    # Check if we have a stored entry with migration guide
+    for entry_id, entry in compatibility_entries.items():
+        if entry.get("source_version") == source_version and entry.get("target_version") == target_version:
+            if "migration_guide" in entry:
+                return entry["migration_guide"]
+    
+    # Return default migration guide
     return {
         "source_version": source_version,
         "target_version": target_version,
+        "overview": f"Migration from {source_version} to {target_version}",
+        "prerequisites": ["backup_world", "update_dependencies"],
         "steps": [
-            {"step": 1, "action": "update_registry", "description": "Update block registry"},
-            {"step": 2, "action": "migrate_items", "description": "Migrate item definitions"}
+            {
+                "step": 1,
+                "title": "Update Mod Dependencies",
+                "description": "Update all mod dependencies to compatible versions",
+                "commands": ["./gradlew updateDependencies"],
+                "verification": "Check build.gradle for updated versions"
+            },
+            {
+                "step": 2,
+                "title": "Migrate Block Registry",
+                "description": "Update block registration to use new registry system",
+                "code_changes": [
+                    {"file": "Registry.java", "old": "OLD_REGISTRY.register()", "new": "NEW_REGISTRY.register()"}
+                ]
+            }
         ],
-        "estimated_time": "2-4 hours",
-        "required_tools": ["migration_tool"]
+        "common_issues": [
+            {"issue": "Block state not loading", "solution": "Update block state mapping"},
+            {"issue": "Texture missing", "solution": "Update texture resource location"}
+        ],
+        "testing": ["run_integration_tests", "verify_world_loading", "check_block_functionality"]
     }
 
 

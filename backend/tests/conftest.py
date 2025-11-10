@@ -187,6 +187,15 @@ async def async_client():
     """Create an async test client for FastAPI app."""
     # Import modules to create fresh app instance
     import asyncio
+    import sys
+    from pathlib import Path
+    
+    # Add src to path (needed for CI environment)
+    backend_dir = Path(__file__).parent.parent
+    src_dir = backend_dir / "src"
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+    
     from fastapi import FastAPI
     from db.base import get_db
     from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
