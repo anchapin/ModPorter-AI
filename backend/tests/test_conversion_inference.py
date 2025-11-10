@@ -2,10 +2,8 @@
 Comprehensive tests for Conversion Inference Engine API
 """
 import pytest
-import json
 from uuid import uuid4
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestConversionInferenceAPI:

@@ -9,19 +9,14 @@ import logging
 import json
 import hashlib
 import uuid
-from typing import Dict, List, Optional, Any, Tuple, Set
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
+    KnowledgeNodeCRUD
 )
 
 logger = logging.getLogger(__name__)

@@ -7,11 +7,12 @@ collaboration on knowledge graph editing.
 
 import json
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
+from ..db.crud import get_async_session
 from ..services.realtime_collaboration import (
     realtime_collaboration_service, OperationType, ConflictType
 )
@@ -457,7 +458,7 @@ async def websocket_collaboration(
         logger.error(f"Error in WebSocket endpoint: {e}")
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 
 

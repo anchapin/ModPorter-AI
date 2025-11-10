@@ -12,14 +12,13 @@ import hashlib
 import time
 import threading
 from typing import Dict, List, Optional, Any, Tuple, Set
-from datetime import datetime, timedelta
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, OrderedDict
 from functools import wraps
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )

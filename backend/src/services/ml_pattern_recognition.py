@@ -8,8 +8,8 @@ identifying optimal conversion patterns between Java and Bedrock concepts.
 import logging
 import json
 import numpy as np
-from typing import Dict, List, Optional, Any, Tuple, Set
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime
 from dataclasses import dataclass
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -17,14 +17,9 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, mean_squared_error
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
 
 logger = logging.getLogger(__name__)

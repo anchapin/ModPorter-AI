@@ -8,22 +8,16 @@ change tracking, and live updates.
 
 import logging
 import json
-import asyncio
 import uuid
-from typing import Dict, List, Optional, Any, Tuple, Set
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
 
 logger = logging.getLogger(__name__)

@@ -8,7 +8,7 @@ connections with proper pooling, retry logic, and performance tuning.
 import os
 import time
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 

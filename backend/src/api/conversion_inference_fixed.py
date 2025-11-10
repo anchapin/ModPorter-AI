@@ -5,9 +5,9 @@ This module provides REST API endpoints for the automated inference
 engine that finds optimal conversion paths and sequences.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db

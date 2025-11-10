@@ -6,25 +6,17 @@ to process and validate expert contributions to the knowledge graph system.
 """
 
 import asyncio
-import json
 import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 
-from db.base import get_db
 from db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD,
     CommunityContributionCRUD
 )
 from db.peer_review_crud import (
     ReviewTemplateCRUD, ReviewWorkflowCRUD
-)
-from db.models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern,
-    CommunityContribution, ReviewTemplate
 )
 
 logger = logging.getLogger(__name__)

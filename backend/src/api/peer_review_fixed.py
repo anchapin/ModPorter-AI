@@ -5,10 +5,9 @@ This module provides REST API endpoints for the peer review system,
 including reviews, workflows, reviewer expertise, templates, and analytics.
 """
 
-from typing import Dict, List, Optional, Any
-from datetime import date
+from typing import Dict, Optional, Any
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db

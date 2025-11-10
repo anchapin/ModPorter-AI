@@ -5,7 +5,7 @@ This module provides REST API endpoints for the knowledge graph
 and community curation system.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid

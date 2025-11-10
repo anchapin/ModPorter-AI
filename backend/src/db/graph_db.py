@@ -6,10 +6,9 @@ for the knowledge graph and community curation system.
 """
 
 import os
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from typing import Dict, List, Optional, Any
 import logging
-from neo4j import GraphDatabase, Driver, Session, Record
+from neo4j import GraphDatabase, Driver, Session
 from neo4j.exceptions import ServiceUnavailable, AuthError
 import json
 

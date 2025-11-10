@@ -7,16 +7,14 @@ concurrent access, connection pooling, and query efficiency.
 """
 
 import os
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from typing import Dict, List, Optional, Any
 import logging
 import json
 import time
 from contextlib import contextmanager
 from threading import Lock
-from neo4j import GraphDatabase, Driver, Session, Record
+from neo4j import GraphDatabase, Driver
 from neo4j.exceptions import ServiceUnavailable, AuthError
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +360,7 @@ class OptimizedGraphDatabaseManager:
         Returns:
             List[Dict[str, Any]]: List of nodes
         """
-        cache_key = self._get_cache_key(f"find_nodes_by_type", {
+        cache_key = self._get_cache_key("find_nodes_by_type", {
             "node_type": node_type,
             "minecraft_version": minecraft_version
         })
@@ -413,7 +411,7 @@ class OptimizedGraphDatabaseManager:
         Returns:
             List[Dict[str, Any]]: Search results
         """
-        cache_key = self._get_cache_key(f"search_nodes", {
+        cache_key = self._get_cache_key("search_nodes", {
             "query_text": query_text,
             "limit": limit
         })
@@ -468,7 +466,7 @@ class OptimizedGraphDatabaseManager:
         Returns:
             Dict[str, Any]: Neighbors and relationships
         """
-        cache_key = self._get_cache_key(f"get_node_neighbors", {
+        cache_key = self._get_cache_key("get_node_neighbors", {
             "node_id": node_id,
             "depth": depth,
             "max_nodes": max_nodes
@@ -568,7 +566,7 @@ class OptimizedGraphDatabaseManager:
         Returns:
             Dict[str, List[Dict[str, Any]]]: Incoming and outgoing relationships
         """
-        cache_key = self._get_cache_key(f"get_node_relationships", {
+        cache_key = self._get_cache_key("get_node_relationships", {
             "node_id": node_id
         })
         

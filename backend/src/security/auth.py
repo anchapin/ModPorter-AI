@@ -3,13 +3,13 @@ Production Security and Authentication System
 Comprehensive security implementation with JWT, RBAC, and session management
 """
 import asyncio
+import json
 import logging
 import secrets
-import hashlib
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 import redis.asyncio as redis
 from fastapi import HTTPException, status, Depends

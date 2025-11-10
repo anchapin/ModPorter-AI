@@ -7,22 +7,14 @@ including filtering, clustering, layout algorithms, and interactive features.
 
 import logging
 import json
-import math
-import networkx as nx
-import numpy as np
-from typing import Dict, List, Optional, Any, Tuple, Set
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
 
 logger = logging.getLogger(__name__)
@@ -1064,4 +1056,18 @@ class AdvancedVisualizationService:
         try:
             if layout == LayoutAlgorithm.SPRING:
                 return await self._spring_layout(nodes, edges)
-            elif layout == LayoutAlgorithm.FRUchte
+            elif layout == LayoutAlgorithm.FRUCHTERMAN:
+                return await self._fruchterman_layout(nodes, edges)
+            elif layout == LayoutAlgorithm.CIRCULAR:
+                return await self._circular_layout(nodes, edges)
+            elif layout == LayoutAlgorithm.HIERARCHICAL:
+                return await self._hierarchical_layout(nodes, edges)
+            elif layout == LayoutAlgorithm.GRID:
+                return await self._grid_layout(nodes, edges)
+            else:
+                # Default to spring layout
+                return await self._spring_layout(nodes, edges)
+        except Exception as e:
+            logger.error(f"Error applying layout {layout}: {e}")
+            # Fallback to simple positioning
+            return {node["id"]: {"x": i * 100, "y": i * 100} for i, node in enumerate(nodes)}

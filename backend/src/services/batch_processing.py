@@ -6,25 +6,20 @@ operations, including chunking, parallel processing, and progress tracking.
 """
 
 import logging
-import json
 import asyncio
 import uuid
 import time
 import threading
-from typing import Dict, List, Optional, Any, Tuple, Set, Callable
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
 from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
+    KnowledgeNodeCRUD
 )
 
 logger = logging.getLogger(__name__)

@@ -770,4 +770,14 @@ class AdvancedVisualizationService:
             # Apply layout algorithm
             if layout == LayoutAlgorithm.SPRING:
                 pos = nx.spring_layout(G, k=1, iterations=50)
-            elif layout == LayoutAlgorithm.FRUchte
+            elif layout == LayoutAlgorithm.FRUCHTERMAN:
+                pos = nx.fruchterman_reingold_layout(G)
+            elif layout == LayoutAlgorithm.CIRCULAR:
+                pos = nx.circular_layout(G)
+            elif layout == LayoutAlgorithm.HIERARCHICAL:
+                pos = nx.spring_layout(G, k=1, iterations=50)  # Fallback for hierarchical
+            elif layout == LayoutAlgorithm.GRID:
+                pos = nx.grid_layout(G)
+            else:
+                # Default to spring layout
+                pos = nx.spring_layout(G, k=1, iterations=50)

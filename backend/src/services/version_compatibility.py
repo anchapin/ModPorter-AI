@@ -6,18 +6,15 @@ Java and Bedrock versions for conversion patterns and features.
 """
 
 import logging
-import json
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
+from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc
+from sqlalchemy import select
 
-from ..db.crud import get_async_session
 from ..db.knowledge_graph_crud import (
     VersionCompatibilityCRUD,
     ConversionPatternCRUD
 )
-from ..models import VersionCompatibility, ConversionPattern
+from ..models import VersionCompatibility
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +85,9 @@ class VersionCompatibilityService:
     async def get_supported_features(
         self,
         java_version: str,
+        db: AsyncSession,
         bedrock_version: str,
-        feature_type: Optional[str] = None,
-        db: AsyncSession
+        feature_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get features supported between specific Java and Bedrock versions.

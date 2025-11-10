@@ -4,9 +4,7 @@ Comprehensive monitoring for application performance and business metrics
 """
 import asyncio
 import logging
-import time
 import psutil
-import traceback
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, asdict
@@ -14,7 +12,6 @@ from functools import wraps
 import uuid
 import json
 from contextlib import asynccontextmanager
-import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 import redis.asyncio as redis
 

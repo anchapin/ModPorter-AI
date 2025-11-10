@@ -2,10 +2,8 @@
 Simple tests for Knowledge Graph System API that match the actual implementation
 """
 import pytest
-import json
 from uuid import uuid4
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestKnowledgeGraphAPI:

@@ -7,10 +7,9 @@ import redis.asyncio as redis_async
 from typing import Dict, Any, Optional, List
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
 from dataclasses import dataclass
-import hashlib
 
 logger = logging.getLogger(__name__)
 

@@ -164,7 +164,7 @@ class ConversionInferenceEngine:
         target_platform: str = "bedrock",
         minecraft_version: str = "latest",
         path_options: Dict[str, Any] = None,
-        db: AsyncSession
+        db: AsyncSession = None
     ) -> Dict[str, Any]:
         """
         Infer conversion paths for multiple Java concepts.
@@ -247,7 +247,7 @@ class ConversionInferenceEngine:
         conversion_dependencies: Optional[Dict[str, List[str]]] = None,
         target_platform: str = "bedrock",
         minecraft_version: str = "latest",
-        db: AsyncSession
+        db: AsyncSession = None
     ) -> Dict[str, Any]:
         """
         Optimize conversion sequence based on dependencies and shared patterns.
@@ -399,7 +399,7 @@ class ConversionInferenceEngine:
     async def get_inference_statistics(
         self,
         days: int = 30,
-        db: AsyncSession
+        db: AsyncSession = None
     ) -> Dict[str, Any]:
         """
         Get statistics about inference engine performance.

@@ -5,13 +5,11 @@ This module provides database operations for knowledge graph models
 using both PostgreSQL and Neo4j databases.
 """
 
-import uuid
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, func, desc
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, update, func, desc
 
 from .models import (
     KnowledgeNode, KnowledgeRelationship, ConversionPattern,

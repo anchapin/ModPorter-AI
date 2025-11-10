@@ -2,11 +2,8 @@
 Comprehensive tests for Expert Knowledge Capture System API
 """
 import pytest
-import json
 from uuid import uuid4
-from datetime import datetime, timedelta
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestExpertKnowledgeAPI:

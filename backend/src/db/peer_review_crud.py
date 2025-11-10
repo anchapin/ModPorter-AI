@@ -6,19 +6,16 @@ including reviews, workflows, reviewer expertise, templates, and analytics.
 """
 
 from typing import Dict, List, Optional, Any
-from uuid import UUID
 from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, and_, or_, func, desc
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, update, and_, func, desc
 
 from db.models import (
     PeerReview as PeerReviewModel,
     ReviewWorkflow as ReviewWorkflowModel,
     ReviewerExpertise as ReviewerExpertiseModel,
     ReviewTemplate as ReviewTemplateModel,
-    ReviewAnalytics as ReviewAnalyticsModel,
-    CommunityContribution as CommunityContributionModel
+    ReviewAnalytics as ReviewAnalyticsModel
 )
 
 

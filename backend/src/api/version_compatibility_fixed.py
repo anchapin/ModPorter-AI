@@ -6,7 +6,7 @@ system that manages Java and Bedrock edition version relationships.
 """
 
 from typing import Dict, List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from uuid import uuid4

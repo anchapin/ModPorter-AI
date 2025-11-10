@@ -5,6 +5,7 @@ This module provides REST API endpoints for large graph batch operations,
 including job submission, progress tracking, and job management.
 """
 
+import json
 import logging
 from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from ..services.batch_processing import (
-    batch_processing_service, BatchOperationType, ProcessingMode, BatchStatus
+    batch_processing_service, BatchOperationType, ProcessingMode
 )
 
 logger = logging.getLogger(__name__)
@@ -236,7 +237,7 @@ async def import_nodes(
                 nodes_data = json.loads(content.decode())
             elif file.filename.endswith('.csv'):
                 # Parse CSV
-                nodes_data = await self._parse_csv_nodes(content.decode())
+                nodes_data = await _parse_csv_nodes(content.decode())
             else:
                 raise HTTPException(
                     status_code=400,
@@ -304,7 +305,7 @@ async def import_relationships(
                 relationships_data = json.loads(content.decode())
             elif file.filename.endswith('.csv'):
                 # Parse CSV
-                relationships_data = await self._parse_csv_relationships(content.decode())
+                relationships_data = await _parse_csv_relationships(content.decode())
             else:
                 raise HTTPException(
                     status_code=400,
@@ -543,9 +544,9 @@ async def get_operation_types():
             operation_types.append({
                 "value": op_type.value,
                 "name": op_type.value.replace("_", " ").title(),
-                "description": self._get_operation_description(op_type),
-                "requires_file": self._operation_requires_file(op_type),
-                "estimated_duration": self._get_operation_duration(op_type)
+                "description": _get_operation_description(op_type),
+                "requires_file": _operation_requires_file(op_type),
+                "estimated_duration": _get_operation_duration(op_type)
             })
         
         return {
@@ -569,9 +570,9 @@ async def get_processing_modes():
             modes.append({
                 "value": mode.value,
                 "name": mode.value.title(),
-                "description": self._get_processing_mode_description(mode),
-                "use_cases": self._get_processing_mode_use_cases(mode),
-                "recommended_for": self._get_processing_mode_recommendations(mode)
+                "description": _get_processing_mode_description(mode),
+                "use_cases": _get_processing_mode_use_cases(mode),
+                "recommended_for": _get_processing_mode_recommendations(mode)
             })
         
         return {

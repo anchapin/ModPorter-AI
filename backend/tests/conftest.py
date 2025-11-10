@@ -152,7 +152,6 @@ def client():
     # Ensure tables are created
     import asyncio
     from db.declarative_base import Base
-    from db import models
 
     async def ensure_tables():
         async with test_engine.begin() as conn:
@@ -186,7 +185,6 @@ def client():
 async def async_client():
     """Create an async test client for FastAPI app."""
     # Import modules to create fresh app instance
-    import asyncio
     import sys
     from pathlib import Path
     
@@ -202,7 +200,6 @@ async def async_client():
     from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
     from sqlalchemy.ext.asyncio import AsyncSession
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi import FastAPI
     import os
     from dotenv import load_dotenv
     from datetime import datetime

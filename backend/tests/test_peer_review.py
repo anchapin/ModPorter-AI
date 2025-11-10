@@ -2,7 +2,6 @@
 Comprehensive tests for Peer Review System API
 """
 import pytest
-import json
 from uuid import uuid4
 from datetime import datetime, timedelta
 from httpx import AsyncClient

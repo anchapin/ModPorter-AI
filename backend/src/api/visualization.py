@@ -6,8 +6,8 @@ including filtering, layout, clustering, and export capabilities.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Dict, List, Any
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
@@ -602,4 +602,9 @@ def _get_layout_suitability(layout: LayoutAlgorithm) -> List[str]:
     """Get suitable use cases for a layout algorithm."""
     suitability = {
         LayoutAlgorithm.SPRING: ["General purpose", "Moderate size graphs", "Force-directed layout"],
-        LayoutAlgorithm.FRUchte
+        LayoutAlgorithm.FRUCHTERMAN: ["Large graphs", "Physics simulation", "Energy minimization"],
+        LayoutAlgorithm.CIRCULAR: ["Social networks", "Cyclical relationships", "Community visualization"],
+        LayoutAlgorithm.HIERARCHICAL: ["Organizational charts", "Dependency graphs", "Process flows"],
+        LayoutAlgorithm.GRID: ["Regular structures", "Matrix-style data", "Tabular relationships"]
+    }
+    return suitability.get(layout, ["General use"])

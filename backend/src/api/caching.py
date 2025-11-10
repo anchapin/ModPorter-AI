@@ -414,8 +414,8 @@ async def get_cache_strategies():
             strategies.append({
                 "value": strategy.value,
                 "name": strategy.value.replace("_", " ").title(),
-                "description": self._get_strategy_description(strategy),
-                "use_cases": self._get_strategy_use_cases(strategy)
+                "description": _get_strategy_description(strategy),
+                "use_cases": _get_strategy_use_cases(strategy)
             })
         
         return {
@@ -440,8 +440,8 @@ async def get_invalidation_strategies():
             strategies.append({
                 "value": strategy.value,
                 "name": strategy.value.replace("_", " ").title(),
-                "description": self._get_invalidation_description(strategy),
-                "use_cases": self._get_invalidation_use_cases(strategy)
+                "description": _get_invalidation_description(strategy),
+                "use_cases": _get_invalidation_use_cases(strategy)
             })
         
         return {
@@ -476,7 +476,7 @@ async def test_cache_performance(
             cache_times = []
             for i in range(iterations):
                 cache_start = time.time()
-                result = await graph_caching_service.get("nodes", f"test_key_{i}")
+                await graph_caching_service.get("nodes", f"test_key_{i}")
                 cache_end = time.time()
                 cache_times.append((cache_end - cache_start) * 1000)
         
@@ -485,7 +485,7 @@ async def test_cache_performance(
             cache_times = []
             for i in range(iterations):
                 cache_start = time.time()
-                result = await graph_caching_service.set(
+                await graph_caching_service.set(
                     "nodes", f"test_key_{i}", {"data": f"test_data_{i}"}
                 )
                 cache_end = time.time()

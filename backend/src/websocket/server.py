@@ -7,10 +7,9 @@ import json
 import logging
 from datetime import datetime
 from typing import Dict, Set, Any, Optional, List
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from enum import Enum
 import uuid
-import asyncpg
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import redis.asyncio as redis
@@ -323,7 +322,7 @@ class ConversionProgressTracker:
                             result[key] = json.loads(value)
                         else:
                             result[key] = value
-                    except:
+                    except Exception:
                         result[key] = value
                 return result
         except Exception as e:
@@ -551,7 +550,7 @@ class NotificationManager:
                                 notification[key] = json.loads(value)
                             else:
                                 notification[key] = value
-                        except:
+                        except Exception:
                             notification[key] = value
                     notifications.append(notification)
             

@@ -6,27 +6,17 @@ visualizations, including level-of-detail, streaming, and adaptive loading.
 """
 
 import logging
-import json
-import math
 import asyncio
 import uuid
 import time
 import threading
-from typing import Dict, List, Optional, Any, Tuple, Set
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.crud import get_async_session
-from ..db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
-from ..models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
-)
 
 logger = logging.getLogger(__name__)
 
