@@ -1,10 +1,9 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 Respond to Sourcery AI unresolved threads on PR #296 and apply agreed changes
+- 🔄 Run test suite locally to validate fixes
 
 ## Pending
-- ⏳ Run test suite locally to validate fixes
 - ⏳ Update CI configuration if needed
 - ⏳ Document changes and update tasks
 
@@ -12,6 +11,8 @@
 - ✅ Implement fixes in backend services and routes
 - ✅ Analyze GitHub Actions CI logs for PR #296 run 19237805581/job 54992314911
 - ✅ Identify failing tests and root causes
+- ✅ Respond to Sourcery AI unresolved threads on PR #296 and apply agreed changes
+- ✅ Push follow-up commit message summarizing changes for PR #296
 
 ## Completed
 - ✅ Fixed Knowledge Graph API routing and response format issues (3+ tests passing)
