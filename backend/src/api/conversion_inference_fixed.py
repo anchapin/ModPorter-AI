@@ -59,10 +59,7 @@ async def infer_conversion_path(
 
     # Check for other required fields in source_mod
     if source_mod:
-        missing = []
-        for key in ["loader", "features"]:
-            if not source_mod.get(key):
-                missing.append(key)
+        missing = [key for key in ["loader", "features"] if not source_mod.get(key)]
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

@@ -15,6 +15,11 @@
 - ✅ Push follow-up commit message summarizing changes for PR #296
 - ✅ Fixed Conversion Inference API response fields (added primary_path in infer-path; added performance_change in update-model)
 - ✅ Updated Knowledge Graph endpoints to satisfy tests (status codes, relationships retrieval, neighbors, subgraph, deletion, batch ops, patterns list)
+- ✅ Addressed Sourcery AI review comments in fixed API modules
+  - Refactored loops to comprehensions in knowledge_graph_fixed.py (relationships, neighbors)
+  - Replaced global list reassignment with slice assignment to avoid global usage
+  - Simplified missing-field detection in conversion_inference_fixed.py
+  - Preserved API contracts and status codes to maintain test expectations
 
 ## Completed
 - ✅ Fixed Knowledge Graph API routing and response format issues (3+ tests passing)
