@@ -44,7 +44,7 @@ from services.report_generator import ConversionReportGenerator
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
-from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review_fixed as peer_review as peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
+from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
 # Debug: Check if version compatibility routes are loaded
 try:
