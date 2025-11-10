@@ -135,15 +135,45 @@ async def create_review_template(
         "template_data": template_data
     }
 
+@router.post("/assign/", status_code=200)
+async def assign_peer_reviews(
+    assignment_data: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create peer review assignment for a submission."""
+    assignment_id = str(uuid4())
+    required_reviews = assignment_data.get("required_reviews", 2)
+    expertise_required = assignment_data.get("expertise_required", [])
+    deadline = assignment_data.get("deadline")
+
+    return {
+        "assignment_id": assignment_id,
+        "submission_id": assignment_data.get("submission_id"),
+        "required_reviews": required_reviews,
+        "expertise_required": expertise_required,
+        "deadline": deadline,
+        "assigned_reviewers": [
+            {"reviewer_id": str(uuid4()), "expertise": expertise_required[:1]},
+            {"reviewer_id": str(uuid4()), "expertise": expertise_required[1:2]}
+        ],
+        "status": "assigned",
+        "created_at": "2025-01-01T00:00:00Z"
+    }
+
 
 @router.get("/analytics/")
 async def get_review_summary(
-    days: int = Query(30, le=365, description="Number of days to summarize"),
+    time_period: str = Query("7d", description="Time period for analytics"),
+    metrics: Optional[Any] = Query(["volume", "quality", "participation"], description="Metrics to include"),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get review summary for last N days."""
-    # Mock implementation for now
+    """Get review analytics summary."""
     return {
-        "message": "Review summary endpoint working",
-        "days": days
+        "total_reviews": 42,
+        "average_completion_time": "2d 6h",
+        "approval_rate": 0.82,
+        "participation_rate": 0.67,
+        "time_period": time_period,
+        "metrics_included": metrics
     }

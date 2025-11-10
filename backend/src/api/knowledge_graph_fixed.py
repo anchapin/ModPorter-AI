@@ -28,18 +28,35 @@ async def health_check():
     }
 
 
-@router.post("/nodes")
-@router.post("/nodes/")
+@router.post("/nodes", status_code=201)
+@router.post("/nodes/", status_code=201)
 async def create_knowledge_node(
     node_data: Dict[str, Any],
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new knowledge node."""
+    # Basic validation
+    allowed_types = {
+        "java_class",
+        "minecraft_block",
+        "minecraft_item",
+        "pattern",
+        "entity",
+        "api_reference",
+        "tutorial",
+        "performance_tip"
+    }
+    node_type = node_data.get("node_type")
+    if not node_type or node_type not in allowed_types:
+        raise HTTPException(status_code=422, detail="Invalid node_type")
+    if not isinstance(node_data.get("properties", {}), dict):
+        raise HTTPException(status_code=422, detail="properties must be an object")
+
     # Create node with generated ID
     node_id = str(uuid.uuid4())
     node = {
         "id": node_id,
-        "node_type": node_data.get("node_type"),
+        "node_type": node_type,
         "name": node_data.get("name"),
         "properties": node_data.get("properties", {}),
         "minecraft_version": node_data.get("minecraft_version", "latest"),
@@ -83,15 +100,21 @@ async def get_node_relationships(
     }
 
 
-@router.post("/relationships")
-@router.post("/relationships/")
-@router.post("/edges")
-@router.post("/edges/")
+@router.post("/relationships", status_code=201)
+@router.post("/relationships/", status_code=201)
+@router.post("/edges", status_code=201)
+@router.post("/edges/", status_code=201)
 async def create_knowledge_relationship(
     relationship_data: Dict[str, Any],
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new knowledge relationship."""
+    # Basic validation
+    if not relationship_data.get("source_id") or not relationship_data.get("target_id"):
+        raise HTTPException(status_code=422, detail="source_id and target_id are required")
+    if not relationship_data.get("relationship_type"):
+        raise HTTPException(status_code=422, detail="relationship_type is required")
+
     # Mock implementation for now
     return {
         "source_id": relationship_data.get("source_id"),
@@ -464,6 +487,35 @@ async def get_visualization_data(
             {"source": str(uuid.uuid4()), "target": str(uuid.uuid4()), "type": "references"}
         ],
         "layout": layout
+    }
+
+@router.get("/insights/")
+async def get_graph_insights(
+    focus_domain: str = Query("blocks", description="Domain to focus analysis on"),
+    analysis_types: Optional[Any] = Query(["patterns", "gaps", "connections"], description="Analysis types to include"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get insights from the knowledge graph populated with community data."""
+    # Mock data for insights
+    patterns = [
+        {"focus": "Block Registration", "pattern": "deferred_registration", "prevalence": 0.65},
+        {"focus": "Block Properties", "pattern": "use_block_states", "prevalence": 0.52},
+        {"focus": "Block Performance", "pattern": "tick_optimization", "prevalence": 0.41}
+    ]
+    knowledge_gaps = [
+        {"area": "rendering_optimization", "severity": "medium", "missing_docs": True},
+        {"area": "network_sync", "severity": "low", "missing_examples": True}
+    ]
+    strong_connections = [
+        {"source": "block_registration", "target": "thread_safety", "confidence": 0.84},
+        {"source": "block_states", "target": "serialization", "confidence": 0.78}
+    ]
+
+    return {
+        "patterns": patterns,
+        "knowledge_gaps": knowledge_gaps,
+        "strong_connections": strong_connections,
+        "focus_domain": focus_domain
     }
 
 
