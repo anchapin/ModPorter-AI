@@ -19,7 +19,7 @@ from collections import defaultdict, OrderedDict
 from functools import wraps
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.knowledge_graph_crud import (
+from db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
 

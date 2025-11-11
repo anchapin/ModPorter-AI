@@ -29,7 +29,8 @@ class Settings(BaseSettings):
         # Convert to async format if needed
         url = self.database_url_raw
         if url.startswith("postgresql://"):
-            return url.replace("postgresql://", "postgresql+asyncpg://")
+            # Use psycopg with asyncio support
+            return url.replace("postgresql://", "postgresql+psycopg://")
         return url
 
     @property

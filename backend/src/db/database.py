@@ -7,15 +7,11 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# Database URL configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite+aiosqlite:///./modporter.db"
-)
+from config import settings
 
 # Create async engine
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.database_url,
     echo=os.getenv("DB_ECHO", "false").lower() == "true",
     future=True
 )

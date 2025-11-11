@@ -4,6 +4,14 @@ Test suite for A/B testing infrastructure
 
 import pytest
 import uuid
+import sys
+from pathlib import Path
+
+# Add backend src to path
+backend_src = Path(__file__).parent / "backend" / "src"
+if str(backend_src) not in sys.path:
+    sys.path.insert(0, str(backend_src))
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import crud
 

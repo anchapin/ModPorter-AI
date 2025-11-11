@@ -18,10 +18,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, mean_squared_error
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.knowledge_graph_crud import (
+from db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
-from ..models import (
+from db.models import (
     KnowledgeNode
 )
 
