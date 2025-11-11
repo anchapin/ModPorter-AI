@@ -11,6 +11,7 @@ python-dateutil==2.9.0.post0
 # Database
 sqlalchemy>=2.0.23
 asyncpg>=0.29
+psycopg2-binary>=2.9.7  # PostgreSQL sync driver for migrations
 alembic==1.17.0
 pgvector>=0.1.1
 aiosqlite>=0.19.0  # For SQLite async support in tests
