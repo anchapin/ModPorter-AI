@@ -12,7 +12,7 @@ setup(
         'python-dateutil==2.9.0.post0',
         'sqlalchemy>=2.0.23',
         'asyncpg>=0.29',
-        'psycopg2-binary>=2.9.7',
+
         'alembic==1.17.0',
         'pgvector>=0.1.1',
         'aiosqlite>=0.19.0',

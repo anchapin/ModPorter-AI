@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from db.base import get_db
-from ..db import crud
+from db import crud
 import uuid
 from datetime import datetime
 from enum import Enum

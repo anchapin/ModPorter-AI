@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from datetime import datetime
 
-from .. import models
+from db.models import BehaviorTemplate
 
 async def create_behavior_template(
     session: AsyncSession,
@@ -19,9 +19,9 @@ async def create_behavior_template(
     version: str = "1.0.0",
     created_by: Optional[str] = None,
     commit: bool = True,
-) -> models.BehaviorTemplate:
+) -> BehaviorTemplate:
     """Create a new behavior template."""
-    template = models.BehaviorTemplate(
+    template = BehaviorTemplate(
         name=name,
         description=description,
         category=category,
@@ -44,14 +44,14 @@ async def create_behavior_template(
 async def get_behavior_template(
     session: AsyncSession,
     template_id: str,
-) -> Optional[models.BehaviorTemplate]:
+) -> Optional[BehaviorTemplate]:
     """Get a behavior template by ID."""
     try:
         template_uuid = uuid.UUID(template_id)
     except ValueError:
         raise ValueError(f"Invalid template ID format: {template_id}")
 
-    stmt = select(models.BehaviorTemplate).where(models.BehaviorTemplate.id == template_uuid)
+    stmt = select(BehaviorTemplate).where(BehaviorTemplate.id == template_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -66,37 +66,37 @@ async def get_behavior_templates(
     is_public: Optional[bool] = None,
     skip: int = 0,
     limit: int = 50,
-) -> List[models.BehaviorTemplate]:
+) -> List[BehaviorTemplate]:
     """Get behavior templates with filtering and search."""
-    stmt = select(models.BehaviorTemplate)
+    stmt = select(BehaviorTemplate)
 
     # Apply filters
     if category:
-        stmt = stmt.where(models.BehaviorTemplate.category == category)
+        stmt = stmt.where(BehaviorTemplate.category == category)
     
     if template_type:
-        stmt = stmt.where(models.BehaviorTemplate.template_type == template_type)
+        stmt = stmt.where(BehaviorTemplate.template_type == template_type)
     
     if is_public is not None:
-        stmt = stmt.where(models.BehaviorTemplate.is_public == is_public)
+        stmt = stmt.where(BehaviorTemplate.is_public == is_public)
     
     if tags:
         # Filter by tags - any tag match
-        tag_conditions = [models.BehaviorTemplate.tags.any(tag=tag) for tag in tags]
+        tag_conditions = [BehaviorTemplate.tags.any(tag=tag) for tag in tags]
         stmt = stmt.where(func.or_(*tag_conditions))
     
     if search:
         # Search in name and description
         search_filter = func.or_(
-            models.BehaviorTemplate.name.ilike(f"%{search}%"),
-            models.BehaviorTemplate.description.ilike(f"%{search}%")
+            BehaviorTemplate.name.ilike(f"%{search}%"),
+            BehaviorTemplate.description.ilike(f"%{search}%")
         )
         stmt = stmt.where(search_filter)
 
     # Apply pagination and ordering
     stmt = stmt.offset(skip).limit(limit).order_by(
-        models.BehaviorTemplate.is_public.desc(),
-        models.BehaviorTemplate.updated_at.desc()
+        BehaviorTemplate.is_public.desc(),
+        BehaviorTemplate.updated_at.desc()
     )
 
     result = await session.execute(stmt)
@@ -108,7 +108,7 @@ async def update_behavior_template(
     template_id: str,
     updates: dict,
     commit: bool = True,
-) -> Optional[models.BehaviorTemplate]:
+) -> Optional[BehaviorTemplate]:
     """Update a behavior template."""
     try:
         template_uuid = uuid.UUID(template_id)
@@ -128,10 +128,10 @@ async def update_behavior_template(
         update_values['updated_at'] = datetime.now(datetime.UTC)
         
         stmt = (
-            update(models.BehaviorTemplate)
-            .where(models.BehaviorTemplate.id == template_uuid)
+            update(BehaviorTemplate)
+            .where(BehaviorTemplate.id == template_uuid)
             .values(**update_values)
-            .returning(models.BehaviorTemplate)
+            .returning(BehaviorTemplate)
         )
         result = await session.execute(stmt)
         
@@ -160,7 +160,7 @@ async def delete_behavior_template(
     if not existing_template:
         return False
 
-    stmt = delete(models.BehaviorTemplate).where(models.BehaviorTemplate.id == template_uuid)
+    stmt = delete(BehaviorTemplate).where(BehaviorTemplate.id == template_uuid)
     result = await session.execute(stmt)
     
     if commit:
