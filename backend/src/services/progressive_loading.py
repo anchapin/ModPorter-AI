@@ -88,9 +88,9 @@ class LoadingChunk:
     chunk_id: str
     chunk_index: int
     total_chunks: int
-    items: List[Dict[str, Any]] = field(default_factory=list)
     detail_level: DetailLevel
     load_priority: LoadingPriority
+    items: List[Dict[str, Any]] = field(default_factory=list)
     estimated_size_bytes: int = 0
     load_time_ms: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
