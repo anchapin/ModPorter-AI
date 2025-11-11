@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from db.declarative_base import Base
+from .declarative_base import Base
 
 # Custom type that automatically chooses the right JSON type based on the database
 class JSONType(TypeDecorator):

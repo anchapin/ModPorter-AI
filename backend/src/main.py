@@ -16,8 +16,8 @@ if str(current_dir) not in sys.path:
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.base import get_db, AsyncSessionLocal
-from db import crud
+from .db.base import get_db, AsyncSessionLocal
+from .db import crud
 from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse

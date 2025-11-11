@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
-from ..db.crud import get_async_session
+from ..db.database import get_async_session
 from ..services.realtime_collaboration import (
     realtime_collaboration_service, OperationType, ConflictType
 )

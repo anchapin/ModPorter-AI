@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from db.base import get_db
-from db import crud
+from ..db import crud
 from services.asset_conversion_service import asset_conversion_service
 
 # Configure logger for this module
