@@ -1,0 +1,580 @@
+"""
+Tests for graph_caching.py service.
+Focus on covering caching strategies and performance optimization.
+"""
+
+import pytest
+import time
+import threading
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timedelta
+
+# Import the service
+from services.graph_caching import (
+    GraphCacheService,
+    CacheLevel,
+    CacheStrategy,
+    CacheInvalidationStrategy,
+    CacheEntry,
+    CacheConfig,
+    MemoryCache,
+    RedisCache,
+    CacheManager
+)
+
+
+class TestCacheLevel:
+    """Test the CacheLevel enum."""
+    
+    def test_cache_level_values(self):
+        """Test all enum values are present."""
+        assert CacheLevel.L1_MEMORY.value == "l1_memory"
+        assert CacheLevel.L2_REDIS.value == "l2_redis"
+        assert CacheLevel.L3_DATABASE.value == "l3_database"
+
+
+class TestCacheStrategy:
+    """Test the CacheStrategy enum."""
+    
+    def test_cache_strategy_values(self):
+        """Test all enum values are present."""
+        assert CacheStrategy.LRU.value == "lru"
+        assert CacheStrategy.LFU.value == "lfu"
+        assert CacheStrategy.FIFO.value == "fifo"
+        assert CacheStrategy.TTL.value == "ttl"
+        assert CacheStrategy.WRITE_THROUGH.value == "write_through"
+        assert CacheStrategy.WRITE_BEHIND.value == "write_behind"
+        assert CacheStrategy.REFRESH_AHEAD.value == "refresh_ahead"
+
+
+class TestCacheInvalidationStrategy:
+    """Test the CacheInvalidationStrategy enum."""
+    
+    def test_invalidation_strategy_values(self):
+        """Test all enum values are present."""
+        assert CacheInvalidationStrategy.TIME_BASED.value == "time_based"
+        assert CacheInvalidationStrategy.EVENT_DRIVEN.value == "event_driven"
+
+
+class TestCacheEntry:
+    """Test the CacheEntry dataclass."""
+    
+    def test_cache_entry_creation(self):
+        """Test creating CacheEntry instance."""
+        entry = CacheEntry(
+            key="test_key",
+            value={"data": "test"},
+            created_at=datetime.now(),
+            last_accessed=datetime.now(),
+            access_count=1,
+            ttl=300,
+            metadata={"source": "test"}
+        )
+        
+        assert entry.key == "test_key"
+        assert entry.value["data"] == "test"
+        assert entry.access_count == 1
+        assert entry.ttl == 300
+        assert entry.metadata["source"] == "test"
+        
+    def test_cache_entry_is_expired(self):
+        """Test cache entry expiration check."""
+        # Non-expired entry
+        entry = CacheEntry(
+            key="test_key",
+            value="test",
+            created_at=datetime.now(),
+            last_accessed=datetime.now(),
+            access_count=1,
+            ttl=300
+        )
+        assert not entry.is_expired()
+        
+        # Expired entry
+        past_time = datetime.now() - timedelta(seconds=400)
+        entry = CacheEntry(
+            key="test_key",
+            value="test",
+            created_at=past_time,
+            last_accessed=past_time,
+            access_count=1,
+            ttl=300
+        )
+        assert entry.is_expired()
+        
+    def test_cache_entry_update_access(self):
+        """Test updating access information."""
+        entry = CacheEntry(
+            key="test_key",
+            value="test",
+            created_at=datetime.now(),
+            last_accessed=datetime.now(),
+            access_count=1
+        )
+        
+        original_count = entry.access_count
+        time.sleep(0.01)  # Ensure timestamp difference
+        
+        entry.update_access()
+        
+        assert entry.access_count == original_count + 1
+        assert entry.last_accessed > entry.created_at
+
+
+class TestCacheConfig:
+    """Test the CacheConfig dataclass."""
+    
+    def test_cache_config_creation(self):
+        """Test creating CacheConfig instance."""
+        config = CacheConfig(
+            max_size=1000,
+            ttl=300,
+            strategy=CacheStrategy.LRU,
+            invalidation_strategy=CacheInvalidationStrategy.TIME_BASED,
+            cleanup_interval=60,
+            enable_compression=True
+        )
+        
+        assert config.max_size == 1000
+        assert config.ttl == 300
+        assert config.strategy == CacheStrategy.LRU
+        assert config.invalidation_strategy == CacheInvalidationStrategy.TIME_BASED
+        assert config.cleanup_interval == 60
+        assert config.enable_compression == True
+
+
+class TestMemoryCache:
+    """Test the MemoryCache class."""
+    
+    def test_memory_cache_initialization(self):
+        """Test MemoryCache initialization."""
+        config = CacheConfig(
+            max_size=100,
+            ttl=300,
+            strategy=CacheStrategy.LRU
+        )
+        cache = MemoryCache(config)
+        
+        assert cache.config == config
+        assert len(cache.cache) == 0
+        assert cache.access_order == []
+        
+    def test_memory_cache_set_and_get(self):
+        """Test setting and getting values."""
+        config = CacheConfig(max_size=10, ttl=300)
+        cache = MemoryCache(config)
+        
+        # Set value
+        cache.set("key1", "value1")
+        
+        # Get value
+        result = cache.get("key1")
+        assert result == "value1"
+        
+        # Get non-existent key
+        result = cache.get("non_existent")
+        assert result is None
+        
+    def test_memory_cache_lru_eviction(self):
+        """Test LRU eviction policy."""
+        config = CacheConfig(max_size=3, ttl=300, strategy=CacheStrategy.LRU)
+        cache = MemoryCache(config)
+        
+        # Fill cache
+        cache.set("key1", "value1")
+        cache.set("key2", "value2")
+        cache.set("key3", "value3")
+        
+        # Access key1 to make it most recently used
+        cache.get("key1")
+        
+        # Add new key, should evict key2 (least recently used)
+        cache.set("key4", "value4")
+        
+        assert cache.get("key1") == "value1"  # Should still exist
+        assert cache.get("key2") is None  # Should be evicted
+        assert cache.get("key3") == "value3"
+        assert cache.get("key4") == "value4"
+        
+    def test_memory_cache_fifo_eviction(self):
+        """Test FIFO eviction policy."""
+        config = CacheConfig(max_size=3, ttl=300, strategy=CacheStrategy.FIFO)
+        cache = MemoryCache(config)
+        
+        # Fill cache
+        cache.set("key1", "value1")
+        cache.set("key2", "value2")
+        cache.set("key3", "value3")
+        
+        # Add new key, should evict key1 (first in)
+        cache.set("key4", "value4")
+        
+        assert cache.get("key1") is None  # Should be evicted
+        assert cache.get("key2") == "value2"
+        assert cache.get("key3") == "value3"
+        assert cache.get("key4") == "value4"
+        
+    def test_memory_cache_ttl_expiration(self):
+        """Test TTL-based expiration."""
+        config = CacheConfig(max_size=10, ttl=1)  # 1 second TTL
+        cache = MemoryCache(config)
+        
+        # Set value
+        cache.set("key1", "value1")
+        
+        # Should be accessible immediately
+        assert cache.get("key1") == "value1"
+        
+        # Wait for expiration
+        time.sleep(1.1)
+        
+        # Should be expired
+        assert cache.get("key1") is None
+        
+    def test_memory_cache_clear(self):
+        """Test cache clearing."""
+        config = CacheConfig(max_size=10, ttl=300)
+        cache = MemoryCache(config)
+        
+        # Fill cache
+        cache.set("key1", "value1")
+        cache.set("key2", "value2")
+        
+        # Clear cache
+        cache.clear()
+        
+        assert len(cache.cache) == 0
+        assert cache.get("key1") is None
+        assert cache.get("key2") is None
+        
+    def test_memory_cache_size_limit(self):
+        """Test cache size limits."""
+        config = CacheConfig(max_size=5, ttl=300)
+        cache = MemoryCache(config)
+        
+        # Fill beyond limit
+        for i in range(10):
+            cache.set(f"key{i}", f"value{i}")
+            
+        assert len(cache.cache) <= 5
+        assert cache.size() <= 5
+        
+    def test_memory_cache_stats(self):
+        """Test cache statistics."""
+        config = CacheConfig(max_size=10, ttl=300)
+        cache = MemoryCache(config)
+        
+        # Perform operations
+        cache.set("key1", "value1")
+        cache.get("key1")  # Hit
+        cache.get("key2")  # Miss
+        
+        stats = cache.get_stats()
+        
+        assert "hits" in stats
+        assert "misses" in stats
+        assert "size" in stats
+        assert stats["hits"] == 1
+        assert stats["misses"] == 1
+        assert stats["size"] == 1
+
+
+class TestRedisCache:
+    """Test the RedisCache class."""
+    
+    @pytest.fixture
+    def redis_cache(self):
+        """Create RedisCache instance with mocked Redis client."""
+        config = CacheConfig(max_size=1000, ttl=300)
+        with patch('services.graph_caching.redis') as mock_redis:
+            mock_client = MagicMock()
+            mock_redis.Redis.return_value = mock_client
+            
+            cache = RedisCache(config)
+            cache.client = mock_client
+            return cache
+            
+    def test_redis_cache_set_and_get(self, redis_cache):
+        """Test setting and getting values in Redis."""
+        # Mock Redis operations
+        redis_cache.client.setex.return_value = True
+        redis_cache.client.get.return_value = b'"test_value"'
+        
+        # Set value
+        redis_cache.set("key1", {"data": "test"})
+        
+        # Verify Redis setex was called
+        redis_cache.client.setex.assert_called_once()
+        
+        # Get value
+        result = redis_cache.get("key1")
+        assert result == {"data": "test"}
+        
+        redis_cache.client.get.assert_called_with("key1")
+        
+    def test_redis_cache_get_nonexistent(self, redis_cache):
+        """Test getting non-existent key from Redis."""
+        redis_cache.client.get.return_value = None
+        
+        result = redis_cache.get("non_existent")
+        assert result is None
+        
+    def test_redis_cache_delete(self, redis_cache):
+        """Test deleting key from Redis."""
+        redis_cache.client.delete.return_value = 1
+        
+        result = redis_cache.delete("key1")
+        assert result == True
+        redis_cache.client.delete.assert_called_with("key1")
+        
+    def test_redis_cache_clear(self, redis_cache):
+        """Test clearing Redis cache."""
+        redis_cache.client.flushdb.return_value = True
+        
+        redis_cache.clear()
+        redis_cache.client.flushdb.assert_called_once()
+
+
+class TestCacheManager:
+    """Test the CacheManager class."""
+    
+    @pytest.fixture
+    def cache_manager(self):
+        """Create CacheManager instance."""
+        config = CacheConfig(
+            max_size=100,
+            ttl=300,
+            strategy=CacheStrategy.LRU
+        )
+        return CacheManager(config)
+        
+    def test_cache_manager_initialization(self, cache_manager):
+        """Test CacheManager initialization."""
+        assert cache_manager.l1_cache is not None
+        assert cache_manager.l2_cache is not None
+        assert cache_manager.config is not None
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_get_l1_hit(self, cache_manager):
+        """Test cache hit in L1 cache."""
+        cache_manager.l1_cache.set("test_key", "test_value")
+        
+        result = await cache_manager.get("test_key")
+        
+        assert result == "test_value"
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_get_l2_hit(self, cache_manager):
+        """Test cache hit in L2 cache."""
+        # Mock L2 cache
+        cache_manager.l2_cache = AsyncMock()
+        cache_manager.l2_cache.get.return_value = "test_value"
+        
+        result = await cache_manager.get("test_key")
+        
+        assert result == "test_value"
+        cache_manager.l2_cache.get.assert_called_with("test_key")
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_get_miss(self, cache_manager):
+        """Test cache miss in all levels."""
+        cache_manager.l2_cache = AsyncMock()
+        cache_manager.l2_cache.get.return_value = None
+        
+        result = await cache_manager.get("non_existent")
+        
+        assert result is None
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_set(self, cache_manager):
+        """Test setting value in cache."""
+        await cache_manager.set("test_key", "test_value")
+        
+        # Should be set in L1 cache
+        assert cache_manager.l1_cache.get("test_key") == "test_value"
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_invalidate(self, cache_manager):
+        """Test cache invalidation."""
+        # Set value first
+        await cache_manager.set("test_key", "test_value")
+        
+        # Invalidate
+        await cache_manager.invalidate("test_key")
+        
+        # Should be removed from all levels
+        assert cache_manager.l1_cache.get("test_key") is None
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_invalidate_pattern(self, cache_manager):
+        """Test pattern-based cache invalidation."""
+        # Set multiple values
+        await cache_manager.set("node:1", "value1")
+        await cache_manager.set("node:2", "value2")
+        await cache_manager.set("edge:1", "value3")
+        
+        # Invalidate nodes
+        await cache_manager.invalidate_pattern("node:*")
+        
+        # Only node values should be invalidated
+        assert cache_manager.l1_cache.get("node:1") is None
+        assert cache_manager.l1_cache.get("node:2") is None
+        assert cache_manager.l1_cache.get("edge:1") == "value3"
+        
+    @pytest.mark.asyncio
+    async def test_cache_manager_batch_operations(self, cache_manager):
+        """Test batch cache operations."""
+        # Batch set
+        data = {"key1": "value1", "key2": "value2", "key3": "value3"}
+        await cache_manager.batch_set(data)
+        
+        # Batch get
+        keys = ["key1", "key2", "key3"]
+        results = await cache_manager.batch_get(keys)
+        
+        assert results == {"key1": "value1", "key2": "value2", "key3": "value3"}
+        
+    def test_cache_manager_get_stats(self, cache_manager):
+        """Test getting cache statistics."""
+        stats = cache_manager.get_stats()
+        
+        assert "l1_cache" in stats
+        assert "l2_cache" in stats
+        assert "total_size" in stats
+        assert "hit_rate" in stats
+
+
+class TestGraphCacheService:
+    """Test the main GraphCacheService class."""
+    
+    @pytest.fixture
+    def service(self):
+        """Create GraphCacheService instance."""
+        return GraphCacheService()
+        
+    def test_service_initialization(self, service):
+        """Test service initialization."""
+        assert service.cache_manager is not None
+        assert service.node_cache_prefix == "node:"
+        assert self.edge_cache_prefix == "edge:"
+        
+    @pytest.mark.asyncio
+    async def test_cache_node(self, service):
+        """Test caching a node."""
+        node_data = {
+            "id": "1",
+            "type": "concept",
+            "properties": {"name": "Entity"}
+        }
+        
+        await service.cache_node("1", node_data)
+        
+        # Retrieve from cache
+        cached = await service.get_cached_node("1")
+        assert cached == node_data
+        
+    @pytest.mark.asyncio
+    async def test_cache_edge(self, service):
+        """Test caching an edge."""
+        edge_data = {
+            "id": "edge1",
+            "source": "1",
+            "target": "2",
+            "type": "relates_to",
+            "properties": {"weight": 0.5}
+        }
+        
+        await service.cache_edge("edge1", edge_data)
+        
+        # Retrieve from cache
+        cached = await service.get_cached_edge("edge1")
+        assert cached == edge_data
+        
+    @pytest.mark.asyncio
+    async def test_cache_relationship_pattern(self, service):
+        """Test caching relationship patterns."""
+        pattern_data = {
+            "pattern_type": "entity_mapping",
+            "java_class": "Entity",
+            "bedrock_type": "entity_definition",
+            "success_rate": 0.85
+        }
+        
+        await service.cache_relationship_pattern("entity_mapping", pattern_data)
+        
+        # Retrieve from cache
+        cached = await service.get_cached_pattern("entity_mapping")
+        assert cached == pattern_data
+        
+    @pytest.mark.asyncio
+    async def test_cache_neighbors(self, service):
+        """Test caching node neighbors."""
+        neighbors = [
+            {"id": "2", "type": "concept"},
+            {"id": "3", "type": "property"}
+        ]
+        
+        await service.cache_neighbors("1", neighbors)
+        
+        # Retrieve from cache
+        cached = await service.get_cached_neighbors("1")
+        assert cached == neighbors
+        
+    @pytest.mark.asyncio
+    async def test_cache_subgraph(self, service):
+        """Test caching subgraph data."""
+        subgraph = {
+            "nodes": [
+                {"id": "1", "type": "concept"},
+                {"id": "2", "type": "concept"}
+            ],
+            "edges": [
+                {"source": "1", "target": "2", "type": "relates_to"}
+            ]
+        }
+        
+        await service.cache_subgraph("sub1", subgraph)
+        
+        # Retrieve from cache
+        cached = await service.get_cached_subgraph("sub1")
+        assert cached == subgraph
+        
+    @pytest.mark.asyncio
+    async def test_invalidate_node_cascade(self, service):
+        """Test node invalidation cascading to related data."""
+        # Cache node and related data
+        await service.cache_node("1", {"id": "1", "type": "concept"})
+        await service.cache_neighbors("1", [{"id": "2"}])
+        await service.cache_subgraph("sub1", {"nodes": [{"id": "1"}]})
+        
+        # Invalidate node
+        await service.invalidate_node("1")
+        
+        # Related data should also be invalidated
+        assert await service.get_cached_node("1") is None
+        assert await service.get_cached_neighbors("1") is None
+        
+    @pytest.mark.asyncio
+    async def test_warm_cache_with_popular_data(self, service):
+        """Test warming cache with popular data."""
+        with patch.object(service, '_get_popular_patterns') as mock_popular:
+            mock_popular.return_value = [
+                {"key": "pattern1", "data": {"test": "data1"}},
+                {"key": "pattern2", "data": {"test": "data2"}}
+            ]
+            
+            await service.warm_cache()
+            
+            # Verify data was cached
+            assert await service.get_cached_pattern("pattern1") is not None
+            assert await service.get_cached_pattern("pattern2") is not None
+            
+    def test_get_cache_performance_metrics(self, service):
+        """Test getting cache performance metrics."""
+        metrics = service.get_performance_metrics()
+        
+        assert "cache_size" in metrics
+        assert "hit_rate" in metrics
+        assert "miss_rate" in metrics
+        assert "eviction_count" in metrics
+        assert "average_access_time" in metrics

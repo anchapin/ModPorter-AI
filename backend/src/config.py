@@ -22,7 +22,8 @@ class Settings(BaseSettings):
         # Use test database if in testing mode
         if os.getenv("TESTING") == "true":
             # Default to SQLite for testing to avoid connection issues
-            test_db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+            # Use file-based database for testing to support table creation across connections
+            test_db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
             return test_db_url
         
         # Convert to async format if needed

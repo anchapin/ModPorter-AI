@@ -252,7 +252,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.now(datetime.UTC).isoformat()
+        timestamp=datetime.utcnow().isoformat()
     )
 
 # File upload endpoint
@@ -746,7 +746,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=cached.get("created_at", datetime.now(datetime.UTC)) if cached else datetime.now(datetime.UTC)
+            created_at=cached.get("created_at", datetime.utcnow()) if cached else datetime.utcnow()
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)

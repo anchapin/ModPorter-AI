@@ -63,6 +63,15 @@ def pytest_sessionstart(session):
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
                         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
                     await conn.run_sync(Base.metadata.create_all)
+                    # Verify tables were created
+                    if db_url.startswith("sqlite"):
+                        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+                        tables = [row[0] for row in result.fetchall()]
+                        print(f"Created tables: {tables}")
+                    else:
+                        result = await conn.execute(text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'"))
+                        tables = [row[0] for row in result.fetchall()]
+                        print(f"Created tables: {tables}")
 
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
@@ -106,6 +115,22 @@ def client():
         from main import app
         from db.base import get_db
         from db import models  # Ensure models are imported
+        from db.declarative_base import Base
+
+        # Initialize tables in the test engine (create them fresh for each test)
+        import asyncio
+        
+        async def init_tables():
+            async with test_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        
+        # Create a new event loop and run table creation
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(init_tables())
+        finally:
+            loop.close()
 
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(

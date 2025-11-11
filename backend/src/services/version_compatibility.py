@@ -10,11 +10,11 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from ..db.knowledge_graph_crud import (
+from db.knowledge_graph_crud import (
     VersionCompatibilityCRUD,
     ConversionPatternCRUD
 )
-from ..models import VersionCompatibility
+from db.models import VersionCompatibility
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +185,8 @@ class VersionCompatibilityService:
                 db, java_version, bedrock_version
             )
             
+            success = False
+            
             if existing:
                 # Update existing entry
                 update_data = {
@@ -196,7 +198,6 @@ class VersionCompatibilityService:
                     "known_issues": compatibility_data.get("known_issues", [])
                 }
                 
-                from ..db.knowledge_graph_crud import VersionCompatibilityCRUD
                 success = await VersionCompatibilityCRUD.update(
                     db, existing.id, update_data
                 )

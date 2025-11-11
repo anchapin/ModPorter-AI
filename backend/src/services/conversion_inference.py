@@ -13,15 +13,15 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc
 
-from ..db.crud import get_async_session
-from ..db.knowledge_graph_crud import (
+
+from db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
-from ..db.graph_db import graph_db
-from ..models import (
+from db.graph_db import graph_db
+from db.models import (
     KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
-from ..services.version_compatibility import version_compatibility_service
+from services.version_compatibility import version_compatibility_service
 
 logger = logging.getLogger(__name__)
 

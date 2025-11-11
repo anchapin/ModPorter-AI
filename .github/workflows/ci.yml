@@ -656,12 +656,204 @@ jobs:
             ;;
         esac
 
+  # Test coverage enforcement
+  coverage-check:
+    name: Test Coverage Check
+    runs-on: ubuntu-latest
+    needs: [changes, prepare-base-images]
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
+    timeout-minutes: 15
+
+    # Use Python base image if available, fallback to setup-python
+    container:
+      image: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image || '' }}
+      options: --name coverage-test-container --user root
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    # Conditional Python setup - only if not using container
+    - name: Set up Python 3.11 (fallback)
+      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        cache-dependency-path: |
+          ai-engine/requirements*.txt
+          backend/requirements*.txt
+          requirements-test.txt
+
+    - name: Install system dependencies
+      run: |
+        echo "🔧 Installing system dependencies..."
+        apt-get update -qq
+        apt-get install -y -qq bc
+
+    - name: Install test dependencies
+      run: |
+        echo "⚡ Installing test dependencies..."
+        python -m pip install --upgrade --no-cache-dir pip setuptools wheel
+        pip install --upgrade --force-reinstall --no-cache-dir \
+          -r requirements-test.txt
+
+    - name: Install backend dependencies
+      run: |
+        echo "📦 Installing backend dependencies..."
+        cd backend
+        pip install --no-deps -r requirements.txt
+        pip install --no-deps -r requirements-dev.txt
+
+    - name: Install ai-engine dependencies
+      run: |
+        echo "🤖 Installing ai-engine dependencies..."
+        cd ai-engine
+        pip install --no-deps -r requirements.txt
+        pip install --no-deps -r requirements-dev.txt
+        pip install --no-deps -e .
+
+    - name: Run coverage tests for backend
+      run: |
+        echo "🧪 Running backend coverage tests..."
+        cd backend
+        python -m pytest src/tests/ tests/ \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --cov-fail-under=80 \
+          --tb=short \
+          --strict-markers \
+          --disable-warnings \
+          --junitxml=backend-coverage-results.xml
+
+    - name: Run coverage tests for ai-engine
+      run: |
+        echo "🤖 Running ai-engine coverage tests..."
+        cd ai-engine
+        python -m pytest src/tests/ tests/ \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --cov-fail-under=80 \
+          --tb=short \
+          --strict-markers \
+          --disable-warnings \
+          --junitxml=ai-engine-coverage-results.xml
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v5
+      if: always()
+      with:
+        name: coverage-reports
+        path: |
+          backend/coverage.xml
+          backend/htmlcov/
+          backend/coverage.json
+          ai-engine/coverage.xml
+          ai-engine/htmlcov/
+          ai-engine/coverage.json
+        retention-days: 7
+
+    - name: Check coverage thresholds
+      run: |
+        echo "📊 Verifying 80% coverage requirement..."
+        
+        # Check backend coverage
+        if [ -f "backend/coverage.xml" ]; then
+          BACKEND_COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('backend/coverage.xml')
+          root = tree.getroot()
+          coverage = root.find('.//coverage').get('line-rate')
+          print(f'{float(coverage)*100:.1f}')
+          ")
+          echo "Backend coverage: ${BACKEND_COVERAGE}%"
+          
+          if (( $(echo "${BACKEND_COVERAGE} < 80" | bc -l) )); then
+            echo "❌ Backend coverage ${BACKEND_COVERAGE}% is below 80% threshold"
+            echo "::error::Backend test coverage is ${BACKEND_COVERAGE}%, which is below the required 80%"
+            exit 1
+          else
+            echo "✅ Backend coverage ${BACKEND_COVERAGE}% meets 80% requirement"
+          fi
+        else
+          echo "⚠️ Backend coverage report not found"
+        fi
+        
+        # Check ai-engine coverage
+        if [ -f "ai-engine/coverage.xml" ]; then
+          AI_ENGINE_COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('ai-engine/coverage.xml')
+          root = tree.getroot()
+          coverage = root.find('.//coverage').get('line-rate')
+          print(f'{float(coverage)*100:.1f}')
+          ")
+          echo "AI Engine coverage: ${AI_ENGINE_COVERAGE}%"
+          
+          if (( $(echo "${AI_ENGINE_COVERAGE} < 80" | bc -l) )); then
+            echo "❌ AI Engine coverage ${AI_ENGINE_COVERAGE}% is below 80% threshold"
+            echo "::error::AI Engine test coverage is ${AI_ENGINE_COVERAGE}%, which is below the required 80%"
+            exit 1
+          else
+            echo "✅ AI Engine coverage ${AI_ENGINE_COVERAGE}% meets 80% requirement"
+          fi
+        else
+          echo "⚠️ AI Engine coverage report not found"
+        fi
+        
+        echo "✅ All coverage requirements met!"
+
+    - name: Generate coverage summary
+      if: always()
+      run: |
+        echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "backend/coverage.xml" ]; then
+          BACKEND_COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('backend/coverage.xml')
+          root = tree.getroot()
+          coverage = root.find('.//coverage').get('line-rate')
+          print(f'{float(coverage)*100:.1f}')
+          ")
+          echo "| Component | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          if (( $(echo "${BACKEND_COVERAGE} >= 80" | bc -l) )); then
+            echo "| Backend | ${BACKEND_COVERAGE}% | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Backend | ${BACKEND_COVERAGE}% | ❌ Fail |" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        if [ -f "ai-engine/coverage.xml" ]; then
+          AI_ENGINE_COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('ai-engine/coverage.xml')
+          root = tree.getroot()
+          coverage = root.find('.//coverage').get('line-rate')
+          print(f'{float(coverage)*100:.1f}')
+          ")
+          if (( $(echo "${AI_ENGINE_COVERAGE} >= 80" | bc -l) )); then
+            echo "| AI Engine | ${AI_ENGINE_COVERAGE}% | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| AI Engine | ${AI_ENGINE_COVERAGE}% | ❌ Fail |" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "> **Requirement**: All components must maintain ≥80% test coverage" >> $GITHUB_STEP_SUMMARY
+
   # Performance tracking and optimization monitoring
   performance-monitoring:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
+    needs: [integration-tests, frontend-tests, coverage-check, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
