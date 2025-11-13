@@ -1,0 +1,27 @@
+{
+  "workflow_summary": {
+    "total_time": 5.406752347946167,
+    "steps_completed": 20,
+    "success": false
+  },
+  "coverage_improvement": {
+    "before": 0,
+    "after": 0,
+    "improvement": 0,
+    "target_achieved": false
+  },
+  "test_generation": {
+    "tests_generated": 0,
+    "files_processed": 0
+  },
+  "mutation_testing": {
+    "mutation_score": 0,
+    "target_met": false
+  },
+  "errors": [
+    "Command failed with code 2: C:\\Python313\\python.exe: can't open file 'C:\\\\Users\\\\ancha\\\\Documents\\\\projects\\\\ModPorter-AI\\\\quick_coverage_analysis.py': [Errno 2] No such file or directory\n",
+    "Command failed with code 2: C:\\Python313\\python.exe: can't open file 'C:\\\\Users\\\\ancha\\\\Documents\\\\projects\\\\ModPorter-AI\\\\automated_test_generator.py': [Errno 2] No such file or directory\n",
+    "Command failed with code 4: ImportError while loading conftest 'C:\\Users\\ancha\\Documents\\projects\\ModPorter-AI\\tests\\conftest.py'.\n_pytest.pathlib.ImportPathMismatchError: ('tests.conftest', 'C:\\\\Users\\\\ancha\\\\Documents\\\\projects\\\\ModPorter-AI\\\\backend\\\\tests\\\\conftest.py', WindowsPath('C:/Users/ancha/Documents/projects/ModPorter-AI/tests/conftest.py'))\n",
+    "Command failed with code 2: C:\\Python313\\python.exe: can't open file 'C:\\\\Users\\\\ancha\\\\Documents\\\\projects\\\\ModPorter-AI\\\\run_mutation_tests.py': [Errno 2] No such file or directory\n"
+  ]
+}

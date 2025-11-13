@@ -1,23 +1,40 @@
+#!/usr/bin/env python3
+"""Quick script to read coverage data"""
 import json
-with open('coverage.json') as f:
-    data = json.load(f)
-total = data['totals']['percent_covered']
-print(f"Overall Coverage: {total:.1f}%")
+from pathlib import Path
 
-# Get files with lowest coverage
-files = []
-for filename, file_data in data['files'].items():
-    if file_data['summary']['num_statements'] > 0:
-        coverage_pct = file_data['summary']['percent_covered']
-        files.append((filename, coverage_pct, file_data['summary']['num_statements']))
+def main():
+    coverage_file = Path("coverage.json")
+    if not coverage_file.exists():
+        print("coverage.json not found")
+        return
+    
+    with open(coverage_file) as f:
+        data = json.load(f)
+    
+    totals = data.get("totals", {})
+    percent = totals.get("percent_covered", 0)
+    covered = totals.get("covered_lines", 0)
+    total = totals.get("num_statements", 0)
+    
+    print(f"Current Coverage: {percent:.1f}% ({covered}/{total} statements)")
+    
+    # Find service layer files
+    files = data.get("files", {})
+    service_files = {}
+    
+    for filename, file_data in files.items():
+        if "services" in filename and "src/services" in filename:
+            name = filename.split("src/services/")[-1]
+            service_files[name] = {
+                "percent": file_data["summary"]["percent_covered"],
+                "covered": file_data["summary"]["covered_lines"],
+                "total": file_data["summary"]["num_statements"]
+            }
+    
+    print("\n=== Service Layer Coverage ===")
+    for name, stats in sorted(service_files.items(), key=lambda x: x[1]["total"], reverse=True):
+        print(f"{name}: {stats['percent']:.1f}% ({stats['covered']}/{stats['total']} statements)")
 
-# Sort by coverage (lowest first) and by statement count (highest first)
-files.sort(key=lambda x: (x[1], -x[2]))
-
-print("\nFiles needing coverage (lowest % with most statements):")
-for i, (filename, coverage, statements) in enumerate(files[:15], 1):
-    print(f"{i:2d}. {filename:<60} {coverage:5.1f}% ({statements} stmts)")
-
-print(f"\nTarget: 80.0%")
-print(f"Current: {total:.1f}%")
-print(f"Need: {80.0 - total:.1f}% more")
+if __name__ == "__main__":
+    main()

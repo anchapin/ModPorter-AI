@@ -1,0 +1,886 @@
+{
+  "test_model": [
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.120937",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpyjf8wm6r\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.151213",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpv38on3xq\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.204622",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpvdpf751n\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.236079",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpeldxipvz\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.297088",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmphbc5vk6p\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.256770",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp9mw3g4w1\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.302511",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp75t3iem0\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.351363",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpm3khrz6c\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.391341",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpn2kwmpru\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.437417",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp54jbt9tg\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.276109",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpye95a7jd\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.312581",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpa9uai2f8\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.369875",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpwzd24ffs\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.405206",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpb0kmvz3i\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.449541",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpf7kzhpyh\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.067608",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpk079xh69\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.102998",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpxih7ry2c\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.158332",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp6zva5q_8\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.194963",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp40z3lri3\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.238143",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpj3j_2f73\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:37.875465",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpu0xc_xks\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:37.912453",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpi12k0dxe\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:37.952283",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpy9w_g8oo\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:37.989512",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpcfspcsz5\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:38.039042",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp7xayu9cv\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.698197",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpg7urot0q\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.739367",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpvnel2a5_\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.781132",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpt6kmcpkn\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.821183",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpfdzlo6v9\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.866564",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmprjz5stef\\test_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T07:51:01.485871",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T07:53:51.852662",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T07:57:32.468903",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T08:32:17.372156",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": true
+    }
+  ],
+  "lifecycle_test": [
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.371206",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpsydqyq9j\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.508808",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpla5_q8cl\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.512641",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpvh163ud_\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.305640",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmptivbd074\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:38.104349",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp1bjpd5ah\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "lifecycle_test",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.929742",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp3_5s6qwi\\lifecycle_test\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Lifecycle test model",
+      "performance_metrics": {
+        "accuracy": 1.0
+      },
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [
+        "test",
+        "lifecycle"
+      ],
+      "is_active": true
+    }
+  ],
+  "versioned_model": [
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.418492",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp9j10p8qm\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T13:49:57.436729",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp9j10p8qm\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.546697",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmps7whoo13\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T16:56:23.567676",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmps7whoo13\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.567944",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpn_9hso35\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T17:58:48.581416",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpn_9hso35\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.354353",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp6ob4gm4p\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T18:13:32.374114",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmp6ob4gm4p\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:38.139187",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpt5ebisxx\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-11T19:28:38.158614",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpt5ebisxx\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.967509",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpnwq6lp_m\\versioned_model\\1.0.0.pkl",
+      "file_size": 879,
+      "checksum": "fe0dca92134e28b894408fbc5858515b3b3372131ff69b4545069205cb0b5c2c",
+      "description": "Version 1.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": false
+    },
+    {
+      "name": "versioned_model",
+      "version": "2.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-12T02:44:28.989520",
+      "file_path": "C:\\Users\\ancha\\AppData\\Local\\Temp\\tmpnwq6lp_m\\versioned_model\\2.0.0.pkl",
+      "file_size": 879,
+      "checksum": "8e384500fbf346b5d33b83a9cfcb5bdb3ecd7ada831bf85815bd158aa336aa10",
+      "description": "Version 2.0",
+      "performance_metrics": {},
+      "input_schema": {},
+      "output_schema": {},
+      "tags": [],
+      "is_active": true
+    }
+  ]
+}

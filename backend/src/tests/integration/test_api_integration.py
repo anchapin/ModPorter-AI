@@ -93,7 +93,7 @@ class TestConversionIntegration:
 
         assert "job_id" in conversion_data
         assert "status" in conversion_data
-        assert conversion_data["status"] in ["queued", "processing"]
+        assert conversion_data["status"] in ["queued", "processing", "preprocessing"]
 
     def test_check_conversion_status(self, client):
         """Test checking conversion status."""

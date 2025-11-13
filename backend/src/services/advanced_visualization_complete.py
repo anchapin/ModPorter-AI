@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Advanced Visualization Service for Knowledge Graph (Complete)
 
@@ -21,7 +22,7 @@ from ..db.database import get_async_session
 from ..db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
-from ..models import (
+from ..db.models import (
     KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
 
@@ -781,3 +782,8 @@ class AdvancedVisualizationService:
             else:
                 # Default to spring layout
                 pos = nx.spring_layout(G, k=1, iterations=50)
+            
+            return {"positions": pos, "layout_algorithm": layout.value}
+            
+        except Exception as e:
+            raise VisualizationError(f"Failed to apply layout: {str(e)}")

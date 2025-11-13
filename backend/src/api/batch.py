@@ -634,7 +634,7 @@ async def get_status_summary():
                 "total_active": active_result["total_active"] if active_result["success"] else 0,
                 "queue_size": active_result["queue_size"] if active_result["success"] else 0,
                 "max_concurrent": active_result["max_concurrent_jobs"] if active_result["success"] else 0,
-                "recent_history": history_result["total_history"] if history_result["success"] else 0
+                "recent_history": len(history_result.get("job_history", [])) if history_result["success"] else 0
             },
             "timestamp": datetime.utcnow().isoformat()
         }

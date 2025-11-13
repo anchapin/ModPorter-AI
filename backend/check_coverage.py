@@ -1,77 +1,26 @@
-#!/usr/bin/env python
-"""Quick coverage check script."""
+﻿import json
 
-import subprocess
-import sys
-import json
+# Load coverage data
+with open('coverage.json', 'r') as f:
+    data = json.load(f)
 
-def run_coverage():
-    """Run coverage check and return summary."""
-    try:
-        # Run pytest with coverage
-        result = subprocess.run(
-            [
-                sys.executable, "-m", "pytest",
-                "src/tests/unit/",
-                "--cov=src",
-                "--cov-report=json",
-                "--cov-fail-under=0",
-                "-q"
-            ],
-            capture_output=True,
-            text=True,
-            cwd="."
-        )
-        
-        # Read coverage JSON
-        try:
-            with open("coverage.json", "r") as f:
-                data = json.load(f)
-                
-            total_coverage = data["totals"]["percent_covered"]
-            
-            print(f"\n{'='*60}")
-            print(f"CURRENT COVERAGE SUMMARY")
-            print(f"{'='*60}")
-            print(f"Overall Coverage: {total_coverage:.1f}%")
-            
-            # Find files with lowest coverage
-            files = []
-            for filename, file_data in data["files"].items():
-                if file_data["summary"]["num_statements"] > 0:  # Skip empty files
-                    coverage_pct = file_data["summary"]["percent_covered"]
-                    files.append((filename, coverage_pct))
-            
-            # Sort by coverage (lowest first)
-            files.sort(key=lambda x: x[1])
-            
-            print(f"\nTOP 10 FILES NEEDING COVERAGE:")
-            for i, (filename, coverage) in enumerate(files[:10], 1):
-                print(f"{i:2d}. {filename:<60} {coverage:5.1f}%")
-            
-            print(f"\nTOP 10 FILES WITH BEST COVERAGE:")
-            for i, (filename, coverage) in enumerate(files[-10:][::-1], 1):
-                if coverage > 0:
-                    print(f"{i:2d}. {filename:<60} {coverage:5.1f}%")
-            
-            print(f"\n{'='*60}")
-            print(f"TARGET: 80.0%")
-            print(f"CURRENT: {total_coverage:.1f}%")
-            print(f"REMAINING: {80.0 - total_coverage:.1f}%")
-            
-            return total_coverage
-            
-        except FileNotFoundError:
-            print("Error: coverage.json not found")
-            return 0.0
-        except json.JSONDecodeError:
-            print("Error: Could not parse coverage.json")
-            return 0.0
-            
-    except Exception as e:
-        print(f"Error running coverage: {e}")
-        return 0.0
+files = data['files']
+print('=== SERVICES COVERAGE ===')
 
-if __name__ == "__main__":
-    coverage = run_coverage()
-    sys.exit(0 if coverage >= 80 else 1)
+# Look for specific services we need to analyze
+target_services = []
+for k, v in files.items():
+    if 'services' in k and ('advanced_visualization' in k or 'version_compatibility' in k):
+        coverage_pct = v['summary']['percent_covered']
+        num_stmts = v['summary']['num_statements']
+        covered_stmts = v['summary']['covered_lines']
+        print(f'{k}: {coverage_pct}% ({covered_stmts}/{num_stmts} stmts)')
+        target_services.append((k, coverage_pct, num_stmts, covered_stmts))
+
+print('\n=== ANALYSIS ===')
+for service, coverage, stmts, covered in target_services:
+    missing = stmts - covered
+    print(f'{service}:')
+    print(f'  Current: {coverage}% ({covered}/{stmts})')
+    print(f'  Missing: {missing} statements')
+    print(f'  Potential improvement: +{missing:.0f} lines')

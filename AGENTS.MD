@@ -92,6 +92,44 @@ These phrases indicate you're about to violate the todo system:
 
 ---
 
+## 🎯 CRITICAL: 80% Test Coverage Requirement
+
+**MANDATORY POLICY:** ModPorter-AI requires maintaining ≥80% test coverage for all components.
+
+### Coverage Standards:
+- **Backend Services**: Must maintain ≥80% line coverage
+- **AI Engine**: Must maintain ≥80% line coverage  
+- **Frontend**: Must maintain ≥80% branch coverage
+- **Integration Tests**: Full end-to-end workflow coverage
+
+### Quality Gates:
+- **CI/CD Pipeline**: Automatically fails if coverage drops below 80%
+- **Code Review**: PRs must demonstrate coverage improvements
+- **Coverage Regression**: New code must include corresponding tests
+- **Critical Paths**: Core business logic requires ≥95% coverage
+
+### Coverage Enforcement:
+- **No Threshold Reductions**: Coverage targets are non-negotiable
+- **Automated Checks**: GitHub Actions enforces coverage in all PRs
+- **Coverage Reports**: Generated and reviewed in every deployment
+- **Quality Metrics**: Coverage directly tied to deployment readiness
+
+**VIOLATION CONSEQUENCES:**
+- PRs with <80% coverage will be automatically rejected
+- Coverage drops trigger deployment rollbacks
+- Teams must fix coverage issues before merging features
+- Chronic low coverage areas require immediate test investment
+
+### Testing Priority Framework:
+1. **Tier 1 (Critical)**: API endpoints, business logic, database operations
+2. **Tier 2 (High)**: Service integrations, authentication, validation
+3. **Tier 3 (Standard)**: Utility functions, helper classes, configuration
+4. **Tier 4 (Low)**: Development tools, debugging utilities, experimental features
+
+**TEST-FIRST DEVELOPMENT:** All new features must include comprehensive test coverage before implementation review.
+
+---
+
 ## 🛡️ Droid Shield Bypass Methods
 
 When Droid Shield detects false positives, use these methods to bypass:

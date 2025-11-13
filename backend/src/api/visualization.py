@@ -10,13 +10,16 @@ from typing import Dict, List, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.base import get_db
+from ..db.base import get_db
 from ..services.advanced_visualization import (
-    advanced_visualization_service, VisualizationType, FilterType, 
+    AdvancedVisualizationService, VisualizationType, FilterType, 
     LayoutAlgorithm
 )
 
 logger = logging.getLogger(__name__)
+
+# Create service instance
+advanced_visualization_service = AdvancedVisualizationService()
 
 router = APIRouter()
 

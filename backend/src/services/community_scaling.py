@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Community Scaling Service
 
@@ -764,7 +765,11 @@ class CommunityScalingService:
                 "monthly_servers": "$" + str(max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 1000) - 4) * 200),
                 "monthly_database": "$" + str(max(20, math.ceil(growth_projection["projected_capacity"]["users"] / 50)) * 20),
                 "monthly_cdn": "$" + str(max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 2000) - 4) * 150),
-                "total_monthly": "$" + str(max(0, max(200 * (math.ceil(growth_projection["projected_capacity"]["users"] / 1000) - 4), 20 * (math.ceil(growth_projection["projected_capacity"]["users"] / 50) - 0), 150 * (max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 2000) - 4))))
+                "total_monthly": "$" + str(max(0, max(
+                    200 * (math.ceil(growth_projection["projected_capacity"]["users"] / 1000) - 4),
+                    20 * (math.ceil(growth_projection["projected_capacity"]["users"] / 50) - 0),
+                    150 * (max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 2000) - 4))
+                )))
             }
         }
     

@@ -384,7 +384,7 @@ class GraphVersionControlService:
                 return MergeResult(
                     success=True,
                     merge_strategy=merge_strategy,
-                    message="Nothing to merge - branches are already up to date"
+                    metadata={"message": "Nothing to merge - branches are already up to date"}
                 )
             
             # Detect conflicts
@@ -409,7 +409,7 @@ class GraphVersionControlService:
                     conflicts=conflicts,
                     resolved_conflicts=resolved_conflicts,
                     merge_strategy=merge_strategy,
-                    message="Merge failed due to unresolved conflicts"
+                    metadata={"message": "Merge failed due to unresolved conflicts"}
                 )
             
             # Create merge commit
@@ -485,7 +485,7 @@ class GraphVersionControlService:
                 resolved_conflicts=resolved_conflicts,
                 merged_changes=merge_changes,
                 merge_strategy=merge_strategy,
-                message=f"Successfully merged {source_branch} into {target_branch}"
+                metadata={"message": f"Successfully merged {source_branch} into {target_branch}"}
             )
             
         except Exception as e:

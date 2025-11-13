@@ -201,7 +201,7 @@ class GraphCachingService:
     
     def __init__(self):
         self.l1_cache: Dict[str, CacheEntry] = {}
-        self.l2_cache: LRUCache(10000)  # For larger data sets
+        self.l2_cache = LRUCache(10000)  # For larger data sets
         self.l3_cache: Dict[str, Any] = {}  # Fallback to memory
         
         self.cache_stats: Dict[str, CacheStats] = {

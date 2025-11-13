@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.base import get_db
+from ..db.base import get_db
 from ..services.progressive_loading import (
     progressive_loading_service, LoadingStrategy, DetailLevel, LoadingPriority
 )

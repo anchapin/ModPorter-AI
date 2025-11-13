@@ -5,10 +5,24 @@ This ensures full coverage for the report data types system.
 
 import pytest
 import json
+import sys
 from datetime import datetime
 from typing import Dict, Any, List
 
-from backend.src.types.report_types import (
+# Add the src directory to Python path and import directly
+from pathlib import Path
+backend_dir = Path(__file__).parent.parent
+src_dir = backend_dir / "src"
+sys.path.insert(0, str(src_dir))
+
+# Import the module directly using importlib
+import importlib.util
+spec = importlib.util.spec_from_file_location("report_types", src_dir / "types" / "report_types.py")
+report_types_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(report_types_module)
+
+# Now import from the loaded module
+from report_types_module import (
     ConversionStatus,
     ImpactLevel,
     ReportMetadata,
