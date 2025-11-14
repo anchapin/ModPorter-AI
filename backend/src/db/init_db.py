@@ -17,9 +17,10 @@ async def init_db() -> None:
         try:
             async with async_engine.begin() as conn:
                 # First, ensure required extensions are installed
-                logger.info("Creating database extensions...")
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                if conn.dialect.name == "postgresql":
+                    logger.info("Creating database extensions...")
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
 
                 # Now create all tables
                 logger.info("Creating database tables...")
