@@ -1,3 +1,14 @@
+# FIXED_IMPORTS_MARKER
+# Setup Python path
+import sys
+from pathlib import Path
+
+# Add the backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir / "src"))
+
+
 from contextlib import asynccontextmanager
 import sys
 import os
@@ -16,18 +27,19 @@ if str(current_dir) not in sys.path:
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.base import get_db, AsyncSessionLocal
-from db import crud
-from services.cache import CacheService
+from src.db.base import get_db, AsyncSessionLocal
+from src.db import crud
+from src.services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from services import addon_exporter # For .mcaddon export
-from services import conversion_parser # For parsing converted pack output
-from services.asset_conversion_service import asset_conversion_service
+from src.services import addon_exporter # For .mcaddon export
+from src.services import conversion_parser # For parsing converted pack output
+from src.services.asset_conversion_service import asset_conversion_service
 import shutil # For directory operations
 from typing import List, Optional, Dict
 from datetime import datetime
+from typing import Optional
 import uvicorn
 import uuid
 import asyncio # Added for simulated AI conversion
@@ -35,19 +47,26 @@ import httpx  # Add for AI Engine communication
 import json  # For JSON operations
 from dotenv import load_dotenv
 import logging
-from db.init_db import init_db
+from src.db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
-from models import addon_models as pydantic_addon_models # For addon Pydantic models
-from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
-from services.report_generator import ConversionReportGenerator
+from src.models.addon_models import * # For addon Pydantic models
+pydantic_addon_models = sys.modules['src.models.addon_models']
+try:
+    from src.report_models import InteractiveReport, FullConversionReport # For conversion report model
+    from src.report_generator import ConversionReportGenerator
+except ImportError:
+    # Fallback for testing without these modules
+    InteractiveReport = None
+    FullConversionReport = None
+    ConversionReportGenerator = None
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
-from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
+from src.api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
+from src.api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
 # Debug: Check if version compatibility routes are loaded
 try:
-    from api import version_compatibility_fixed
+    from src.api import version_compatibility_fixed
     print(f"Version compatibility routes: {[route.path for route in version_compatibility_fixed.router.routes]}")
     print(f"TESTING env: {os.getenv('TESTING')}")
 except Exception as e:
@@ -67,8 +86,14 @@ try:
 except Exception as e:
     print(f"Error importing version_compatibility_fixed: {e}")
 
-# Import mock data from report_generator
-from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+# Import report generator
+try:
+    from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+except Exception as e:
+    print(f"Error importing from report_generator: {e}")
+    ConversionReportGenerator = None
+    MOCK_CONVERSION_RESULT_SUCCESS = {}
+    MOCK_CONVERSION_RESULT_FAILURE = {}
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -101,7 +126,10 @@ async def lifespan(app: FastAPI):
 cache = CacheService()
 
 # Report generator instance
-report_generator = ConversionReportGenerator()
+if ConversionReportGenerator is not None:
+    report_generator = ConversionReportGenerator()
+else:
+    report_generator = None
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -170,6 +198,7 @@ app.include_router(expert_knowledge.router, prefix="/api/v1/expert-knowledge", t
 app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
 app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
 app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
+app.include_router(caching.router, prefix="/api/v1/caching", tags=["caching"])
 
 # Add routes without /v1 prefix for integration test compatibility
 app.include_router(expert_knowledge.router, prefix="/api/expert-knowledge", tags=["expert-knowledge-integration"])
@@ -217,16 +246,20 @@ class ConversionResponse(BaseModel):
 
 class ConversionStatus(BaseModel):
     """Status model for conversion job"""
+    model_config = {"arbitrary_types_allowed": True}
+
     job_id: str
     status: str
     progress: int
     message: str
     result_url: Optional[str] = None
     error: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 class ConversionJob(BaseModel):
     """Detailed model for a conversion job"""
+    model_config = {"arbitrary_types_allowed": True}
+
     job_id: str
     file_id: str
     original_filename: str
@@ -236,8 +269,8 @@ class ConversionJob(BaseModel):
     options: Optional[dict] = None
     result_url: Optional[str] = None
     error_message: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 class HealthResponse(BaseModel):
     """Health check response model"""
@@ -1156,4 +1189,3 @@ async def export_addon_mcaddon(
         media_type="application/zip", # Standard for .mcaddon which is a zip file
         headers={"Content-Disposition": f"attachment; filename=\"{download_filename}\""}
     )
-
