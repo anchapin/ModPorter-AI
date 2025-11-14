@@ -61,7 +61,7 @@ except ImportError:
     ConversionReportGenerator = None
 
 # Import API routers
-from src.api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
+from src.api import assets, performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
 from src.api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
 
 # Debug: Check if version compatibility routes are loaded
@@ -199,6 +199,7 @@ app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer
 app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
 app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
 app.include_router(caching.router, prefix="/api/v1/caching", tags=["caching"])
+app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
 
 # Add routes without /v1 prefix for integration test compatibility
 app.include_router(expert_knowledge.router, prefix="/api/expert-knowledge", tags=["expert-knowledge-integration"])
