@@ -1,0 +1,14 @@
+{
+  "timestamp": "1763163658.5565012",
+  "services": [
+    {
+      "service": "backend",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error processing line 1 of C:\\Users\\ancha\\AppData\\Roaming\\Python\\Python313\\site-packages\\__editable__.adk-1.0.0.pth:\n\nFatal Python error: init_import_site: Failed to import the site module\nPython runtime state: initialized\nTraceback (most recent call last):\n  File \"<frozen site>\", line 206, in addpackage\n  File \"<string>\", line 1, in <module>\n  File \"C:\\Users\\ancha\\AppData\\Roaming\\Python\\Python313\\site-packages\\__editable___adk_1_0_0_finder.py\", line 5, in <module>\n    from importlib.util import spec_from_file_location\n  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 1176, in exec_module\n  File \"<frozen importlib.util>\", line 168, in <module>\nAttributeError: module 'types' has no attribute 'ModuleType'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<frozen site>\", line 710, in <module>\n  File \"<frozen site>\", line 696, in main\n  File \"<frozen site>\", line 374, in addusersitepackages\n  File \"<frozen site>\", line 247, in addsitedir\n  File \"<frozen site>\", line 216, in addpackage\n  File \"C:\\Python313\\Lib\\traceback.py\", line 7, in <module>\n    import textwrap\n  File \"C:\\Python313\\Lib\\textwrap.py\", line 8, in <module>\n    import re\n  File \"C:\\Python313\\Lib\\re\\__init__.py\", line 125, in <module>\n    import enum\n  File \"C:\\Python313\\Lib\\enum.py\", line 4, in <module>\n    from types import MappingProxyType, DynamicClassAttribute\nImportError: cannot import name 'MappingProxyType' from 'types' (C:\\Users\\ancha\\Documents\\projects\\ModPorter-AI\\backend\\src\\types\\__init__.py)\n",
+      "coverage_percent": 48.518610730735716,
+      "coverage_lines_covered": 7795,
+      "coverage_lines_missing": 8271
+    }
+  ]
+}

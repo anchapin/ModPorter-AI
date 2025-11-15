@@ -1,0 +1,58 @@
+.knowledge-graph-viewer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.knowledge-graph-viewer .MuiCardContent-root {
+  padding: 20px;
+}
+
+.knowledge-graph-viewer svg {
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.knowledge-graph-viewer .node {
+  cursor: pointer;
+}
+
+.knowledge-graph-viewer .node circle {
+  transition: stroke-width 0.2s ease;
+}
+
+.knowledge-graph-viewer .node:hover circle {
+  stroke-width: 4px;
+}
+
+.knowledge-graph-viewer .link {
+  fill: none;
+  stroke: #999;
+  stroke-opacity: 0.6;
+}
+
+.knowledge-graph-viewer .node-label {
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+}
+
+.knowledge-graph-viewer .node-type-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  fill: #666;
+  user-select: none;
+}
+
+.knowledge-graph-viewer .tooltip {
+  position: absolute;
+  text-align: left;
+  padding: 8px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border: 0px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1000;
+}

@@ -4,22 +4,22 @@ from fastapi.testclient import TestClient
 
 
 def test_health_check():
-    """Test that the AI engine can start without import errors."""
-    # Basic import test
+    """Test that AI engine can start without import errors and has basic functionality."""
+    from main import app
+    client = TestClient(app)
+
+    # Test actual functionality
+    assert app is not None
+    assert hasattr(app, 'routes')
+
+    # Test OpenAPI (exercises FastAPI code)
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    assert "openapi" in response.json()
+
+    # Test docs endpoint if available
     try:
-        from main import app
-        client = TestClient(app)
-        
-        # Test if we can import the app
-        assert app is not None
-        
-        # If health endpoint exists, test it
-        try:
-            response = client.get("/health")
-            assert response.status_code in [200, 404]  # 404 is ok if endpoint doesn't exist yet
-        except Exception:
-            # Health endpoint might not exist yet, that's ok
-            pass
-            
-    except ImportError as e:
-        pytest.skip(f"Cannot import main app: {e}")
+        response = client.get("/docs")
+        assert response.status_code in [200, 404]  # 404 is ok if docs not enabled
+    except Exception:
+        pass

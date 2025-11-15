@@ -11,6 +11,8 @@ from config import settings
 
 # Configure engine based on database type
 database_url = settings.database_url
+print(f"Database URL being used: {database_url}")  # Debug
+
 if database_url.startswith("sqlite"):
     # SQLite configuration - no pool settings
     async_engine = create_async_engine(
@@ -19,6 +21,10 @@ if database_url.startswith("sqlite"):
     )
 else:
     # PostgreSQL configuration - with pool settings
+    # Ensure we're using asyncpg driver for async operations
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+    
     async_engine = create_async_engine(
         database_url,
         echo=False,

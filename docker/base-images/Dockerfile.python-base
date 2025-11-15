@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     libssl-dev \
     libmagic-dev \
+    libpq-dev \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -28,13 +29,19 @@ COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
 COPY ai-engine/requirements-dev.txt /tmp/ai-engine-requirements-dev.txt
 COPY backend/requirements.txt /tmp/backend-requirements.txt
 
-# Install all Python dependencies in a single layer
+# Install all Python dependencies in separate stages to avoid conflicts
 # This is the time-consuming step that we want to cache
+# First install ai-engine dependencies
 RUN pip install --no-cache-dir \
-    -r /tmp/ai-engine-requirements.txt \
+    -r /tmp/ai-engine-requirements.txt
+
+# Then install backend dependencies (will handle conflicts automatically)
+RUN pip install --no-cache-dir \
     -r /tmp/ai-engine-requirements-dev.txt \
-    -r /tmp/backend-requirements.txt \
-    # Add common development dependencies (in case not in requirements files)
+    -r /tmp/backend-requirements.txt
+
+# Finally add common development dependencies
+RUN pip install --no-cache-dir \
     pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock \
     ruff black isort mypy \
     alembic \

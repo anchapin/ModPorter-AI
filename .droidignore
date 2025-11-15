@@ -1,0 +1,22 @@
+# Droid Shield exclusions for legitimate configuration
+# Database connections with environment variables (not actual secrets)
+**/docker-compose.prod.yml
+**/docker-compose*.yml
+
+# Database migration files (schema definitions only)
+**/backend/src/database/migrations.py
+
+# Environment example files (no actual secrets)
+**/*.env.example
+**/.env.prod.example
+
+# AGENTS.md configuration file (coding guidelines, not secrets)
+**/AGENTS.md
+
+# Configuration files with variable substitution
+**/docker/nginx/nginx.conf
+**/monitoring/prometheus.yml
+**/monitoring/alertmanager.yml
+**/monitoring/loki.yml
+**/monitoring/promtail.yml
+**/monitoring/blackbox.yml

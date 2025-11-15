@@ -30,6 +30,7 @@ add_ai_engine_to_path()
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
+from .fix_ci import CIFixer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -139,21 +140,34 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='Convert Java Minecraft mods to Bedrock add-ons',
+        description='ModPorter AI - Convert Java Minecraft mods to Bedrock add-ons',
         prog='python -m modporter.cli'
     )
     
-    parser.add_argument(
+    # Create subparsers for different commands
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Convert command (default)
+    convert_parser = subparsers.add_parser('convert', help='Convert a Java mod to Bedrock add-on')
+    convert_parser.add_argument(
         'jar_file',
         help='Path to the Java mod JAR file to convert'
     )
-    
-    parser.add_argument(
+    convert_parser.add_argument(
         '-o', '--output',
         help='Output directory (defaults to same directory as JAR file)',
         default=None
     )
     
+    # Fix CI command
+    fix_ci_parser = subparsers.add_parser('fix-ci', help='Fix failing CI checks for current PR')
+    fix_ci_parser.add_argument(
+        '--repo-path',
+        default='.',
+        help='Path to the repository (default: current directory)'
+    )
+    
+    # Global arguments
     parser.add_argument(
         '-v', '--verbose',
         action='store_true',
@@ -172,14 +186,30 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Convert the mod
-    result = convert_mod(args.jar_file, args.output)
+    # Handle commands
+    if args.command == 'convert' or args.command is None:
+        # Default to convert if no command specified
+        jar_file = getattr(args, 'jar_file', None)
+        if not jar_file:
+            parser.error("jar_file is required for convert command")
+        
+        result = convert_mod(jar_file, getattr(args, 'output', None))
+        
+        # Exit with appropriate code
+        if result['success']:
+            sys.exit(0)
+        else:
+            sys.exit(1)
     
-    # Exit with appropriate code
-    if result['success']:
-        sys.exit(0)
+    elif args.command == 'fix-ci':
+        fixer = CIFixer(getattr(args, 'repo_path', '.'))
+        success = fixer.fix_failing_ci()
+        
+        # Exit with appropriate code
+        sys.exit(0 if success else 1)
+    
     else:
-        sys.exit(1)
+        parser.error(f"Unknown command: {args.command}")
 
 
 if __name__ == '__main__':

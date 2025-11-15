@@ -121,17 +121,18 @@ async def submit_feedback(
     # Check if job exists
     try:
         job = await crud.get_job(db, feedback.job_id)
-        if not job:
-            logger.warning(f"Job not found: {feedback.job_id}")
-            raise HTTPException(
-                status_code=404,
-                detail=f"Conversion job with ID '{feedback.job_id}' not found"
-            )
     except Exception as e:
         logger.error(f"Database error checking job {feedback.job_id}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Error validating job ID"
+        )
+    
+    if not job:
+        logger.warning(f"Job not found: {feedback.job_id}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversion job with ID '{feedback.job_id}' not found"
         )
 
     # Create enhanced feedback with RL training data

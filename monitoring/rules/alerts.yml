@@ -1,0 +1,307 @@
+# Production Alert Rules for ModPorter-AI
+# Comprehensive alerting for system health and performance
+
+groups:
+  # System and infrastructure alerts
+  - name: system.rules
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is above 90% on {{ $labels.device }} at {{ $labels.instance }}. Current value: {{ $value }}%"
+
+      - alert: HighDiskIO
+        expr: irate(node_disk_io_time_seconds_total[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High disk I/O on {{ $labels.instance }}"
+          description: "Disk I/O is above 80% for more than 5 minutes on {{ $labels.instance }}. Current value: {{ $value }}%"
+
+  # Application service alerts
+  - name: application.rules
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "The service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is above 5% for more than 5 minutes on {{ $labels.job }}. Current value: {{ $value }}%"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+          description: "95th percentile latency is above 1s for more than 5 minutes on {{ $labels.job }}. Current value: {{ $value }}s"
+
+      - alert: LowThroughput
+        expr: rate(http_requests_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Low throughput on {{ $labels.job }}"
+          description: "Request rate is below 0.1 req/s for more than 10 minutes on {{ $labels.job }}. Current value: {{ $value }} req/s"
+
+  # Database alerts
+  - name: database.rules
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance has been down for more than 1 minute"
+
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "PostgreSQL connection usage is above 80%. Current value: {{ $value }}%"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_statements_mean_exec_time > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "Average query execution time is above 1 second. Current value: {{ $value }}ms"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance has been down for more than 1 minute"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 90%. Current value: {{ $value }}%"
+
+  # AI/ML specific alerts
+  - name: ml.rules
+    rules:
+      - alert: MLModelDown
+        expr: ml_model_predictions_total == 0
+        for: 10m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "ML model not making predictions"
+          description: "No predictions have been made by ML models in the last 10 minutes"
+
+      - alert: MLModelLowAccuracy
+        expr: ml_model_accuracy < 0.8
+        for: 15m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "ML model accuracy is low"
+          description: "ML model accuracy is below 80% for more than 15 minutes. Current value: {{ $value }}"
+
+      - alert: AIEngineHighLatency
+        expr: histogram_quantile(0.95, rate(ai_engine_request_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "AI Engine high latency"
+          description: "95th percentile AI Engine latency is above 30 seconds. Current value: {{ $value }}s"
+
+      - alert: ConversionQueueBacklog
+        expr: conversion_queue_length > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Conversion queue backlog"
+          description: "Conversion queue has more than 100 items. Current value: {{ $value }}"
+
+  # WebSocket alerts
+  - name: websocket.rules
+    rules:
+      - alert: WebSocketConnectionsHigh
+        expr: websocket_active_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High WebSocket connections"
+          description: "Active WebSocket connections are above 1000. Current value: {{ $value }}"
+
+      - alert: WebSocketErrors
+        expr: rate(websocket_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High WebSocket error rate"
+          description: "WebSocket error rate is above 0.1 errors/sec. Current value: {{ $value }} errors/sec"
+
+  # NGINX alerts
+  - name: nginx.rules
+    rules:
+      - alert: NginxDown
+        expr: up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "NGINX is down"
+          description: "NGINX instance has been down for more than 1 minute"
+
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "NGINX high error rate"
+          description: "NGINX error rate is above 5%. Current value: {{ $value }}%"
+
+      - alert: NginxHighResponseTime
+        expr: histogram_quantile(0.95, rate(nginx_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "NGINX high response time"
+          description: "95th percentile response time is above 2 seconds. Current value: {{ $value }}s"
+
+  # Security alerts
+  - name: security.rules
+    rules:
+      - alert: SuspiciousActivity
+        expr: rate(http_requests_total{status=~"4.."}[5m]) / rate(http_requests_total[5m]) * 100 > 20
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High rate of 4xx errors"
+          description: "4xx error rate is above 20%, indicating potential security issues or misconfiguration"
+
+      - alert: TooManyFailedLogins
+        expr: rate(failed_login_attempts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High rate of failed login attempts"
+          description: "Failed login attempts are above 5 per second. Current value: {{ $value }}/sec"
+
+      - alert: RateLimitExceeded
+        expr: rate(http_requests_total{status="429"}[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Rate limiting being triggered frequently"
+          description: "Rate limit exceeded requests are above 1 per second. Current value: {{ $value }}/sec"
+
+  # Business metrics alerts
+  - name: business.rules
+    rules:
+      - alert: ConversionFailureRateHigh
+        expr: rate(conversion_failures_total[5m]) / rate(conversions_total[5m]) * 100 > 10
+        for: 10m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "High conversion failure rate"
+          description: "Conversion failure rate is above 10%. Current value: {{ $value }}%"
+
+      - alert: LowUserEngagement
+        expr: rate(user_actions_total[1h]) < 10
+        for: 30m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Low user engagement"
+          description: "User action rate is below 10 per hour. Current value: {{ $value }}/hour"
+
+      - alert: ConversionProcessingSlow
+        expr: histogram_quantile(0.95, rate(conversion_processing_duration_seconds_bucket[5m])) > 300
+        for: 10m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Slow conversion processing"
+          description: "95th percentile conversion processing time is above 5 minutes. Current value: {{ $value }}s"

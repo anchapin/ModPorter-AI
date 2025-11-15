@@ -5,7 +5,13 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-# Add the src directory to the Python path
+# Mock magic library before any imports that might use it
+sys.modules['magic'] = type(sys)('magic')
+sys.modules['magic'].open = lambda *args, **kwargs: None
+sys.modules['magic'].from_buffer = lambda buffer, mime=False: 'application/octet-stream' if mime else 'data'
+sys.modules['magic'].from_file = lambda filename, mime=False: 'application/octet-stream' if mime else 'data'
+
+# Add src directory to Python path
 backend_dir = Path(__file__).parent.parent
 src_dir = backend_dir / "src"
 sys.path.insert(0, str(src_dir))
@@ -44,7 +50,7 @@ def pytest_sessionstart(session):
             async def init_test_db():
                 from db.declarative_base import Base
                 # from db import models  # Import all models to ensure they're registered
-                # # Import the models.py file directly to ensure all models are registered
+                # # Import models.py file directly to ensure all models are registered
                 # import db.models
                 from sqlalchemy import text
                 print(f"Database URL: {test_engine.url}")
@@ -90,7 +96,7 @@ def pytest_sessionstart(session):
 
 @pytest.fixture
 def project_root():
-    """Get the project root directory for accessing test fixtures."""
+    """Get project root directory for accessing test fixtures."""
     # Navigate from backend/src/tests/conftest.py to project root
     current_dir = Path(__file__).parent  # tests/
     src_dir = current_dir.parent         # src/
@@ -126,7 +132,7 @@ async def db_session():
 
 @pytest.fixture
 def client():
-    """Create a test client for the FastAPI app with proper test database."""
+    """Create a test client for FastAPI app with proper test database."""
     # Set testing environment variable
     os.environ["TESTING"] = "true"
 
@@ -134,7 +140,7 @@ def client():
     from main import app
     from db.base import get_db
 
-    # Override the database dependency to use our test engine
+    # Override database dependency to use our test engine
     test_session_maker = async_sessionmaker(
         bind=test_engine,
         expire_on_commit=False,
@@ -147,12 +153,11 @@ def client():
         try:
             yield session
         finally:
-            asyncio.create_task(session.close())
+            session.close()
 
     # Ensure tables are created
     import asyncio
     from db.declarative_base import Base
-    # from db import models
 
     async def ensure_tables():
         async with test_engine.begin() as conn:
@@ -172,7 +177,7 @@ def client():
     finally:
         loop.close()
 
-    # Override the dependency
+    # Override dependency
     app.dependency_overrides[get_db] = override_get_db
 
     # Create TestClient
@@ -184,9 +189,92 @@ def client():
 
 @pytest.fixture(scope="function")
 async def async_client():
-    """Create an async test client for the FastAPI app."""
-    # Import app
-    from main import app
+    """Create an async test client for FastAPI app."""
+    # Import modules to create fresh app instance
+    import sys
+    from pathlib import Path
+
+    # Add src to path (needed for CI environment)
+    backend_dir = Path(__file__).parent.parent
+    src_dir = backend_dir / "src"
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+
+    from fastapi import FastAPI
+    from db.base import get_db
+    from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
+    from api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from fastapi.middleware.cors import CORSMiddleware
+    import os
+    from dotenv import load_dotenv
+    from datetime import datetime
+
+    # Load environment variables
+    load_dotenv()
+
+    # Create fresh FastAPI app
+    app = FastAPI(title="ModPorter AI Backend Test")
+
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Include API routers
+    app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
+    app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
+    app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
+    app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"])
+    app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
+    app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+    app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
+    app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-files"])
+    app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
+    app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
+    app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
+    app.include_router(knowledge_graph.router, prefix="/api/v1/knowledge-graph", tags=["knowledge-graph"])
+    app.include_router(expert_knowledge.router, prefix="/api/v1/expert-knowledge", tags=["expert-knowledge"])
+    app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
+    app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
+    app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
+
+    # Add main health endpoint
+    from pydantic import BaseModel
+
+    class HealthResponse(BaseModel):
+        """Health check response model"""
+        status: str
+        version: str
+        timestamp: str
+
+    @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
+    async def health_check():
+        """Check the health status of the API"""
+        return HealthResponse(
+            status="healthy",
+            version="1.0.0",
+            timestamp=datetime.utcnow().isoformat()
+        )
+
+    # Override database dependency to use our test engine
+    test_session_maker = async_sessionmaker(
+        bind=test_engine,
+        expire_on_commit=False,
+        class_=AsyncSession
+    )
+
+    def override_get_db():
+        # Create a new session for each request
+        session = test_session_maker()
+        try:
+            yield session
+        finally:
+            session.close()
 
     # Ensure tables are created
     from db.declarative_base import Base
@@ -204,10 +292,24 @@ async def async_client():
 
     await ensure_tables()
 
-    # Create AsyncClient using the newer API
+    # Override dependency
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Create AsyncClient using httpx
     import httpx
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:
-        yield test_client
+    try:
+        # Debug: print available routes
+        print(f"DEBUG: Available routes in test client setup: {len(app.routes)} total routes")
+        print(f"DEBUG: Sample routes: {[route.path for route in app.routes[:10]]}")
+        print(f"DEBUG: Conversion inference routes: {[route.path for route in app.routes if '/conversion-inference' in route.path]}")
+        print(f"DEBUG: Expert knowledge routes: {[route.path for route in app.routes if '/expert' in route.path]}")
+        print(f"DEBUG: Peer review routes: {[route.path for route in app.routes if '/peer-review' in route.path]}")
+        print(f"DEBUG: Knowledge graph routes: {[route.path for route in app.routes if '/knowledge-graph' in route.path]}")
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:
+            yield test_client
+    finally:
+        # Clean up dependency override
+        app.dependency_overrides.clear()
 
 @pytest.fixture(scope="function")
 async def async_test_db():

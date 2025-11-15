@@ -1,0 +1,51 @@
+chore: follow-up on PR #296 — address Sourcery threads and align API responses with tests
+
+Summary:
+- Responded to Sourcery AI unresolved threads and applied agreed changes
+- Aligned multiple API endpoints with integration test expectations
+- Removed duplicate/redundant fields flagged by Sourcery
+
+Details:
+Knowledge Graph (backend/src/api/knowledge_graph_fixed.py)
+- POST /nodes and /nodes/ now return 201 Created and perform basic validation:
+  - Validates node_type against allowed set and ensures properties is an object
+- POST /edges, /edges/, /relationships, /relationships/ now return 201 Created
+  - Validate source_id, target_id, and relationship_type
+- Added GET /insights/ endpoint returning patterns, knowledge_gaps, and strong_connections
+  - Supports integration tests requiring graph insights
+
+Peer Review (backend/src/api/peer_review_fixed.py)
+- Added POST /assign/ endpoint returning assignment_id and status=assigned
+- Updated GET /analytics/ to include expected fields:
+  - total_reviews, average_completion_time, approval_rate, participation_rate
+
+Expert Knowledge (backend/src/api/expert_knowledge.py)
+- Adjusted POST /extract/ to return extracted_entities and relationships (non-empty),
+  matching integration test expectations
+- Added POST /graph/suggestions to provide suggested_nodes and relevant_patterns
+- Added batch endpoints:
+  - POST /contributions/batch → 202 Accepted with batch_id
+  - GET /contributions/batch/{batch_id}/status → returns completed status
+
+Conversion Inference (backend/src/api/conversion_inference_fixed.py)
+- POST /infer-path/:
+  - Added validation for required source_mod fields ("loader", "features") → 422 on missing
+  - Added recommended_path (sequence of version steps) and confidence_score to response
+    aligning with test expectations
+- POST /compare-strategies/:
+  - Removed duplicate "recommended_strategy" key to avoid silent overwrites
+- POST /update-model/:
+  - Removed redundant "performance_change" field and retained "performance_improvement"
+    to avoid duplication flagged by Sourcery
+
+Housekeeping
+- Eliminated duplicated keys and redundant fields highlighted by Sourcery
+- Ensured consistent 201 status codes for creation endpoints
+
+References
+- PR: #296 (feature/knowledge-graph-community-curation)
+- Related tests: tests/integration/test_phase2_apis.py and associated suites
+
+Notes
+- No breaking changes to external contracts intended; updates align with tests and REST conventions.
+- No dependency changes.

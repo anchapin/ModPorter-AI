@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 from services import addon_exporter
+from services.cache import CacheService
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import uuid
@@ -65,7 +66,7 @@ async def export_behavior_pack(
         behavior_files = [f for f in behavior_files if f.file_type in request.file_types]
 
     # Get addon details (for proper export structure)
-    addon_details = await crud.get_addon_details(db, uuid.UUID(request.conversion_id))
+    addon_details = await crud.get_job(db, request.conversion_id)
     if not addon_details:
         # Create minimal addon details if not found
         addon_details = type('AddonDetails', (), {
@@ -134,7 +135,6 @@ async def export_behavior_pack(
     elif request.export_format == "zip":
         # Create ZIP archive
         import zipfile
-        from services.cache import CacheService
         
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -230,7 +230,6 @@ async def download_exported_pack(
         raise HTTPException(status_code=404, detail="Conversion not found")
 
     # Get export data from cache
-    from services.cache import CacheService
     cache = CacheService()
     export_data = await cache.get_export_data(conversion_id)
     

@@ -5,7 +5,8 @@ This demonstrates the recommended patterns for testing FastAPI applications
 with async database operations.
 """
 import pytest
-from tests.async_test_client import AsyncTestClient
+import httpx
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
@@ -61,7 +62,8 @@ async def test_app_startup():
         assert hasattr(app, 'routes')
 
         # Test with async client
-        async with AsyncTestClient(app) as client:
+        transport = httpx.ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Try to access root endpoint
             response = await client.get("/")
             # Accept any response - we just want to ensure no import errors
@@ -81,7 +83,8 @@ async def test_api_endpoint_with_database():
     try:
         from main import app
 
-        async with AsyncTestClient(app) as client:
+        transport = httpx.ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Example: Test an API endpoint that uses the database
             # This would be replaced with actual endpoint tests
 

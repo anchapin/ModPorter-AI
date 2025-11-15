@@ -23,6 +23,7 @@
     "format": "pnpm run format:frontend && pnpm run format:backend",
     "format:frontend": "cd frontend && pnpm run lint -- --fix",
     "format:backend": "cd backend && source .venv/bin/activate && python -m black src/ tests/ && python -m ruff check --fix src/ tests/",
+    "fix-ci": "python scripts/fix-failing-ci-checks",
     "storybook": "cd frontend && pnpm run storybook",
     "build-storybook": "cd frontend && pnpm run build-storybook"
   },

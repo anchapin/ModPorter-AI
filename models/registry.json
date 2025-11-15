@@ -1,0 +1,50 @@
+{
+  "test_model": [
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T18:31:03.028485",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T20:49:05.876555",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": true
+    }
+  ]
+}
