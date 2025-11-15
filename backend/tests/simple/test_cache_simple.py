@@ -138,13 +138,13 @@ async def clear_expired_cache():
         raise HTTPException(status_code=500, detail=f"Failed to clear expired cache: {str(e)}")
 
 # Create a FastAPI test app
-test_app = FastAPI()
-test_app.include_router(router, prefix="/api")
+app = FastAPI()
+app.include_router(router, prefix="/api")
 
 @pytest.fixture
 def client():
     """Create a test client."""
-    return TestClient(test_app)
+    return TestClient(app)
 
 class TestCacheApi:
     """Test cache API endpoints"""

@@ -121,9 +121,9 @@ class RedisJobManager:
             status_dict = json.loads(data)
             # Convert ISO strings back to datetime
             if status_dict.get('started_at'):
-                status_dict['started_at'] = datetime.fromisoformat(status_dict['started_at'])
+                status_dict['started_at'] = dt.datetime.fromisoformat(status_dict['started_at'])
             if status_dict.get('completed_at'):
-                status_dict['completed_at'] = datetime.fromisoformat(status_dict['completed_at'])
+                status_dict['completed_at'] = dt.datetime.fromisoformat(status_dict['completed_at'])
 
             return ConversionStatus(**status_dict)
         except Exception as e:
@@ -170,8 +170,8 @@ class ConversionStatus(BaseModel):
     progress: int
     current_stage: str
     message: str
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: Optional[dt.datetime] = None
+    completed_at: Optional[dt.datetime] = None
 
 # Job storage is now handled by RedisJobManager - no global dict
 

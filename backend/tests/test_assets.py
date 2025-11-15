@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 from fastapi import UploadFile
 
 # Import the actual modules we're testing
-from backend.src.api.assets import (
+from src.api.assets import (
     router, AssetResponse, AssetUploadRequest, AssetStatusUpdate,
     _asset_to_response, ASSETS_STORAGE_DIR, MAX_ASSET_SIZE
 )
@@ -47,8 +47,8 @@ class MockAsset:
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
-test_app = FastAPI()
-test_app.include_router(router, prefix="/api")
+app = FastAPI()
+app.include_router(router, prefix="/api")
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def mock_asset():
 @pytest.fixture
 def client():
     """Create a test client."""
-    return TestClient(test_app)
+    return TestClient(app)
 
 
 class TestAssetHelpers:
@@ -105,7 +105,7 @@ class TestListConversionAssets:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.get("/api/conversions/test-conversion/assets")
 
         # Assertions
@@ -125,7 +125,7 @@ class TestListConversionAssets:
 
         # Execute API call with filters
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.get(
                 "/api/conversions/test-conversion/assets",
                 params={"asset_type": "texture", "status": "pending", "limit": 50}
@@ -151,7 +151,7 @@ class TestListConversionAssets:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.get("/api/conversions/test-conversion/assets")
 
         # Assertions
@@ -178,7 +178,7 @@ class TestUploadAsset:
             with tempfile.TemporaryDirectory() as temp_dir:
                 with patch('backend.src.api.assets.get_db', return_value=mock_db), \
                      patch('backend.src.api.assets.ASSETS_STORAGE_DIR', temp_dir):
-                    client = TestClient(test_app)
+                    client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
                         data={"asset_type": "texture"},
@@ -194,7 +194,7 @@ class TestUploadAsset:
 
     def test_upload_asset_no_file(self):
         """Test upload with no file provided."""
-        client = TestClient(test_app)
+        client = TestClient(app)
         response = client.post(
             "/api/conversions/test-conversion/assets",
             data={"asset_type": "texture"}
@@ -219,7 +219,7 @@ class TestUploadAsset:
             # Execute API call
             with tempfile.TemporaryDirectory() as tmp_dir:
                 with patch('backend.src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
-                    client = TestClient(test_app)
+                    client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
                         data={"asset_type": "texture"},
@@ -247,7 +247,7 @@ class TestUploadAsset:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 with patch('backend.src.api.assets.get_db', return_value=mock_db), \
                      patch('backend.src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
-                    client = TestClient(test_app)
+                    client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
                         data={"asset_type": "texture"},
@@ -272,7 +272,7 @@ class TestGetAsset:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.get(f"/api/assets/{asset_id}")
 
         # Assertions
@@ -293,7 +293,7 @@ class TestGetAsset:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.get(f"/api/assets/{asset_id}")
 
         # Assertions
@@ -320,7 +320,7 @@ class TestUpdateAssetStatus:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
                 json=status_data
@@ -355,7 +355,7 @@ class TestUpdateAssetStatus:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
                 json=status_data
@@ -388,7 +388,7 @@ class TestUpdateAssetStatus:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
                 json=status_data
@@ -419,7 +419,7 @@ class TestUpdateAssetMetadata:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/metadata",
                 json=metadata_data
@@ -448,7 +448,7 @@ class TestUpdateAssetMetadata:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/metadata",
                 json=metadata_data
@@ -476,7 +476,7 @@ class TestDeleteAsset:
         with patch('backend.src.api.assets.get_db', return_value=mock_db), \
              patch('os.path.exists', return_value=True), \
              patch('os.remove') as mock_remove:
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.delete(f"/api/assets/{asset_id}")
 
         # Assertions
@@ -502,7 +502,7 @@ class TestDeleteAsset:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.delete(f"/api/assets/{asset_id}")
 
         # Assertions
@@ -522,7 +522,7 @@ class TestDeleteAsset:
              patch('backend.src.api.assets.get_db', return_value=mock_db), \
              patch('os.path.exists', return_value=False), \
              patch('os.remove') as mock_remove:
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.delete(f"/api/assets/{asset_id}")
 
         # Assertions
@@ -548,7 +548,7 @@ class TestTriggerAssetConversion:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
         # Assertions
@@ -567,7 +567,7 @@ class TestTriggerAssetConversion:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
         # Assertions
@@ -585,7 +585,7 @@ class TestTriggerAssetConversion:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
         # Assertions
@@ -611,7 +611,7 @@ class TestTriggerAssetConversion:
 
         # Execute API call
         with patch('backend.src.api.assets.get_db', return_value=mock_db):
-            client = TestClient(test_app)
+            client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
         # Assertions
@@ -636,7 +636,7 @@ class TestConvertAllConversionAssets:
         }
 
         # Execute API call
-        client = TestClient(test_app)
+        client = TestClient(app)
         response = client.post(f"/api/conversions/{conversion_id}/assets/convert-all")
 
         # Assertions
@@ -659,7 +659,7 @@ class TestConvertAllConversionAssets:
         mock_service.convert_assets_for_conversion.side_effect = Exception("Service unavailable")
 
         # Execute API call
-        client = TestClient(test_app)
+        client = TestClient(app)
         response = client.post(f"/api/conversions/{conversion_id}/assets/convert-all")
 
         # Assertions

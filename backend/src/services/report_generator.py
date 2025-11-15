@@ -19,7 +19,13 @@ from .report_models import (
     LogEntry,
     FullConversionReport,
 )
-from ..db.models import Job, Addon, Asset, ConversionLog, FeatureMapping, BehaviorFile
+try:
+    from ..db.models import ConversionJob as Job, Addon, Asset, BehaviorFile
+except ImportError:
+    # Fallback for when running from different contexts
+    from src.db.models import ConversionJob as Job, Addon, Asset, BehaviorFile
+
+# Note: ConversionLog and FeatureMapping are not in models.py - using what's available
 
 logger = logging.getLogger(__name__)
 

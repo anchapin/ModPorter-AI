@@ -7,10 +7,15 @@ focusing on core path finding, optimization, and validation functionality.
 
 import pytest
 import json
+import sys
+import os
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from typing import Dict, List, Any, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.services.conversion_inference import ConversionInferenceEngine
 from src.db.knowledge_graph_crud import KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD

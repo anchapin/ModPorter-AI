@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc
 
 
-from db.knowledge_graph_crud import (
+from src.db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
-from db.graph_db import graph_db
-from db.models import (
+from src.db.graph_db import graph_db
+from src.db.models import (
     KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
-from services.version_compatibility import version_compatibility_service
+from src.services.version_compatibility import version_compatibility_service
 
 logger = logging.getLogger(__name__)
 

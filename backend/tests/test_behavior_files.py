@@ -225,13 +225,13 @@ async def delete_behavior_file(
         raise HTTPException(status_code=500, detail=f"Failed to delete behavior file: {str(e)}")
 
 # Create a FastAPI test app
-test_app = FastAPI()
-test_app.include_router(router, prefix="/api")
+app = FastAPI()
+app.include_router(router, prefix="/api")
 
 @pytest.fixture
 def client():
     """Create a test client."""
-    return TestClient(test_app)
+    return TestClient(app)
 
 class TestBehaviorFilesApi:
     """Test behavior files API endpoints"""

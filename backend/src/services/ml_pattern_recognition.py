@@ -11,16 +11,32 @@ import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from dataclasses import dataclass
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, mean_squared_error
+try:
+    from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.metrics import accuracy_score, mean_squared_error
+except ImportError:
+    # Fallback if sklearn is not available
+    RandomForestClassifier = None
+    GradientBoostingRegressor = None
+    TfidfVectorizer = None
+    KMeans = None
+    StandardScaler = None
+    LabelEncoder = None
+    accuracy_score = None
+    mean_squared_error = None
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-)
+try:
+    from ..db.knowledge_graph_crud import (
+        KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    )
+except ImportError:
+    from src.db.knowledge_graph_crud import (
+        KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    )
 
 logger = logging.getLogger(__name__)
 

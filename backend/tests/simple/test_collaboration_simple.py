@@ -237,13 +237,13 @@ async def delete_collaboration_session(session_id: str = Path(..., description="
         raise HTTPException(status_code=500, detail=f"Failed to delete collaboration session: {str(e)}")
 
 # Create a FastAPI test app
-test_app = FastAPI()
-test_app.include_router(router, prefix="/api")
+app = FastAPI()
+app.include_router(router, prefix="/api")
 
 @pytest.fixture
 def client():
     """Create a test client."""
-    return TestClient(test_app)
+    return TestClient(app)
 
 class TestCollaborationApi:
     """Test collaboration API endpoints"""

@@ -125,11 +125,8 @@ async def lifespan(app: FastAPI):
 # Cache service instance
 cache = CacheService()
 
-# Report generator instance
-if ConversionReportGenerator is not None:
-    report_generator = ConversionReportGenerator()
-else:
-    report_generator = None
+# Report generator will be created as needed with database session
+report_generator = None
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -985,7 +982,7 @@ async def try_ai_engine_or_fallback(job_id: str):
 
 
 @app.get("/api/v1/jobs/{job_id}/report", response_model=InteractiveReport, tags=["conversion"])
-async def get_conversion_report(job_id: str):
+async def get_conversion_report(job_id: str, db: AsyncSession = Depends(get_db)):
     mock_data_source = None
     if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
@@ -998,11 +995,16 @@ async def get_conversion_report(job_id: str):
     else:
         raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
 
-    report = report_generator.create_interactive_report(mock_data_source, job_id)
-    return report
+    # Create report generator with database session
+    if ConversionReportGenerator is not None:
+        generator = ConversionReportGenerator(db)
+        report = generator.create_interactive_report(mock_data_source, job_id)
+        return report
+    else:
+        raise HTTPException(status_code=500, detail="Report generator not available")
 
 @app.get("/api/v1/jobs/{job_id}/report/prd", response_model=FullConversionReport, tags=["conversion"])
-async def get_conversion_report_prd(job_id: str):
+async def get_conversion_report_prd(job_id: str, db: AsyncSession = Depends(get_db)):
     mock_data_source = None
     if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
@@ -1015,8 +1017,13 @@ async def get_conversion_report_prd(job_id: str):
     else:
         raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
 
-    report = report_generator.create_full_conversion_report_prd_style(mock_data_source)
-    return report
+    # Create report generator with database session
+    if ConversionReportGenerator is not None:
+        generator = ConversionReportGenerator(db)
+        report = generator.create_full_conversion_report_prd_style(mock_data_source)
+        return report
+    else:
+        raise HTTPException(status_code=500, detail="Report generator not available")
 
 
 # Addon Data Management Endpoints

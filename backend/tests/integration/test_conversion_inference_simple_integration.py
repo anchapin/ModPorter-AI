@@ -170,54 +170,54 @@ class TestConversionInferenceBasicIntegration:
                 with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
                     with patch.object(engine, '_calculate_savings', return_value=2.0):
 
-                    # Create mock concept_paths for the test
-                    concept_paths = {
-                        "java_block": {
-                            "primary_path": {
-                                "path_type": "direct",
-                                "confidence": 0.85,
-                                "steps": [{"step": "convert"}]
-                            }
-                        },
-                        "java_entity": {
-                            "primary_path": {
-                                "path_type": "indirect",
-                                "confidence": 0.75,
-                                "steps": [{"step": "transform"}]
-                            }
-                        },
-                        "java_item": {
-                            "primary_path": {
-                                "path_type": "direct",
-                                "confidence": 0.9,
-                                "steps": [{"step": "convert"}]
+                        # Create mock concept_paths for the test
+                        concept_paths = {
+                            "java_block": {
+                                "primary_path": {
+                                    "path_type": "direct",
+                                    "confidence": 0.85,
+                                    "steps": [{"step": "convert"}]
+                                }
+                            },
+                            "java_entity": {
+                                "primary_path": {
+                                    "path_type": "indirect",
+                                    "confidence": 0.75,
+                                    "steps": [{"step": "transform"}]
+                                }
+                            },
+                            "java_item": {
+                                "primary_path": {
+                                    "path_type": "direct",
+                                    "confidence": 0.9,
+                                    "steps": [{"step": "convert"}]
+                                }
                             }
                         }
-                    }
 
-                    # Test optimization
-                    result = await engine.optimize_conversion_sequence(
-                        java_concepts,
-                        conversion_dependencies,
-                        "bedrock",
-                        "1.19.3",
-                        mock_db
-                    )
+                        # Test optimization
+                        result = await engine.optimize_conversion_sequence(
+                            java_concepts,
+                            conversion_dependencies,
+                            "bedrock",
+                            "1.19.3",
+                            mock_db
+                        )
 
-                    # Verify optimization result
-                    assert isinstance(result, dict)
-                    assert "success" is True
-                    assert "processing_sequence" in result  # Key is "processing_sequence", not "processing_groups"
-                    assert len(result["processing_sequence"]) == 2
+                        # Verify optimization result
+                        assert isinstance(result, dict)
+                        assert "success" == True
+                        assert "processing_sequence" in result  # Key is "processing_sequence", not "processing_groups"
+                        assert len(result["processing_sequence"]) == 2
 
-                    # Verify dependency order is respected
-                    processing_sequence = result["processing_sequence"]
-                    item_group = processing_sequence[0]
-                    entity_block_group = processing_sequence[1]
+                        # Verify dependency order is respected
+                        processing_sequence = result["processing_sequence"]
+                        item_group = processing_sequence[0]
+                        entity_block_group = processing_sequence[1]
 
-                    assert "java_item" in item_group["concepts"]
-                    assert "java_entity" in entity_block_group["concepts"]
-                    assert "java_block" in entity_block_group["concepts"]
+                        assert "java_item" in item_group["concepts"]
+                        assert "java_entity" in entity_block_group["concepts"]
+                        assert "java_block" in entity_block_group["concepts"]
 
     @pytest.mark.asyncio
     async def test_batch_conversion_with_shared_steps(self, engine):

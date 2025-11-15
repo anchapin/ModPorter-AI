@@ -65,14 +65,14 @@ class MultiModalDocument(BaseModel):
     # Timestamps
     created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
     updated_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
-    indexed_at: Optional[datetime] = Field(None)
+    indexed_at: Optional[dt.datetime] = Field(None)
 
     # Context information
     project_context: Optional[str] = Field(None, description="Project or context identifier")
     tags: List[str] = Field(default_factory=list, description="Content tags for filtering")
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders = {dt.datetime: lambda v: v.isoformat()}
 
 
 class EmbeddingVector(BaseModel):
@@ -105,7 +105,7 @@ class EmbeddingVector(BaseModel):
     created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders = {dt.datetime: lambda v: v.isoformat()}
 
 
 class ImageMetadata(BaseModel):
@@ -203,7 +203,7 @@ class SearchQuery(BaseModel):
     preferred_models: Optional[List[EmbeddingModel]] = Field(None, description="Preferred embedding models")
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders = {dt.datetime: lambda v: v.isoformat()}
 
 
 class SearchResult(BaseModel):
@@ -231,7 +231,7 @@ class SearchResult(BaseModel):
     retrieved_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
     class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+        json_encoders = {dt.datetime: lambda v: v.isoformat()}
 
 
 class HybridSearchConfig(BaseModel):

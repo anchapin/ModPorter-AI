@@ -42,6 +42,16 @@ class ExtractionResult(BaseModel):
     found_manifest_type: Optional[str] = None
 
 
+class FileInfo(BaseModel):
+    """File metadata for processing."""
+    filename: str
+    file_path: Path
+    file_size: int
+    content_type: Optional[str] = None
+    upload_date: Optional[str] = None
+    content_hash: Optional[str] = None
+
+
 class DownloadResult(BaseModel):
     success: bool
     message: str
@@ -256,6 +266,19 @@ class FileProcessor:
         Scans the specified file for malware, including ZIP bomb and path traversal checks.
         """
         logger.info(f"Starting malware scan for file: {file_path} (type: {file_type})")
+
+        # Create file info for external scanning
+        try:
+            file_size = file_path.stat().st_size if file_path.exists() else 0
+        except OSError:
+            file_size = 0
+
+        file_info = FileInfo(
+            filename=file_path.name,
+            file_path=file_path,
+            file_size=file_size,
+            content_type=file_type
+        )
 
         # Define limits for ZIP bomb detection
         MAX_COMPRESSION_RATIO = 100
@@ -728,7 +751,7 @@ class FileProcessor:
         scan_details = {
             'scanners_used': enabled_scanners,
             'scan_count': len(scan_results),
-            'file_size_bytes': file_info.size,
+            'file_size_bytes': file_info.file_size,
             'file_hash_sha256': file_info.content_hash
         }
 
@@ -863,10 +886,10 @@ class FileProcessor:
             suspicious_indicators.append(f"Risky file extension: {file_path.suffix}")
 
         # Check file size (very small or very large files can be suspicious)
-        if file_info.size < 100:  # Very small files
-            suspicious_indicators.append(f"Suspiciously small file: {file_info.size} bytes")
-        elif file_info.size > 100 * 1024 * 1024:  # Very large files (>100MB)
-            suspicious_indicators.append(f"Suspiciously large file: {file_info.size / 1024 / 1024:.1f}MB")
+        if file_info.file_size < 100:  # Very small files
+            suspicious_indicators.append(f"Suspiciously small file: {file_info.file_size} bytes")
+        elif file_info.file_size > 100 * 1024 * 1024:  # Very large files (>100MB)
+            suspicious_indicators.append(f"Suspiciously large file: {file_info.file_size / 1024 / 1024:.1f}MB")
 
         # Check filename patterns
         suspicious_names = ['setup', 'install', 'crack', 'keygen', 'patch', 'loader', 'dropper']

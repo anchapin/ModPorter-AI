@@ -208,11 +208,11 @@ def test_{function_name}_edge_cases():
     # Test with edge cases
     edge_cases = [
         # None values
-        {", ".join(["None"] * len(params)) if params else "pass")},
+        {", ".join(["None"] * len(params)) if params else "pass"},
         # Empty values
-        {", ".join([f'"" if isinstance(test_{param}_{i}, str) else 0' for i, param in enumerate(params)]) if params else "pass")},
+        {", ".join(['"" if isinstance(test_' + param + f'_{i}, str) else 0' for i, param in enumerate(params)]) if params else "pass"},
         # Large values
-        {", ".join([f'999999 if isinstance(test_{param}_{i}, (int, float)) else "x" * 1000' for i, param in enumerate(params)]) if params else "pass"}
+        {", ".join(['999999 if isinstance(test_' + param + f'_{i}, (int, float)) else "x" * 1000' for i, param in enumerate(params)]) if params else "pass"}
     ]
 
     for case in edge_cases:
@@ -225,7 +225,7 @@ def test_{function_name}_edge_cases():
             pass
         except Exception as e:
             # Unexpected exceptions should be investigated
-            raise AssertionError(f"Unexpected exception for edge case {{case}}: {{e}}")
+            raise AssertionError(f"Unexpected exception for edge case {case}: {e}")
 '''
 
 
