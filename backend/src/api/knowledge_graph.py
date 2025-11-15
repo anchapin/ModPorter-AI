@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from unittest.mock import Mock
 
 try:
     from db.base import get_db

@@ -35,13 +35,13 @@ async def submit_batch_job(
         processing_mode_str = job_data.get("processing_mode", "sequential")
         chunk_size = job_data.get("chunk_size", 100)
         parallel_workers = job_data.get("parallel_workers", 4)
-        
+
         if not operation_type_str:
             raise HTTPException(
                 status_code=400,
                 detail="operation_type is required"
             )
-        
+
         # Parse operation type
         try:
             operation_type = BatchOperationType(operation_type_str)
@@ -50,7 +50,7 @@ async def submit_batch_job(
                 status_code=400,
                 detail=f"Invalid operation_type: {operation_type_str}"
             )
-        
+
         # Parse processing mode
         try:
             processing_mode = ProcessingMode(processing_mode_str)
@@ -59,16 +59,16 @@ async def submit_batch_job(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode_str}"
             )
-        
+
         result = await batch_processing_service.submit_batch_job(
             operation_type, parameters, processing_mode, chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -81,12 +81,12 @@ async def get_job_status(job_id: str):
     """Get status and progress of a batch job."""
     try:
         result = await batch_processing_service.get_job_status(job_id)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=404, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -102,14 +102,14 @@ async def cancel_job(
     """Cancel a running batch job."""
     try:
         reason = cancel_data.get("reason", "User requested cancellation") if cancel_data else "User requested cancellation"
-        
+
         result = await batch_processing_service.cancel_job(job_id, reason)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -125,14 +125,14 @@ async def pause_job(
     """Pause a running batch job."""
     try:
         reason = pause_data.get("reason", "User requested pause") if pause_data else "User requested pause"
-        
+
         result = await batch_processing_service.pause_job(job_id, reason)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -145,12 +145,12 @@ async def resume_job(job_id: str):
     """Resume a paused batch job."""
     try:
         result = await batch_processing_service.resume_job(job_id)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -163,12 +163,12 @@ async def get_active_jobs():
     """Get list of all active batch jobs."""
     try:
         result = await batch_processing_service.get_active_jobs()
-        
+
         if not result["success"]:
             raise HTTPException(status_code=500, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -193,14 +193,14 @@ async def get_job_history(
                     status_code=400,
                     detail=f"Invalid operation_type: {operation_type}"
                 )
-        
+
         result = await batch_processing_service.get_job_history(limit, op_type)
-        
+
         if not result["success"]:
             raise HTTPException(status_code=500, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -228,10 +228,10 @@ async def import_nodes(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode}"
             )
-        
+
         # Read and parse file content
         content = await file.read()
-        
+
         try:
             if file.filename.endswith('.json'):
                 nodes_data = json.loads(content.decode())
@@ -248,29 +248,29 @@ async def import_nodes(
                 status_code=400,
                 detail=f"Failed to parse file: {str(e)}"
             )
-        
+
         # Submit batch job
         parameters = {
             "nodes": nodes_data,
             "source_file": file.filename,
             "file_size": len(content)
         }
-        
+
         result = await batch_processing_service.submit_batch_job(
-            BatchOperationType.IMPORT_NODES, parameters, mode, 
+            BatchOperationType.IMPORT_NODES, parameters, mode,
             chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "success": True,
             "message": f"Import job submitted for {file.filename}",
             "job_id": result["job_id"],
             "estimated_total_items": result["estimated_total_items"]
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -296,10 +296,10 @@ async def import_relationships(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode}"
             )
-        
+
         # Read and parse file content
         content = await file.read()
-        
+
         try:
             if file.filename.endswith('.json'):
                 relationships_data = json.loads(content.decode())
@@ -316,29 +316,29 @@ async def import_relationships(
                 status_code=400,
                 detail=f"Failed to parse file: {str(e)}"
             )
-        
+
         # Submit batch job
         parameters = {
             "relationships": relationships_data,
             "source_file": file.filename,
             "file_size": len(content)
         }
-        
+
         result = await batch_processing_service.submit_batch_job(
-            BatchOperationType.IMPORT_RELATIONSHIPS, parameters, mode, 
+            BatchOperationType.IMPORT_RELATIONSHIPS, parameters, mode,
             chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "success": True,
             "message": f"Import job submitted for {file.filename}",
             "job_id": result["job_id"],
             "estimated_total_items": result["estimated_total_items"]
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -360,14 +360,14 @@ async def export_graph(
         processing_mode = export_data.get("processing_mode", "sequential")
         chunk_size = export_data.get("chunk_size", 100)
         parallel_workers = export_data.get("parallel_workers", 4)
-        
+
         # Validate format
         if format_type not in ["json", "csv", "gexf", "graphml"]:
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported format: {format_type}"
             )
-        
+
         # Parse processing mode
         try:
             mode = ProcessingMode(processing_mode)
@@ -376,24 +376,24 @@ async def export_graph(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode}"
             )
-        
+
         # Submit batch job
         parameters = {
             "format": format_type,
             "filters": filters,
             "include_relationships": include_relationships,
             "include_patterns": include_patterns,
-            "output_file": f"graph_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{format_type}"
+            "output_file": f"graph_export_{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d_%H%M%S')}.{format_type}"
         }
-        
+
         result = await batch_processing_service.submit_batch_job(
-            BatchOperationType.EXPORT_GRAPH, parameters, mode, 
+            BatchOperationType.EXPORT_GRAPH, parameters, mode,
             chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "success": True,
             "message": f"Export job submitted in {format_type} format",
@@ -401,7 +401,7 @@ async def export_graph(
             "estimated_total_items": result["estimated_total_items"],
             "output_format": format_type
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -423,14 +423,14 @@ async def batch_delete_nodes(
         processing_mode = delete_data.get("processing_mode", "sequential")
         chunk_size = delete_data.get("chunk_size", 100)
         parallel_workers = delete_data.get("parallel_workers", 4)
-        
+
         # Validate filters
         if not filters:
             raise HTTPException(
                 status_code=400,
                 detail="filters are required for deletion"
             )
-        
+
         # Parse processing mode
         try:
             mode = ProcessingMode(processing_mode)
@@ -439,22 +439,22 @@ async def batch_delete_nodes(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode}"
             )
-        
+
         # Submit batch job
         parameters = {
             "filters": filters,
             "dry_run": dry_run,
             "operation": "batch_delete_nodes"
         }
-        
+
         result = await batch_processing_service.submit_batch_job(
-            BatchOperationType.DELETE_NODES, parameters, mode, 
+            BatchOperationType.DELETE_NODES, parameters, mode,
             chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "success": True,
             "message": f"Batch delete job submitted (dry_run={dry_run})",
@@ -462,7 +462,7 @@ async def batch_delete_nodes(
             "estimated_total_items": result["estimated_total_items"],
             "dry_run": dry_run
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -482,7 +482,7 @@ async def batch_validate_graph(
         processing_mode = validation_data.get("processing_mode", "parallel")
         chunk_size = validation_data.get("chunk_size", 200)
         parallel_workers = validation_data.get("parallel_workers", 6)
-        
+
         # Validate rules
         valid_rules = ["nodes", "relationships", "patterns", "consistency", "all"]
         for rule in validation_rules:
@@ -491,7 +491,7 @@ async def batch_validate_graph(
                     status_code=400,
                     detail=f"Invalid validation rule: {rule}"
                 )
-        
+
         # Parse processing mode
         try:
             mode = ProcessingMode(processing_mode)
@@ -500,22 +500,22 @@ async def batch_validate_graph(
                 status_code=400,
                 detail=f"Invalid processing_mode: {processing_mode}"
             )
-        
+
         # Submit batch job
         parameters = {
             "rules": validation_rules,
             "scope": scope,
             "validation_options": validation_data.get("options", {})
         }
-        
+
         result = await batch_processing_service.submit_batch_job(
-            BatchOperationType.VALIDATE_GRAPH, parameters, mode, 
+            BatchOperationType.VALIDATE_GRAPH, parameters, mode,
             chunk_size, parallel_workers, db
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "success": True,
             "message": f"Graph validation job submitted with rules: {validation_rules}",
@@ -524,7 +524,7 @@ async def batch_validate_graph(
             "validation_rules": validation_rules,
             "scope": scope
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -539,7 +539,7 @@ async def get_operation_types():
     """Get available batch operation types."""
     try:
         operation_types = []
-        
+
         for op_type in BatchOperationType:
             operation_types.append({
                 "value": op_type.value,
@@ -548,13 +548,13 @@ async def get_operation_types():
                 "requires_file": _operation_requires_file(op_type),
                 "estimated_duration": _get_operation_duration(op_type)
             })
-        
+
         return {
             "success": True,
             "operation_types": operation_types,
             "total_types": len(operation_types)
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting operation types: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get operation types: {str(e)}")
@@ -565,7 +565,7 @@ async def get_processing_modes():
     """Get available processing modes."""
     try:
         modes = []
-        
+
         for mode in ProcessingMode:
             modes.append({
                 "value": mode.value,
@@ -574,13 +574,13 @@ async def get_processing_modes():
                 "use_cases": _get_processing_mode_use_cases(mode),
                 "recommended_for": _get_processing_mode_recommendations(mode)
             })
-        
+
         return {
             "success": True,
             "processing_modes": modes,
             "total_modes": len(modes)
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting processing modes: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get processing modes: {str(e)}")
@@ -592,10 +592,10 @@ async def get_status_summary():
     try:
         # Get active jobs
         active_result = await batch_processing_service.get_active_jobs()
-        
+
         # Get recent history
         history_result = await batch_processing_service.get_job_history(limit=100)
-        
+
         # Calculate statistics
         status_counts = {
             "pending": 0,
@@ -605,27 +605,27 @@ async def get_status_summary():
             "failed": 0,
             "cancelled": 0
         }
-        
+
         operation_type_counts = {}
-        
+
         if active_result["success"]:
             for job in active_result["active_jobs"]:
                 status = job["status"]
                 if status in status_counts:
                     status_counts[status] += 1
-                
+
                 op_type = job["operation_type"]
                 operation_type_counts[op_type] = operation_type_counts.get(op_type, 0) + 1
-        
+
         if history_result["success"]:
             for job in history_result["job_history"]:
                 status = job["status"]
                 if status in status_counts:
                     status_counts[status] += 1
-                
+
                 op_type = job["operation_type"]
                 operation_type_counts[op_type] = operation_type_counts.get(op_type, 0) + 1
-        
+
         return {
             "success": True,
             "summary": {
@@ -636,9 +636,9 @@ async def get_status_summary():
                 "max_concurrent": active_result["max_concurrent_jobs"] if active_result["success"] else 0,
                 "recent_history": len(history_result.get("job_history", [])) if history_result["success"] else 0
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": dt.datetime.now(dt.timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting status summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get status summary: {str(e)}")
@@ -650,7 +650,7 @@ async def get_performance_stats():
     try:
         # This would get statistics from the batch processing service
         # For now, return mock data
-        
+
         return {
             "success": True,
             "performance_stats": {
@@ -687,9 +687,9 @@ async def get_performance_stats():
                     }
                 }
             },
-            "calculated_at": datetime.utcnow().isoformat()
+            "calculated_at": dt.datetime.now(dt.timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting performance stats: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get performance stats: {str(e)}")
@@ -701,11 +701,11 @@ async def _parse_csv_nodes(content: str) -> List[Dict[str, Any]]:
     """Parse CSV content for nodes."""
     import csv
     import io
-    
+
     try:
         reader = csv.DictReader(io.StringIO(content))
         nodes = []
-        
+
         for row in reader:
             node = {
                 "name": row.get("name", ""),
@@ -718,9 +718,9 @@ async def _parse_csv_nodes(content: str) -> List[Dict[str, Any]]:
                 "properties": json.loads(row.get("properties", "{}"))
             }
             nodes.append(node)
-        
+
         return nodes
-        
+
     except Exception as e:
         raise ValueError(f"Failed to parse CSV nodes: {str(e)}")
 
@@ -729,11 +729,11 @@ async def _parse_csv_relationships(content: str) -> List[Dict[str, Any]]:
     """Parse CSV content for relationships."""
     import csv
     import io
-    
+
     try:
         reader = csv.DictReader(io.StringIO(content))
         relationships = []
-        
+
         for row in reader:
             relationship = {
                 "source_node_id": row.get("source_node_id", ""),
@@ -743,9 +743,9 @@ async def _parse_csv_relationships(content: str) -> List[Dict[str, Any]]:
                 "properties": json.loads(row.get("properties", "{}"))
             }
             relationships.append(relationship)
-        
+
         return relationships
-        
+
     except Exception as e:
         raise ValueError(f"Failed to parse CSV relationships: {str(e)}")
 
@@ -824,4 +824,4 @@ def _get_processing_mode_recommendations(mode) -> List[str]:
 
 
 # Add missing imports
-from datetime import datetime
+import datetime as dt

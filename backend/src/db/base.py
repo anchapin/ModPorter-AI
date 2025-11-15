@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from config import settings
+from ..config import settings
 
 # Base is imported in models.py and migrations
 # from .declarative_base import Base
@@ -24,7 +24,7 @@ else:
     # Ensure we're using asyncpg driver for async operations
     if database_url.startswith("postgresql://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-    
+
     async_engine = create_async_engine(
         database_url,
         echo=False,

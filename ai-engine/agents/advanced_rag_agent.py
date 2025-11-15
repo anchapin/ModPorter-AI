@@ -9,7 +9,7 @@ import logging
 import re
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
+import datetime as dt
 
 # Import advanced RAG components
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
@@ -129,7 +129,7 @@ class AdvancedRAGAgent:
         Returns:
             RAG response with answer and sources
         """
-        start_time = datetime.utcnow()
+        start_time = dt.datetime.now(dt.timezone.utc)
 
         try:
             logger.info(f"Processing RAG query: '{query_text[:100]}...'")
@@ -184,7 +184,7 @@ class AdvancedRAGAgent:
             )
 
             # Calculate processing time
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (dt.datetime.now(dt.timezone.utc) - start_time).total_seconds() * 1000
 
             # Compile metadata
             response_metadata = {
@@ -226,7 +226,7 @@ class AdvancedRAGAgent:
 
         except Exception as e:
             logger.error(f"Error processing RAG query: {e}")
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (dt.datetime.now(dt.timezone.utc) - start_time).total_seconds() * 1000
 
             # Return error response
             return RAGResponse(
@@ -697,7 +697,7 @@ class AdvancedRAGAgent:
         # Add query to history
         context['queries'].append({
             'query': query.query_text,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': dt.datetime.now(dt.timezone.utc).isoformat(),
             'confidence': response.confidence,
             'sources_found': len(response.sources)
         })

@@ -1,611 +1,867 @@
 """
-Comprehensive tests for version_compatibility.py
-Focus on improving coverage for complex methods and uncovered areas
+Comprehensive tests for version_compatibility.py API endpoints
+This file implements actual tests to increase coverage from 0% to near 100%
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+import json
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel
+
+# Set up path imports
 import sys
 import os
-
-# Add source to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import the module under test
+from src.api.version_compatibility import (
+    get_version_compatibility, get_java_version_compatibility,
+    create_or_update_compatibility, get_supported_features,
+    get_conversion_path, generate_migration_guide, get_matrix_overview,
+    get_java_versions, get_bedrock_versions, get_matrix_visual_data,
+    get_version_recommendations, get_compatibility_statistics,
+    CompatibilityRequest, MigrationGuideRequest, ConversionPathRequest,
+    _get_recommendation_reason, _generate_recommendations
+)
 
-class TestVersionCompatibilityServiceAdvanced:
-    """Advanced test suite for uncovered complex methods"""
-    
-    @pytest.fixture
-    def mock_db(self):
-        """Create a mock database session"""
-        return AsyncMock()
-    
-    @pytest.fixture
-    def service(self):
-        """Create service instance for testing"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.models': Mock()
-        }):
-            from src.services.version_compatibility import VersionCompatibilityService
-            return VersionCompatibilityService()
-    
-    @pytest.fixture
-    def mock_compatibility_data(self):
-        """Mock version compatibility data"""
-        class MockCompatibility:
-            def __init__(self, java_version, bedrock_version, score=0.8):
-                self.java_version = java_version
-                self.bedrock_version = bedrock_version
-                self.compatibility_score = score
-                self.features_supported = ["blocks", "entities"]
-                self.known_issues = []
-                self.updated_at = AsyncMock()
-                self.updated_at.isoformat.return_value = "2024-01-01T00:00:00"
-        
-        return [
-            MockCompatibility("1.19.4", "1.19.0", 0.9),
-            MockCompatibility("1.20.1", "1.20.0", 0.85),
-            MockCompatibility("1.20.6", "1.20.60", 0.95)
-        ]
-    
-    @pytest.mark.asyncio
-    async def test_get_compatibility_with_exact_match(self, service, mock_db):
-        """Test get_compatibility with exact database match"""
-        # Mock database response
-        mock_compatibility = Mock()
-        mock_compatibility.java_version = "1.20.1"
-        mock_compatibility.bedrock_version = "1.20.0"
-        mock_compatibility.compatibility_score = 0.85
-        
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_compatibility.return_value = mock_compatibility
-            
-            result = await service.get_compatibility("1.20.1", "1.20.0", mock_db)
-            
-            assert result is not None
-            assert result.java_version == "1.20.1"
-            assert result.bedrock_version == "1.20.0"
-            mock_crud.get_compatibility.assert_called_once_with(mock_db, "1.20.1", "1.20.0")
-    
-    @pytest.mark.asyncio
-    async def test_get_compatibility_with_closest_match(self, service, mock_db):
-        """Test get_compatibility when falling back to closest versions"""
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            # No exact match found
-            mock_crud.get_compatibility.return_value = None
-            
-            # Mock closest compatibility finding
-            with patch.object(service, '_find_closest_compatibility') as mock_closest:
-                mock_closest.return_value = Mock(compatibility_score=0.7)
-                
-                result = await service.get_compatibility("1.20.1", "1.20.0", mock_db)
-                
-                assert result is not None
-                mock_closest.assert_called_once_with(mock_db, "1.20.1", "1.20.0")
-    
-    @pytest.mark.asyncio
-    async def test_get_compatibility_error_handling(self, service, mock_db):
-        """Test get_compatibility error handling"""
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_compatibility.side_effect = Exception("Database error")
-            
-            result = await service.get_compatibility("1.20.1", "1.20.0", mock_db)
-            
-            assert result is None
-    
-    @pytest.mark.asyncio
-    async def test_get_by_java_version_success(self, service, mock_db):
-        """Test get_by_java_version with successful query"""
-        mock_compatibilities = [
-            Mock(java_version="1.20.1", bedrock_version="1.20.0"),
-            Mock(java_version="1.20.1", bedrock_version="1.19.0")
-        ]
-        
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_by_java_version.return_value = mock_compatibilities
-            
-            result = await service.get_by_java_version("1.20.1", mock_db)
-            
-            assert len(result) == 2
-            mock_crud.get_by_java_version.assert_called_once_with(mock_db, "1.20.1")
-    
-    @pytest.mark.asyncio
-    async def test_get_by_java_version_error_handling(self, service, mock_db):
-        """Test get_by_java_version error handling"""
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_by_java_version.side_effect = Exception("Database error")
-            
-            result = await service.get_by_java_version("1.20.1", mock_db)
-            
-            assert result == []
-    
-    @pytest.mark.asyncio
-    async def test_get_supported_features_with_compatibility(self, service, mock_db):
-        """Test get_supported_features with valid compatibility"""
-        mock_compatibility = Mock()
-        mock_compatibility.features_supported = {
-            "blocks": {"supported": True, "coverage": 0.9},
-            "entities": {"supported": True, "coverage": 0.8},
-            "items": {"supported": False, "coverage": 0.0}
+# Mock dependencies
+@pytest.fixture
+def mock_db():
+    """Create a mock AsyncSession"""
+    mock_db = AsyncMock(spec=AsyncSession)
+    return mock_db
+
+@pytest.fixture
+def mock_compatibility_request():
+    """Sample compatibility request data"""
+    return {
+        "java_version": "1.18.2",
+        "bedrock_version": "1.18.30",
+        "compatibility_score": 0.85,
+        "features_supported": [
+            {"name": "world_generation", "status": "full"},
+            {"name": "entities", "status": "partial"}
+        ],
+        "deprecated_patterns": ["old_block_states"],
+        "migration_guides": {"blocks": "use_block_states"},
+        "auto_update_rules": {"entity_types": "update_names"},
+        "known_issues": ["redstone_differences"]
+    }
+
+@pytest.fixture
+def mock_migration_request():
+    """Sample migration guide request data"""
+    return {
+        "from_java_version": "1.16.5",
+        "to_bedrock_version": "1.18.30",
+        "features": ["world_generation", "entities", "redstone"]
+    }
+
+@pytest.fixture
+def mock_conversion_path_request():
+    """Sample conversion path request data"""
+    return {
+        "java_version": "1.17.1",
+        "bedrock_version": "1.18.30",
+        "feature_type": "redstone"
+    }
+
+# Mock the dependencies at module level
+@pytest.fixture(autouse=True)
+def mock_dependencies():
+    """Mock all external dependencies for the version_compatibility module"""
+    with patch('src.api.version_compatibility.version_compatibility_service') as mock_service:
+        # Make async methods return AsyncMock
+        mock_service.get_compatibility = AsyncMock()
+        mock_service.get_by_java_version = AsyncMock()
+        mock_service.update_compatibility = AsyncMock()
+        mock_service.get_supported_features = AsyncMock()
+        mock_service.get_conversion_path = AsyncMock()
+        mock_service.generate_migration_guide = AsyncMock()
+        mock_service.get_matrix_overview = AsyncMock()
+
+        yield {
+            'service': mock_service
         }
-        mock_compatibility.known_issues = ["Some blocks may not convert correctly"]
-        
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = mock_compatibility
-            
-            result = await service.get_supported_features(
-                "1.20.1", mock_db, "1.20.0", "blocks"
-            )
-            
-            assert result["java_version"] == "1.20.1"
-            assert result["bedrock_version"] == "1.20.0"
-            assert "blocks" in result["features"]
-            assert result["features"]["blocks"]["supported"] is True
-            assert len(result["known_issues"]) == 1
-    
-    @pytest.mark.asyncio
-    async def test_get_supported_features_no_compatibility(self, service, mock_db):
-        """Test get_supported_features when no compatibility found"""
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = None
-            
-            result = await service.get_supported_features(
-                "1.20.1", mock_db, "1.20.0", "blocks"
-            )
-            
-            assert result["error"] == "No compatibility data found"
-            assert "No compatibility data available" in result["message"]
-    
-    @pytest.mark.asyncio
-    async def test_get_matrix_overview_with_data(self, service, mock_db, mock_compatibility_data):
-        """Test get_matrix_overview with compatibility data"""
-        # Mock database query
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = mock_compatibility_data
-        mock_db.execute.return_value = mock_result
-        
-        result = await service.get_matrix_overview(mock_db)
-        
-        assert result["total_combinations"] == 3
-        assert len(result["java_versions"]) == 3
-        assert len(result["bedrock_versions"]) == 3
-        assert result["average_compatibility"] == 0.9  # (0.9 + 0.85 + 0.95) / 3
-        assert "compatibility_distribution" in result
-        assert "matrix" in result
-    
-    @pytest.mark.asyncio
-    async def test_get_matrix_overview_no_data(self, service, mock_db):
-        """Test get_matrix_overview with no compatibility data"""
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_db.execute.return_value = mock_result
-        
-        result = await service.get_matrix_overview(mock_db)
-        
-        assert result["total_combinations"] == 0
-        assert result["java_versions"] == []
-        assert result["bedrock_versions"] == []
-        assert result["average_compatibility"] == 0.0
-        assert result["matrix"] == {}
-    
-    @pytest.mark.asyncio
-    async def test_get_matrix_overview_error_handling(self, service, mock_db):
-        """Test get_matrix_overview error handling"""
-        mock_db.execute.side_effect = Exception("Database error")
-        
-        result = await service.get_matrix_overview(mock_db)
-        
-        assert "error" in result
-        assert result["error"] == "Database error"
-    
-    @pytest.mark.asyncio
-    async def test_generate_migration_guide_success(self, service, mock_db):
-        """Test generate_migration_guide with valid data"""
-        mock_compatibility = Mock()
-        mock_compatibility.compatibility_score = 0.85
-        mock_compatibility.features_supported = {
-            "blocks": {"supported": True, "coverage": 0.9},
-            "entities": {"supported": True, "coverage": 0.8}
-        }
-        mock_compatibility.known_issues = []
-        mock_compatibility.java_version = "1.20.1"
-        mock_compatibility.bedrock_version = "1.20.0"
-        
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = mock_compatibility
-            
-            with patch.object(service, '_generate_direct_migration_steps') as mock_direct:
-                mock_direct.return_value = [
-                    {"step": "convert_blocks", "description": "Convert all blocks"}
-                ]
-                
-                result = await service.generate_migration_guide(
-                    "1.20.1", "1.20.0", ["blocks", "entities"], mock_db
-                )
-                
-                assert result["source_version"] == "1.20.1"
-                assert result["target_version"] == "1.20.0"
-                assert result["compatibility_score"] == 0.85
-                assert "migration_steps" in result
-                assert len(result["migration_steps"]) == 1
-    
-    @pytest.mark.asyncio
-    async def test_generate_migration_guide_no_compatibility(self, service, mock_db):
-        """Test generate_migration_guide when no compatibility found"""
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = None
-            
-            result = await service.generate_migration_guide(
-                "1.20.1", "1.20.0", ["blocks"], mock_db
-            )
-            
-            assert result["error"] == "No compatibility data found"
-            assert "No migration data available" in result["message"]
-    
-    @pytest.mark.asyncio
-    async def test_find_optimal_conversion_path_direct(self, service, mock_db):
-        """Test _find_optimal_conversion_path with direct compatibility"""
-        mock_compatibility = Mock()
-        mock_compatibility.compatibility_score = 0.9
-        
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = mock_compatibility
-            
-            result = await service._find_optimal_conversion_path(
-                "1.20.1", "1.20.0", mock_db, "blocks"
-            )
-            
-            assert result["path_type"] == "direct"
-            assert result["compatibility_score"] == 0.9
-            assert "patterns" in result
-    
-    @pytest.mark.asyncio
-    async def test_find_optimal_conversion_path_intermediate(self, service, mock_db):
-        """Test _find_optimal_conversion_path with intermediate steps"""
-        mock_compatibility_low = Mock()
-        mock_compatibility_low.compatibility_score = 0.3  # Low score - need intermediate
-        
-        mock_compatibility_intermediate = Mock()
-        mock_compatibility_intermediate.compatibility_score = 0.7
-        
-        mock_compatibility_final = Mock()
-        mock_compatibility_final.compatibility_score = 0.8
-        
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            # First call returns low compatibility
-            mock_get_compat.return_value = mock_compatibility_low
-            
-            with patch.object(service, '_get_sorted_java_versions') as mock_java_versions:
-                mock_java_versions.return_value = ["1.19.4", "1.20.1", "1.20.6"]
-                
-                with patch.object(service, '_get_sorted_bedrock_versions') as mock_bedrock_versions:
-                    mock_bedrock_versions.return_value = ["1.19.0", "1.20.0", "1.20.60"]
-                    
-                    with patch.object(service, '_find_best_bedrock_match') as mock_best_match:
-                        mock_best_match.return_value = "1.20.0"
-                        
-                        # Configure subsequent calls
-                        def side_effect(*args):
-                            if args[0] == "1.20.1" and args[1] == "1.20.0":
-                                return mock_compatibility_intermediate
-                            elif args[0] == "1.20.0" and args[1] == "1.20.0":
-                                return mock_compatibility_final
-                            return None
-                        
-                        mock_get_compat.side_effect = side_effect
-                        
-                        with patch.object(service, '_get_relevant_patterns') as mock_patterns:
-                            mock_patterns.return_value = []
-                            
-                            result = await service._find_optimal_conversion_path(
-                                "1.20.1", "1.20.0", mock_db, "blocks"
-                            )
-                            
-                            assert result["path_type"] == "intermediate"
-                            assert "steps" in result
-                            assert len(result["steps"]) == 2
-    
-    @pytest.mark.asyncio
-    async def test_find_optimal_conversion_path_version_not_found(self, service, mock_db):
-        """Test _find_optimal_conversion_path with unknown versions"""
-        with patch.object(service, 'get_compatibility') as mock_get_compat:
-            mock_get_compat.return_value = None  # No compatibility found
-            
-            with patch.object(service, '_get_sorted_java_versions') as mock_java_versions:
-                mock_java_versions.return_value = ["1.19.4", "1.20.1", "1.20.6"]
-                
-                result = await service._find_optimal_conversion_path(
-                    "1.21.0", "1.20.0", mock_db, "blocks"
-                )
-                
-                assert result["path_type"] == "failed"
-                assert "Source Java version 1.21.0 not found" in result["message"]
-    
-    @pytest.mark.asyncio
-    async def test_get_relevant_patterns_success(self, service, mock_db):
-        """Test _get_relevant_patterns with matching patterns"""
-        mock_pattern = Mock()
-        mock_pattern.id = "pattern_1"
-        mock_pattern.name = "Block Conversion Pattern"
-        mock_pattern.description = "Converts blocks between versions"
-        mock_pattern.success_rate = 0.85
-        mock_pattern.tags = ["blocks", "conversion"]
-        
-        with patch('src.services.version_compatibility.ConversionPatternCRUD') as mock_crud:
-            mock_crud.get_by_version.return_value = [mock_pattern]
-            
-            result = await service._get_relevant_patterns(
-                mock_db, "1.20.1", "blocks"
-            )
-            
-            assert len(result) == 1
-            assert result[0]["id"] == "pattern_1"
-            assert result[0]["name"] == "Block Conversion Pattern"
-            assert result[0]["success_rate"] == 0.85
-            mock_crud.get_by_version.assert_called_once_with(
-                mock_db, minecraft_version="1.20.1", validation_status="validated"
-            )
-    
-    @pytest.mark.asyncio
-    async def test_get_relevant_patterns_no_match(self, service, mock_db):
-        """Test _get_relevant_patterns with no matching patterns"""
-        mock_pattern = Mock()
-        mock_pattern.id = "pattern_1"
-        mock_pattern.name = "Entity Conversion Pattern"
-        mock_pattern.description = "Converts entities between versions"
-        mock_pattern.success_rate = 0.75
-        mock_pattern.tags = ["entities", "conversion"]
-        # Mock the contains method to return False
-        mock_pattern.name.lower.return_value.contains.return_value = False
-        
-        with patch('src.services.version_compatibility.ConversionPatternCRUD') as mock_crud:
-            mock_crud.get_by_version.return_value = [mock_pattern]
-            
-            result = await service._get_relevant_patterns(
-                mock_db, "1.20.1", "blocks"
-            )
-            
-            assert len(result) == 0
-    
-    @pytest.mark.asyncio
-    async def test_get_relevant_patterns_error_handling(self, service, mock_db):
-        """Test _get_relevant_patterns error handling"""
-        with patch('src.services.version_compatibility.ConversionPatternCRUD') as mock_crud:
-            mock_crud.get_by_version.side_effect = Exception("Database error")
-            
-            result = await service._get_relevant_patterns(
-                mock_db, "1.20.1", "blocks"
-            )
-            
-            assert result == []
-    
-    @pytest.mark.asyncio
-    async def test_get_sorted_java_versions(self, service, mock_db):
-        """Test _get_sorted_java_versions returns predefined list"""
-        result = await service._get_sorted_java_versions(mock_db)
-        
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert "1.14.4" in result
-        assert "1.21.0" in result
-        # Check that versions are in expected order
-        assert result == sorted(result, key=lambda x: tuple(map(int, x.split('.'))))
-    
-    @pytest.mark.asyncio
-    async def test_get_sorted_bedrock_versions(self, service, mock_db):
-        """Test _get_sorted_bedrock_versions returns predefined list"""
-        result = await service._get_sorted_bedrock_versions(mock_db)
-        
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert "1.14.0" in result
-        assert "1.21.0" in result
-        # Check that versions are in expected order
-        assert result == sorted(result, key=lambda x: tuple(map(int, x.split('.'))))
-    
-    @pytest.mark.asyncio
-    async def test_find_best_bedrock_match_success(self, service, mock_db):
-        """Test _find_best_bedrock_match with successful finding"""
-        mock_compatibility = Mock()
-        mock_compatibility.bedrock_version = "1.20.0"
-        mock_compatibility.compatibility_score = 0.85
-        
-        with patch.object(service, 'get_by_java_version') as mock_get_by_java:
-            mock_get_by_java.return_value = [mock_compatibility]
-            
-            result = await service._find_best_bedrock_match(
-                mock_db, "1.20.1", "blocks"
-            )
-            
-            assert result == "1.20.0"
-            mock_get_by_java.assert_called_once_with(mock_db, "1.20.1")
-    
-    @pytest.mark.asyncio
-    async def test_find_best_bedrock_match_no_match(self, service, mock_db):
-        """Test _find_best_bedrock_match with no suitable match"""
-        with patch.object(service, 'get_by_java_version') as mock_get_by_java:
-            mock_get_by_java.return_value = []
-            
-            result = await service._find_best_bedrock_match(
-                mock_db, "1.20.1", "blocks"
-            )
-            
-            assert result is None
 
 
-class TestVersionCompatibilityServiceUpdate:
-    """Test suite for update compatibility functionality"""
-    
-    @pytest.fixture
-    def service(self):
-        """Create service instance for testing"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.models': Mock()
-        }):
-            from src.services.version_compatibility import VersionCompatibilityService
-            return VersionCompatibilityService()
-    
-    @pytest.fixture
-    def mock_db(self):
-        """Create a mock database session"""
-        return AsyncMock()
-    
-    @pytest.mark.asyncio
-    async def test_update_compatibility_create_new(self, service, mock_db):
-        """Test update_compatibility creates new entry when none exists"""
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_compatibility.return_value = None
-            mock_crud.create_compatibility.return_value = Mock(
-                java_version="1.20.1",
-                bedrock_version="1.20.0",
-                compatibility_score=0.85
-            )
-            
-            result = await service.update_compatibility(
-                "1.20.1", "1.20.0", 0.85,
-                ["blocks", "entities"], ["issue1"], mock_db
-            )
-            
-            assert result is not None
-            assert result.java_version == "1.20.1"
-            assert result.bedrock_version == "1.20.0"
-            assert result.compatibility_score == 0.85
-            mock_crud.create_compatibility.assert_called_once()
-    
-    @pytest.mark.asyncio
-    async def test_update_compatibility_update_existing(self, service, mock_db):
-        """Test update_compatibility updates existing entry"""
-        existing_compat = Mock()
-        existing_compat.id = "existing_id"
-        
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD') as mock_crud:
-            mock_crud.get_compatibility.return_value = existing_compat
-            mock_crud.update_compatibility.return_value = Mock(
-                java_version="1.20.1",
-                bedrock_version="1.20.0",
-                compatibility_score=0.9
-            )
-            
-            result = await service.update_compatibility(
-                "1.20.1", "1.20.0", 0.9,
-                ["blocks"], [], mock_db
-            )
-            
-            assert result is not None
-            assert result.java_version == "1.20.1"
-            assert result.bedrock_version == "1.20.0"
-            assert result.compatibility_score == 0.9
-            mock_crud.update_compatibility.assert_called_once()
+# Version Compatibility Tests
+
+@pytest.mark.asyncio
+async def test_get_version_compatibility_success(mock_db, mock_dependencies):
+    """Test successful version compatibility retrieval"""
+    # Setup
+    java_version = "1.18.2"
+    bedrock_version = "1.18.30"
+
+    # Mock compatibility object
+    mock_compatibility = Mock()
+    mock_compatibility.java_version = java_version
+    mock_compatibility.bedrock_version = bedrock_version
+    mock_compatibility.compatibility_score = 0.85
+    mock_compatibility.features_supported = [
+        {"name": "world_generation", "status": "full"},
+        {"name": "entities", "status": "partial"}
+    ]
+    mock_compatibility.deprecated_patterns = ["old_block_states"]
+    mock_compatibility.migration_guides = {"blocks": "use_block_states"}
+    mock_compatibility.auto_update_rules = {"entity_types": "update_names"}
+    mock_compatibility.known_issues = ["redstone_differences"]
+    mock_compatibility.created_at.isoformat.return_value = "2023-01-01T12:00:00"
+    mock_compatibility.updated_at.isoformat.return_value = "2023-01-15T12:00:00"
+
+    mock_dependencies['service'].get_compatibility.return_value = mock_compatibility
+
+    # Execute
+    result = await get_version_compatibility(java_version, bedrock_version, mock_db)
+
+    # Assert
+    assert result["java_version"] == java_version
+    assert result["bedrock_version"] == bedrock_version
+    assert result["compatibility_score"] == 0.85
+    assert len(result["features_supported"]) == 2
+    assert "old_block_states" in result["deprecated_patterns"]
+    mock_dependencies['service'].get_compatibility.assert_called_once_with(java_version, bedrock_version, mock_db)
+
+@pytest.mark.asyncio
+async def test_get_version_compatibility_not_found(mock_db, mock_dependencies):
+    """Test version compatibility when not found"""
+    # Setup
+    java_version = "1.14.4"
+    bedrock_version = "1.18.30"
+    mock_dependencies['service'].get_compatibility.return_value = None
+
+    # Execute & Assert
+    with pytest.raises(HTTPException) as excinfo:
+        await get_version_compatibility(java_version, bedrock_version, mock_db)
+
+    assert excinfo.value.status_code == 404
+    assert f"No compatibility data found for Java {java_version} to Bedrock {bedrock_version}" in str(excinfo.value.detail)
+
+@pytest.mark.asyncio
+async def test_get_version_compatibility_exception(mock_db, mock_dependencies):
+    """Test version compatibility with exception"""
+    # Setup
+    java_version = "1.18.2"
+    bedrock_version = "1.18.30"
+    mock_dependencies['service'].get_compatibility.side_effect = Exception("Database error")
+
+    # Execute & Assert
+    with pytest.raises(HTTPException) as excinfo:
+        await get_version_compatibility(java_version, bedrock_version, mock_db)
+
+    assert excinfo.value.status_code == 500
+    assert "Error getting version compatibility" in str(excinfo.value.detail)
+
+@pytest.mark.asyncio
+async def test_get_java_version_compatibility_success(mock_db, mock_dependencies):
+    """Test successful Java version compatibility retrieval"""
+    # Setup
+    java_version = "1.18.2"
+
+    # Mock compatibility objects
+    mock_compat1 = Mock()
+    mock_compat1.bedrock_version = "1.18.30"
+    mock_compat1.compatibility_score = 0.85
+    mock_compat1.features_supported = [{"name": "world_generation", "status": "full"}]
+    mock_compat1.known_issues = ["redstone_differences"]
+
+    mock_compat2 = Mock()
+    mock_compat2.bedrock_version = "1.17.30"
+    mock_compat2.compatibility_score = 0.75
+    mock_compat2.features_supported = [{"name": "entities", "status": "partial"}]
+    mock_compat2.known_issues = ["entity_differences"]
+
+    mock_dependencies['service'].get_by_java_version.return_value = [mock_compat1, mock_compat2]
+
+    # Execute
+    result = await get_java_version_compatibility(java_version, mock_db)
+
+    # Assert
+    assert result["java_version"] == java_version
+    assert result["total_bedrock_versions"] == 2
+    assert result["best_compatibility"] == "1.18.30"
+    assert result["average_compatibility"] == 0.8
+    assert len(result["compatibilities"]) == 2
+
+    # Check first compatibility
+    compat1 = result["compatibilities"][0]
+    assert compat1["bedrock_version"] == "1.18.30"
+    assert compat1["compatibility_score"] == 0.85
+    assert compat1["features_count"] == 1
+    assert compat1["issues_count"] == 1
+
+@pytest.mark.asyncio
+async def test_get_java_version_compatibility_not_found(mock_db, mock_dependencies):
+    """Test Java version compatibility when not found"""
+    # Setup
+    java_version = "1.14.4"
+    mock_dependencies['service'].get_by_java_version.return_value = []
+
+    # Execute & Assert
+    with pytest.raises(HTTPException) as excinfo:
+        await get_java_version_compatibility(java_version, mock_db)
+
+    assert excinfo.value.status_code == 404
+    assert f"No compatibility data found for Java {java_version}" in str(excinfo.value.detail)
+
+@pytest.mark.asyncio
+async def test_create_or_update_compatibility_success(mock_compatibility_request, mock_db, mock_dependencies):
+    """Test successful compatibility creation/update"""
+    # Setup
+    request = CompatibilityRequest(**mock_compatibility_request)
+    mock_dependencies['service'].update_compatibility.return_value = True
+
+    # Execute
+    result = await create_or_update_compatibility(request, mock_db)
+
+    # Assert
+    assert result["message"] == "Compatibility information updated successfully"
+    assert result["java_version"] == request.java_version
+    assert result["bedrock_version"] == request.bedrock_version
+    assert result["compatibility_score"] == request.compatibility_score
+    mock_dependencies['service'].update_compatibility.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_create_or_update_compatibility_failure(mock_compatibility_request, mock_db, mock_dependencies):
+    """Test compatibility creation/update failure"""
+    # Setup
+    request = CompatibilityRequest(**mock_compatibility_request)
+    mock_dependencies['service'].update_compatibility.return_value = False
+
+    # Execute & Assert
+    with pytest.raises(HTTPException) as excinfo:
+        await create_or_update_compatibility(request, mock_db)
+
+    assert excinfo.value.status_code == 400
+    assert "Failed to create or update compatibility entry" in str(excinfo.value.detail)
+
+@pytest.mark.asyncio
+async def test_get_supported_features_success(mock_db, mock_dependencies):
+    """Test successful supported features retrieval"""
+    # Setup
+    java_version = "1.18.2"
+    bedrock_version = "1.18.30"
+    feature_type = "entities"
+
+    expected_features = {
+        "features": [
+            {"name": "mobs", "status": "full", "notes": "All mobs supported"},
+            {"name": "items", "status": "partial", "notes": "Some items missing"}
+        ],
+        "total_count": 2,
+        "fully_supported": 1
+    }
+
+    mock_dependencies['service'].get_supported_features.return_value = expected_features
+
+    # Execute
+    result = await get_supported_features(java_version, bedrock_version, feature_type, mock_db)
+
+    # Assert
+    assert result == expected_features
+    mock_dependencies['service'].get_supported_features.assert_called_once_with(
+        java_version, bedrock_version, feature_type, mock_db
+    )
+
+@pytest.mark.asyncio
+async def test_get_conversion_path_success(mock_conversion_path_request, mock_db, mock_dependencies):
+    """Test successful conversion path retrieval"""
+    # Setup
+    request = ConversionPathRequest(**mock_conversion_path_request)
+
+    expected_path = {
+        "found": True,
+        "direct": False,
+        "steps": [
+            {
+                "from_version": "1.17.1",
+                "to_version": "1.18.0",
+                "feature_type": "redstone",
+                "confidence": 0.9
+            },
+            {
+                "from_version": "1.18.0",
+                "to_version": "1.18.30",
+                "feature_type": "redstone",
+                "confidence": 0.95
+            }
+        ],
+        "total_confidence": 0.855
+    }
+
+    mock_dependencies['service'].get_conversion_path.return_value = expected_path
+
+    # Execute
+    result = await get_conversion_path(request, mock_db)
+
+    # Assert
+    assert result == expected_path
+    mock_dependencies['service'].get_conversion_path.assert_called_once_with(
+        java_version=request.java_version,
+        bedrock_version=request.bedrock_version,
+        feature_type=request.feature_type,
+        db=mock_db
+    )
+
+@pytest.mark.asyncio
+async def test_generate_migration_guide_success(mock_migration_request, mock_db, mock_dependencies):
+    """Test successful migration guide generation"""
+    # Setup
+    request = MigrationGuideRequest(**mock_migration_request)
+
+    expected_guide = {
+        "from_version": "1.16.5",
+        "to_version": "1.18.30",
+        "features": [
+            {
+                "name": "world_generation",
+                "status": "compatible",
+                "steps": ["Update biome definitions", "Test world generation"]
+            },
+            {
+                "name": "entities",
+                "status": "partial",
+                "steps": ["Update entity models", "Test entity behaviors"]
+            }
+        ],
+        "resources": ["https://example.com/migration-guide"]
+    }
+
+    mock_dependencies['service'].generate_migration_guide.return_value = expected_guide
+
+    # Execute
+    result = await generate_migration_guide(request, mock_db)
+
+    # Assert
+    assert result == expected_guide
+    mock_dependencies['service'].generate_migration_guide.assert_called_once_with(
+        from_java_version=request.from_java_version,
+        to_bedrock_version=request.to_bedrock_version,
+        features=request.features,
+        db=mock_db
+    )
+
+@pytest.mark.asyncio
+async def test_get_matrix_overview_success(mock_db, mock_dependencies):
+    """Test successful matrix overview retrieval"""
+    # Setup
+    expected_overview = {
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"],
+        "total_combinations": 9,
+        "average_compatibility": 0.75,
+        "compatibility_distribution": {
+            "high": 3,
+            "medium": 4,
+            "low": 2
+        },
+        "matrix": {
+            "1.16.5": {
+                "1.16.100": {"score": 0.9, "features_count": 10, "issues_count": 1},
+                "1.17.30": {"score": 0.7, "features_count": 8, "issues_count": 2},
+                "1.18.30": {"score": 0.6, "features_count": 7, "issues_count": 3}
+            },
+            "1.17.1": {
+                "1.16.100": {"score": 0.5, "features_count": 6, "issues_count": 4},
+                "1.17.30": {"score": 0.9, "features_count": 10, "issues_count": 1},
+                "1.18.30": {"score": 0.8, "features_count": 9, "issues_count": 2}
+            },
+            "1.18.2": {
+                "1.16.100": {"score": 0.4, "features_count": 5, "issues_count": 5},
+                "1.17.30": {"score": 0.7, "features_count": 8, "issues_count": 3},
+                "1.18.30": {"score": 0.95, "features_count": 12, "issues_count": 0}
+            }
+        },
+        "last_updated": "2023-01-15T12:00:00"
+    }
+
+    mock_dependencies['service'].get_matrix_overview.return_value = expected_overview
+
+    # Execute
+    result = await get_matrix_overview(mock_db)
+
+    # Assert
+    assert result == expected_overview
+    mock_dependencies['service'].get_matrix_overview.assert_called_once_with(mock_db)
+
+@pytest.mark.asyncio
+async def test_get_java_versions_success(mock_db, mock_dependencies):
+    """Test successful Java versions list retrieval"""
+    # Setup
+    expected_overview = {
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"],
+        "last_updated": "2023-01-15T12:00:00"
+    }
+
+    mock_dependencies['service'].get_matrix_overview.return_value = expected_overview
+
+    # Execute
+    result = await get_java_versions(mock_db)
+
+    # Assert
+    assert result["java_versions"] == ["1.16.5", "1.17.1", "1.18.2"]
+    assert result["total_count"] == 3
+    assert result["last_updated"] == "2023-01-15T12:00:00"
+
+@pytest.mark.asyncio
+async def test_get_bedrock_versions_success(mock_db, mock_dependencies):
+    """Test successful Bedrock versions list retrieval"""
+    # Setup
+    expected_overview = {
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"],
+        "last_updated": "2023-01-15T12:00:00"
+    }
+
+    mock_dependencies['service'].get_matrix_overview.return_value = expected_overview
+
+    # Execute
+    result = await get_bedrock_versions(mock_db)
+
+    # Assert
+    assert result["bedrock_versions"] == ["1.16.100", "1.17.30", "1.18.30"]
+    assert result["total_count"] == 3
+    assert result["last_updated"] == "2023-01-15T12:00:00"
+
+@pytest.mark.asyncio
+async def test_get_matrix_visual_data_success(mock_db, mock_dependencies):
+    """Test successful matrix visual data retrieval"""
+    # Setup
+    expected_overview = {
+        "java_versions": ["1.16.5", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.18.30"],
+        "matrix": {
+            "1.16.5": {
+                "1.16.100": {"score": 0.9, "features_count": 10, "issues_count": 1},
+                "1.18.30": {"score": 0.6, "features_count": 7, "issues_count": 3}
+            },
+            "1.18.2": {
+                "1.16.100": {"score": 0.4, "features_count": 5, "issues_count": 5},
+                "1.18.30": {"score": 0.95, "features_count": 12, "issues_count": 0}
+            }
+        },
+        "total_combinations": 4,
+        "average_compatibility": 0.7,
+        "compatibility_distribution": {
+            "high": 2,
+            "medium": 1,
+            "low": 1
+        },
+        "last_updated": "2023-01-15T12:00:00"
+    }
+
+    mock_dependencies['service'].get_matrix_overview.return_value = expected_overview
+
+    # Execute
+    result = await get_matrix_visual_data(mock_db)
+
+    # Assert
+    assert "data" in result
+    assert "java_versions" in result
+    assert "bedrock_versions" in result
+    assert "summary" in result
+
+    # Check data structure
+    assert len(result["data"]) == 4  # 2 java * 2 bedrock = 4 combinations
+
+    # Check first data point
+    first_point = result["data"][0]
+    assert first_point["java_version"] == "1.16.5"
+    assert first_point["bedrock_version"] == "1.16.100"
+    assert first_point["java_index"] == 0
+    assert first_point["bedrock_index"] == 0
+    assert first_point["compatibility_score"] == 0.9
+    assert first_point["features_count"] == 10
+    assert first_point["issues_count"] == 1
+    assert first_point["supported"] is True
+
+    # Check summary
+    summary = result["summary"]
+    assert summary["total_combinations"] == 4
+    assert summary["average_compatibility"] == 0.7
+    assert summary["high_compatibility_count"] == 2
+    assert summary["medium_compatibility_count"] == 1
+    assert summary["low_compatibility_count"] == 1
+
+@pytest.mark.asyncio
+async def test_get_version_recommendations_success(mock_db, mock_dependencies):
+    """Test successful version recommendations retrieval"""
+    # Setup
+    java_version = "1.18.2"
+
+    # Mock compatibility objects
+    mock_compat1 = Mock()
+    mock_compat1.bedrock_version = "1.18.30"
+    mock_compat1.compatibility_score = 0.95
+    mock_compat1.features_supported = [{"name": "world_generation", "status": "full"}] * 10
+    mock_compat1.known_issues = []
+
+    mock_compat2 = Mock()
+    mock_compat2.bedrock_version = "1.17.30"
+    mock_compat2.compatibility_score = 0.85
+    mock_compat2.features_supported = [{"name": "entities", "status": "partial"}] * 8
+    mock_compat2.known_issues = ["some_issues"]
+
+    mock_compat3 = Mock()
+    mock_compat3.bedrock_version = "1.16.100"
+    mock_compat3.compatibility_score = 0.4
+    mock_compat3.features_supported = [{"name": "items", "status": "partial"}] * 5
+    mock_compat3.known_issues = ["many_issues"]
+
+    mock_dependencies['service'].get_by_java_version.return_value = [mock_compat1, mock_compat2, mock_compat3]
+
+    # Execute
+    result = await get_version_recommendations(
+        java_version=java_version,
+        limit=2,
+        min_compatibility=0.5,
+        db=mock_db
+    )
+
+    # Assert
+    assert result["java_version"] == java_version
+    assert result["total_available"] == 2  # Only those above min_compatibility
+    assert result["min_score_used"] == 0.5
+
+    # Check recommendations
+    recommendations = result["recommendations"]
+    assert len(recommendations) == 2  # Limited by limit parameter
+
+    # First recommendation should be the highest compatibility
+    first_rec = recommendations[0]
+    assert first_rec["bedrock_version"] == "1.18.30"
+    assert first_rec["compatibility_score"] == 0.95
+    assert first_rec["features_count"] == 10
+    assert first_rec["issues_count"] == 0
+    assert first_rec["features"] == mock_compat1.features_supported
+    assert first_rec["issues"] == mock_compat1.known_issues
+    assert "Excellent compatibility" in first_rec["recommendation_reason"]
+
+    # Second recommendation
+    second_rec = recommendations[1]
+    assert second_rec["bedrock_version"] == "1.17.30"
+    assert second_rec["compatibility_score"] == 0.85
+
+@pytest.mark.asyncio
+async def test_get_version_recommendations_not_found(mock_db, mock_dependencies):
+    """Test version recommendations when Java version not found"""
+    # Setup
+    java_version = "1.14.4"
+    mock_dependencies['service'].get_by_java_version.return_value = []
+
+    # Execute & Assert
+    with pytest.raises(HTTPException) as excinfo:
+        await get_version_recommendations(java_version=java_version, db=mock_db)
+
+    assert excinfo.value.status_code == 404
+    assert f"No compatibility data found for Java {java_version}" in str(excinfo.value.detail)
+
+@pytest.mark.asyncio
+async def test_get_compatibility_statistics_success(mock_db, mock_dependencies):
+    """Test successful compatibility statistics retrieval"""
+    # Setup
+    expected_overview = {
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"],
+        "matrix": {
+            "1.16.5": {
+                "1.16.100": {"score": 0.9, "features_count": 10, "issues_count": 1},
+                "1.17.30": {"score": 0.7, "features_count": 8, "issues_count": 2},
+                "1.18.30": {"score": 0.6, "features_count": 7, "issues_count": 3}
+            },
+            "1.17.1": {
+                "1.16.100": {"score": 0.5, "features_count": 6, "issues_count": 4},
+                "1.17.30": {"score": 0.9, "features_count": 10, "issues_count": 1},
+                "1.18.30": {"score": 0.8, "features_count": 9, "issues_count": 2}
+            },
+            "1.18.2": {
+                "1.16.100": {"score": 0.4, "features_count": 5, "issues_count": 5},
+                "1.17.30": {"score": 0.7, "features_count": 8, "issues_count": 3},
+                "1.18.30": {"score": 0.95, "features_count": 12, "issues_count": 0}
+            }
+        },
+        "total_combinations": 9,
+        "average_compatibility": 0.7,
+        "compatibility_distribution": {
+            "high": 3,
+            "medium": 4,
+            "low": 2
+        },
+        "last_updated": "2023-01-15T12:00:00"
+    }
+
+    mock_dependencies['service'].get_matrix_overview.return_value = expected_overview
+
+    # Execute
+    result = await get_compatibility_statistics(mock_db)
+
+    # Assert
+    # Check coverage section
+    coverage = result["coverage"]
+    assert coverage["total_possible_combinations"] == 9
+    assert coverage["documented_combinations"] == 9
+    assert coverage["coverage_percentage"] == 100.0
+    assert coverage["java_versions_count"] == 3
+    assert coverage["bedrock_versions_count"] == 3
+
+    # Check score distribution
+    score_dist = result["score_distribution"]
+    assert score_dist["average_score"] == pytest.approx(0.7)
+    assert score_dist["minimum_score"] == 0.4
+    assert score_dist["maximum_score"] == 0.95
+    assert score_dist["median_score"] == 0.7
+    assert score_dist["high_compatibility"] == 3
+    assert score_dist["medium_compatibility"] == 4
+    assert score_dist["low_compatibility"] == 2
+
+    # Check best combinations
+    best_combinations = result["best_combinations"]
+    assert len(best_combinations) <= 10  # Limited to top 10
+    # First should be the highest score
+    assert best_combinations[0]["java_version"] == "1.18.2"
+    assert best_combinations[0]["bedrock_version"] == "1.18.30"
+    assert best_combinations[0]["score"] == 0.95
+    assert best_combinations[0]["features"] == 12
+
+    # Check worst combinations
+    worst_combinations = result["worst_combinations"]
+    assert len(worst_combinations) <= 10  # Limited to top 10
+    # First should be the lowest score
+    assert worst_combinations[0]["java_version"] == "1.18.2"
+    assert worst_combinations[0]["bedrock_version"] == "1.16.100"
+    assert worst_combinations[0]["score"] == 0.4
+    assert worst_combinations[0]["issues"] == 5
 
 
-class TestVersionCompatibilityServiceEdgeCases:
-    """Test suite for edge cases and internal utility methods"""
-    
-    @pytest.fixture
-    def service(self):
-        """Create service instance for testing"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.models': Mock()
-        }):
-            from src.services.version_compatibility import VersionCompatibilityService
-            return VersionCompatibilityService()
-    
-    @pytest.fixture
-    def mock_db(self):
-        """Create a mock database session"""
-        return AsyncMock()
-    
-    @pytest.mark.asyncio
-    async def test_find_closest_compatibility_fallback(self, service, mock_db):
-        """Test _find_closest_compatibility fallback behavior"""
-        with patch.object(service, 'get_by_java_version') as mock_get_by_java:
-            mock_get_by_java.return_value = []
-            
-            result = await service._find_closest_compatibility(
-                mock_db, "1.20.1", "1.20.0"
-            )
-            
-            assert result is None
-    
-    @pytest.mark.asyncio
-    async def test_find_closest_compatibility_partial_match(self, service, mock_db):
-        """Test _find_closest_compatibility with partial version matches"""
-        mock_compat = Mock()
-        mock_compat.java_version = "1.20.0"  # Close match to 1.20.1
-        mock_compat.bedrock_version = "1.20.0"
-        mock_compat.compatibility_score = 0.7
-        
-        with patch.object(service, 'get_by_java_version') as mock_get_by_java:
-            mock_get_by_java.return_value = [mock_compat]
-            
-            result = await service._find_closest_compatibility(
-                mock_db, "1.20.1", "1.20.0"
-            )
-            
-            assert result is not None
-            assert result.java_version == "1.20.0"
-    
-    def test_load_default_compatibility(self, service):
-        """Test _load_default_compatibility returns data"""
-        result = service._load_default_compatibility()
-        
-        # Should return some default compatibility data
-        assert isinstance(result, dict)
-        # The method should not raise exceptions
-    
-    @pytest.mark.asyncio
-    async def test_generate_direct_migration_steps(self, service, mock_db):
-        """Test _generate_direct_migration_steps creates valid steps"""
-        mock_compatibility = Mock()
-        mock_compatibility.features_supported = {
-            "blocks": {"supported": True, "coverage": 0.9},
-            "entities": {"supported": True, "coverage": 0.8}
-        }
-        
-        steps = service._generate_direct_migration_steps(
-            mock_compatibility, ["blocks", "entities"]
-        )
-        
-        assert isinstance(steps, list)
-        # Should have steps for each supported feature
-        assert len(steps) >= 1
-        
-        # Check step structure
-        for step in steps:
-            assert "step" in step
-            assert "description" in step
-            assert "priority" in step
-    
-    @pytest.mark.asyncio
-    async def test_generate_gradual_migration_steps(self, service, mock_db):
-        """Test _generate_gradual_migration_steps creates phased approach"""
-        mock_compatibility = Mock()
-        mock_compatibility.features_supported = {
-            "blocks": {"supported": True, "coverage": 0.9},
-            "entities": {"supported": True, "coverage": 0.8},
-            "items": {"supported": True, "coverage": 0.6}
-        }
-        
-        steps = service._generate_gradual_migration_steps(
-            mock_compatibility, ["blocks", "entities", "items"]
-        )
-        
-        assert isinstance(steps, list)
-        # Should have phases for gradual migration
-        assert len(steps) >= 1
-        
-        # Check for phase structure
-        for step in steps:
-            assert "phase" in step or "step" in step
-            assert "description" in step
-            assert "features" in step or "priority" in step
+# Helper Function Tests
 
+def test_get_recommendation_reason_excellent():
+    """Test recommendation reason for excellent compatibility"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.95
+    mock_compatibility.features_supported = [{"name": "feature1"}]
+    mock_compatibility.known_issues = []
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    mock_all_compatibilities = [mock_compatibility]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "Excellent compatibility" in result
+
+def test_get_recommendation_reason_high_with_features():
+    """Test recommendation reason for high compatibility with many features"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.85
+    mock_compatibility.features_supported = [{"name": f"feature{i}"} for i in range(10)]
+    mock_compatibility.known_issues = []
+
+    mock_other = Mock()
+    mock_other.compatibility_score = 0.75
+    mock_other.features_supported = [{"name": f"feature{i}"} for i in range(5)]
+    mock_other.known_issues = []
+
+    mock_all_compatibilities = [mock_compatibility, mock_other]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "High compatibility with above-average feature support" in result
+
+def test_get_recommendation_reason_good():
+    """Test recommendation reason for good compatibility"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.8
+    mock_compatibility.features_supported = [{"name": "feature1"}]
+    mock_compatibility.known_issues = []
+
+    mock_other = Mock()
+    mock_other.compatibility_score = 0.7
+    mock_other.features_supported = [{"name": "feature1"}]
+    mock_other.known_issues = []
+
+    mock_all_compatibilities = [mock_compatibility, mock_other]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "Good compatibility" in result
+
+def test_get_recommendation_reason_features_focus():
+    """Test recommendation reason focusing on features"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.6
+    mock_compatibility.features_supported = [{"name": f"feature{i}"} for i in range(10)]
+    mock_compatibility.known_issues = []
+
+    mock_other = Mock()
+    mock_other.compatibility_score = 0.7
+    mock_other.features_supported = [{"name": "feature1"}]
+    mock_other.known_issues = []
+
+    mock_all_compatibilities = [mock_compatibility, mock_other]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "Extensive feature support" in result
+
+def test_get_recommendation_reason_stable():
+    """Test recommendation reason for stable compatibility"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.6
+    mock_compatibility.features_supported = [{"name": "feature1"}]
+    mock_compatibility.known_issues = []
+
+    mock_other = Mock()
+    mock_other.compatibility_score = 0.7
+    mock_other.features_supported = [{"name": "feature1"}]
+    mock_other.known_issues = ["some_issues"]
+
+    mock_all_compatibilities = [mock_compatibility, mock_other]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "Stable compatibility with no known issues" in result
+
+def test_get_recommendation_reason_default():
+    """Test default recommendation reason"""
+    # Setup
+    mock_compatibility = Mock()
+    mock_compatibility.compatibility_score = 0.5
+    mock_compatibility.features_supported = [{"name": "feature1"}]
+    mock_compatibility.known_issues = ["some_issues"]
+
+    mock_other = Mock()
+    mock_other.compatibility_score = 0.7
+    mock_other.features_supported = [{"name": "feature1"}]
+    mock_other.known_issues = []
+
+    mock_all_compatibilities = [mock_compatibility, mock_other]
+
+    # Execute
+    result = _get_recommendation_reason(mock_compatibility, mock_all_compatibilities)
+
+    # Assert
+    assert "Available option with acceptable compatibility" in result
+
+def test_generate_recommendations_low_avg():
+    """Test recommendations for low average compatibility"""
+    # Setup
+    overview = {
+        "average_compatibility": 0.6,
+        "compatibility_distribution": {
+            "high": 1,
+            "medium": 2,
+            "low": 3
+        },
+        "java_versions": ["1.16.5", "1.17.1"],
+        "bedrock_versions": ["1.16.100", "1.17.30"]
+    }
+
+    # Execute
+    result = _generate_recommendations(overview)
+
+    # Assert
+    assert len(result) > 0
+    assert any("low compatibility scores" in rec for rec in result)
+
+def test_generate_recommendations_many_low():
+    """Test recommendations for many low compatibility combinations"""
+    # Setup
+    overview = {
+        "average_compatibility": 0.7,
+        "compatibility_distribution": {
+            "high": 2,
+            "medium": 2,
+            "low": 5
+        },
+        "java_versions": ["1.16.5", "1.17.1"],
+        "bedrock_versions": ["1.16.100", "1.17.30"]
+    }
+
+    # Execute
+    result = _generate_recommendations(overview)
+
+    # Assert
+    assert len(result) > 0
+    assert any("low-compatibility combinations" in rec for rec in result)
+
+def test_generate_recommendations_limited_java():
+    """Test recommendations for limited Java version coverage"""
+    # Setup
+    overview = {
+        "average_compatibility": 0.8,
+        "compatibility_distribution": {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+        },
+        "java_versions": ["1.16.5", "1.17.1"],  # Only 2 versions
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"]
+    }
+
+    # Execute
+    result = _generate_recommendations(overview)
+
+    # Assert
+    assert len(result) > 0
+    assert any("Limited Java version coverage" in rec for rec in result)
+
+def test_generate_recommendations_limited_bedrock():
+    """Test recommendations for limited Bedrock version coverage"""
+    # Setup
+    overview = {
+        "average_compatibility": 0.8,
+        "compatibility_distribution": {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+        },
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100"]  # Only 1 version
+    }
+
+    # Execute
+    result = _generate_recommendations(overview)
+
+    # Assert
+    assert len(result) > 0
+    assert any("Limited Bedrock version coverage" in rec for rec in result)
+
+def test_generate_recommendations_few_high():
+    """Test recommendations for few high compatibility combinations"""
+    # Setup
+    overview = {
+        "average_compatibility": 0.7,
+        "compatibility_distribution": {
+            "high": 1,  # Only 1 high compatibility
+            "medium": 5,
+            "low": 2
+        },
+        "java_versions": ["1.16.5", "1.17.1", "1.18.2"],
+        "bedrock_versions": ["1.16.100", "1.17.30", "1.18.30"]
+    }
+
+    # Execute
+    result = _generate_recommendations(overview)
+
+    # Assert
+    assert len(result) > 0
+    assert any("Few high-compatibility combinations" in rec for rec in result)

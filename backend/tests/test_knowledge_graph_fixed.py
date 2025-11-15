@@ -352,23 +352,191 @@ def test_async_get_knowledge_node_error_handling():
     # TODO: Test error conditions and exceptions
     assert True  # Placeholder - implement error handling tests
 
-def test_async_update_knowledge_node_basic():
+async def test_async_update_knowledge_node_basic():
     """Basic test for update_knowledge_node"""
-    # TODO: Implement basic functionality test
-    # Setup test data
-    # Call function/method
-    # Assert results
-    assert True  # Placeholder - implement actual test
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-def test_async_update_knowledge_node_edge_cases():
+    from api.knowledge_graph_fixed import update_knowledge_node
+    from db.knowledge_graph_crud import KnowledgeNodeCRUD
+    from db.models import KnowledgeNode
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Create mock database session
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    # Create mock existing node
+    mock_node = MagicMock(spec=KnowledgeNode)
+    mock_node.id = "test-node-id"
+    mock_node.node_type = "java_class"
+    mock_node.name = "TestClass"
+    mock_node.description = "Test class description"
+    mock_node.properties = {"field1": "value1"}
+    mock_node.minecraft_version = "1.19.2"
+    mock_node.platform = "java"
+    mock_node.expert_validated = False
+    mock_node.community_rating = 4.5
+    mock_node.updated_at = None
+
+    # Mock the get_by_id and update methods to return our mock node
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=mock_node) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', return_value=mock_node) as mock_update:
+
+        # Test data for update
+        update_data = {
+            "node_type": "bedrock_behavior",
+            "name": "UpdatedClass",
+            "description": "Updated description",
+            "properties": {"field2": "value2"},
+            "platform": "bedrock"
+        }
+
+        # Call the function
+        result = await update_knowledge_node("test-node-id", update_data, mock_db)
+
+        # Debug output
+        print(f"Result: {result}")
+        print(f"Mock get_by_id called: {mock_get_by_id.called}")
+        print(f"Mock update called: {mock_update.called}")
+        print(f"Result type: {type(result)}")
+
+        # Assert results
+        assert result["status"] == "success"
+        assert result["node_id"] == "test-node-id"
+        assert result["node_type"] == "java_class"  # Mock doesn't actually update
+        assert result["name"] == "TestClass"
+        assert result["properties"]["field1"] == "value1"  # Mock doesn't actually update
+        assert result["metadata"]["platform"] == "java"  # Mock doesn't actually update
+
+        # Verify CRUD methods were called
+        mock_get_by_id.assert_called_once_with(mock_db, "test-node-id")
+        mock_update.assert_called_once_with(mock_db, "test-node-id", update_data)
+
+async def test_async_update_knowledge_node_edge_cases():
     """Edge case tests for update_knowledge_node"""
-    # TODO: Test edge cases, error conditions
-    assert True  # Placeholder - implement edge case tests
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-def test_async_update_knowledge_node_error_handling():
+    from api.knowledge_graph_fixed import update_knowledge_node
+    from db.knowledge_graph_crud import KnowledgeNodeCRUD
+    from db.models import KnowledgeNode
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Create mock database session
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    # Create mock existing node
+    mock_node = MagicMock(spec=KnowledgeNode)
+    mock_node.id = "test-node-id"
+    mock_node.node_type = "java_class"
+    mock_node.name = "TestClass"
+    mock_node.description = None
+    mock_node.properties = {}
+    mock_node.minecraft_version = "1.19.2"
+    mock_node.platform = "java"
+    mock_node.expert_validated = False
+    mock_node.community_rating = None
+    mock_node.updated_at = None
+
+    # Test case 1: Empty update data
+    mock_get_by_id = AsyncMock(return_value=mock_node)
+    mock_update = AsyncMock(return_value=mock_node)
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=mock_node) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', return_value=mock_node) as mock_update:
+
+        result = await update_knowledge_node("test-node-id", {}, mock_db)
+
+        # Should still be successful with empty update
+        assert result["status"] == "success"
+        assert result["node_id"] == "test-node-id"
+
+    # Test case 2: Partial update with only one field
+    mock_get_by_id = AsyncMock(return_value=mock_node)
+    mock_update = AsyncMock(return_value=mock_node)
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=mock_node) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', return_value=mock_node) as mock_update:
+
+        result = await update_knowledge_node("test-node-id", {"node_type": "bedrock_behavior"}, mock_db)
+
+        # Should be successful with partial update
+        assert result["status"] == "success"
+        assert result["node_id"] == "test-node-id"
+
+    # Test case 3: Update with null values
+    mock_get_by_id = AsyncMock(return_value=mock_node)
+    mock_update = AsyncMock(return_value=mock_node)
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=mock_node) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', return_value=mock_node) as mock_update:
+
+        result = await update_knowledge_node("test-node-id", {
+            "description": None,
+            "community_rating": None
+        }, mock_db)
+
+        # Should be successful with null values
+        assert result["status"] == "success"
+        assert result["node_id"] == "test-node-id"
+
+async def test_async_update_knowledge_node_error_handling():
     """Error handling tests for update_knowledge_node"""
-    # TODO: Test error conditions and exceptions
-    assert True  # Placeholder - implement error handling tests
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+    from api.knowledge_graph_fixed import update_knowledge_node
+    from db.knowledge_graph_crud import KnowledgeNodeCRUD
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Create mock database session
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    # Test case 1: Non-existent node
+    mock_get_by_id = AsyncMock(return_value=None)
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=None) as mock_get_by_id:
+
+        result = await update_knowledge_node("nonexistent-node-id", {}, mock_db)
+
+        # Should return error
+        assert result["status"] == "error"
+        assert result["message"] == "Knowledge node not found"
+        assert result["node_id"] == "nonexistent-node-id"
+
+    # Test case 2: Database exception during update
+    mock_get_by_id = AsyncMock(return_value=MagicMock())
+    mock_update = AsyncMock(side_effect=Exception("Database error"))
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=MagicMock()) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', side_effect=Exception("Database error")) as mock_update:
+
+        result = await update_knowledge_node("test-node-id", {}, mock_db)
+
+        # Should return error
+        assert result["status"] == "error"
+        assert "Database error" in result["message"]
+        assert result["node_id"] == "test-node-id"
+
+    # Test case 3: Update returns None (failed update)
+    mock_get_by_id = AsyncMock(return_value=MagicMock())
+    mock_update = AsyncMock(return_value=None)
+
+    with patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.get_by_id', return_value=MagicMock()) as mock_get_by_id, \
+         patch('db.knowledge_graph_crud.KnowledgeNodeCRUD.update', return_value=None) as mock_update:
+
+        result = await update_knowledge_node("test-node-id", {}, mock_db)
+
+        # Should return error
+        assert result["status"] == "error"
+        assert result["message"] == "Failed to update knowledge node"
+        assert result["node_id"] == "test-node-id"
 
 def test_async_delete_knowledge_node_basic():
     """Basic test for delete_knowledge_node"""

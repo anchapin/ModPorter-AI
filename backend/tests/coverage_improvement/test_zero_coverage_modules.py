@@ -11,6 +11,11 @@ from unittest.mock import Mock, patch, MagicMock
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
+# Add ai-engine directory to Python path for JavaAnalyzerAgent
+ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine')
+if ai_engine_path not in sys.path:
+    sys.path.insert(0, ai_engine_path)
+
 # Mock magic library before importing modules that use it
 sys.modules['magic'] = Mock()
 sys.modules['magic'].open = Mock(return_value=Mock())
@@ -72,7 +77,7 @@ class TestZeroCoverageModules:
     def test_java_analyzer_agent_init(self):
         """Test JavaAnalyzerAgent initialization"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
             assert agent is not None
         except ImportError as e:

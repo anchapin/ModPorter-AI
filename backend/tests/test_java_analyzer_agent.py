@@ -14,11 +14,23 @@ from pathlib import Path
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+# Add ai-engine directory to Python path for JavaAnalyzerAgent
+ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', 'ai-engine')
+if ai_engine_path not in sys.path:
+    sys.path.insert(0, ai_engine_path)
+
 # Mock magic library before importing modules that use it
 sys.modules['magic'] = Mock()
 sys.modules['magic'].open = Mock(return_value=Mock())
 sys.modules['magic'].from_buffer = Mock(return_value='application/octet-stream')
 sys.modules['magic'].from_file = Mock(return_value='data')
+
+# Mock other dependencies
+sys.modules['neo4j'] = Mock()
+sys.modules['crewai'] = Mock()
+sys.modules['langchain'] = Mock()
+sys.modules['javalang'] = Mock()
+sys.modules['zipfile'] = Mock()
 
 class TestJavaAnalyzerAgent:
     """Test Java Analyzer Agent functionality"""
@@ -54,7 +66,7 @@ public class ExampleMod {
     @pytest.fixture
     def mock_agent(self):
         """Create a mock Java Analyzer Agent instance"""
-        with patch('java_analyzer_agent.JavaAnalyzerAgent') as mock_agent_class:
+        with patch('agents.java_analyzer.JavaAnalyzerAgent') as mock_agent_class:
             agent_instance = Mock()
             agent_instance.analyze_mod_structure = AsyncMock(return_value={
                 "mod_id": "example-mod",
@@ -96,7 +108,7 @@ public class ExampleMod {
 
         # Import the module to test (with mocked magic)
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -124,7 +136,7 @@ public class ExampleMod {
         }
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -153,7 +165,7 @@ public class ExampleMod {
         }
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -185,7 +197,7 @@ public class ExampleMod {
         ]
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -208,7 +220,7 @@ public class ExampleMod {
         ]
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -241,7 +253,7 @@ public class ExampleMod {
 
         try:
             with patch.dict('sys.modules', {'java': Mock()}):
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
                 agent = JavaAnalyzerAgent()
 
             # Act
@@ -271,7 +283,7 @@ public class ExampleMod {
         }
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -287,13 +299,13 @@ public class ExampleMod {
     def test_scan_java_files(self, mock_file):
         """Test scanning Java files for features"""
         # Arrange
-        with patch('java_analyzer_agent.os.walk') as mock_walk:
+        with patch('agents.java_analyzer.os.walk') as mock_walk:
             mock_walk.return_value = [
                 ("com/example/mod", ["subdir"], ["ExampleItem.java", "ExampleEntity.java"])
             ]
 
             with patch.dict('sys.modules', {'java': Mock()}):
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
                 agent = JavaAnalyzerAgent()
 
             # Act
@@ -309,7 +321,7 @@ public class ExampleMod {
         """Test reading dependency file"""
         # Arrange
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -326,7 +338,7 @@ public class ExampleMod {
         """Test parsing JSON file"""
         # Arrange
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act
@@ -341,7 +353,7 @@ public class ExampleMod {
         nonexistent_file = "/nonexistent/file.jar"
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act & Assert
@@ -354,7 +366,7 @@ public class ExampleMod {
         nonexistent_file = "/nonexistent/file.jar"
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act & Assert
@@ -367,7 +379,7 @@ public class ExampleMod {
         nonexistent_file = "/nonexistent/file.jar"
 
         with patch.dict('sys.modules', {'java': Mock()}):
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             agent = JavaAnalyzerAgent()
 
         # Act & Assert

@@ -1,4 +1,11 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_, or_
+import datetime
+import time
+import logging
+import os
+
 from .report_models import (
     SummaryReport,
     FeatureAnalysis,
@@ -10,14 +17,11 @@ from .report_models import (
     FeatureConversionDetail,
     AssumptionDetail,
     LogEntry,
-    FullConversionReport,  # Assuming this is the main model to be produced by create_interactive_report
+    FullConversionReport,
 )
-import datetime
-import time  # For processing_time_seconds
+from ..db.models import Job, Addon, Asset, ConversionLog, FeatureMapping, BehaviorFile
 
-# Placeholder for data that would come from other services/agents
-# In a real scenario, these would be fetched from databases or other microservices
-# based on a conversion job ID.
+logger = logging.getLogger(__name__)
 
 MOCK_CONVERSION_RESULT_SUCCESS = {
     "job_id": "job_123_success",
@@ -191,9 +195,211 @@ MOCK_CONVERSION_RESULT_FAILURE = {
 
 
 class ConversionReportGenerator:
-    def generate_summary_report(
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_conversion_data(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch real conversion data from database based on job_id
+
+        Args:
+            job_id: The conversion job ID to fetch data for
+
+        Returns:
+            Dictionary with conversion data or None if job not found
+        """
+        try:
+            # Get the main job record
+            job_stmt = select(Job).where(Job.id == job_id)
+            job_result = await self.db.execute(job_stmt)
+            job = job_result.scalar_one_or_none()
+
+            if not job:
+                logger.warning(f"Job {job_id} not found")
+                return None
+
+            # Get associated addon
+            addon_stmt = select(Addon).where(Addon.job_id == job_id)
+            addon_result = await self.db.execute(addon_stmt)
+            addon = addon_result.scalar_one_or_none()
+
+            # Get assets for this job
+            assets_stmt = select(Asset).where(Asset.job_id == job_id)
+            assets_result = await self.db.execute(assets_stmt)
+            assets = assets_result.scalars().all()
+
+            # Get conversion logs
+            logs_stmt = select(ConversionLog).where(ConversionLog.job_id == job_id)
+            logs_result = await self.db.execute(logs_stmt)
+            logs = logs_result.scalars().all()
+
+            # Get feature mappings
+            feature_stmt = select(FeatureMapping).where(FeatureMapping.job_id == job_id)
+            feature_result = await self.db.execute(feature_stmt)
+            features = feature_result.scalars().all()
+
+            # Get behavior files
+            behavior_stmt = select(BehaviorFile).where(BehaviorFile.addon_id == (addon.id if addon else None))
+            behavior_result = await self.db.execute(behavior_stmt)
+            behavior_files = behavior_result.scalars().all()
+
+            # Compile comprehensive conversion data
+            conversion_data = {
+                "job_id": job_id,
+                "status": job.status.value,
+                "created_at": job.created_at,
+                "updated_at": job.updated_at,
+                "original_filename": job.original_filename,
+                "file_size": job.file_size,
+                "progress": job.progress,
+                "error_message": job.error_message,
+                "processing_time_seconds": self._calculate_processing_time(job),
+                "addon": {
+                    "id": addon.id if addon else None,
+                    "name": addon.name if addon else None,
+                    "description": addon.description if addon else None,
+                    "version": addon.version if addon else None,
+                    "uuid": addon.uuid if addon else None,
+                    "pack_icon": addon.pack_icon if addon else None,
+                } if addon else None,
+                "assets_count": len(assets),
+                "assets": [
+                    {
+                        "id": asset.id,
+                        "asset_type": asset.asset_type,
+                        "original_path": asset.original_path,
+                        "converted_path": asset.converted_path,
+                        "conversion_status": asset.conversion_status,
+                        "conversion_notes": asset.conversion_notes,
+                        "file_size": asset.file_size
+                    }
+                    for asset in assets
+                ],
+                "logs_count": len(logs),
+                "logs": [
+                    {
+                        "id": log.id,
+                        "level": log.level,
+                        "message": log.message,
+                        "timestamp": log.timestamp,
+                        "source": log.source,
+                        "details": log.details
+                    }
+                    for log in logs
+                ],
+                "features_count": len(features),
+                "features": [
+                    {
+                        "id": feature.id,
+                        "java_feature": feature.java_feature,
+                        "bedrock_feature": feature.bedrock_feature,
+                        "conversion_method": feature.conversion_method,
+                        "confidence_score": feature.confidence_score,
+                        "status": feature.status,
+                        "notes": feature.notes
+                    }
+                    for feature in features
+                ],
+                "behavior_files_count": len(behavior_files),
+                "behavior_files": [
+                    {
+                        "id": bf.id,
+                        "display_name": bf.display_name,
+                        "file_type": bf.file_type,
+                        "file_path": bf.file_path,
+                        "content_length": len(bf.content) if bf.content else 0
+                    }
+                    for bf in behavior_files
+                ]
+            }
+
+            # Calculate derived statistics
+            conversion_data.update(self._calculate_statistics(conversion_data))
+
+            return conversion_data
+
+        except Exception as e:
+            logger.error(f"Error fetching conversion data for job {job_id}: {e}")
+            return None
+
+    def _calculate_processing_time(self, job: Job) -> float:
+        """Calculate processing time in seconds"""
+        if job.created_at and job.updated_at:
+            return (job.updated_at - job.created_at).total_seconds()
+        return 0.0
+
+    def _calculate_statistics(self, conversion_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate derived statistics from conversion data"""
+        features = conversion_data.get("features", [])
+        assets = conversion_data.get("assets", [])
+
+        # Feature conversion statistics
+        total_features = len(features)
+        converted_features = len([f for f in features if f.get("status") == "converted"])
+        partially_converted_features = len([f for f in features if f.get("status") == "partial"])
+        failed_features = len([f for f in features if f.get("status") == "failed"])
+
+        # Asset conversion statistics
+        total_assets = len(assets)
+        successful_assets = len([a for a in assets if a.get("conversion_status") == "success"])
+
+        # Calculate overall success rate
+        overall_success_rate = 0.0
+        if total_features > 0:
+            # Weight features more heavily than assets in overall success rate
+            feature_weight = 0.7
+            asset_weight = 0.3
+
+            feature_success_rate = (converted_features + (partially_converted_features * 0.5)) / total_features
+            asset_success_rate = successful_assets / total_assets if total_assets > 0 else 1.0
+
+            overall_success_rate = (feature_success_rate * feature_weight) + (asset_success_rate * asset_weight)
+
+        # Calculate assumptions applied (estimated)
+        assumptions_applied_count = len([f for f in features if f.get("conversion_method") == "assumption_based"])
+
+        return {
+            "overall_success_rate": round(overall_success_rate * 100, 1),
+            "total_features": total_features,
+            "converted_features": converted_features,
+            "partially_converted_features": partially_converted_features,
+            "failed_features": failed_features,
+            "assumptions_applied_count": assumptions_applied_count,
+            "total_assets": total_assets,
+            "successful_assets": successful_assets,
+            "quick_statistics": {
+                "files_processed": total_assets,
+                "features_analyzed": total_features,
+                "average_confidence": round(sum(f.get("confidence_score", 0) for f in features) / total_features, 2) if total_features > 0 else 0.0,
+                "errors_encountered": len([l for l in conversion_data.get("logs", []) if l.get("level") == "ERROR"])
+            }
+        }
+
+    async def generate_summary_report(self, job_id: str) -> Optional[SummaryReport]:
+        """Generate summary report using real database data"""
+        conversion_data = await self.get_conversion_data(job_id)
+
+        if not conversion_data:
+            return None
+
+        return SummaryReport(
+            overall_success_rate=conversion_data.get("overall_success_rate", 0.0),
+            total_features=conversion_data.get("total_features", 0),
+            converted_features=conversion_data.get("converted_features", 0),
+            partially_converted_features=conversion_data.get("partially_converted_features", 0),
+            failed_features=conversion_data.get("failed_features", 0),
+            assumptions_applied_count=conversion_data.get("assumptions_applied_count", 0),
+            processing_time_seconds=conversion_data.get("processing_time_seconds", 0.0),
+            download_url=f"/api/v1/addons/{conversion_data.get('addon', {}).get('uuid')}/download" if conversion_data.get('addon') else None,
+            quick_statistics=conversion_data.get("quick_statistics", {}),
+        )
+
+    def generate_summary_report_legacy(
         self, conversion_result: Dict[str, Any]
     ) -> SummaryReport:
+        """
+        Legacy method for backward compatibility with existing code
+        """
         return SummaryReport(
             overall_success_rate=conversion_result.get("overall_success_rate", 0.0),
             total_features=conversion_result.get("total_features", 0),

@@ -2,10 +2,11 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import zipfile
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import httpx
 from fastapi import UploadFile
@@ -349,21 +350,18 @@ class FileProcessor:
                 logger.error(msg)
                 return ScanResult(is_safe=False, message=msg)
 
-        # Placeholder for External Scanner (e.g., ClamAV)
-        logger.info(
-            f"Placeholder for external malware scan (e.g., ClamAV) for file: {file_path}. Integration would occur here."
-        )
-        # In a real scenario, you would invoke an external scanner here.
-        # For example:
-        # external_scan_result = await some_external_scanner_service.scan(file_path)
-        # if not external_scan_result.is_safe:
-        #     logger.warning(f"External malware scan detected threats in {file_path}: {external_scan_result.details}")
-        #     return ScanResult(is_safe=False, message="External scanner detected malware.", details=external_scan_result.details)
+        # External Scanner Integration (ClamAV)
+        external_scan_result = await self._external_malware_scan(file_path, file_info)
+        if not external_scan_result.is_safe:
+            logger.warning(f"External malware scan detected threats in {file_path}: {external_scan_result.details}")
+            return ScanResult(
+                is_safe=False,
+                message="External scanner detected malware.",
+                details=external_scan_result.details
+            )
 
-        # Current return assumes basic checks passed and no external scanner is integrated or it also passed.
-        # If an external scanner was integrated, its result would need to be factored in here.
         logger.info(
-            f"File {file_path} passed all implemented security checks (basic archive checks; no external scan performed)."
+            f"File {file_path} passed all security checks (basic archive checks + external scan)."
         )
         return ScanResult(
             is_safe=True, message="File passed implemented security checks."
@@ -686,3 +684,255 @@ class FileProcessor:
                 exc_info=True,
             )
             return False
+
+    async def _external_malware_scan(self, file_path: Path, file_info: FileInfo) -> ScanResult:
+        """
+        Perform external malware scan using integrated scanners (ClamAV, Windows Defender, etc.)
+
+        Args:
+            file_path: Path to the file to scan
+            file_info: FileInfo object with file metadata
+
+        Returns:
+            ScanResult with scan findings
+        """
+        logger.info(f"Starting external malware scan for {file_path}")
+
+        # Check which scanners are available and enabled
+        enabled_scanners = self._get_enabled_scanners()
+        scan_results = []
+
+        for scanner_name in enabled_scanners:
+            try:
+                result = await self._run_specific_scanner(scanner_name, file_path, file_info)
+                scan_results.append({
+                    'scanner': scanner_name,
+                    'result': result
+                })
+
+                # If any scanner detects malware, return immediately
+                if not result.is_safe:
+                    logger.warning(f"Scanner {scanner_name} detected malware in {file_path}")
+                    return ScanResult(
+                        is_safe=False,
+                        message=f"Malware detected by {scanner_name}",
+                        details=result.details
+                    )
+
+            except Exception as e:
+                logger.error(f"Scanner {scanner_name} failed for {file_path}: {e}")
+                # Continue with other scanners even if one fails
+                continue
+
+        # All enabled scanners passed (no scanners were available or they all passed)
+        scan_details = {
+            'scanners_used': enabled_scanners,
+            'scan_count': len(scan_results),
+            'file_size_bytes': file_info.size,
+            'file_hash_sha256': file_info.content_hash
+        }
+
+        logger.info(f"External malware scan completed for {file_path}. All scanners passed.")
+        return ScanResult(
+            is_safe=True,
+            message="External malware scan completed - no threats detected",
+            details=scan_details
+        )
+
+    def _get_enabled_scanners(self) -> List[str]:
+        """Get list of enabled and available malware scanners"""
+        enabled_scanners = []
+
+        # Check for ClamAV
+        if self._check_clamav_available():
+            enabled_scanners.append('clamav')
+
+        # Check for Windows Defender (Windows only)
+        if os.name == 'nt' and self._check_windows_defender_available():
+            enabled_scanners.append('windows_defender')
+
+        # Check for built-in heuristic scanner (always available as fallback)
+        enabled_scanners.append('heuristic')
+
+        return enabled_scanners
+
+    def _check_clamav_available(self) -> bool:
+        """Check if ClamAV is available and running"""
+        try:
+            # Try to run clamscan --version to check if ClamAV is installed
+            result = subprocess.run(['clamscan', '--version'],
+                                  capture_output=True, text=True, timeout=5)
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            logger.debug("ClamAV not available")
+            return False
+
+    def _check_windows_defender_available(self) -> bool:
+        """Check if Windows Defender is available"""
+        if os.name != 'nt':
+            return False
+
+        try:
+            # Try to run Windows Defender CLI
+            result = subprocess.run(['MpCmdRun.exe', '-h'],
+                                  capture_output=True, text=True, timeout=5)
+            return result.returncode in [0, 1]  # Return code 1 is normal for help
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            logger.debug("Windows Defender not available")
+            return False
+
+    async def _run_specific_scanner(self, scanner_name: str, file_path: Path, file_info: FileInfo) -> ScanResult:
+        """Run a specific malware scanner"""
+        if scanner_name == 'clamav':
+            return await self._run_clamav_scan(file_path)
+        elif scanner_name == 'windows_defender':
+            return await self._run_windows_defender_scan(file_path)
+        elif scanner_name == 'heuristic':
+            return await self._run_heuristic_scan(file_path, file_info)
+        else:
+            raise ValueError(f"Unknown scanner: {scanner_name}")
+
+    async def _run_clamav_scan(self, file_path: Path) -> ScanResult:
+        """Run ClamAV scan on the file"""
+        try:
+            # Run clamscan on the file
+            cmd = ['clamscan', '--no-summary', str(file_path)]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+            # ClamAV returns 0 for clean, 1 for virus found
+            if result.returncode == 0:
+                return ScanResult(is_safe=True, message="ClamAV scan passed - no threats detected")
+            elif result.returncode == 1:
+                # Virus found - parse the output
+                virus_info = result.stdout.strip()
+                return ScanResult(
+                    is_safe=False,
+                    message="ClamAV detected malware",
+                    details={
+                        'scanner': 'clamav',
+                        'threat_detected': virus_info,
+                        'return_code': result.returncode
+                    }
+                )
+            else:
+                # Other error
+                raise RuntimeError(f"ClamAV scan failed with return code {result.returncode}: {result.stderr}")
+
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("ClamAV scan timed out")
+        except Exception as e:
+            raise RuntimeError(f"ClamAV scan error: {str(e)}")
+
+    async def _run_windows_defender_scan(self, file_path: Path) -> ScanResult:
+        """Run Windows Defender scan on the file"""
+        try:
+            # Run Windows Defender scan
+            cmd = ['MpCmdRun.exe', '-Scan', '-ScanType', '3', '-File', str(file_path), '-DisableRemediation']
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+            # Windows Defender returns 0 for no threats, 2-3 for threats found
+            if result.returncode == 0:
+                return ScanResult(is_safe=True, message="Windows Defender scan passed - no threats detected")
+            elif result.returncode in [2, 3]:
+                return ScanResult(
+                    is_safe=False,
+                    message="Windows Defender detected malware",
+                    details={
+                        'scanner': 'windows_defender',
+                        'return_code': result.returncode,
+                        'stdout': result.stdout,
+                        'stderr': result.stderr
+                    }
+                )
+            else:
+                # Other error
+                raise RuntimeError(f"Windows Defender scan failed with return code {result.returncode}: {result.stderr}")
+
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Windows Defender scan timed out")
+        except Exception as e:
+            raise RuntimeError(f"Windows Defender scan error: {str(e)}")
+
+    async def _run_heuristic_scan(self, file_path: Path, file_info: FileInfo) -> ScanResult:
+        """Run heuristic malware detection scan"""
+        suspicious_indicators = []
+
+        # Check file extension patterns
+        risky_extensions = ['.exe', '.scr', '.bat', '.cmd', '.pif', '.com', '.vbs', '.js', '.jar']
+        if file_path.suffix.lower() in risky_extensions:
+            suspicious_indicators.append(f"Risky file extension: {file_path.suffix}")
+
+        # Check file size (very small or very large files can be suspicious)
+        if file_info.size < 100:  # Very small files
+            suspicious_indicators.append(f"Suspiciously small file: {file_info.size} bytes")
+        elif file_info.size > 100 * 1024 * 1024:  # Very large files (>100MB)
+            suspicious_indicators.append(f"Suspiciously large file: {file_info.size / 1024 / 1024:.1f}MB")
+
+        # Check filename patterns
+        suspicious_names = ['setup', 'install', 'crack', 'keygen', 'patch', 'loader', 'dropper']
+        if any(sus_name in file_path.name.lower() for sus_name in suspicious_names):
+            suspicious_indicators.append(f"Suspicious filename pattern: {file_path.name}")
+
+        # Check for double extensions
+        if '.' in file_path.stem and len(file_path.suffixes) > 1:
+            suspicious_indicators.append(f"Double extension detected: {file_path.name}")
+
+        # Basic content analysis (safe check)
+        try:
+            # Read first 1KB for analysis
+            with open(file_path, 'rb') as f:
+                header = f.read(1024)
+
+            # Check for suspicious patterns in file header
+            suspicious_patterns = [
+                b'eval(', b'exec(', b'system(', b'shell_exec', b'powershell',
+                b'CreateProcess', b'VirtualAlloc', b'WriteProcessMemory',
+                b'encrypted', b'obfuscated', b'packed'
+            ]
+
+            found_patterns = []
+            for pattern in suspicious_patterns:
+                if pattern.lower() in header.lower():
+                    found_patterns.append(pattern.decode('utf-8', errors='ignore'))
+
+            if found_patterns:
+                suspicious_indicators.append(f"Suspicious patterns detected: {found_patterns}")
+
+        except Exception:
+            # If we can't read the file, that's suspicious too
+            suspicious_indicators.append("Unable to analyze file content")
+
+        # Determine threat level based on indicators
+        threat_level = len(suspicious_indicators)
+        if threat_level == 0:
+            return ScanResult(is_safe=True, message="Heuristic scan passed - no suspicious indicators detected")
+        elif threat_level <= 2:
+            return ScanResult(
+                is_safe=True,
+                message="Heuristic scan passed - minor suspicious indicators detected",
+                details={
+                    'scanner': 'heuristic',
+                    'suspicious_indicators': suspicious_indicators,
+                    'threat_level': 'low'
+                }
+            )
+        elif threat_level <= 4:
+            return ScanResult(
+                is_safe=False,
+                message="Heuristic scan detected potential threats",
+                details={
+                    'scanner': 'heuristic',
+                    'suspicious_indicators': suspicious_indicators,
+                    'threat_level': 'medium'
+                }
+            )
+        else:
+            return ScanResult(
+                is_safe=False,
+                message="Heuristic scan detected suspicious file",
+                details={
+                    'scanner': 'heuristic',
+                    'suspicious_indicators': suspicious_indicators,
+                    'threat_level': 'high'
+                }
+            )

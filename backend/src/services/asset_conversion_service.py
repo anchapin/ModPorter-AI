@@ -8,8 +8,8 @@ import httpx
 import logging
 from typing import Dict, Any
 
-from db import crud
-from db.base import AsyncSessionLocal
+from ..db import crud
+from ..db.base import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 

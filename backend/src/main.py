@@ -38,7 +38,7 @@ from src.services import conversion_parser # For parsing converted pack output
 from src.services.asset_conversion_service import asset_conversion_service
 import shutil # For directory operations
 from typing import List, Optional, Dict
-from datetime import datetime
+import datetime as dt
 from typing import Optional
 import uvicorn
 import uuid
@@ -286,7 +286,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=dt.datetime.now(dt.timezone.utc).isoformat()
     )
 
 # File upload endpoint

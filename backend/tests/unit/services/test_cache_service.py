@@ -13,8 +13,11 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch, AsyncMock
 
 # Import the service and mocks
-from services.cache import CacheService
-from models.cache_models import CacheStats
+from src.services.cache import CacheService
+from src.models.cache_models import CacheStats
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from tests.mocks.redis_mock import create_mock_redis_client
 
 

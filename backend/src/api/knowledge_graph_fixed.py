@@ -8,9 +8,15 @@ and community curation system.
 from typing import Dict, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import uuid
+import logging
 
 from db.base import get_db
+from db.knowledge_graph_crud import KnowledgeNodeCRUD
+from db.models import KnowledgeNode
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -67,10 +73,10 @@ async def create_knowledge_node(
         "community_rating": 0.0,
         "created_at": "2025-01-01T00:00:00Z"
     }
-    
+
     # Store in mock for retrieval
     mock_nodes[node_id] = node
-    
+
     return node
 
 
@@ -383,13 +389,51 @@ async def update_knowledge_node(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a knowledge node."""
-    return {
-        "id": node_id,
-        "node_type": update_data.get("node_type", "java_class"),
-        "properties": update_data.get("properties", {}),
-        "metadata": update_data.get("metadata", {}),
-        "updated_at": "2025-01-01T00:00:00Z"
-    }
+    try:
+        # First check if the node exists
+        existing_node = await KnowledgeNodeCRUD.get_by_id(db, node_id)
+
+        if not existing_node:
+            return {
+                "status": "error",
+                "message": "Knowledge node not found",
+                "node_id": node_id
+            }
+
+        # Update the node using the CRUD operation
+        updated_node = await KnowledgeNodeCRUD.update(db, node_id, update_data)
+
+        if not updated_node:
+            return {
+                "status": "error",
+                "message": "Failed to update knowledge node",
+                "node_id": node_id
+            }
+
+        # Return success response with the updated node data
+        return {
+            "status": "success",
+            "message": "Knowledge node updated successfully",
+            "node_id": str(updated_node.id),
+            "node_type": updated_node.node_type,
+            "name": updated_node.name,
+            "description": updated_node.description,
+            "properties": updated_node.properties,
+            "metadata": {
+                "minecraft_version": updated_node.minecraft_version,
+                "platform": updated_node.platform,
+                "expert_validated": updated_node.expert_validated,
+                "community_rating": float(updated_node.community_rating) if updated_node.community_rating else None
+            },
+            "updated_at": updated_node.updated_at.isoformat() if updated_node.updated_at else None
+        }
+    except Exception as e:
+        logger.error(f"Error updating knowledge node {node_id}: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Failed to update knowledge node: {str(e)}",
+            "node_id": node_id
+        }
 
 
 @router.delete("/nodes/{node_id}", status_code=204)
@@ -590,7 +634,7 @@ async def batch_create_nodes(
             "node_type": node.get("node_type"),
             "properties": node.get("properties", {})
         })
-    
+
     return {
         "created_nodes": created_nodes
     }

@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+import datetime as dt
 from enum import Enum
 import uvicorn
 import os
@@ -46,7 +46,7 @@ if debug_mode:
 # Status enumeration for conversion states
 class ConversionStatusEnum(str, Enum):
     QUEUED = "queued"
-    IN_PROGRESS = "in_progress" 
+    IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -87,19 +87,19 @@ class RedisJobManager:
     def __init__(self, redis_client):
         self.redis = redis_client
         self.available = True
-    
+
     async def set_job_status(self, job_id: str, status: "ConversionStatus") -> None:
         """Store job status in Redis with error handling"""
         try:
             if not self.available:
                 raise HTTPException(status_code=503, detail="Job state storage unavailable")
-            
+
             status_dict = status.model_dump()
             status_dict['started_at'] = status_dict['started_at'].isoformat() if status_dict['started_at'] else None
             status_dict['completed_at'] = status_dict['completed_at'].isoformat() if status_dict['completed_at'] else None
-            
+
             await self.redis.set(
-                f"ai_engine:jobs:{job_id}", 
+                f"ai_engine:jobs:{job_id}",
                 json.dumps(status_dict),
                 ex=3600  # Expire after 1 hour
             )
@@ -107,30 +107,30 @@ class RedisJobManager:
             logger.error(f"Failed to store job status in Redis: {e}", exc_info=True)
             self.available = False
             raise HTTPException(status_code=503, detail="Job state storage failed")
-    
+
     async def get_job_status(self, job_id: str) -> Optional["ConversionStatus"]:
         """Retrieve job status from Redis with error handling"""
         try:
             if not self.available:
                 return None
-            
+
             data = await self.redis.get(f"ai_engine:jobs:{job_id}")
             if not data:
                 return None
-            
+
             status_dict = json.loads(data)
             # Convert ISO strings back to datetime
             if status_dict.get('started_at'):
                 status_dict['started_at'] = datetime.fromisoformat(status_dict['started_at'])
             if status_dict.get('completed_at'):
                 status_dict['completed_at'] = datetime.fromisoformat(status_dict['completed_at'])
-                
+
             return ConversionStatus(**status_dict)
         except Exception as e:
             logger.error(f"Failed to retrieve job status from Redis: {e}", exc_info=True)
             self.available = False
             return None
-    
+
     async def delete_job(self, job_id: str) -> None:
         """Remove job from Redis"""
         try:
@@ -179,31 +179,31 @@ class ConversionStatus(BaseModel):
 async def startup_event():
     """Initialize services on startup"""
     global conversion_crew, assumption_engine, redis_client, job_manager
-    
+
     logger.info("Starting ModPorter AI Engine...")
-    
+
     try:
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         redis_client = aioredis.from_url(redis_url, decode_responses=True)
-        
+
         # Test Redis connection
         await redis_client.ping()
         logger.info("Redis connection established")
-        
+
         # Initialize job manager
         job_manager = RedisJobManager(redis_client)
         logger.info("RedisJobManager initialized")
-        
+
         # Initialize SmartAssumptionEngine
         assumption_engine = SmartAssumptionEngine()
         logger.info("SmartAssumptionEngine initialized")
-        
+
         # Note: We now initialize the conversion crew per request to support variants
         # The global conversion_crew will remain None
-        
+
         logger.info("ModPorter AI Engine startup complete")
-        
+
     except Exception as e:
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Service initialization failed")
@@ -214,13 +214,13 @@ async def health_check():
     services = {
         "assumption_engine": "healthy" if assumption_engine else "unavailable",
     }
-    
+
     # Conversion crew is now initialized per request, so we don't check it here
-    
+
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=dt.datetime.now(dt.timezone.utc).isoformat(),
         services=services
     )
 
@@ -230,13 +230,13 @@ async def start_conversion(
     background_tasks: BackgroundTasks
 ):
     """Start a new mod conversion job"""
-    
+
     if not job_manager or not job_manager.available:
         raise HTTPException(status_code=503, detail="Job state storage unavailable")
-    
+
     # Initialize conversion crew with variant if specified
     # The crew is now initialized in the background task to avoid blocking the request
-    
+
     # Create job status
     job_status = ConversionStatus(
         job_id=request.job_id,
@@ -244,12 +244,12 @@ async def start_conversion(
         progress=0,
         current_stage="initialization",
         message="Conversion job queued",
-        started_at=datetime.utcnow()
+        started_at=dt.datetime.now(dt.timezone.utc)
     )
-    
+
     # Store in Redis instead of global dict
     await job_manager.set_job_status(request.job_id, job_status)
-    
+
     # Start conversion in background
     background_tasks.add_task(
         process_conversion,
@@ -258,9 +258,9 @@ async def start_conversion(
         request.conversion_options,
         request.experiment_variant  # Pass variant to process_conversion
     )
-    
+
     logger.info(f"Started conversion job {request.job_id}")
-    
+
     return ConversionResponse(
         job_id=request.job_id,
         status="queued",
@@ -271,14 +271,14 @@ async def start_conversion(
 @app.get("/api/v1/status/{job_id}", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str):
     """Get the status of a conversion job"""
-    
+
     if not job_manager:
         raise HTTPException(status_code=503, detail="Job state storage unavailable")
-    
+
     job_status = await job_manager.get_job_status(job_id)
     if not job_status:
         raise HTTPException(status_code=404, detail="Job not found")
-    
+
     return job_status
 
 @app.get("/api/v1/jobs", response_model=List[ConversionStatus], tags=["conversion"])
@@ -286,7 +286,7 @@ async def list_jobs():
     """List all active conversion jobs"""
     if not job_manager or not job_manager.available:
         raise HTTPException(status_code=503, detail="Job state storage unavailable")
-    
+
     # Note: In production, implement pagination and filtering
     # For now, return empty list as Redis doesn't have easy "list all" without keys
     logger.warning("list_jobs endpoint returns empty - implement Redis SCAN for production")
@@ -294,38 +294,38 @@ async def list_jobs():
 
 async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str, Any], experiment_variant: Optional[str] = None):
     """Process a conversion job using the AI crew"""
-    
+
     try:
         # Get current job status
         job_status = await job_manager.get_job_status(job_id)
         if not job_status:
             logger.error(f"Job {job_id} not found during processing")
             return
-        
+
         # Update job status
         job_status.status = "processing"
         job_status.current_stage = "analysis"
         job_status.message = "Analyzing mod structure"
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
-        
+
         logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
-        
+
         # Prepare output path
         output_path = options.get("output_path")
         if not output_path:
             # Default output path using job_id pattern that backend expects
             # Use the mounted volume path inside the container
             output_path = os.path.join(os.getenv("CONVERSION_OUTPUT_DIR", "/app/conversion_outputs"), f"{job_id}_converted.mcaddon")
-        
+
         # Ensure the output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
         try:
             # Initialize conversion crew with variant if specified
             crew = ModPorterConversionCrew(variant_id=experiment_variant)
             logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
-            
+
             # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)
             if job_status:
@@ -333,7 +333,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 job_status.message = "Analyzing Java mod structure"
                 job_status.progress = 20
                 await job_manager.set_job_status(job_id, job_status)
-            
+
             # Execute the actual AI conversion using the conversion crew
             from pathlib import Path
             conversion_result = crew.convert_mod(
@@ -342,7 +342,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 smart_assumptions=options.get("smart_assumptions", True),
                 include_dependencies=options.get("include_dependencies", True)
             )
-            
+
             # Update progress based on conversion result
             if conversion_result.get("status") == "failed":
                 # Mark job as failed
@@ -353,7 +353,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                     await job_manager.set_job_status(job_id, job_status)
                 logger.error(f"Conversion failed for job {job_id}: {conversion_result.get('error')}")
                 return
-            
+
             # Update progress through conversion stages
             stages = [
                 ("planning", "Creating conversion plan", 40),
@@ -362,7 +362,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 ("packaging", "Packaging Bedrock addon", 90),
                 ("validation", "Validating conversion", 95),
             ]
-            
+
             for stage, message, progress in stages:
                 job_status = await job_manager.get_job_status(job_id)
                 if job_status:
@@ -370,16 +370,16 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                     job_status.message = message
                     job_status.progress = progress
                     await job_manager.set_job_status(job_id, job_status)
-                
+
                 # Short delay to show progress
                 import asyncio
                 await asyncio.sleep(0.5)
-            
+
             # Verify output file was created
             if not os.path.exists(output_path):
                 logger.error(f"Output file not created by conversion crew: {output_path}")
                 logger.error("This indicates a serious conversion failure that should not be masked")
-                
+
                 # Mark job as failed explicitly instead of creating a fake successful output
                 job_status = await job_manager.get_job_status(job_id)
                 if job_status:
@@ -387,9 +387,9 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                     job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
                     await job_manager.set_job_status(job_id, job_status)
                 return
-            
+
             logger.info(f"Conversion completed successfully: {output_path}")
-            
+
         except Exception as conversion_error:
             logger.error(f"Failed to convert mod {mod_file_path}: {conversion_error}")
             # Mark job as failed if conversion fails
@@ -405,14 +405,14 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         if job_status:
             job_status.status = "completed"
             job_status.message = "Conversion completed successfully"
-            job_status.completed_at = datetime.utcnow()
+            job_status.completed_at = dt.datetime.now(dt.timezone.utc)
             await job_manager.set_job_status(job_id, job_status)
-        
+
         logger.info(f"Completed conversion for job {job_id}")
-        
+
     except Exception as e:
         logger.error(f"Conversion failed for job {job_id}: {e}", exc_info=True)
-        
+
         # Update job status to failed
         job_status = await job_manager.get_job_status(job_id)
         if job_status:

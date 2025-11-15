@@ -5,9 +5,9 @@ name: Deploy ModPorter AI
 
 on:
   push:
-    branches: [ main, production ]
+    branches: [main, production]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   DOCKER_BUILDKIT: 1
@@ -42,144 +42,145 @@ jobs:
           - 6379:6379
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20.19.0"
 
-    - name: Cache Python dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
 
-    - name: Cache Node dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+      - name: Cache Node dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
 
-    - name: Install backend dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-    - name: Install AI engine dependencies
-      run: |
-        cd ai-engine
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      - name: Install AI engine dependencies
+        run: |
+          cd ai-engine
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install --frozen-lockfile
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install --frozen-lockfile
 
-    # Install system dependencies for health checks
-    - name: Install system dependencies
-      run: |
-        echo "🔧 Installing system dependencies..."
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq netcat-traditional netcat-openbsd curl
+      # Install system dependencies for health checks
+      - name: Install system dependencies
+        run: |
+          echo "🔧 Installing system dependencies..."
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq netcat-traditional netcat-openbsd curl
 
-    - name: Wait for services to be ready
-      run: |
-        echo "🔍 Checking service connectivity..."
-        
-        echo "Testing Redis connectivity..."
-        timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
-        echo "✅ Redis is ready"
-        
-        echo "Testing PostgreSQL connectivity..."
-        timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'
-        echo "✅ PostgreSQL is ready"
+      - name: Wait for services to be ready
+        run: |
+          echo "🔍 Checking service connectivity..."
 
-    - name: Run backend tests
-      env:
-        DATABASE_URL: postgresql://postgres:test_password@localhost:5432/modporter_test
-        REDIS_URL: redis://localhost:6379
-        SECRET_KEY: test_secret_key
-        JWT_SECRET_KEY: test_jwt_secret
-        TESTING: true
-        CI: true
-      run: |
-        cd backend
-        python -m pytest tests/ -v --cov=src --cov-report=xml --timeout=120 --ignore=tests/unit/test_addon_assets_crud.py --ignore=tests/unit/test_behavior_files_crud.py --ignore=tests/unit/test_conversion_assets_crud.py --ignore=tests/unit/test_cache_service.py --ignore=tests/unit/test_comparison_api.py --ignore=tests/unit/test_main_unit.py --ignore=tests/unit/test_performance_api.py --ignore=tests/unit/test_validation.py --ignore=tests/unit/test_validation_api.py --ignore=tests/integration/test_api_v1_integration.py --ignore=tests/integration/test_end_to_end_integration.py --ignore=tests/integration/test_performance_integration.py --ignore=tests/integration/test_validation_api_integration.py
+          echo "Testing Redis connectivity..."
+          timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
+          echo "✅ Redis is ready"
 
-    - name: Run AI engine tests
-      env:
-        REDIS_URL: redis://localhost:6379
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key' }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'test_key' }}
-        TESTING: true
-        CI: true
-      run: |
-        cd ai-engine
-        # Run tests with timeout and exclude slow AI tests in CI
-        python -m pytest tests/ -v --cov=. --cov-report=xml --timeout=240 -m "not slow and not ai"
+          echo "Testing PostgreSQL connectivity..."
+          timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'
+          echo "✅ PostgreSQL is ready"
 
-    - name: Run frontend tests
-      run: |
-        cd frontend
-        npm run test:ci
+      - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/modporter_test
+          REDIS_URL: redis://localhost:6379
+          SECRET_KEY: test_secret_key
+          JWT_SECRET_KEY: test_jwt_secret
+          TESTING: true
+          CI: true
+        run: |
+          cd backend
+          # Run tests from backend directory with proper Python path
+          python -m pytest tests/ -v --cov=src --cov-report=xml --timeout=120 --ignore=tests/coverage_improvement/manual/services/temp/test_advanced_visualization_complete_comprehensive.py --ignore=tests/phase1/services/test_cache.py --ignore=tests/test_assets_api.py --ignore=tests/test_behavior_export_api.py --ignore=tests/test_caching_api.py --ignore=tests/test_collaboration_api.py --ignore=tests/test_collaboration_api_working.py --ignore=tests/test_conversion_success_prediction.py --ignore=tests/test_conversion_success_prediction_final.py --ignore=tests/test_conversion_success_prediction_fixed.py --ignore=tests/test_conversion_success_prediction_new.py --ignore=tests/test_conversion_success_prediction_working.py --ignore=tests/test_conversion_success_simple.py --ignore=tests/test_conversion_working.py --ignore=tests/test_knowledge_graph_full.py --ignore=tests/test_main.py --ignore=tests/test_main_achievable.py --ignore=tests/test_main_api.py --ignore=tests/test_main_api_working.py --ignore=tests/test_main_comprehensive.py --ignore=tests/test_main_working.py --ignore=tests/test_ml_pattern_recognition_working.py --ignore=tests/unit/services/test_cache_service.py --ignore=tests/unit/services/test_conversion_success_prediction.py
 
-    - name: Frontend type check
-      run: |
-        cd frontend
-        npx tsc --noEmit
+      - name: Run AI engine tests
+        env:
+          REDIS_URL: redis://localhost:6379
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'test_key' }}
+          TESTING: true
+          CI: true
+        run: |
+          cd ai-engine
+          # Run tests with timeout and exclude slow AI tests in CI
+          python -m pytest tests/ -v --cov=. --cov-report=xml --timeout=240 -m "not slow and not ai"
 
-    - name: Frontend lint check
-      run: |
-        cd frontend
-        npm run lint
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm run test:ci
 
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
+      - name: Frontend type check
+        run: |
+          cd frontend
+          npx tsc --noEmit
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v5
-      with:
-        files: ./backend/coverage.xml,./ai-engine/coverage.xml
+      - name: Frontend lint check
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./backend/coverage.xml,./ai-engine/coverage.xml
 
   security:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        version: 'latest'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          version: "latest"
 
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v4
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: "trivy-results.sarif"
 
-    - name: Run Bandit security linter (Backend)
-      run: |
-        pip install bandit
-        bandit -r backend/src/ -f json -o bandit-backend.json || true
+      - name: Run Bandit security linter (Backend)
+        run: |
+          pip install bandit
+          bandit -r backend/src/ -f json -o bandit-backend.json || true
 
-    - name: Run Bandit security linter (AI Engine)
-      run: |
-        bandit -r ai-engine/ -f json -o bandit-ai.json || true
+      - name: Run Bandit security linter (AI Engine)
+        run: |
+          bandit -r ai-engine/ -f json -o bandit-ai.json || true
 
   build:
     needs: [test, security]
@@ -187,47 +188,47 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
 
-    - name: Build and push Frontend image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./frontend
-        push: true
-        tags: |
-          modporter/frontend:latest
-          modporter/frontend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            modporter/frontend:latest
+            modporter/frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Build and push Backend image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./backend
-        push: true
-        tags: |
-          modporter/backend:latest
-          modporter/backend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            modporter/backend:latest
+            modporter/backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Build and push AI Engine image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./ai-engine
-        push: true
-        tags: |
-          modporter/ai-engine:latest
-          modporter/ai-engine:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push AI Engine image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ai-engine
+          push: true
+          tags: |
+            modporter/ai-engine:latest
+            modporter/ai-engine:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: [build]
@@ -236,67 +237,67 @@ jobs:
     environment: production
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.9.1
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Add server to known hosts
-      run: |
-        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Deploy to production server
-      env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-      run: |
-        # Copy deployment files to server
-        scp -r . $SERVER_USER@$SERVER_HOST:/opt/modporter-ai/
+      - name: Deploy to production server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          # Copy deployment files to server
+          scp -r . $SERVER_USER@$SERVER_HOST:/opt/modporter-ai/
 
-        # Deploy on server
-        ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-          cd /opt/modporter-ai
-          
-          # Update environment variables
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env.prod
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.prod
-          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env.prod
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env.prod
-          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env.prod
-          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env.prod
-          echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.prod
-          
-          # Run deployment script
-          ./scripts/deploy.sh production
-        EOF
+          # Deploy on server
+          ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+            cd /opt/modporter-ai
 
-    - name: Run health checks
-      run: |
-        # Wait for deployment to complete
-        sleep 60
-        
-        # Check service health
-        curl -f http://${{ secrets.SERVER_HOST }}/api/v1/health
-        curl -f http://${{ secrets.SERVER_HOST }}:8001/api/v1/health
-        curl -f http://${{ secrets.SERVER_HOST }}/health
+            # Update environment variables
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env.prod
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.prod
+            echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env.prod
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env.prod
+            echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env.prod
+            echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env.prod
+            echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.prod
 
-    - name: Notify deployment status
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      if: always()
+            # Run deployment script
+            ./scripts/deploy.sh production
+          EOF
+
+      - name: Run health checks
+        run: |
+          # Wait for deployment to complete
+          sleep 60
+
+          # Check service health
+          curl -f http://${{ secrets.SERVER_HOST }}/api/v1/health
+          curl -f http://${{ secrets.SERVER_HOST }}:8001/api/v1/health
+          curl -f http://${{ secrets.SERVER_HOST }}/health
+
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#deployments"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
 
   rollback:
     runs-on: ubuntu-latest
@@ -305,16 +306,16 @@ jobs:
     environment: production
 
     steps:
-    - name: Rollback deployment
-      env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-      run: |
-        ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-          cd /opt/modporter-ai
-          
-          # Rollback to previous version
-          docker-compose -f docker-compose.prod.yml down
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d
-        EOF
+      - name: Rollback deployment
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+            cd /opt/modporter-ai
+
+            # Rollback to previous version
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
+          EOF

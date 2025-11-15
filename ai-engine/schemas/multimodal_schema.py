@@ -7,7 +7,7 @@ multi-modal embeddings and metadata in the advanced RAG system.
 
 from enum import Enum
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+import datetime as dt
 from pydantic import BaseModel, Field
 
 
@@ -42,35 +42,35 @@ class ProcessingStatus(str, Enum):
 class MultiModalDocument(BaseModel):
     """
     Core document model for multi-modal content storage.
-    
+
     This model represents a single document that may contain multiple
     types of content (text, code, images) with their respective embeddings.
     """
-    
+
     # Core identifiers
     id: str = Field(..., description="Unique document identifier")
     content_hash: str = Field(..., description="MD5 hash of the original content")
     source_path: str = Field(..., description="Original file path or URL")
-    
+
     # Content information
     content_type: ContentType = Field(..., description="Primary content type")
     content_text: Optional[str] = Field(None, description="Text content if applicable")
     content_metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional content metadata")
-    
+
     # Processing information
     chunk_index: Optional[int] = Field(None, description="Chunk index if document was split")
     total_chunks: Optional[int] = Field(None, description="Total number of chunks")
     processing_status: ProcessingStatus = Field(ProcessingStatus.PENDING)
-    
+
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+    updated_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
     indexed_at: Optional[datetime] = Field(None)
-    
+
     # Context information
     project_context: Optional[str] = Field(None, description="Project or context identifier")
     tags: List[str] = Field(default_factory=list, description="Content tags for filtering")
-    
+
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
 
@@ -78,32 +78,32 @@ class MultiModalDocument(BaseModel):
 class EmbeddingVector(BaseModel):
     """
     Embedding vector storage with metadata.
-    
+
     Stores the actual vector embeddings along with information about
     how they were generated and their dimensions.
     """
-    
+
     # Core identifiers
     document_id: str = Field(..., description="Reference to MultiModalDocument")
     embedding_id: str = Field(..., description="Unique embedding identifier")
-    
+
     # Embedding information
     model_name: EmbeddingModel = Field(..., description="Model used to generate embedding")
     embedding_vector: List[float] = Field(..., description="The actual embedding vector")
     embedding_dimension: int = Field(..., description="Dimension of the embedding")
-    
+
     # Quality metrics
     confidence_score: Optional[float] = Field(None, description="Model confidence in embedding quality")
     similarity_threshold: Optional[float] = Field(None, description="Minimum similarity for matches")
-    
+
     # Processing metadata
     model_version: Optional[str] = Field(None, description="Version of the embedding model")
     preprocessing_steps: List[str] = Field(default_factory=list, description="Applied preprocessing steps")
-    
+
     # Performance metrics
     generation_time_ms: Optional[float] = Field(None, description="Time to generate embedding")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
 
@@ -111,29 +111,29 @@ class EmbeddingVector(BaseModel):
 class ImageMetadata(BaseModel):
     """
     Metadata specific to image content.
-    
+
     Stores image-specific information for better context understanding
     and processing optimization.
     """
-    
+
     document_id: str = Field(..., description="Reference to MultiModalDocument")
-    
+
     # Image properties
     width: int = Field(..., description="Image width in pixels")
     height: int = Field(..., description="Image height in pixels")
     channels: int = Field(..., description="Number of color channels")
     format: str = Field(..., description="Image format (PNG, JPG, etc.)")
     file_size_bytes: int = Field(..., description="File size in bytes")
-    
+
     # Minecraft-specific metadata
     minecraft_asset_type: Optional[str] = Field(None, description="Type of Minecraft asset (block, item, entity)")
     texture_category: Optional[str] = Field(None, description="Texture category (blocks, items, entities)")
     animation_frames: Optional[int] = Field(None, description="Number of animation frames if animated")
-    
+
     # Processing information
     preprocessing_applied: List[str] = Field(default_factory=list, description="Applied image preprocessing")
     color_palette: Optional[List[str]] = Field(None, description="Dominant colors in hex format")
-    
+
     # Visual features
     has_transparency: bool = Field(False, description="Whether image has transparency")
     is_tileable: Optional[bool] = Field(None, description="Whether texture is tileable")
@@ -143,30 +143,30 @@ class ImageMetadata(BaseModel):
 class CodeMetadata(BaseModel):
     """
     Metadata specific to code content.
-    
+
     Stores code-specific information for better semantic understanding
     and conversion accuracy.
     """
-    
+
     document_id: str = Field(..., description="Reference to MultiModalDocument")
-    
+
     # Code properties
     language: str = Field(..., description="Programming language")
     file_extension: str = Field(..., description="File extension")
     lines_of_code: int = Field(..., description="Number of lines of code")
-    
+
     # Java/Minecraft specific
     package_name: Optional[str] = Field(None, description="Java package name")
     class_names: List[str] = Field(default_factory=list, description="Class names in the file")
     method_names: List[str] = Field(default_factory=list, description="Method names in the file")
     minecraft_version: Optional[str] = Field(None, description="Target Minecraft version")
     mod_loader: Optional[str] = Field(None, description="Mod loader (Forge, Fabric, etc.)")
-    
+
     # Code analysis
     complexity_score: Optional[float] = Field(None, description="Code complexity score")
     dependencies: List[str] = Field(default_factory=list, description="External dependencies")
     ast_features: Optional[Dict[str, Any]] = Field(None, description="AST-based features")
-    
+
     # Conversion metadata
     conversion_confidence: Optional[float] = Field(None, description="Confidence in conversion accuracy")
     conversion_notes: List[str] = Field(default_factory=list, description="Notes about conversion process")
@@ -175,33 +175,33 @@ class CodeMetadata(BaseModel):
 class SearchQuery(BaseModel):
     """
     Search query model for the advanced RAG system.
-    
+
     Represents a search query with context and filtering options
     for multi-modal retrieval.
     """
-    
+
     # Query content
     query_text: str = Field(..., description="The search query text")
     query_context: Optional[str] = Field(None, description="Additional context for the query")
-    
+
     # Search parameters
     top_k: int = Field(10, description="Number of results to return")
     similarity_threshold: float = Field(0.7, description="Minimum similarity score")
-    
+
     # Filtering options
     content_types: Optional[List[ContentType]] = Field(None, description="Filter by content types")
     tags: Optional[List[str]] = Field(None, description="Filter by tags")
     project_context: Optional[str] = Field(None, description="Filter by project context")
     date_range: Optional[tuple] = Field(None, description="Filter by date range")
-    
+
     # Search strategy
     use_hybrid_search: bool = Field(True, description="Use hybrid search (vector + keyword)")
     enable_reranking: bool = Field(True, description="Enable result re-ranking")
     expand_query: bool = Field(True, description="Enable query expansion")
-    
+
     # Model preferences
     preferred_models: Optional[List[EmbeddingModel]] = Field(None, description="Preferred embedding models")
-    
+
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
 
@@ -210,26 +210,26 @@ class SearchResult(BaseModel):
     """
     Search result model containing matched document and relevance information.
     """
-    
+
     # Document information
     document: MultiModalDocument = Field(..., description="The matched document")
-    
+
     # Relevance scores
     similarity_score: float = Field(..., description="Vector similarity score")
     keyword_score: Optional[float] = Field(None, description="Keyword matching score")
     final_score: float = Field(..., description="Final combined relevance score")
-    
+
     # Ranking information
     rank: int = Field(..., description="Result rank in the search results")
     embedding_model_used: EmbeddingModel = Field(..., description="Model used for similarity calculation")
-    
+
     # Context information
     matched_content: Optional[str] = Field(None, description="Specific content that matched")
     match_explanation: Optional[str] = Field(None, description="Explanation of why this result matched")
-    
+
     # Metadata
-    retrieved_at: datetime = Field(default_factory=datetime.utcnow)
-    
+    retrieved_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
 
@@ -238,20 +238,20 @@ class HybridSearchConfig(BaseModel):
     """
     Configuration for hybrid search combining vector and keyword search.
     """
-    
+
     # Weight distribution
     vector_weight: float = Field(0.7, description="Weight for vector similarity")
     keyword_weight: float = Field(0.3, description="Weight for keyword matching")
-    
+
     # Keyword search settings
     enable_fuzzy_matching: bool = Field(True, description="Enable fuzzy keyword matching")
     min_keyword_length: int = Field(3, description="Minimum keyword length")
     stemming_enabled: bool = Field(True, description="Enable keyword stemming")
-    
+
     # Vector search settings
     vector_similarity_metric: str = Field("cosine", description="Similarity metric for vectors")
     normalize_vectors: bool = Field(True, description="Normalize vectors before comparison")
-    
+
     # Re-ranking settings
     rerank_top_k: int = Field(50, description="Number of candidates for re-ranking")
     rerank_model: Optional[str] = Field(None, description="Model for re-ranking")
@@ -261,7 +261,7 @@ class HybridSearchConfig(BaseModel):
 def get_database_schema() -> Dict[str, Any]:
     """
     Get the database schema definition for multi-modal RAG system.
-    
+
     Returns:
         Dictionary containing table definitions and indexes.
     """

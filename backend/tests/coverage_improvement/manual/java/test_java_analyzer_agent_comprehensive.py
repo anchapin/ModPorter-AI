@@ -12,6 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
+# Add ai-engine directory to Python path for JavaAnalyzerAgent
+ai_engine_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai-engine")
+if ai_engine_path not in sys.path:
+    sys.path.insert(0, ai_engine_path)
+
 # Mock magic library before importing modules that use it
 sys.modules['magic'] = Mock()
 sys.modules['magic'].open = Mock(return_value=Mock())
@@ -34,7 +39,7 @@ sys.modules['javalang'].tokenize = mock_tokenizer
 sys.modules['javalang'].tree = mock_tree
 
 # Import module to test
-from java_analyzer_agent import JavaAnalyzerAgent
+from agents.java_analyzer import JavaAnalyzerAgent
 
 
 class TestJavaAnalyzerAgent:
@@ -43,7 +48,7 @@ class TestJavaAnalyzerAgent:
     def test_java_analyzer_agent_import(self):
         """Test that the JavaAnalyzerAgent can be imported successfully"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             assert JavaAnalyzerAgent is not None
         except ImportError:
             pytest.skip("Could not import JavaAnalyzerAgent")
@@ -51,14 +56,14 @@ class TestJavaAnalyzerAgent:
     def test_java_analyzer_agent_initialization(self):
         """Test initializing the Java analyzer agent"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             # Try to create an instance
             try:
                 agent = JavaAnalyzerAgent()
                 assert agent is not None
             except Exception:
                 # Mock the LLM if needed
-                with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+                with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                     mock_llm.return_value = Mock()
                     agent = JavaAnalyzerAgent()
                     assert agent is not None
@@ -68,10 +73,10 @@ class TestJavaAnalyzerAgent:
     def test_analyze_mod_structure(self):
         """Test the analyze_mod_structure method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -97,10 +102,10 @@ class TestJavaAnalyzerAgent:
     def test_extract_dependencies(self):
         """Test the extract_dependencies method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -123,10 +128,10 @@ class TestJavaAnalyzerAgent:
     def test_identify_mod_features(self):
         """Test the identify_mod_features method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -149,10 +154,10 @@ class TestJavaAnalyzerAgent:
     def test_generate_mod_report(self):
         """Test the generate_mod_report method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -171,17 +176,17 @@ class TestJavaAnalyzerAgent:
     def test_parse_java_files(self):
         """Test the _parse_java_files method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
 
                 # Mock javalang
-                with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+                with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                     mock_parse.return_value = Mock()
 
                     # Try to call the method
@@ -197,10 +202,10 @@ class TestJavaAnalyzerAgent:
     def test_analyze_java_class(self):
         """Test the _analyze_java_class method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -225,10 +230,10 @@ class TestJavaAnalyzerAgent:
     def test_analyze_java_method(self):
         """Test the _analyze_java_method method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -253,10 +258,10 @@ class TestJavaAnalyzerAgent:
     def test_extract_minecraft_events(self):
         """Test the extract_minecraft_events method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -279,10 +284,10 @@ class TestJavaAnalyzerAgent:
     def test_identify_mod_entities(self):
         """Test the identify_mod_entities method"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
 
             # Mock dependencies
-            with patch('java_analyzer_agent.ChatOpenAI') as mock_llm:
+            with patch('agents.java_analyzer.ChatOpenAI') as mock_llm:
                 mock_llm.return_value = Mock()
 
                 # Create agent instance
@@ -309,7 +314,7 @@ class TestJavaAnalyzerAgentMethods:
     def test_java_analyzer_agent_methods_import(self):
             """Test that the JavaAnalyzerAgent methods are available"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
                 # Create an instance to test methods
                 agent = JavaAnalyzerAgent()
                 assert hasattr(agent, 'analyze_jar_for_mvp')
@@ -321,13 +326,13 @@ class TestJavaAnalyzerAgentMethods:
     def test_java_analyzer_agent_mvp_method(self):
             """Test the analyze_jar_for_mvp method"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
 
                 # Mock the jar file access
-                with patch('java_analyzer_agent.zipfile.ZipFile') as mock_zipfile:
+                with patch('agents.java_analyzer.zipfile.ZipFile') as mock_zipfile:
                     mock_zip = Mock()
                     mock_zipfile.return_value = mock_zip
                     mock_zip.infolist.return_value = []
@@ -346,7 +351,7 @@ class TestJavaAnalyzerAgentMethods:
     def test_extract_texture_path(self):
             """Test the _extract_texture_path method"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
@@ -373,7 +378,7 @@ class TestJavaAnalyzerAgentMethods:
     def test_extract_registry_name(self):
             """Test the _extract_registry_name method"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
@@ -401,10 +406,10 @@ class TestJavaAnalyzerAgentMethods:
     def test_extract_inheritance_info(self):
         """Test the extract_inheritance_info method"""
         try:
-            from java_analyzer_agent import JavaClassAnalyzer
+            from agents.java_analyzer import JavaClassAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -431,10 +436,10 @@ class TestJavaAnalyzerAgentMethods:
     def test_extract_field_info(self):
         """Test the extract_field_info method"""
         try:
-            from java_analyzer_agent import JavaClassAnalyzer
+            from agents.java_analyzer import JavaClassAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -459,10 +464,10 @@ class TestJavaAnalyzerAgentMethods:
     def test_identify_minecraft_class_type(self):
         """Test the identify_minecraft_class_type method"""
         try:
-            from java_analyzer_agent import JavaClassAnalyzer
+            from agents.java_analyzer import JavaClassAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -494,7 +499,7 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_java_analyzer_agent_additional_import(self):
         """Test that the JavaAnalyzerAgent has additional methods"""
         try:
-            from java_analyzer_agent import JavaAnalyzerAgent
+            from agents.java_analyzer import JavaAnalyzerAgent
             assert JavaAnalyzerAgent is not None
         except ImportError:
             pytest.skip("Could not import JavaAnalyzerAgent")
@@ -502,13 +507,13 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_parse_java_sources_for_register(self):
             """Test the _parse_java_sources_for_register method"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
 
                 # Mock dependencies
-                with patch('java_analyzer_agent.zipfile.ZipFile') as mock_zipfile:
+                with patch('agents.java_analyzer.zipfile.ZipFile') as mock_zipfile:
                     mock_zip = Mock()
                     mock_zipfile.return_value = mock_zip
                     mock_zip.infolist.return_value = []
@@ -527,7 +532,7 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_analyze_mod_structure(self):
             """Test the analyze_mod_structure method if it exists"""
             try:
-                from java_analyzer_agent import JavaAnalyzerAgent
+                from agents.java_analyzer import JavaAnalyzerAgent
 
                 # Create agent instance
                 agent = JavaAnalyzerAgent()
@@ -535,7 +540,7 @@ class TestJavaAnalyzerAgentAdditionalMethods:
                 # Check if method exists
                 if hasattr(agent, 'analyze_mod_structure'):
                     # Mock dependencies
-                    with patch('java_analyzer_agent.zipfile.ZipFile') as mock_zipfile:
+                    with patch('agents.java_analyzer.zipfile.ZipFile') as mock_zipfile:
                         mock_zip = Mock()
                         mock_zipfile.return_value = mock_zip
                         mock_zip.infolist.return_value = []
@@ -556,10 +561,10 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_extract_method_info(self):
         """Test the extract_method_info method"""
         try:
-            from java_analyzer_agent import JavaMethodAnalyzer
+            from agents.java_analyzer import JavaMethodAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -586,10 +591,10 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_identify_minecraft_events(self):
         """Test the identify_minecraft_events method"""
         try:
-            from java_analyzer_agent import JavaMethodAnalyzer
+            from agents.java_analyzer import JavaMethodAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -616,10 +621,10 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_extract_parameter_info(self):
         """Test the extract_parameter_info method"""
         try:
-            from java_analyzer_agent import JavaMethodAnalyzer
+            from agents.java_analyzer import JavaMethodAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance
@@ -643,10 +648,10 @@ class TestJavaAnalyzerAgentAdditionalMethods:
     def test_identify_minecraft_api_calls(self):
         """Test the identify_minecraft_api_calls method"""
         try:
-            from java_analyzer_agent import JavaMethodAnalyzer
+            from agents.java_analyzer import JavaMethodAnalyzer
 
             # Mock dependencies
-            with patch('java_analyzer_agent.javalang.parse.parse') as mock_parse:
+            with patch('agents.java_analyzer.javalang.parse.parse') as mock_parse:
                 mock_parse.return_value = Mock()
 
                 # Create analyzer instance

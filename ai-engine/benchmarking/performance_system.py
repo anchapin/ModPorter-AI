@@ -4,16 +4,149 @@ from .metrics_collector import PerformanceMetricsCollector as ExternalPerformanc
 # If it's ai_engine.src.benchmarking.metrics_collector, the import path might need adjustment
 # based on how Python resolves modules in this project structure.
 # For now, proceeding with the relative import.
+import time
+import json
+import os
 
 class BenchmarkExecutor:
     def __init__(self):
-        pass
+        self.benchmark_results = {}
+        self.active_benchmarks = {}
 
     def run_benchmark(self, scenario):
-        # Placeholder for benchmark execution logic
-        print(f"Running benchmark for scenario: {scenario.get('scenario')}")
-        # Simulate collecting some metrics
-        return {"cpu_usage": 50, "memory_usage": 256}
+        """
+        Execute performance benchmark for given scenario
+
+        Args:
+            scenario (dict): Benchmark scenario configuration
+
+        Returns:
+            dict: Performance metrics and results
+        """
+        scenario_id = scenario.get('scenario_id', 'unknown')
+        scenario_name = scenario.get('scenario_name', 'Unknown Scenario')
+
+        print(f"Running benchmark for scenario: {scenario_name} (ID: {scenario_id})")
+
+        # Initialize results structure
+        results = {
+            'scenario_id': scenario_id,
+            'scenario_name': scenario_name,
+            'start_time': time.time(),
+            'metrics': {},
+            'status': 'running'
+        }
+
+        try:
+            # Extract scenario parameters
+            parameters = scenario.get('parameters', {})
+            duration_seconds = parameters.get('duration_seconds', 60)
+            target_load = parameters.get('target_load', 'medium')
+
+            # Simulate different benchmark types
+            if scenario.get('type') == 'conversion':
+                results['metrics'] = self._run_conversion_benchmark(scenario)
+            elif scenario.get('type') == 'load':
+                results['metrics'] = self._run_load_benchmark(scenario)
+            elif scenario.get('type') == 'memory':
+                results['metrics'] = self._run_memory_benchmark(scenario)
+            else:
+                results['metrics'] = self._run_generic_benchmark(scenario)
+
+            results['status'] = 'completed'
+            results['success'] = True
+
+        except Exception as e:
+            results['status'] = 'failed'
+            results['error'] = str(e)
+            results['success'] = False
+
+        finally:
+            results['end_time'] = time.time()
+            results['duration'] = results['end_time'] - results['start_time']
+
+        # Store results
+        self.benchmark_results[scenario_id] = results
+
+        return results
+
+    def _run_conversion_benchmark(self, scenario):
+        """Benchmark mod conversion performance"""
+        parameters = scenario.get('parameters', {})
+        mod_size = parameters.get('mod_size_mb', 10)
+        complexity = parameters.get('complexity', 'medium')
+
+        # Simulate conversion metrics
+        base_time = mod_size * 2  # 2 seconds per MB base
+        complexity_multiplier = {'simple': 0.5, 'medium': 1.0, 'complex': 2.0}.get(complexity, 1.0)
+
+        processing_time = base_time * complexity_multiplier
+        memory_usage = 50 + (mod_size * 5)  # MB
+
+        return {
+            'processing_time_seconds': processing_time,
+            'memory_usage_mb': memory_usage,
+            'cpu_usage_percent': min(90, 30 + (mod_size * 2)),
+            'conversion_rate_mb_per_sec': mod_size / max(processing_time, 0.1),
+            'success_rate': 0.95 + (0.04 * (1 / complexity_multiplier)),
+            'files_processed': int(mod_size * 10),
+            'errors_detected': max(0, int(mod_size * 0.1 * (1 - complexity_multiplier)))
+        }
+
+    def _run_load_benchmark(self, scenario):
+        """Benchmark system under load"""
+        parameters = scenario.get('parameters', {})
+        concurrent_users = parameters.get('concurrent_users', 10)
+        request_rate = parameters.get('requests_per_second', 100)
+
+        # Simulate load test metrics
+        base_latency = 50  # ms
+        latency_increase = concurrent_users * 2  # ms per user
+        avg_latency = base_latency + latency_increase
+
+        return {
+            'avg_response_time_ms': avg_latency,
+            'p95_response_time_ms': avg_latency * 1.5,
+            'p99_response_time_ms': avg_latency * 2.0,
+            'throughput_rps': min(request_rate, 1000 / (avg_latency / 1000)),
+            'cpu_usage_percent': min(95, 40 + (concurrent_users * 3)),
+            'memory_usage_mb': 100 + (concurrent_users * 10),
+            'error_rate_percent': max(0, (avg_latency - 200) / 100),
+            'concurrent_users_handled': concurrent_users
+        }
+
+    def _run_memory_benchmark(self, scenario):
+        """Benchmark memory usage patterns"""
+        parameters = scenario.get('parameters', {})
+        data_size = parameters.get('data_size_mb', 100)
+        iterations = parameters.get('iterations', 1000)
+
+        # Simulate memory metrics
+        peak_memory = data_size * 1.5  # 50% overhead
+        memory_efficiency = min(0.95, 0.7 + (1000 / iterations) * 0.1)
+
+        return {
+            'peak_memory_usage_mb': peak_memory,
+            'avg_memory_usage_mb': peak_memory * 0.8,
+            'memory_efficiency_percent': memory_efficiency * 100,
+            'gc_frequency_per_minute': max(1, iterations / 100),
+            'memory_leaks_detected': 0 if memory_efficiency > 0.9 else 1,
+            'allocation_rate_mb_per_sec': data_size / 60,  # Assume 1 minute test
+            'deallocation_rate_mb_per_sec': (data_size * memory_efficiency) / 60
+        }
+
+    def _run_generic_benchmark(self, scenario):
+        """Generic benchmark for unknown scenarios"""
+        return {
+            'cpu_usage_percent': 45,
+            'memory_usage_mb': 200,
+            'disk_io_mb_per_sec': 50,
+            'network_io_mb_per_sec': 25,
+            'response_time_ms': 100,
+            'throughput_ops_per_sec': 150,
+            'error_rate_percent': 1.0,
+            'availability_percent': 99.9
+        }
 
 # The old internal PerformanceMetricsCollector class is no longer needed here,
 # as PerformanceBenchmarkingSystem now uses ExternalPerformanceMetricsCollector.
@@ -21,7 +154,14 @@ class BenchmarkExecutor:
 
 class LoadTestGenerator:
     def __init__(self):
-        pass
+        self.active_loads = {}
+        self.load_generators = {
+            'cpu': self._generate_cpu_load,
+            'memory': self._generate_memory_load,
+            'io': self._generate_io_load,
+            'network': self._generate_network_load,
+            'entity': self._generate_entity_load
+        }
 
     def generate_load(self, scenario):
         """Generates a simulated load based on scenario parameters."""
@@ -60,6 +200,195 @@ class LoadTestGenerator:
 
         print("Load generation simulation complete.")
         return {"load_generated": True, "details": load_details}
+
+    def _generate_cpu_load(self, intensity, duration_seconds):
+        """Generate CPU load for testing"""
+        print(f"Generating CPU load: intensity={intensity}, duration={duration_seconds}s")
+
+        # Simulate CPU-intensive work
+        start_time = time.time()
+        operations_per_second = intensity * 1000000  # Millions of operations
+
+        while time.time() - start_time < duration_seconds:
+            # Perform CPU-intensive calculations
+            result = sum(i * i for i in range(1000))
+            # Small delay to control intensity
+            if intensity < 0.8:
+                time.sleep(0.001 * (1 - intensity))
+
+        return {"cpu_cycles": operations_per_second * duration_seconds, "intensity": intensity}
+
+    def _generate_memory_load(self, size_mb, duration_seconds):
+        """Generate memory load for testing"""
+        print(f"Generating memory load: size={size_mb}MB, duration={duration_seconds}s")
+
+        # Allocate memory to simulate load
+        data_chunks = []
+        chunk_size = 1024 * 1024  # 1MB chunks
+        num_chunks = int(size_mb)
+
+        try:
+            for i in range(num_chunks):
+                # Allocate 1MB chunk
+                chunk = bytearray(chunk_size)
+                # Fill with some data to ensure it's actually allocated
+                for j in range(0, chunk_size, 4096):
+                    chunk[j] = i % 256
+                data_chunks.append(chunk)
+
+            # Hold memory for specified duration
+            time.sleep(duration_seconds)
+
+            return {
+                "memory_allocated_mb": size_mb,
+                "chunks_allocated": len(data_chunks),
+                "duration_seconds": duration_seconds
+            }
+
+        finally:
+            # Clean up memory
+            data_chunks.clear()
+
+    def _generate_io_load(self, operations, duration_seconds):
+        """Generate I/O load for testing"""
+        print(f"Generating I/O load: operations={operations}, duration={duration_seconds}s")
+
+        import tempfile
+        import os
+
+        temp_files = []
+        start_time = time.time()
+
+        try:
+            # Perform file I/O operations
+            for i in range(min(operations, 100)):  # Limit to prevent disk filling
+                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                    temp_files.append(tmp_file.name)
+                    # Write data
+                    data = os.urandom(1024 * 100)  # 100KB of random data
+                    tmp_file.write(data)
+                    tmp_file.flush()
+                    os.fsync(tmp_file.fileno())  # Force write to disk
+
+                    # Read data back
+                    tmp_file.seek(0)
+                    read_data = tmp_file.read()
+
+                    # Verify data integrity
+                    if len(read_data) != len(data):
+                        raise IOError("Data integrity check failed")
+
+            # Calculate I/O metrics
+            total_data_mb = (operations * 100) / (1024 * 1024)  # Convert to MB
+            actual_duration = time.time() - start_time
+
+            return {
+                "io_operations": min(operations, 100),
+                "data_processed_mb": total_data_mb,
+                "duration_seconds": actual_duration,
+                "throughput_mb_per_sec": total_data_mb / max(actual_duration, 0.1)
+            }
+
+        finally:
+            # Clean up temporary files
+            for temp_file in temp_files:
+                try:
+                    os.unlink(temp_file)
+                except:
+                    pass
+
+    def _generate_network_load(self, bandwidth_mbps, duration_seconds):
+        """Generate network load for testing"""
+        print(f"Generating network load: bandwidth={bandwidth_mbps}Mbps, duration={duration_seconds}s")
+
+        # Simulate network operations
+        packets_per_second = bandwidth_mbps * 1000  # Approximate packets
+        packet_size = 1500  # bytes
+
+        total_packets = int(packets_per_second * duration_seconds)
+        simulated_latency = 50  # ms
+
+        # Simulate network operations
+        start_time = time.time()
+        packets_sent = 0
+
+        while time.time() - start_time < duration_seconds and packets_sent < total_packets:
+            # Simulate packet transmission
+            packet_data = os.urandom(packet_size)
+
+            # Simulate network latency
+            time.sleep(simulated_latency / 1000)
+
+            packets_sent += 1
+
+        actual_duration = time.time() - start_time
+        data_sent_mb = (packets_sent * packet_size) / (1024 * 1024)
+
+        return {
+            "packets_sent": packets_sent,
+            "data_sent_mb": data_sent_mb,
+            "duration_seconds": actual_duration,
+            "actual_bandwidth_mbps": (data_sent_mb * 8) / max(actual_duration, 0.1)
+        }
+
+    def _generate_entity_load(self, entity_count, complexity_level):
+        """Generate entity-based load for Minecraft-like scenarios"""
+        print(f"Generating entity load: count={entity_count}, complexity={complexity_level}")
+
+        # Simulate entity processing
+        entities = []
+        start_time = time.time()
+
+        for i in range(entity_count):
+            # Create entity data structure
+            entity = {
+                'id': i,
+                'position': (i % 100, (i // 100) % 100, (i // 10000) % 100),
+                'velocity': (0, 0, 0),
+                'health': 100,
+                'type': f'entity_type_{i % 10}',
+                'active': True
+            }
+            entities.append(entity)
+
+            # Simulate entity AI/processing based on complexity
+            if complexity_level == 'high':
+                # Complex AI calculations
+                for j in range(100):
+                    entity['position'] = (
+                        entity['position'][0] + 0.1,
+                        entity['position'][1],
+                        entity['position'][2]
+                    )
+            elif complexity_level == 'medium':
+                # Medium complexity
+                for j in range(10):
+                    entity['health'] = max(0, entity['health'] - 1)
+            else:
+                # Simple processing
+                entity['active'] = i % 2 == 0
+
+        processing_time = time.time() - start_time
+
+        return {
+            'entities_processed': len(entities),
+            'processing_time_seconds': processing_time,
+            'entities_per_second': len(entities) / max(processing_time, 0.001),
+            'complexity_level': complexity_level
+        }
+
+    def stop_load(self, load_id):
+        """Stop active load generation"""
+        if load_id in self.active_loads:
+            load_info = self.active_loads[load_id]
+            load_info['stopped'] = True
+            load_info['stop_time'] = time.time()
+            return True
+        return False
+
+    def get_active_loads(self):
+        """Get information about active loads"""
+        return self.active_loads.copy()
 
 class PerformanceAnalyzer:
     def __init__(self):

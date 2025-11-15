@@ -10,9 +10,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, P
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from db.base import get_db
+from ..db.base import get_db
 from ..db import crud
-from services.asset_conversion_service import asset_conversion_service
+from ..services.asset_conversion_service import asset_conversion_service
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)

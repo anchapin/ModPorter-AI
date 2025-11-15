@@ -159,16 +159,73 @@ Generate only the test code, no explanations:
     
     def _generate_template_test(self, source_code: str, function_name: str) -> str:
         """Fallback template-based test generation"""
+        # Parse the function to extract basic information
+        try:
+            tree = ast.parse(source_code)
+            func_node = None
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef) and node.name == function_name:
+                    func_node = node
+                    break
+
+            # Extract parameter information
+            params = []
+            return_type = None
+            if func_node:
+                for arg in func_node.args.args:
+                    params.append(arg.arg)
+                if func_node.returns:
+                    return_type = ast.unparse(func_node.returns) if hasattr(ast, 'unparse') else 'Any'
+
+            # Generate appropriate test parameters
+            test_params = []
+            for i, param in enumerate(params):
+                test_params.append(f"test_{param}_{i}")
+
+        except Exception:
+            # Fallback if parsing fails
+            params = ["test_param"]
+            test_params = ["test_param_1"]
+            return_type = "Any"
+
+        param_str = ", ".join(test_params)
+
         return f'''
 def test_{function_name}_basic():
     """Basic test for {function_name}"""
-    # TODO: Implement test based on function behavior
-    assert True  # Placeholder
+    # Test with typical inputs
+    {param_str if param_str else "pass"}
+    try:
+        result = {function_name}({param_str})
+        # Basic assertion - result should not be None for non-void functions
+        {"" if return_type == "None" else "assert result is not None"}
+    except Exception as e:
+        # If function is expected to raise exceptions, handle them gracefully
+        assert isinstance(e, (ValueError, TypeError, AttributeError))
 
 def test_{function_name}_edge_cases():
     """Edge case tests for {function_name}"""
-    # TODO: Add edge case testing
-    assert True  # Placeholder
+    # Test with edge cases
+    edge_cases = [
+        # None values
+        {", ".join(["None"] * len(params)) if params else "pass")},
+        # Empty values
+        {", ".join([f'"" if isinstance(test_{param}_{i}, str) else 0' for i, param in enumerate(params)]) if params else "pass")},
+        # Large values
+        {", ".join([f'999999 if isinstance(test_{param}_{i}, (int, float)) else "x" * 1000' for i, param in enumerate(params)]) if params else "pass"}
+    ]
+
+    for case in edge_cases:
+        try:
+            result = {function_name}({case if case else ""})
+            # Should handle edge cases gracefully or raise appropriate exceptions
+            {"" if return_type == "None" else "assert result is not None"}
+        except (ValueError, TypeError, AttributeError):
+            # Expected exceptions for invalid inputs
+            pass
+        except Exception as e:
+            # Unexpected exceptions should be investigated
+            raise AssertionError(f"Unexpected exception for edge case {{case}}: {{e}}")
 '''
 
 
@@ -181,31 +238,75 @@ class TemplateTestGenerator:
         endpoint = route_info.get("endpoint", "")
         method = route_info.get("method", "GET")
         path_params = route_info.get("path_params", [])
-        
+
         test_name = f"test_{method.lower()}_{endpoint.strip('/').replace('/', '_')}"
-        
+
+        # Generate appropriate test data based on HTTP method
+        test_data = ""
+        if method.upper() in ["POST", "PUT", "PATCH"]:
+            test_data = f'''
+    # Test with valid data
+    valid_data = {{
+        "name": "test_value",
+        "description": "Test description"
+    }}
+    response = client.{method.lower()}("{endpoint}", json=valid_data)
+'''
+        else:
+            test_data = f'''response = client.{method.lower()}("{endpoint}")'''
+
         return f'''
 @pytest.mark.asyncio
 async def {test_name}_success():
     """Test successful {method} {endpoint}"""
-    # TODO: Implement test for successful response
-    response = client.{method.lower()}("{endpoint}")
-    assert response.status_code == 200
+    # Test with valid request data and authentication
+    with patch('src.main.get_current_user', return_value={{'id': 1, 'username': 'test_user'}}):
+        {test_data}
+        assert response.status_code in [200, 201]  # 200 for GET/PUT, 201 for POST
+        response_data = response.json()
+        assert response_data is not None
+        # Validate response structure based on endpoint
+        if isinstance(response_data, dict):
+            assert "status_code" in response_data or "data" in response_data
 
 @pytest.mark.asyncio
 async def {test_name}_not_found():
     """Test {method} {endpoint} with missing resource"""
-    # TODO: Implement test for 404 response
-    response = client.{method.lower()}("{endpoint}/99999")
-    assert response.status_code == 404
+    with patch('src.main.get_current_user', return_value={{'id': 1, 'username': 'test_user'}}):
+        # Test with non-existent resource ID
+        if '{endpoint}'.endswith('/'):
+            test_endpoint = f"{{'{endpoint}'}}99999"
+        else:
+            test_endpoint = f"{{'{endpoint}'}}/99999"
+
+        response = client.{method.lower()}(test_endpoint)
+        assert response.status_code == 404
+        response_data = response.json()
+        assert "detail" in response_data or "message" in response_data
 
 @pytest.mark.asyncio
 async def {test_name}_validation_error():
     """Test {method} {endpoint} with invalid data"""
-    # TODO: Implement test for validation errors
-    invalid_data = {{"invalid": "data"}}
-    response = client.{method.lower()}("{endpoint}", json=invalid_data)
-    assert response.status_code == 422
+    with patch('src.main.get_current_user', return_value={{'id': 1, 'username': 'test_user'}}):
+        # Test various invalid data scenarios
+        invalid_scenarios = [
+            {{"": ""}},  # Empty object
+            {{"invalid_field": 123}},  # Invalid field names
+            {{"name": None}},  # Null values
+        ]
+
+        for invalid_data in invalid_scenarios:
+            response = client.{method.lower()}("{endpoint}", json=invalid_data)
+            assert response.status_code in [400, 422]  # Bad Request or Validation Error
+            response_data = response.json()
+            assert "detail" in response_data or "message" in response_data
+
+@pytest.mark.asyncio
+async def {test_name}_unauthorized():
+    """Test {method} {endpoint} without authentication"""
+    # Test without authentication
+    response = client.{method.lower()}("{endpoint}")
+    assert response.status_code in [401, 403]  # Unauthorized or Forbidden
 '''
     
     @staticmethod
@@ -213,19 +314,88 @@ async def {test_name}_validation_error():
         """Generate service layer tests"""
         class_name = service_info.get("class_name", "Service")
         methods = service_info.get("methods", [])
-        
+
         tests = []
         for method in methods:
-            test_name = f"test_{class_name.lower()}_{method['name']}"
+            method_name = method.get('name', 'unknown_method')
+            test_name = f"test_{class_name.lower()}_{method_name}"
+            params = method.get('params', [])
+
+            # Generate test parameters
+            param_str = ", ".join([f"mock_{p}" for p in params]) if params else ""
+
             tests.append(f'''
-def {test_name}_basic():
-    """Test {class_name}.{method['name']}"""
-    # TODO: Setup mocks and test basic functionality
+@pytest.mark.asyncio
+async def {test_name}_success():
+    """Test {class_name}.{method_name} - successful execution"""
+    # Setup mocks and test basic functionality
+    mock_db = AsyncMock()
+    mock_service = {class_name}(mock_db)
+
     # Mock external dependencies
-    # Test return values
-    assert True  # Placeholder
+    with patch('src.services.{class_name.lower()}.logger') as mock_logger:
+        try:
+            # Test with valid parameters
+            {param_str if param_str else "pass"}
+            result = await mock_service.{method_name}({param_str})
+
+            # Test return values
+            assert result is not None
+
+            # Verify no unexpected exceptions occurred
+            mock_logger.exception.assert_not_called()
+
+        except Exception as e:
+            # If method is expected to raise exceptions, validate them
+            assert isinstance(e, (ValueError, TypeError, AttributeError))
+
+@pytest.mark.asyncio
+async def {test_name}_database_error():
+    """Test {class_name}.{method_name} - database error handling"""
+    # Test database error scenarios
+    mock_db = AsyncMock()
+    mock_service = {class_name}(mock_db)
+
+    # Simulate database errors
+    mock_db.execute.side_effect = Exception("Database connection failed")
+
+    with patch('src.services.{class_name.lower()}.logger') as mock_logger:
+        try:
+            {param_str if param_str else "pass"}
+            result = await mock_service.{method_name}({param_str})
+            # If no exception, ensure appropriate error handling
+            assert False, "Expected database error was not raised"
+        except Exception:
+            # Expected database error - verify logging
+            mock_logger.exception.assert_called_once()
+
+@pytest.mark.asyncio
+async def {test_name}_invalid_input():
+    """Test {class_name}.{method_name} - invalid input handling"""
+    mock_db = AsyncMock()
+    mock_service = {class_name}(mock_db)
+
+    # Test with invalid parameters
+    invalid_params = [
+        None,  # None values
+        "",    # Empty strings
+        {{}},  # Empty objects
+    ]
+
+    for invalid_param in invalid_params[:1]:  # Test first invalid type
+        with patch('src.services.{class_name.lower()}.logger'):
+            try:
+                result = await mock_service.{method_name}(invalid_param)
+                # If no exception, method should handle invalid input gracefully
+                assert result is not None
+            except (ValueError, TypeError):
+                # Expected exceptions for invalid input
+                pass
+            except Exception as e:
+                # Unexpected exceptions should fail the test
+                raise AssertionError(f"Unexpected exception for invalid input: {{e}}")
 ''')
-        
+
         return "\n".join(tests)
 
 
@@ -237,34 +407,122 @@ class PropertyTestGenerator:
         """Generate property-based tests"""
         if not HYPOTHESIS_AVAILABLE:
             return "# Hypothesis not available for property-based testing\n"
-        
+
         func_name = function_info.get("name", "function")
         params = function_info.get("parameters", [])
-        
+        return_type = function_info.get("return_type", "Any")
+
         strategies = []
-        for param in params:
+        param_names = []
+        for i, param in enumerate(params):
             param_type = param.get("type", "str")
+            param_name = param.get("name", f"arg{i}")
+            param_names.append(param_name)
+
             if param_type == "int":
-                strategies.append("st.integers(min_value=0, max_value=1000)")
+                strategies.append(f"st.integers(min_value=-1000, max_value=1000)")
+            elif param_type == "positive_int":
+                strategies.append(f"st.integers(min_value=0, max_value=1000)")
             elif param_type == "str":
-                strategies.append("st.text(min_size=1, max_size=10)")
+                strategies.append(f"st.text(min_size=1, max_size=50, alphabet=st.characters(whitelist_categories=('L', 'N', 'Zs')))")
+            elif param_type == "email":
+                strategies.append(f"st.emails()")
             elif param_type == "float":
-                strategies.append("st.floats(min_value=0.0, max_value=100.0)")
+                strategies.append(f"st.floats(min_value=-100.0, max_value=100.0, allow_nan=False, allow_infinity=False)")
+            elif param_type == "bool":
+                strategies.append(f"st.booleans()")
+            elif param_type == "list":
+                strategies.append(f"st.lists(st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
+            elif param_type == "dict":
+                strategies.append(f"st.dictionaries(keys=st.text(min_size=1, max_size=10), values=st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
             else:
-                strategies.append("st.just(None)")
-        
-        strategy_args = ", ".join([f"arg{i}" for i in range(len(strategies))])
-        param_args = ", ".join([f"arg{i}" for i in range(len(strategies))])
-        
+                strategies.append(f"st.just(None)")
+
+        strategy_args = ", ".join([f"{name}={strategy}" for name, strategy in zip(param_names, strategies)])
+        param_args = ", ".join(param_names)
+
+        # Generate appropriate property assertions based on return type
+        if return_type in ["int", "positive_int"]:
+            assertions = f"""
+    # Test integer-specific properties
+    if isinstance(result, int):
+        assert isinstance(result, int)
+        # If function claims to return positive integers
+        if "{return_type}" == "positive_int":
+            assert result >= 0
+        # Test idempotency for pure functions
+        if len([{param_args}]) <= 3:  # Only test idempotency for simple inputs
+            result2 = {func_name}({param_args})
+            assert result == result2"""
+        elif return_type == "str":
+            assertions = f"""
+    # Test string-specific properties
+    if isinstance(result, str):
+        assert isinstance(result, str)
+        # Test that empty inputs don't cause crashes
+        if any(arg == "" for arg in [{param_args}]):
+            assert result is not None
+        # Test idempotency for pure functions
+        if len([{param_args}]) <= 3:
+            result2 = {func_name}({param_args})
+            assert result == result2"""
+        elif return_type == "list":
+            assertions = f"""
+    # Test list-specific properties
+    if isinstance(result, list):
+        assert isinstance(result, list)
+        # Test that list order is consistent for same inputs
+        if len([{param_args}]) <= 3:
+            result2 = {func_name}({param_args})
+            assert result == result2"""
+        elif return_type == "dict":
+            assertions = f"""
+    # Test dict-specific properties
+    if isinstance(result, dict):
+        assert isinstance(result, dict)
+        # Test that dict structure is consistent
+        if len([{param_args}]) <= 3:
+            result2 = {func_name}({param_args})
+            assert set(result.keys()) == set(result2.keys())"""
+        else:
+            assertions = f"""
+    # Test generic properties
+    assert result is not None or {func_name} is expected_to_return_none
+    # Test that function doesn't raise exceptions for valid inputs
+    if len([{param_args}]) <= 3:
+        result2 = {func_name}({param_args})
+        assert type(result) == type(result2)"""
+
         return f'''
 @given({strategy_args})
+@example({", ".join([f"example_{i}" for i in range(len(param_names))])})
 def test_{func_name}_properties({param_args}):
     """Property-based test for {func_name}"""
-    # TODO: Test properties that should always hold
-    # Example: assert output >= 0 if function returns positive numbers
-    # result = {func_name}({param_args})
-    # assert isinstance(result, expected_type)
-    pass
+    # Test properties that should always hold
+    try:
+        result = {func_name}({param_args})
+
+        # Basic type and consistency properties
+        assert result is not None or "{return_type}" == "None"
+
+        # Test specific properties based on return type
+        {assertions}
+
+        # Test commutativity for functions with same-type parameters (if applicable)
+        # Test associativity for binary operations (if applicable)
+        # Test identity properties (if applicable)
+
+    except (ValueError, TypeError, ZeroDivisionError, IndexError, KeyError):
+        # Expected exceptions for certain edge cases are acceptable
+        pass
+    except Exception as e:
+        # Unexpected exceptions should fail the test
+        raise AssertionError(f"Unexpected exception in property test: {{e}}")
+
+# Example values for @example decorator
+example_0 = 1 if len({param_names}) > 0 else None
+example_1 = "test" if len({param_names}) > 1 else None
+example_2 = 3.14 if len({param_names}) > 2 else None
 '''
 
 
@@ -535,11 +793,81 @@ class AutomatedTestGenerator:
 @pytest.mark.asyncio
 async def test_{candidate["name"]}_basic():
     """Basic test for {candidate["name"]}"""
-    # TODO: Implement test based on function behavior
-    # Setup test data
-    # Call the function
-    # Assert results
-    assert True  # Remove this and implement proper test
+    # Setup test data based on function parameters
+    test_params = []
+    mock_data = self._generate_mock_data_for_function(candidate["name"])
+
+    try:
+        # Import and call the function
+        module_path = candidate["module"].replace("/", ".").replace(".py", "")
+        function_module = importlib.import_module(module_path)
+        target_function = getattr(function_module, candidate["name"])
+
+        # Call with test parameters
+        if candidate["params"]:
+            result = target_function(*mock_data)
+        else:
+            result = target_function()
+
+        # Basic assertions
+        assert result is not None or target_function.__annotations__.get("return") == type(None)
+
+        # Test with edge cases
+        edge_cases = self._generate_edge_cases(candidate["params"])
+        for edge_case in edge_cases:
+            try:
+                if candidate["params"]:
+                    edge_result = target_function(*edge_case)
+                else:
+                    edge_result = target_function()
+                # Should handle edge cases gracefully
+                assert True
+            except (ValueError, TypeError, AttributeError):
+                # Expected exceptions for invalid inputs
+                pass
+
+    except ImportError:
+        pytest.skip(f"Could not import module: {{module_path}}")
+    except Exception as e:
+        # Handle any other exceptions gracefully
+        assert isinstance(e, (ValueError, TypeError, AttributeError)), f"Unexpected exception: {{e}}"
+
+def _generate_mock_data_for_function(self, func_name: str) -> list:
+    """Generate mock data for testing a function"""
+    # Generate basic mock data based on common patterns
+    return [
+        "test_string",  # String parameter
+        42,            # Integer parameter
+        3.14,          # Float parameter
+        True,          # Boolean parameter
+        [],            # List parameter
+        {{}}           # Dict parameter
+    ][:3]  # Limit to first 3 parameters
+
+def _generate_edge_cases(self, params: list) -> list:
+    """Generate edge case data for function parameters"""
+    edge_cases = []
+
+    # None values
+    none_case = [None] * len(params)
+    edge_cases.append(none_case)
+
+    # Empty values
+    empty_case = []
+    for param in params:
+        if "string" in param.lower() or "str" in param.lower():
+            empty_case.append("")
+        elif "int" in param.lower():
+            empty_case.append(0)
+        elif "list" in param.lower():
+            empty_case.append([])
+        elif "dict" in param.lower():
+            empty_case.append({{}})
+        else:
+            empty_case.append(None)
+    edge_cases.append(empty_case)
+
+    return edge_cases
 '''
     
     def _get_file_coverage(self, file_path: str) -> float:

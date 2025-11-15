@@ -11,6 +11,11 @@ from unittest.mock import Mock, patch, MagicMock
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
+# Add ai-engine directory to Python path for JavaAnalyzerAgent
+ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine')
+if ai_engine_path not in sys.path:
+    sys.path.insert(0, ai_engine_path)
+
 # Mock magic library before importing modules that use it
 sys.modules['magic'] = Mock()
 sys.modules['magic'].open = Mock(return_value=Mock())
@@ -230,12 +235,12 @@ class TestSimpleImports:
         """Test importing JavaAnalyzerAgent"""
         try:
             # Import the module
-            import java_analyzer_agent
+            from agents import java_analyzer
             # Test that class exists
             assert hasattr(java_analyzer_agent, 'JavaAnalyzerAgent')
 
             # Test instantiation
-            agent = java_analyzer_agent.JavaAnalyzerAgent()
+            agent = java_analyzer.JavaAnalyzerAgent()
             assert agent is not None
 
             # Test that it has the expected method
