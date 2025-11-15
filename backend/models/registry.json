@@ -576,6 +576,98 @@
       "tags": [
         "test"
       ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T16:21:46.219021",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T16:22:54.424977",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T16:40:59.580190",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
+      "is_active": false
+    },
+    {
+      "name": "test_model",
+      "version": "1.0.0",
+      "model_type": "sklearn",
+      "created_at": "2025-11-14T16:45:01.101244",
+      "file_path": "/tmp/model.joblib",
+      "file_size": 1024,
+      "checksum": "abc123",
+      "description": "Test model",
+      "performance_metrics": {
+        "accuracy": 0.95
+      },
+      "input_schema": {
+        "feature1": "float"
+      },
+      "output_schema": {
+        "prediction": "float"
+      },
+      "tags": [
+        "test"
+      ],
       "is_active": true
     }
   ],

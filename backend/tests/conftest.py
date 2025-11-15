@@ -5,6 +5,12 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+# Mock magic library before any imports that might use it
+sys.modules['magic'] = type(sys)('magic')
+sys.modules['magic'].open = lambda *args, **kwargs: None
+sys.modules['magic'].from_buffer = lambda buffer, mime=False: 'application/octet-stream' if mime else 'data'
+sys.modules['magic'].from_file = lambda filename, mime=False: 'application/octet-stream' if mime else 'data'
+
 # Add src directory to Python path
 backend_dir = Path(__file__).parent.parent
 src_dir = backend_dir / "src"
@@ -187,13 +193,13 @@ async def async_client():
     # Import modules to create fresh app instance
     import sys
     from pathlib import Path
-    
+
     # Add src to path (needed for CI environment)
     backend_dir = Path(__file__).parent.parent
     src_dir = backend_dir / "src"
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
-    
+
     from fastapi import FastAPI
     from db.base import get_db
     from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
@@ -203,13 +209,13 @@ async def async_client():
     import os
     from dotenv import load_dotenv
     from datetime import datetime
-    
+
     # Load environment variables
     load_dotenv()
-    
+
     # Create fresh FastAPI app
     app = FastAPI(title="ModPorter AI Backend Test")
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -218,7 +224,7 @@ async def async_client():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Include API routers
     app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
     app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
@@ -236,16 +242,16 @@ async def async_client():
     app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
     app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
     app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
-    
+
     # Add main health endpoint
     from pydantic import BaseModel
-    
+
     class HealthResponse(BaseModel):
         """Health check response model"""
         status: str
         version: str
         timestamp: str
-    
+
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
     async def health_check():
         """Check the health status of the API"""
@@ -254,7 +260,7 @@ async def async_client():
             version="1.0.0",
             timestamp=datetime.utcnow().isoformat()
         )
-    
+
     # Override database dependency to use our test engine
     test_session_maker = async_sessionmaker(
         bind=test_engine,
