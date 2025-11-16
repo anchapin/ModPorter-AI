@@ -1,4 +1,4 @@
-﻿name: CI - Integration Tests (Optimized)
+name: CI - Integration Tests (Optimized)
 
 on:
   pull_request:
