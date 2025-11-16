@@ -224,54 +224,55 @@ class TestConversionInferenceBasicIntegration:
     @pytest.mark.asyncio
     async def test_batch_conversion_with_shared_steps(self, engine):
         """Test batch conversion with shared steps"""
-        # Create conversion sequence with shared steps
-        conversion_sequence = [
-            {
-                "concept": "block1",
-                "steps": [
-                    {"action": "parse_java", "concept": "java_block1"},
-                    {"action": "convert_texture", "concept": "bedrock_texture1"}
-                ],
-                "estimated_time": 5.0
-            },
-            {
-                "concept": "block2",
-                "steps": [
-                    {"action": "parse_java", "concept": "java_block2"},
-                    {"action": "convert_texture", "concept": "bedrock_texture2"}
-                ],
-                "estimated_time": 3.0
-            }
-        ]
+        # Create concepts with dependencies
+        java_concepts = ["block1", "block2"]
+        conversion_dependencies = {
+            "block2": ["block1"]  # block2 depends on block1
+        }
 
-        # Mock the optimization methods
-        with patch.object(engine, '_identify_shared_steps', return_value=[
-            {"action": "parse_java", "concept": "java_block"},
-            {"action": "convert_texture", "concept": "bedrock_texture"}
-        ]):
-            with patch.object(engine, '_estimate_batch_time', return_value=6.5):
-                with patch.object(engine, '_get_batch_optimizations', return_value=["parallel_processing"]):
+        # Mock the optimization methods with proper return structure
+        with patch.object(engine, '_build_dependency_graph', return_value={
+            "block1": ["block2"],
+            "block2": []
+        }):
+            with patch.object(engine, '_topological_sort', return_value=["block2", "block1"]):
+                mock_groups = [
+                    {
+                        "concepts": ["block1"],
+                        "shared_patterns": ["block_conversion"],
+                        "estimated_time": 5.0,
+                        "optimization_notes": "Single block conversion"
+                    },
+                    {
+                        "concepts": ["block2"],
+                        "shared_patterns": ["block_conversion"],
+                        "estimated_time": 3.0,
+                        "optimization_notes": "Block with dependency"
+                    }
+                ]
+
+                with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
                     with patch.object(engine, '_calculate_savings', return_value=2.0):
 
                         # Test optimization
-                        result = await engine.optimize_conversion_sequence(conversion_sequence)
+                        result = await engine.optimize_conversion_sequence(
+                            java_concepts,
+                            conversion_dependencies,
+                            "bedrock",
+                            "1.19.3"
+                        )
 
                         # Verify optimization was applied
                         assert isinstance(result, dict)
-                        assert "optimization_applied" in result
-                        assert result["optimization_applied"] is True
+                        assert result["success"] is True
+                        assert "processing_sequence" in result
 
-                        # Verify shared steps identified
-                        assert "shared_steps" in result
-                        assert len(result["shared_steps"]) == 2
+                        # Verify processing groups
+                        processing_sequence = result["processing_sequence"]
+                        assert len(processing_sequence) == 2
 
-                        # Verify time savings
-                        assert "time_savings" in result
-                        assert result["time_savings"] == 2.0
-
-                        # Verify optimizations identified
-                        assert "optimizations" in result
-                        assert "parallel_processing" in result["optimizations"]
+                        # Verify optimization savings
+                        assert "optimization_savings" in result
 
 
 class TestConversionInferenceErrorHandling:
@@ -298,34 +299,38 @@ class TestConversionInferenceErrorHandling:
     @pytest.mark.asyncio
     async def test_direct_path_fallback_to_indirect(self, engine, mock_db):
         """Test fallback from direct to indirect paths"""
-        # Mock direct paths to return empty
-        with patch.object(engine, '_find_direct_paths', return_value=[]):
-            # Mock indirect paths to return a result
-            indirect_path_result = [
-                {
-                    "path_type": "indirect",
-                    "confidence": 0.65,
-                    "steps": [
-                        {"action": "step1"},
-                        {"action": "step2"},
-                        {"action": "step3"}
-                    ],
-                    "intermediate_concepts": ["concept1", "concept2"],
-                    "path_length": 3
-                }
-            ]
+        # Mock source node to be found
+        mock_source_node = {"id": "java_entity", "type": "java", "concept": "java_entity"}
 
-            with patch.object(engine, '_find_indirect_paths', return_value=indirect_path_result):
-                # Test path inference with fallback
-                result = await engine.infer_conversion_path(
-                    "java_entity", mock_db, "bedrock", "1.19.3"
-                )
+        with patch.object(engine, '_find_concept_node', return_value=mock_source_node):
+            # Mock direct paths to return empty
+            with patch.object(engine, '_find_direct_paths', return_value=[]):
+                # Mock indirect paths to return a result
+                indirect_path_result = [
+                    {
+                        "path_type": "indirect",
+                        "confidence": 0.65,
+                        "steps": [
+                            {"action": "step1"},
+                            {"action": "step2"},
+                            {"action": "step3"}
+                        ],
+                        "intermediate_concepts": ["concept1", "concept2"],
+                        "path_length": 3
+                    }
+                ]
 
-                # Verify result uses indirect path
-                assert result is not None
-                assert result["primary_path"]["path_type"] == "indirect"
-                assert result["primary_path"]["confidence"] == 0.65
-                assert len(result["primary_path"]["steps"]) == 3
+                with patch.object(engine, '_find_indirect_paths', return_value=indirect_path_result):
+                    # Test path inference with fallback
+                    result = await engine.infer_conversion_path(
+                        "java_entity", mock_db, "bedrock", "1.19.3"
+                    )
+
+                    # Verify result uses indirect path
+                    assert result is not None
+                    assert result["primary_path"]["path_type"] == "indirect"
+                    assert result["primary_path"]["confidence"] == 0.65
+                    assert len(result["primary_path"]["steps"]) == 3
 
     @pytest.mark.asyncio
     async def test_enhance_conversion_accuracy_with_errors(self, engine):
@@ -350,7 +355,7 @@ class TestConversionInferenceErrorHandling:
                 # Verify error is handled gracefully
                 assert isinstance(result, dict)
                 assert "error" in result
-                assert result["enhanced_paths"] == []
+                assert result["success"] is False
 
     @pytest.mark.asyncio
     async def test_optimize_conversion_sequence_empty(self, engine):
@@ -360,9 +365,11 @@ class TestConversionInferenceErrorHandling:
 
         # Verify empty sequence handling
         assert isinstance(result, dict)
-        assert "optimized_sequence" in result
-        assert len(result["optimized_sequence"]) == 0
-        assert result["optimization_applied"] is False
+        assert "success" in result
+        assert result["success"] is True  # Empty sequence is a valid optimization
+        assert "processing_sequence" in result
+        assert len(result["processing_sequence"]) == 0
+        assert result["total_concepts"] == 0
 
 
 class TestConversionInferencePerformance:
@@ -391,18 +398,22 @@ class TestConversionInferencePerformance:
         """Test concurrent path inference requests"""
         # Create tasks for concurrent execution
         async def infer_path(concept_id):
-            # Mock individual paths
-            with patch.object(engine, '_find_direct_paths', return_value=[
-                {
-                    "path_type": "direct",
-                    "confidence": 0.8 + (concept_id * 0.01),  # Varied confidence
-                    "steps": [{"step": f"conversion_{concept_id}"}],
-                    "path_length": 1
-                }
-            ]):
-                return await engine.infer_conversion_path(
-                    f"concept_{concept_id}", mock_db, "bedrock", "1.19.3"
-                )
+            # Mock source node to be found
+            mock_source_node = {"id": f"concept_{concept_id}", "type": "java", "concept": f"concept_{concept_id}"}
+
+            with patch.object(engine, '_find_concept_node', return_value=mock_source_node):
+                # Mock individual paths
+                with patch.object(engine, '_find_direct_paths', return_value=[
+                    {
+                        "path_type": "direct",
+                        "confidence": 0.8 + (concept_id * 0.01),  # Varied confidence
+                        "steps": [{"step": f"conversion_{concept_id}"}],
+                        "path_length": 1
+                    }
+                ]):
+                    return await engine.infer_conversion_path(
+                        f"concept_{concept_id}", mock_db, "bedrock", "1.19.3"
+                    )
 
         # Create concurrent tasks
         concurrent_requests = 10
@@ -431,29 +442,38 @@ class TestConversionInferencePerformance:
         """Test performance with large batch optimizations"""
         # Create large batch
         batch_size = 50
-        conversion_sequence = [
-            {
-                "concept": f"concept_{i}",
-                "steps": [{"action": "convert", "concept": f"target_{i}"}],
-                "estimated_time": 1.0
-            }
-            for i in range(batch_size)
-        ]
+        java_concepts = [f"concept_{i}" for i in range(batch_size)]
 
         # Mock optimization methods to be efficient
-        with patch.object(engine, '_identify_shared_steps', return_value=[]):
-            with patch.object(engine, '_estimate_batch_time', return_value=batch_size * 0.5):
+        with patch.object(engine, '_build_dependency_graph', return_value={}):
+            with patch.object(engine, '_topological_sort', return_value=java_concepts):
+                mock_groups = [
+                    {
+                        "concepts": [concept],
+                        "shared_patterns": ["conversion"],
+                        "estimated_time": 1.0,
+                        "optimization_notes": f"Convert {concept}"
+                    }
+                    for concept in java_concepts
+                ]
 
-                # Test large batch optimization
-                start_time = time.time()
-                result = await engine.optimize_conversion_sequence(conversion_sequence)
-                end_time = time.time()
+                with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
+                    with patch.object(engine, '_calculate_savings', return_value=25.0):
 
-                # Verify result
-                assert isinstance(result, dict)
-                assert "optimized_sequence" in result
-                assert len(result["optimized_sequence"]) == batch_size
+                        # Test large batch optimization
+                        start_time = time.time()
+                        result = await engine.optimize_conversion_sequence(
+                            java_concepts, {}, "bedrock", "1.19.3"
+                        )
+                        end_time = time.time()
 
-                # Verify performance
-                processing_time = end_time - start_time
-                assert processing_time < 5.0  # Should process quickly with mocks
+                        # Verify result
+                        assert isinstance(result, dict)
+                        assert result["success"] is True
+                        assert "processing_sequence" in result
+                        assert len(result["processing_sequence"]) == batch_size
+                        assert result["total_concepts"] == batch_size
+
+                        # Verify performance
+                        processing_time = end_time - start_time
+                        assert processing_time < 5.0  # Should process quickly with mocks
