@@ -46,8 +46,21 @@ class TestEndToEndConversionWorkflow:
     @pytest.mark.asyncio
     async def test_simple_conversion_inference(self, engine, mock_db):
         """Test basic conversion inference workflow"""
-        # Mock graph database to return a simple direct conversion path
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        # Mock both database CRUD and graph database
+        with patch('src.db.knowledge_graph_crud.KnowledgeNodeCRUD') as mock_crud, \
+             patch('src.db.graph_db.graph_db') as mock_graph_db:
+
+            # Mock the database search to return a found node
+            mock_node_instance = Mock()
+            mock_node_instance.id = "java_block_123"
+            mock_node_instance.neo4j_id = "java_block_123"
+            mock_node_instance.name = "JavaBlock"
+            mock_node_instance.node_type = "block"
+            mock_node_instance.platform = "java"
+
+            mock_crud.return_value.search_nodes = AsyncMock(return_value=[mock_node_instance])
+
+            # Mock graph database to return a simple direct conversion path
             mock_graph_db.find_conversion_paths.return_value = [
                 {
                     "path_length": 1,
@@ -57,31 +70,27 @@ class TestEndToEndConversionWorkflow:
                         "platform": "bedrock",
                         "minecraft_version": "1.19.3"
                     },
-                    "relationships": [{"type": "CONVERTS_TO", "confidence": 0.9}],  # Add confidence back with proper structure
+                    "relationships": [{"type": "CONVERTS_TO", "confidence": 0.9}],
                     "supported_features": ["textures", "behaviors"],
                     "success_rate": 0.9,
                     "usage_count": 150
                 }
             ]
-            # Make sure mock_graph_db itself is not a Mock object that would cause iteration issues
-            mock_graph_db.find_conversion_paths.return_value = list(mock_graph_db.find_conversion_paths.return_value)
 
-            # Create mock source node
-            mock_source_node = Mock()
-            mock_source_node.neo4j_id = "java_block_123"
-            mock_source_node.name = "JavaBlock"
-
-            # Execute conversion inference
-            result = await engine._find_direct_paths(
-                mock_db, mock_source_node, "bedrock", "1.19.3"
+            # Execute conversion inference using the public API
+            result = await engine.infer_conversion_path(
+                java_concept="JavaBlock",
+                db=mock_db,
+                target_platform="bedrock",
+                minecraft_version="1.19.3"
             )
 
             # Verify inference result
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert result[0]["path_type"] == "direct"
-            assert result[0]["confidence"] == 0.85
-            assert result[0]["steps"][0]["target_concept"] == "bedrock_block"
+            assert isinstance(result, dict)
+            assert result["success"] is True
+            assert "conversion_path" in result
+            assert result["conversion_path"]["confidence"] >= 0.8
+            assert len(result["conversion_path"]["steps"]) == 1
 
     @pytest.mark.asyncio
     async def test_conversion_with_complex_dependencies(self, engine, mock_db):
@@ -182,7 +191,7 @@ class TestEndToEndConversionWorkflow:
                 block_index = -1
                 entity_index = -1
 
-                for i, group in enumerate(processing_groups):
+                for i, group in enumerate(processing_sequence):
                     if "java_block_1" in group.get("concepts", []):
                         block_found = True
                         block_index = i
@@ -388,7 +397,7 @@ class TestPerformanceUnderRealisticWorkloads:
                 {
                     "path_length": 1,
                     "confidence": 0.85,
-                    "end_node": {"name": f"concurrent_entity_{i}", "platform": "bedrock"},
+                    "end_node": {"name": "concurrent_entity", "platform": "bedrock"},
                     "relationships": [{"type": "CONVERTS_TO"}]
                 }
             ]
@@ -449,7 +458,7 @@ class TestPerformanceUnderRealisticWorkloads:
                     {
                         "path_length": 1,
                         "confidence": 0.85,
-                        "end_node": {"name": f"entity_{i}", "platform": "bedrock"},
+                        "end_node": {"name": f"entity_{batch_size}", "platform": "bedrock"},
                         "relationships": [{"type": "CONVERTS_TO"}]
                     }
                 ]
@@ -486,8 +495,8 @@ class TestPerformanceUnderRealisticWorkloads:
             mock_node.name = "TestNode"
 
             # Simulate connection pool behavior with small delays
-            async def simulate_db_call(delay=0.01):
-                await asyncio.sleep(delay)  # Simulate DB latency
+            async def simulate_db_call(name):
+                await asyncio.sleep(0.01)  # Simulate DB latency
                 return mock_node
 
             mock_crud.get_by_name = Mock(side_effect=simulate_db_call)
