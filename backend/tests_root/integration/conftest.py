@@ -14,16 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 os.environ["TESTING"] = "true"
 
 # Add backend/src to path
-backend_src = Path(__file__).parent.parent.parent / "backend" / "src"
+backend_src = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(backend_src))
 
 @pytest.fixture(scope="function")
 async def async_client():
     """Create an async test client for FastAPI app."""
-    from config import settings
+    from src.config import settings
     from sqlalchemy.ext.asyncio import create_async_engine
     from sqlalchemy import text
-    from db.declarative_base import Base
+    from src.db.declarative_base import Base
     
     # Use test database
     test_db_url = settings.database_url
@@ -51,9 +51,9 @@ async def async_client():
         await conn.run_sync(Base.metadata.create_all)
     
     # Mock init_db to prevent re-initialization
-    with patch('db.init_db.init_db', new_callable=AsyncMock):
+    with patch('src.db.init_db.init_db', new_callable=AsyncMock):
         from main import app
-        from db.base import get_db
+        from src.db.base import get_db
         
         # Override database dependency
         async def override_get_db():

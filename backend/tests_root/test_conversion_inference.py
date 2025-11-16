@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the actual service
-from backend.src.services.conversion_inference import ConversionInferenceEngine
+from src.services.conversion_inference import ConversionInferenceEngine
 
 @pytest.fixture
 def mock_db():

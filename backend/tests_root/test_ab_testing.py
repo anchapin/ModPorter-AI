@@ -8,12 +8,12 @@ import sys
 from pathlib import Path
 
 # Add backend src to path
-backend_src = Path(__file__).parent / "backend" / "src"
+backend_src = Path(__file__).parent.parent / "src"
 if str(backend_src) not in sys.path:
     sys.path.insert(0, str(backend_src))
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import crud
+from src.db import crud
 
 
 @pytest.mark.asyncio

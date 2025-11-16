@@ -24,9 +24,9 @@ class ValidationResult:
     expected_conversion_challenges: List[str]
 
 
-class TestModValidator:
+class ModValidatorFixture:
     """Validates test mods for comprehensive ModPorter AI testing."""
-    
+
     def __init__(self):
         """Initialize the test mod validator."""
         self.validation_rules = {
@@ -403,7 +403,7 @@ def validate_test_suite(test_dir: Optional[Path] = None) -> Dict[str, List[Valid
     if test_dir is None:
         test_dir = Path(__file__).parent / "test_mods"
     
-    validator = TestModValidator()
+    validator = ModValidatorFixture()
     return validator.validate_test_suite(test_dir)
 
 
@@ -411,7 +411,7 @@ if __name__ == "__main__":
     # Run validation when executed directly
     test_dir = Path(__file__).parent / "test_mods"
     
-    validator = TestModValidator()
+    validator = ModValidatorFixture()
     results = validator.validate_test_suite(test_dir)
     
     report = validator.generate_validation_report(results)
