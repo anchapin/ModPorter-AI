@@ -159,3 +159,6 @@ bin/
 
 # MCP todo list
 .mcp-todos.json
+
+# Agent documentation files
+AGENTS.MD
