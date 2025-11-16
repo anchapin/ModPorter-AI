@@ -14,7 +14,7 @@ from sqlalchemy import text
 os.environ["TESTING"] = "true"
 
 # Add backend src to path
-backend_src = Path(__file__).parent / "src"
+backend_src = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(backend_src))
 
 

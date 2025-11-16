@@ -158,12 +158,14 @@ class TestConversionInferenceBasicIntegration:
                     {
                         "concepts": ["java_item"],
                         "shared_patterns": ["item_conversion"],
-                        "estimated_time": 5.0
+                        "estimated_time": 5.0,
+                        "optimization_notes": "Simple item conversion"
                     },
                     {
                         "concepts": ["java_entity", "java_block"],
                         "shared_patterns": ["entity_block_conversion"],
-                        "estimated_time": 8.0
+                        "estimated_time": 8.0,
+                        "optimization_notes": "Entity and block conversion with shared patterns"
                     }
                 ]
 
@@ -206,7 +208,7 @@ class TestConversionInferenceBasicIntegration:
 
                         # Verify optimization result
                         assert isinstance(result, dict)
-                        assert "success" == True
+                        assert result["success"] == True
                         assert "processing_sequence" in result  # Key is "processing_sequence", not "processing_groups"
                         assert len(result["processing_sequence"]) == 2
 

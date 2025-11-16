@@ -10,7 +10,11 @@ This test ensures Issue #174 requirements are met:
 
 import json
 import zipfile
+import sys
 from pathlib import Path
+
+# Add current directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Import the fixture creation utilities
 from simple_copper_block import get_expected_analysis_result, get_expected_bedrock_block

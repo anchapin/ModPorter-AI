@@ -17,7 +17,7 @@ import asyncio
 # Import graph database manager
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent / "src"))
+sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 from src.db.graph_db import GraphDatabaseManager
 
 
