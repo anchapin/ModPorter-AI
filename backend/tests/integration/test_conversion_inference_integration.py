@@ -81,7 +81,7 @@ class TestEndToEndConversionWorkflow:
             assert len(result) == 1
             assert result[0]["path_type"] == "direct"
             assert result[0]["confidence"] == 0.85
-            assert result[0]["end_node"]["name"] == "bedrock_block"
+            assert result[0]["steps"][0]["target_concept"] == "bedrock_block"
 
     @pytest.mark.asyncio
     async def test_conversion_with_complex_dependencies(self, engine, mock_db):
@@ -170,12 +170,12 @@ class TestEndToEndConversionWorkflow:
             )
 
             # Verify batch processing
-            assert "optimized_sequence" in result
-            assert "processing_groups" in result
+            assert "processing_sequence" in result
+            assert "optimization_savings" in result
 
             # Verify dependency order is respected
-            processing_groups = result.get("processing_groups", [])
-            if processing_groups:
+            processing_sequence = result.get("processing_sequence", [])
+            if processing_sequence:
                 # Block should come before entity due to dependency
                 block_found = False
                 entity_found = False
@@ -468,7 +468,7 @@ class TestPerformanceUnderRealisticWorkloads:
                 processing_times.append(end_time - start_time)
 
                 # Verify result for each batch size
-                assert "optimized_sequence" in result
+                assert "processing_sequence" in result
 
                 # Simple scaling check: processing time shouldn't grow exponentially
                 if batch_size > 5:
