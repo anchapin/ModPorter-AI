@@ -33,8 +33,19 @@ jobs:
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
+        env:
+          # You are 100% correct: This redirects the API
+          # calls to your z.ai proxy endpoint.
+          ANTHROPIC_BASE_URL: "https://api.z.ai/api/anthropic"
+          
+          # Optional but recommended: Map the z.ai model
+          # names to the standard Claude model names.
+          ANTHROPIC_DEFAULT_OPUS_MODEL: "GLM-4.6"
+          ANTHROPIC_DEFAULT_SONNET_MODEL: "GLM-4.6"
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: "GLM-4.5-Air"
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_api_key: ${{ secrets.Z_AI_API_KEY }}
+          claude_args: "--dangerously-skip-permissions"
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
