@@ -598,19 +598,16 @@ class ExpertKnowledgeCaptureService:
     ) -> Dict[str, Any]:
         """Get local statistics for a domain."""
         try:
-            # Query local knowledge for the domain
-            # This would involve complex queries to the knowledge graph
-            # For now, return mock statistics
-            
-            return {
-                "total_nodes": 150,
-                "total_relationships": 340,
-                "total_patterns": 85,
-                "expert_validated": 120,
-                "community_contributed": 30,
-                "average_quality_score": 0.78,
-                "last_updated": datetime.utcnow().isoformat()
-            }
+            # TODO: Query local knowledge for the domain
+            # This should involve complex queries to the knowledge graph:
+            # - Count nodes by type and expertise area
+            # - Analyze relationship patterns and quality scores
+            # - Calculate expert vs community contribution ratios
+            # - Determine domain coverage and knowledge gaps
+            raise NotImplementedError(
+                "Domain knowledge statistics query not yet implemented. "
+                "Requires knowledge graph analytics setup."
+            )
             
         except Exception as e:
             logger.error(f"Error getting domain statistics: {e}")
@@ -624,27 +621,16 @@ class ExpertKnowledgeCaptureService:
     ) -> List[Dict[str, Any]]:
         """Find similar local patterns."""
         try:
-            # This would search the knowledge graph for similar patterns
-            # For now, return mock data
-            
-            return [
-                {
-                    "id": "pattern_1",
-                    "name": "Entity AI Conversion",
-                    "similarity_score": 0.85,
-                    "java_pattern": "Entity#setAI",
-                    "bedrock_pattern": "minecraft:behavior.go_to_entity",
-                    "description": "Convert Java entity AI to Bedrock behavior"
-                },
-                {
-                    "id": "pattern_2",
-                    "name": "Custom Item Behavior",
-                    "similarity_score": 0.72,
-                    "java_pattern": "Item#onItemUse",
-                    "bedrock_pattern": "minecraft:component.item_use",
-                    "description": "Convert Java item interaction to Bedrock components"
-                }
-            ]
+            # TODO: Search the knowledge graph for similar patterns
+            # This should implement pattern similarity search:
+            # - Compare Java code patterns with known conversion patterns
+            # - Calculate similarity scores based on structure and semantics
+            # - Return ranked list of matching conversion patterns
+            # - Include confidence scores and success metrics
+            raise NotImplementedError(
+                "Similar pattern search not yet implemented. "
+                "Requires knowledge graph pattern matching setup."
+            )
             
         except Exception as e:
             logger.error(f"Error finding similar patterns: {e}")

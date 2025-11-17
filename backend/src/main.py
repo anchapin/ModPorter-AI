@@ -62,29 +62,29 @@ except ImportError:
 
 # Import API routers
 from src.api import assets, performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
-from src.api import knowledge_graph_fixed as knowledge_graph, expert_knowledge, peer_review, conversion_inference_fixed as conversion_inference, version_compatibility_fixed as version_compatibility
+from src.api import knowledge_graph, expert_knowledge, peer_review, conversion_inference, version_compatibility
 
 # Debug: Check if version compatibility routes are loaded
 try:
-    from src.api import version_compatibility_fixed
-    print(f"Version compatibility routes: {[route.path for route in version_compatibility_fixed.router.routes]}")
+    from src.api import version_compatibility
+    print(f"Version compatibility routes: {[route.path for route in version_compatibility.router.routes]}")
     print(f"TESTING env: {os.getenv('TESTING')}")
 except Exception as e:
-    print(f"Error importing version_compatibility_fixed: {e}")
+    print(f"Error importing version_compatibility: {e}")
 
 # Debug: Check if knowledge graph routes are loaded
 try:
-    from api import knowledge_graph_fixed
-    print(f"Knowledge graph routes: {[route.path for route in knowledge_graph_fixed.router.routes]}")
+    from src.api import knowledge_graph
+    print(f"Knowledge graph routes: {[route.path for route in knowledge_graph.router.routes]}")
 except Exception as e:
-    print(f"Error importing knowledge_graph_fixed: {e}")
+    print(f"Error importing knowledge_graph: {e}")
 
 # Debug: Check if version compatibility routes are loaded
 try:
-    from api import version_compatibility_fixed
-    print(f"Version compatibility routes: {[route.path for route in version_compatibility_fixed.router.routes]}")
+    from src.api import version_compatibility
+    print(f"Version compatibility routes: {[route.path for route in version_compatibility.router.routes]}")
 except Exception as e:
-    print(f"Error importing version_compatibility_fixed: {e}")
+    print(f"Error importing version_compatibility: {e}")
 
 # Import report generator
 try:

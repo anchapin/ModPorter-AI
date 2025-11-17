@@ -451,50 +451,19 @@ async def get_capture_statistics(
     Includes processing metrics, quality trends, and domain coverage.
     """
     try:
-        # This would query database for actual statistics
-        # For now, return mock data
-        stats = {
-            "period_days": days,
-            "contributions_processed": 284,
-            "successful_processing": 267,
-            "failed_processing": 17,
-            "success_rate": 94.0,
-            "average_quality_score": 0.82,
-            "total_nodes_created": 1456,
-            "total_relationships_created": 3287,
-            "total_patterns_created": 876,
-            "top_contributors": [
-                {"contributor_id": "expert_minecraft_dev", "contributions": 42, "avg_quality": 0.89},
-                {"contributor_id": "bedrock_specialist", "contributions": 38, "avg_quality": 0.86},
-                {"contributor_id": "conversion_master", "contributions": 35, "avg_quality": 0.91}
-            ],
-            "domain_coverage": {
-                "entities": 92,
-                "blocks_items": 88,
-                "behaviors": 79,
-                "commands": 71,
-                "animations": 65,
-                "ui_hud": 68,
-                "world_gen": 74,
-                "storage_sync": 58,
-                "networking": 43,
-                "optimization": 81
-            },
-            "quality_trends": {
-                "7_days": 0.84,
-                "14_days": 0.83,
-                "30_days": 0.82,
-                "90_days": 0.79
-            },
-            "processing_performance": {
-                "avg_processing_time_seconds": 45.2,
-                "fastest_processing_seconds": 12.1,
-                "slowest_processing_seconds": 127.8,
-                "parallel_utilization": 87.3
-            }
-        }
-        
-        return stats
+        # TODO: Implement actual statistics query from database
+        # Query period should include:
+        # - Contribution processing metrics (success/failure rates)
+        # - Quality score trends and averages
+        # - Knowledge graph growth statistics (nodes, relationships, patterns)
+        # - Top contributor rankings and performance
+        # - Domain coverage analysis across Minecraft mod categories
+        # - Processing performance metrics and utilization
+
+        raise HTTPException(
+            status_code=501,
+            detail="Statistics endpoint not yet implemented. Requires database analytics setup."
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

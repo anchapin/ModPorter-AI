@@ -201,7 +201,10 @@ class Neo4jRetryHandler:
                 else:
                     logger.error(f"Neo4j operation failed after {self.max_retries + 1} attempts: {e}")
         
-        raise last_exception
+        if last_exception is not None:
+            raise last_exception
+        else:
+            raise RuntimeError("Operation failed after retries, but no exception was captured. This should not happen.")
     
     def _should_not_retry(self, exception: Exception) -> bool:
         """Check if exception should not be retried."""

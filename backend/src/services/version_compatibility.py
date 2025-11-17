@@ -530,7 +530,7 @@ class VersionCompatibilityService:
                 return {"path_type": "failed", "message": f"Source Java version {java_version} not found"}
             
             try:
-                bedrock_target_idx = bedrock_versions.index(bedrock_version)
+                bedrock_versions.index(bedrock_version)  # Verify target version exists
             except ValueError:
                 return {"path_type": "failed", "message": f"Target Bedrock version {bedrock_version} not found"}
             
