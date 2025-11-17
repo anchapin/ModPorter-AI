@@ -1,15 +1,15 @@
-# Test dependencies
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-pytest-cov
-pytest-mock
-pytest-timeout
-requests
+# Test dependencies - includes main requirements needed for testing
+# This file ensures test automation has all required dependencies
 
-# Async HTTP client for testing
-httpx>=0.24.0
-aiosqlite>=0.19.0
+# Main requirements (core dependencies needed for tests)
+-r requirements.txt
 
-# Docker testing
-pytest-docker
-docker
+# Additional testing tools
+pytest-mock>=3.11.0
+pytest-docker>=3.2.0
+docker>=7.1.0
+mutmut>=2.4.0
+hypothesis>=6.0.0
+
+# Development tools
+pre-commit>=3.0.0
