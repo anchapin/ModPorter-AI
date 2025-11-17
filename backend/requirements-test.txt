@@ -1,0 +1,15 @@
+# Test dependencies - includes main requirements needed for testing
+# This file ensures test automation has all required dependencies
+
+# Main requirements (core dependencies needed for tests)
+-r requirements.txt
+
+# Additional testing tools
+pytest-mock>=3.11.0
+pytest-docker>=3.2.0
+docker>=7.1.0
+mutmut>=2.4.0
+hypothesis>=6.0.0
+
+# Development tools
+pre-commit>=3.0.0
