@@ -349,9 +349,10 @@ class TestReviewWorkflowCRUD:
         """Sample review workflow data."""
         return {
             "id": "workflow_001",
-            "review_id": "review_001",
-            "stage": "initial_review",
-            "status": "in_progress",
+            "contribution_id": "review_001",
+            "workflow_type": "standard",
+            "status": "active",
+            "current_stage": "initial_review",
             "assigned_to": "reviewer_001",
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
@@ -477,10 +478,11 @@ class TestReviewerExpertiseCRUD:
         return {
             "id": "expertise_001",
             "reviewer_id": "reviewer_001",
-            "domain": "java_modding",
-            "expertise_level": 8,
-            "verified_reviews": 25,
-            "average_rating": 4.5,
+            "expertise_areas": ["java_modding"],
+            "java_experience_level": 8,
+            "bedrock_experience_level": 7,
+            "review_count": 25,
+            "average_review_score": 4.5,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
@@ -605,14 +607,23 @@ class TestReviewTemplateCRUD:
         """Sample review template data."""
         return {
             "id": "template_001",
-            "name": "Java Mod Review Template",
-            "description": "Template for reviewing Java mods",
-            "criteria": {
-                "code_quality": {"weight": 0.3, "max_score": 10},
-                "functionality": {"weight": 0.4, "max_score": 10},
-                "documentation": {"weight": 0.2, "max_score": 10},
-                "performance": {"weight": 0.1, "max_score": 10}
+            "template_name": "Java Mod Review Template",
+            "template_type": "pattern",
+            "contribution_types": ["java_mod", "conversion"],
+            "review_criteria": [
+                {"name": "code_quality", "max_score": 10},
+                {"name": "functionality", "max_score": 10},
+                {"name": "documentation", "max_score": 10},
+                {"name": "performance", "max_score": 10}
+            ],
+            "scoring_weights": {
+                "code_quality": 0.3,
+                "functionality": 0.4,
+                "documentation": 0.2,
+                "performance": 0.1
             },
+            "required_checks": ["compilation", "basic_functionality"],
+            "automated_tests": ["unit_tests", "integration_tests"],
             "created_by": "admin_001",
             "is_active": True,
             "created_at": datetime.utcnow(),
