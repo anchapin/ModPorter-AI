@@ -7,11 +7,11 @@ engine that finds optimal conversion paths and sequences.
 
 from typing import Dict, Any
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, validator
 
-from db.base import get_db
+from src.db.base import get_db
 
 router = APIRouter()
 
@@ -144,8 +144,6 @@ async def batch_infer_paths(
     """Infer conversion paths for multiple Java concepts in batch."""
     # Mock implementation for now
     java_concepts = request.get("java_concepts", [])
-    target_platform = request.get("target_platform", "bedrock")
-    minecraft_version = request.get("minecraft_version", "latest")
     
     concept_paths = {}
     for concept in java_concepts:
@@ -243,8 +241,6 @@ async def learn_from_conversion(
     # Mock implementation for now
     java_concept = request.get("java_concept", "")
     bedrock_concept = request.get("bedrock_concept", "")
-    conversion_result = request.get("conversion_result", {})
-    success_metrics = request.get("success_metrics", {})
     
     return {
         "message": "Learning from conversion completed successfully",

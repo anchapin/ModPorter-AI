@@ -6,22 +6,16 @@ optimal conversion paths between Java and Bedrock modding concepts.
 """
 
 import logging
-import json
-import math
-from typing import Dict, List, Optional, Any, Tuple, Set
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc
+from sqlalchemy import select
 
 
 from src.db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    KnowledgeNodeCRUD, ConversionPatternCRUD
 )
 from src.db.graph_db import graph_db
-from src.db.models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern
-)
-from src.services.version_compatibility import version_compatibility_service
 
 logger = logging.getLogger(__name__)
 

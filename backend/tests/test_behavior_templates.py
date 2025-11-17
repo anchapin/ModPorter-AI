@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
-from backend.src.api.behavior_templates import router, TEMPLATE_CATEGORIES
+from src.api.behavior_templates import router, TEMPLATE_CATEGORIES
 import uuid
 from datetime import datetime
 
@@ -10,7 +10,7 @@ client = TestClient(router)
 
 @pytest.fixture
 def mock_db_session():
-    with patch('backend.src.api.behavior_templates.get_db') as mock_get_db:
+    with patch('src.api.behavior_templates.get_db') as mock_get_db:
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         yield mock_db
