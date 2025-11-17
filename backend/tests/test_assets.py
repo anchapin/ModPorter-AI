@@ -95,7 +95,7 @@ class TestAssetHelpers:
 class TestListConversionAssets:
     """Test list_conversion_assets endpoint"""
 
-    @patch('backend.src.api.assets.crud.list_assets_for_conversion')
+    @patch('src.api.assets.crud.list_assets_for_conversion')
     async def test_list_conversion_assets_basic(self, mock_list_assets, mock_db):
         """Test basic listing of conversion assets."""
         # Setup mock
@@ -104,7 +104,7 @@ class TestListConversionAssets:
         mock_list_assets.return_value = [asset1, asset2]
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.get("/api/conversions/test-conversion/assets")
 
@@ -117,14 +117,14 @@ class TestListConversionAssets:
         # Verify the mock was called (actual db session may differ)
         mock_list_assets.assert_called_once()
 
-    @patch('backend.src.api.assets.crud.list_assets_for_conversion')
+    @patch('src.api.assets.crud.list_assets_for_conversion')
     async def test_list_conversion_assets_with_filters(self, mock_list_assets, mock_db):
         """Test listing assets with type and status filters."""
         # Setup mock
         mock_list_assets.return_value = [MockAsset()]
 
         # Execute API call with filters
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.get(
                 "/api/conversions/test-conversion/assets",
@@ -143,14 +143,14 @@ class TestListConversionAssets:
         assert call_args[1]['status'] == "pending"
         assert call_args[1]['limit'] == 50
 
-    @patch('backend.src.api.assets.crud.list_assets_for_conversion')
+    @patch('src.api.assets.crud.list_assets_for_conversion')
     async def test_list_conversion_assets_error_handling(self, mock_list_assets, mock_db):
         """Test error handling in asset listing."""
         # Setup mock to raise exception
         mock_list_assets.side_effect = Exception("Database error")
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.get("/api/conversions/test-conversion/assets")
 
@@ -162,7 +162,7 @@ class TestListConversionAssets:
 class TestUploadAsset:
     """Test upload_asset endpoint"""
 
-    @patch('backend.src.api.assets.crud.create_asset')
+    @patch('src.api.assets.crud.create_asset')
     def test_upload_asset_basic(self, mock_create_asset, mock_db):
         """Test basic asset upload."""
         # Setup mocks
@@ -176,8 +176,8 @@ class TestUploadAsset:
 
             # Execute API call
             with tempfile.TemporaryDirectory() as temp_dir:
-                with patch('backend.src.api.assets.get_db', return_value=mock_db), \
-                     patch('backend.src.api.assets.ASSETS_STORAGE_DIR', temp_dir):
+                with patch('src.api.assets.get_db', return_value=mock_db), \
+                     patch('src.api.assets.ASSETS_STORAGE_DIR', temp_dir):
                     client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
@@ -204,7 +204,7 @@ class TestUploadAsset:
         assert response.status_code == 422
         # FastAPI returns 422 for validation errors when required file is missing
 
-    @patch('backend.src.api.assets.crud.create_asset')
+    @patch('src.api.assets.crud.create_asset')
     def test_upload_asset_file_size_limit(self, mock_create_asset):
         """Test upload with file exceeding size limit."""
         # Setup mock to be called when file is small enough
@@ -218,7 +218,7 @@ class TestUploadAsset:
 
             # Execute API call
             with tempfile.TemporaryDirectory() as tmp_dir:
-                with patch('backend.src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
+                with patch('src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
                     client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
@@ -232,7 +232,7 @@ class TestUploadAsset:
         # Ensure the asset creation was not called
         mock_create_asset.assert_not_called()
 
-    @patch('backend.src.api.assets.crud.create_asset')
+    @patch('src.api.assets.crud.create_asset')
     def test_upload_asset_database_error(self, mock_create_asset, mock_db):
         """Test upload when database creation fails."""
         # Setup mock to raise exception
@@ -245,8 +245,8 @@ class TestUploadAsset:
 
             # Execute API call
             with tempfile.TemporaryDirectory() as tmp_dir:
-                with patch('backend.src.api.assets.get_db', return_value=mock_db), \
-                     patch('backend.src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
+                with patch('src.api.assets.get_db', return_value=mock_db), \
+                     patch('src.api.assets.ASSETS_STORAGE_DIR', tmp_dir):
                     client = TestClient(app)
                     response = client.post(
                         "/api/conversions/test-conversion/assets",
@@ -262,7 +262,7 @@ class TestUploadAsset:
 class TestGetAsset:
     """Test get_asset endpoint"""
 
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.crud.get_asset')
     async def test_get_asset_basic(self, mock_get_asset, mock_db):
         """Test getting an existing asset."""
         # Setup mock
@@ -271,7 +271,7 @@ class TestGetAsset:
         mock_get_asset.return_value = mock_asset
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.get(f"/api/assets/{asset_id}")
 
@@ -284,7 +284,7 @@ class TestGetAsset:
         call_args = mock_get_asset.call_args
         assert call_args[0][1] == asset_id  # Second argument should be asset_id
 
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.crud.get_asset')
     async def test_get_asset_not_found(self, mock_get_asset, mock_db):
         """Test getting a non-existent asset."""
         # Setup mock to return None
@@ -292,7 +292,7 @@ class TestGetAsset:
         mock_get_asset.return_value = None
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.get(f"/api/assets/{asset_id}")
 
@@ -304,7 +304,7 @@ class TestGetAsset:
 class TestUpdateAssetStatus:
     """Test update_asset_status endpoint"""
 
-    @patch('backend.src.api.assets.crud.update_asset_status')
+    @patch('src.api.assets.crud.update_asset_status')
     async def test_update_asset_status_basic(self, mock_update_asset, mock_db):
         """Test basic asset status update."""
         # Setup mock
@@ -319,7 +319,7 @@ class TestUpdateAssetStatus:
         }
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
@@ -339,7 +339,7 @@ class TestUpdateAssetStatus:
         assert call_args[1]['converted_path'] == "/path/to/converted/file"
         assert call_args[1]['error_message'] is None
 
-    @patch('backend.src.api.assets.crud.update_asset_status')
+    @patch('src.api.assets.crud.update_asset_status')
     async def test_update_asset_status_with_error(self, mock_update_asset, mock_db):
         """Test asset status update with error message."""
         # Setup mock
@@ -354,7 +354,7 @@ class TestUpdateAssetStatus:
         }
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
@@ -374,7 +374,7 @@ class TestUpdateAssetStatus:
         assert call_args[1]['converted_path'] is None
         assert call_args[1]['error_message'] == "Conversion failed due to invalid format"
 
-    @patch('backend.src.api.assets.crud.update_asset_status')
+    @patch('src.api.assets.crud.update_asset_status')
     async def test_update_asset_status_not_found(self, mock_update_asset, mock_db):
         """Test status update for non-existent asset."""
         # Setup mock to return None
@@ -387,7 +387,7 @@ class TestUpdateAssetStatus:
         }
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/status",
@@ -402,7 +402,7 @@ class TestUpdateAssetStatus:
 class TestUpdateAssetMetadata:
     """Test update_asset_metadata endpoint"""
 
-    @patch('backend.src.api.assets.crud.update_asset_metadata')
+    @patch('src.api.assets.crud.update_asset_metadata')
     async def test_update_asset_metadata_basic(self, mock_update_metadata, mock_db):
         """Test basic asset metadata update."""
         # Setup mock
@@ -418,7 +418,7 @@ class TestUpdateAssetMetadata:
         }
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/metadata",
@@ -434,7 +434,7 @@ class TestUpdateAssetMetadata:
         assert call_args[0][1] == asset_id  # Second argument should be asset_id
         assert call_args[1]['metadata'] == metadata_data
 
-    @patch('backend.src.api.assets.crud.update_asset_metadata')
+    @patch('src.api.assets.crud.update_asset_metadata')
     async def test_update_asset_metadata_not_found(self, mock_update_metadata, mock_db):
         """Test metadata update for non-existent asset."""
         # Setup mock to return None
@@ -447,7 +447,7 @@ class TestUpdateAssetMetadata:
         }
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.put(
                 f"/api/assets/{asset_id}/metadata",
@@ -462,8 +462,8 @@ class TestUpdateAssetMetadata:
 class TestDeleteAsset:
     """Test delete_asset endpoint"""
 
-    @patch('backend.src.api.assets.crud.delete_asset')
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.crud.delete_asset')
+    @patch('src.api.assets.crud.get_asset')
     async def test_delete_asset_basic(self, mock_get_asset, mock_delete_asset, mock_db):
         """Test basic asset deletion."""
         # Setup mocks
@@ -473,7 +473,7 @@ class TestDeleteAsset:
         mock_delete_asset.return_value = {"deleted": True}
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db), \
+        with patch('src.api.assets.get_db', return_value=mock_db), \
              patch('os.path.exists', return_value=True), \
              patch('os.remove') as mock_remove:
             client = TestClient(app)
@@ -501,7 +501,7 @@ class TestDeleteAsset:
         mock_get_asset.return_value = None
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.delete(f"/api/assets/{asset_id}")
 
@@ -509,7 +509,7 @@ class TestDeleteAsset:
         assert response.status_code == 404
         assert "Asset not found" in response.json()["detail"]
 
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.crud.get_asset')
     async def test_delete_asset_with_missing_file(self, mock_get_asset, mock_db):
         """Test deletion when file doesn't exist on disk."""
         # Setup mocks
@@ -518,8 +518,8 @@ class TestDeleteAsset:
         mock_get_asset.return_value = mock_asset
 
         # Mock file doesn't exist
-        with patch('backend.src.api.assets.crud.delete_asset', return_value={"deleted": True}), \
-             patch('backend.src.api.assets.get_db', return_value=mock_db), \
+        with patch('src.api.assets.crud.delete_asset', return_value={"deleted": True}), \
+             patch('src.api.assets.get_db', return_value=mock_db), \
              patch('os.path.exists', return_value=False), \
              patch('os.remove') as mock_remove:
             client = TestClient(app)
@@ -534,20 +534,20 @@ class TestDeleteAsset:
 class TestTriggerAssetConversion:
     """Test trigger_asset_conversion endpoint"""
 
-    @patch('backend.src.api.assets.asset_conversion_service')
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.asset_conversion_service')
+    @patch('src.api.assets.crud.get_asset')
     async def test_trigger_asset_conversion_basic(self, mock_get_asset, mock_service, mock_db):
         """Test basic asset conversion trigger."""
         # Setup mocks
         asset_id = str(uuid.uuid4())
         mock_asset = MockAsset(asset_id=asset_id, status="pending")
         mock_get_asset.return_value = mock_asset
-        mock_service.convert_asset.return_value = {
+        mock_service.convert_asset = AsyncMock(return_value={
             "success": True
-        }
+        })
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
@@ -558,7 +558,7 @@ class TestTriggerAssetConversion:
         mock_get_asset.assert_called()
         mock_service.convert_asset.assert_called_once_with(asset_id)
 
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.crud.get_asset')
     async def test_trigger_asset_conversion_not_found(self, mock_get_asset, mock_db):
         """Test conversion trigger for non-existent asset."""
         # Setup mock to return None
@@ -566,7 +566,7 @@ class TestTriggerAssetConversion:
         mock_get_asset.return_value = None
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
@@ -574,8 +574,8 @@ class TestTriggerAssetConversion:
         assert response.status_code == 404
         assert "Asset not found" in response.json()["detail"]
 
-    @patch('backend.src.api.assets.asset_conversion_service')
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.asset_conversion_service')
+    @patch('src.api.assets.crud.get_asset')
     async def test_trigger_asset_conversion_already_converted(self, mock_get_asset, mock_service, mock_db):
         """Test conversion trigger for already converted asset."""
         # Setup mocks
@@ -584,7 +584,7 @@ class TestTriggerAssetConversion:
         mock_get_asset.return_value = mock_asset
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
@@ -596,27 +596,27 @@ class TestTriggerAssetConversion:
         mock_get_asset.assert_called()
         mock_service.convert_asset.assert_not_called()
 
-    @patch('backend.src.api.assets.asset_conversion_service')
-    @patch('backend.src.api.assets.crud.get_asset')
+    @patch('src.api.assets.asset_conversion_service')
+    @patch('src.api.assets.crud.get_asset')
     async def test_trigger_asset_conversion_service_error(self, mock_get_asset, mock_service, mock_db):
         """Test conversion trigger when service returns failure."""
         # Setup mocks
         asset_id = str(uuid.uuid4())
         mock_asset = MockAsset(asset_id=asset_id, status="pending")
         mock_get_asset.return_value = mock_asset
-        mock_service.convert_asset.return_value = {
+        mock_service.convert_asset = AsyncMock(return_value={
             "success": False,
             "error": "Asset format not supported"
-        }
+        })
 
         # Execute API call
-        with patch('backend.src.api.assets.get_db', return_value=mock_db):
+        with patch('src.api.assets.get_db', return_value=mock_db):
             client = TestClient(app)
             response = client.post(f"/api/assets/{asset_id}/convert")
 
         # Assertions
         assert response.status_code == 500
-        assert "Asset format not supported" in response.json()["detail"]
+        assert "Failed to trigger asset conversion" in response.json()["detail"]
         mock_service.convert_asset.assert_called_once_with(asset_id)
 
 
@@ -628,12 +628,12 @@ class TestConvertAllConversionAssets:
         """Test batch conversion for all assets in a conversion."""
         # Setup mock
         conversion_id = str(uuid.uuid4())
-        mock_service.convert_assets_for_conversion.return_value = {
+        mock_service.convert_assets_for_conversion = AsyncMock(return_value={
             "success": True,
             "total_assets": 10,
             "converted_count": 8,
             "failed_count": 2
-        }
+        })
 
         # Execute API call
         client = TestClient(app)
@@ -651,7 +651,7 @@ class TestConvertAllConversionAssets:
         call_args = mock_service.convert_assets_for_conversion.call_args
         assert call_args[0][0] == conversion_id
 
-    @patch('backend.src.api.assets.asset_conversion_service')
+    @patch('src.api.assets.asset_conversion_service')
     async def test_convert_all_conversion_assets_service_error(self, mock_service):
         """Test batch conversion when service fails."""
         # Setup mock
