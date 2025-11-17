@@ -48,7 +48,17 @@ class TestConversionSuccessPredictionService:
             pattern_type="direct_mapping",
             minecraft_version="1.20.0",
             node_type="block",
-            platform="java"
+            platform="java",
+            description_length=50,
+            expert_validated=True,
+            community_rating=4.2,
+            usage_count=15,
+            relationship_count=8,
+            success_history=[0.9, 0.85, 0.95],
+            feature_count=5,
+            complexity_score=0.3,
+            version_compatibility=0.8,
+            cross_platform_difficulty=0.4
         )
 
     @pytest.fixture
@@ -379,7 +389,17 @@ class TestConversionFeatures:
             pattern_type="direct_mapping",
             minecraft_version="1.20.0",
             node_type="block",
-            platform="java"
+            platform="java",
+            description_length=50,
+            expert_validated=True,
+            community_rating=4.2,
+            usage_count=15,
+            relationship_count=8,
+            success_history=[0.9, 0.85, 0.95],
+            feature_count=5,
+            complexity_score=0.3,
+            version_compatibility=0.8,
+            cross_platform_difficulty=0.4
         )
 
         assert features.java_concept == "Java Block"

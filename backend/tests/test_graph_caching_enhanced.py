@@ -91,33 +91,30 @@ class TestCacheConfigAdvanced:
         """Test cache config parameter validation"""
         # Valid config
         config = CacheConfig(
-            l1_max_size=1000,
-            l2_max_size=10000,
-            default_ttl=300,
-            compression_threshold=1024,
+            max_entries=1000,
+            max_size_mb=100.0,
+            ttl_seconds=300,
             enable_compression=True
         )
-        assert config.l1_max_size == 1000
+        assert config.max_entries == 1000
         assert config.enable_compression is True
-        
+
         # Test with invalid parameters
         with pytest.raises((ValueError, TypeError)):
-            CacheConfig(l1_max_size=-1)
+            CacheConfig(max_entries=-1)
     
     def test_cache_config_serialization(self):
         """Test cache config serialization"""
         config = CacheConfig(
-            l1_max_size=1000,
-            l2_max_size=10000,
-            default_ttl=300,
-            compression_threshold=1024,
-            enable_compression=True,
-            enable_metrics=True
+            max_entries=1000,
+            max_size_mb=100.0,
+            ttl_seconds=300,
+            enable_compression=True
         )
-        
+
         config_dict = config.__dict__ if hasattr(config, '__dict__') else {}
         assert isinstance(config_dict, dict)
-        assert config_dict.get('l1_max_size') == 1000
+        assert config_dict.get('max_entries') == 1000
 
 
 class TestLRUCacheAdvanced:
@@ -251,12 +248,10 @@ class TestGraphCachingServiceAdvanced:
     def service(self):
         """Create GraphCachingService instance"""
         config = CacheConfig(
-            l1_max_size=100,
-            l2_max_size=1000,
-            default_ttl=60,
-            compression_threshold=512,
-            enable_compression=True,
-            enable_metrics=True
+            max_entries=100,
+            max_size_mb=10.0,
+            ttl_seconds=60,
+            enable_compression=True
         )
         return GraphCachingService(config=config)
     
@@ -443,18 +438,17 @@ class TestGraphCachingServiceAdvanced:
     async def test_cache_memory_management(self, service):
         """Test cache memory management and cleanup"""
         # Fill cache beyond capacity
-        for i in range(200):  # More than l1_max_size of 100
+        for i in range(200):  # More than max_entries of 100
             await service.set("test", f"key_{i}", f"value_{i}")
-        
+
         # Get memory stats
         memory_stats = await service.get_memory_stats()
-        
-        assert "l1_size" in memory_stats
-        assert "l2_size" in memory_stats
+
+        assert "current_size" in memory_stats
         assert "memory_usage_mb" in memory_stats
         
-        # L1 should not exceed max size
-        assert memory_stats["l1_size"] <= service.config.l1_max_size
+        # Cache should not exceed max entries
+        assert memory_stats["current_size"] <= service.config.max_entries
     
     @pytest.mark.asyncio
     async def test_cache_error_recovery(self, service, mock_db):
@@ -739,8 +733,8 @@ class TestCacheEdgeCases:
         original_config = service.config
         try:
             # Set very small cache size to trigger pressure
-            service.config.l1_max_size = 5
-            service.config.l2_max_size = 10
+            service.config.max_entries = 5
+            service.config.max_size_mb = 1.0
             
             # Fill beyond capacity
             for i in range(20):

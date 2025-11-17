@@ -47,10 +47,12 @@ class TestPeerReviewCRUD:
             "contribution_id": "contrib_001",
             "reviewer_id": "reviewer_001",
             "status": "pending",
-            "score": 0,
-            "feedback": "",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "overall_score": 0.0,
+            "review_comments": "",
+            "technical_accuracy": 3,
+            "documentation_quality": 3,
+            "minecraft_compatibility": 3,
+            "innovation_value": 3
         }
     
     @pytest.fixture
