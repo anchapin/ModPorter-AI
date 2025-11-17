@@ -10,7 +10,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, and_, func, desc
 
-from db.models import (
+from src.db.models import (
     PeerReview as PeerReviewModel,
     ReviewWorkflow as ReviewWorkflowModel,
     ReviewerExpertise as ReviewerExpertiseModel,

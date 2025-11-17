@@ -18,7 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from src.services.advanced_visualization import (
     VisualizationType, FilterType, LayoutAlgorithm,
     VisualizationFilter, VisualizationNode, VisualizationEdge,
-    GraphCluster, VisualizationState, VisualizationMetrics
+    GraphCluster, VisualizationState, VisualizationMetrics,
+    AdvancedVisualizationService
 )
 
 

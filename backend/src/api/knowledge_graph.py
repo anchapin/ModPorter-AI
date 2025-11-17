@@ -13,13 +13,13 @@ from sqlalchemy import select, desc
 from unittest.mock import Mock
 
 try:
-    from db.base import get_db
-    from db.knowledge_graph_crud import (
+    from src.db.base import get_db
+    from src.db.knowledge_graph_crud import (
         KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD,
         CommunityContributionCRUD, VersionCompatibilityCRUD
     )
-    from db.graph_db import graph_db
-    from db.models import (
+    from src.db.graph_db import graph_db
+    from src.db.models import (
         KnowledgeNode as KnowledgeNodeModel,
         KnowledgeRelationship as KnowledgeRelationshipModel,
         ConversionPattern as ConversionPatternModel,

@@ -60,14 +60,16 @@ def sample_knowledge_nodes():
     return [
         KnowledgeNode(
             id="node1",
-            concept="Block",
+            name="Block",
+            node_type="java_concept",
             platform="java",
             minecraft_version="1.20.0",
             properties={"type": "solid", "light_level": 0}
         ),
         KnowledgeNode(
-            id="node2", 
-            concept="block_component",
+            id="node2",
+            name="block_component",
+            node_type="bedrock_concept",
             platform="bedrock",
             minecraft_version="1.20.0",
             properties={"component_type": "minecraft:block", "light_emission": 0.0}

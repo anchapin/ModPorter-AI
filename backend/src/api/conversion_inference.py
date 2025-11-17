@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
-from db.base import get_db
+from src.db.base import get_db
 from services.conversion_inference import conversion_inference_engine
 
 router = APIRouter()

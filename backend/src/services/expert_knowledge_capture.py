@@ -13,10 +13,10 @@ from datetime import datetime
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.knowledge_graph_crud import (
+from src.db.knowledge_graph_crud import (
     CommunityContributionCRUD
 )
-from db.peer_review_crud import (
+from src.db.peer_review_crud import (
     ReviewTemplateCRUD, ReviewWorkflowCRUD
 )
 

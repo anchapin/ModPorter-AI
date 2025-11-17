@@ -3,7 +3,7 @@ import pytest_asyncio
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import crud
-from db.base import AsyncSessionLocal
+from src.db.base import AsyncSessionLocal
 
 
 @pytest_asyncio.fixture

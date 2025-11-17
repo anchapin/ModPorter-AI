@@ -14,12 +14,12 @@ import os
 import uuid
 from uuid import uuid4
 
-from db.base import get_db
-from db.peer_review_crud import (
+from src.db.base import get_db
+from src.db.peer_review_crud import (
     PeerReviewCRUD, ReviewWorkflowCRUD, ReviewerExpertiseCRUD,
     ReviewTemplateCRUD, ReviewAnalyticsCRUD
 )
-from db.models import (
+from src.db.models import (
     ReviewerExpertise as ReviewerExpertiseModel,
     ReviewTemplate as ReviewTemplateModel,
     CommunityContribution as CommunityContributionModel

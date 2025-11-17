@@ -54,7 +54,7 @@ def pytest_sessionstart(session):
             import asyncio
 
             async def init_test_db():
-                from db.declarative_base import Base
+                from src.db.declarative_base import Base
                 from db import models  # Ensure this imports models.py to create all tables
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
@@ -113,9 +113,9 @@ def client():
     with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
         from main import app
-        from db.base import get_db
+        from src.db.base import get_db
         from db import models  # Ensure models are imported
-        from db.declarative_base import Base
+        from src.db.declarative_base import Base
 
         # Initialize tables in the test engine (create them fresh for each test)
         import asyncio
@@ -168,7 +168,7 @@ async def async_client():
     with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
         from main import app
-        from db.base import get_db
+        from src.db.base import get_db
         from db import models  # Ensure models are imported
         
         # Create a fresh session maker per test to avoid connection sharing

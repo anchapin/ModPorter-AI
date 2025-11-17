@@ -13,7 +13,7 @@ from datetime import datetime
 import os
 from uuid import uuid4
 
-from db.base import get_db
+from src.db.base import get_db
 from services.expert_knowledge_capture import expert_capture_service
 
 router = APIRouter()

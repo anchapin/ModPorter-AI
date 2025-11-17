@@ -43,7 +43,7 @@ class TestBatchProcessingService:
             operation_type=BatchOperationType.IMPORT_NODES,
             status=BatchStatus.PENDING,
             created_at=datetime.utcnow(),
-            total_items=100,
+            total_processed=100,
             processed_items=0,
             failed_items=0,
             chunk_size=10,
@@ -57,7 +57,7 @@ class TestBatchProcessingService:
         """Sample batch progress for testing."""
         return BatchProgress(
             job_id=str(uuid.uuid4()),
-            total_items=100,
+            total_processed=100,
             processed_items=50,
             failed_items=5,
             current_chunk=5,
@@ -101,7 +101,7 @@ class TestBatchProcessingService:
         # Job parameters
         job_params = {
             "operation_type": BatchOperationType.IMPORT_NODES,
-            "total_items": 100,
+            "total_processed": 100,
             "chunk_size": 10,
             "processing_mode": ProcessingMode.PARALLEL,
             "parallel_workers": 4,
@@ -118,7 +118,7 @@ class TestBatchProcessingService:
             assert "job_id" in result
             assert result["status"] == BatchStatus.PENDING.value
             assert result["operation_type"] == BatchOperationType.IMPORT_NODES.value
-            assert result["total_items"] == 100
+            assert result["total_processed"] == 100
             assert result["chunk_size"] == 10
             assert result["processing_mode"] == ProcessingMode.PARALLEL.value
 
@@ -142,7 +142,7 @@ class TestBatchProcessingService:
         assert result is not None
         assert result["job_id"] == job_id
         assert result["status"] == BatchStatus.PENDING.value
-        assert result["total_items"] == 100
+        assert result["total_processed"] == 100
         assert result["processed_items"] == 0
         assert result["failed_items"] == 0
         assert result["progress_percentage"] == 0.0
@@ -198,7 +198,7 @@ class TestBatchProcessingService:
             # Verify the result
             assert result is not None
             assert result["job_id"] == job_id
-            assert result["total_items"] == 100
+            assert result["total_processed"] == 100
             assert result["processed_items"] == 50
             assert result["failed_items"] == 5
             assert result["progress_percentage"] == 50.0
@@ -214,7 +214,7 @@ class TestBatchProcessingService:
         sample_batch_job.status = BatchStatus.COMPLETED
         sample_batch_job.result = {
             "success": True,
-            "total_items": 100,
+            "total_processed": 100,
             "processed_items": 95,
             "failed_items": 5,
             "processing_time_seconds": 180.0
@@ -229,7 +229,7 @@ class TestBatchProcessingService:
         # Verify the result
         assert result is not None
         assert result["success"] is True
-        assert result["total_items"] == 100
+        assert result["total_processed"] == 100
         assert result["processed_items"] == 95
         assert result["failed_items"] == 5
         assert result["processing_time_seconds"] == 180.0
@@ -399,7 +399,7 @@ class TestBatchProcessingService:
         # Verify the result
         assert result is not None
         assert result.job_id == job_id
-        assert result.total_items == 100
+        assert result.total_processed == 100
         assert result.processed_items == 45
         assert result.failed_items == 5
         assert result.progress_percentage == 50.0  # (45+5)/100 * 100
@@ -419,7 +419,7 @@ class TestBatchProcessingService:
         with patch.object(service, '_calculate_progress') as mock_progress:
             mock_progress.return_value = BatchProgress(
                 job_id=job_id,
-                total_items=100,
+                total_processed=100,
                 processed_items=45,
                 failed_items=5,
                 current_chunk=5,
@@ -519,7 +519,7 @@ class TestBatchProcessingService:
             status=BatchStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=2),
             completed_at=datetime.utcnow() - timedelta(hours=1),
-            total_items=100,
+            total_processed=100,
             processed_items=95,
             failed_items=5
         )
@@ -530,7 +530,7 @@ class TestBatchProcessingService:
             status=BatchStatus.FAILED,
             created_at=datetime.utcnow() - timedelta(hours=3),
             completed_at=datetime.utcnow() - timedelta(hours=2),
-            total_items=50,
+            total_processed=50,
             processed_items=25,
             failed_items=25
         )
@@ -599,7 +599,7 @@ class TestBatchProcessingService:
         sample_batch_job.status = BatchStatus.COMPLETED
         sample_batch_job.result = {
             "success": True,
-            "total_items": 100,
+            "total_processed": 100,
             "processed_items": 95,
             "failed_items": 5,
             "processing_time_seconds": 180.0
