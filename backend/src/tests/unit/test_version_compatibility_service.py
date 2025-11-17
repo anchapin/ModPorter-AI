@@ -12,7 +12,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from services.version_compatibility import version_compatibility_service
-from db.models import VersionCompatibility
+from src.db.models import VersionCompatibility
 
 
 class TestVersionCompatibilityService:

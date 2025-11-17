@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from unittest.mock import Mock
 
 try:
-    from db.base import get_db
+    from src.db.base import get_db
     from services.version_compatibility import version_compatibility_service
 except ImportError:
     # Mock imports if they fail

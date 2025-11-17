@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, ConfigDict
 
-from db.base import get_db
+from src.db.base import get_db
 from db import crud
 
 # Configure logger for this module

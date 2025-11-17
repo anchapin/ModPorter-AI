@@ -10,11 +10,11 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from db.knowledge_graph_crud import (
+from src.db.knowledge_graph_crud import (
     VersionCompatibilityCRUD,
     ConversionPatternCRUD
 )
-from db.models import VersionCompatibility
+from src.db.models import VersionCompatibility
 
 logger = logging.getLogger(__name__)
 

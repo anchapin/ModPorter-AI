@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from datetime import datetime
 
-from db.models import BehaviorTemplate
+from src.db.models import BehaviorTemplate
 
 async def create_behavior_template(
     session: AsyncSession,

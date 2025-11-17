@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-from db.base import get_db
+from src.db.base import get_db
 from db import crud
-from db.models import BehaviorFile
+from src.db.models import BehaviorFile
 import uuid
 import datetime as dt
 from enum import Enum

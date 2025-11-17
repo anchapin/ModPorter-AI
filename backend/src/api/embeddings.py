@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.base import get_db
+from src.db.base import get_db
 from db import crud
 # DocumentEmbedding import removed as it's unused
 from models.embedding_models import (

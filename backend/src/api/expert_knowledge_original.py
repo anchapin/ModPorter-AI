@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, U
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
-from db.base import get_db
+from src.db.base import get_db
 from services.expert_knowledge_capture import expert_capture_service
 
 router = APIRouter()

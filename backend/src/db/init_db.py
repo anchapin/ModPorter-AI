@@ -1,5 +1,5 @@
-from db.base import async_engine
-from db.declarative_base import Base
+from src.db.base import async_engine
+from src.db.declarative_base import Base
 import logging
 import asyncio
 from sqlalchemy import text

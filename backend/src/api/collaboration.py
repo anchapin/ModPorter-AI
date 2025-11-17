@@ -11,7 +11,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.base import get_db
+from src.db.base import get_db
 from ..db.database import get_async_session
 from ..services.realtime_collaboration import (
     realtime_collaboration_service, OperationType, ConflictType
