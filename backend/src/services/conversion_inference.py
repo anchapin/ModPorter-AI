@@ -15,6 +15,7 @@ from sqlalchemy import select
 from src.db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, ConversionPatternCRUD
 )
+from src.db.models import KnowledgeNode
 from src.db.graph_db import graph_db
 
 logger = logging.getLogger(__name__)

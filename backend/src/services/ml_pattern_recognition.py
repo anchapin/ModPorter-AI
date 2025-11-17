@@ -75,14 +75,19 @@ class MLPatternRecognitionService:
     
     def __init__(self):
         self.is_trained = False
-        self.models = {
-            "pattern_classifier": RandomForestClassifier(n_estimators=100, random_state=42),
-            "success_predictor": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "feature_clustering": KMeans(n_clusters=8, random_state=42),
-            "text_vectorizer": TfidfVectorizer(max_features=1000, stop_words='english'),
-            "feature_scaler": StandardScaler(),
-            "label_encoder": LabelEncoder()
-        }
+        # Only initialize models if sklearn is available
+        if RandomForestClassifier is not None:
+            self.models = {
+                "pattern_classifier": RandomForestClassifier(n_estimators=100, random_state=42),
+                "success_predictor": GradientBoostingRegressor(n_estimators=100, random_state=42),
+                "feature_clustering": KMeans(n_clusters=8, random_state=42),
+                "text_vectorizer": TfidfVectorizer(max_features=1000, stop_words='english'),
+                "feature_scaler": StandardScaler(),
+                "label_encoder": LabelEncoder()
+            }
+        else:
+            self.models = {}
+            logger.warning("sklearn not available - ML pattern recognition features disabled")
         self.feature_cache = {}
         self.model_metrics = {}
         self.training_data = []

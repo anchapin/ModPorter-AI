@@ -10,7 +10,12 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from crewai.tools import tool
+try:
+    from crewai.tools import tool
+except ImportError:
+    # Fallback for older versions of crewai
+    def tool(func):
+        return func
 from models.smart_assumptions import (
     AssumptionResult,
     FeatureContext,
