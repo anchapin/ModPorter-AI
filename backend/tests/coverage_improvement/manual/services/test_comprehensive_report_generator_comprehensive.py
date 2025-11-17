@@ -39,7 +39,7 @@ sys.modules['matplotlib.pyplot'].figure = Mock(return_value=mock_figure)
 sys.modules['matplotlib.pyplot'].subplots = Mock(return_value=(mock_figure, Mock()))
 
 # Import module to test
-from services.comprehensive_report_generator import ConversionReportGenerator
+from src.services.comprehensive_report_generator import ConversionReportGenerator
 
 
 class TestComprehensiveReportGenerator:
@@ -48,7 +48,7 @@ class TestComprehensiveReportGenerator:
     def test_comprehensive_report_generator_import(self):
         """Test that the ComprehensiveReportGenerator can be imported successfully"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
             assert ComprehensiveReportGenerator is not None
         except ImportError:
             pytest.skip("Could not import ComprehensiveReportGenerator")
@@ -56,7 +56,7 @@ class TestComprehensiveReportGenerator:
     def test_comprehensive_report_generator_initialization(self):
         """Test initializing the comprehensive report generator"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
             # Try to create an instance
             try:
                 generator = ComprehensiveReportGenerator()
@@ -73,7 +73,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_conversion_report(self):
         """Test the generate_conversion_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -96,7 +96,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_feature_comparison_report(self):
         """Test the generate_feature_comparison_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -119,7 +119,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_quality_metrics_report(self):
         """Test the generate_quality_metrics_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -142,7 +142,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_community_feedback_report(self):
         """Test the generate_community_feedback_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -165,7 +165,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_performance_metrics_report(self):
         """Test the generate_performance_metrics_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -188,7 +188,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_comprehensive_dashboard(self):
         """Test the generate_comprehensive_dashboard method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -211,7 +211,7 @@ class TestComprehensiveReportGenerator:
     def test_extract_conversion_summary(self):
         """Test the _extract_conversion_summary method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -240,7 +240,7 @@ class TestComprehensiveReportGenerator:
     def test_extract_feature_mapping_data(self):
         """Test the _extract_feature_mapping_data method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -276,7 +276,7 @@ class TestComprehensiveReportGenerator:
     def test_extract_quality_metrics_data(self):
         """Test the _extract_quality_metrics_data method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -304,7 +304,7 @@ class TestComprehensiveReportGenerator:
     def test_extract_community_feedback_data(self):
         """Test the _extract_community_feedback_data method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -342,7 +342,7 @@ class TestComprehensiveReportGenerator:
     def test_extract_performance_metrics_data(self):
         """Test the _extract_performance_metrics_data method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -375,7 +375,7 @@ class TestComprehensiveReportGenerator:
     def test_create_feature_comparison_chart(self):
         """Test the _create_feature_comparison_chart method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -400,7 +400,7 @@ class TestComprehensiveReportGenerator:
     def test_create_quality_metrics_chart(self):
         """Test the _create_quality_metrics_chart method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -426,7 +426,7 @@ class TestComprehensiveReportGenerator:
     def test_create_performance_metrics_chart(self):
         """Test the _create_performance_metrics_chart method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -452,7 +452,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_html_report(self):
         """Test the _generate_html_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -480,7 +480,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_json_report(self):
         """Test the _generate_json_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -508,7 +508,7 @@ class TestComprehensiveReportGenerator:
     def test_generate_csv_report(self):
         """Test the _generate_csv_report method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -536,7 +536,7 @@ class TestComprehensiveReportGenerator:
     def test_schedule_report_generation(self):
         """Test the schedule_report_generation method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()
@@ -563,7 +563,7 @@ class TestComprehensiveReportGenerator:
     def test_send_report_notification(self):
         """Test the _send_report_notification method"""
         try:
-            from services.comprehensive_report_generator import ComprehensiveReportGenerator
+            from src.services.comprehensive_report_generator import ComprehensiveReportGenerator
 
             # Create generator instance
             generator = ComprehensiveReportGenerator()

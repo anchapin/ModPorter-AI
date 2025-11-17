@@ -4,7 +4,7 @@ Test suite for A/B testing infrastructure
 
 import pytest
 import uuid
-from db import crud
+from src.db import crud
 
 
 @pytest.mark.asyncio

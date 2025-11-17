@@ -65,7 +65,7 @@ sys.modules['kubernetes.client'].CoreV1Api = Mock(return_value=mock_k8s_api)
 sys.modules['kubernetes.client'].AppsV1Api = Mock(return_value=mock_k8s_api)
 
 # Import module to test
-from services.community_scaling import CommunityScalingService
+from src.services.community_scaling import CommunityScalingService
 
 
 class TestCommunityScalingService:
@@ -74,7 +74,7 @@ class TestCommunityScalingService:
     def test_community_scaling_service_import(self):
         """Test that the CommunityScalingService can be imported successfully"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
             assert CommunityScalingService is not None
         except ImportError:
             pytest.skip("Could not import CommunityScalingService")
@@ -82,7 +82,7 @@ class TestCommunityScalingService:
     def test_community_scaling_service_initialization(self):
         """Test initializing the community scaling service"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
             # Try to create an instance
             try:
                 service = CommunityScalingService()
@@ -99,7 +99,7 @@ class TestCommunityScalingService:
     def test_register_scaling_policy(self):
         """Test the register_scaling_policy method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -134,7 +134,7 @@ class TestCommunityScalingService:
     def test_update_scaling_policy(self):
         """Test the update_scaling_policy method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -166,7 +166,7 @@ class TestCommunityScalingService:
     def test_delete_scaling_policy(self):
         """Test the delete_scaling_policy method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -189,7 +189,7 @@ class TestCommunityScalingService:
     def test_get_scaling_policies(self):
         """Test the get_scaling_policies method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -212,7 +212,7 @@ class TestCommunityScalingService:
     def test_execute_scaling_policy(self):
         """Test the execute_scaling_policy method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -240,7 +240,7 @@ class TestCommunityScalingService:
     def test_monitor_system_load(self):
         """Test the monitor_system_load method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -269,7 +269,7 @@ class TestCommunityScalingService:
     def test_predict_scaling_needs(self):
         """Test the predict_scaling_needs method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -301,7 +301,7 @@ class TestCommunityScalingService:
     def test_get_scaling_history(self):
         """Test the get_scaling_history method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -324,7 +324,7 @@ class TestCommunityScalingService:
     def test_enable_auto_scaling(self):
         """Test the enable_auto_scaling method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -348,7 +348,7 @@ class TestCommunityScalingService:
     def test_disable_auto_scaling(self):
         """Test the disable_auto_scaling method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -372,7 +372,7 @@ class TestCommunityScalingService:
     def test_get_scaling_recommendations(self):
         """Test the get_scaling_recommendations method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -410,7 +410,7 @@ class TestCommunityScalingServiceMethods:
     def test_community_scaling_service_methods_import(self):
         """Test that the CommunityScalingService has expected methods"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
             # Create an instance to test methods
             service = CommunityScalingService()
             assert hasattr(service, 'assess_scaling_needs')
@@ -423,7 +423,7 @@ class TestCommunityScalingServiceMethods:
     def test_auto_scaling_manager_initialization(self):
         """Test initializing the auto scaling manager"""
         try:
-            from services.community_scaling import AutoScalingManager
+            from src.services.community_scaling import AutoScalingManager
 
             # Try to create an instance
             try:
@@ -440,7 +440,7 @@ class TestCommunityScalingServiceMethods:
     def test_apply_scaling_policy(self):
         """Test the apply_scaling_policy method"""
         try:
-            from services.community_scaling import AutoScalingManager
+            from src.services.community_scaling import AutoScalingManager
 
             # Create manager instance
             manager = AutoScalingManager()
@@ -477,7 +477,7 @@ class TestCommunityScalingServiceMethods:
     def test_enable_auto_scaling(self):
         """Test the enable_auto_scaling method"""
         try:
-            from services.community_scaling import AutoScalingManager
+            from src.services.community_scaling import AutoScalingManager
 
             # Create manager instance
             manager = AutoScalingManager()
@@ -495,7 +495,7 @@ class TestCommunityScalingServiceMethods:
     def test_disable_auto_scaling(self):
         """Test the disable_auto_scaling method"""
         try:
-            from services.community_scaling import AutoScalingManager
+            from src.services.community_scaling import AutoScalingManager
 
             # Create manager instance
             manager = AutoScalingManager()
@@ -513,7 +513,7 @@ class TestCommunityScalingServiceMethods:
     def test_evaluate_scaling_decision(self):
         """Test the evaluate_scaling_decision method"""
         try:
-            from services.community_scaling import AutoScalingManager
+            from src.services.community_scaling import AutoScalingManager
 
             # Create manager instance
             manager = AutoScalingManager()
@@ -545,7 +545,7 @@ class TestCommunityScalingServiceMethods:
     def test_assess_scaling_needs(self):
         """Test the assess_scaling_needs method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -568,7 +568,7 @@ class TestCommunityScalingServiceMethods:
     def test_load_balancer_initialization(self):
         """Test initializing the load balancer"""
         try:
-            from services.community_scaling import LoadBalancer
+            from src.services.community_scaling import LoadBalancer
 
             # Try to create an instance
             try:
@@ -585,7 +585,7 @@ class TestCommunityScalingServiceMethods:
     def test_scale_up(self):
         """Test the scale_up method"""
         try:
-            from services.community_scaling import LoadBalancer
+            from src.services.community_scaling import LoadBalancer
 
             # Create load balancer instance
             lb = LoadBalancer()
@@ -609,7 +609,7 @@ class TestCommunityScalingServiceMethods:
     def test_scale_down(self):
         """Test the scale_down method"""
         try:
-            from services.community_scaling import LoadBalancer
+            from src.services.community_scaling import LoadBalancer
 
             # Create load balancer instance
             lb = LoadBalancer()
@@ -633,7 +633,7 @@ class TestCommunityScalingServiceMethods:
     def test_get_current_replicas(self):
         """Test the get_current_replicas method"""
         try:
-            from services.community_scaling import LoadBalancer
+            from src.services.community_scaling import LoadBalancer
 
             # Create load balancer instance
             lb = LoadBalancer()
@@ -661,7 +661,7 @@ class TestCommunityScalingServiceMethods:
     def test_get_load_distribution(self):
         """Test the get_load_distribution method"""
         try:
-            from services.community_scaling import LoadBalancer
+            from src.services.community_scaling import LoadBalancer
 
             # Create load balancer instance
             lb = LoadBalancer()
@@ -691,7 +691,7 @@ class TestCommunityScalingServiceMethods:
     def test_optimize_content_distribution(self):
         """Test the optimize_content_distribution method"""
         try:
-            from services.community_scaling import CommunityScalingService
+            from src.services.community_scaling import CommunityScalingService
 
             # Create service instance
             service = CommunityScalingService()
@@ -714,7 +714,7 @@ class TestCommunityScalingServiceMethods:
     def test_resource_monitor_initialization(self):
         """Test initializing the resource monitor"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Try to create an instance
             try:
@@ -731,7 +731,7 @@ class TestCommunityScalingServiceMethods:
     def test_get_current_metrics(self):
         """Test the get_current_metrics method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()
@@ -756,7 +756,7 @@ class TestCommunityScalingServiceMethods:
     def test_get_historical_metrics(self):
         """Test the get_historical_metrics method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()
@@ -784,7 +784,7 @@ class TestCommunityScalingServiceMethods:
     def test_predict_future_load(self):
         """Test the predict_future_load method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()
@@ -809,7 +809,7 @@ class TestCommunityScalingServiceMethods:
     def test_collect_metrics(self):
         """Test the collect_metrics method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()
@@ -840,7 +840,7 @@ class TestCommunityScalingServiceMethods:
     def test_start_monitoring(self):
         """Test the start_monitoring method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()
@@ -864,7 +864,7 @@ class TestCommunityScalingServiceMethods:
     def test_stop_monitoring(self):
         """Test the stop_monitoring method"""
         try:
-            from services.community_scaling import ResourceMonitor
+            from src.services.community_scaling import ResourceMonitor
 
             # Create monitor instance
             monitor = ResourceMonitor()

@@ -6,7 +6,7 @@ import os
 import datetime
 from typing import Dict, Any, List
 
-from models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
+from src.models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
 
 # Constants for manifest versions, can be updated as needed
 MIN_ENGINE_VERSION_RP = [1, 16, 0]
