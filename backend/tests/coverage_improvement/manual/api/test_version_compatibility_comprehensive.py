@@ -28,7 +28,7 @@ sys.modules['github'] = Mock()
 sys.modules['requests'] = Mock()
 
 # Import module to test
-from api.version_compatibility import router
+from src.api.version_compatibility import router
 
 
 class TestVersionCompatibilityAPI:
@@ -403,7 +403,7 @@ class TestVersionCompatibilityAPI:
         """Test that all imported modules are available"""
         # Test key imports
         try:
-            from api.version_compatibility import router
+            from src.api.version_compatibility import router
             assert router is not None
         except ImportError:
             pytest.skip("Could not import version_compatibility router")

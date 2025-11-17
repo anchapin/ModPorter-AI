@@ -32,7 +32,7 @@ graph_db_mock.search_nodes = Mock(return_value=[])
 graph_db_mock.find_conversion_paths = Mock(return_value=[])
 
 # Import module to test
-from api.knowledge_graph import router
+from src.api.knowledge_graph import router
 
 
 class TestKnowledgeGraphAPI:
