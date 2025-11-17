@@ -73,14 +73,15 @@ class TestBatchProcessingService:
         """Sample batch result for testing."""
         return BatchResult(
             success=True,
-            total_items=100,
-            processed_items=95,
-            failed_items=5,
-            processing_time_seconds=180.0,
-            chunks_processed=10,
-            error_details=[
-                {"item_id": "item_10", "error": "Invalid data format"},
-                {"item_id": "item_25", "error": "Missing required field"}
+            job_id="test_job_123",
+            operation_type=BatchOperationType.IMPORT_NODES,
+            total_processed=95,
+            total_failed=5,
+            execution_time_seconds=180.0,
+            result_data={"chunks_processed": 10},
+            errors=[
+                "item_10: Invalid data format",
+                "item_25: Missing required field"
             ],
             metadata={"source": "test_file.json", "target": "knowledge_graph"}
         )

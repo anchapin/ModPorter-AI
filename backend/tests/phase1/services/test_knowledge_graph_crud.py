@@ -78,15 +78,14 @@ class TestKnowledgeNodeCRUD:
         """Sample knowledge node for testing."""
         return KnowledgeNode(
             id=uuid.uuid4(),
-            title="Test Java Block",
+            name="Test Java Block",
             description="A test Java block for unit testing",
             node_type="java_concept",
-            metadata={
+            properties={
                 "class": "Block",
                 "package": "net.minecraft.block",
                 "minecraft_version": "1.18.2"
             },
-            embedding=[0.1, 0.2, 0.3],
             platform="java",
             minecraft_version="1.18.2",
             created_by="test_user",

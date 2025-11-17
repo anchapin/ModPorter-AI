@@ -179,14 +179,14 @@ class TestModelManager:
         assert 0 <= result <= 1 or 0 <= result <= 1  # Probability or class label
 
 
-class TestConversionSuccessPredictor:
-    """Test the main ConversionSuccessPredictor class."""
-    
+class TestConversionSuccessPredictionService:
+    """Test the main ConversionSuccessPredictionService class."""
+
     @pytest.fixture
     def predictor(self):
         """Create a predictor instance with mocked dependencies."""
         with patch('services.conversion_success_prediction.KnowledgeNodeCRUD') as mock_crud:
-            predictor = ConversionSuccessPredictor()
+            predictor = ConversionSuccessPredictionService()
             predictor.node_crud = mock_crud
             return predictor
             
