@@ -17,16 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 # Import the module under test
-from api.peer_review import (
-    router,
-    _map_review_data_to_model,
-    _map_model_to_response,
-    _map_workflow_data_to_model,
-    _map_workflow_model_to_response,
-    process_review_completion,
-    update_contribution_review_status,
-    start_review_workflow
-)
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from api.peer_review import router
 from db.models import (
     ReviewerExpertise as ReviewerExpertiseModel,
     ReviewTemplate as ReviewTemplateModel,

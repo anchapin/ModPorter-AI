@@ -13,13 +13,13 @@ from datetime import datetime
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from services.conversion_success_prediction import (
+from src.services.conversion_success_prediction import (
     ConversionSuccessPredictionService,
     PredictionType,
     ConversionFeatures,
     PredictionResult
 )
-from db.models import KnowledgeNode
+from src.db.models import KnowledgeNode
 
 
 class TestConversionSuccessPredictionService:

@@ -20,9 +20,9 @@ sys.modules['magic'].from_buffer = Mock(return_value='application/octet-stream')
 sys.modules['magic'].from_file = Mock(return_value='data')
 
 # Import the module we're testing
-from api.knowledge_graph_fixed import router, get_knowledge_nodes, create_knowledge_node, update_knowledge_node
-from api.knowledge_graph_fixed import get_node_relationships, create_knowledge_relationship
-from api.knowledge_graph_fixed import get_knowledge_node
+from api.knowledge_graph import router, get_knowledge_nodes, create_knowledge_node, update_knowledge_node
+from api.knowledge_graph import get_node_relationships, create_knowledge_relationship
+from api.knowledge_graph import get_knowledge_node
 from db.models import KnowledgeNode, KnowledgeRelationship
 
 

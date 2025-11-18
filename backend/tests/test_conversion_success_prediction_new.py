@@ -14,11 +14,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from services.conversion_success_prediction import (
+from src.services.conversion_success_prediction import (
     ConversionSuccessPredictionService, PredictionType, ConversionFeatures, PredictionResult
 )
-from db.knowledge_graph_crud import KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
-from db.models import KnowledgeNode
+from src.db.knowledge_graph_crud import KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+from src.db.models import KnowledgeNode
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
