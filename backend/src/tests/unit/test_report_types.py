@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from typing import Dict, Any, List
 
-from src.types.report_types import (
+from src.custom_types.report_types import (
     ConversionStatus,
     ImpactLevel,
     ReportMetadata,

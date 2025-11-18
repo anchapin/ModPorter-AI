@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime
 from typing import List, Dict, Any
 
-from src.types.report_types import (
+from src.custom_types.report_types import (
     ConversionStatus,
     ImpactLevel,
     ReportMetadata,

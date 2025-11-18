@@ -15,7 +15,7 @@ import time
 import logging
 
 try:
-    from src.types.report_types import (
+    from src.custom_types.report_types import (
         InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
         AssumptionsReport, AssumptionReportItem, DeveloperLog, ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
     )
