@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 try:
-    from ..config import settings
+    from src.config import settings
 except ImportError:
     # Fallback for when running from different contexts
     try:

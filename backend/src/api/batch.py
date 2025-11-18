@@ -11,8 +11,8 @@ from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.base import get_db
-from ..services.batch_processing import (
+from src.db.base import get_db
+from src.services.batch_processing import (
     batch_processing_service, BatchOperationType, ProcessingMode
 )
 

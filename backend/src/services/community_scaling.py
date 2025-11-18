@@ -18,11 +18,11 @@ from sqlalchemy import select, and_, or_, desc, func
 from unittest.mock import Mock
 
 try:
-    from ..db.database import get_async_session
-    from ..db.knowledge_graph_crud import (
+    from src.db.database import get_async_session
+    from src.db.knowledge_graph_crud import (
         KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, CommunityContributionCRUD
     )
-    from ..db.peer_review_crud import (
+    from src.db.peer_review_crud import (
         PeerReviewCRUD, ReviewWorkflowCRUD
     )
 except ImportError:

@@ -16,7 +16,7 @@ from enum import Enum
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.knowledge_graph_crud import (
+from src.db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
 

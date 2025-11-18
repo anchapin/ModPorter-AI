@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 # Try to import performance monitoring and caching, but don't fail if not available
 try:
-    from ..utils.graph_performance_monitor import performance_monitor, monitor_graph_operation
-    from ..utils.graph_cache import graph_cache, cached_node, cached_operation
-    from ..db.neo4j_config import neo4j_config
+    from src.utils.graph_performance_monitor import performance_monitor, monitor_graph_operation
+    from src.utils.graph_cache import graph_cache, cached_node, cached_operation
+    from src.db.neo4j_config import neo4j_config
     PERFORMANCE_ENABLED = True
 except ImportError:
     PERFORMANCE_ENABLED = False

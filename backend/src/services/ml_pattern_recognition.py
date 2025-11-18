@@ -30,7 +30,7 @@ except ImportError:
 from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
-    from ..db.knowledge_graph_crud import (
+    from src.db.knowledge_graph_crud import (
         KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
     )
 except ImportError:

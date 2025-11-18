@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Import behavioral testing framework components
 try:
-    from ...ai_engine.src.testing.behavioral_framework import BehavioralTestingFramework
+    from ai_engine.src.testing.behavioral_framework import BehavioralTestingFramework
 except ImportError:
     # Fallback for development - create a mock class
     class BehavioralTestingFramework:

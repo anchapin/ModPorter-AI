@@ -18,11 +18,11 @@ from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc, func
 
-from ..db.database import get_async_session
-from ..db.knowledge_graph_crud import (
+from src.db.database import get_async_session
+from src.db.knowledge_graph_crud import (
     KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
 )
-from ..db.models import (
+from src.db.models import (
     KnowledgeNode, KnowledgeRelationship, ConversionPattern
 )
 

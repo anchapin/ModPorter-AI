@@ -10,8 +10,8 @@ from typing import Dict, List, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.base import get_db
-from ..services.advanced_visualization import (
+from src.db.base import get_db
+from src.services.advanced_visualization import (
     AdvancedVisualizationService, VisualizationType, FilterType, 
     LayoutAlgorithm
 )

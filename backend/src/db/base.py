@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 try:
-    from ..config import settings
+    from src.config import settings
 except ImportError:
     from src.config import settings
 

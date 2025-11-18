@@ -17,8 +17,8 @@ from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.database import get_async_session
-from ..db.knowledge_graph_crud import (
+from src.db.database import get_async_session
+from src.db.knowledge_graph_crud import (
     KnowledgeNodeCRUD
 )
 

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
-from ..services.graph_version_control import graph_version_control_service
+from src.services.graph_version_control import graph_version_control_service
 
 logger = logging.getLogger(__name__)
 

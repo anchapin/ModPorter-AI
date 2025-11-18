@@ -20,7 +20,7 @@ from .report_models import (
     FullConversionReport,
 )
 try:
-    from ..db.models import ConversionJob as Job, Addon, Asset, BehaviorFile
+    from src.db.models import ConversionJob as Job, Addon, Asset, BehaviorFile
 except ImportError:
     # Fallback for when running from different contexts
     from src.db.models import ConversionJob as Job, Addon, Asset, BehaviorFile

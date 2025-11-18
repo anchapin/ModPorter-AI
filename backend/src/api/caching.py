@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
-from ..services.graph_caching import (
+from src.services.graph_caching import (
     graph_caching_service, CacheStrategy, CacheInvalidationStrategy
 )
 
@@ -254,7 +254,7 @@ async def update_cache_config(config_data: Dict[str, Any]):
                     "enable_serialization": config_data.get("enable_serialization", True)
                 }
                 
-                from ..services.graph_caching import CacheConfig
+                from src.services.graph_caching import CacheConfig
                 graph_caching_service.cache_configs[cache_type] = CacheConfig(**new_config)
                 
             except ValueError as e:
@@ -407,7 +407,7 @@ async def get_cache_history(
 async def get_cache_strategies():
     """Get available caching strategies."""
     try:
-        from ..services.graph_caching import CacheStrategy
+        from src.services.graph_caching import CacheStrategy
         
         strategies = []
         for strategy in CacheStrategy:
@@ -433,7 +433,7 @@ async def get_cache_strategies():
 async def get_invalidation_strategies():
     """Get available cache invalidation strategies."""
     try:
-        from ..services.graph_caching import CacheInvalidationStrategy
+        from src.services.graph_caching import CacheInvalidationStrategy
         
         strategies = []
         for strategy in CacheInvalidationStrategy:
