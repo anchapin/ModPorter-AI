@@ -2,7 +2,7 @@
 # This file ensures test automation has all required dependencies
 
 # Main requirements (core dependencies needed for tests)
--r requirements.txt
+-r backend/requirements.txt
 
 # Additional testing tools
 pytest-mock>=3.11.0
