@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from uuid import uuid4
 
-from src.db.base import get_db
+from db.base import get_db
 
 router = APIRouter()
 

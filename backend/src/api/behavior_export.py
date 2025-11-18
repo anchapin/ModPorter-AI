@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict
 from pydantic import BaseModel, Field
-from src.db.base import get_db
+from db.base import get_db
 from db import crud
 from services import addon_exporter
-from src.services.cache import CacheService
+from services.cache import CacheService
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import uuid

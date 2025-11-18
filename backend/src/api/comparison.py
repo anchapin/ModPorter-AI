@@ -80,13 +80,13 @@ from sqlalchemy.orm import selectinload
 
 
 # Adjust these imports based on your actual database setup location
-# from src.db.declarative_base import Base # Base is not directly used here, models are
-from src.db.models import (
+# from db.declarative_base import Base # Base is not directly used here, models are
+from db.models import (
     ComparisonResultDb,
     FeatureMappingDb,
     ConversionJob,
 )  # ConversionJob for FK check
-from src.db.base import get_db
+from db.base import get_db
 
 router = APIRouter()
 

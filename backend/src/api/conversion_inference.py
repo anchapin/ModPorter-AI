@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, validator
 
-from src.db.base import get_db
+from db.base import get_db
 
 router = APIRouter()
 

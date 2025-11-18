@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
-from src.db.base import get_db
+from db.base import get_db
 from db import crud
 
 # Configure logger for this module

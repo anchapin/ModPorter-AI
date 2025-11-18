@@ -12,9 +12,9 @@ from sqlalchemy import select
 import uuid
 import logging
 
-from src.db.base import get_db
-from src.db.knowledge_graph_crud import KnowledgeNodeCRUD
-from src.db.models import KnowledgeNode
+from db.base import get_db
+from db.knowledge_graph_crud import KnowledgeNodeCRUD
+from db.models import KnowledgeNode
 
 logger = logging.getLogger(__name__)
 

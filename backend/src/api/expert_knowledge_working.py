@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from src.db.base import get_db
+from db.base import get_db
 
 router = APIRouter()
 

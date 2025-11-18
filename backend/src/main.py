@@ -27,15 +27,15 @@ if str(current_dir) not in sys.path:
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.base import get_db, AsyncSessionLocal
-from src.db import crud
-from src.services.cache import CacheService
+from db.base import get_db, AsyncSessionLocal
+from db import crud
+from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from src.services import addon_exporter # For .mcaddon export
-from src.services import conversion_parser # For parsing converted pack output
-from src.services.asset_conversion_service import asset_conversion_service
+from services import addon_exporter # For .mcaddon export
+from services import conversion_parser # For parsing converted pack output
+from services.asset_conversion_service import asset_conversion_service
 import shutil # For directory operations
 from typing import List, Optional, Dict
 import datetime as dt
@@ -47,13 +47,13 @@ import httpx  # Add for AI Engine communication
 import json  # For JSON operations
 from dotenv import load_dotenv
 import logging
-from src.db.init_db import init_db
+from db.init_db import init_db
 from uuid import UUID as PyUUID # For addon_id path parameter
-from src.models.addon_models import * # For addon Pydantic models
+from models.addon_models import * # For addon Pydantic models
 pydantic_addon_models = sys.modules['src.models.addon_models']
 try:
-    from src.report_models import InteractiveReport, FullConversionReport # For conversion report model
-    from src.report_generator import ConversionReportGenerator
+    from report_models import InteractiveReport, FullConversionReport # For conversion report model
+    from report_generator import ConversionReportGenerator
 except ImportError:
     # Fallback for testing without these modules
     InteractiveReport = None
@@ -61,12 +61,12 @@ except ImportError:
     ConversionReportGenerator = None
 
 # Import API routers
-from src.api import assets, performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
-from src.api import knowledge_graph, expert_knowledge, peer_review, conversion_inference, version_compatibility
+from api import assets, performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, caching
+from api import knowledge_graph, expert_knowledge, peer_review, conversion_inference, version_compatibility
 
 # Debug: Check if version compatibility routes are loaded
 try:
-    from src.api import version_compatibility
+    from api import version_compatibility
     print(f"Version compatibility routes: {[route.path for route in version_compatibility.router.routes]}")
     print(f"TESTING env: {os.getenv('TESTING')}")
 except Exception as e:
@@ -74,21 +74,21 @@ except Exception as e:
 
 # Debug: Check if knowledge graph routes are loaded
 try:
-    from src.api import knowledge_graph
+    from api import knowledge_graph
     print(f"Knowledge graph routes: {[route.path for route in knowledge_graph.router.routes]}")
 except Exception as e:
     print(f"Error importing knowledge_graph: {e}")
 
 # Debug: Check if version compatibility routes are loaded
 try:
-    from src.api import version_compatibility
+    from api import version_compatibility
     print(f"Version compatibility routes: {[route.path for route in version_compatibility.router.routes]}")
 except Exception as e:
     print(f"Error importing version_compatibility: {e}")
 
 # Import report generator
 try:
-    from src.services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+    from services.report_generator import ConversionReportGenerator, MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 except Exception as e:
     print(f"Error importing from report_generator: {e}")
     ConversionReportGenerator = None

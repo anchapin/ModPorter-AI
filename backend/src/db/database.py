@@ -11,7 +11,11 @@ try:
     from ..config import settings
 except ImportError:
     # Fallback for when running from different contexts
-    from src.config import settings
+    try:
+        from src.config import settings
+    except ImportError:
+        # Final fallback - assume config is in path
+        from config import settings
 
 # Create async engine
 engine = create_async_engine(
