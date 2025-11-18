@@ -11,15 +11,13 @@ from unittest.mock import MagicMock
 
 # Import and apply our custom mocks
 from .redis_mock import apply_redis_mock
-from .sklearn_mock import apply_sklearn_mock
 
 def apply_all_mocks():
     """Apply all necessary mocks for testing."""
     # Apply Redis mock to prevent connection errors
     apply_redis_mock()
 
-    # Apply sklearn mock to prevent import errors
-    apply_sklearn_mock()
+    # sklearn is now properly installed, no mock needed
 
     # Mock other external dependencies as needed
     mock_pgvector()
