@@ -780,7 +780,7 @@ class CommunityScalingService:
                     200 * (max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 1000) - 4)),
                     20 * (max(20, math.ceil(growth_projection["projected_capacity"]["users"] / 50))),
                     150 * (max(0, math.ceil(growth_projection["projected_capacity"]["users"] / 2000) - 4))
-                ))
+                )))
             }
         }
 

@@ -9,7 +9,6 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 
 from src.db.knowledge_graph_crud import (
