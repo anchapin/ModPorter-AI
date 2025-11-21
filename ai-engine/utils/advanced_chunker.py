@@ -108,7 +108,7 @@ class JavaCodeChunker:
         # Find class boundaries
         try:
             ast.parse(code)  # This won't work for Java, but shows the concept
-        except:
+        except (SyntaxError, TypeError):
             # Fallback to regex-based chunking for Java
             chunks.extend(self._chunk_java_with_regex(code, file_path))
         

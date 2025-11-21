@@ -131,7 +131,7 @@ class GPUConfig:
                     gpu_count = torch.cuda.device_count()
                     gpu_name = torch.cuda.get_device_name(0) if gpu_count > 0 else "Unknown AMD GPU"
                     print(f"GPU Config: AMD GPU - {gpu_name} ({gpu_count} device(s))")
-                except:
+                except (Exception, OSError):
                     print("GPU Config: AMD GPU detected (device info unavailable)")
                     
             else:
@@ -213,7 +213,7 @@ class GPUConfig:
                 if torch.cuda.is_available():
                     torch.backends.cudnn.benchmark = True
                     torch.backends.cudnn.enabled = True
-            except:
+            except (ImportError, AttributeError):
                 pass
                 
         elif self.gpu_type == GPUType.AMD:
@@ -223,7 +223,7 @@ class GPUConfig:
                 if torch.cuda.is_available():
                     # Enable tensor fusion for AMD
                     torch.backends.cudnn.enabled = True
-            except:
+            except (ImportError, AttributeError):
                 pass
     
     def get_config_summary(self) -> Dict[str, Any]:

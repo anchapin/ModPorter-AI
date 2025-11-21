@@ -5,7 +5,6 @@ from .metrics_collector import PerformanceMetricsCollector as ExternalPerformanc
 # based on how Python resolves modules in this project structure.
 # For now, proceeding with the relative import.
 import time
-import json
 import os
 
 class BenchmarkExecutor:
@@ -40,8 +39,8 @@ class BenchmarkExecutor:
         try:
             # Extract scenario parameters
             parameters = scenario.get('parameters', {})
-            duration_seconds = parameters.get('duration_seconds', 60)
-            target_load = parameters.get('target_load', 'medium')
+            parameters.get('duration_seconds', 60)
+            parameters.get('target_load', 'medium')
 
             # Simulate different benchmark types
             if scenario.get('type') == 'conversion':
@@ -211,7 +210,7 @@ class LoadTestGenerator:
 
         while time.time() - start_time < duration_seconds:
             # Perform CPU-intensive calculations
-            result = sum(i * i for i in range(1000))
+            sum(i * i for i in range(1000))
             # Small delay to control intensity
             if intensity < 0.8:
                 time.sleep(0.001 * (1 - intensity))
@@ -294,7 +293,7 @@ class LoadTestGenerator:
             for temp_file in temp_files:
                 try:
                     os.unlink(temp_file)
-                except:
+                except (OSError, FileNotFoundError):
                     pass
 
     def _generate_network_load(self, bandwidth_mbps, duration_seconds):
@@ -314,7 +313,7 @@ class LoadTestGenerator:
 
         while time.time() - start_time < duration_seconds and packets_sent < total_packets:
             # Simulate packet transmission
-            packet_data = os.urandom(packet_size)
+            os.urandom(packet_size)
 
             # Simulate network latency
             time.sleep(simulated_latency / 1000)

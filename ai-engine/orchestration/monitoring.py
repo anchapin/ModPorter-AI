@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from .strategy_selector import OrchestrationStrategy
+from .task_graph import TaskNode
 
 logger = logging.getLogger(__name__)
 
