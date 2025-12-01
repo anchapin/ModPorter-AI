@@ -1,22 +1,7 @@
 name: CI - Integration Tests (Optimized)
 
 on:
-  pull_request:
-    branches: [main, develop]
-    paths-ignore:
-      - "*.md"
-      - "*.txt"
-      - "docs/**"
-      - ".gitignore"
-      - "LICENSE"
-  push:
-    branches: [main, develop]
-    paths-ignore:
-      - "*.md"
-      - "*.txt"
-      - "docs/**"
-      - ".gitignore"
-      - "LICENSE"
+  # This workflow is intended for local testing with 'act' and should not run on GitHub
   workflow_dispatch:
     inputs:
       reason:
