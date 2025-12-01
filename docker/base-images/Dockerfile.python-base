@@ -28,6 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
 COPY ai-engine/requirements-dev.txt /tmp/ai-engine-requirements-dev.txt
 COPY backend/requirements.txt /tmp/backend-requirements.txt
+COPY requirements-test.txt /tmp/requirements-test.txt
 
 # Install all Python dependencies in separate stages to avoid conflicts
 # This is the time-consuming step that we want to cache
@@ -38,7 +39,8 @@ RUN pip install --no-cache-dir \
 # Then install backend dependencies (will handle conflicts automatically)
 RUN pip install --no-cache-dir \
     -r /tmp/ai-engine-requirements-dev.txt \
-    -r /tmp/backend-requirements.txt
+    -r /tmp/backend-requirements.txt \
+    -r /tmp/requirements-test.txt
 
 # Finally add common development dependencies
 RUN pip install --no-cache-dir \

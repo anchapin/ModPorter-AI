@@ -9,7 +9,7 @@ on:
       force_rebuild:
         description: 'Force rebuild all base images'
         required: false
-        default: 'false'
+        default: false
         type: boolean
   push:
     paths:
@@ -78,7 +78,7 @@ jobs:
       id: deps-hash
       run: |
         # Create combined hash of all Python requirements
-        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Python deps hash: $HASH"
     

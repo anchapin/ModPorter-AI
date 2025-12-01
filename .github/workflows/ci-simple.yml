@@ -46,20 +46,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install system dependencies
-        run: |
-          apt-get update -qq
-          apt-get install -y -qq netcat-openbsd curl
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pytest-cov
-
       - name: Test ai-engine imports
         run: |
           echo "Testing ai-engine imports..."
