@@ -8,7 +8,6 @@ import time
 import psutil
 import tracemalloc
 from uuid import uuid4
-from concurrent.futures import ThreadPoolExecutor
 from httpx import AsyncClient
 
 
@@ -260,7 +259,7 @@ class TestKnowledgeGraphPerformance:
         
         for level in range(1, levels):
             parent_start = sum(nodes_per_level[:level])
-            parent_end = sum(nodes_per_level[:level + 1])
+            sum(nodes_per_level[:level + 1])
             
             for i in range(nodes_per_level[level]):
                 node_response = await async_client.post("/api/knowledge-graph/nodes/", json={
@@ -374,6 +373,7 @@ class TestKnowledgeGraphPerformance:
         """Test memory usage under sustained load"""
         
         memory_measurements = []
+        node_ids = []
         operation_count = 0
         max_operations = 1000
         
@@ -390,7 +390,7 @@ class TestKnowledgeGraphPerformance:
             # Create edge (connect to previous node if exists)
             if operation_count > 0:
                 await async_client.post("/api/knowledge-graph/edges/", json={
-                    "source_id": node_ids[-1] if 'node_ids' in locals() else node_response.json()["id"],
+                    "source_id": node_ids[-1],
                     "target_id": node_response.json()["id"],
                     "relationship_type": "depends_on"
                 })
@@ -518,7 +518,7 @@ class TestKnowledgeGraphPerformance:
         cache_test_queries = [
             f"/api/knowledge-graph/nodes/{node_id}",
             f"/api/knowledge-graph/nodes/{node_id}/neighbors",
-            f"/api/knowledge-graph/search/?query=CacheTestNode"
+            "/api/knowledge-graph/search/?query=CacheTestNode"
         ]
         
         for query_url in cache_test_queries:

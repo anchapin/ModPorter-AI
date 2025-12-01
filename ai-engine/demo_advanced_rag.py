@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # Import components
+# ruff: noqa: E402
 from agents.advanced_rag_agent import AdvancedRAGAgent
 from evaluation.rag_evaluator import RAGEvaluator
 from schemas.multimodal_schema import ContentType

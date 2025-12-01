@@ -4,21 +4,18 @@ Phase 3: Core Logic Completion - 80% Coverage Target
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock
 import sys
 import os
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Any
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.automated_confidence_scoring import (
     AutomatedConfidenceScoringService,
     ValidationLayer,
     ValidationScore,
-    ConfidenceAssessment
+    ConfidenceAssessment,
 )
 
 
@@ -28,9 +25,11 @@ class TestAutomatedConfidenceScoringService:
     @pytest.fixture
     def service(self):
         """Create service instance for testing"""
-        with patch('services.automated_confidence_scoring.KnowledgeNodeCRUD'), \
-             patch('services.automated_confidence_scoring.KnowledgeRelationshipCRUD'), \
-             patch('services.automated_confidence_scoring.ConversionPatternCRUD'):
+        with (
+            patch("services.automated_confidence_scoring.KnowledgeNodeCRUD"),
+            patch("services.automated_confidence_scoring.KnowledgeRelationshipCRUD"),
+            patch("services.automated_confidence_scoring.ConversionPatternCRUD"),
+        ):
             service = AutomatedConfidenceScoringService()
             # Initialize required attributes
             service.confidence_cache = {}
@@ -63,28 +62,29 @@ class TestAutomatedConfidenceScoringService:
             "version_compatibility": 0.9,
             "semantic_similarity": 0.8,
             "properties": {"test": "value"},
-            "metadata": {"source": "expert_curated"}
+            "metadata": {"source": "expert_curated"},
         }
 
     # Test initialization
     def test_service_initialization(self, service):
         """Test service initialization"""
         assert service is not None
-        assert hasattr(service, 'confidence_cache')
-        assert hasattr(service, 'validation_history')
-        assert hasattr(service, 'feedback_history')
+        assert hasattr(service, "confidence_cache")
+        assert hasattr(service, "validation_history")
+        assert hasattr(service, "feedback_history")
 
     # Test confidence assessment
     @pytest.mark.asyncio
     async def test_assess_confidence(self, service, mock_db_session, sample_item_data):
         """Test confidence assessment"""
         # Mock validation methods
-        with patch.object(service, '_get_item_data') as mock_get_data, \
-             patch.object(service, '_should_apply_layer') as mock_should_apply, \
-             patch.object(service, '_apply_validation_layer') as mock_validate, \
-             patch.object(service, '_calculate_overall_confidence') as mock_calc, \
-             patch.object(service, '_cache_assessment') as mock_cache:
-
+        with (
+            patch.object(service, "_get_item_data") as mock_get_data,
+            patch.object(service, "_should_apply_layer") as mock_should_apply,
+            patch.object(service, "_apply_validation_layer") as mock_validate,
+            patch.object(service, "_calculate_overall_confidence") as mock_calc,
+            patch.object(service, "_cache_assessment") as mock_cache,
+        ):
             mock_get_data.return_value = sample_item_data
             mock_should_apply.return_value = True
             mock_validate.return_value = ValidationScore(
@@ -92,7 +92,7 @@ class TestAutomatedConfidenceScoringService:
                 score=0.9,
                 confidence=0.95,
                 evidence={"expert_approved": True},
-                metadata={"validator": "expert_1"}
+                metadata={"validator": "expert_1"},
             )
             mock_calc.return_value = 0.85
             mock_cache.return_value = None
@@ -100,7 +100,7 @@ class TestAutomatedConfidenceScoringService:
             result = await service.assess_confidence(
                 item_type="knowledge_relationship",
                 item_id="test_item_1",
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             assert isinstance(result, ConfidenceAssessment)
@@ -114,11 +114,11 @@ class TestAutomatedConfidenceScoringService:
         items = [
             {"type": "knowledge_relationship", "id": "item_1"},
             {"type": "conversion_pattern", "id": "item_2"},
-            {"type": "knowledge_node", "id": "item_3"}
+            {"type": "knowledge_node", "id": "item_3"},
         ]
 
         # Mock individual assessment
-        with patch.object(service, 'assess_confidence') as mock_assess:
+        with patch.object(service, "assess_confidence") as mock_assess:
             mock_assess.return_value = ConfidenceAssessment(
                 overall_confidence=0.8,
                 validation_scores=[
@@ -127,9 +127,9 @@ class TestAutomatedConfidenceScoringService:
                         score=0.9,
                         confidence=0.95,
                         evidence={},
-                        metadata={}
+                        metadata={},
                     )
-                ]
+                ],
             )
 
             result = await service.batch_assess_confidence(items, db=mock_db_session)
@@ -150,16 +150,20 @@ class TestAutomatedConfidenceScoringService:
             "actual_outcome": "success",
             "confidence_score": 0.8,
             "feedback_type": "performance",
-            "details": {"conversion_completed": True, "accuracy": 0.9}
+            "details": {"conversion_completed": True, "accuracy": 0.9},
         }
 
         # Mock update methods
-        with patch.object(service, '_calculate_feedback_impact') as mock_impact, \
-             patch.object(service, '_apply_feedback_to_score') as mock_apply, \
-             patch.object(service, '_update_item_confidence') as mock_update, \
-             patch.object(service, '_get_item_data') as mock_get_data:
-
-            mock_impact.return_value = {"expert_validation": 0.1, "community_validation": -0.05}
+        with (
+            patch.object(service, "_calculate_feedback_impact") as mock_impact,
+            patch.object(service, "_apply_feedback_to_score") as mock_apply,
+            patch.object(service, "_update_item_confidence") as mock_update,
+            patch.object(service, "_get_item_data") as mock_get_data,
+        ):
+            mock_impact.return_value = {
+                "expert_validation": 0.1,
+                "community_validation": -0.05,
+            }
             mock_apply.return_value = 0.85
             mock_update.return_value = {"success": True, "new_confidence": 0.85}
             mock_get_data.return_value = {"current_confidence": 0.8}
@@ -179,16 +183,14 @@ class TestAutomatedConfidenceScoringService:
     async def test_get_confidence_trends(self, service, mock_db_session):
         """Test confidence trends analysis"""
         # Mock trend analysis
-        with patch.object(service, '_analyze_layer_performance') as mock_analyze:
+        with patch.object(service, "_analyze_layer_performance") as mock_analyze:
             mock_analyze.return_value = {
                 "expert_validation": {"trend": "stable", "avg_confidence": 0.9},
-                "community_validation": {"trend": "increasing", "avg_confidence": 0.8}
+                "community_validation": {"trend": "increasing", "avg_confidence": 0.8},
             }
 
             result = await service.get_confidence_trends(
-                days=30,
-                layer=ValidationLayer.EXPERT_VALIDATION,
-                db=mock_db_session
+                days=30, layer=ValidationLayer.EXPERT_VALIDATION, db=mock_db_session
             )
 
             assert isinstance(result, dict)
@@ -201,39 +203,48 @@ class TestAutomatedConfidenceScoringService:
     async def test_get_item_data(self, service, mock_db_session):
         """Test item data retrieval"""
         # Mock CRUD operations
-        with patch('services.automated_confidence_scoring.KnowledgeNodeCRUD.get_by_id') as mock_node, \
-             patch('services.automated_confidence_scoring.KnowledgeRelationshipCRUD.get_by_id') as mock_rel, \
-             patch('services.automated_confidence_scoring.ConversionPatternCRUD.get_by_id') as mock_pattern:
-
+        with (
+            patch(
+                "services.automated_confidence_scoring.KnowledgeNodeCRUD.get_by_id"
+            ) as mock_node,
+            patch(
+                "services.automated_confidence_scoring.KnowledgeRelationshipCRUD.get_by_id"
+            ) as mock_rel,
+            patch(
+                "services.automated_confidence_scoring.ConversionPatternCRUD.get_by_id"
+            ) as mock_pattern,
+        ):
             mock_node.return_value = Mock(
                 id="node_1",
                 name="test_node",
                 expert_validated=True,
                 community_rating=4.5,
-                usage_count=100
+                usage_count=100,
             )
             mock_rel.return_value = Mock(
-                id="rel_1",
-                confidence_score=0.8,
-                expert_validated=True
+                id="rel_1", confidence_score=0.8, expert_validated=True
             )
             mock_pattern.return_value = Mock(
-                id="pattern_1",
-                success_rate=0.85,
-                expert_validated=True
+                id="pattern_1", success_rate=0.85, expert_validated=True
             )
 
             # Test different item types
-            node_data = await service._get_item_data("knowledge_node", "node_1", mock_db_session)
+            node_data = await service._get_item_data(
+                "knowledge_node", "node_1", mock_db_session
+            )
             assert isinstance(node_data, dict)
             assert "id" in node_data
             assert node_data["id"] == "node_1"
 
-            rel_data = await service._get_item_data("knowledge_relationship", "rel_1", mock_db_session)
+            rel_data = await service._get_item_data(
+                "knowledge_relationship", "rel_1", mock_db_session
+            )
             assert isinstance(rel_data, dict)
             assert rel_data["id"] == "rel_1"
 
-            pattern_data = await service._get_item_data("conversion_pattern", "pattern_1", mock_db_session)
+            pattern_data = await service._get_item_data(
+                "conversion_pattern", "pattern_1", mock_db_session
+            )
             assert isinstance(pattern_data, dict)
             assert pattern_data["id"] == "pattern_1"
 
@@ -243,16 +254,14 @@ class TestAutomatedConfidenceScoringService:
         """Test validation layer application criteria"""
         # Test expert validation layer
         should_apply = await service._should_apply_layer(
-            ValidationLayer.EXPERT_VALIDATION, 
-            sample_item_data
+            ValidationLayer.EXPERT_VALIDATION, sample_item_data
         )
         assert isinstance(should_apply, bool)
 
         # Test layer with insufficient data
         incomplete_data = {"id": "test", "type": "test"}
         should_apply = await service._should_apply_layer(
-            ValidationLayer.COMMUNITY_VALIDATION,
-            incomplete_data
+            ValidationLayer.COMMUNITY_VALIDATION, incomplete_data
         )
         assert isinstance(should_apply, bool)
 
@@ -310,7 +319,9 @@ class TestAutomatedConfidenceScoringService:
 
     # Test cross-platform validation
     @pytest.mark.asyncio
-    async def test_validate_cross_platform_compatibility(self, service, sample_item_data):
+    async def test_validate_cross_platform_compatibility(
+        self, service, sample_item_data
+    ):
         """Test cross-platform compatibility validation"""
         result = await service._validate_cross_platform_compatibility(sample_item_data)
 
@@ -369,22 +380,22 @@ class TestAutomatedConfidenceScoringService:
                 score=0.9,
                 confidence=0.95,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.8,
                 confidence=0.85,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.85,
                 confidence=0.9,
                 evidence={},
-                metadata={}
-            )
+                metadata={},
+            ),
         ]
 
         overall = service._calculate_overall_confidence(validation_scores)
@@ -403,22 +414,22 @@ class TestAutomatedConfidenceScoringService:
                 score=0.3,  # Low score
                 confidence=0.9,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.2,  # Very low score
                 confidence=0.8,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.8,  # High score
                 confidence=0.9,
                 evidence={},
-                metadata={}
-            )
+                metadata={},
+            ),
         ]
 
         risks = service._identify_risk_factors(validation_scores)
@@ -436,22 +447,22 @@ class TestAutomatedConfidenceScoringService:
                 score=0.9,  # High score
                 confidence=0.95,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.8,  # High score
                 confidence=0.85,
                 evidence={},
-                metadata={}
+                metadata={},
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.85,  # High score
                 confidence=0.9,
                 evidence={},
-                metadata={}
-            )
+                metadata={},
+            ),
         ]
 
         factors = service._identify_confidence_factors(validation_scores)
@@ -466,7 +477,7 @@ class TestAutomatedConfidenceScoringService:
         feedback_data = {
             "actual_outcome": "success",
             "predicted_confidence": 0.8,
-            "performance_metrics": {"accuracy": 0.9, "conversion_time": 120}
+            "performance_metrics": {"accuracy": 0.9, "conversion_time": 120},
         }
 
         impact = service._calculate_feedback_impact(feedback_data)
@@ -483,12 +494,9 @@ class TestAutomatedConfidenceScoringService:
         current_score = 0.8
         feedback_impact = {
             "expert_validation": 0.1,  # Increase
-            "community_validation": -0.05  # Decrease
+            "community_validation": -0.05,  # Decrease
         }
-        layer_confidence = {
-            "expert_validation": 0.9,
-            "community_validation": 0.8
-        }
+        layer_confidence = {"expert_validation": 0.9, "community_validation": 0.8}
 
         new_score = service._apply_feedback_to_score(
             current_score, feedback_impact, layer_confidence
@@ -507,7 +515,10 @@ class TestAutomatedConfidenceScoringService:
             "item_2": {"confidence": 0.7, "validation_layers": ["expert", "community"]},
             "item_3": {"confidence": 0.8, "validation_layers": ["expert", "community"]},
             "item_4": {"confidence": 0.6, "validation_layers": ["expert", "community"]},
-            "item_5": {"confidence": 0.85, "validation_layers": ["expert", "community"]}
+            "item_5": {
+                "confidence": 0.85,
+                "validation_layers": ["expert", "community"],
+            },
         }
 
         analysis = service._analyze_batch_results(batch_results)
@@ -527,7 +538,7 @@ class TestAutomatedConfidenceScoringService:
             "item_2": {"item_type": "knowledge_relationship", "confidence": 0.7},
             "item_3": {"item_type": "conversion_pattern", "confidence": 0.8},
             "item_4": {"item_type": "conversion_pattern", "confidence": 0.85},
-            "item_5": {"item_type": "knowledge_node", "confidence": 0.6}
+            "item_5": {"item_type": "knowledge_node", "confidence": 0.6},
         }
 
         patterns = await service._analyze_batch_patterns(batch_results)
@@ -560,7 +571,7 @@ class TestAutomatedConfidenceScoringService:
             {"timestamp": "2024-01-02", "confidence": 0.75},
             {"timestamp": "2024-01-03", "confidence": 0.8},
             {"timestamp": "2024-01-04", "confidence": 0.85},
-            {"timestamp": "2024-01-05", "confidence": 0.9}
+            {"timestamp": "2024-01-05", "confidence": 0.9},
         ]
 
         trend = service._calculate_confidence_trend(assessments)
@@ -583,9 +594,9 @@ class TestAutomatedConfidenceScoringService:
                     score=0.9,
                     confidence=0.95,
                     evidence={},
-                    metadata={}
+                    metadata={},
                 )
-            ]
+            ],
         )
 
         # Test caching
@@ -601,14 +612,14 @@ class TestAutomatedConfidenceScoringService:
     async def test_assess_confidence_error(self, service, mock_db_session):
         """Test error handling in confidence assessment"""
         # Mock data retrieval failure
-        with patch.object(service, '_get_item_data') as mock_get_data:
+        with patch.object(service, "_get_item_data") as mock_get_data:
             mock_get_data.side_effect = Exception("Data retrieval failed")
 
             with pytest.raises(Exception):
                 await service.assess_confidence(
                     item_type="knowledge_relationship",
                     item_id="non_existent",
-                    db=mock_db_session
+                    db=mock_db_session,
                 )
 
 
@@ -621,7 +632,10 @@ class TestValidationLayer:
         assert ValidationLayer.COMMUNITY_VALIDATION.value == "community_validation"
         assert ValidationLayer.HISTORICAL_VALIDATION.value == "historical_validation"
         assert ValidationLayer.PATTERN_VALIDATION.value == "pattern_validation"
-        assert ValidationLayer.CROSS_PLATFORM_VALIDATION.value == "cross_platform_validation"
+        assert (
+            ValidationLayer.CROSS_PLATFORM_VALIDATION.value
+            == "cross_platform_validation"
+        )
         assert ValidationLayer.VERSION_COMPATIBILITY.value == "version_compatibility"
         assert ValidationLayer.USAGE_VALIDATION.value == "usage_validation"
         assert ValidationLayer.SEMANTIC_VALIDATION.value == "semantic_validation"
@@ -637,7 +651,7 @@ class TestValidationScore:
             score=0.9,
             confidence=0.95,
             evidence={"expert_approved": True},
-            metadata={"validator": "expert_1"}
+            metadata={"validator": "expert_1"},
         )
 
         assert score.layer == ValidationLayer.EXPERT_VALIDATION
@@ -658,18 +672,19 @@ class TestConfidenceAssessment:
                 score=0.9,
                 confidence=0.95,
                 evidence={},
-                metadata={}
+                metadata={},
             )
         ]
 
         assessment = ConfidenceAssessment(
-            overall_confidence=0.85,
-            validation_scores=validation_scores
+            overall_confidence=0.85, validation_scores=validation_scores
         )
 
         assert assessment.overall_confidence == 0.85
         assert len(assessment.validation_scores) == 1
-        assert assessment.validation_scores[0].layer == ValidationLayer.EXPERT_VALIDATION
+        assert (
+            assessment.validation_scores[0].layer == ValidationLayer.EXPERT_VALIDATION
+        )
 
 
 if __name__ == "__main__":

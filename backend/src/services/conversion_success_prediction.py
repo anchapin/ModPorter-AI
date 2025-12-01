@@ -9,27 +9,34 @@ import logging
 import json
 import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass
 from enum import Enum
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, mean_squared_error
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    mean_squared_error,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    KnowledgeNodeCRUD,
+    KnowledgeRelationshipCRUD,
+    ConversionPatternCRUD,
 )
-from src.db.models import (
-    KnowledgeNode
-)
+from src.db.models import KnowledgeNode
 
 logger = logging.getLogger(__name__)
 
 
 class PredictionType(Enum):
     """Types of conversion success predictions."""
+
     OVERALL_SUCCESS = "overall_success"
     FEATURE_COMPLETENESS = "feature_completeness"
     PERFORMANCE_IMPACT = "performance_impact"
@@ -42,6 +49,7 @@ class PredictionType(Enum):
 @dataclass
 class ConversionFeatures:
     """Features for conversion success prediction."""
+
     java_concept: str
     bedrock_concept: str
     pattern_type: str
@@ -63,6 +71,7 @@ class ConversionFeatures:
 @dataclass
 class PredictionResult:
     """Result of conversion success prediction."""
+
     prediction_type: PredictionType
     predicted_value: float
     confidence: float
@@ -80,27 +89,36 @@ class ConversionSuccessPredictionService:
         self.db = db
         self.is_trained = False
         self.models = {
-            "overall_success": RandomForestClassifier(n_estimators=100, random_state=42),
-            "feature_completeness": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "performance_impact": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "compatibility_score": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "risk_assessment": RandomForestClassifier(n_estimators=100, random_state=42),
-            "conversion_time": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "resource_usage": GradientBoostingRegressor(n_estimators=100, random_state=42)
+            "overall_success": RandomForestClassifier(
+                n_estimators=100, random_state=42
+            ),
+            "feature_completeness": GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            ),
+            "performance_impact": GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            ),
+            "compatibility_score": GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            ),
+            "risk_assessment": RandomForestClassifier(
+                n_estimators=100, random_state=42
+            ),
+            "conversion_time": GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            ),
+            "resource_usage": GradientBoostingRegressor(
+                n_estimators=100, random_state=42
+            ),
         }
-        self.preprocessors = {
-            "feature_scaler": StandardScaler(),
-            "label_encoders": {}
-        }
+        self.preprocessors = {"feature_scaler": StandardScaler(), "label_encoders": {}}
         self.feature_names = []
         self.training_data = []
         self.model_metrics = {}
         self.prediction_history = []
 
     async def train_models(
-        self,
-        db: AsyncSession,
-        force_retrain: bool = False
+        self, db: AsyncSession, force_retrain: bool = False
     ) -> Dict[str, Any]:
         """
         Train ML models using historical conversion data.
@@ -117,7 +135,7 @@ class ConversionSuccessPredictionService:
                 return {
                     "success": True,
                     "message": "Models already trained",
-                    "metrics": self.model_metrics
+                    "metrics": self.model_metrics,
                 }
 
             # Step 1: Collect training data
@@ -127,7 +145,7 @@ class ConversionSuccessPredictionService:
                 return {
                     "success": False,
                     "error": "Insufficient training data (minimum 100 samples required)",
-                    "available_samples": len(training_data)
+                    "available_samples": len(training_data),
                 }
 
             # Step 2: Prepare features and targets
@@ -137,7 +155,7 @@ class ConversionSuccessPredictionService:
                 return {
                     "success": False,
                     "error": "Insufficient feature data (minimum 50 feature samples required)",
-                    "available_features": len(features)
+                    "available_features": len(features),
                 }
 
             # Step 3: Train each model
@@ -162,7 +180,10 @@ class ConversionSuccessPredictionService:
             for prediction_type in PredictionType:
                 if prediction_type.value in targets:
                     y = targets[prediction_type.value]
-                    if prediction_type in [PredictionType.OVERALL_SUCCESS, PredictionType.RISK_ASSESSMENT]:
+                    if prediction_type in [
+                        PredictionType.OVERALL_SUCCESS,
+                        PredictionType.RISK_ASSESSMENT,
+                    ]:
                         self.models[prediction_type.value].fit(X_scaled, y)
                     else:
                         self.models[prediction_type.value].fit(X_scaled, y)
@@ -174,7 +195,7 @@ class ConversionSuccessPredictionService:
                 "training_samples": len(training_data),
                 "feature_count": len(self.feature_names),
                 "models_trained": len(training_results),
-                "training_timestamp": datetime.utcnow().isoformat()
+                "training_timestamp": datetime.now(UTC).isoformat(),
             }
 
             # Store model metrics
@@ -185,15 +206,12 @@ class ConversionSuccessPredictionService:
                 "message": "ML models trained successfully",
                 "metrics": self.model_metrics,
                 "training_samples": len(training_data),
-                "feature_count": len(self.feature_names)
+                "feature_count": len(self.feature_names),
             }
 
         except Exception as e:
             logger.error(f"Error training conversion prediction models: {e}")
-            return {
-                "success": False,
-                "error": f"Model training failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Model training failed: {str(e)}"}
 
     async def predict_conversion_success(
         self,
@@ -202,7 +220,7 @@ class ConversionSuccessPredictionService:
         pattern_type: str = "unknown",
         minecraft_version: str = "latest",
         context_data: Dict[str, Any] = None,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> Dict[str, Any]:
         """
         Predict conversion success for Java concept.
@@ -222,7 +240,7 @@ class ConversionSuccessPredictionService:
             if not self.is_trained:
                 return {
                     "success": False,
-                    "error": "ML models not trained. Call train_models() first."
+                    "error": "ML models not trained. Call train_models() first.",
                 }
 
             # Step 1: Extract conversion features
@@ -234,7 +252,7 @@ class ConversionSuccessPredictionService:
                 return {
                     "success": False,
                     "error": "Unable to extract conversion features",
-                    "java_concept": java_concept
+                    "java_concept": java_concept,
                 }
 
             # Step 2: Prepare features for prediction
@@ -281,10 +299,10 @@ class ConversionSuccessPredictionService:
                 "issues_mitigations": issues_mitigations,
                 "prediction_metadata": {
                     "model_version": "1.0",
-                    "prediction_timestamp": datetime.utcnow().isoformat(),
+                    "prediction_timestamp": datetime.now(UTC).isoformat(),
                     "feature_count": len(self.feature_names),
-                    "confidence_threshold": 0.7
-                }
+                    "confidence_threshold": 0.7,
+                },
             }
 
         except Exception as e:
@@ -292,13 +310,11 @@ class ConversionSuccessPredictionService:
             return {
                 "success": False,
                 "error": f"Prediction failed: {str(e)}",
-                "java_concept": java_concept
+                "java_concept": java_concept,
             }
 
     async def batch_predict_success(
-        self,
-        conversions: List[Dict[str, Any]],
-        db: AsyncSession = None
+        self, conversions: List[Dict[str, Any]], db: AsyncSession = None
     ) -> Dict[str, Any]:
         """
         Predict success for multiple conversions.
@@ -314,7 +330,7 @@ class ConversionSuccessPredictionService:
             if not self.is_trained:
                 return {
                     "success": False,
-                    "error": "ML models not trained. Call train_models() first."
+                    "error": "ML models not trained. Call train_models() first.",
                 }
 
             batch_results = {}
@@ -328,14 +344,20 @@ class ConversionSuccessPredictionService:
                 context_data = conversion.get("context_data", {})
 
                 result = await self.predict_conversion_success(
-                    java_concept, bedrock_concept, pattern_type,
-                    minecraft_version, context_data, db
+                    java_concept,
+                    bedrock_concept,
+                    pattern_type,
+                    minecraft_version,
+                    context_data,
+                    db,
                 )
 
-                batch_results[f"conversion_{i+1}"] = {
+                batch_results[f"conversion_{i + 1}"] = {
                     "input": conversion,
                     "prediction": result,
-                    "success_probability": result.get("predictions", {}).get("overall_success", {}).get("predicted_value", 0.0)
+                    "success_probability": result.get("predictions", {})
+                    .get("overall_success", {})
+                    .get("predicted_value", 0.0),
                 }
 
             # Analyze batch results
@@ -356,11 +378,16 @@ class ConversionSuccessPredictionService:
                 "ranked_conversions": ranked_conversions,
                 "batch_patterns": batch_patterns,
                 "batch_metadata": {
-                    "prediction_timestamp": datetime.utcnow().isoformat(),
-                    "average_success_probability": np.mean([
-                        result["success_probability"] for result in batch_results.values()
-                    ]) if batch_results else 0.0
-                }
+                    "prediction_timestamp": datetime.now(UTC).isoformat(),
+                    "average_success_probability": np.mean(
+                        [
+                            result["success_probability"]
+                            for result in batch_results.values()
+                        ]
+                    )
+                    if batch_results
+                    else 0.0,
+                },
             }
 
         except Exception as e:
@@ -368,7 +395,7 @@ class ConversionSuccessPredictionService:
             return {
                 "success": False,
                 "error": f"Batch prediction failed: {str(e)}",
-                "total_conversions": len(conversions)
+                "total_conversions": len(conversions),
             }
 
     async def update_models_with_feedback(
@@ -376,7 +403,7 @@ class ConversionSuccessPredictionService:
         conversion_id: str,
         actual_result: Dict[str, Any],
         feedback_data: Dict[str, Any] = None,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> Dict[str, Any]:
         """
         Update ML models with actual conversion results.
@@ -401,7 +428,7 @@ class ConversionSuccessPredictionService:
             if not stored_prediction:
                 return {
                     "success": False,
-                    "error": "No stored prediction found for conversion"
+                    "error": "No stored prediction found for conversion",
                 }
 
             # Calculate prediction accuracy
@@ -437,11 +464,11 @@ class ConversionSuccessPredictionService:
             # Update prediction record
             update_record = {
                 "conversion_id": conversion_id,
-                "update_timestamp": datetime.utcnow().isoformat(),
+                "update_timestamp": datetime.now(UTC).isoformat(),
                 "actual_result": actual_result,
                 "feedback_data": feedback_data,
                 "accuracy_scores": accuracy_scores,
-                "model_improvements": model_improvements
+                "model_improvements": model_improvements,
             }
 
             return {
@@ -450,20 +477,17 @@ class ConversionSuccessPredictionService:
                 "model_improvements": model_improvements,
                 "training_example_created": training_example is not None,
                 "update_record": update_record,
-                "recommendation": await self._get_model_update_recommendation(accuracy_scores)
+                "recommendation": await self._get_model_update_recommendation(
+                    accuracy_scores
+                ),
             }
 
         except Exception as e:
             logger.error(f"Error updating models with feedback: {e}")
-            return {
-                "success": False,
-                "error": f"Model update failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Model update failed: {str(e)}"}
 
     async def get_prediction_insights(
-        self,
-        days: int = 30,
-        prediction_type: Optional[PredictionType] = None
+        self, days: int = 30, prediction_type: Optional[PredictionType] = None
     ) -> Dict[str, Any]:
         """
         Get insights about prediction performance.
@@ -477,54 +501,58 @@ class ConversionSuccessPredictionService:
         """
         try:
             if not self.is_trained:
-                return {
-                    "success": False,
-                    "error": "ML models not trained"
-                }
+                return {"success": False, "error": "ML models not trained"}
 
             # Get recent predictions
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            cutoff_date = datetime.now(UTC) - timedelta(days=days)
             recent_predictions = [
-                pred for pred in self.prediction_history
+                pred
+                for pred in self.prediction_history
                 if datetime.fromisoformat(pred["timestamp"]) > cutoff_date
             ]
 
             if prediction_type:
                 recent_predictions = [
-                    pred for pred in recent_predictions
+                    pred
+                    for pred in recent_predictions
                     if prediction_type.value in pred.get("predictions", {})
                 ]
 
             # Analyze prediction accuracy
-            accuracy_analysis = await self._analyze_prediction_accuracy(recent_predictions)
+            accuracy_analysis = await self._analyze_prediction_accuracy(
+                recent_predictions
+            )
 
             # Analyze feature importance trends
-            feature_trends = await self._analyze_feature_importance_trends(recent_predictions)
+            feature_trends = await self._analyze_feature_importance_trends(
+                recent_predictions
+            )
 
             # Identify prediction patterns
-            prediction_patterns = await self._identify_prediction_patterns(recent_predictions)
+            prediction_patterns = await self._identify_prediction_patterns(
+                recent_predictions
+            )
 
             return {
                 "success": True,
                 "analysis_period_days": days,
-                "prediction_type_filter": prediction_type.value if prediction_type else None,
+                "prediction_type_filter": prediction_type.value
+                if prediction_type
+                else None,
                 "total_predictions": len(recent_predictions),
                 "accuracy_analysis": accuracy_analysis,
                 "feature_trends": feature_trends,
                 "prediction_patterns": prediction_patterns,
                 "insights_metadata": {
-                    "analysis_timestamp": datetime.utcnow().isoformat(),
+                    "analysis_timestamp": datetime.now(UTC).isoformat(),
                     "model_trained": self.is_trained,
-                    "training_samples": len(self.training_data)
-                }
+                    "training_samples": len(self.training_data),
+                },
             }
 
         except Exception as e:
             logger.error(f"Error getting prediction insights: {e}")
-            return {
-                "success": False,
-                "error": f"Insights analysis failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Insights analysis failed: {str(e)}"}
 
     # Private Helper Methods
 
@@ -548,9 +576,13 @@ class ConversionSuccessPredictionService:
                     "overall_success": 1 if pattern.success_rate > 0.7 else 0,
                     "feature_completeness": pattern.success_rate or 0.5,
                     "performance_impact": 0.8 if pattern.success_rate > 0.8 else 0.5,
-                    "compatibility_score": 0.9 if pattern.minecraft_version == "latest" else 0.7,
+                    "compatibility_score": 0.9
+                    if pattern.minecraft_version == "latest"
+                    else 0.7,
                     "risk_assessment": 0 if pattern.success_rate > 0.8 else 1,
-                    "conversion_time": 1.0 if pattern.pattern_type == "direct_conversion" else 2.5,
+                    "conversion_time": 1.0
+                    if pattern.pattern_type == "direct_conversion"
+                    else 2.5,
                     "resource_usage": 0.5 if pattern.success_rate > 0.7 else 0.8,
                     "expert_validated": pattern.expert_validated,
                     "usage_count": pattern.usage_count or 0,
@@ -558,8 +590,10 @@ class ConversionSuccessPredictionService:
                     "features": json.loads(pattern.conversion_features or "{}"),
                     "metadata": {
                         "source": "conversion_patterns",
-                        "validation_results": json.loads(pattern.validation_results or "{}")
-                    }
+                        "validation_results": json.loads(
+                            pattern.validation_results or "{}"
+                        ),
+                    },
                 }
                 training_data.append(training_sample)
 
@@ -583,19 +617,22 @@ class ConversionSuccessPredictionService:
                         "overall_success": 1 if rel.confidence_score > 0.7 else 0,
                         "feature_completeness": rel.confidence_score or 0.5,
                         "performance_impact": 0.7,
-                        "compatibility_score": 0.8 if node.minecraft_version == "latest" else 0.6,
+                        "compatibility_score": 0.8
+                        if node.minecraft_version == "latest"
+                        else 0.6,
                         "risk_assessment": 0 if rel.confidence_score > 0.8 else 1,
                         "conversion_time": 1.0,
                         "resource_usage": 0.6,
-                        "expert_validated": node.expert_validated and rel.expert_validated,
+                        "expert_validated": node.expert_validated
+                        and rel.expert_validated,
                         "usage_count": 0,
                         "confidence_score": rel.confidence_score or 0.5,
                         "features": json.loads(node.properties or "{}"),
                         "metadata": {
                             "source": "knowledge_graph",
                             "node_id": str(node.id),
-                            "relationship_id": str(rel.id)
-                        }
+                            "relationship_id": str(rel.id),
+                        },
                     }
                     training_data.append(training_sample)
 
@@ -607,8 +644,7 @@ class ConversionSuccessPredictionService:
             return []
 
     async def _prepare_training_data(
-        self,
-        training_data: List[Dict[str, Any]]
+        self, training_data: List[Dict[str, Any]]
     ) -> Tuple[List[Dict[str, Any]], Dict[str, List[float]]]:
         """Prepare features and targets for training."""
         try:
@@ -620,7 +656,7 @@ class ConversionSuccessPredictionService:
                 "compatibility_score": [],
                 "risk_assessment": [],
                 "conversion_time": [],
-                "resource_usage": []
+                "resource_usage": [],
             }
 
             for sample in training_data:
@@ -630,8 +666,12 @@ class ConversionSuccessPredictionService:
                     "usage_count": min(sample.get("usage_count", 0) / 100.0, 1.0),
                     "confidence_score": sample.get("confidence_score", 0.5),
                     "feature_count": len(sample.get("features", {})),
-                    "pattern_type_encoded": self._encode_pattern_type(sample.get("pattern_type", "")),
-                    "version_compatibility": 0.9 if sample.get("minecraft_version") == "latest" else 0.7
+                    "pattern_type_encoded": self._encode_pattern_type(
+                        sample.get("pattern_type", "")
+                    ),
+                    "version_compatibility": 0.9
+                    if sample.get("minecraft_version") == "latest"
+                    else 0.7,
                 }
 
                 features.append(feature_dict)
@@ -656,7 +696,7 @@ class ConversionSuccessPredictionService:
             "item_conversion": 0.6,
             "behavior_conversion": 0.5,
             "command_conversion": 0.4,
-            "unknown": 0.3
+            "unknown": 0.3,
         }
         return pattern_encoding.get(pattern_type, 0.3)
 
@@ -664,7 +704,7 @@ class ConversionSuccessPredictionService:
         self,
         prediction_type: PredictionType,
         features: List[Dict[str, Any]],
-        targets: List[float]
+        targets: List[float],
     ) -> Dict[str, Any]:
         """Train a specific prediction model."""
         try:
@@ -691,18 +731,25 @@ class ConversionSuccessPredictionService:
             # Evaluate
             y_pred = model.predict(X_test_scaled)
 
-            if prediction_type in [PredictionType.OVERALL_SUCCESS, PredictionType.RISK_ASSESSMENT]:
+            if prediction_type in [
+                PredictionType.OVERALL_SUCCESS,
+                PredictionType.RISK_ASSESSMENT,
+            ]:
                 # Classification metrics
                 accuracy = accuracy_score(y_test, y_pred)
-                precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-                recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-                f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+                precision = precision_score(
+                    y_test, y_pred, average="weighted", zero_division=0
+                )
+                recall = recall_score(
+                    y_test, y_pred, average="weighted", zero_division=0
+                )
+                f1 = f1_score(y_test, y_pred, average="weighted", zero_division=0)
 
                 metrics = {
                     "accuracy": accuracy,
                     "precision": precision,
                     "recall": recall,
-                    "f1_score": f1
+                    "f1_score": f1,
                 }
             else:
                 # Regression metrics
@@ -712,7 +759,7 @@ class ConversionSuccessPredictionService:
                 metrics = {
                     "mse": mse,
                     "rmse": rmse,
-                    "mae": np.mean(np.abs(y_test - y_pred))
+                    "mae": np.mean(np.abs(y_test - y_pred)),
                 }
 
             # Cross-validation
@@ -724,7 +771,7 @@ class ConversionSuccessPredictionService:
                 "training_samples": len(X_train),
                 "test_samples": len(X_test),
                 "feature_count": X_train.shape[1],
-                "metrics": metrics
+                "metrics": metrics,
             }
 
         except Exception as e:
@@ -737,7 +784,7 @@ class ConversionSuccessPredictionService:
         bedrock_concept: Optional[str],
         pattern_type: str,
         minecraft_version: str,
-        db: AsyncSession
+        db: AsyncSession,
     ) -> Optional[ConversionFeatures]:
         """Extract features for conversion prediction."""
         try:
@@ -768,7 +815,7 @@ class ConversionSuccessPredictionService:
                     feature_count=0,
                     complexity_score=0.5,
                     version_compatibility=0.7,
-                    cross_platform_difficulty=0.5
+                    cross_platform_difficulty=0.5,
                 )
 
             # Get relationships
@@ -795,7 +842,7 @@ class ConversionSuccessPredictionService:
                 version_compatibility=0.9 if minecraft_version == "latest" else 0.7,
                 cross_platform_difficulty=self._calculate_cross_platform_difficulty(
                     java_node, bedrock_concept
-                )
+                ),
             )
 
             return features
@@ -824,7 +871,7 @@ class ConversionSuccessPredictionService:
                 "item": 0.6,
                 "behavior": 0.9,
                 "command": 0.5,
-                "unknown": 0.5
+                "unknown": 0.5,
             }
             complexity += type_complexity.get(node.node_type, 0.5) * 0.2
 
@@ -834,9 +881,7 @@ class ConversionSuccessPredictionService:
             return 0.5
 
     def _calculate_cross_platform_difficulty(
-        self,
-        java_node: KnowledgeNode,
-        bedrock_concept: Optional[str]
+        self, java_node: KnowledgeNode, bedrock_concept: Optional[str]
     ) -> float:
         """Calculate cross-platform conversion difficulty."""
         try:
@@ -855,7 +900,7 @@ class ConversionSuccessPredictionService:
                 "item": 0.4,
                 "behavior": 0.9,
                 "command": 0.7,
-                "unknown": 0.5
+                "unknown": 0.5,
             }
             difficulty += type_difficulty.get(java_node.node_type, 0.5) * 0.2
 
@@ -867,21 +912,25 @@ class ConversionSuccessPredictionService:
     async def _prepare_feature_vector(self, features: ConversionFeatures) -> np.ndarray:
         """Prepare feature vector for ML model."""
         try:
-            feature_vector = np.array([
-                features.expert_validated,
-                min(features.usage_count / 100.0, 1.0),
-                features.community_rating,
-                features.feature_count / 10.0,  # Normalize
-                self._encode_pattern_type(features.pattern_type),
-                features.version_compatibility,
-                features.complexity_score,
-                features.cross_platform_difficulty,
-                features.relationship_count / 10.0,  # Normalize
-                1.0 if features.minecraft_version == "latest" else 0.7
-            ])
+            feature_vector = np.array(
+                [
+                    features.expert_validated,
+                    min(features.usage_count / 100.0, 1.0),
+                    features.community_rating,
+                    features.feature_count / 10.0,  # Normalize
+                    self._encode_pattern_type(features.pattern_type),
+                    features.version_compatibility,
+                    features.complexity_score,
+                    features.cross_platform_difficulty,
+                    features.relationship_count / 10.0,  # Normalize
+                    1.0 if features.minecraft_version == "latest" else 0.7,
+                ]
+            )
 
             # Scale features
-            feature_vector = self.preprocessors["feature_scaler"].transform([feature_vector])
+            feature_vector = self.preprocessors["feature_scaler"].transform(
+                [feature_vector]
+            )
 
             return feature_vector[0]
 
@@ -893,7 +942,7 @@ class ConversionSuccessPredictionService:
         self,
         prediction_type: PredictionType,
         feature_vector: np.ndarray,
-        features: ConversionFeatures
+        features: ConversionFeatures,
     ) -> PredictionResult:
         """Make prediction for a specific type."""
         try:
@@ -904,11 +953,17 @@ class ConversionSuccessPredictionService:
             feature_importance = self._get_feature_importance(model, prediction_type)
 
             # Calculate prediction confidence
-            confidence = self._calculate_prediction_confidence(model, feature_vector, prediction_type)
+            confidence = self._calculate_prediction_confidence(
+                model, feature_vector, prediction_type
+            )
 
             # Generate risk and success factors
-            risk_factors = self._identify_risk_factors(features, prediction_type, prediction)
-            success_factors = self._identify_success_factors(features, prediction_type, prediction)
+            risk_factors = self._identify_risk_factors(
+                features, prediction_type, prediction
+            )
+            success_factors = self._identify_success_factors(
+                features, prediction_type, prediction
+            )
 
             # Generate recommendations
             recommendations = self._generate_type_recommendations(
@@ -926,8 +981,8 @@ class ConversionSuccessPredictionService:
                 prediction_metadata={
                     "model_type": type(model).__name__,
                     "feature_count": len(feature_vector),
-                    "prediction_time": datetime.utcnow().isoformat()
-                }
+                    "prediction_time": datetime.now(UTC).isoformat(),
+                },
             )
 
         except Exception as e:
@@ -940,20 +995,18 @@ class ConversionSuccessPredictionService:
                 risk_factors=[f"Prediction error: {str(e)}"],
                 success_factors=[],
                 recommendations=["Retry prediction"],
-                prediction_metadata={"error": str(e)}
+                prediction_metadata={"error": str(e)},
             )
 
     def _get_feature_importance(
-        self,
-        model,
-        prediction_type: PredictionType
+        self, model, prediction_type: PredictionType
     ) -> Dict[str, float]:
         """Get feature importance from model."""
         try:
-            if hasattr(model, 'feature_importances_'):
+            if hasattr(model, "feature_importances_"):
                 # Tree-based models
                 importance = model.feature_importances_
-            elif hasattr(model, 'coef_'):
+            elif hasattr(model, "coef_"):
                 # Linear models
                 importance = np.abs(model.coef_)
             else:
@@ -969,7 +1022,7 @@ class ConversionSuccessPredictionService:
                 "complexity_score",
                 "cross_platform_difficulty",
                 "relationship_count_normalized",
-                "is_latest_version"
+                "is_latest_version",
             ]
 
             return {
@@ -982,14 +1035,11 @@ class ConversionSuccessPredictionService:
             return {}
 
     def _calculate_prediction_confidence(
-        self,
-        model,
-        feature_vector: np.ndarray,
-        prediction_type: PredictionType
+        self, model, feature_vector: np.ndarray, prediction_type: PredictionType
     ) -> float:
         """Calculate confidence in prediction."""
         try:
-            if hasattr(model, 'predict_proba'):
+            if hasattr(model, "predict_proba"):
                 # Classification models
                 probabilities = model.predict_proba([feature_vector])
                 confidence = max(probabilities[0])
@@ -1006,7 +1056,7 @@ class ConversionSuccessPredictionService:
         self,
         features: ConversionFeatures,
         prediction_type: PredictionType,
-        prediction: float
+        prediction: float,
     ) -> List[str]:
         """Identify risk factors for prediction."""
         risk_factors = []
@@ -1038,7 +1088,7 @@ class ConversionSuccessPredictionService:
         self,
         features: ConversionFeatures,
         prediction_type: PredictionType,
-        prediction: float
+        prediction: float,
     ) -> List[str]:
         """Identify success factors for prediction."""
         success_factors = []
@@ -1070,32 +1120,42 @@ class ConversionSuccessPredictionService:
         self,
         prediction_type: PredictionType,
         prediction: float,
-        features: ConversionFeatures
+        features: ConversionFeatures,
     ) -> List[str]:
         """Generate recommendations for specific prediction type."""
         recommendations = []
 
         if prediction_type == PredictionType.OVERALL_SUCCESS:
             if prediction > 0.8:
-                recommendations.append("High success probability - proceed with confidence")
+                recommendations.append(
+                    "High success probability - proceed with confidence"
+                )
             elif prediction > 0.6:
                 recommendations.append("Moderate success probability - test thoroughly")
             else:
-                recommendations.append("Low success probability - consider alternatives")
+                recommendations.append(
+                    "Low success probability - consider alternatives"
+                )
 
         elif prediction_type == PredictionType.FEATURE_COMPLETENESS:
             if prediction < 0.7:
-                recommendations.append("Expected feature gaps - plan for manual completion")
+                recommendations.append(
+                    "Expected feature gaps - plan for manual completion"
+                )
 
         elif prediction_type == PredictionType.PERFORMANCE_IMPACT:
             if prediction > 0.8:
-                recommendations.append("High performance impact - optimize critical paths")
+                recommendations.append(
+                    "High performance impact - optimize critical paths"
+                )
             elif prediction < 0.3:
                 recommendations.append("Low performance impact - safe for performance")
 
         elif prediction_type == PredictionType.CONVERSION_TIME:
             if prediction > 2.0:
-                recommendations.append("Long conversion time - consider breaking into steps")
+                recommendations.append(
+                    "Long conversion time - consider breaking into steps"
+                )
 
         elif prediction_type == PredictionType.RESOURCE_USAGE:
             if prediction > 0.8:
@@ -1107,27 +1167,36 @@ class ConversionSuccessPredictionService:
         self,
         java_concept: str,
         bedrock_concept: Optional[str],
-        predictions: Dict[str, PredictionResult]
+        predictions: Dict[str, PredictionResult],
     ) -> Dict[str, Any]:
         """Analyze overall conversion viability."""
         try:
-            overall_success = predictions.get("overall_success", PredictionResult(
-                PredictionType.OVERALL_SUCCESS, 0.0, 0.0, {}, [], [], [], {}
-            ))
+            overall_success = predictions.get(
+                "overall_success",
+                PredictionResult(
+                    PredictionType.OVERALL_SUCCESS, 0.0, 0.0, {}, [], [], [], {}
+                ),
+            )
 
-            risk_assessment = predictions.get("risk_assessment", PredictionResult(
-                PredictionType.RISK_ASSESSMENT, 0.0, 0.0, {}, [], [], [], {}
-            ))
+            risk_assessment = predictions.get(
+                "risk_assessment",
+                PredictionResult(
+                    PredictionType.RISK_ASSESSMENT, 0.0, 0.0, {}, [], [], [], {}
+                ),
+            )
 
-            feature_completeness = predictions.get("feature_completeness", PredictionResult(
-                PredictionType.FEATURE_COMPLETENESS, 0.0, 0.0, {}, [], [], [], {}
-            ))
+            feature_completeness = predictions.get(
+                "feature_completeness",
+                PredictionResult(
+                    PredictionType.FEATURE_COMPLETENESS, 0.0, 0.0, {}, [], [], [], {}
+                ),
+            )
 
             # Calculate viability score
             viability_score = (
-                overall_success.predicted_value * 0.4 +
-                (1.0 - risk_assessment.predicted_value) * 0.3 +
-                feature_completeness.predicted_value * 0.3
+                overall_success.predicted_value * 0.4
+                + (1.0 - risk_assessment.predicted_value) * 0.3
+                + feature_completeness.predicted_value * 0.3
             )
 
             # Determine viability level
@@ -1148,11 +1217,13 @@ class ConversionSuccessPredictionService:
                 "risk_level": risk_assessment.predicted_value,
                 "feature_coverage": feature_completeness.predicted_value,
                 "recommended_action": self._get_recommended_action(viability_level),
-                "confidence": np.mean([
-                    overall_success.confidence,
-                    risk_assessment.confidence,
-                    feature_completeness.confidence
-                ])
+                "confidence": np.mean(
+                    [
+                        overall_success.confidence,
+                        risk_assessment.confidence,
+                        feature_completeness.confidence,
+                    ]
+                ),
             }
 
             return assessment
@@ -1162,7 +1233,7 @@ class ConversionSuccessPredictionService:
             return {
                 "viability_score": 0.5,
                 "viability_level": "unknown",
-                "error": str(e)
+                "error": str(e),
             }
 
     def _get_recommended_action(self, viability_level: str) -> str:
@@ -1172,7 +1243,7 @@ class ConversionSuccessPredictionService:
             "medium": "Proceed with caution - thorough testing recommended",
             "low": "Consider alternatives or seek expert consultation",
             "very_low": "Not recommended - significant risk of failure",
-            "unknown": "Insufficient data for recommendation"
+            "unknown": "Insufficient data for recommendation",
         }
         return actions.get(viability_level, "Unknown viability level")
 
@@ -1180,7 +1251,7 @@ class ConversionSuccessPredictionService:
         self,
         features: ConversionFeatures,
         predictions: Dict[str, PredictionResult],
-        viability_analysis: Dict[str, Any]
+        viability_analysis: Dict[str, Any],
     ) -> List[str]:
         """Generate comprehensive conversion recommendations."""
         try:
@@ -1189,15 +1260,21 @@ class ConversionSuccessPredictionService:
             # Viability-based recommendations
             viability_level = viability_analysis.get("viability_level", "unknown")
             if viability_level == "high":
-                recommendations.append("High viability - proceed with standard conversion process")
+                recommendations.append(
+                    "High viability - proceed with standard conversion process"
+                )
             elif viability_level == "medium":
-                recommendations.append("Medium viability - implement additional testing")
+                recommendations.append(
+                    "Medium viability - implement additional testing"
+                )
             elif viability_level in ["low", "very_low"]:
                 recommendations.append("Low viability - seek expert review first")
 
             # Feature-based recommendations
             if not features.expert_validated:
-                recommendations.append("Request expert validation to improve reliability")
+                recommendations.append(
+                    "Request expert validation to improve reliability"
+                )
 
             if features.community_rating < 0.5:
                 recommendations.append("Encourage community testing and feedback")
@@ -1212,7 +1289,9 @@ class ConversionSuccessPredictionService:
 
             performance_impact = predictions.get("performance_impact")
             if performance_impact and performance_impact.predicted_value > 0.8:
-                recommendations.append("Implement performance monitoring and optimization")
+                recommendations.append(
+                    "Implement performance monitoring and optimization"
+                )
 
             conversion_time = predictions.get("conversion_time")
             if conversion_time and conversion_time.predicted_value > 2.0:
@@ -1225,9 +1304,7 @@ class ConversionSuccessPredictionService:
             return ["Error generating recommendations"]
 
     async def _identify_issues_mitigations(
-        self,
-        features: ConversionFeatures,
-        predictions: Dict[str, PredictionResult]
+        self, features: ConversionFeatures, predictions: Dict[str, PredictionResult]
     ) -> Dict[str, List[str]]:
         """Identify potential issues and mitigations."""
         try:
@@ -1259,41 +1336,35 @@ class ConversionSuccessPredictionService:
                 issues.append("Expected feature gaps")
                 mitigations.append("Plan for manual feature completion")
 
-            return {
-                "issues": issues,
-                "mitigations": mitigations
-            }
+            return {"issues": issues, "mitigations": mitigations}
 
         except Exception as e:
             logger.error(f"Error identifying issues and mitigations: {e}")
-            return {
-                "issues": [f"Error: {str(e)}"],
-                "mitigations": []
-            }
+            return {"issues": [f"Error: {str(e)}"], "mitigations": []}
 
     async def _store_prediction(
         self,
         java_concept: str,
         bedrock_concept: Optional[str],
         predictions: Dict[str, PredictionResult],
-        context_data: Optional[Dict[str, Any]]
+        context_data: Optional[Dict[str, Any]],
     ):
         """Store prediction for learning."""
         try:
             prediction_record = {
-                "conversion_id": f"{java_concept}_{bedrock_concept or 'unknown'}_{datetime.utcnow().timestamp()}",
-                "timestamp": datetime.utcnow().isoformat(),
+                "conversion_id": f"{java_concept}_{bedrock_concept or 'unknown'}_{datetime.now(UTC).timestamp()}",
+                "timestamp": datetime.now(UTC).isoformat(),
                 "java_concept": java_concept,
                 "bedrock_concept": bedrock_concept,
                 "predictions": {
                     pred_type.value: {
                         "predicted_value": pred.predicted_value,
                         "confidence": pred.confidence,
-                        "feature_importance": pred.feature_importance
+                        "feature_importance": pred.feature_importance,
                     }
                     for pred_type, pred in predictions.items()
                 },
-                "context_data": context_data or {}
+                "context_data": context_data or {},
             }
 
             self.prediction_history.append(prediction_record)
@@ -1306,8 +1377,7 @@ class ConversionSuccessPredictionService:
             logger.error(f"Error storing prediction: {e}")
 
     async def _analyze_batch_predictions(
-        self,
-        batch_results: Dict[str, Dict[str, Any]]
+        self, batch_results: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Analyze batch prediction results."""
         try:
@@ -1336,12 +1406,20 @@ class ConversionSuccessPredictionService:
 
             analysis = {
                 "total_conversions": len(batch_results),
-                "average_success_probability": np.mean(success_probabilities) if success_probabilities else 0.0,
-                "average_risk_assessment": np.mean(risk_assessments) if risk_assessments else 0.0,
-                "average_feature_completeness": np.mean(feature_completeness) if feature_completeness else 0.0,
+                "average_success_probability": np.mean(success_probabilities)
+                if success_probabilities
+                else 0.0,
+                "average_risk_assessment": np.mean(risk_assessments)
+                if risk_assessments
+                else 0.0,
+                "average_feature_completeness": np.mean(feature_completeness)
+                if feature_completeness
+                else 0.0,
                 "high_success_count": sum(1 for p in success_probabilities if p > 0.8),
-                "medium_success_count": sum(1 for p in success_probabilities if 0.5 < p <= 0.8),
-                "low_success_count": sum(1 for p in success_probabilities if p <= 0.5)
+                "medium_success_count": sum(
+                    1 for p in success_probabilities if 0.5 < p <= 0.8
+                ),
+                "low_success_count": sum(1 for p in success_probabilities if p <= 0.5),
             }
 
             return analysis
@@ -1351,8 +1429,7 @@ class ConversionSuccessPredictionService:
             return {}
 
     async def _rank_conversions_by_success(
-        self,
-        batch_results: Dict[str, Dict[str, Any]]
+        self, batch_results: Dict[str, Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Rank conversions by success probability."""
         try:
@@ -1362,13 +1439,15 @@ class ConversionSuccessPredictionService:
                 success_prob = result.get("success_probability", 0.0)
                 input_data = result.get("input", {})
 
-                rankings.append({
-                    "conversion_id": conv_id,
-                    "java_concept": input_data.get("java_concept"),
-                    "bedrock_concept": input_data.get("bedrock_concept"),
-                    "success_probability": success_prob,
-                    "rank": 0  # Will be filled after sorting
-                })
+                rankings.append(
+                    {
+                        "conversion_id": conv_id,
+                        "java_concept": input_data.get("java_concept"),
+                        "bedrock_concept": input_data.get("bedrock_concept"),
+                        "success_probability": success_prob,
+                        "rank": 0,  # Will be filled after sorting
+                    }
+                )
 
             # Sort by success probability (descending)
             rankings.sort(key=lambda x: x["success_probability"], reverse=True)
@@ -1384,8 +1463,7 @@ class ConversionSuccessPredictionService:
             return []
 
     async def _identify_batch_patterns(
-        self,
-        batch_results: Dict[str, Dict[str, Any]]
+        self, batch_results: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Identify patterns across batch predictions."""
         try:
@@ -1394,7 +1472,7 @@ class ConversionSuccessPredictionService:
 
             for result in batch_results.values():
                 input_data = result.get("input", {})
-                prediction = result.get("prediction", {})
+                result.get("prediction", {})
 
                 pattern_types.append(input_data.get("pattern_type", "unknown"))
                 success_probabilities.append(result.get("success_probability", 0.0))
@@ -1419,15 +1497,25 @@ class ConversionSuccessPredictionService:
             return {
                 "pattern_type_distribution": pattern_counts,
                 "average_success_by_pattern": pattern_averages,
-                "most_common_pattern": max(pattern_counts.items(), key=lambda x: x[1])[0] if pattern_counts else None,
-                "best_performing_pattern": max(pattern_averages.items(), key=lambda x: x[1])[0] if pattern_averages else None
+                "most_common_pattern": max(pattern_counts.items(), key=lambda x: x[1])[
+                    0
+                ]
+                if pattern_counts
+                else None,
+                "best_performing_pattern": max(
+                    pattern_averages.items(), key=lambda x: x[1]
+                )[0]
+                if pattern_averages
+                else None,
             }
 
         except Exception as e:
             logger.error(f"Error identifying batch patterns: {e}")
             return {}
 
-    async def _update_model_metrics(self, accuracy_scores: Dict[str, float]) -> Dict[str, Any]:
+    async def _update_model_metrics(
+        self, accuracy_scores: Dict[str, float]
+    ) -> Dict[str, Any]:
         """Update model performance metrics with feedback."""
         try:
             improvements = {}
@@ -1439,8 +1527,12 @@ class ConversionSuccessPredictionService:
                     # Update accuracy (simplified)
                     if "accuracy" in current_metrics:
                         new_accuracy = (current_metrics["accuracy"] + accuracy) / 2
-                        self.model_metrics[pred_type]["metrics"]["accuracy"] = new_accuracy
-                        improvements[pred_type] = new_accuracy - current_metrics["accuracy"]
+                        self.model_metrics[pred_type]["metrics"]["accuracy"] = (
+                            new_accuracy
+                        )
+                        improvements[pred_type] = (
+                            new_accuracy - current_metrics["accuracy"]
+                        )
                     elif "mse" in current_metrics:
                         # For regression models, convert accuracy to error
                         error = 1.0 - accuracy
@@ -1458,7 +1550,7 @@ class ConversionSuccessPredictionService:
         self,
         stored_prediction: Dict[str, Any],
         actual_result: Dict[str, Any],
-        feedback_data: Optional[Dict[str, Any]]
+        feedback_data: Optional[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
         """Create training example from prediction and actual result."""
         try:
@@ -1483,8 +1575,8 @@ class ConversionSuccessPredictionService:
                 "feedback_data": feedback_data or {},
                 "metadata": {
                     "source": "feedback",
-                    "creation_timestamp": datetime.utcnow().isoformat()
-                }
+                    "creation_timestamp": datetime.now(UTC).isoformat(),
+                },
             }
 
             return training_example
@@ -1493,15 +1585,21 @@ class ConversionSuccessPredictionService:
             logger.error(f"Error creating training example: {e}")
             return None
 
-    async def _get_model_update_recommendation(self, accuracy_scores: Dict[str, float]) -> str:
+    async def _get_model_update_recommendation(
+        self, accuracy_scores: Dict[str, float]
+    ) -> str:
         """Get recommendation for model updates."""
         try:
-            avg_accuracy = np.mean(list(accuracy_scores.values())) if accuracy_scores else 0.0
+            avg_accuracy = (
+                np.mean(list(accuracy_scores.values())) if accuracy_scores else 0.0
+            )
 
             if avg_accuracy > 0.8:
                 return "Models performing well - continue current approach"
             elif avg_accuracy > 0.6:
-                return "Models performing moderately - consider retraining with more data"
+                return (
+                    "Models performing moderately - consider retraining with more data"
+                )
             else:
                 return "Models need improvement - review training data and feature engineering"
 
@@ -1511,3 +1609,4 @@ class ConversionSuccessPredictionService:
 
 # Singleton instance
 conversion_success_prediction_service = ConversionSuccessPredictionService()
+conversion_success_predictor = conversion_success_prediction_service

@@ -5,10 +5,9 @@ This module provides a mock implementation of Redis functionality
 to enable testing without requiring a real Redis instance.
 """
 
-import json
 import asyncio
-from typing import Any, Dict, List, Optional, Union
-from unittest.mock import MagicMock, AsyncMock
+from typing import Any, Dict, List, Optional
+from unittest.mock import MagicMock
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ class MockRedis:
 
         # Handle binary data for decode_responses=False
         if not self.decode_responses and isinstance(value, str):
-            value = value.encode('utf-8')
+            value = value.encode("utf-8")
 
         self.data[key] = value
 
@@ -68,7 +67,7 @@ class MockRedis:
 
         # Handle binary data for decode_responses=False
         if not self.decode_responses and isinstance(value, bytes):
-            value = value.decode('utf-8')
+            value = value.decode("utf-8")
 
         return value
 
@@ -121,7 +120,7 @@ class MockRedis:
             "used_memory": 1234567,
             "used_memory_human": "1.23M",
             "connected_clients": 1,
-            "uptime_in_seconds": 1000
+            "uptime_in_seconds": 1000,
         }
 
     async def ping(self) -> bool:
@@ -158,7 +157,14 @@ class MockRedisAsyncio:
     def __getattr__(self, name: str):
         """Pass through any other attributes to the original module if available."""
         try:
+            # Avoid recursion by checking if we're already in the mock
+            import sys
+
+            if "redis" in sys.modules and isinstance(sys.modules["redis"], MagicMock):
+                # We're already mocked, return a MagicMock
+                return MagicMock()
             import redis.asyncio
+
             return getattr(redis.asyncio, name)
         except (ImportError, AttributeError):
             # Return a MagicMock for any attributes we don't explicitly mock
@@ -167,6 +173,7 @@ class MockRedisAsyncio:
 
 # Create the mock module
 mock_redis_asyncio = MockRedisAsyncio()
+
 
 # Monkey patch the redis module for testing
 def apply_redis_mock():
@@ -179,8 +186,8 @@ def apply_redis_mock():
     mock_redis.asyncio = mock_redis_asyncio
 
     # Replace the redis module in sys.modules
-    sys.modules['redis'] = mock_redis
-    sys.modules['redis.asyncio'] = mock_redis_asyncio
+    sys.modules["redis"] = mock_redis
+    sys.modules["redis.asyncio"] = mock_redis_asyncio
 
 
 # Utility function for tests

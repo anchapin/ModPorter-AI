@@ -6,8 +6,6 @@ automatic and manual test generation methods.
 """
 
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
@@ -667,16 +665,16 @@ class CoverageGapAnalyzer:
             commands = automation_plan["workflow_commands"]
             
             f.write("### Recommended Commands:\n")
-            f.write(f"```bash\n")
-            f.write(f"# Full automation workflow\n")
+            f.write("```bash\n")
+            f.write("# Full automation workflow\n")
             f.write(f"{commands['full_automation']}\n\n")
-            f.write(f"# Targeted test generation\n")
+            f.write("# Targeted test generation\n")
             f.write(f"{commands['targeted_generation']}\n\n")
-            f.write(f"# Quick coverage analysis\n")
+            f.write("# Quick coverage analysis\n")
             f.write(f"{commands['quick_analysis']}\n\n")
-            f.write(f"# Mutation testing\n")
+            f.write("# Mutation testing\n")
             f.write(f"{commands['mutation_testing']}\n")
-            f.write(f"```\n\n")
+            f.write("```\n\n")
             
             # Next Steps
             f.write("## Next Steps\n\n")
@@ -724,22 +722,22 @@ def main():
     targets = report["action_plan"]["targets_analysis"]
     implementation = report["action_plan"]["implementation_plan"]
     
-    print(f"CURRENT STATUS:")
+    print("CURRENT STATUS:")
     print(f"   Coverage: {current_state['coverage_percentage']:.1f}%")
     print(f"   Statements: {current_state['covered_statements']}/{current_state['total_statements']}")
     print(f"   Target: 80% ({current_state['needed_statements']} statements needed)")
     print()
     
-    print(f"TARGETS ANALYSIS:")
+    print("TARGETS ANALYSIS:")
     print(f"   Total Potential Gain: {targets['total_potential_gain']} statements")
     print(f"   Files Selected: {targets['selected_files']}")
     print(f"   Expected Final Coverage: {targets['expected_coverage']:.1f}%")
     print()
     
-    print(f"IMPLEMENTATION PLAN:")
+    print("IMPLEMENTATION PLAN:")
     print(f"   Total Effort: {implementation['total_effort_hours']:.1f} hours")
     print(f"   Phases: {len(implementation['phases'])}")
-    print(f"   Automation Efficiency: 85-95% time savings")
+    print("   Automation Efficiency: 85-95% time savings")
     print()
     
     print(f"REPORT SAVED: {report_file}")

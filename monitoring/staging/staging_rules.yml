@@ -1,0 +1,176 @@
+# Staging environment alerting rules
+groups:
+  - name: staging_performance
+    rules:
+      # High CPU usage alerts (based on baseline of 71.3%)
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          service: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% (threshold: 85%) for more than 5 minutes"
+          runbook_url: "https://docs.modporter.ai/runbooks/high-cpu"
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 2m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 90% for more than 2 minutes"
+
+      # High memory usage alerts
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes"
+
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 95% for more than 2 minutes"
+
+      # Backend service performance
+      - alert: HighBackendResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="backend"}[5m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High backend response time"
+          description: "95th percentile response time is above 3 seconds"
+
+      - alert: BackendErrorRate
+        expr: rate(http_requests_total{job="backend",status=~"5.."}[5m]) / rate(http_requests_total{job="backend"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High backend error rate"
+          description: "Backend error rate is above 5%"
+
+      # AI Engine performance
+      - alert: HighAIEngineResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ai-engine"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High AI engine response time"
+          description: "95th percentile response time is above 10 seconds"
+
+      # Database performance
+      - alert: PostgreSQLConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High PostgreSQL connections"
+          description: "PostgreSQL connection usage is above 80%"
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Slow PostgreSQL queries"
+          description: "Average query time is above 1 second"
+
+      # Redis performance
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 90%"
+
+      - alert: RedisConnectionsHigh
+        expr: redis_connected_clients > 80
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High Redis connections"
+          description: "Redis has more than 80 connected clients"
+
+      # Service health
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute"
+
+      # Optimization validation alerts
+      - alert: OptimizationRegressionDetected
+        expr: optimization_performance_regression > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Performance regression detected"
+          description: "Performance has regressed by more than 10%"
+
+      - alert: BenchmarkFailure
+        expr: benchmark_success == 0
+        for: 1m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Benchmark failure"
+          description: "Latest benchmark run has failed"
+
+  - name: staging_capacity
+    rules:
+      # Disk space
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is below 20% on {{ $labels.mountpoint }}"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk space is below 10% on {{ $labels.mountpoint }}"

@@ -11,7 +11,7 @@ import pytest
 import asyncio
 from pathlib import Path
 from typing import AsyncGenerator, Generator, Dict, Any
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock
 
 # Add parent directories to path for imports
 backend_dir = Path(__file__).parent.parent
@@ -35,7 +35,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import StaticPool
 
 # Import application modules after mocks are applied
-from config import settings
 from db.declarative_base import Base
 
 # Configure test database
@@ -56,6 +55,7 @@ TestAsyncSessionLocal = async_sessionmaker(
     bind=test_engine, expire_on_commit=False, class_=AsyncSession
 )
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
@@ -63,10 +63,12 @@ def event_loop():
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session")
 def project_root_dir() -> Path:
     """Get the project root directory for accessing test fixtures."""
     return project_root
+
 
 @pytest.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -90,6 +92,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             # Rollback any changes and close the session
             await session.rollback()
             await session.close()
+
 
 @pytest.fixture
 def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
@@ -118,6 +121,7 @@ def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
 
     # Clean up
     app.dependency_overrides.clear()
+
 
 @pytest.fixture
 async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
@@ -151,35 +155,82 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
 
     # Import and include all API routers
     from api import (
-        performance, behavioral_testing, validation, comparison,
-        embeddings, feedback, experiments, behavior_files,
-        behavior_templates, behavior_export, advanced_events,
-        knowledge_graph_fixed as knowledge_graph, expert_knowledge,
-        peer_review, conversion_inference_fixed as conversion_inference,
-        version_compatibility_fixed as version_compatibility
+        performance,
+        behavioral_testing,
+        validation,
+        comparison,
+        embeddings,
+        feedback,
+        experiments,
+        behavior_files,
+        behavior_templates,
+        behavior_export,
+        advanced_events,
+        knowledge_graph_fixed as knowledge_graph,
+        expert_knowledge,
+        peer_review,
+        conversion_inference_fixed as conversion_inference,
+        version_compatibility_fixed as version_compatibility,
     )
 
     # Include API routers
-    app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
-    app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
-    app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
-    app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"])
-    app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
+    app.include_router(
+        performance.router, prefix="/api/v1/performance", tags=["performance"]
+    )
+    app.include_router(
+        behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"]
+    )
+    app.include_router(
+        validation.router, prefix="/api/v1/validation", tags=["validation"]
+    )
+    app.include_router(
+        comparison.router, prefix="/api/v1/comparison", tags=["comparison"]
+    )
+    app.include_router(
+        embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"]
+    )
     app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
-    app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
+    app.include_router(
+        experiments.router, prefix="/api/v1/experiments", tags=["experiments"]
+    )
     app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-files"])
-    app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
-    app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
-    app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
-    app.include_router(knowledge_graph.router, prefix="/api/v1/knowledge-graph", tags=["knowledge-graph"])
-    app.include_router(expert_knowledge.router, prefix="/api/v1/expert-knowledge", tags=["expert-knowledge"])
-    app.include_router(peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"])
-    app.include_router(conversion_inference.router, prefix="/api/v1/conversion-inference", tags=["conversion-inference"])
-    app.include_router(version_compatibility.router, prefix="/api/v1/version-compatibility", tags=["version-compatibility"])
+    app.include_router(
+        behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"]
+    )
+    app.include_router(
+        behavior_export.router, prefix="/api/v1", tags=["behavior-export"]
+    )
+    app.include_router(
+        advanced_events.router, prefix="/api/v1", tags=["advanced-events"]
+    )
+    app.include_router(
+        knowledge_graph.router,
+        prefix="/api/v1/knowledge-graph",
+        tags=["knowledge-graph"],
+    )
+    app.include_router(
+        expert_knowledge.router,
+        prefix="/api/v1/expert-knowledge",
+        tags=["expert-knowledge"],
+    )
+    app.include_router(
+        peer_review.router, prefix="/api/v1/peer-review", tags=["peer-review"]
+    )
+    app.include_router(
+        conversion_inference.router,
+        prefix="/api/v1/conversion-inference",
+        tags=["conversion-inference"],
+    )
+    app.include_router(
+        version_compatibility.router,
+        prefix="/api/v1/version-compatibility",
+        tags=["version-compatibility"],
+    )
 
     # Add main health endpoint
     class HealthResponse(BaseModel):
         """Health check response model"""
+
         status: str
         version: str
         timestamp: str
@@ -190,7 +241,7 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
         return HealthResponse(
             status="healthy",
             version="1.0.0",
-            timestamp=datetime.datetime.utcnow().isoformat()
+            timestamp=datetime.datetime.utcnow().isoformat(),
         )
 
     # Override database dependency to use our test session
@@ -202,22 +253,28 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
 
     # Create AsyncClient using httpx
     try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as test_client:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as test_client:
             yield test_client
     finally:
         # Clean up dependency override
         app.dependency_overrides.clear()
 
+
 @pytest.fixture
 def mock_redis():
     """Create a mock Redis client for testing."""
     from tests.mocks.redis_mock import create_mock_redis_client
+
     return create_mock_redis_client()
+
 
 @pytest.fixture
 def mock_llm():
     """Create a mock LLM client for testing."""
     return MagicMock()
+
 
 @pytest.fixture
 def sample_conversion_job_data() -> Dict[str, Any]:
@@ -227,8 +284,9 @@ def sample_conversion_job_data() -> Dict[str, Any]:
         "status": "pending",
         "mod_file": "test_mod.jar",
         "created_at": "2023-01-01T00:00:00Z",
-        "updated_at": "2023-01-01T00:00:00Z"
+        "updated_at": "2023-01-01T00:00:00Z",
     }
+
 
 @pytest.fixture
 def sample_addon_data() -> Dict[str, Any]:
@@ -238,13 +296,15 @@ def sample_addon_data() -> Dict[str, Any]:
         "name": "Test Addon",
         "version": "1.0.0",
         "description": "A test addon",
-        "created_at": "2023-01-01T00:00:00Z"
+        "created_at": "2023-01-01T00:00:00Z",
     }
+
 
 @pytest.fixture
 def temp_dir(tmp_path) -> Path:
     """Create a temporary directory for file operations."""
     return tmp_path
+
 
 @pytest.fixture
 def sample_java_file(temp_dir) -> Path:
@@ -286,18 +346,16 @@ def sample_java_file(temp_dir) -> Path:
     """)
     return java_file
 
+
 # Add custom pytest marks
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "unit: marks tests as unit tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "unit: marks tests as unit tests")
+
 
 # Global database setup (run once per session)
 @pytest.fixture(scope="session", autouse=True)

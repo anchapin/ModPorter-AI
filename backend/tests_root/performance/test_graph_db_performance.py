@@ -10,9 +10,7 @@ import time
 import psutil
 import tracemalloc
 import os
-from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
-import asyncio
 
 # Import graph database manager
 import sys
@@ -127,7 +125,7 @@ class TestGraphDatabasePerformance:
                 node_id = graph_manager.create_node(
                     node_type="java_class",
                     name=f"RelTestClass{i}",
-                    properties={"package": f"com.example.rel"}
+                    properties={"package": "com.example.rel"}
                 )
                 node_ids.append(node_id)
             

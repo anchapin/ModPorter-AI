@@ -3,12 +3,9 @@ Working tests for main.py focusing on actual functionality
 Simplified to improve coverage without complex mocking
 """
 
-import pytest
 import tempfile
 import os
 import sys
-from pathlib import Path
-from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
 # Add src to path
@@ -20,6 +17,7 @@ from src.main import app, ConversionRequest
 
 # Test client
 client = TestClient(app)
+
 
 class TestConversionRequest:
     """Test ConversionRequest model properties that don't require external dependencies"""
@@ -65,6 +63,7 @@ class TestConversionRequest:
         request = ConversionRequest(options=options)
         assert request.options == options
 
+
 class TestHealthEndpoint:
     """Test health check endpoint"""
 
@@ -76,13 +75,14 @@ class TestHealthEndpoint:
         assert "status" in data
         assert "version" in data or "uptime" in data
 
+
 class TestBasicAppSetup:
     """Test basic FastAPI app configuration"""
 
     def test_app_exists(self):
         """Test that the FastAPI app is properly configured"""
         assert app is not None
-        assert hasattr(app, 'title')
+        assert hasattr(app, "title")
         assert app.title == "ModPorter AI Backend"
 
     def test_app_routes(self):
@@ -92,6 +92,7 @@ class TestBasicAppSetup:
         assert "/api/v1/health" in routes
         assert "/api/v1/convert" in routes
         assert "/docs" in routes or "/redoc" in routes
+
 
 class TestFileOperations:
     """Test file-related operations with actual file handling"""
@@ -105,12 +106,13 @@ class TestFileOperations:
         try:
             assert os.path.exists(tmp_path)
             assert tmp_path.endswith(".jar")
-            with open(tmp_path, 'rb') as f:
+            with open(tmp_path, "rb") as f:
                 content = f.read()
                 assert content == b"dummy jar content"
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
 
 class TestUploadEndpoint:
     """Test upload endpoint behavior"""
@@ -125,12 +127,13 @@ class TestUploadEndpoint:
             with open(tmp_path, "rb") as f:
                 response = client.post(
                     "/api/v1/upload",
-                    files={"file": ("test-mod.jar", f, "application/java-archive")}
+                    files={"file": ("test-mod.jar", f, "application/java-archive")},
                 )
             # Endpoint should exist (may return validation error)
             assert response.status_code in [200, 201, 400, 422, 500]
         finally:
             os.unlink(tmp_path)
+
 
 class TestConversionEndpoints:
     """Test conversion endpoints with basic functionality"""
@@ -140,7 +143,7 @@ class TestConversionEndpoints:
         request_data = {
             "file_id": "test-file-id",
             "original_filename": "test-mod.jar",
-            "target_version": "1.20.0"
+            "target_version": "1.20.0",
         }
 
         response = client.post("/api/v1/convert", json=request_data)
@@ -159,6 +162,7 @@ class TestConversionEndpoints:
         # Endpoint should exist
         assert response.status_code in [200, 500]
 
+
 class TestAddonEndpoints:
     """Test addon endpoints exist"""
 
@@ -170,14 +174,12 @@ class TestAddonEndpoints:
 
     def test_upsert_addon_endpoint_exists(self):
         """Test that upsert addon endpoint responds"""
-        addon_data = {
-            "name": "Test Addon",
-            "description": "Test description"
-        }
+        addon_data = {"name": "Test Addon", "description": "Test description"}
 
         response = client.put("/api/v1/addons/test-addon-id", json=addon_data)
         # Endpoint should exist (may return validation error)
         assert response.status_code in [200, 400, 422, 500]
+
 
 class TestErrorHandling:
     """Test error handling scenarios"""
@@ -192,6 +194,7 @@ class TestErrorHandling:
         response = client.delete("/api/v1/health")
         assert response.status_code in [405, 404]
 
+
 class TestAppConfiguration:
     """Test app-level configuration"""
 
@@ -200,11 +203,13 @@ class TestAppConfiguration:
         middleware_types = [type(middleware.cls) for middleware in app.user_middleware]
         # Check for CORSMiddleware
         from fastapi.middleware.cors import CORSMiddleware
+
         assert CORSMiddleware in middleware_types
 
     def test_openapi_docs_available(self):
         """Test that OpenAPI docs are configured"""
         assert app.docs_url is not None or app.redoc_url is not None
+
 
 # Performance and integration tests
 class TestPerformance:
@@ -213,11 +218,13 @@ class TestPerformance:
     def test_health_response_time(self):
         """Test that health endpoint responds quickly"""
         import time
+
         start_time = time.time()
         response = client.get("/api/v1/health")
         response_time = time.time() - start_time
         assert response_time < 2.0  # Should respond within 2 seconds
         assert response.status_code == 200
+
 
 class TestModels:
     """Test Pydantic models and validation"""
@@ -226,9 +233,7 @@ class TestModels:
         """Test ConversionRequest model validation"""
         # Valid request
         request = ConversionRequest(
-            file_id="test-id",
-            original_filename="test.jar",
-            target_version="1.20.0"
+            file_id="test-id", original_filename="test.jar", target_version="1.20.0"
         )
         assert request.file_id == "test-id"
         assert request.original_filename == "test.jar"

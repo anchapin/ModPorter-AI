@@ -7,5 +7,5 @@ from .performance_models import (
     BenchmarkStatusResponse as BenchmarkStatusResponse,
     BenchmarkReportResponse as BenchmarkReportResponse,
     ScenarioDefinition as ScenarioDefinition,
-    CustomScenarioRequest as CustomScenarioRequest
+    CustomScenarioRequest as CustomScenarioRequest,
 )

@@ -7,7 +7,6 @@ import asyncio
 from uuid import uuid4
 from datetime import datetime, timedelta
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestPhase2Integration:
@@ -193,7 +192,7 @@ class TestPhase2Integration:
         
         compat_response = await async_client.post("/api/version-compatibility/entries/", json=compatibility_entry)
         assert compat_response.status_code == 201
-        compat_id = compat_response.json()["id"]
+        compat_response.json()["id"]
         
         # Step 5: Verify compatibility matrix includes the new entry
         matrix_response = await async_client.get("/api/version-compatibility/compatibility/1.18.2/1.19.2")
@@ -330,7 +329,7 @@ class TestPhase2Integration:
         assert validation_response.status_code == 200
         
         validation_result = validation_response.json()
-        assert validation_result["is_valid"] == True
+        assert validation_result["is_valid"]
         
         # Step 3: Create peer review assignment
         assignment_response = await async_client.post("/api/peer-review/assign/", json={
@@ -340,7 +339,7 @@ class TestPhase2Integration:
             "deadline": (datetime.now() + timedelta(days=7)).isoformat()
         })
         assert assignment_response.status_code == 200
-        assignment_id = assignment_response.json()["assignment_id"]
+        assignment_response.json()["assignment_id"]
         
         # Step 4: Submit multiple reviews
         review_data_1 = {
@@ -370,7 +369,7 @@ class TestPhase2Integration:
         status_data = status_response.json()
         assert status_data["reviews_completed"] == 2
         assert status_data["average_review_score"] > 8.0
-        assert status_data["approval_ready"] == True
+        assert status_data["approval_ready"]
         
         # Step 6: Final approval and publishing
         approval_response = await async_client.post(f"/api/expert-knowledge/contributions/{contribution_id}/approve", json={
@@ -527,7 +526,7 @@ class TestPhase2Integration:
             await asyncio.sleep(1)
             attempt += 1
         
-        assert processing_complete == True
+        assert processing_complete
         
         # Step 3: Generate analytics from processed data
         analytics_response = await async_client.get("/api/peer-review/analytics/", params={

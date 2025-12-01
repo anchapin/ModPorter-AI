@@ -12,9 +12,7 @@ Priority: PRIORITY 2 - Integration Tests (IN PROGRESS)
 import pytest
 import asyncio
 import time
-from datetime import datetime
 from unittest.mock import Mock, patch, AsyncMock
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # Test configuration
 TEST_TIMEOUT = 30  # seconds
@@ -31,18 +29,22 @@ class TestConversionInferenceBasicIntegration:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             engine = ConversionInferenceEngine()
 
             # Mock the _find_concept_node method to avoid database calls
-            with patch.object(engine, '_find_concept_node', return_value=None):
+            with patch.object(engine, "_find_concept_node", return_value=None):
                 yield engine
 
     @pytest.mark.asyncio
@@ -59,13 +61,13 @@ class TestConversionInferenceBasicIntegration:
                         "target_concept": "bedrock_block",
                         "relationship": "CONVERTS_TO",
                         "platform": "bedrock",
-                        "version": "1.19.3"
+                        "version": "1.19.3",
                     }
                 ],
                 "path_length": 1,
                 "supports_features": ["textures", "behaviors"],
                 "success_rate": 0.9,
-                "usage_count": 150
+                "usage_count": 150,
             }
         ]
 
@@ -75,10 +77,16 @@ class TestConversionInferenceBasicIntegration:
         mock_source_node.neo4j_id = "java_block_123"
         mock_source_node.name = "JavaBlock"
 
-        with patch.object(engine, '_find_concept_node', return_value=mock_source_node):  # Return valid node
-            with patch.object(engine, '_suggest_similar_concepts', return_value=[]):  # Mock suggestion method
-                with patch.object(engine, '_find_direct_paths', return_value=direct_path_result):
-                    with patch.object(engine, '_find_indirect_paths', return_value=[]):
+        with patch.object(
+            engine, "_find_concept_node", return_value=mock_source_node
+        ):  # Return valid node
+            with patch.object(
+                engine, "_suggest_similar_concepts", return_value=[]
+            ):  # Mock suggestion method
+                with patch.object(
+                    engine, "_find_direct_paths", return_value=direct_path_result
+                ):
+                    with patch.object(engine, "_find_indirect_paths", return_value=[]):
                         # Test the public API
                         result = await engine.infer_conversion_path(
                             "java_block", mock_db, "bedrock", "1.19.3"
@@ -100,23 +108,30 @@ class TestConversionInferenceBasicIntegration:
                 "path_type": "direct",
                 "confidence": 0.75,
                 "steps": [{"step": "direct_conversion"}],
-                "pattern_type": "simple_conversion"
+                "pattern_type": "simple_conversion",
             },
             {
                 "path_type": "indirect",
                 "confidence": 0.60,
                 "steps": [{"step": "step1"}, {"step": "step2"}],
-                "pattern_type": "complex_conversion"
-            }
+                "pattern_type": "complex_conversion",
+            },
         ]
 
         # Mock the enhancement methods
-        with patch.object(engine, '_validate_conversion_pattern', return_value=0.8):
-            with patch.object(engine, '_check_platform_compatibility', return_value=0.9):
-                with patch.object(engine, '_refine_with_ml_predictions', return_value=0.82):
-                    with patch.object(engine, '_integrate_community_wisdom', return_value=0.75):
-                        with patch.object(engine, '_optimize_for_performance', return_value=0.88):
-
+        with patch.object(engine, "_validate_conversion_pattern", return_value=0.8):
+            with patch.object(
+                engine, "_check_platform_compatibility", return_value=0.9
+            ):
+                with patch.object(
+                    engine, "_refine_with_ml_predictions", return_value=0.82
+                ):
+                    with patch.object(
+                        engine, "_integrate_community_wisdom", return_value=0.75
+                    ):
+                        with patch.object(
+                            engine, "_optimize_for_performance", return_value=0.88
+                        ):
                             # Test enhancement
                             result = await engine.enhance_conversion_accuracy(
                                 conversion_paths, {"version": "1.19.3"}
@@ -129,7 +144,10 @@ class TestConversionInferenceBasicIntegration:
 
                             # Verify enhancement summary - actual result uses 'accuracy_improvements'
                             assert "accuracy_improvements" in result
-                            assert "enhanced_avg_confidence" in result["accuracy_improvements"]
+                            assert (
+                                "enhanced_avg_confidence"
+                                in result["accuracy_improvements"]
+                            )
 
                             # Check that confidence was improved
                             enhanced_path = result["enhanced_paths"][0]
@@ -143,59 +161,45 @@ class TestConversionInferenceBasicIntegration:
         java_concepts = ["java_block", "java_entity", "java_item"]
         conversion_dependencies = {
             "java_entity": ["java_block"],  # Entity depends on block
-            "java_item": ["java_entity"]     # Item depends on entity
+            "java_item": ["java_entity"],  # Item depends on entity
         }
 
         # Mock helper methods
-        with patch.object(engine, '_build_dependency_graph', return_value={
-            "java_block": ["java_entity"],
-            "java_entity": ["java_item"],
-            "java_item": []
-        }):
-            with patch.object(engine, '_topological_sort', return_value=["java_item", "java_entity", "java_block"]):
+        with patch.object(
+            engine,
+            "_build_dependency_graph",
+            return_value={
+                "java_block": ["java_entity"],
+                "java_entity": ["java_item"],
+                "java_item": [],
+            },
+        ):
+            with patch.object(
+                engine,
+                "_topological_sort",
+                return_value=["java_item", "java_entity", "java_block"],
+            ):
                 # Mock group_by_patterns directly with full structure
                 mock_groups = [
                     {
                         "concepts": ["java_item"],
                         "shared_patterns": ["item_conversion"],
                         "estimated_time": 5.0,
-                        "optimization_notes": "Simple item conversion"
+                        "optimization_notes": "Simple item conversion",
                     },
                     {
                         "concepts": ["java_entity", "java_block"],
                         "shared_patterns": ["entity_block_conversion"],
                         "estimated_time": 8.0,
-                        "optimization_notes": "Entity and block conversion with shared patterns"
-                    }
+                        "optimization_notes": "Entity and block conversion with shared patterns",
+                    },
                 ]
 
-                with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
-                    with patch.object(engine, '_calculate_savings', return_value=2.0):
-
+                with patch.object(
+                    engine, "_group_by_patterns", return_value=mock_groups
+                ):
+                    with patch.object(engine, "_calculate_savings", return_value=2.0):
                         # Create mock concept_paths for the test
-                        concept_paths = {
-                            "java_block": {
-                                "primary_path": {
-                                    "path_type": "direct",
-                                    "confidence": 0.85,
-                                    "steps": [{"step": "convert"}]
-                                }
-                            },
-                            "java_entity": {
-                                "primary_path": {
-                                    "path_type": "indirect",
-                                    "confidence": 0.75,
-                                    "steps": [{"step": "transform"}]
-                                }
-                            },
-                            "java_item": {
-                                "primary_path": {
-                                    "path_type": "direct",
-                                    "confidence": 0.9,
-                                    "steps": [{"step": "convert"}]
-                                }
-                            }
-                        }
 
                         # Test optimization
                         result = await engine.optimize_conversion_sequence(
@@ -203,13 +207,15 @@ class TestConversionInferenceBasicIntegration:
                             conversion_dependencies,
                             "bedrock",
                             "1.19.3",
-                            mock_db
+                            mock_db,
                         )
 
                         # Verify optimization result
                         assert isinstance(result, dict)
-                        assert result["success"] == True
-                        assert "processing_sequence" in result  # Key is "processing_sequence", not "processing_groups"
+                        assert result["success"]
+                        assert (
+                            "processing_sequence" in result
+                        )  # Key is "processing_sequence", not "processing_groups"
                         assert len(result["processing_sequence"]) == 2
 
                         # Verify dependency order is respected
@@ -231,35 +237,36 @@ class TestConversionInferenceBasicIntegration:
         }
 
         # Mock the optimization methods with proper return structure
-        with patch.object(engine, '_build_dependency_graph', return_value={
-            "block1": ["block2"],
-            "block2": []
-        }):
-            with patch.object(engine, '_topological_sort', return_value=["block2", "block1"]):
+        with patch.object(
+            engine,
+            "_build_dependency_graph",
+            return_value={"block1": ["block2"], "block2": []},
+        ):
+            with patch.object(
+                engine, "_topological_sort", return_value=["block2", "block1"]
+            ):
                 mock_groups = [
                     {
                         "concepts": ["block1"],
                         "shared_patterns": ["block_conversion"],
                         "estimated_time": 5.0,
-                        "optimization_notes": "Single block conversion"
+                        "optimization_notes": "Single block conversion",
                     },
                     {
                         "concepts": ["block2"],
                         "shared_patterns": ["block_conversion"],
                         "estimated_time": 3.0,
-                        "optimization_notes": "Block with dependency"
-                    }
+                        "optimization_notes": "Block with dependency",
+                    },
                 ]
 
-                with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
-                    with patch.object(engine, '_calculate_savings', return_value=2.0):
-
+                with patch.object(
+                    engine, "_group_by_patterns", return_value=mock_groups
+                ):
+                    with patch.object(engine, "_calculate_savings", return_value=2.0):
                         # Test optimization
                         result = await engine.optimize_conversion_sequence(
-                            java_concepts,
-                            conversion_dependencies,
-                            "bedrock",
-                            "1.19.3"
+                            java_concepts, conversion_dependencies, "bedrock", "1.19.3"
                         )
 
                         # Verify optimization was applied
@@ -286,25 +293,33 @@ class TestConversionInferenceErrorHandling:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.mark.asyncio
     async def test_direct_path_fallback_to_indirect(self, engine, mock_db):
         """Test fallback from direct to indirect paths"""
         # Mock source node to be found
-        mock_source_node = {"id": "java_entity", "type": "java", "concept": "java_entity"}
+        mock_source_node = {
+            "id": "java_entity",
+            "type": "java",
+            "concept": "java_entity",
+        }
 
-        with patch.object(engine, '_find_concept_node', return_value=mock_source_node):
+        with patch.object(engine, "_find_concept_node", return_value=mock_source_node):
             # Mock direct paths to return empty
-            with patch.object(engine, '_find_direct_paths', return_value=[]):
+            with patch.object(engine, "_find_direct_paths", return_value=[]):
                 # Mock indirect paths to return a result
                 indirect_path_result = [
                     {
@@ -313,14 +328,16 @@ class TestConversionInferenceErrorHandling:
                         "steps": [
                             {"action": "step1"},
                             {"action": "step2"},
-                            {"action": "step3"}
+                            {"action": "step3"},
                         ],
                         "intermediate_concepts": ["concept1", "concept2"],
-                        "path_length": 3
+                        "path_length": 3,
                     }
                 ]
 
-                with patch.object(engine, '_find_indirect_paths', return_value=indirect_path_result):
+                with patch.object(
+                    engine, "_find_indirect_paths", return_value=indirect_path_result
+                ):
                     # Test path inference with fallback
                     result = await engine.infer_conversion_path(
                         "java_entity", mock_db, "bedrock", "1.19.3"
@@ -341,14 +358,21 @@ class TestConversionInferenceErrorHandling:
                 "path_type": "direct",
                 "confidence": 0.75,
                 "steps": [{"step": "direct_conversion"}],
-                "pattern_type": "simple_conversion"
+                "pattern_type": "simple_conversion",
             }
         ]
 
         # Mock enhancement methods to raise exceptions
-        with patch.object(engine, '_validate_conversion_pattern', side_effect=Exception("Pattern validation failed")):
-            with patch.object(engine, '_check_platform_compatibility', side_effect=Exception("Platform check failed")):
-
+        with patch.object(
+            engine,
+            "_validate_conversion_pattern",
+            side_effect=Exception("Pattern validation failed"),
+        ):
+            with patch.object(
+                engine,
+                "_check_platform_compatibility",
+                side_effect=Exception("Platform check failed"),
+            ):
                 # Test error handling
                 result = await engine.enhance_conversion_accuracy(conversion_paths)
 
@@ -383,34 +407,50 @@ class TestConversionInferencePerformance:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.mark.asyncio
     async def test_concurrent_path_inference(self, engine, mock_db):
         """Test concurrent path inference requests"""
+
         # Create tasks for concurrent execution
         async def infer_path(concept_id):
             # Mock source node to be found
-            mock_source_node = {"id": f"concept_{concept_id}", "type": "java", "concept": f"concept_{concept_id}"}
+            mock_source_node = {
+                "id": f"concept_{concept_id}",
+                "type": "java",
+                "concept": f"concept_{concept_id}",
+            }
 
-            with patch.object(engine, '_find_concept_node', return_value=mock_source_node):
+            with patch.object(
+                engine, "_find_concept_node", return_value=mock_source_node
+            ):
                 # Mock individual paths
-                with patch.object(engine, '_find_direct_paths', return_value=[
-                    {
-                        "path_type": "direct",
-                        "confidence": 0.8 + (concept_id * 0.01),  # Varied confidence
-                        "steps": [{"step": f"conversion_{concept_id}"}],
-                        "path_length": 1
-                    }
-                ]):
+                with patch.object(
+                    engine,
+                    "_find_direct_paths",
+                    return_value=[
+                        {
+                            "path_type": "direct",
+                            "confidence": 0.8
+                            + (concept_id * 0.01),  # Varied confidence
+                            "steps": [{"step": f"conversion_{concept_id}"}],
+                            "path_length": 1,
+                        }
+                    ],
+                ):
                     return await engine.infer_conversion_path(
                         f"concept_{concept_id}", mock_db, "bedrock", "1.19.3"
                     )
@@ -445,21 +485,22 @@ class TestConversionInferencePerformance:
         java_concepts = [f"concept_{i}" for i in range(batch_size)]
 
         # Mock optimization methods to be efficient
-        with patch.object(engine, '_build_dependency_graph', return_value={}):
-            with patch.object(engine, '_topological_sort', return_value=java_concepts):
+        with patch.object(engine, "_build_dependency_graph", return_value={}):
+            with patch.object(engine, "_topological_sort", return_value=java_concepts):
                 mock_groups = [
                     {
                         "concepts": [concept],
                         "shared_patterns": ["conversion"],
                         "estimated_time": 1.0,
-                        "optimization_notes": f"Convert {concept}"
+                        "optimization_notes": f"Convert {concept}",
                     }
                     for concept in java_concepts
                 ]
 
-                with patch.object(engine, '_group_by_patterns', return_value=mock_groups):
-                    with patch.object(engine, '_calculate_savings', return_value=25.0):
-
+                with patch.object(
+                    engine, "_group_by_patterns", return_value=mock_groups
+                ):
+                    with patch.object(engine, "_calculate_savings", return_value=25.0):
                         # Test large batch optimization
                         start_time = time.time()
                         result = await engine.optimize_conversion_sequence(
@@ -476,4 +517,6 @@ class TestConversionInferencePerformance:
 
                         # Verify performance
                         processing_time = end_time - start_time
-                        assert processing_time < 5.0  # Should process quickly with mocks
+                        assert (
+                            processing_time < 5.0
+                        )  # Should process quickly with mocks

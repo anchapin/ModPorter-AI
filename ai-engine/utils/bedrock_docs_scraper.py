@@ -343,12 +343,10 @@ class BedrockDocsScraper:
         ]
         
         text_parts = []
-        content_element = None
         
         for tag_selector in main_content_tags:
             element = soup.select_one(tag_selector)
             if element:
-                content_element = element
                 text_parts.append(element.get_text(separator="\n", strip=True))
                 break
 
@@ -358,14 +356,12 @@ class BedrockDocsScraper:
             if content_divs:
                 largest_div = max(content_divs, key=lambda div: len(div.get_text()))
                 if len(largest_div.get_text()) > 500:  # Only if substantial content
-                    content_element = largest_div
                     text_parts.append(largest_div.get_text(separator="\n", strip=True))
             
             # Final fallback to body
             if not text_parts:
                 body = soup.find("body")
                 if body:
-                    content_element = body
                     text_parts.append(body.get_text(separator="\n", strip=True))
 
         extracted_text = "\n".join(text_parts)

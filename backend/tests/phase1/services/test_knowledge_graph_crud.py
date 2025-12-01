@@ -7,17 +7,22 @@ including nodes, relationships, patterns, and community contributions.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import uuid
 
 from src.db.models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern,
-    CommunityContribution, VersionCompatibility
+    KnowledgeNode,
+    KnowledgeRelationship,
+    ConversionPattern,
+    CommunityContribution,
+    VersionCompatibility,
 )
 from src.db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD,
-    CommunityContributionCRUD, VersionCompatibilityCRUD
+    KnowledgeNodeCRUD,
+    KnowledgeRelationshipCRUD,
+    ConversionPatternCRUD,
+    CommunityContributionCRUD,
+    VersionCompatibilityCRUD,
 )
 
 
@@ -42,35 +47,38 @@ class TestKnowledgeNodeCRUD:
         graph.create_node = AsyncMock(return_value="neo4j_id_123")
         graph.update_node = AsyncMock(return_value=True)
         graph.delete_node = AsyncMock(return_value=True)
-        graph.get_node = AsyncMock(return_value={
-            "id": "neo4j_id_123",
-            "labels": ["JavaConcept"],
-            "properties": {
-                "name": "TestNode",
-                "node_type": "java_concept",
-                "platform": "java",
-                "minecraft_version": "1.18.2"
-            }
-        })
-        graph.find_nodes = AsyncMock(return_value=[
-            {
+        graph.get_node = AsyncMock(
+            return_value={
                 "id": "neo4j_id_123",
                 "labels": ["JavaConcept"],
                 "properties": {
                     "name": "TestNode",
-                    "node_type": "java_concept"
+                    "node_type": "java_concept",
+                    "platform": "java",
+                    "minecraft_version": "1.18.2",
+                },
+            }
+        )
+        graph.find_nodes = AsyncMock(
+            return_value=[
+                {
+                    "id": "neo4j_id_123",
+                    "labels": ["JavaConcept"],
+                    "properties": {"name": "TestNode", "node_type": "java_concept"},
                 }
-            }
-        ])
-        graph.get_node_relationships = AsyncMock(return_value=[
-            {
-                "id": "rel_1",
-                "type": "CONVERTS_TO",
-                "source": "neo4j_id_123",
-                "target": "neo4j_id_456",
-                "properties": {"confidence": 0.85}
-            }
-        ])
+            ]
+        )
+        graph.get_node_relationships = AsyncMock(
+            return_value=[
+                {
+                    "id": "rel_1",
+                    "type": "CONVERTS_TO",
+                    "source": "neo4j_id_123",
+                    "target": "neo4j_id_456",
+                    "properties": {"confidence": 0.85},
+                }
+            ]
+        )
         return graph
 
     @pytest.fixture
@@ -84,13 +92,13 @@ class TestKnowledgeNodeCRUD:
             properties={
                 "class": "Block",
                 "package": "net.minecraft.block",
-                "minecraft_version": "1.18.2"
+                "minecraft_version": "1.18.2",
             },
             platform="java",
             minecraft_version="1.18.2",
             created_by="test_user",
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -103,19 +111,19 @@ class TestKnowledgeNodeCRUD:
             "metadata": {
                 "component": "minecraft:block",
                 "format_version": "1.16.0",
-                "minecraft_version": "1.18.0"
+                "minecraft_version": "1.18.0",
             },
             "embedding": [0.2, 0.3, 0.4],
             "platform": "bedrock",
             "minecraft_version": "1.18.0",
-            "created_by": "test_user"
+            "created_by": "test_user",
         }
 
     @pytest.mark.asyncio
     async def test_create_node(self, mock_db_session, mock_graph_db, sample_node_data):
         """Test creating a new knowledge node."""
         # Mock the database query result
-        mock_node = KnowledgeNode(
+        KnowledgeNode(
             id=uuid.uuid4(),
             title=sample_node_data["title"],
             description=sample_node_data["description"],
@@ -126,7 +134,7 @@ class TestKnowledgeNodeCRUD:
             minecraft_version=sample_node_data["minecraft_version"],
             created_by=sample_node_data["created_by"],
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         mock_db_session.add = MagicMock()
         mock_db_session.execute.return_value = None
@@ -135,7 +143,7 @@ class TestKnowledgeNodeCRUD:
         mock_db_session.refresh.return_value = None
         mock_db_session.execute.return_value = None
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
             result = await KnowledgeNodeCRUD.create(mock_db_session, sample_node_data)
 
@@ -153,14 +161,20 @@ class TestKnowledgeNodeCRUD:
             mock_graph_db.create_node.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_node_by_id(self, mock_db_session, mock_graph_db, sample_knowledge_node):
+    async def test_get_node_by_id(
+        self, mock_db_session, mock_graph_db, sample_knowledge_node
+    ):
         """Test getting a knowledge node by ID."""
         # Mock database query to return our sample node
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_node
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_node
+        )
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeNodeCRUD.get_by_id(mock_db_session, sample_knowledge_node.id)
+            result = await KnowledgeNodeCRUD.get_by_id(
+                mock_db_session, sample_knowledge_node.id
+            )
 
             # Verify the result
             assert result is not None
@@ -178,7 +192,7 @@ class TestKnowledgeNodeCRUD:
         # Mock database query to return None
         mock_db_session.execute.return_value.scalar_one_or_none.return_value = None
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
             result = await KnowledgeNodeCRUD.get_by_id(mock_db_session, uuid.uuid4())
 
@@ -247,21 +261,27 @@ class TestKnowledgeNodeCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_node(self, mock_db_session, mock_graph_db, sample_knowledge_node):
+    async def test_update_node(
+        self, mock_db_session, mock_graph_db, sample_knowledge_node
+    ):
         """Test updating a knowledge node."""
         # Mock database query to return our sample node
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_node
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_node
+        )
 
         # Mock update data
         update_data = {
             "title": "Updated Node Title",
             "description": "Updated description",
-            "metadata": {"updated": True}
+            "metadata": {"updated": True},
         }
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeNodeCRUD.update(mock_db_session, sample_knowledge_node.id, update_data)
+            result = await KnowledgeNodeCRUD.update(
+                mock_db_session, sample_knowledge_node.id, update_data
+            )
 
             # Verify the result
             assert result is not None
@@ -273,14 +293,20 @@ class TestKnowledgeNodeCRUD:
             mock_graph_db.update_node.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_node(self, mock_db_session, mock_graph_db, sample_knowledge_node):
+    async def test_delete_node(
+        self, mock_db_session, mock_graph_db, sample_knowledge_node
+    ):
         """Test deleting a knowledge node."""
         # Mock database query to return our sample node
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_node
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_node
+        )
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeNodeCRUD.delete(mock_db_session, sample_knowledge_node.id)
+            result = await KnowledgeNodeCRUD.delete(
+                mock_db_session, sample_knowledge_node.id
+            )
 
             # Verify the result
             assert result is True
@@ -296,7 +322,7 @@ class TestKnowledgeNodeCRUD:
         # Mock database query to return None
         mock_db_session.execute.return_value.scalar_one_or_none.return_value = None
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
             result = await KnowledgeNodeCRUD.delete(mock_db_session, uuid.uuid4())
 
@@ -331,22 +357,26 @@ class TestKnowledgeRelationshipCRUD:
         graph.create_relationship = AsyncMock(return_value="rel_id_123")
         graph.update_relationship = AsyncMock(return_value=True)
         graph.delete_relationship = AsyncMock(return_value=True)
-        graph.get_relationship = AsyncMock(return_value={
-            "id": "rel_id_123",
-            "type": "CONVERTS_TO",
-            "source": "neo4j_id_123",
-            "target": "neo4j_id_456",
-            "properties": {"confidence": 0.85}
-        })
-        graph.find_relationships = AsyncMock(return_value=[
-            {
+        graph.get_relationship = AsyncMock(
+            return_value={
                 "id": "rel_id_123",
                 "type": "CONVERTS_TO",
                 "source": "neo4j_id_123",
                 "target": "neo4j_id_456",
-                "properties": {"confidence": 0.85}
+                "properties": {"confidence": 0.85},
             }
-        ])
+        )
+        graph.find_relationships = AsyncMock(
+            return_value=[
+                {
+                    "id": "rel_id_123",
+                    "type": "CONVERTS_TO",
+                    "source": "neo4j_id_123",
+                    "target": "neo4j_id_456",
+                    "properties": {"confidence": 0.85},
+                }
+            ]
+        )
         return graph
 
     @pytest.fixture
@@ -360,9 +390,9 @@ class TestKnowledgeRelationshipCRUD:
             confidence=0.85,
             metadata={
                 "conversion_difficulty": "medium",
-                "notes": "Standard conversion pattern"
+                "notes": "Standard conversion pattern",
             },
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -373,24 +403,23 @@ class TestKnowledgeRelationshipCRUD:
             "target_id": uuid.uuid4(),
             "relationship_type": "converts_to",
             "confidence": 0.9,
-            "metadata": {
-                "conversion_difficulty": "low",
-                "notes": "Simple conversion"
-            }
+            "metadata": {"conversion_difficulty": "low", "notes": "Simple conversion"},
         }
 
     @pytest.mark.asyncio
-    async def test_create_relationship(self, mock_db_session, mock_graph_db, sample_relationship_data):
+    async def test_create_relationship(
+        self, mock_db_session, mock_graph_db, sample_relationship_data
+    ):
         """Test creating a new knowledge relationship."""
         # Mock the database query result
-        mock_relationship = KnowledgeRelationship(
+        KnowledgeRelationship(
             id=uuid.uuid4(),
             source_id=sample_relationship_data["source_id"],
             target_id=sample_relationship_data["target_id"],
             relationship_type=sample_relationship_data["relationship_type"],
             confidence=sample_relationship_data["confidence"],
             metadata=sample_relationship_data["metadata"],
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_db_session.add = MagicMock()
         mock_db_session.execute.return_value = None
@@ -399,15 +428,20 @@ class TestKnowledgeRelationshipCRUD:
         mock_db_session.refresh.return_value = None
         mock_db_session.execute.return_value = None
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeRelationshipCRUD.create(mock_db_session, sample_relationship_data)
+            result = await KnowledgeRelationshipCRUD.create(
+                mock_db_session, sample_relationship_data
+            )
 
             # Verify the result
             assert result is not None
             assert result.source_id == sample_relationship_data["source_id"]
             assert result.target_id == sample_relationship_data["target_id"]
-            assert result.relationship_type == sample_relationship_data["relationship_type"]
+            assert (
+                result.relationship_type
+                == sample_relationship_data["relationship_type"]
+            )
             assert result.confidence == sample_relationship_data["confidence"]
 
             # Verify database operations were called
@@ -417,35 +451,48 @@ class TestKnowledgeRelationshipCRUD:
             mock_graph_db.create_relationship.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_relationship_by_id(self, mock_db_session, mock_graph_db, sample_knowledge_relationship):
+    async def test_get_relationship_by_id(
+        self, mock_db_session, mock_graph_db, sample_knowledge_relationship
+    ):
         """Test getting a knowledge relationship by ID."""
         # Mock database query to return our sample relationship
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_relationship
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_relationship
+        )
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeRelationshipCRUD.get_by_id(mock_db_session, sample_knowledge_relationship.id)
+            result = await KnowledgeRelationshipCRUD.get_by_id(
+                mock_db_session, sample_knowledge_relationship.id
+            )
 
             # Verify the result
             assert result is not None
             assert result.id == sample_knowledge_relationship.id
             assert result.source_id == sample_knowledge_relationship.source_id
             assert result.target_id == sample_knowledge_relationship.target_id
-            assert result.relationship_type == sample_knowledge_relationship.relationship_type
+            assert (
+                result.relationship_type
+                == sample_knowledge_relationship.relationship_type
+            )
 
             # Verify database operations were called
             mock_db_session.execute.assert_called_once()
             mock_graph_db.get_relationship.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_relationships_by_source(self, mock_db_session, sample_knowledge_relationship):
+    async def test_get_relationships_by_source(
+        self, mock_db_session, sample_knowledge_relationship
+    ):
         """Test getting relationships by source node ID."""
         # Mock database query to return a list of relationships
         relationships = [sample_knowledge_relationship]
         mock_db_session.execute.return_value.scalars().all.return_value = relationships
 
         # Call the method
-        result = await KnowledgeRelationshipCRUD.get_by_source(mock_db_session, sample_knowledge_relationship.source_id)
+        result = await KnowledgeRelationshipCRUD.get_by_source(
+            mock_db_session, sample_knowledge_relationship.source_id
+        )
 
         # Verify the result
         assert result is not None
@@ -457,14 +504,18 @@ class TestKnowledgeRelationshipCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_relationships_by_target(self, mock_db_session, sample_knowledge_relationship):
+    async def test_get_relationships_by_target(
+        self, mock_db_session, sample_knowledge_relationship
+    ):
         """Test getting relationships by target node ID."""
         # Mock database query to return a list of relationships
         relationships = [sample_knowledge_relationship]
         mock_db_session.execute.return_value.scalars().all.return_value = relationships
 
         # Call the method
-        result = await KnowledgeRelationshipCRUD.get_by_target(mock_db_session, sample_knowledge_relationship.target_id)
+        result = await KnowledgeRelationshipCRUD.get_by_target(
+            mock_db_session, sample_knowledge_relationship.target_id
+        )
 
         # Verify the result
         assert result is not None
@@ -476,14 +527,18 @@ class TestKnowledgeRelationshipCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_relationships_by_type(self, mock_db_session, sample_knowledge_relationship):
+    async def test_get_relationships_by_type(
+        self, mock_db_session, sample_knowledge_relationship
+    ):
         """Test getting relationships by type."""
         # Mock database query to return a list of relationships
         relationships = [sample_knowledge_relationship]
         mock_db_session.execute.return_value.scalars().all.return_value = relationships
 
         # Call the method
-        result = await KnowledgeRelationshipCRUD.get_by_type(mock_db_session, "converts_to")
+        result = await KnowledgeRelationshipCRUD.get_by_type(
+            mock_db_session, "converts_to"
+        )
 
         # Verify the result
         assert result is not None
@@ -495,20 +550,23 @@ class TestKnowledgeRelationshipCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_relationship(self, mock_db_session, mock_graph_db, sample_knowledge_relationship):
+    async def test_update_relationship(
+        self, mock_db_session, mock_graph_db, sample_knowledge_relationship
+    ):
         """Test updating a knowledge relationship."""
         # Mock database query to return our sample relationship
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_relationship
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_relationship
+        )
 
         # Mock update data
-        update_data = {
-            "confidence": 0.95,
-            "metadata": {"updated": True}
-        }
+        update_data = {"confidence": 0.95, "metadata": {"updated": True}}
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeRelationshipCRUD.update(mock_db_session, sample_knowledge_relationship.id, update_data)
+            result = await KnowledgeRelationshipCRUD.update(
+                mock_db_session, sample_knowledge_relationship.id, update_data
+            )
 
             # Verify the result
             assert result is not None
@@ -520,14 +578,20 @@ class TestKnowledgeRelationshipCRUD:
             mock_graph_db.update_relationship.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_relationship(self, mock_db_session, mock_graph_db, sample_knowledge_relationship):
+    async def test_delete_relationship(
+        self, mock_db_session, mock_graph_db, sample_knowledge_relationship
+    ):
         """Test deleting a knowledge relationship."""
         # Mock database query to return our sample relationship
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_knowledge_relationship
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_knowledge_relationship
+        )
 
-        with patch('src.db.knowledge_graph_crud.optimized_graph_db', mock_graph_db):
+        with patch("src.db.knowledge_graph_crud.optimized_graph_db", mock_graph_db):
             # Call the method
-            result = await KnowledgeRelationshipCRUD.delete(mock_db_session, sample_knowledge_relationship.id)
+            result = await KnowledgeRelationshipCRUD.delete(
+                mock_db_session, sample_knowledge_relationship.id
+            )
 
             # Verify the result
             assert result is True
@@ -561,11 +625,11 @@ class TestConversionPatternCRUD:
             name="Java Block to Bedrock Component",
             description="Standard conversion from Java Block class to Bedrock block component",
             java_template="public class {class_name} extends Block { ... }",
-            bedrock_template="{ \"format_version\": \"1.16.0\", \"minecraft:block\": { ... } }",
+            bedrock_template='{ "format_version": "1.16.0", "minecraft:block": { ... } }',
             variables=["class_name", "identifier"],
             success_rate=0.85,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -575,16 +639,16 @@ class TestConversionPatternCRUD:
             "name": "Java Item to Bedrock Item",
             "description": "Standard conversion from Java Item class to Bedrock item",
             "java_template=": "public class {class_name} extends Item { ... }",
-            "bedrock_template": "{ \"format_version\": \"1.16.0\", \"minecraft:item\": { ... } }",
+            "bedrock_template": '{ "format_version": "1.16.0", "minecraft:item": { ... } }',
             "variables": ["class_name", "identifier"],
-            "success_rate": 0.9
+            "success_rate": 0.9,
         }
 
     @pytest.mark.asyncio
     async def test_create_pattern(self, mock_db_session, sample_pattern_data):
         """Test creating a new conversion pattern."""
         # Mock the database query result
-        mock_pattern = ConversionPattern(
+        ConversionPattern(
             id=uuid.uuid4(),
             name=sample_pattern_data["name"],
             description=sample_pattern_data["description"],
@@ -593,14 +657,16 @@ class TestConversionPatternCRUD:
             variables=sample_pattern_data["variables"],
             success_rate=sample_pattern_data["success_rate"],
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         mock_db_session.add = MagicMock()
         mock_db_session.execute.return_value = None
         mock_db_session.refresh.return_value = None
 
         # Call the method
-        result = await ConversionPatternCRUD.create(mock_db_session, sample_pattern_data)
+        result = await ConversionPatternCRUD.create(
+            mock_db_session, sample_pattern_data
+        )
 
         # Verify the result
         assert result is not None
@@ -620,10 +686,14 @@ class TestConversionPatternCRUD:
     async def test_get_pattern_by_id(self, mock_db_session, sample_conversion_pattern):
         """Test getting a conversion pattern by ID."""
         # Mock database query to return our sample pattern
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_conversion_pattern
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_conversion_pattern
+        )
 
         # Call the method
-        result = await ConversionPatternCRUD.get_by_id(mock_db_session, sample_conversion_pattern.id)
+        result = await ConversionPatternCRUD.get_by_id(
+            mock_db_session, sample_conversion_pattern.id
+        )
 
         # Verify the result
         assert result is not None
@@ -635,14 +705,18 @@ class TestConversionPatternCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_patterns_by_name(self, mock_db_session, sample_conversion_pattern):
+    async def test_get_patterns_by_name(
+        self, mock_db_session, sample_conversion_pattern
+    ):
         """Test getting conversion patterns by name."""
         # Mock database query to return a list of patterns
         patterns = [sample_conversion_pattern]
         mock_db_session.execute.return_value.scalars().all.return_value = patterns
 
         # Call the method
-        result = await ConversionPatternCRUD.get_by_name(mock_db_session, "Java Block to Bedrock Component")
+        result = await ConversionPatternCRUD.get_by_name(
+            mock_db_session, "Java Block to Bedrock Component"
+        )
 
         # Verify the result
         assert result is not None
@@ -657,16 +731,17 @@ class TestConversionPatternCRUD:
     async def test_update_pattern(self, mock_db_session, sample_conversion_pattern):
         """Test updating a conversion pattern."""
         # Mock database query to return our sample pattern
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_conversion_pattern
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_conversion_pattern
+        )
 
         # Mock update data
-        update_data = {
-            "success_rate": 0.9,
-            "description": "Updated description"
-        }
+        update_data = {"success_rate": 0.9, "description": "Updated description"}
 
         # Call the method
-        result = await ConversionPatternCRUD.update(mock_db_session, sample_conversion_pattern.id, update_data)
+        result = await ConversionPatternCRUD.update(
+            mock_db_session, sample_conversion_pattern.id, update_data
+        )
 
         # Verify the result
         assert result is not None
@@ -680,10 +755,14 @@ class TestConversionPatternCRUD:
     async def test_delete_pattern(self, mock_db_session, sample_conversion_pattern):
         """Test deleting a conversion pattern."""
         # Mock database query to return our sample pattern
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_conversion_pattern
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_conversion_pattern
+        )
 
         # Call the method
-        result = await ConversionPatternCRUD.delete(mock_db_session, sample_conversion_pattern.id)
+        result = await ConversionPatternCRUD.delete(
+            mock_db_session, sample_conversion_pattern.id
+        )
 
         # Verify the result
         assert result is True
@@ -721,20 +800,13 @@ class TestVersionCompatibilityCRUD:
                     "category": "block_properties",
                     "description": "Some block properties differ between Java and Bedrock",
                     "severity": "medium",
-                    "workaround": "Use alternative properties"
+                    "workaround": "Use alternative properties",
                 }
             ],
-            features_supported=[
-                "basic_blocks",
-                "custom_items",
-                "simple_entities"
-            ],
-            features_unsupported=[
-                "advanced_redstone",
-                "complex_entity_ai"
-            ],
+            features_supported=["basic_blocks", "custom_items", "simple_entities"],
+            features_unsupported=["advanced_redstone", "complex_entity_ai"],
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -749,26 +821,25 @@ class TestVersionCompatibilityCRUD:
                     "category": "item_components",
                     "description": "Item components have different implementations",
                     "severity": "low",
-                    "workaround": "Use component translation layer"
+                    "workaround": "Use component translation layer",
                 }
             ],
             "features_supported": [
                 "basic_blocks",
                 "custom_items",
                 "simple_entities",
-                "advanced_redstone"
+                "advanced_redstone",
             ],
-            "features_unsupported": [
-                "complex_entity_ai",
-                "custom_dimensions"
-            ]
+            "features_unsupported": ["complex_entity_ai", "custom_dimensions"],
         }
 
     @pytest.mark.asyncio
-    async def test_create_compatibility(self, mock_db_session, sample_compatibility_data):
+    async def test_create_compatibility(
+        self, mock_db_session, sample_compatibility_data
+    ):
         """Test creating a new version compatibility entry."""
         # Mock the database query result
-        mock_compatibility = VersionCompatibility(
+        VersionCompatibility(
             id=uuid.uuid4(),
             java_version=sample_compatibility_data["java_version"],
             bedrock_version=sample_compatibility_data["bedrock_version"],
@@ -777,20 +848,25 @@ class TestVersionCompatibilityCRUD:
             features_supported=sample_compatibility_data["features_supported"],
             features_unsupported=sample_compatibility_data["features_unsupported"],
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         mock_db_session.add = MagicMock()
         mock_db_session.execute.return_value = None
         mock_db_session.refresh.return_value = None
 
         # Call the method
-        result = await VersionCompatibilityCRUD.create(mock_db_session, sample_compatibility_data)
+        result = await VersionCompatibilityCRUD.create(
+            mock_db_session, sample_compatibility_data
+        )
 
         # Verify the result
         assert result is not None
         assert result.java_version == sample_compatibility_data["java_version"]
         assert result.bedrock_version == sample_compatibility_data["bedrock_version"]
-        assert result.compatibility_score == sample_compatibility_data["compatibility_score"]
+        assert (
+            result.compatibility_score
+            == sample_compatibility_data["compatibility_score"]
+        )
 
         # Verify database operations were called
         mock_db_session.add.assert_called_once()
@@ -798,16 +874,20 @@ class TestVersionCompatibilityCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_compatibility(self, mock_db_session, sample_version_compatibility):
+    async def test_get_compatibility(
+        self, mock_db_session, sample_version_compatibility
+    ):
         """Test getting version compatibility by Java and Bedrock versions."""
         # Mock database query to return our sample compatibility
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_version_compatibility
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_version_compatibility
+        )
 
         # Call the method
         result = await VersionCompatibilityCRUD.get_compatibility(
             mock_db_session,
             sample_version_compatibility.java_version,
-            sample_version_compatibility.bedrock_version
+            sample_version_compatibility.bedrock_version,
         )
 
         # Verify the result
@@ -815,22 +895,28 @@ class TestVersionCompatibilityCRUD:
         assert result.id == sample_version_compatibility.id
         assert result.java_version == sample_version_compatibility.java_version
         assert result.bedrock_version == sample_version_compatibility.bedrock_version
-        assert result.compatibility_score == sample_version_compatibility.compatibility_score
+        assert (
+            result.compatibility_score
+            == sample_version_compatibility.compatibility_score
+        )
 
         # Verify database operations were called
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_compatibility_by_java_version(self, mock_db_session, sample_version_compatibility):
+    async def test_get_compatibility_by_java_version(
+        self, mock_db_session, sample_version_compatibility
+    ):
         """Test getting version compatibilities by Java version."""
         # Mock database query to return a list of compatibilities
         compatibilities = [sample_version_compatibility]
-        mock_db_session.execute.return_value.scalars().all.return_value = compatibilities
+        mock_db_session.execute.return_value.scalars().all.return_value = (
+            compatibilities
+        )
 
         # Call the method
         result = await VersionCompatibilityCRUD.get_by_java_version(
-            mock_db_session,
-            sample_version_compatibility.java_version
+            mock_db_session, sample_version_compatibility.java_version
         )
 
         # Verify the result
@@ -843,16 +929,19 @@ class TestVersionCompatibilityCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_compatibility_by_bedrock_version(self, mock_db_session, sample_version_compatibility):
+    async def test_get_compatibility_by_bedrock_version(
+        self, mock_db_session, sample_version_compatibility
+    ):
         """Test getting version compatibilities by Bedrock version."""
         # Mock database query to return a list of compatibilities
         compatibilities = [sample_version_compatibility]
-        mock_db_session.execute.return_value.scalars().all.return_value = compatibilities
+        mock_db_session.execute.return_value.scalars().all.return_value = (
+            compatibilities
+        )
 
         # Call the method
         result = await VersionCompatibilityCRUD.get_by_bedrock_version(
-            mock_db_session,
-            sample_version_compatibility.bedrock_version
+            mock_db_session, sample_version_compatibility.bedrock_version
         )
 
         # Verify the result
@@ -865,22 +954,24 @@ class TestVersionCompatibilityCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_compatibility(self, mock_db_session, sample_version_compatibility):
+    async def test_update_compatibility(
+        self, mock_db_session, sample_version_compatibility
+    ):
         """Test updating a version compatibility entry."""
         # Mock database query to return our sample compatibility
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_version_compatibility
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_version_compatibility
+        )
 
         # Mock update data
         update_data = {
             "compatibility_score": 0.95,
-            "features_supported": ["basic_blocks", "custom_items", "advanced_redstone"]
+            "features_supported": ["basic_blocks", "custom_items", "advanced_redstone"],
         }
 
         # Call the method
         result = await VersionCompatibilityCRUD.update(
-            mock_db_session,
-            sample_version_compatibility.id,
-            update_data
+            mock_db_session, sample_version_compatibility.id, update_data
         )
 
         # Verify the result
@@ -892,13 +983,19 @@ class TestVersionCompatibilityCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_compatibility(self, mock_db_session, sample_version_compatibility):
+    async def test_delete_compatibility(
+        self, mock_db_session, sample_version_compatibility
+    ):
         """Test deleting a version compatibility entry."""
         # Mock database query to return our sample compatibility
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_version_compatibility
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_version_compatibility
+        )
 
         # Call the method
-        result = await VersionCompatibilityCRUD.delete(mock_db_session, sample_version_compatibility.id)
+        result = await VersionCompatibilityCRUD.delete(
+            mock_db_session, sample_version_compatibility.id
+        )
 
         # Verify the result
         assert result is True
@@ -935,12 +1032,12 @@ class TestCommunityContributionCRUD:
             description="Enhanced the block conversion pattern with better material mapping",
             data={
                 "java_improvement": "Added support for custom block properties",
-                "bedrock_improvement": "Improved component structure validation"
+                "bedrock_improvement": "Improved component structure validation",
             },
             status="approved",
             votes=15,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -955,16 +1052,16 @@ class TestCommunityContributionCRUD:
             "data": {
                 "java_entity": "CustomEntity",
                 "bedrock_entity": "custom:entity",
-                "components": ["minecraft:health", "minecraft:movement"]
+                "components": ["minecraft:health", "minecraft:movement"],
             },
-            "status": "pending"
+            "status": "pending",
         }
 
     @pytest.mark.asyncio
     async def test_create_contribution(self, mock_db_session, sample_contribution_data):
         """Test creating a new community contribution."""
         # Mock the database query result
-        mock_contribution = CommunityContribution(
+        CommunityContribution(
             id=uuid.uuid4(),
             author_id=sample_contribution_data["author_id"],
             contribution_type=sample_contribution_data["contribution_type"],
@@ -975,14 +1072,16 @@ class TestCommunityContributionCRUD:
             status=sample_contribution_data["status"],
             votes=0,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         mock_db_session.add = MagicMock()
         mock_db_session.execute.return_value = None
         mock_db_session.refresh.return_value = None
 
         # Call the method
-        result = await CommunityContributionCRUD.create(mock_db_session, sample_contribution_data)
+        result = await CommunityContributionCRUD.create(
+            mock_db_session, sample_contribution_data
+        )
 
         # Verify the result
         assert result is not None
@@ -999,13 +1098,19 @@ class TestCommunityContributionCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_contribution_by_id(self, mock_db_session, sample_community_contribution):
+    async def test_get_contribution_by_id(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test getting a community contribution by ID."""
         # Mock database query to return our sample contribution
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_community_contribution
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_community_contribution
+        )
 
         # Call the method
-        result = await CommunityContributionCRUD.get_by_id(mock_db_session, sample_community_contribution.id)
+        result = await CommunityContributionCRUD.get_by_id(
+            mock_db_session, sample_community_contribution.id
+        )
 
         # Verify the result
         assert result is not None
@@ -1017,7 +1122,9 @@ class TestCommunityContributionCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_contributions_by_author(self, mock_db_session, sample_community_contribution):
+    async def test_get_contributions_by_author(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test getting contributions by author ID."""
         # Mock database query to return a list of contributions
         contributions = [sample_community_contribution]
@@ -1025,8 +1132,7 @@ class TestCommunityContributionCRUD:
 
         # Call the method
         result = await CommunityContributionCRUD.get_by_author(
-            mock_db_session,
-            sample_community_contribution.author_id
+            mock_db_session, sample_community_contribution.author_id
         )
 
         # Verify the result
@@ -1039,14 +1145,18 @@ class TestCommunityContributionCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_contributions_by_status(self, mock_db_session, sample_community_contribution):
+    async def test_get_contributions_by_status(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test getting contributions by status."""
         # Mock database query to return a list of contributions
         contributions = [sample_community_contribution]
         mock_db_session.execute.return_value.scalars().all.return_value = contributions
 
         # Call the method
-        result = await CommunityContributionCRUD.get_by_status(mock_db_session, "approved")
+        result = await CommunityContributionCRUD.get_by_status(
+            mock_db_session, "approved"
+        )
 
         # Verify the result
         assert result is not None
@@ -1058,22 +1168,21 @@ class TestCommunityContributionCRUD:
         mock_db_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_contribution(self, mock_db_session, sample_community_contribution):
+    async def test_update_contribution(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test updating a community contribution."""
         # Mock database query to return our sample contribution
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_community_contribution
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_community_contribution
+        )
 
         # Mock update data
-        update_data = {
-            "status": "approved",
-            "votes": 20
-        }
+        update_data = {"status": "approved", "votes": 20}
 
         # Call the method
         result = await CommunityContributionCRUD.update(
-            mock_db_session,
-            sample_community_contribution.id,
-            update_data
+            mock_db_session, sample_community_contribution.id, update_data
         )
 
         # Verify the result
@@ -1085,13 +1194,19 @@ class TestCommunityContributionCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_upvote_contribution(self, mock_db_session, sample_community_contribution):
+    async def test_upvote_contribution(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test upvoting a community contribution."""
         # Mock database query to return our sample contribution
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_community_contribution
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_community_contribution
+        )
 
         # Call the method
-        result = await CommunityContributionCRUD.upvote(mock_db_session, sample_community_contribution.id)
+        result = await CommunityContributionCRUD.upvote(
+            mock_db_session, sample_community_contribution.id
+        )
 
         # Verify the result
         assert result is True
@@ -1101,13 +1216,19 @@ class TestCommunityContributionCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_downvote_contribution(self, mock_db_session, sample_community_contribution):
+    async def test_downvote_contribution(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test downvoting a community contribution."""
         # Mock database query to return our sample contribution
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_community_contribution
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_community_contribution
+        )
 
         # Call the method
-        result = await CommunityContributionCRUD.downvote(mock_db_session, sample_community_contribution.id)
+        result = await CommunityContributionCRUD.downvote(
+            mock_db_session, sample_community_contribution.id
+        )
 
         # Verify the result
         assert result is True
@@ -1117,13 +1238,19 @@ class TestCommunityContributionCRUD:
         mock_db_session.refresh.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_contribution(self, mock_db_session, sample_community_contribution):
+    async def test_delete_contribution(
+        self, mock_db_session, sample_community_contribution
+    ):
         """Test deleting a community contribution."""
         # Mock database query to return our sample contribution
-        mock_db_session.execute.return_value.scalar_one_or_none.return_value = sample_community_contribution
+        mock_db_session.execute.return_value.scalar_one_or_none.return_value = (
+            sample_community_contribution
+        )
 
         # Call the method
-        result = await CommunityContributionCRUD.delete(mock_db_session, sample_community_contribution.id)
+        result = await CommunityContributionCRUD.delete(
+            mock_db_session, sample_community_contribution.id
+        )
 
         # Verify the result
         assert result is True

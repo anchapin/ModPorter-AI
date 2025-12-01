@@ -14,7 +14,7 @@ This module provides mocks for:
 import sys
 from unittest.mock import MagicMock, Mock
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any
 from dataclasses import dataclass
 
 # Mock schemas.multimodal_schema

@@ -16,12 +16,11 @@ Usage:
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import List
 
 class TestAutomationIntegrator:
     """Integrates all automation tools into cohesive workflow"""
@@ -318,7 +317,7 @@ jobs:
         print(f"  Errors: {len(self.results['errors'])}")
         
         if self.results["coverage_after"] >= 80:
-            print(f"  ✓ 80% COVERAGE TARGET ACHIEVED!")
+            print("  ✓ 80% COVERAGE TARGET ACHIEVED!")
         else:
             remaining = 80 - self.results["coverage_after"]
             print(f"  ⚠ Need +{remaining:.1f}% more coverage to reach 80% target")

@@ -29,7 +29,7 @@ def test_tool_registry():
         registry = get_tool_registry()
         tools = registry.list_available_tools()
         
-        print(f"[OK] Tool registry initialized successfully")
+        print("[OK] Tool registry initialized successfully")
         print(f"[OK] Discovered {len(tools)} tools:")
         
         for tool in tools:
@@ -119,7 +119,7 @@ def test_bedrock_scraper_integration():
             parsed_result = json.loads(result)
             
             if parsed_result.get('success'):
-                print(f"[OK] Scraper executed successfully")
+                print("[OK] Scraper executed successfully")
                 print(f"   Documents found: {parsed_result.get('total_documents', 0)}")
             else:
                 print(f"[WARN]  Scraper executed but with issues: {parsed_result.get('error', 'Unknown error')}")
@@ -151,7 +151,7 @@ def test_rag_crew_integration():
         
         # Check system status
         status = rag_crew.get_system_status()
-        print(f"[OK] System status retrieved:")
+        print("[OK] System status retrieved:")
         print(f"   LLM Model: {status.get('llm_model', 'unknown')}")
         print(f"   Tool registry enabled: {status.get('tool_registry_enabled', False)}")
         print(f"   Total agents: {status.get('total_agents', 0)}")
@@ -160,7 +160,7 @@ def test_rag_crew_integration():
         
         # Validate tool configuration
         validation = rag_crew.validate_tool_configuration()
-        print(f"[OK] Tool validation completed:")
+        print("[OK] Tool validation completed:")
         print(f"   Valid tools: {len(validation.get('valid_tools', []))}")
         print(f"   Invalid tools: {len(validation.get('invalid_tools', []))}")
         

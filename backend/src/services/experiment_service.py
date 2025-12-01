@@ -19,11 +19,15 @@ class ExperimentService:
         """Get all active experiments."""
         return await crud.list_experiments(self.db, status="active")
 
-    async def get_experiment_variants(self, experiment_id: uuid.UUID) -> List[models.ExperimentVariant]:
+    async def get_experiment_variants(
+        self, experiment_id: uuid.UUID
+    ) -> List[models.ExperimentVariant]:
         """Get all variants for an experiment."""
         return await crud.list_experiment_variants(self.db, experiment_id)
 
-    async def allocate_variant(self, experiment_id: uuid.UUID) -> Optional[models.ExperimentVariant]:
+    async def allocate_variant(
+        self, experiment_id: uuid.UUID
+    ) -> Optional[models.ExperimentVariant]:
         """
         Allocate a variant for the given experiment based on traffic allocation settings.
 
@@ -47,7 +51,9 @@ class ExperimentService:
         # In a more advanced implementation, we could implement weighted distribution
         return random.choice(variants)
 
-    async def get_control_variant(self, experiment_id: uuid.UUID) -> Optional[models.ExperimentVariant]:
+    async def get_control_variant(
+        self, experiment_id: uuid.UUID
+    ) -> Optional[models.ExperimentVariant]:
         """Get the control variant for an experiment."""
         variants = await self.get_experiment_variants(experiment_id)
         for variant in variants:

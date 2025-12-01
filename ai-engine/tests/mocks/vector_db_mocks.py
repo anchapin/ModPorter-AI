@@ -8,7 +8,7 @@ This module provides mocks for:
 """
 
 import sys
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 # Mock chromadb
 def mock_chromadb():

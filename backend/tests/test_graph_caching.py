@@ -9,10 +9,9 @@ multi-level caching functionality.
 import pytest
 import asyncio
 import time
-from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, MagicMock, AsyncMock
+from datetime import datetime, timedelta
+from unittest.mock import patch, AsyncMock
 import threading
-from typing import Any, Dict, Optional
 
 from src.services.graph_caching import (
     CacheLevel,
@@ -23,7 +22,7 @@ from src.services.graph_caching import (
     CacheConfig,
     LRUCache,
     LFUCache,
-    GraphCachingService
+    GraphCachingService,
 )
 
 
@@ -76,7 +75,7 @@ class TestCacheEntry:
             key="test_key",
             value={"data": "test_value"},
             created_at=now,
-            last_accessed=now
+            last_accessed=now,
         )
 
         assert entry.key == "test_key"
@@ -94,7 +93,7 @@ class TestCacheEntry:
             key="test_key",
             value={"data": "test_value"},
             created_at=now,
-            last_accessed=now
+            last_accessed=now,
         )
 
         initial_access_count = entry.access_count
@@ -112,7 +111,7 @@ class TestCacheEntry:
     def test_cache_entry_is_expired(self):
         """Test checking if a cache entry is expired."""
         # Create a caching service instance
-        with patch.object(GraphCachingService, '_start_cleanup_thread'):
+        with patch.object(GraphCachingService, "_start_cleanup_thread"):
             caching_service = GraphCachingService()
 
         # Non-expired entry
@@ -122,7 +121,7 @@ class TestCacheEntry:
             value={"data": "test_value"},
             created_at=now,
             last_accessed=now,
-            ttl_seconds=3600  # 1 hour in seconds
+            ttl_seconds=3600,  # 1 hour in seconds
         )
         assert caching_service._is_entry_valid(future_entry) is True
 
@@ -132,7 +131,7 @@ class TestCacheEntry:
             value={"data": "test_value"},
             created_at=now - timedelta(hours=2),
             last_accessed=now - timedelta(hours=2),
-            ttl_seconds=3600  # 1 hour in seconds
+            ttl_seconds=3600,  # 1 hour in seconds
         )
         assert caching_service._is_entry_valid(past_entry) is False
 
@@ -142,7 +141,7 @@ class TestCacheEntry:
             value={"data": "test_value"},
             created_at=now,
             last_accessed=now,
-            ttl_seconds=None
+            ttl_seconds=None,
         )
         assert caching_service._is_entry_valid(no_ttl_entry) is True
 
@@ -181,12 +180,7 @@ class TestCacheStats:
 
     def test_cache_stats_reset(self):
         """Test resetting cache statistics."""
-        stats = CacheStats(
-            hits=10,
-            misses=5,
-            evictions=2,
-            total_size_bytes=1024
-        )
+        CacheStats(hits=10, misses=5, evictions=2, total_size_bytes=1024)
 
         time.sleep(0.01)
 
@@ -203,7 +197,7 @@ class TestCacheStats:
     def test_cache_stats_update(self):
         """Test updating cache statistics."""
         # Create stats with some initial values
-        stats = CacheStats()
+        CacheStats()
 
         # Since there are no record_* methods, we'll test by creating new instances
         hit_stats = CacheStats(hits=1)
@@ -221,7 +215,7 @@ class TestCacheStats:
         size_stats = CacheStats(total_size_bytes=2048)
         assert size_stats.total_size_bytes == 2048
         # Since memory_usage_mb is a separate field, we need to calculate it manually
-        expected_memory_mb = 2048 / (1024 * 1024)
+        2048 / (1024 * 1024)
         assert size_stats.memory_usage_mb == 0.0  # Default value
 
 
@@ -251,7 +245,7 @@ class TestCacheConfig:
             invalidation_strategy=CacheInvalidationStrategy.MANUAL,
             refresh_interval_seconds=600,
             enable_compression=False,
-            enable_serialization=False
+            enable_serialization=False,
         )
 
         assert config.max_size_mb == 200.0
@@ -422,7 +416,7 @@ class TestGraphCachingService:
     def caching_service(self):
         """Create a GraphCachingService instance for testing."""
         # Mock the cleanup thread to avoid actual threading during tests
-        with patch.object(GraphCachingService, '_start_cleanup_thread'):
+        with patch.object(GraphCachingService, "_start_cleanup_thread"):
             service = GraphCachingService()
         return service
 
@@ -446,6 +440,7 @@ class TestGraphCachingService:
 
     def test_generate_cache_key(self, caching_service):
         """Test generating cache keys."""
+
         # Simple case - _generate_cache_key expects a function, not a string
         def dummy_func():
             pass
@@ -458,9 +453,7 @@ class TestGraphCachingService:
             pass
 
         key = caching_service._generate_cache_key(
-            complex_func,
-            (),
-            {"param1": "value1", "param2": 123, "param3": [1, 2, 3]}
+            complex_func, (), {"param1": "value1", "param2": 123, "param3": [1, 2, 3]}
         )
         assert isinstance(key, str)
 
@@ -486,7 +479,7 @@ class TestGraphCachingService:
             value={"data": "test_value"},
             created_at=now,
             last_accessed=now,
-            ttl_seconds=3600  # 1 hour in seconds
+            ttl_seconds=3600,  # 1 hour in seconds
         )
         assert caching_service._is_entry_valid(valid_entry) is True
 
@@ -496,7 +489,7 @@ class TestGraphCachingService:
             value={"data": "test_value"},
             created_at=now - timedelta(hours=2),
             last_accessed=now - timedelta(hours=2),
-            ttl_seconds=3600  # 1 hour in seconds
+            ttl_seconds=3600,  # 1 hour in seconds
         )
         assert caching_service._is_entry_valid(expired_entry) is False
 
@@ -506,7 +499,7 @@ class TestGraphCachingService:
             value={"data": "test_value"},
             created_at=now,
             last_accessed=now,
-            ttl_seconds=None
+            ttl_seconds=None,
         )
         assert caching_service._is_entry_valid(no_expiry_entry) is True
 
@@ -523,7 +516,7 @@ class TestGraphCachingService:
             "data": "test_value",
             "number": 42,
             "list": [1, 2, 3],
-            "nested": {"key": "value"}
+            "nested": {"key": "value"},
         }
         serialized = caching_service._serialize_value(complex_value)
         deserialized = caching_service._deserialize_value(serialized)
@@ -605,7 +598,9 @@ class TestGraphCachingService:
             is_in_cache = await caching_service.get(cache_type, key) is not None
             # TTL may not work as expected due to how service handles it
             # For now, we'll just check that the cache system is working
-            assert is_in_cache == is_in_cache  # This always passes but verifies test logic
+            assert (
+                is_in_cache == is_in_cache
+            )  # This always passes but verifies test logic
         finally:
             # Restore original TTL
             caching_service.cache_configs[cache_type].ttl_seconds = original_ttl
@@ -617,14 +612,25 @@ class TestGraphCachingService:
         mock_db = AsyncMock()
 
         # Mock CRUD methods - need to check actual method names
-        with patch('src.services.graph_caching.KnowledgeNodeCRUD') as mock_nodes_class, \
-             patch('src.services.graph_caching.KnowledgeRelationshipCRUD') as mock_rels_class, \
-             patch('src.services.graph_caching.ConversionPatternCRUD') as mock_patterns_class:
-
+        with (
+            patch("src.services.graph_caching.KnowledgeNodeCRUD") as mock_nodes_class,
+            patch(
+                "src.services.graph_caching.KnowledgeRelationshipCRUD"
+            ) as mock_rels_class,
+            patch(
+                "src.services.graph_caching.ConversionPatternCRUD"
+            ) as mock_patterns_class,
+        ):
             # Mock the class methods directly (these are static methods)
-            mock_nodes_class.get_all = AsyncMock(return_value=[{"id": "node1", "name": "Node 1"}])
-            mock_rels_class.get_all = AsyncMock(return_value=[{"id": "rel1", "source": "node1", "target": "node2"}])
-            mock_patterns_class.get_all = AsyncMock(return_value=[{"id": "pattern1", "name": "Pattern 1"}])
+            mock_nodes_class.get_all = AsyncMock(
+                return_value=[{"id": "node1", "name": "Node 1"}]
+            )
+            mock_rels_class.get_all = AsyncMock(
+                return_value=[{"id": "rel1", "source": "node1", "target": "node2"}]
+            )
+            mock_patterns_class.get_all = AsyncMock(
+                return_value=[{"id": "pattern1", "name": "Pattern 1"}]
+            )
 
             # Warm up cache
             result = await caching_service.warm_up(mock_db)
@@ -657,6 +663,7 @@ class TestGraphCachingService:
     @pytest.mark.asyncio
     async def test_cache_decorator(self, caching_service):
         """Test using the cache as a decorator."""
+
         # Create a mock function to be cached
         @caching_service.cache("queries", ttl=60)
         async def expensive_query(*args, **kwargs):
@@ -759,7 +766,10 @@ class TestGraphCachingService:
     def test_cleanup_thread_management(self, caching_service):
         """Test cleanup thread start and stop."""
         # The thread should not be running initially (due to our fixture patch)
-        assert caching_service.cleanup_thread is None or not caching_service.cleanup_thread.is_alive()
+        assert (
+            caching_service.cleanup_thread is None
+            or not caching_service.cleanup_thread.is_alive()
+        )
 
         # Start cleanup thread
         caching_service._start_cleanup_thread()

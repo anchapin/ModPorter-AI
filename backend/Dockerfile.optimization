@@ -1,0 +1,33 @@
+# Optimization validation service Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy optimization service code
+COPY src/services/optimization_integration.py .
+COPY src/services/adaptive_optimizer.py .
+COPY src/services/performance_monitor.py .
+COPY src/services/benchmark_suite.py .
+COPY src/models/ .
+COPY src/db/ .
+
+# Create optimization validation service entrypoint
+COPY scripts/optimization_validator.py .
+
+# Create reports directory
+RUN mkdir -p /app/reports
+
+EXPOSE 8091
+
+CMD ["python", "optimization_validator.py"]

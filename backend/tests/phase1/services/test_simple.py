@@ -4,10 +4,7 @@ This is a basic test to verify our test infrastructure is working.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import asyncio
+from unittest.mock import AsyncMock, MagicMock
 import uuid
 
 
@@ -35,9 +32,9 @@ class TestSimple:
         """Test that our fixture is working."""
         # Verify the mock is of the right type
         assert mock_db_session is not None
-        assert hasattr(mock_db_session, 'execute')
-        assert hasattr(mock_db_session, 'commit')
-        assert hasattr(mock_db_session, 'rollback')
+        assert hasattr(mock_db_session, "execute")
+        assert hasattr(mock_db_session, "commit")
+        assert hasattr(mock_db_session, "rollback")
 
     @pytest.mark.asyncio
     async def test_async_function(self, mock_db_session):
@@ -51,8 +48,6 @@ class TestSimple:
 
         # Verify it was called
         mock_db_session.execute.assert_called_once_with("SELECT * FROM table")
-
-
 
     def test_uuid_generation(self):
         """Test UUID generation."""
@@ -73,12 +68,7 @@ class TestSimple:
         assert "key1" in test_dict
         assert test_dict["key1"] == "value1"
 
-    @pytest.mark.parametrize("input_val,expected", [
-        (1, 2),
-        (2, 4),
-        (3, 6),
-        (0, 0)
-    ])
+    @pytest.mark.parametrize("input_val,expected", [(1, 2), (2, 4), (3, 6), (0, 0)])
     def test_parameterized(self, input_val, expected):
         """Test with parameterized values."""
         result = input_val * 2
@@ -89,6 +79,7 @@ class TestSimple:
         """A test marked as slow."""
         # Simulate a slow operation
         import time
+
         time.sleep(0.1)
         assert True
 
@@ -132,6 +123,7 @@ class TestSimple:
     @pytest.mark.asyncio
     async def test_async_context_manager(self):
         """Test using an async context manager."""
+
         # Create a simple async context manager
         class SimpleAsyncContext:
             async def __aenter__(self):

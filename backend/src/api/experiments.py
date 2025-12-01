@@ -115,8 +115,7 @@ class ExperimentResultResponse(BaseModel):
 
 @router.post("/experiments", response_model=ExperimentResponse)
 async def create_experiment(
-    experiment: ExperimentCreate,
-    db: AsyncSession = Depends(get_db)
+    experiment: ExperimentCreate, db: AsyncSession = Depends(get_db)
 ):
     """Create a new A/B testing experiment."""
     logger.info(f"Creating new experiment: {experiment.name}")
@@ -125,8 +124,7 @@ async def create_experiment(
     if experiment.traffic_allocation is not None:
         if experiment.traffic_allocation < 0 or experiment.traffic_allocation > 100:
             raise HTTPException(
-                status_code=400,
-                detail="Traffic allocation must be between 0 and 100"
+                status_code=400, detail="Traffic allocation must be between 0 and 100"
             )
 
     try:
@@ -136,7 +134,7 @@ async def create_experiment(
             description=experiment.description,
             start_date=experiment.start_date,
             end_date=experiment.end_date,
-            traffic_allocation=experiment.traffic_allocation or 100
+            traffic_allocation=experiment.traffic_allocation or 100,
         )
 
         return ExperimentResponse(
@@ -148,22 +146,21 @@ async def create_experiment(
             status=db_experiment.status,
             traffic_allocation=db_experiment.traffic_allocation,
             created_at=db_experiment.created_at,
-            updated_at=db_experiment.updated_at
+            updated_at=db_experiment.updated_at,
         )
     except Exception as e:
         logger.error(f"Error creating experiment: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error creating experiment"
-        )
+        raise HTTPException(status_code=500, detail="Error creating experiment")
 
 
 @router.get("/experiments", response_model=List[ExperimentResponse])
 async def list_experiments(
-    status: Optional[str] = Query(None, description="Filter by status (draft, active, paused, completed)"),
+    status: Optional[str] = Query(
+        None, description="Filter by status (draft, active, paused, completed)"
+    ),
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """List all A/B testing experiments."""
     logger.info(f"Listing experiments: status={status}, skip={skip}, limit={limit}")
@@ -175,7 +172,9 @@ async def list_experiments(
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
 
     try:
-        experiments = await crud.list_experiments(db, status=status, skip=skip, limit=limit)
+        experiments = await crud.list_experiments(
+            db, status=status, skip=skip, limit=limit
+        )
 
         return [
             ExperimentResponse(
@@ -187,23 +186,17 @@ async def list_experiments(
                 status=exp.status,
                 traffic_allocation=exp.traffic_allocation,
                 created_at=exp.created_at,
-                updated_at=exp.updated_at
+                updated_at=exp.updated_at,
             )
             for exp in experiments
         ]
     except Exception as e:
         logger.error(f"Error listing experiments: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error listing experiments"
-        )
+        raise HTTPException(status_code=500, detail="Error listing experiments")
 
 
 @router.get("/experiments/{experiment_id}", response_model=ExperimentResponse)
-async def get_experiment(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
     """Get details of a specific A/B testing experiment."""
     logger.info(f"Getting experiment: {experiment_id}")
 
@@ -226,23 +219,18 @@ async def get_experiment(
             status=db_experiment.status,
             traffic_allocation=db_experiment.traffic_allocation,
             created_at=db_experiment.created_at,
-            updated_at=db_experiment.updated_at
+            updated_at=db_experiment.updated_at,
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error getting experiment"
-        )
+        raise HTTPException(status_code=500, detail="Error getting experiment")
 
 
 @router.put("/experiments/{experiment_id}", response_model=ExperimentResponse)
 async def update_experiment(
-    experiment_id: str,
-    experiment: ExperimentUpdate,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, experiment: ExperimentUpdate, db: AsyncSession = Depends(get_db)
 ):
     """Update an A/B testing experiment."""
     logger.info(f"Updating experiment: {experiment_id}")
@@ -254,19 +242,18 @@ async def update_experiment(
 
     # Validate status if provided
     if experiment.status:
-        valid_statuses = ['draft', 'active', 'paused', 'completed']
+        valid_statuses = ["draft", "active", "paused", "completed"]
         if experiment.status not in valid_statuses:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}",
             )
 
     # Validate traffic allocation if provided
     if experiment.traffic_allocation is not None:
         if experiment.traffic_allocation < 0 or experiment.traffic_allocation > 100:
             raise HTTPException(
-                status_code=400,
-                detail="Traffic allocation must be between 0 and 100"
+                status_code=400, detail="Traffic allocation must be between 0 and 100"
             )
 
     try:
@@ -282,7 +269,7 @@ async def update_experiment(
             start_date=experiment.start_date,
             end_date=experiment.end_date,
             status=experiment.status,
-            traffic_allocation=experiment.traffic_allocation
+            traffic_allocation=experiment.traffic_allocation,
         )
 
         return ExperimentResponse(
@@ -294,23 +281,17 @@ async def update_experiment(
             status=updated_experiment.status,
             traffic_allocation=updated_experiment.traffic_allocation,
             created_at=updated_experiment.created_at,
-            updated_at=updated_experiment.updated_at
+            updated_at=updated_experiment.updated_at,
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error updating experiment"
-        )
+        raise HTTPException(status_code=500, detail="Error updating experiment")
 
 
 @router.delete("/experiments/{experiment_id}")
-async def delete_experiment(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def delete_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
     """Delete an A/B testing experiment."""
     logger.info(f"Deleting experiment: {experiment_id}")
 
@@ -331,17 +312,16 @@ async def delete_experiment(
         raise
     except Exception as e:
         logger.error(f"Error deleting experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error deleting experiment"
-        )
+        raise HTTPException(status_code=500, detail="Error deleting experiment")
 
 
-@router.post("/experiments/{experiment_id}/variants", response_model=ExperimentVariantResponse)
+@router.post(
+    "/experiments/{experiment_id}/variants", response_model=ExperimentVariantResponse
+)
 async def create_experiment_variant(
     experiment_id: str,
     variant: ExperimentVariantCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new variant for an A/B testing experiment."""
     logger.info(f"Creating variant for experiment {experiment_id}: {variant.name}")
@@ -363,7 +343,7 @@ async def create_experiment_variant(
             name=variant.name,
             description=variant.description,
             is_control=variant.is_control or False,
-            strategy_config=variant.strategy_config
+            strategy_config=variant.strategy_config,
         )
 
         return ExperimentVariantResponse(
@@ -374,22 +354,21 @@ async def create_experiment_variant(
             is_control=db_variant.is_control,
             strategy_config=db_variant.strategy_config,
             created_at=db_variant.created_at,
-            updated_at=db_variant.updated_at
+            updated_at=db_variant.updated_at,
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating variant for experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error creating experiment variant"
-        )
+        raise HTTPException(status_code=500, detail="Error creating experiment variant")
 
 
-@router.get("/experiments/{experiment_id}/variants", response_model=List[ExperimentVariantResponse])
+@router.get(
+    "/experiments/{experiment_id}/variants",
+    response_model=List[ExperimentVariantResponse],
+)
 async def list_experiment_variants(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, db: AsyncSession = Depends(get_db)
 ):
     """List all variants for an A/B testing experiment."""
     logger.info(f"Listing variants for experiment: {experiment_id}")
@@ -416,7 +395,7 @@ async def list_experiment_variants(
                 is_control=variant.is_control,
                 strategy_config=variant.strategy_config,
                 created_at=variant.created_at,
-                updated_at=variant.updated_at
+                updated_at=variant.updated_at,
             )
             for variant in variants
         ]
@@ -424,17 +403,15 @@ async def list_experiment_variants(
         raise
     except Exception as e:
         logger.error(f"Error listing variants for experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error listing experiment variants"
-        )
+        raise HTTPException(status_code=500, detail="Error listing experiment variants")
 
 
-@router.get("/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse)
+@router.get(
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
+)
 async def get_experiment_variant(
-    experiment_id: str,
-    variant_id: str,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, variant_id: str, db: AsyncSession = Depends(get_db)
 ):
     """Get details of a specific variant in an A/B testing experiment."""
     logger.info(f"Getting variant {variant_id} for experiment {experiment_id}")
@@ -457,7 +434,9 @@ async def get_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         return ExperimentVariantResponse(
             id=str(db_variant.id),
@@ -467,24 +446,26 @@ async def get_experiment_variant(
             is_control=db_variant.is_control,
             strategy_config=db_variant.strategy_config,
             created_at=db_variant.created_at,
-            updated_at=db_variant.updated_at
+            updated_at=db_variant.updated_at,
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting variant {variant_id} for experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error getting experiment variant"
+        logger.error(
+            f"Error getting variant {variant_id} for experiment {experiment_id}: {e}"
         )
+        raise HTTPException(status_code=500, detail="Error getting experiment variant")
 
 
-@router.put("/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse)
+@router.put(
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
+)
 async def update_experiment_variant(
     experiment_id: str,
     variant_id: str,
     variant: ExperimentVariantUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Update a variant in an A/B testing experiment."""
     logger.info(f"Updating variant {variant_id} for experiment {experiment_id}")
@@ -507,7 +488,9 @@ async def update_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         updated_variant = await crud.update_experiment_variant(
             db,
@@ -515,7 +498,7 @@ async def update_experiment_variant(
             name=variant.name,
             description=variant.description,
             is_control=variant.is_control,
-            strategy_config=variant.strategy_config
+            strategy_config=variant.strategy_config,
         )
 
         return ExperimentVariantResponse(
@@ -526,23 +509,20 @@ async def update_experiment_variant(
             is_control=updated_variant.is_control,
             strategy_config=updated_variant.strategy_config,
             created_at=updated_variant.created_at,
-            updated_at=updated_variant.updated_at
+            updated_at=updated_variant.updated_at,
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating variant {variant_id} for experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error updating experiment variant"
+        logger.error(
+            f"Error updating variant {variant_id} for experiment {experiment_id}: {e}"
         )
+        raise HTTPException(status_code=500, detail="Error updating experiment variant")
 
 
 @router.delete("/experiments/{experiment_id}/variants/{variant_id}")
 async def delete_experiment_variant(
-    experiment_id: str,
-    variant_id: str,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, variant_id: str, db: AsyncSession = Depends(get_db)
 ):
     """Delete a variant from an A/B testing experiment."""
     logger.info(f"Deleting variant {variant_id} from experiment {experiment_id}")
@@ -565,7 +545,9 @@ async def delete_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         await crud.delete_experiment_variant(db, variant_uuid)
 
@@ -573,17 +555,15 @@ async def delete_experiment_variant(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting variant {variant_id} from experiment {experiment_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error deleting experiment variant"
+        logger.error(
+            f"Error deleting variant {variant_id} from experiment {experiment_id}: {e}"
         )
+        raise HTTPException(status_code=500, detail="Error deleting experiment variant")
 
 
 @router.post("/experiment_results", response_model=ExperimentResultResponse)
 async def create_experiment_result(
-    result: ExperimentResultCreate,
-    db: AsyncSession = Depends(get_db)
+    result: ExperimentResultCreate, db: AsyncSession = Depends(get_db)
 ):
     """Record results from an A/B testing experiment."""
     logger.info(f"Recording experiment result for variant {result.variant_id}")
@@ -595,11 +575,19 @@ async def create_experiment_result(
         raise HTTPException(status_code=400, detail="Invalid ID format")
 
     # Validate KPI values
-    if result.kpi_quality is not None and (result.kpi_quality < 0 or result.kpi_quality > 100):
-        raise HTTPException(status_code=400, detail="kpi_quality must be between 0 and 100")
+    if result.kpi_quality is not None and (
+        result.kpi_quality < 0 or result.kpi_quality > 100
+    ):
+        raise HTTPException(
+            status_code=400, detail="kpi_quality must be between 0 and 100"
+        )
 
-    if result.user_feedback_score is not None and (result.user_feedback_score < 1 or result.user_feedback_score > 5):
-        raise HTTPException(status_code=400, detail="user_feedback_score must be between 1 and 5")
+    if result.user_feedback_score is not None and (
+        result.user_feedback_score < 1 or result.user_feedback_score > 5
+    ):
+        raise HTTPException(
+            status_code=400, detail="user_feedback_score must be between 1 and 5"
+        )
 
     try:
         # Check if variant exists
@@ -616,7 +604,7 @@ async def create_experiment_result(
             kpi_cost=result.kpi_cost,
             user_feedback_score=result.user_feedback_score,
             user_feedback_text=result.user_feedback_text,
-            metadata=result.metadata
+            metadata=result.metadata,
         )
 
         return ExperimentResultResponse(
@@ -629,16 +617,13 @@ async def create_experiment_result(
             user_feedback_score=db_result.user_feedback_score,
             user_feedback_text=db_result.user_feedback_text,
             metadata=db_result.metadata,
-            created_at=db_result.created_at
+            created_at=db_result.created_at,
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error recording experiment result: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error recording experiment result"
-        )
+        raise HTTPException(status_code=500, detail="Error recording experiment result")
 
 
 @router.get("/experiment_results", response_model=List[ExperimentResultResponse])
@@ -647,10 +632,12 @@ async def list_experiment_results(
     session_id: Optional[str] = Query(None, description="Filter by session ID"),
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """List experiment results."""
-    logger.info(f"Listing experiment results: variant_id={variant_id}, session_id={session_id}, skip={skip}, limit={limit}")
+    logger.info(
+        f"Listing experiment results: variant_id={variant_id}, session_id={session_id}, skip={skip}, limit={limit}"
+    )
 
     # Validate parameters
     if skip < 0:
@@ -666,11 +653,7 @@ async def list_experiment_results(
 
     try:
         results = await crud.list_experiment_results(
-            db,
-            variant_id=variant_uuid,
-            session_id=session_uuid,
-            skip=skip,
-            limit=limit
+            db, variant_id=variant_uuid, session_id=session_uuid, skip=skip, limit=limit
         )
 
         return [
@@ -684,13 +667,10 @@ async def list_experiment_results(
                 user_feedback_score=result.user_feedback_score,
                 user_feedback_text=result.user_feedback_text,
                 metadata=result.metadata,
-                created_at=result.created_at
+                created_at=result.created_at,
             )
             for result in results
         ]
     except Exception as e:
         logger.error(f"Error listing experiment results: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error listing experiment results"
-        )
+        raise HTTPException(status_code=500, detail="Error listing experiment results")

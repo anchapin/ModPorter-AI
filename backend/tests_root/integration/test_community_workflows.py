@@ -3,7 +3,6 @@ End-to-end tests for community workflows
 Tests complete user journeys through the community curation system
 """
 import pytest
-import asyncio
 from uuid import uuid4
 from datetime import datetime, timedelta
 from httpx import AsyncClient

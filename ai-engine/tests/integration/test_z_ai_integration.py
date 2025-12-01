@@ -78,7 +78,7 @@ class TestZAIIntegration:
                 mock_llm = MagicMock()
                 mock_ollama.return_value = mock_llm
                 
-                llm = get_llm_backend()
+                get_llm_backend()
                 mock_ollama.assert_called_once()
     
     @pytest.mark.asyncio

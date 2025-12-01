@@ -21,15 +21,11 @@ except ImportError:
 engine = create_async_engine(
     settings.database_url,
     echo=os.getenv("DB_ECHO", "false").lower() == "true",
-    future=True
+    future=True,
 )
 
 # Create async session factory
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

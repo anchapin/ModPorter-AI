@@ -14,12 +14,22 @@ class ValidationReportModel(BaseModel):
     """Comprehensive validation report from AI agents."""
 
     conversion_id: str = Field(..., description="Unique conversion identifier")
-    semantic_analysis: Dict[str, Any] = Field(..., description="Semantic preservation analysis")
-    behavior_prediction: Dict[str, Any] = Field(..., description="Behavioral difference predictions")
+    semantic_analysis: Dict[str, Any] = Field(
+        ..., description="Semantic preservation analysis"
+    )
+    behavior_prediction: Dict[str, Any] = Field(
+        ..., description="Behavioral difference predictions"
+    )
     asset_integrity: Dict[str, Any] = Field(..., description="Asset validation results")
-    manifest_validation: Dict[str, Any] = Field(..., description="Manifest structure validation")
-    overall_confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence score")
-    recommendations: List[str] = Field(default_factory=list, description="Improvement recommendations")
+    manifest_validation: Dict[str, Any] = Field(
+        ..., description="Manifest structure validation"
+    )
+    overall_confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Overall confidence score"
+    )
+    recommendations: List[str] = Field(
+        default_factory=list, description="Improvement recommendations"
+    )
     raw_data: Optional[Dict[str, Any]] = Field(None, description="Raw validation data")
 
 
@@ -51,30 +61,36 @@ class ValidationAgent:
         return ValidationReportModel(
             conversion_id=conversion_id,
             semantic_analysis=self._analyze_semantic_preservation(conversion_artifacts),
-            behavior_prediction=self._predict_behavior_differences(conversion_artifacts),
+            behavior_prediction=self._predict_behavior_differences(
+                conversion_artifacts
+            ),
             asset_integrity=self._validate_asset_integrity(conversion_artifacts),
             manifest_validation=self._validate_manifest_structure(conversion_artifacts),
             overall_confidence=self._calculate_overall_confidence(),
-            recommendations=self._generate_recommendations(conversion_artifacts)
+            recommendations=self._generate_recommendations(conversion_artifacts),
         )
 
-    def _analyze_semantic_preservation(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_semantic_preservation(
+        self, artifacts: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Analyze how well the conversion preserves original semantics."""
         return {
             "intent_preserved": True,
             "confidence": 0.85,
             "findings": ["Mock semantic analysis finding"],
             "critical_issues": [],
-            "warnings": ["Some complex logic may be simplified"]
+            "warnings": ["Some complex logic may be simplified"],
         }
 
-    def _predict_behavior_differences(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
+    def _predict_behavior_differences(
+        self, artifacts: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Predict behavioral differences between Java and Bedrock versions."""
         return {
             "behavior_diff": "minimal",
             "confidence": 0.9,
             "potential_issues": ["Mock behavior prediction"],
-            "compatibility_score": 0.88
+            "compatibility_score": 0.88,
         }
 
     def _validate_asset_integrity(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,7 +99,7 @@ class ValidationAgent:
             "all_assets_valid": True,
             "corrupted_files": [],
             "asset_specific_issues": {},
-            "missing_assets": []
+            "missing_assets": [],
         }
 
     def _validate_manifest_structure(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,7 +108,7 @@ class ValidationAgent:
             "is_valid": True,
             "errors": [],
             "warnings": ["Mock manifest validation warning"],
-            "schema_compliance": True
+            "schema_compliance": True,
         }
 
     def _calculate_overall_confidence(self) -> float:

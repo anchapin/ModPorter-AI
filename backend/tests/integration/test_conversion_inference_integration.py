@@ -13,9 +13,7 @@ Priority: PRIORITY 2 - Integration Tests (IN PROGRESS)
 import pytest
 import asyncio
 import time
-from datetime import datetime
 from unittest.mock import Mock, patch, AsyncMock
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # Test configuration
 TEST_TIMEOUT = 30  # seconds
@@ -41,19 +39,16 @@ def mock_conversion_dependencies():
             "end_node": {
                 "name": "bedrock_block",
                 "platform": "bedrock",
-                "minecraft_version": "1.19.3"
+                "minecraft_version": "1.19.3",
             },
             "relationships": [{"type": "CONVERTS_TO", "confidence": 0.9}],
             "supported_features": ["textures", "behaviors"],
             "success_rate": 0.9,
-            "usage_count": 150
+            "usage_count": 150,
         }
     ]
 
-    return {
-        'node_instance': mock_node_instance,
-        'graph_response': mock_graph_response
-    }
+    return {"node_instance": mock_node_instance, "graph_response": mock_graph_response}
 
 
 class TestEndToEndConversionWorkflow:
@@ -67,37 +62,46 @@ class TestEndToEndConversionWorkflow:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.mark.asyncio
-    async def test_simple_conversion_inference(self, engine, mock_db, mock_conversion_dependencies):
+    async def test_simple_conversion_inference(
+        self, engine, mock_db, mock_conversion_dependencies
+    ):
         """Test basic conversion inference workflow"""
         deps = mock_conversion_dependencies
 
         # Mock both database CRUD and graph database
-        with patch('src.db.knowledge_graph_crud.KnowledgeNodeCRUD') as mock_crud, \
-             patch('src.db.graph_db.graph_db') as mock_graph_db:
-
+        with (
+            patch("src.db.knowledge_graph_crud.KnowledgeNodeCRUD") as mock_crud,
+            patch("src.db.graph_db.graph_db") as mock_graph_db,
+        ):
             # Mock the database search to return a found node
-            deps['node_instance'].name = "JavaBlock"
-            deps['node_instance'].neo4j_id = "java_block_123"
-            mock_crud.return_value.search_nodes = AsyncMock(return_value=[deps['node_instance']])
-            mock_graph_db.find_conversion_paths.return_value = deps['graph_response']
+            deps["node_instance"].name = "JavaBlock"
+            deps["node_instance"].neo4j_id = "java_block_123"
+            mock_crud.return_value.search_nodes = AsyncMock(
+                return_value=[deps["node_instance"]]
+            )
+            mock_graph_db.find_conversion_paths.return_value = deps["graph_response"]
 
             # Execute conversion inference using the public API
             result = await engine.infer_conversion_path(
                 java_concept="JavaBlock",
                 db=mock_db,
                 target_platform="bedrock",
-                minecraft_version="1.19.3"
+                minecraft_version="1.19.3",
             )
 
             # Verify inference result
@@ -110,7 +114,7 @@ class TestEndToEndConversionWorkflow:
     async def test_conversion_with_complex_dependencies(self, engine, mock_db):
         """Test conversion with complex dependency chains"""
         # Mock complex dependency graph
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             mock_graph_db.find_conversion_paths.return_value = [
                 {
                     "path_length": 3,
@@ -118,17 +122,25 @@ class TestEndToEndConversionWorkflow:
                     "end_node": {
                         "name": "complex_bedrock_entity",
                         "platform": "bedrock",
-                        "minecraft_version": "1.19.3"
+                        "minecraft_version": "1.19.3",
                     },
                     "nodes": [
                         {"name": "java_entity"},
                         {"name": "intermediate_component"},
-                        {"name": "complex_bedrock_entity"}
+                        {"name": "complex_bedrock_entity"},
                     ],
                     "relationships": [
-                        {"type": "CONVERTS_TO", "source": "java_entity", "target": "intermediate_component"},
-                        {"type": "ENHANCES", "source": "intermediate_component", "target": "complex_bedrock_entity"}
-                    ]
+                        {
+                            "type": "CONVERTS_TO",
+                            "source": "java_entity",
+                            "target": "intermediate_component",
+                        },
+                        {
+                            "type": "ENHANCES",
+                            "source": "intermediate_component",
+                            "target": "complex_bedrock_entity",
+                        },
+                    ],
                 }
             ]
 
@@ -139,8 +151,12 @@ class TestEndToEndConversionWorkflow:
 
             # Test inference with complex dependencies
             result = await engine._find_indirect_paths(
-                mock_db, mock_source_node, "bedrock", "1.19.3",
-                max_depth=5, min_confidence=0.7
+                mock_db,
+                mock_source_node,
+                "bedrock",
+                "1.19.3",
+                max_depth=5,
+                min_confidence=0.7,
             )
 
             # For now, just verify we get a response (may be empty due to mocking complexity)
@@ -153,30 +169,27 @@ class TestEndToEndConversionWorkflow:
     async def test_batch_conversion_processing(self, engine, mock_db):
         """Test batch conversion of multiple concepts"""
         # Mock multiple conversion paths
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             mock_graph_db.find_conversion_paths.return_value = [
                 {
                     "path_length": 1,
                     "confidence": 0.9,
                     "end_node": {"name": "bedrock_block_1", "platform": "bedrock"},
-                    "relationships": [{"type": "CONVERTS_TO"}]
+                    "relationships": [{"type": "CONVERTS_TO"}],
                 },
                 {
                     "path_length": 2,
                     "confidence": 0.75,
                     "end_node": {"name": "bedrock_entity_1", "platform": "bedrock"},
-                    "nodes": [
-                        {"name": "java_entity_1"},
-                        {"name": "bedrock_entity_1"}
-                    ],
-                    "relationships": [{"type": "CONVERTS_TO"}]
-                }
+                    "nodes": [{"name": "java_entity_1"}, {"name": "bedrock_entity_1"}],
+                    "relationships": [{"type": "CONVERTS_TO"}],
+                },
             ]
 
             # Create mock source nodes
             concepts = [
                 {"name": "java_block_1", "type": "block"},
-                {"name": "java_entity_1", "type": "entity"}
+                {"name": "java_entity_1", "type": "entity"},
             ]
 
             dependencies = {
@@ -189,7 +202,7 @@ class TestEndToEndConversionWorkflow:
                 dependencies,
                 "bedrock",
                 "1.19.3",
-                mock_db
+                mock_db,
             )
 
             # Verify batch processing
@@ -202,16 +215,12 @@ class TestEndToEndConversionWorkflow:
                 # Block should come before entity due to dependency
                 block_found = False
                 entity_found = False
-                block_index = -1
-                entity_index = -1
 
                 for i, group in enumerate(processing_sequence):
                     if "java_block_1" in group.get("concepts", []):
                         block_found = True
-                        block_index = i
                     if "java_entity_1" in group.get("concepts", []):
                         entity_found = True
-                        entity_index = i
 
                 # Dependency order check simplified due to mocking complexity
                 if block_found and entity_found:
@@ -225,14 +234,18 @@ class TestErrorRecoveryAndFallbacks:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.fixture
@@ -244,30 +257,30 @@ class TestErrorRecoveryAndFallbacks:
     async def test_conversion_path_fallback(self, engine, mock_db):
         """Test fallback to alternative conversion paths"""
         # Mock graph database with multiple paths of varying quality
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             # First call returns low-quality paths
             mock_graph_db.find_conversion_paths.side_effect = [
                 [],  # No direct paths found
-                [   # Return indirect paths as fallback
+                [  # Return indirect paths as fallback
                     {
                         "path_length": 2,
                         "confidence": 0.6,  # Lower confidence but acceptable
                         "end_node": {
                             "name": "fallback_entity",
                             "platform": "bedrock",
-                            "minecraft_version": "1.19.3"
+                            "minecraft_version": "1.19.3",
                         },
                         "nodes": [
                             {"name": "java_entity"},
                             {"name": "intermediate_component"},
-                            {"name": "fallback_entity"}
+                            {"name": "fallback_entity"},
                         ],
                         "relationships": [
                             {"type": "CONVERTS_TO"},
-                            {"type": "TRANSFORMS_TO"}
-                        ]
+                            {"type": "TRANSFORMS_TO"},
+                        ],
                     }
-                ]
+                ],
             ]
 
             # Create mock source node
@@ -289,30 +302,30 @@ class TestErrorRecoveryAndFallbacks:
     async def test_partial_path_fallback(self, engine, mock_db):
         """Test fallback to alternative paths when direct paths fail"""
         # Mock graph database to return different results for different calls
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             # First call for direct paths returns empty
             mock_graph_db.find_conversion_paths.side_effect = [
                 [],  # No direct paths
-                [   # Return indirect paths as fallback
+                [  # Return indirect paths as fallback
                     {
                         "path_length": 2,
                         "confidence": 0.65,
                         "end_node": {
                             "name": "bedrock_entity",
                             "platform": "bedrock",
-                            "minecraft_version": "1.19.3"
+                            "minecraft_version": "1.19.3",
                         },
                         "nodes": [
                             {"name": "java_entity"},
                             {"name": "intermediate_component"},
-                            {"name": "bedrock_entity"}
+                            {"name": "bedrock_entity"},
                         ],
                         "relationships": [
                             {"type": "CONVERTS_TO"},
-                            {"type": "TRANSFORMS_TO"}
-                        ]
+                            {"type": "TRANSFORMS_TO"},
+                        ],
                     }
-                ]
+                ],
             ]
 
             # Create mock source node
@@ -328,8 +341,12 @@ class TestErrorRecoveryAndFallbacks:
 
             # Then try indirect paths
             indirect_result = await engine._find_indirect_paths(
-                mock_db, mock_source_node, "bedrock", "1.19.3",
-                max_depth=3, min_confidence=0.6
+                mock_db,
+                mock_source_node,
+                "bedrock",
+                "1.19.3",
+                max_depth=3,
+                min_confidence=0.6,
             )
 
             # Verify fallback behavior (simplified assertions due to mocking complexity)
@@ -343,7 +360,7 @@ class TestErrorRecoveryAndFallbacks:
     async def test_network_timeout_recovery(self, engine, mock_db):
         """Test recovery from network timeouts during conversion"""
         # Mock network timeout and recovery
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             # First call times out, second call succeeds
             mock_graph_db.find_conversion_paths.side_effect = [
                 asyncio.TimeoutError("Network timeout"),
@@ -352,9 +369,9 @@ class TestErrorRecoveryAndFallbacks:
                         "path_length": 1,
                         "confidence": 0.85,
                         "end_node": {"name": "recovered_entity", "platform": "bedrock"},
-                        "relationships": [{"type": "CONVERTS_TO"}]
+                        "relationships": [{"type": "CONVERTS_TO"}],
                     }
-                ]
+                ],
             ]
 
             # Create mock source node
@@ -392,14 +409,18 @@ class TestPerformanceUnderRealisticWorkloads:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.fixture
@@ -411,13 +432,13 @@ class TestPerformanceUnderRealisticWorkloads:
     async def test_concurrent_conversion_requests(self, engine, mock_db):
         """Test handling of concurrent conversion requests"""
         # Mock graph database responses
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             mock_graph_db.find_conversion_paths.return_value = [
                 {
                     "path_length": 1,
                     "confidence": 0.85,
                     "end_node": {"name": "concurrent_entity", "platform": "bedrock"},
-                    "relationships": [{"type": "CONVERTS_TO"}]
+                    "relationships": [{"type": "CONVERTS_TO"}],
                 }
             ]
 
@@ -436,7 +457,7 @@ class TestPerformanceUnderRealisticWorkloads:
                 return {
                     "concept_id": concept_id,
                     "result": result,
-                    "processing_time": end_time - start_time
+                    "processing_time": end_time - start_time,
                 }
 
             # Run concurrent conversions
@@ -450,12 +471,16 @@ class TestPerformanceUnderRealisticWorkloads:
 
             # Verify each conversion was successful (simplified due to mocking)
             for result in results:
-                assert isinstance(result["result"], list)  # Just verify structure, not content
+                assert isinstance(
+                    result["result"], list
+                )  # Just verify structure, not content
                 assert result["processing_time"] < TEST_TIMEOUT
 
             # Verify concurrent processing was efficient
             total_time = end_time - start_time
-            avg_individual_time = sum(r["processing_time"] for r in results) / len(results)
+            avg_individual_time = sum(r["processing_time"] for r in results) / len(
+                results
+            )
 
             # Basic performance check - just verify timing data was collected
             assert total_time > 0
@@ -468,7 +493,7 @@ class TestPerformanceUnderRealisticWorkloads:
         # In a real scenario, you would monitor actual memory usage
 
         # Mock conversion paths for different batch sizes
-        with patch('src.db.graph_db.graph_db') as mock_graph_db:
+        with patch("src.db.graph_db.graph_db") as mock_graph_db:
             batch_sizes = [5, 10, 20]  # Different batch sizes
             processing_times = []
 
@@ -478,8 +503,11 @@ class TestPerformanceUnderRealisticWorkloads:
                     {
                         "path_length": 1,
                         "confidence": 0.85,
-                        "end_node": {"name": f"entity_{batch_size}", "platform": "bedrock"},
-                        "relationships": [{"type": "CONVERTS_TO"}]
+                        "end_node": {
+                            "name": f"entity_{batch_size}",
+                            "platform": "bedrock",
+                        },
+                        "relationships": [{"type": "CONVERTS_TO"}],
                     }
                 ]
 
@@ -505,13 +533,15 @@ class TestPerformanceUnderRealisticWorkloads:
                     ratio = processing_times[-1] / processing_times[-2]
                     new_concepts_ratio = batch_sizes[-1] / batch_sizes[-2]
                     # Allow huge overhead for CI environments (up to 25x to account for extreme variance)
-                    assert ratio < new_concepts_ratio * 25.0  # Allow 2400% overhead for CI variance
+                    assert (
+                        ratio < new_concepts_ratio * 25.0
+                    )  # Allow 2400% overhead for CI variance
 
     @pytest.mark.asyncio
     async def test_database_connection_pooling(self, engine, mock_db):
         """Test database connection pooling under load"""
         # Mock database with connection pool behavior
-        with patch('src.db.knowledge_graph_crud.KnowledgeNodeCRUD') as mock_crud:
+        with patch("src.db.knowledge_graph_crud.KnowledgeNodeCRUD") as mock_crud:
             mock_node = Mock()
             mock_node.neo4j_id = "test_node"
             mock_node.name = "TestNode"
@@ -532,7 +562,7 @@ class TestPerformanceUnderRealisticWorkloads:
                 return {
                     "concept_id": concept_id,
                     "result": result,
-                    "processing_time": end_time - start_time
+                    "processing_time": end_time - start_time,
                 }
 
             # Run concurrent DB calls

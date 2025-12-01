@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 # Import and apply our custom mocks
 from .redis_mock import apply_redis_mock
 
+
 def apply_all_mocks():
     """Apply all necessary mocks for testing."""
     # Apply Redis mock to prevent connection errors
@@ -37,8 +38,8 @@ def mock_pgvector():
     mock_pgvector.sqlalchemy.VECTOR = MagicMock()
 
     # Add to sys.modules
-    sys.modules['pgvector'] = mock_pgvector
-    sys.modules['pgvector.sqlalchemy'] = mock_pgvector.sqlalchemy
+    sys.modules["pgvector"] = mock_pgvector
+    sys.modules["pgvector.sqlalchemy"] = mock_pgvector.sqlalchemy
 
 
 def mock_magic():
@@ -53,11 +54,15 @@ def mock_magic():
 
     # Mock file type detection
     mock_magic.open = lambda *args, **kwargs: mock_open
-    mock_magic.from_buffer = lambda buffer, mime=False: 'application/octet-stream' if mime else 'data'
-    mock_magic.from_file = lambda filename, mime=False: 'application/octet-stream' if mime else 'data'
+    mock_magic.from_buffer = (
+        lambda buffer, mime=False: "application/octet-stream" if mime else "data"
+    )
+    mock_magic.from_file = (
+        lambda filename, mime=False: "application/octet-stream" if mime else "data"
+    )
 
     # Add to sys.modules
-    sys.modules['magic'] = mock_magic
+    sys.modules["magic"] = mock_magic
 
 
 def setup_test_environment():
@@ -69,6 +74,7 @@ def setup_test_environment():
 
     # Configure logging for tests
     import logging
+
     logging.getLogger().setLevel(logging.INFO)
 
     # Ensure test environment is set

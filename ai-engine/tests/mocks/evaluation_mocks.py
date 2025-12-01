@@ -8,7 +8,7 @@ This module provides mocks for:
 import sys
 from unittest.mock import MagicMock, Mock
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass
 
 # Mock evaluation.rag_evaluator

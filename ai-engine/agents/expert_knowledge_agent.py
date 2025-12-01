@@ -8,14 +8,13 @@ about Java and Bedrock modding concepts for the knowledge graph system.
 import asyncio
 import json
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 import datetime as dt
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from tools.search_tool import SearchTool
 from utils.llm_utils import LLMUtils
-from .knowledge_base_agent import KnowledgeBaseAgent
 
 
 class ExpertKnowledgeValidator(BaseModel):

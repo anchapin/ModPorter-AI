@@ -8,19 +8,23 @@ from models import addon_models as pydantic_addon_models
 # Placeholder for actual user ID retrieval logic
 DEFAULT_USER_ID = "conversion_system_user"
 
+
 def parse_json_file(file_path: str) -> Optional[Dict[str, Any]]:
     """Safely parses a JSON file."""
     if not os.path.exists(file_path):
         # print(f"Warning: JSON file not found: {file_path}")
         return None
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             return json.load(f)
     except json.JSONDecodeError:
         # print(f"Warning: Could not decode JSON from {file_path}")
         return None
 
-def find_pack_folder(pack_root_path: str, pack_type_suffix: str = "BP") -> Optional[str]:
+
+def find_pack_folder(
+    pack_root_path: str, pack_type_suffix: str = "BP"
+) -> Optional[str]:
     """Finds a behavior or resource pack folder by common naming conventions."""
     for item in os.listdir(pack_root_path):
         item_path = os.path.join(pack_root_path, item)
@@ -30,16 +34,16 @@ def find_pack_folder(pack_root_path: str, pack_type_suffix: str = "BP") -> Optio
                 return item_path
     # Fallback: check if root itself is the pack folder (e.g. if only one pack type provided)
     if os.path.exists(os.path.join(pack_root_path, "manifest.json")):
-         # crude check, might need more specific manifest parsing to confirm type
+        # crude check, might need more specific manifest parsing to confirm type
         return pack_root_path
     return None
 
 
 def transform_pack_to_addon_data(
-    pack_root_path: str, # Path to the directory containing RP and BP folders
+    pack_root_path: str,  # Path to the directory containing RP and BP folders
     addon_name_fallback: str,
-    addon_id_override: uuid.UUID, # The ID for the addon (job_id)
-    user_id: Optional[str] = None
+    addon_id_override: uuid.UUID,  # The ID for the addon (job_id)
+    user_id: Optional[str] = None,
 ) -> tuple[pydantic_addon_models.AddonDataUpload, List[Dict[str, str]]]:
     """
     Parses a converted addon pack directory (containing RP & BP)
@@ -58,18 +62,32 @@ def transform_pack_to_addon_data(
     if bp_path:
         bp_manifest = parse_json_file(os.path.join(bp_path, "manifest.json"))
         if bp_manifest and isinstance(bp_manifest.get("header"), dict):
-            addon_name = bp_manifest["header"].get("name", addon_name).replace(" Behavior Pack", "").replace(" BP", "")
-            addon_description = bp_manifest["header"].get("description", addon_description)
-    elif rp_path: # Or from RP manifest
+            addon_name = (
+                bp_manifest["header"]
+                .get("name", addon_name)
+                .replace(" Behavior Pack", "")
+                .replace(" BP", "")
+            )
+            addon_description = bp_manifest["header"].get(
+                "description", addon_description
+            )
+    elif rp_path:  # Or from RP manifest
         rp_manifest = parse_json_file(os.path.join(rp_path, "manifest.json"))
         if rp_manifest and isinstance(rp_manifest.get("header"), dict):
-            addon_name = rp_manifest["header"].get("name", addon_name).replace(" Resource Pack", "").replace(" RP", "")
-            addon_description = rp_manifest["header"].get("description", addon_description)
+            addon_name = (
+                rp_manifest["header"]
+                .get("name", addon_name)
+                .replace(" Resource Pack", "")
+                .replace(" RP", "")
+            )
+            addon_description = rp_manifest["header"].get(
+                "description", addon_description
+            )
 
     blocks: List[pydantic_addon_models.AddonBlockCreate] = []
     # assets list (old) removed here
     recipes: List[pydantic_addon_models.AddonRecipeCreate] = []
-    identified_assets_info: List[Dict[str, str]] = [] # New list for asset details
+    identified_assets_info: List[Dict[str, str]] = []  # New list for asset details
 
     # 1. Parse Behavior Pack (Blocks, Recipes)
     if bp_path:
@@ -80,26 +98,36 @@ def transform_pack_to_addon_data(
                 if block_file_name.endswith(".json"):
                     block_json_path = os.path.join(bp_blocks_path, block_file_name)
                     block_data_bp = parse_json_file(block_json_path)
-                    if block_data_bp and isinstance(block_data_bp.get("minecraft:block"), dict):
-                        description = block_data_bp["minecraft:block"].get("description", {})
+                    if block_data_bp and isinstance(
+                        block_data_bp.get("minecraft:block"), dict
+                    ):
+                        description = block_data_bp["minecraft:block"].get(
+                            "description", {}
+                        )
                         identifier = description.get("identifier")
                         if not identifier:
-                            continue # Skip block if no identifier
+                            continue  # Skip block if no identifier
 
                         # For AddonBlock.properties, we might store non-component description fields
                         # or specific custom properties derived from the Bedrock JSON.
                         # For AddonBehavior.data, we store the components.
-                        properties_for_db = {} # Example: could store 'is_experimental'
+                        properties_for_db = {}  # Example: could store 'is_experimental'
                         if description.get("is_experimental"):
                             properties_for_db["is_experimental"] = True
 
                         # Simplistic: store all components as behavior data
-                        behavior_data_for_db = block_data_bp["minecraft:block"].get("components", {})
+                        behavior_data_for_db = block_data_bp["minecraft:block"].get(
+                            "components", {}
+                        )
 
                         block_create = pydantic_addon_models.AddonBlockCreate(
                             identifier=identifier,
                             properties=properties_for_db,
-                            behavior=pydantic_addon_models.AddonBehaviorCreate(data=behavior_data_for_db) if behavior_data_for_db else None
+                            behavior=pydantic_addon_models.AddonBehaviorCreate(
+                                data=behavior_data_for_db
+                            )
+                            if behavior_data_for_db
+                            else None,
                         )
                         blocks.append(block_create)
 
@@ -111,7 +139,9 @@ def transform_pack_to_addon_data(
                     recipe_json_path = os.path.join(bp_recipes_path, recipe_file_name)
                     recipe_data = parse_json_file(recipe_json_path)
                     if recipe_data:
-                        recipes.append(pydantic_addon_models.AddonRecipeCreate(data=recipe_data))
+                        recipes.append(
+                            pydantic_addon_models.AddonRecipeCreate(data=recipe_data)
+                        )
 
     # 2. Parse Resource Pack (Assets, client-side block definitions)
     if rp_path:
@@ -133,15 +163,17 @@ def transform_pack_to_addon_data(
                         # The path for AddonAssetCreate will be like "{asset_uuid}_{original_filename}"
 
                         original_filename_for_db = file_name
-                        asset_type_for_db = "texture" # Default, can be refined
+                        asset_type_for_db = "texture"  # Default, can be refined
 
                         # Determine subfolder (e.g., "blocks", "items") for semantic path
-                        relative_to_textures_dir = os.path.relpath(asset_file_source_path, rp_textures_path)
+                        relative_to_textures_dir = os.path.relpath(
+                            asset_file_source_path, rp_textures_path
+                        )
                         # e.g. blocks/my_texture.png -> type "texture_block"
                         if "block" in relative_to_textures_dir.lower():
-                             asset_type_for_db = "texture_block"
+                            asset_type_for_db = "texture_block"
                         elif "item" in relative_to_textures_dir.lower():
-                             asset_type_for_db = "texture_item"
+                            asset_type_for_db = "texture_item"
 
                         # This is a placeholder for the actual asset registration
                         # In a real scenario, the file from asset_file_source_path would be copied to
@@ -154,11 +186,13 @@ def transform_pack_to_addon_data(
                         # conceptual_path_in_rp = os.path.join("textures", relative_to_textures_dir).replace("\\\\", "/")
 
                         # Asset information to be returned for later processing
-                        identified_assets_info.append({
-                            "type": asset_type_for_db,
-                            "original_filename": original_filename_for_db,
-                            "source_tmp_path": asset_file_source_path # Full path to the asset in the temp pack
-                        })
+                        identified_assets_info.append(
+                            {
+                                "type": asset_type_for_db,
+                                "original_filename": original_filename_for_db,
+                                "source_tmp_path": asset_file_source_path,  # Full path to the asset in the temp pack
+                            }
+                        )
 
         # Client-side block definitions (blocks.json) could be processed here if needed.
 
@@ -168,11 +202,12 @@ def transform_pack_to_addon_data(
         description=addon_description,
         user_id=actual_user_id,
         blocks=blocks,
-        assets=[], # Assets are handled separately now
-        recipes=recipes
+        assets=[],  # Assets are handled separately now
+        recipes=recipes,
     )
 
-    return addon_data_upload, identified_assets_info # Return both objects
+    return addon_data_upload, identified_assets_info  # Return both objects
+
 
 # Note: Asset file copying logic is explicitly NOT in this parser.
 # The parser identifies assets and their source paths.

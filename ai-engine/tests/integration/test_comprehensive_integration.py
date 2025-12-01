@@ -16,6 +16,7 @@ project_root = ai_engine_root.parent
 sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
 
+# ruff: noqa: E402
 from cli.main import convert_mod
 from tests.fixtures.test_jar_generator import create_test_mod_suite
 

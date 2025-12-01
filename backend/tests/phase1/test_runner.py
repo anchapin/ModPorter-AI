@@ -2,12 +2,13 @@
 Simple test runner for Phase 1 tests.
 This script runs all Phase 1 tests and provides a summary of results.
 """
+
 import os
 import sys
 import subprocess
-import time
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
+
 
 def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
     """
@@ -31,20 +32,23 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
     if not test_file.exists():
         print(f"Error: Test file not found at {test_file}")
         print(f"Current directory: {os.getcwd()}")
-        print(f"Available files in tests/phase1/services:")
+        print("Available files in tests/phase1/services:")
         # Use glob instead of iterdir for better Windows compatibility
         import glob
-        files = glob.glob(f"tests/phase1/services/*.py")
+
+        files = glob.glob("tests/phase1/services/*.py")
         for file in files:
             print(f"  - {Path(file).name}")
         return {"success": False, "error": "Test file not found"}
 
     # Build pytest command
     cmd = [
-        sys.executable, "-m", "pytest",
+        sys.executable,
+        "-m",
+        "pytest",
         f"tests/phase1/services/{module}.py",
         "--tb=short",
-        "-q"  # Quiet output for cleaner summary
+        "-q",  # Quiet output for cleaner summary
     ]
 
     if verbose:
@@ -56,7 +60,7 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
             cmd,
             capture_output=True,
             text=True,
-            timeout=300  # 5-minute timeout
+            timeout=300,  # 5-minute timeout
         )
 
         # Parse output for test statistics
@@ -79,8 +83,8 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
             for i, part in enumerate(parts):
                 if part.isdigit() and i < len(parts) - 1:
                     tests_run = int(part)
-                elif part in ["failed", "error"] and i > 0 and parts[i-1].isdigit():
-                    failures = int(parts[i-1])
+                elif part in ["failed", "error"] and i > 0 and parts[i - 1].isdigit():
+                    failures = int(parts[i - 1])
 
         success = result.returncode == 0 and failures == 0
 
@@ -91,7 +95,7 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
             "errors": errors,
             "stdout": result.stdout,
             "stderr": result.stderr,
-            "cmd": " ".join(cmd)
+            "cmd": " ".join(cmd),
         }
     except subprocess.TimeoutExpired:
         print(f"Tests for {module} timed out")
@@ -102,7 +106,7 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
             "errors": 1,
             "stdout": "",
             "stderr": "Test execution timed out",
-            "cmd": " ".join(cmd)
+            "cmd": " ".join(cmd),
         }
     except Exception as e:
         print(f"Error running tests for {module}: {e}")
@@ -113,16 +117,21 @@ def run_tests(module: str, verbose: bool = False) -> Dict[str, Any]:
             "errors": 1,
             "stdout": "",
             "stderr": str(e),
-            "cmd": " ".join(cmd)
+            "cmd": " ".join(cmd),
         }
+
 
 def main():
     """Main function to run tests."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run Phase 1 tests for ModPorter-AI backend")
+    parser = argparse.ArgumentParser(
+        description="Run Phase 1 tests for ModPorter-AI backend"
+    )
     parser.add_argument("--module", type=str, help="Run a specific test module")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
+    )
 
     args = parser.parse_args()
 
@@ -133,14 +142,16 @@ def main():
         "test_knowledge_graph_crud",
         "test_version_compatibility",
         "test_batch_processing",
-        "test_cache"
+        "test_cache",
     ]
 
     if args.module and args.module in test_modules:
         # Run a specific module
         result = run_tests(args.module, args.verbose)
         status = "✅ PASSED" if result["success"] else "❌ FAILED"
-        print(f"\n{args.module}: {status} ({result['tests_run']} tests, {result['failures']} failures)")
+        print(
+            f"\n{args.module}: {status} ({result['tests_run']} tests, {result['failures']} failures)"
+        )
 
         if not result["success"] and result["stderr"]:
             print(f"STDERR: {result['stderr']}")
@@ -164,7 +175,9 @@ def main():
         total_failures += result["failures"] + result["errors"]
 
         status = "✅ PASSED" if result["success"] else "❌ FAILED"
-        print(f"{module}: {status} ({result['tests_run']} tests, {result['failures']} failures)")
+        print(
+            f"{module}: {status} ({result['tests_run']} tests, {result['failures']} failures)"
+        )
 
     # Print summary
     total_passed = total_tests - total_failures
@@ -188,6 +201,7 @@ def main():
     print("=" * 60)
 
     sys.exit(0 if overall_success else 1)
+
 
 if __name__ == "__main__":
     main()

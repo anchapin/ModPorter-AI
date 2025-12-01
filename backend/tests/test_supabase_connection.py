@@ -6,20 +6,22 @@ from sqlalchemy.sql import text
 # Import settings for checking database configuration
 from src.config import settings
 
+
 def should_skip_supabase_test():
     """Check if we should skip the Supabase integration test."""
     db_url = settings.database_url
     # Skip if using SQLite (test environment) or placeholder credentials
     return (
-        os.getenv("TESTING") == "true" or
-        db_url.startswith("sqlite") or
-        "supabase_project_id" in db_url or
-        "localhost" in db_url
+        os.getenv("TESTING") == "true"
+        or db_url.startswith("sqlite")
+        or "supabase_project_id" in db_url
+        or "localhost" in db_url
     )
+
 
 @pytest.mark.skipif(
     should_skip_supabase_test(),
-    reason="Skipping Supabase connection test - requires real Supabase credentials"
+    reason="Skipping Supabase connection test - requires real Supabase credentials",
 )
 @pytest.mark.asyncio
 async def test_supabase_connection():
@@ -42,6 +44,7 @@ async def test_supabase_connection():
         pytest.fail(f"Failed to connect to Supabase or execute query: {e}")
     finally:
         await engine.dispose()
+
 
 @pytest.mark.asyncio
 async def test_database_connection_logic():

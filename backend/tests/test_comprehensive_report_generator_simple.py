@@ -5,10 +5,8 @@ Focus on basic functionality to increase coverage from 0%
 
 import pytest
 import json
-from unittest.mock import Mock, patch
 import sys
 import os
-from typing import Dict, List, Any
 
 # Set up path imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,16 +37,16 @@ class TestConversionReportGeneratorSimple:
             "quick_statistics": {
                 "blocks_converted": 50,
                 "entities_converted": 25,
-                "items_converted": 10
+                "items_converted": 10,
             },
             "total_files_processed": 25,
-            "output_size_mb": 2.5
+            "output_size_mb": 2.5,
         }
 
     def test_initialization(self, generator):
         """Test ConversionReportGenerator initialization."""
         assert generator.version == "2.0.0"
-        assert hasattr(generator, 'start_time')
+        assert hasattr(generator, "start_time")
         assert isinstance(generator.start_time, float)
 
     def test_generate_summary_report_basic(self, generator, mock_conversion_result):
@@ -56,16 +54,16 @@ class TestConversionReportGeneratorSimple:
         result = generator.generate_summary_report(mock_conversion_result)
 
         # Check that result has expected attributes
-        assert hasattr(result, 'overall_success_rate')
-        assert hasattr(result, 'total_features')
-        assert hasattr(result, 'converted_features')
-        assert hasattr(result, 'partially_converted_features')
-        assert hasattr(result, 'failed_features')
-        assert hasattr(result, 'assumptions_applied_count')
-        assert hasattr(result, 'processing_time_seconds')
-        assert hasattr(result, 'download_url')
-        assert hasattr(result, 'total_files_processed')
-        assert hasattr(result, 'output_size_mb')
+        assert hasattr(result, "overall_success_rate")
+        assert hasattr(result, "total_features")
+        assert hasattr(result, "converted_features")
+        assert hasattr(result, "partially_converted_features")
+        assert hasattr(result, "failed_features")
+        assert hasattr(result, "assumptions_applied_count")
+        assert hasattr(result, "processing_time_seconds")
+        assert hasattr(result, "download_url")
+        assert hasattr(result, "total_files_processed")
+        assert hasattr(result, "output_size_mb")
 
         # Check that values are reasonable
         assert 0 <= result.overall_success_rate <= 100
@@ -106,7 +104,7 @@ class TestConversionReportGeneratorSimple:
                 "converted_type": "block",
                 "status": "converted",
                 "compatibility": 0.9,
-                "notes": "Direct mapping available"
+                "notes": "Direct mapping available",
             },
             {
                 "feature_name": "zombie_entity",
@@ -114,7 +112,7 @@ class TestConversionReportGeneratorSimple:
                 "converted_type": "entity",
                 "status": "partially_converted",
                 "compatibility": 0.7,
-                "notes": "AI behavior differences"
+                "notes": "AI behavior differences",
             },
             {
                 "feature_name": "custom_item",
@@ -122,15 +120,15 @@ class TestConversionReportGeneratorSimple:
                 "converted_type": None,
                 "status": "failed",
                 "compatibility": 0.0,
-                "notes": "No equivalent in Bedrock"
-            }
+                "notes": "No equivalent in Bedrock",
+            },
         ]
 
         result = generator.generate_feature_analysis(features_data)
 
         # Check that result has expected attributes
-        assert hasattr(result, 'features')
-        assert hasattr(result, 'compatibility_mapping_summary')
+        assert hasattr(result, "features")
+        assert hasattr(result, "compatibility_mapping_summary")
 
         # Check feature items
         feature_items = result.features
@@ -142,7 +140,7 @@ class TestConversionReportGeneratorSimple:
         assert grass_block.original_type == "block"
         assert grass_block.converted_type == "block"
         assert grass_block.status == "converted"
-        assert hasattr(grass_block, 'compatibility_score')
+        assert hasattr(grass_block, "compatibility_score")
 
     def test_generate_feature_analysis_empty_list(self, generator):
         """Test feature analysis with empty features list."""
@@ -151,18 +149,15 @@ class TestConversionReportGeneratorSimple:
         result = generator.generate_feature_analysis(empty_features)
 
         # Check that result has expected attributes
-        assert hasattr(result, 'features')
-        assert hasattr(result, 'compatibility_mapping_summary')
+        assert hasattr(result, "features")
+        assert hasattr(result, "compatibility_mapping_summary")
 
         # Check default values
         assert len(result.features) == 0
 
     def test_calculate_compatibility_score_converted(self, generator):
         """Test compatibility score calculation for converted feature."""
-        feature_data = {
-            "status": "converted",
-            "compatibility": 0.9
-        }
+        feature_data = {"status": "converted", "compatibility": 0.9}
 
         score = generator._calculate_compatibility_score(feature_data)
 
@@ -170,10 +165,7 @@ class TestConversionReportGeneratorSimple:
 
     def test_calculate_compatibility_score_partially_converted(self, generator):
         """Test compatibility score calculation for partially converted feature."""
-        feature_data = {
-            "status": "partially_converted",
-            "compatibility": 0.7
-        }
+        feature_data = {"status": "partially_converted", "compatibility": 0.7}
 
         score = generator._calculate_compatibility_score(feature_data)
 
@@ -181,10 +173,7 @@ class TestConversionReportGeneratorSimple:
 
     def test_calculate_compatibility_score_failed(self, generator):
         """Test compatibility score calculation for failed feature."""
-        feature_data = {
-            "status": "failed",
-            "compatibility": 0.0
-        }
+        feature_data = {"status": "failed", "compatibility": 0.0}
 
         score = generator._calculate_compatibility_score(feature_data)
 
@@ -207,7 +196,7 @@ class TestConversionReportGeneratorSimple:
                 "original_type": "block",
                 "converted_type": "block",
                 "status": "converted",
-                "compatibility": 0.9
+                "compatibility": 0.9,
             }
         ]
 
@@ -232,15 +221,15 @@ class TestConversionReportGeneratorSimple:
                 "original_type": "block",
                 "converted_type": "block",
                 "status": "converted",
-                "compatibility": 0.9
+                "compatibility": 0.9,
             },
             {
                 "feature_name": "zombie_entity",
                 "original_type": "entity",
                 "converted_type": "entity",
                 "status": "partially_converted",
-                "compatibility": 0.7
-            }
+                "compatibility": 0.7,
+            },
         ]
 
         # Generate feature analysis first
@@ -250,7 +239,7 @@ class TestConversionReportGeneratorSimple:
         csv_result = generator.export_feature_analysis_csv(feature_analysis)
 
         # Check CSV structure
-        lines = csv_result.strip().split('\n')
+        lines = csv_result.strip().split("\n")
         assert len(lines) >= 2  # Header + at least one feature
 
         # Check header

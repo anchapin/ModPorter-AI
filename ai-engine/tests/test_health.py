@@ -1,5 +1,4 @@
 """Basic health check test for AI engine."""
-import pytest
 from fastapi.testclient import TestClient
 
 

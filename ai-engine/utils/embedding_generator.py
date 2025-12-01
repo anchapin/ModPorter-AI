@@ -2,6 +2,7 @@ import logging
 from typing import List, Union
 import os
 import numpy as np # Add if numpy is used for embeddings
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,7 @@ except ImportError:
     OPENAI_AVAILABLE = False
     logger.warning("openai library not found. OpenAI models will be unavailable unless using direct HTTP call.")
 
-# httpx is assumed to be available as per project structure, otherwise add try-except
-import httpx
+# httpx is now imported at the top of the file
 
 class EmbeddingGenerator:
     def __init__(self, model_name: str = None):
@@ -63,8 +63,10 @@ class EmbeddingGenerator:
                     if hasattr(self.model, 'get_sentence_embedding_dimension'):
                         self._embedding_dimension = self.model.get_sentence_embedding_dimension()
                     # Fallback for some models, or use known dimensions
-                    elif "all-MiniLM-L6-v2" in s_model_name: self._embedding_dimension = 384
-                    elif "all-mpnet-base-v2" in s_model_name: self._embedding_dimension = 768
+                    elif "all-MiniLM-L6-v2" in s_model_name:
+                        self._embedding_dimension = 384
+                    elif "all-mpnet-base-v2" in s_model_name:
+                        self._embedding_dimension = 768
                     else:
                         logger.warning(f"Could not automatically determine embedding dimension for ST model: {s_model_name}. You may need to set it manually or update logic.")
                     logger.info(f"SentenceTransformer model embedding dimension: {self._embedding_dimension}")
@@ -80,9 +82,12 @@ class EmbeddingGenerator:
                 logger.error("RAG_EMBEDDING_MODEL is set to an OpenAI model, but OPENAI_API_KEY is not set.")
             else:
                 # Standard dimensions for OpenAI models
-                if "text-embedding-ada-002" in self.o_model_name: self._embedding_dimension = 1536
-                elif "text-embedding-3-small" in self.o_model_name: self._embedding_dimension = 1536
-                elif "text-embedding-3-large" in self.o_model_name: self._embedding_dimension = 3072
+                if "text-embedding-ada-002" in self.o_model_name:
+                    self._embedding_dimension = 1536
+                elif "text-embedding-3-small" in self.o_model_name:
+                    self._embedding_dimension = 1536
+                elif "text-embedding-3-large" in self.o_model_name:
+                    self._embedding_dimension = 3072
                 else:
                     logger.warning(f"Could not automatically determine embedding dimension for OpenAI model: {self.o_model_name}. Update `__init__` if this is a new model.")
 

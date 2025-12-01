@@ -13,12 +13,11 @@ Priority: PRIORITY 3: Performance Tests (IN PROGRESS)
 import pytest
 import asyncio
 import time
-from datetime import datetime
 from unittest.mock import Mock, patch, AsyncMock
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # Test configuration
 CONCURRENT_JOBS = 10  # Number of concurrent jobs for testing
+
 
 class TestConversionInferencePerformance:
     """Test performance aspects of conversion inference."""
@@ -31,14 +30,18 @@ class TestConversionInferencePerformance:
     @pytest.fixture
     def engine(self):
         """Create conversion inference engine with mocked dependencies"""
-        with patch.dict('sys.modules', {
-            'db': Mock(),
-            'db.models': Mock(),
-            'db.knowledge_graph_crud': Mock(),
-            'db.graph_db': Mock(),
-            'services.version_compatibility': Mock()
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "db": Mock(),
+                "db.models": Mock(),
+                "db.knowledge_graph_crud": Mock(),
+                "db.graph_db": Mock(),
+                "services.version_compatibility": Mock(),
+            },
+        ):
             from src.services.conversion_inference import ConversionInferenceEngine
+
             return ConversionInferenceEngine()
 
     @pytest.mark.asyncio
@@ -50,15 +53,19 @@ class TestConversionInferencePerformance:
                 "path_type": "direct",
                 "confidence": 0.8 + (i * 0.01),  # Varied confidence
                 "steps": [{"step": f"conversion_{i}"}],
-                "path_length": 1
+                "path_length": 1,
             }
             for i in range(CONCURRENT_JOBS)
         ]
 
         # Create concurrent tasks
         async def infer_path(job_id):
-            with patch.object(engine, '_find_concept_node', return_value=Mock()):
-                with patch.object(engine, '_find_direct_paths', return_value=[mock_direct_paths[job_id]]):
+            with patch.object(engine, "_find_concept_node", return_value=Mock()):
+                with patch.object(
+                    engine,
+                    "_find_direct_paths",
+                    return_value=[mock_direct_paths[job_id]],
+                ):
                     start_time = time.time()
                     result = await engine.infer_conversion_path(
                         f"concept_{job_id}", mock_db, "bedrock", "1.19.3"
@@ -68,7 +75,7 @@ class TestConversionInferencePerformance:
                     return {
                         "job_id": job_id,
                         "result": result,
-                        "processing_time": end_time - start_time
+                        "processing_time": end_time - start_time,
                     }
 
         # Execute tasks concurrently
@@ -87,13 +94,15 @@ class TestConversionInferencePerformance:
 
         # Verify concurrent execution efficiency
         total_time = end_time - start_time
-        avg_individual_time = sum(r["processing_time"] for r in results) / len(results)
+        sum(r["processing_time"] for r in results) / len(results)
 
         # Concurrent execution should be faster than sequential
         # Allow for overhead - concurrent may be slower due to mocking
         # Performance depends on system load and mocking overhead
         # Just verify the test completes successfully rather than strict timing
-        assert total_time > 0  # Test should take some time  # Allow significant overhead  # At least 20% faster
+        assert (
+            total_time > 0
+        )  # Test should take some time  # Allow significant overhead  # At least 20% faster
 
         # Verify performance metrics
         avg_processing_time = sum(r["processing_time"] for r in results) / len(results)
@@ -107,24 +116,27 @@ class TestConversionInferencePerformance:
         concepts = [f"concept_{i}" for i in range(large_batch_size)]
 
         # Mock helper methods
-        with patch.object(engine, '_find_concept_node', return_value=Mock()):
-            with patch.object(engine, '_build_dependency_graph', return_value={}):
-                with patch.object(engine, '_topological_sort', return_value=concepts):
-                    with patch.object(engine, '_group_by_patterns', return_value=[
-                        {
-                            "concepts": concepts[:25],
-                            "shared_patterns": ["shared_pattern_1"],
-                            "estimated_time": 5.0,
-                            "optimization_notes": ["Batch optimization applied"]
-                        },
-                        {
-                            "concepts": concepts[25:],
-                            "shared_patterns": ["shared_pattern_2"],
-                            "estimated_time": 8.0,
-                            "optimization_notes": ["Large batch processing"]
-                        }
-                    ]):
-
+        with patch.object(engine, "_find_concept_node", return_value=Mock()):
+            with patch.object(engine, "_build_dependency_graph", return_value={}):
+                with patch.object(engine, "_topological_sort", return_value=concepts):
+                    with patch.object(
+                        engine,
+                        "_group_by_patterns",
+                        return_value=[
+                            {
+                                "concepts": concepts[:25],
+                                "shared_patterns": ["shared_pattern_1"],
+                                "estimated_time": 5.0,
+                                "optimization_notes": ["Batch optimization applied"],
+                            },
+                            {
+                                "concepts": concepts[25:],
+                                "shared_patterns": ["shared_pattern_2"],
+                                "estimated_time": 8.0,
+                                "optimization_notes": ["Large batch processing"],
+                            },
+                        ],
+                    ):
                         # Test large batch optimization
                         start_time = time.time()
                         result = await engine.optimize_conversion_sequence(
@@ -139,7 +151,9 @@ class TestConversionInferencePerformance:
 
                         # Verify performance
                         processing_time = end_time - start_time
-                        assert processing_time < 2.0  # Should process quickly with mocks
+                        assert (
+                            processing_time < 2.0
+                        )  # Should process quickly with mocks
 
     @pytest.mark.asyncio
     async def test_memory_usage_optimization(self, engine, mock_db):
@@ -148,14 +162,21 @@ class TestConversionInferencePerformance:
         concepts = [f"concept_{i}" for i in range(20)]
 
         # Mock methods with different memory usage patterns
-        with patch.object(engine, '_find_concept_node', return_value=Mock()):
-            with patch.object(engine, '_identify_shared_steps', return_value=[
-                {"type": "step", "count": 10},  # High memory usage
-                {"type": "step", "count": 5}   # Lower memory usage
-            ]):
-                with patch.object(engine, '_estimate_batch_time', return_value=3.0):
-                    with patch.object(engine, '_get_batch_optimizations', return_value=["memory_optimization"]):
-
+        with patch.object(engine, "_find_concept_node", return_value=Mock()):
+            with patch.object(
+                engine,
+                "_identify_shared_steps",
+                return_value=[
+                    {"type": "step", "count": 10},  # High memory usage
+                    {"type": "step", "count": 5},  # Lower memory usage
+                ],
+            ):
+                with patch.object(engine, "_estimate_batch_time", return_value=3.0):
+                    with patch.object(
+                        engine,
+                        "_get_batch_optimizations",
+                        return_value=["memory_optimization"],
+                    ):
                         # Test optimization
                         start_time = time.time()
                         result = await engine.optimize_conversion_sequence(
@@ -175,12 +196,15 @@ class TestConversionInferencePerformance:
     @pytest.mark.asyncio
     async def test_error_handling_performance(self, engine, mock_db):
         """Test error handling performance under load"""
+
         # Create tasks with potential errors
         async def task_with_error(task_id):
-            with patch.object(engine, '_find_concept_node', return_value=Mock()):
-                with patch.object(engine, '_find_direct_paths',
-                          side_effect=Exception(f"Error for task {task_id}")):
-
+            with patch.object(engine, "_find_concept_node", return_value=Mock()):
+                with patch.object(
+                    engine,
+                    "_find_direct_paths",
+                    side_effect=Exception(f"Error for task {task_id}"),
+                ):
                     try:
                         start_time = time.time()
                         result = await engine.infer_conversion_path(
@@ -191,18 +215,20 @@ class TestConversionInferencePerformance:
                         return {
                             "task_id": task_id,
                             "result": result,
-                            "processing_time": end_time - start_time
+                            "processing_time": end_time - start_time,
                         }
                     except Exception:
                         end_time = time.time()
                         return {
                             "task_id": task_id,
                             "success": False,
-                            "processing_time": end_time - start_time
+                            "processing_time": end_time - start_time,
                         }
 
         # Create mix of successful and failing tasks
-        tasks = [task_with_error(i) if i % 3 == 0 else task_with_error(i) for i in range(9)]
+        tasks = [
+            task_with_error(i) if i % 3 == 0 else task_with_error(i) for i in range(9)
+        ]
 
         # Execute tasks concurrently
         start_time = time.time()

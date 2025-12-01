@@ -1,5 +1,5 @@
 import json
-import redis.asyncio as aioredis
+from redis.asyncio import Redis as AsyncRedis
 from src.config import settings
 from typing import Optional
 from datetime import datetime
@@ -26,7 +26,7 @@ class CacheService:
             logger.info("Redis disabled for tests")
         else:
             try:
-                self._client = aioredis.from_url(
+                self._client = AsyncRedis.from_url(
                     settings.redis_url, decode_responses=True
                 )
                 self._redis_available = True
@@ -216,7 +216,9 @@ class CacheService:
             )
         return stats
 
-    async def set_export_data(self, conversion_id: str, export_data: bytes, ttl_seconds: int = 3600) -> None:
+    async def set_export_data(
+        self, conversion_id: str, export_data: bytes, ttl_seconds: int = 3600
+    ) -> None:
         """
         Store exported behavior pack data in cache.
         """
@@ -224,11 +226,9 @@ class CacheService:
             return
         try:
             # Store binary data as base64 string
-            encoded_data = base64.b64encode(export_data).decode('utf-8')
+            encoded_data = base64.b64encode(export_data).decode("utf-8")
             await self._client.setex(
-                f"export:{conversion_id}:data",
-                ttl_seconds,
-                encoded_data
+                f"export:{conversion_id}:data", ttl_seconds, encoded_data
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for set_export_data: {e}")
@@ -243,7 +243,7 @@ class CacheService:
         try:
             encoded_data = await self._client.get(f"export:{conversion_id}:data")
             if encoded_data:
-                return base64.b64decode(encoded_data.encode('utf-8'))
+                return base64.b64decode(encoded_data.encode("utf-8"))
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_export_data: {e}")

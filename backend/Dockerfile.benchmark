@@ -1,0 +1,31 @@
+# Benchmark service Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy benchmark service code
+COPY src/services/benchmark_suite.py .
+COPY src/services/performance_monitor.py .
+COPY src/api/benchmarking.py .
+COPY src/models/ .
+COPY src/db/ .
+
+# Create benchmark service entrypoint
+COPY scripts/benchmark_service.py .
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+EXPOSE 8090
+
+CMD ["python", "benchmark_service.py"]

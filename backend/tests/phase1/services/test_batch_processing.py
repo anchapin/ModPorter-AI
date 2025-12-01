@@ -6,15 +6,18 @@ including job submission, tracking, execution, and management.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, List, Any, Optional
+from unittest.mock import AsyncMock, patch
 from datetime import datetime, timedelta
-import asyncio
 import uuid
 
 from src.services.batch_processing import (
-    BatchProcessingService, BatchJob, BatchOperationType,
-    BatchStatus, ProcessingMode, BatchProgress, BatchResult
+    BatchProcessingService,
+    BatchJob,
+    BatchOperationType,
+    BatchStatus,
+    ProcessingMode,
+    BatchProgress,
+    BatchResult,
 )
 
 
@@ -49,7 +52,7 @@ class TestBatchProcessingService:
             chunk_size=10,
             processing_mode=ProcessingMode.PARALLEL,
             parallel_workers=4,
-            parameters={"source": "test_file.json"}
+            parameters={"source": "test_file.json"},
         )
 
     @pytest.fixture
@@ -65,7 +68,7 @@ class TestBatchProcessingService:
             progress_percentage=50.0,
             estimated_remaining_seconds=120.0,
             processing_rate_items_per_second=5.0,
-            last_update=datetime.utcnow()
+            last_update=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -79,11 +82,8 @@ class TestBatchProcessingService:
             total_failed=5,
             execution_time_seconds=180.0,
             result_data={"chunks_processed": 10},
-            errors=[
-                "item_10: Invalid data format",
-                "item_25: Missing required field"
-            ],
-            metadata={"source": "test_file.json", "target": "knowledge_graph"}
+            errors=["item_10: Invalid data format", "item_25: Missing required field"],
+            metadata={"source": "test_file.json", "target": "knowledge_graph"},
         )
 
     @pytest.mark.asyncio
@@ -105,11 +105,14 @@ class TestBatchProcessingService:
             "chunk_size": 10,
             "processing_mode": ProcessingMode.PARALLEL,
             "parallel_workers": 4,
-            "parameters": {"source": "test_file.json"}
+            "parameters": {"source": "test_file.json"},
         }
 
         # Mock database operations
-        with patch('src.services.batch_processing.get_async_session', return_value=mock_db_session):
+        with patch(
+            "src.services.batch_processing.get_async_session",
+            return_value=mock_db_session,
+        ):
             # Call the method
             result = await service.submit_batch_job(job_params)
 
@@ -165,7 +168,7 @@ class TestBatchProcessingService:
         service.active_jobs[job_id] = sample_batch_job
 
         # Mock job execution
-        with patch.object(service, '_stop_job_execution', return_value=True):
+        with patch.object(service, "_stop_job_execution", return_value=True):
             # Call the method
             result = await service.cancel_job(job_id)
 
@@ -183,7 +186,9 @@ class TestBatchProcessingService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_get_job_progress(self, service, sample_batch_job, sample_batch_progress):
+    async def test_get_job_progress(
+        self, service, sample_batch_job, sample_batch_progress
+    ):
         """Test getting the progress of a batch job."""
         job_id = sample_batch_job.job_id
 
@@ -191,7 +196,9 @@ class TestBatchProcessingService:
         service.active_jobs[job_id] = sample_batch_job
 
         # Mock progress calculation
-        with patch.object(service, '_calculate_progress', return_value=sample_batch_progress):
+        with patch.object(
+            service, "_calculate_progress", return_value=sample_batch_progress
+        ):
             # Call the method
             result = await service.get_job_progress(job_id)
 
@@ -217,7 +224,7 @@ class TestBatchProcessingService:
             "total_processed": 100,
             "processed_items": 95,
             "failed_items": 5,
-            "processing_time_seconds": 180.0
+            "processing_time_seconds": 180.0,
         }
 
         # Add job to active jobs
@@ -256,14 +263,14 @@ class TestBatchProcessingService:
             job_id=str(uuid.uuid4()),
             operation_type=BatchOperationType.IMPORT_NODES,
             status=BatchStatus.RUNNING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
         job2 = BatchJob(
             job_id=str(uuid.uuid4()),
             operation_type=BatchOperationType.EXPORT_GRAPH,
             status=BatchStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
         # Add jobs to active jobs
@@ -289,7 +296,7 @@ class TestBatchProcessingService:
             operation_type=BatchOperationType.IMPORT_NODES,
             status=BatchStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=2),
-            completed_at=datetime.utcnow() - timedelta(hours=1)
+            completed_at=datetime.utcnow() - timedelta(hours=1),
         )
 
         completed_job2 = BatchJob(
@@ -297,7 +304,7 @@ class TestBatchProcessingService:
             operation_type=BatchOperationType.IMPORT_RELATIONSHIPS,
             status=BatchStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=4),
-            completed_at=datetime.utcnow() - timedelta(hours=3)
+            completed_at=datetime.utcnow() - timedelta(hours=3),
         )
 
         # Add jobs to history
@@ -327,8 +334,8 @@ class TestBatchProcessingService:
         service.active_jobs[job_id] = sample_batch_job
 
         # Mock the execution process
-        with patch.object(service, '_process_job_sequential', return_value=True):
-            with patch.object(service, '_update_job_progress') as mock_update:
+        with patch.object(service, "_process_job_sequential", return_value=True):
+            with patch.object(service, "_update_job_progress") as mock_update:
                 # Call the method
                 result = await service.execute_batch_job(job_id)
 
@@ -349,8 +356,8 @@ class TestBatchProcessingService:
         service.active_jobs[job_id] = sample_batch_job
 
         # Mock the execution process
-        with patch.object(service, '_process_job_parallel', return_value=True):
-            with patch.object(service, '_update_job_progress') as mock_update:
+        with patch.object(service, "_process_job_parallel", return_value=True):
+            with patch.object(service, "_update_job_progress") as mock_update:
                 # Call the method
                 result = await service.execute_batch_job(job_id)
 
@@ -371,8 +378,8 @@ class TestBatchProcessingService:
         service.active_jobs[job_id] = sample_batch_job
 
         # Mock the execution process
-        with patch.object(service, '_process_job_chunked', return_value=True):
-            with patch.object(service, '_update_job_progress') as mock_update:
+        with patch.object(service, "_process_job_chunked", return_value=True):
+            with patch.object(service, "_update_job_progress") as mock_update:
                 # Call the method
                 result = await service.execute_batch_job(job_id)
 
@@ -416,7 +423,7 @@ class TestBatchProcessingService:
         job_id = sample_batch_job.job_id
 
         # Mock progress calculation
-        with patch.object(service, '_calculate_progress') as mock_progress:
+        with patch.object(service, "_calculate_progress") as mock_progress:
             mock_progress.return_value = BatchProgress(
                 job_id=job_id,
                 total_processed=100,
@@ -427,7 +434,7 @@ class TestBatchProcessingService:
                 progress_percentage=50.0,
                 estimated_remaining_seconds=120.0,
                 processing_rate_items_per_second=5.0,
-                last_update=datetime.utcnow()
+                last_update=datetime.utcnow(),
             )
 
             # Call the method
@@ -444,8 +451,8 @@ class TestBatchProcessingService:
         job_id = sample_batch_job.job_id
 
         # Mock the item processing
-        with patch.object(service, '_process_item', return_value=True):
-            with patch.object(service, '_update_job_progress'):
+        with patch.object(service, "_process_item", return_value=True):
+            with patch.object(service, "_update_job_progress"):
                 # Call the method
                 result = await service._process_job_sequential(job_id)
 
@@ -458,8 +465,8 @@ class TestBatchProcessingService:
         job_id = sample_batch_job.job_id
 
         # Mock the item processing
-        with patch.object(service, '_process_item', return_value=True):
-            with patch.object(service, '_update_job_progress'):
+        with patch.object(service, "_process_item", return_value=True):
+            with patch.object(service, "_update_job_progress"):
                 # Call the method
                 result = await service._process_job_parallel(job_id)
 
@@ -472,8 +479,8 @@ class TestBatchProcessingService:
         job_id = sample_batch_job.job_id
 
         # Mock the chunk processing
-        with patch.object(service, '_process_chunk', return_value=True):
-            with patch.object(service, '_update_job_progress'):
+        with patch.object(service, "_process_chunk", return_value=True):
+            with patch.object(service, "_update_job_progress"):
                 # Call the method
                 result = await service._process_job_chunked(job_id)
 
@@ -488,11 +495,11 @@ class TestBatchProcessingService:
         # Set some failed items
         failed_items = [
             {"item_id": "item_10", "error": "Invalid data format"},
-            {"item_id": "item_25", "error": "Missing required field"}
+            {"item_id": "item_25", "error": "Missing required field"},
         ]
 
         # Mock item processing
-        with patch.object(service, '_process_item', return_value=True):
+        with patch.object(service, "_process_item", return_value=True):
             # Call the method
             result = await service.retry_failed_items(job_id, failed_items)
 
@@ -510,7 +517,7 @@ class TestBatchProcessingService:
             job_id=str(uuid.uuid4()),
             operation_type=BatchOperationType.IMPORT_NODES,
             status=BatchStatus.RUNNING,
-            created_at=datetime.utcnow() - timedelta(minutes=10)
+            created_at=datetime.utcnow() - timedelta(minutes=10),
         )
 
         completed_job = BatchJob(
@@ -521,7 +528,7 @@ class TestBatchProcessingService:
             completed_at=datetime.utcnow() - timedelta(hours=1),
             total_processed=100,
             processed_items=95,
-            failed_items=5
+            failed_items=5,
         )
 
         failed_job = BatchJob(
@@ -532,7 +539,7 @@ class TestBatchProcessingService:
             completed_at=datetime.utcnow() - timedelta(hours=2),
             total_processed=50,
             processed_items=25,
-            failed_items=25
+            failed_items=25,
         )
 
         # Add jobs to active and history
@@ -565,7 +572,7 @@ class TestBatchProcessingService:
             operation_type=BatchOperationType.IMPORT_NODES,
             status=BatchStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(days=2),
-            completed_at=datetime.utcnow() - timedelta(days=1)
+            completed_at=datetime.utcnow() - timedelta(days=1),
         )
 
         recent_completed_job = BatchJob(
@@ -573,7 +580,7 @@ class TestBatchProcessingService:
             operation_type=BatchOperationType.IMPORT_RELATIONSHIPS,
             status=BatchStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=1),
-            completed_at=datetime.utcnow() - timedelta(minutes=30)
+            completed_at=datetime.utcnow() - timedelta(minutes=30),
         )
 
         # Add jobs to history
@@ -602,7 +609,7 @@ class TestBatchProcessingService:
             "total_processed": 100,
             "processed_items": 95,
             "failed_items": 5,
-            "processing_time_seconds": 180.0
+            "processing_time_seconds": 180.0,
         }
 
         # Generate the report

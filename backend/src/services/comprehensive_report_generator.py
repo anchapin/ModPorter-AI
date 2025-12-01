@@ -16,8 +16,17 @@ import logging
 
 try:
     from src.custom_types.report_types import (
-        InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
-        AssumptionsReport, AssumptionReportItem, DeveloperLog, ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
+        InteractiveReport,
+        SummaryReport,
+        FeatureAnalysis,
+        FeatureAnalysisItem,
+        AssumptionsReport,
+        AssumptionReportItem,
+        DeveloperLog,
+        ConversionStatus,
+        ImpactLevel,
+        create_report_metadata,
+        calculate_quality_score,
     )
 except ImportError:
     # Mock imports if they fail
@@ -30,8 +39,13 @@ except ImportError:
     DeveloperLog = dict
     ConversionStatus = dict
     ImpactLevel = dict
-    def create_report_metadata(): return {}
-    def calculate_quality_score(): return 0.8
+
+    def create_report_metadata():
+        return {}
+
+    def calculate_quality_score():
+        return 0.8
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +57,9 @@ class ConversionReportGenerator:
         self.version = "2.0.0"
         self.start_time = time.time()
 
-    def generate_summary_report(self, conversion_result: Dict[str, Any]) -> SummaryReport:
+    def generate_summary_report(
+        self, conversion_result: Dict[str, Any]
+    ) -> SummaryReport:
         """Generate enhanced summary report with quality metrics."""
         # Extract basic metrics
         total_features = conversion_result.get("total_features", 0)
@@ -64,12 +80,16 @@ class ConversionReportGenerator:
             converted_features=converted_features,
             partially_converted_features=partially_converted,
             failed_features=failed_features,
-            assumptions_applied_count=conversion_result.get("assumptions_applied_count", 0),
-            processing_time_seconds=conversion_result.get("processing_time_seconds", 0.0),
+            assumptions_applied_count=conversion_result.get(
+                "assumptions_applied_count", 0
+            ),
+            processing_time_seconds=conversion_result.get(
+                "processing_time_seconds", 0.0
+            ),
             download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {}),
             total_files_processed=conversion_result.get("total_files_processed", 0),
-            output_size_mb=conversion_result.get("output_size_mb", 0.0)
+            output_size_mb=conversion_result.get("output_size_mb", 0.0),
         )
 
         # Calculate quality score
@@ -80,7 +100,9 @@ class ConversionReportGenerator:
 
         return summary
 
-    def generate_feature_analysis(self, features_data: List[Dict[str, Any]]) -> FeatureAnalysis:
+    def generate_feature_analysis(
+        self, features_data: List[Dict[str, Any]]
+    ) -> FeatureAnalysis:
         """Generate comprehensive feature analysis."""
         feature_items = []
         total_compatibility = 0.0
@@ -100,9 +122,11 @@ class ConversionReportGenerator:
                 status=feature_data.get("status", ConversionStatus.FAILED),
                 compatibility_score=compatibility_score,
                 assumptions_used=feature_data.get("assumptions_used", []),
-                impact_assessment=feature_data.get("impact_assessment", "No impact analysis available"),
+                impact_assessment=feature_data.get(
+                    "impact_assessment", "No impact analysis available"
+                ),
                 visual_comparison=feature_data.get("visual_comparison"),
-                technical_notes=feature_data.get("technical_notes")
+                technical_notes=feature_data.get("technical_notes"),
             )
 
             feature_items.append(feature_item)
@@ -119,19 +143,25 @@ class ConversionReportGenerator:
                 conversion_patterns.append(pattern)
 
         # Calculate average compatibility
-        avg_compatibility = total_compatibility / len(features_data) if features_data else 0.0
+        avg_compatibility = (
+            total_compatibility / len(features_data) if features_data else 0.0
+        )
 
         return FeatureAnalysis(
             features=feature_items,
-            compatibility_mapping_summary=self._generate_compatibility_summary(feature_items),
+            compatibility_mapping_summary=self._generate_compatibility_summary(
+                feature_items
+            ),
             visual_comparisons_overview=self._generate_visual_overview(feature_items),
             impact_assessment_summary=self._generate_impact_summary(feature_items),
             total_compatibility_score=round(avg_compatibility, 1),
             feature_categories=feature_categories,
-            conversion_patterns=conversion_patterns
+            conversion_patterns=conversion_patterns,
         )
 
-    def generate_assumptions_report(self, assumptions_data: List[Dict[str, Any]]) -> AssumptionsReport:
+    def generate_assumptions_report(
+        self, assumptions_data: List[Dict[str, Any]]
+    ) -> AssumptionsReport:
         """Generate detailed assumptions report."""
         assumption_items = []
         impact_distribution = {"low": 0, "medium": 0, "high": 0}
@@ -148,7 +178,9 @@ class ConversionReportGenerator:
                 technical_details=assumption_data.get("technical_details", ""),
                 visual_example=assumption_data.get("visual_example"),
                 confidence_score=assumption_data.get("confidence_score", 0.8),
-                alternatives_considered=assumption_data.get("alternatives_considered", [])
+                alternatives_considered=assumption_data.get(
+                    "alternatives_considered", []
+                ),
             )
 
             assumption_items.append(assumption_item)
@@ -168,7 +200,7 @@ class ConversionReportGenerator:
             assumptions=assumption_items,
             total_assumptions_count=len(assumption_items),
             impact_distribution=impact_distribution,
-            category_breakdown=category_breakdown
+            category_breakdown=category_breakdown,
         )
 
     def generate_developer_log(self, log_data: Dict[str, Any]) -> DeveloperLog:
@@ -181,10 +213,12 @@ class ConversionReportGenerator:
             error_details=log_data.get("error_details", []),
             optimization_opportunities=self._identify_optimizations(log_data),
             technical_debt_notes=self._identify_technical_debt(log_data),
-            benchmark_comparisons=log_data.get("benchmark_comparisons", {})
+            benchmark_comparisons=log_data.get("benchmark_comparisons", {}),
         )
 
-    def create_interactive_report(self, conversion_result: Dict[str, Any], job_id: str) -> InteractiveReport:
+    def create_interactive_report(
+        self, conversion_result: Dict[str, Any], job_id: str
+    ) -> InteractiveReport:
         """Create comprehensive interactive report."""
         logger.info(f"Generating comprehensive report for job {job_id}")
 
@@ -209,7 +243,7 @@ class ConversionReportGenerator:
             summary=summary,
             feature_analysis=feature_analysis,
             assumptions_report=assumptions_report,
-            developer_log=developer_log
+            developer_log=developer_log,
         )
 
         logger.info(f"Report generated successfully: {metadata.report_id}")
@@ -253,7 +287,9 @@ class ConversionReportGenerator:
         else:
             return "Other"
 
-    def _identify_conversion_pattern(self, feature_data: Dict[str, Any]) -> Optional[str]:
+    def _identify_conversion_pattern(
+        self, feature_data: Dict[str, Any]
+    ) -> Optional[str]:
         """Identify conversion pattern for a feature."""
         status = feature_data.get("status", "").lower()
         assumptions = feature_data.get("assumptions_used", [])
@@ -269,14 +305,18 @@ class ConversionReportGenerator:
         else:
             return None
 
-    def _generate_compatibility_summary(self, features: List[FeatureAnalysisItem]) -> str:
+    def _generate_compatibility_summary(
+        self, features: List[FeatureAnalysisItem]
+    ) -> str:
         """Generate compatibility mapping summary."""
         if not features:
             return "No features analyzed."
 
         total_features = len(features)
         successful = sum(1 for f in features if "success" in f.status.lower())
-        avg_compatibility = sum(f.compatibility_score for f in features) / total_features
+        avg_compatibility = (
+            sum(f.compatibility_score for f in features) / total_features
+        )
 
         return (
             f"Analyzed {total_features} features with {successful} successful conversions. "
@@ -319,17 +359,25 @@ class ConversionReportGenerator:
         if summary.overall_success_rate >= 90:
             actions.append("Excellent conversion! Ready for testing and deployment.")
         elif summary.overall_success_rate >= 70:
-            actions.append("Good conversion results. Review partial conversions for optimization.")
+            actions.append(
+                "Good conversion results. Review partial conversions for optimization."
+            )
         elif summary.overall_success_rate >= 50:
-            actions.append("Moderate success. Consider manual review of failed features.")
+            actions.append(
+                "Moderate success. Consider manual review of failed features."
+            )
         else:
             actions.append("Low success rate. Manual intervention recommended.")
 
         if summary.assumptions_applied_count > 10:
-            actions.append("Many assumptions applied. Review for potential improvements.")
+            actions.append(
+                "Many assumptions applied. Review for potential improvements."
+            )
 
         if summary.failed_features > 0:
-            actions.append(f"Review {summary.failed_features} failed features for manual conversion.")
+            actions.append(
+                f"Review {summary.failed_features} failed features for manual conversion."
+            )
 
         if summary.processing_time_seconds > 300:  # 5 minutes
             actions.append("Consider optimization for faster processing times.")
@@ -342,14 +390,18 @@ class ConversionReportGenerator:
 
         performance = log_data.get("performance_metrics", {})
         if performance.get("memory_peak_mb", 0) > 512:
-            optimizations.append("High memory usage detected. Consider memory optimization.")
+            optimizations.append(
+                "High memory usage detected. Consider memory optimization."
+            )
 
         if performance.get("total_time_seconds", 0) > 300:
             optimizations.append("Long processing time. Consider parallelization.")
 
         api_issues = log_data.get("api_mapping_issues", [])
         if len(api_issues) > 5:
-            optimizations.append("Multiple API mapping issues. Update conversion rules.")
+            optimizations.append(
+                "Multiple API mapping issues. Update conversion rules."
+            )
 
         return optimizations
 
@@ -359,10 +411,14 @@ class ConversionReportGenerator:
 
         errors = log_data.get("error_details", [])
         if errors:
-            debt_notes.append(f"Resolve {len(errors)} conversion errors for better reliability.")
+            debt_notes.append(
+                f"Resolve {len(errors)} conversion errors for better reliability."
+            )
 
         translation_issues = log_data.get("code_translation_details", [])
-        warning_count = sum(1 for t in translation_issues if t.get("level") == "WARNING")
+        warning_count = sum(
+            1 for t in translation_issues if t.get("level") == "WARNING"
+        )
         if warning_count > 0:
             debt_notes.append(f"Address {warning_count} translation warnings.")
 

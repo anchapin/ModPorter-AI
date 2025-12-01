@@ -6,12 +6,10 @@ including caching operations, invalidation, statistics, and Redis interactions.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, List, Any, Optional
+from unittest.mock import AsyncMock, patch
 from datetime import datetime, timedelta
 import json
 import os
-import asyncio
 
 from src.services.cache import CacheService
 
@@ -39,7 +37,9 @@ class TestCacheService:
     @pytest.fixture
     def service(self, mock_redis_client):
         """Create a CacheService instance with mocked Redis for testing."""
-        with patch('src.services.cache.aioredis.from_url', return_value=mock_redis_client):
+        with patch(
+            "src.services.cache.aioredis.from_url", return_value=mock_redis_client
+        ):
             service = CacheService()
             service._client = mock_redis_client
             service._redis_available = True
@@ -64,7 +64,7 @@ class TestCacheService:
             "current_step": "converting_entities",
             "estimated_completion": datetime.utcnow() + timedelta(minutes=30),
             "created_at": datetime.utcnow() - timedelta(minutes=15),
-            "started_at": datetime.utcnow() - timedelta(minutes=10)
+            "started_at": datetime.utcnow() - timedelta(minutes=10),
         }
 
     @pytest.fixture
@@ -74,13 +74,9 @@ class TestCacheService:
             "mod_name": "ExampleMod",
             "mod_version": "1.0.0",
             "minecraft_version": "1.18.2",
-            "features": [
-                "custom_blocks",
-                "custom_items",
-                "custom_entities"
-            ],
+            "features": ["custom_blocks", "custom_items", "custom_entities"],
             "estimated_complexity": "medium",
-            "analysis_time": datetime.utcnow() - timedelta(minutes=5)
+            "analysis_time": datetime.utcnow() - timedelta(minutes=5),
         }
 
     @pytest.fixture
@@ -91,17 +87,17 @@ class TestCacheService:
             "bedrock_files": [
                 "blocks/blocks.json",
                 "items/items.json",
-                "entities/entities.json"
+                "entities/entities.json",
             ],
             "conversion_time": 120,
             "issues": [],
-            "generated_at": datetime.utcnow() - timedelta(minutes=2)
+            "generated_at": datetime.utcnow() - timedelta(minutes=2),
         }
 
     def test_init(self):
         """Test CacheService initialization."""
         # Test with Redis enabled
-        with patch('src.services.cache.aioredis.from_url') as mock_redis:
+        with patch("src.services.cache.aioredis.from_url") as mock_redis:
             mock_redis.return_value = AsyncMock()
             with patch.dict(os.environ, {"DISABLE_REDIS": "false"}):
                 service = CacheService()
@@ -121,12 +117,7 @@ class TestCacheService:
         service = CacheService()
 
         # Test with basic types
-        basic_obj = {
-            "string": "test",
-            "number": 42,
-            "boolean": True,
-            "none": None
-        }
+        basic_obj = {"string": "test", "number": 42, "boolean": True, "none": None}
         serialized = service._make_json_serializable(basic_obj)
         assert serialized == basic_obj
 
@@ -134,23 +125,14 @@ class TestCacheService:
         datetime_obj = datetime(2023, 1, 1, 12, 0, 0)
         obj_with_datetime = {
             "datetime_field": datetime_obj,
-            "nested": {
-                "another_datetime": datetime_obj
-            }
+            "nested": {"another_datetime": datetime_obj},
         }
         serialized = service._make_json_serializable(obj_with_datetime)
         assert serialized["datetime_field"] == datetime_obj.isoformat()
         assert serialized["nested"]["another_datetime"] == datetime_obj.isoformat()
 
         # Test with list
-        list_obj = [
-            "string",
-            42,
-            datetime_obj,
-            {
-                "nested_datetime": datetime_obj
-            }
-        ]
+        list_obj = ["string", 42, datetime_obj, {"nested_datetime": datetime_obj}]
         serialized = service._make_json_serializable(list_obj)
         assert serialized[2] == datetime_obj.isoformat()
         assert serialized[3]["nested_datetime"] == datetime_obj.isoformat()
@@ -231,9 +213,7 @@ class TestCacheService:
         )
 
         # Check job was added to active set
-        mock_redis_client.sadd.assert_called_once_with(
-            "conversion_jobs:active", job_id
-        )
+        mock_redis_client.sadd.assert_called_once_with("conversion_jobs:active", job_id)
 
     @pytest.mark.asyncio
     async def test_track_progress(self, service, mock_redis_client):
@@ -250,7 +230,9 @@ class TestCacheService:
         )
 
     @pytest.mark.asyncio
-    async def test_cache_mod_analysis(self, service, mock_redis_client, sample_mod_analysis):
+    async def test_cache_mod_analysis(
+        self, service, mock_redis_client, sample_mod_analysis
+    ):
         """Test caching mod analysis."""
         mod_hash = "mod_hash_123"
         ttl_seconds = 7200  # 2 hours
@@ -271,10 +253,16 @@ class TestCacheService:
         # Check the value is a JSON string
         analysis_json = json.loads(args[1])
         assert analysis_json["mod_name"] == "ExampleMod"
-        assert analysis_json["features"] == ["custom_blocks", "custom_items", "custom_entities"]
+        assert analysis_json["features"] == [
+            "custom_blocks",
+            "custom_items",
+            "custom_entities",
+        ]
 
     @pytest.mark.asyncio
-    async def test_get_cached_mod_analysis(self, service, mock_redis_client, sample_mod_analysis):
+    async def test_get_cached_mod_analysis(
+        self, service, mock_redis_client, sample_mod_analysis
+    ):
         """Test getting cached mod analysis."""
         mod_hash = "mod_hash_123"
 
@@ -298,13 +286,17 @@ class TestCacheService:
         assert "custom_blocks" in result["features"]
 
     @pytest.mark.asyncio
-    async def test_cache_conversion_result(self, service, mock_redis_client, sample_conversion_result):
+    async def test_cache_conversion_result(
+        self, service, mock_redis_client, sample_conversion_result
+    ):
         """Test caching conversion result."""
         mod_hash = "mod_hash_456"
         ttl_seconds = 3600  # 1 hour
 
         # Call the method
-        await service.cache_conversion_result(mod_hash, sample_conversion_result, ttl_seconds)
+        await service.cache_conversion_result(
+            mod_hash, sample_conversion_result, ttl_seconds
+        )
 
         # Verify Redis was called with correct parameters
         mock_redis_client.set.assert_called_once()
@@ -322,7 +314,9 @@ class TestCacheService:
         assert len(result_json["bedrock_files"]) == 3
 
     @pytest.mark.asyncio
-    async def test_get_cached_conversion_result(self, service, mock_redis_client, sample_conversion_result):
+    async def test_get_cached_conversion_result(
+        self, service, mock_redis_client, sample_conversion_result
+    ):
         """Test getting cached conversion result."""
         mod_hash = "mod_hash_456"
 
@@ -352,7 +346,7 @@ class TestCacheService:
             "asset_path": "assets/textures/block/custom_block.png",
             "converted_path": "assets/textures/blocks/custom_block.png",
             "conversion_time": 5,
-            "success": True
+            "success": True,
         }
         ttl_seconds = 86400  # 24 hours
 
@@ -382,7 +376,7 @@ class TestCacheService:
             "asset_path": "assets/textures/block/custom_block.png",
             "converted_path": "assets/textures/blocks/custom_block.png",
             "conversion_time": 5,
-            "success": True
+            "success": True,
         }
 
         # Mock Redis to return JSON string of conversion
@@ -447,9 +441,7 @@ class TestCacheService:
         result = await service.get_active_jobs()
 
         # Verify Redis was called with correct key
-        mock_redis_client.smembers.assert_called_once_with(
-            "conversion_jobs:active"
-        )
+        mock_redis_client.smembers.assert_called_once_with("conversion_jobs:active")
 
         # Verify the result
         assert result == job_ids
@@ -463,9 +455,7 @@ class TestCacheService:
         await service.remove_from_active_jobs(job_id)
 
         # Verify Redis was called with correct parameters
-        mock_redis_client.srem.assert_called_once_with(
-            "conversion_jobs:active", job_id
-        )
+        mock_redis_client.srem.assert_called_once_with("conversion_jobs:active", job_id)
 
     @pytest.mark.asyncio
     async def test_increment_cache_hits(self, service, mock_redis_client):
@@ -501,7 +491,7 @@ class TestCacheService:
         # Mock Redis to return statistics
         mock_redis_client.get.side_effect = [
             "1000",  # total cache hits from Redis
-            "500"    # total cache misses from Redis
+            "500",  # total cache misses from Redis
         ]
 
         # Call the method
@@ -514,7 +504,7 @@ class TestCacheService:
         assert result["total_hits"] == 1000
         assert result["total_misses"] == 500
         assert result["session_hit_rate"] == 0.75  # 150 / (150 + 50)
-        assert result["total_hit_rate"] == 0.67   # 1000 / (1000 + 500)
+        assert result["total_hit_rate"] == 0.67  # 1000 / (1000 + 500)
 
     @pytest.mark.asyncio
     async def test_reset_cache_stats(self, service, mock_redis_client):
@@ -543,7 +533,7 @@ class TestCacheService:
         matching_keys = [
             "cache:mod_analysis:hash1",
             "cache:mod_analysis:hash2",
-            "cache:mod_analysis:hash3"
+            "cache:mod_analysis:hash3",
         ]
         mock_redis_client.keys.return_value = matching_keys
 
@@ -597,9 +587,16 @@ class TestCacheService:
         """Test getting cache size."""
         # Mock Redis to return key counts for different patterns
         mock_redis_client.keys.side_effect = [
-            ["cache:mod_analysis:hash1", "cache:mod_analysis:hash2"],  # 2 mod analysis keys
-            ["cache:conversion_result:hash3"],                         # 1 conversion result key
-            ["cache:asset_conversion:hash4", "cache:asset_conversion:hash5", "cache:asset_conversion:hash6"]  # 3 asset conversion keys
+            [
+                "cache:mod_analysis:hash1",
+                "cache:mod_analysis:hash2",
+            ],  # 2 mod analysis keys
+            ["cache:conversion_result:hash3"],  # 1 conversion result key
+            [
+                "cache:asset_conversion:hash4",
+                "cache:asset_conversion:hash5",
+                "cache:asset_conversion:hash6",
+            ],  # 3 asset conversion keys
         ]
 
         # Call the method
@@ -621,11 +618,14 @@ class TestCacheService:
         # Mock Redis to return keys
         mock_redis_client.keys.return_value = [
             "cache:mod_analysis:hash1",
-            "cache:conversion_result:hash2"
+            "cache:conversion_result:hash2",
         ]
 
         # Mock Redis TTL checks
-        mock_redis_client.ttl.side_effect = [-1, 60]  # -1 means no expiry, 60 means 60 seconds left
+        mock_redis_client.ttl.side_effect = [
+            -1,
+            60,
+        ]  # -1 means no expiry, 60 means 60 seconds left
 
         # Call the method
         result = await service.purge_expired_entries()

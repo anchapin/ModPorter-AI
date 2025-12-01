@@ -6,14 +6,17 @@ using both PostgreSQL and Neo4j databases.
 """
 
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func, desc
 
 from .models import (
-    KnowledgeNode, KnowledgeRelationship, ConversionPattern,
-    CommunityContribution, VersionCompatibility
+    KnowledgeNode,
+    KnowledgeRelationship,
+    ConversionPattern,
+    CommunityContribution,
+    VersionCompatibility,
 )
 from .graph_db import graph_db
 from .graph_db_optimized import optimized_graph_db
@@ -23,31 +26,38 @@ logger = logging.getLogger(__name__)
 
 # Try to import performance monitoring and caching, but don't fail if not available
 try:
-    from src.utils.graph_performance_monitor import performance_monitor, monitor_graph_operation
+    from src.utils.graph_performance_monitor import (
+        performance_monitor,
+        monitor_graph_operation,
+    )
     from src.utils.graph_cache import graph_cache, cached_node, cached_operation
     from src.db.neo4j_config import neo4j_config
+
     PERFORMANCE_ENABLED = True
 except ImportError:
     PERFORMANCE_ENABLED = False
-    logger.warning("Performance monitoring and caching not available, using basic implementation")
+    logger.warning(
+        "Performance monitoring and caching not available, using basic implementation"
+    )
 
     # Create dummy decorators
     def monitor_graph_operation(op_name):
         def decorator(func):
             return func
+
         return decorator
 
     def cached_node(op_name, ttl=None):
         def decorator(func):
             return func
+
         return decorator
 
     def cached_operation(cache_type="default", ttl=None):
         def decorator(func):
             return func
-        return decorator
 
-logger = logging.getLogger(__name__)
+        return decorator
 
 
 class KnowledgeNodeCRUD:
@@ -55,7 +65,9 @@ class KnowledgeNodeCRUD:
 
     @staticmethod
     @monitor_graph_operation("node_creation")
-    async def create(db: AsyncSession, node_data: Dict[str, Any]) -> Optional[KnowledgeNode]:
+    async def create(
+        db: AsyncSession, node_data: Dict[str, Any]
+    ) -> Optional[KnowledgeNode]:
         """Create a new knowledge node with performance monitoring."""
         try:
             # Create in PostgreSQL
@@ -74,7 +86,7 @@ class KnowledgeNodeCRUD:
                 properties=node_data.get("properties", {}),
                 minecraft_version=node_data.get("minecraft_version", "latest"),
                 platform=node_data.get("platform", "both"),
-                created_by=node_data.get("created_by")
+                created_by=node_data.get("created_by"),
             )
 
             if node_id:
@@ -89,14 +101,17 @@ class KnowledgeNodeCRUD:
 
                 # Cache the node
                 if PERFORMANCE_ENABLED:
-                    graph_cache.cache_node(db_node.id, {
-                        "id": db_node.id,
-                        "neo4j_id": node_id,
-                        "node_type": db_node.node_type,
-                        "name": db_node.name,
-                        "properties": db_node.properties,
-                        "platform": db_node.platform
-                    })
+                    graph_cache.cache_node(
+                        db_node.id,
+                        {
+                            "id": db_node.id,
+                            "neo4j_id": node_id,
+                            "node_type": db_node.node_type,
+                            "name": db_node.name,
+                            "properties": db_node.properties,
+                            "platform": db_node.platform,
+                        },
+                    )
 
             return db_node
         except Exception as e:
@@ -105,9 +120,13 @@ class KnowledgeNodeCRUD:
             return None
 
     @staticmethod
-    async def create_batch(db: AsyncSession, nodes_data: List[Dict[str, Any]]) -> List[Optional[KnowledgeNode]]:
+    async def create_batch(
+        db: AsyncSession, nodes_data: List[Dict[str, Any]]
+    ) -> List[Optional[KnowledgeNode]]:
         """Create multiple knowledge nodes in batch for better performance."""
-        if not PERFORMANCE_ENABLED or not hasattr(optimized_graph_db, 'create_node_batch'):
+        if not PERFORMANCE_ENABLED or not hasattr(
+            optimized_graph_db, "create_node_batch"
+        ):
             # Fallback to individual creation
             return [await KnowledgeNodeCRUD.create(db, data) for data in nodes_data]
 
@@ -129,7 +148,7 @@ class KnowledgeNodeCRUD:
             neo4j_nodes = []
             for i, node_data in enumerate(nodes_data):
                 neo4j_node = node_data.copy()
-                neo4j_node['properties'] = node_data.get('properties', {})
+                neo4j_node["properties"] = node_data.get("properties", {})
                 neo4j_nodes.append(neo4j_node)
 
             neo4j_ids = optimized_graph_db.create_node_batch(neo4j_nodes)
@@ -168,17 +187,21 @@ class KnowledgeNodeCRUD:
             return None
 
     @staticmethod
-    async def get_by_type(db: AsyncSession,
-                         node_type: str,
-                         minecraft_version: str = "latest",
-                         limit: int = 100) -> List[KnowledgeNode]:
+    async def get_by_type(
+        db: AsyncSession,
+        node_type: str,
+        minecraft_version: str = "latest",
+        limit: int = 100,
+    ) -> List[KnowledgeNode]:
         """Get knowledge nodes by type."""
         try:
             result = await db.execute(
                 select(KnowledgeNode)
                 .where(
                     KnowledgeNode.node_type == node_type,
-                    func.lower(KnowledgeNode.minecraft_version).in_([minecraft_version, "latest"])
+                    func.lower(KnowledgeNode.minecraft_version).in_(
+                        [minecraft_version, "latest"]
+                    ),
                 )
                 .order_by(desc(KnowledgeNode.community_rating), KnowledgeNode.name)
                 .limit(limit)
@@ -190,7 +213,9 @@ class KnowledgeNodeCRUD:
 
     @staticmethod
     @monitor_graph_operation("node_update")
-    async def update(db: AsyncSession, node_id: str, update_data: Dict[str, Any]) -> Optional[KnowledgeNode]:
+    async def update(
+        db: AsyncSession, node_id: str, update_data: Dict[str, Any]
+    ) -> Optional[KnowledgeNode]:
         """Update a knowledge node with the provided data."""
         try:
             # Check if node exists
@@ -223,7 +248,7 @@ class KnowledgeNodeCRUD:
                 node.community_rating = update_data["community_rating"]
 
             # Add updated timestamp
-            node.updated_at = datetime.utcnow()
+            node.updated_at = datetime.now(UTC)
 
             await db.commit()
             await db.refresh(node)
@@ -238,7 +263,7 @@ class KnowledgeNodeCRUD:
                     description=node.description,
                     properties=node.properties,
                     minecraft_version=node.minecraft_version,
-                    platform=node.platform
+                    platform=node.platform,
                 )
 
                 # Invalidate cache if performance enabled
@@ -254,9 +279,9 @@ class KnowledgeNodeCRUD:
     @staticmethod
     @cached_node("search", ttl=300)  # Cache for 5 minutes
     @monitor_graph_operation("search")
-    async def search(db: AsyncSession,
-                   query_text: str,
-                   limit: int = 20) -> List[KnowledgeNode]:
+    async def search(
+        db: AsyncSession, query_text: str, limit: int = 20
+    ) -> List[KnowledgeNode]:
         """Search knowledge nodes with caching and performance monitoring."""
         # Check cache first if performance features are enabled
         if PERFORMANCE_ENABLED:
@@ -269,9 +294,7 @@ class KnowledgeNodeCRUD:
             # Optimized PostgreSQL query with better indexing
             result = await db.execute(
                 select(KnowledgeNode)
-                .where(
-                    func.lower(KnowledgeNode.name).contains(func.lower(query_text))
-                )
+                .where(func.lower(KnowledgeNode.name).contains(func.lower(query_text)))
                 .order_by(desc(KnowledgeNode.community_rating), KnowledgeNode.name)
                 .limit(limit)
             )
@@ -287,16 +310,18 @@ class KnowledgeNodeCRUD:
             return []
 
     @staticmethod
-    async def update_validation(db: AsyncSession,
-                             node_id: str,
-                             expert_validated: bool,
-                             community_rating: Optional[float] = None) -> bool:
+    async def update_validation(
+        db: AsyncSession,
+        node_id: str,
+        expert_validated: bool,
+        community_rating: Optional[float] = None,
+    ) -> bool:
         """Update node validation status."""
         try:
             # Update in PostgreSQL
             update_data = {
                 "expert_validated": expert_validated,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(UTC),
             }
             if community_rating is not None:
                 update_data["community_rating"] = community_rating
@@ -326,7 +351,9 @@ class KnowledgeRelationshipCRUD:
     """CRUD operations for knowledge relationships."""
 
     @staticmethod
-    async def create(db: AsyncSession, relationship_data: Dict[str, Any]) -> Optional[KnowledgeRelationship]:
+    async def create(
+        db: AsyncSession, relationship_data: Dict[str, Any]
+    ) -> Optional[KnowledgeRelationship]:
         """Create a new knowledge relationship."""
         try:
             # Create in PostgreSQL
@@ -343,7 +370,7 @@ class KnowledgeRelationshipCRUD:
                 properties=relationship_data.get("properties", {}),
                 confidence_score=relationship_data.get("confidence_score", 0.5),
                 minecraft_version=relationship_data.get("minecraft_version", "latest"),
-                created_by=relationship_data.get("created_by")
+                created_by=relationship_data.get("created_by"),
             )
 
             if rel_id:
@@ -363,9 +390,9 @@ class KnowledgeRelationshipCRUD:
             return None
 
     @staticmethod
-    async def get_by_source(db: AsyncSession,
-                          source_node_id: str,
-                          relationship_type: Optional[str] = None) -> List[KnowledgeRelationship]:
+    async def get_by_source(
+        db: AsyncSession, source_node_id: str, relationship_type: Optional[str] = None
+    ) -> List[KnowledgeRelationship]:
         """Get relationships by source node."""
         try:
             query = select(KnowledgeRelationship).where(
@@ -373,9 +400,13 @@ class KnowledgeRelationshipCRUD:
             )
 
             if relationship_type:
-                query = query.where(KnowledgeRelationship.relationship_type == relationship_type)
+                query = query.where(
+                    KnowledgeRelationship.relationship_type == relationship_type
+                )
 
-            result = await db.execute(query.order_by(desc(KnowledgeRelationship.confidence_score)))
+            result = await db.execute(
+                query.order_by(desc(KnowledgeRelationship.confidence_score))
+            )
             return result.scalars().all()
         except Exception as e:
             logger.error(f"Error getting relationships: {e}")
@@ -386,7 +417,9 @@ class ConversionPatternCRUD:
     """CRUD operations for conversion patterns."""
 
     @staticmethod
-    async def create(db: AsyncSession, pattern_data: Dict[str, Any]) -> Optional[ConversionPattern]:
+    async def create(
+        db: AsyncSession, pattern_data: Dict[str, Any]
+    ) -> Optional[ConversionPattern]:
         """Create a new conversion pattern."""
         try:
             db_pattern = ConversionPattern(**pattern_data)
@@ -400,7 +433,9 @@ class ConversionPatternCRUD:
             return None
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, pattern_id: str) -> Optional[ConversionPattern]:
+    async def get_by_id(
+        db: AsyncSession, pattern_id: str
+    ) -> Optional[ConversionPattern]:
         """Get conversion pattern by ID."""
         try:
             result = await db.execute(
@@ -412,22 +447,28 @@ class ConversionPatternCRUD:
             return None
 
     @staticmethod
-    async def get_by_version(db: AsyncSession,
-                           minecraft_version: str,
-                           validation_status: Optional[str] = None,
-                           limit: int = 50) -> List[ConversionPattern]:
+    async def get_by_version(
+        db: AsyncSession,
+        minecraft_version: str,
+        validation_status: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[ConversionPattern]:
         """Get conversion patterns by Minecraft version."""
         try:
             query = select(ConversionPattern).where(
-                func.lower(ConversionPattern.minecraft_version) == func.lower(minecraft_version)
+                func.lower(ConversionPattern.minecraft_version)
+                == func.lower(minecraft_version)
             )
 
             if validation_status:
-                query = query.where(ConversionPattern.validation_status == validation_status)
+                query = query.where(
+                    ConversionPattern.validation_status == validation_status
+                )
 
             result = await db.execute(
-                query.order_by(desc(ConversionPattern.success_rate), ConversionPattern.name)
-                .limit(limit)
+                query.order_by(
+                    desc(ConversionPattern.success_rate), ConversionPattern.name
+                ).limit(limit)
             )
             return result.scalars().all()
         except Exception as e:
@@ -435,20 +476,21 @@ class ConversionPatternCRUD:
             return []
 
     @staticmethod
-    async def update_success_rate(db: AsyncSession,
-                               pattern_id: str,
-                               success_rate: float,
-                               usage_count: int) -> bool:
+    async def update_success_rate(
+        db: AsyncSession, pattern_id: str, success_rate: float, usage_count: int
+    ) -> bool:
         """Update pattern success metrics."""
         try:
             result = await db.execute(
                 update(ConversionPattern)
                 .where(ConversionPattern.id == pattern_id)
-                .values({
-                    "success_rate": success_rate,
-                    "usage_count": usage_count,
-                    "updated_at": datetime.utcnow()
-                })
+                .values(
+                    {
+                        "success_rate": success_rate,
+                        "usage_count": usage_count,
+                        "updated_at": datetime.now(UTC),
+                    }
+                )
             )
             await db.commit()
             return result.rowcount > 0
@@ -462,7 +504,9 @@ class CommunityContributionCRUD:
     """CRUD operations for community contributions."""
 
     @staticmethod
-    async def create(db: AsyncSession, contribution_data: Dict[str, Any]) -> Optional[CommunityContribution]:
+    async def create(
+        db: AsyncSession, contribution_data: Dict[str, Any]
+    ) -> Optional[CommunityContribution]:
         """Create a new community contribution."""
         try:
             db_contribution = CommunityContribution(**contribution_data)
@@ -476,9 +520,9 @@ class CommunityContributionCRUD:
             return None
 
     @staticmethod
-    async def get_by_contributor(db: AsyncSession,
-                               contributor_id: str,
-                               review_status: Optional[str] = None) -> List[CommunityContribution]:
+    async def get_by_contributor(
+        db: AsyncSession, contributor_id: str, review_status: Optional[str] = None
+    ) -> List[CommunityContribution]:
         """Get contributions by contributor."""
         try:
             query = select(CommunityContribution).where(
@@ -486,24 +530,30 @@ class CommunityContributionCRUD:
             )
 
             if review_status:
-                query = query.where(CommunityContribution.review_status == review_status)
+                query = query.where(
+                    CommunityContribution.review_status == review_status
+                )
 
-            result = await db.execute(query.order_by(desc(CommunityContribution.created_at)))
+            result = await db.execute(
+                query.order_by(desc(CommunityContribution.created_at))
+            )
             return result.scalars().all()
         except Exception as e:
             logger.error(f"Error getting contributions: {e}")
             return []
 
     @staticmethod
-    async def update_review_status(db: AsyncSession,
-                                contribution_id: str,
-                                review_status: str,
-                                validation_results: Optional[Dict[str, Any]] = None) -> bool:
+    async def update_review_status(
+        db: AsyncSession,
+        contribution_id: str,
+        review_status: str,
+        validation_results: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """Update contribution review status."""
         try:
             update_data = {
                 "review_status": review_status,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(UTC),
             }
 
             if validation_results:
@@ -529,13 +579,23 @@ class CommunityContributionCRUD:
                 result = await db.execute(
                     update(CommunityContribution)
                     .where(CommunityContribution.id == contribution_id)
-                    .values({"votes": CommunityContribution.votes + 1, "updated_at": datetime.utcnow()})
+                    .values(
+                        {
+                            "votes": CommunityContribution.votes + 1,
+                            "updated_at": datetime.now(UTC),
+                        }
+                    )
                 )
             elif vote_type == "down":
                 result = await db.execute(
                     update(CommunityContribution)
                     .where(CommunityContribution.id == contribution_id)
-                    .values({"votes": CommunityContribution.votes - 1, "updated_at": datetime.utcnow()})
+                    .values(
+                        {
+                            "votes": CommunityContribution.votes - 1,
+                            "updated_at": datetime.now(UTC),
+                        }
+                    )
                 )
             else:
                 return False
@@ -552,7 +612,9 @@ class VersionCompatibilityCRUD:
     """CRUD operations for version compatibility."""
 
     @staticmethod
-    async def create(db: AsyncSession, compatibility_data: Dict[str, Any]) -> Optional[VersionCompatibility]:
+    async def create(
+        db: AsyncSession, compatibility_data: Dict[str, Any]
+    ) -> Optional[VersionCompatibility]:
         """Create new version compatibility entry."""
         try:
             db_compatibility = VersionCompatibility(**compatibility_data)
@@ -566,16 +628,15 @@ class VersionCompatibilityCRUD:
             return None
 
     @staticmethod
-    async def get_compatibility(db: AsyncSession,
-                              java_version: str,
-                              bedrock_version: str) -> Optional[VersionCompatibility]:
+    async def get_compatibility(
+        db: AsyncSession, java_version: str, bedrock_version: str
+    ) -> Optional[VersionCompatibility]:
         """Get compatibility between Java and Bedrock versions."""
         try:
             result = await db.execute(
-                select(VersionCompatibility)
-                .where(
+                select(VersionCompatibility).where(
                     VersionCompatibility.java_version == java_version,
-                    VersionCompatibility.bedrock_version == bedrock_version
+                    VersionCompatibility.bedrock_version == bedrock_version,
                 )
             )
             return result.scalar_one_or_none()
@@ -584,8 +645,9 @@ class VersionCompatibilityCRUD:
             return None
 
     @staticmethod
-    async def get_by_java_version(db: AsyncSession,
-                                java_version: str) -> List[VersionCompatibility]:
+    async def get_by_java_version(
+        db: AsyncSession, java_version: str
+    ) -> List[VersionCompatibility]:
         """Get all compatibility entries for a Java version."""
         try:
             result = await db.execute(

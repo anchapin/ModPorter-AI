@@ -7,6 +7,7 @@ from sqlalchemy.exc import ProgrammingError, OperationalError
 
 logger = logging.getLogger(__name__)
 
+
 async def init_db() -> None:
     """Initialize database with retry logic for extensions and tables."""
 
@@ -19,8 +20,10 @@ async def init_db() -> None:
                 # First, ensure required extensions are installed
                 if conn.dialect.name == "postgresql":
                     logger.info("Creating database extensions...")
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                    await conn.execute(
+                        text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+                    )
+                    await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
 
                 # Now create all tables
                 logger.info("Creating database tables...")

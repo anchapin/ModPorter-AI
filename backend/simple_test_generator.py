@@ -5,9 +5,8 @@ Focuses on generating basic tests to improve coverage quickly
 """
 
 import ast
-import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 def analyze_file(file_path: Path) -> Dict[str, Any]:
     """Analyze a Python file and extract test-relevant information"""

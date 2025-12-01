@@ -4,7 +4,6 @@ This script helps identify which modules need more test coverage to reach 80% th
 """
 
 import json
-import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -53,7 +52,7 @@ def generate_report(backend_modules: List[Tuple[str, float, int]],
 
     # Backend coverage summary
     backend_total = sum(m[1] for m in backend_modules) / len(backend_modules) if backend_modules else 0
-    report.append(f"## Backend Coverage Summary")
+    report.append("## Backend Coverage Summary")
     report.append(f"- Overall Coverage: {backend_total:.2f}%")
     report.append(f"- Total Modules: {len(backend_modules)}")
     report.append(f"- Modules Below 80%: {len(identify_low_coverage_modules(backend_modules))}")
@@ -68,7 +67,7 @@ def generate_report(backend_modules: List[Tuple[str, float, int]],
 
     # AI Engine coverage summary
     ai_engine_total = sum(m[1] for m in ai_engine_modules) / len(ai_engine_modules) if ai_engine_modules else 0
-    report.append(f"## AI Engine Coverage Summary")
+    report.append("## AI Engine Coverage Summary")
     report.append(f"- Overall Coverage: {ai_engine_total:.2f}%")
     report.append(f"- Total Modules: {len(ai_engine_modules)}")
     report.append(f"- Modules Below 80%: {len(identify_low_coverage_modules(ai_engine_modules))}")

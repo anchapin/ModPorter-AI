@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
 import os
 
+
 class Settings(BaseSettings):
     model_config = ConfigDict(env_file=["../.env", "../.env.local"], extra="ignore")
 
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
-    
+
     # Neo4j graph database settings
     neo4j_uri: str = Field(default="bolt://localhost:7687", alias="NEO4J_URI")
     neo4j_user: str = Field(default="neo4j", alias="NEO4J_USER")
@@ -23,9 +24,11 @@ class Settings(BaseSettings):
         if os.getenv("TESTING") == "true":
             # Default to SQLite for testing to avoid connection issues
             # Use file-based database for testing to support table creation across connections
-            test_db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+            test_db_url = os.getenv(
+                "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db"
+            )
             return test_db_url
-        
+
         # Convert to async format if needed
         url = self.database_url_raw
         if url.startswith("postgresql://"):

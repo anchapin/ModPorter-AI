@@ -45,10 +45,7 @@ class AssetUploadRequest(BaseModel):
         json_schema_extra={
             "example": {
                 "asset_type": "texture",
-                "metadata": {
-                    "category": "blocks",
-                    "resolution": "16x16"
-                }
+                "metadata": {"category": "blocks", "resolution": "16x16"},
             }
         }
     )
@@ -78,18 +75,22 @@ def _asset_to_response(asset) -> AssetResponse:
         original_filename=asset.original_filename,
         error_message=asset.error_message,
         created_at=asset.created_at.isoformat(),
-        updated_at=asset.updated_at.isoformat()
+        updated_at=asset.updated_at.isoformat(),
     )
 
 
-@router.get("/conversions/{conversion_id}/assets", response_model=List[AssetResponse], tags=["assets"])
+@router.get(
+    "/conversions/{conversion_id}/assets",
+    response_model=List[AssetResponse],
+    tags=["assets"],
+)
 async def list_conversion_assets(
     conversion_id: str = Path(..., description="ID of the conversion job"),
     asset_type: Optional[str] = None,
     status: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     List all assets for a given conversion job.
@@ -107,7 +108,7 @@ async def list_conversion_assets(
             asset_type=asset_type,
             status=status,
             skip=skip,
-            limit=limit
+            limit=limit,
         )
         return [_asset_to_response(asset) for asset in assets]
     except Exception as e:
@@ -115,12 +116,16 @@ async def list_conversion_assets(
         raise HTTPException(status_code=500, detail="Failed to retrieve assets")
 
 
-@router.post("/conversions/{conversion_id}/assets", response_model=AssetResponse, tags=["assets"])
+@router.post(
+    "/conversions/{conversion_id}/assets", response_model=AssetResponse, tags=["assets"]
+)
 async def upload_asset(
     conversion_id: str = Path(..., description="ID of the conversion job"),
-    asset_type: str = Form(..., description="Type of asset (e.g., 'texture', 'model', 'sound')"),
+    asset_type: str = Form(
+        ..., description="Type of asset (e.g., 'texture', 'model', 'sound')"
+    ),
     file: UploadFile = File(..., description="Asset file to upload"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Upload a new asset for a conversion job.
@@ -152,7 +157,7 @@ async def upload_asset(
                     os.remove(file_path)  # Clean up partial file
                     raise HTTPException(
                         status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_ASSET_SIZE // (1024 * 1024)}MB"
+                        detail=f"File size exceeds the limit of {MAX_ASSET_SIZE // (1024 * 1024)}MB",
                     )
                 buffer.write(chunk)
     except HTTPException:
@@ -174,7 +179,7 @@ async def upload_asset(
             original_path=file_path,
             original_filename=file.filename,
             file_size=file_size,
-            mime_type=file.content_type
+            mime_type=file.content_type,
         )
         return _asset_to_response(asset)
     except ValueError as e:
@@ -193,7 +198,7 @@ async def upload_asset(
 @router.get("/assets/{asset_id}", response_model=AssetResponse, tags=["assets"])
 async def get_asset(
     asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get details of a specific asset.
@@ -211,7 +216,7 @@ async def get_asset(
 async def update_asset_status(
     status_update: AssetStatusUpdate,
     asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update the conversion status of an asset.
@@ -226,7 +231,7 @@ async def update_asset_status(
         asset_id=asset_id,
         status=status_update.status,
         converted_path=status_update.converted_path,
-        error_message=status_update.error_message
+        error_message=status_update.error_message,
     )
 
     if not asset:
@@ -235,11 +240,13 @@ async def update_asset_status(
     return _asset_to_response(asset)
 
 
-@router.put("/assets/{asset_id}/metadata", response_model=AssetResponse, tags=["assets"])
+@router.put(
+    "/assets/{asset_id}/metadata", response_model=AssetResponse, tags=["assets"]
+)
 async def update_asset_metadata(
     metadata: Dict[str, Any],
     asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update the metadata of an asset.
@@ -258,7 +265,7 @@ async def update_asset_metadata(
 @router.delete("/assets/{asset_id}", tags=["assets"])
 async def delete_asset(
     asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete an asset and its associated file.
@@ -288,16 +295,20 @@ async def delete_asset(
             os.remove(asset.converted_path)
             logger.info(f"Deleted converted asset file: {asset.converted_path}")
         except Exception as e:
-            logger.warning(f"Could not delete converted asset file {asset.converted_path}: {e}")
+            logger.warning(
+                f"Could not delete converted asset file {asset.converted_path}: {e}"
+            )
 
     return {"message": f"Asset {asset_id} deleted successfully"}
 
 
 # Asset conversion trigger endpoint (for AI engine integration)
-@router.post("/assets/{asset_id}/convert", response_model=AssetResponse, tags=["assets"])
+@router.post(
+    "/assets/{asset_id}/convert", response_model=AssetResponse, tags=["assets"]
+)
 async def trigger_asset_conversion(
     asset_id: str = Path(..., description="ID of the asset to convert"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Trigger conversion for a specific asset.
@@ -328,18 +339,22 @@ async def trigger_asset_conversion(
         else:
             error_msg = result.get("error", "Conversion failed")
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
-            raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
+            raise HTTPException(
+                status_code=500, detail=f"Conversion failed: {error_msg}"
+            )
 
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
-        raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
+        raise HTTPException(
+            status_code=500, detail="Failed to trigger asset conversion"
+        )
 
 
 # Batch conversion endpoint for conversion jobs
 @router.post("/conversions/{conversion_id}/assets/convert-all", tags=["assets"])
 async def convert_all_conversion_assets(
     conversion_id: str = Path(..., description="ID of the conversion job"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Trigger conversion for all pending assets in a conversion job.
@@ -351,7 +366,9 @@ async def convert_all_conversion_assets(
     """
     try:
         # Trigger batch conversion through the service
-        result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
+        result = await asset_conversion_service.convert_assets_for_conversion(
+            conversion_id
+        )
 
         return {
             "message": "Asset conversion batch completed",
@@ -359,7 +376,7 @@ async def convert_all_conversion_assets(
             "total_assets": result.get("total_assets", 0),
             "converted_count": result.get("converted_count", 0),
             "failed_count": result.get("failed_count", 0),
-            "success": result.get("success", False)
+            "success": result.get("success", False),
         }
 
     except Exception as e:

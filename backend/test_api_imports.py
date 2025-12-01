@@ -2,7 +2,6 @@
 """Test script to verify API modules can be imported and routers created."""
 
 import sys
-import os
 from pathlib import Path
 
 # Add src to path

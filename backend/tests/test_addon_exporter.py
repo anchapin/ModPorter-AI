@@ -1,5 +1,3 @@
-
-import json
 import uuid
 import zipfile
 from datetime import datetime
@@ -48,7 +46,12 @@ def mock_addon_details():
             addon_models.AddonRecipe(
                 id=uuid.uuid4(),
                 addon_id=addon_id,
-                data={"format_version": "1.12.0", "minecraft:recipe_shaped": {"description": {"identifier": "test:my_recipe"}}},
+                data={
+                    "format_version": "1.12.0",
+                    "minecraft:recipe_shaped": {
+                        "description": {"identifier": "test:my_recipe"}
+                    },
+                },
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
@@ -86,7 +89,9 @@ def test_generate_block_behavior_json(mock_addon_details):
     block = mock_addon_details.blocks[0]
     behavior_json = addon_exporter.generate_block_behavior_json(block)
 
-    assert behavior_json["minecraft:block"]["description"]["identifier"] == "test:my_block"
+    assert (
+        behavior_json["minecraft:block"]["description"]["identifier"] == "test:my_block"
+    )
     assert (
         behavior_json["minecraft:block"]["components"]["minecraft:block_light_emission"]
         == 8
@@ -124,7 +129,9 @@ def test_create_mcaddon_zip(mock_addon_details, monkeypatch):
     # Mock open to avoid real file I/O
     monkeypatch.setattr("builtins.open", MagicMock())
 
-    zip_buffer = addon_exporter.create_mcaddon_zip(mock_addon_details, "/fake/base/path")
+    zip_buffer = addon_exporter.create_mcaddon_zip(
+        mock_addon_details, "/fake/base/path"
+    )
 
     assert isinstance(zip_buffer, BytesIO)
     zip_buffer.seek(0)

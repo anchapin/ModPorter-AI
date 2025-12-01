@@ -4,7 +4,6 @@ Quick Coverage Analysis for ModPorter-AI
 """
 
 import json
-import os
 from pathlib import Path
 
 def analyze_coverage():
@@ -37,7 +36,7 @@ def analyze_coverage():
     
     low_coverage.sort(key=lambda x: x[1])  # Sort by coverage percentage
     
-    print(f"\n=== HIGH IMPACT FILES FOR COVERAGE IMPROVEMENT ===")
+    print("\n=== HIGH IMPACT FILES FOR COVERAGE IMPROVEMENT ===")
     print("File                                                      Coverage    Statements")
     print("-" * 80)
     
@@ -51,15 +50,15 @@ def analyze_coverage():
         potential_coverage = sum(80 * stmts for _, _, stmts in low_coverage) / total_statements
         impact = potential_coverage - current_coverage
         
-        print(f"\n=== IMPACT ANALYSIS ===")
+        print("\n=== IMPACT ANALYSIS ===")
         print(f"Files to improve: {len(low_coverage)}")
         print(f"Total statements: {total_statements}")
         print(f"Current average coverage: {current_coverage:.1f}%")
-        print(f"Target average coverage: 80.0%")
+        print("Target average coverage: 80.0%")
         print(f"Potential improvement: +{impact:.1f}% overall")
         
         # Top priority recommendations
-        print(f"\n=== TOP PRIORITY FILES ===")
+        print("\n=== TOP PRIORITY FILES ===")
         for file_path, coverage, stmts in low_coverage[:5]:
             improvement_potential = min(80 - coverage, 50)  # Max 50% improvement realistic
             impact_score = stmts * improvement_potential / 100

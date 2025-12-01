@@ -29,6 +29,7 @@ class ImpactLevel:
 @dataclass
 class ReportMetadata:
     """Metadata for the conversion report."""
+
     report_id: str
     job_id: str
     generation_timestamp: datetime
@@ -39,6 +40,7 @@ class ReportMetadata:
 @dataclass
 class SummaryReport:
     """Enhanced summary report with additional statistics."""
+
     overall_success_rate: float
     total_features: int
     converted_features: int
@@ -65,6 +67,7 @@ class SummaryReport:
 @dataclass
 class FeatureAnalysisItem:
     """Detailed analysis for a single feature."""
+
     name: str
     original_type: str
     converted_type: Optional[str]
@@ -85,13 +88,14 @@ class FeatureAnalysisItem:
             "assumptions_used": self.assumptions_used,
             "impact_assessment": self.impact_assessment,
             "visual_comparison": self.visual_comparison,
-            "technical_notes": self.technical_notes
+            "technical_notes": self.technical_notes,
         }
 
 
 @dataclass
 class FeatureAnalysis:
     """Comprehensive feature analysis report."""
+
     features: List[FeatureAnalysisItem]
     compatibility_mapping_summary: str
     visual_comparisons_overview: Optional[str] = None
@@ -112,6 +116,7 @@ class FeatureAnalysis:
 @dataclass
 class AssumptionReportItem:
     """Detailed smart assumption report item."""
+
     original_feature: str
     assumption_type: str
     bedrock_equivalent: str
@@ -136,13 +141,14 @@ class AssumptionReportItem:
             "technical_details": self.technical_details,
             "visual_example": self.visual_example,
             "confidence_score": self.confidence_score,
-            "alternatives_considered": self.alternatives_considered
+            "alternatives_considered": self.alternatives_considered,
         }
 
 
 @dataclass
 class AssumptionsReport:
     """Comprehensive assumptions report."""
+
     assumptions: List[AssumptionReportItem]
     total_assumptions_count: int = 0
     impact_distribution: Dict[str, int] = None
@@ -159,6 +165,7 @@ class AssumptionsReport:
 @dataclass
 class DeveloperLog:
     """Enhanced developer technical log."""
+
     code_translation_details: List[Dict[str, Any]]
     api_mapping_issues: List[Dict[str, Any]]
     file_processing_log: List[Dict[str, Any]]
@@ -182,6 +189,7 @@ class DeveloperLog:
 @dataclass
 class InteractiveReport:
     """Main interactive report structure."""
+
     metadata: ReportMetadata
     summary: SummaryReport
     feature_analysis: FeatureAnalysis
@@ -198,7 +206,7 @@ class InteractiveReport:
             self.navigation_structure = {
                 "sections": ["summary", "features", "assumptions", "developer"],
                 "expandable": True,
-                "search_enabled": True
+                "search_enabled": True,
             }
         if self.export_formats is None:
             self.export_formats = ["pdf", "json", "html"]
@@ -213,7 +221,7 @@ class InteractiveReport:
                 "job_id": self.metadata.job_id,
                 "generation_timestamp": self.metadata.generation_timestamp.isoformat(),
                 "version": self.metadata.version,
-                "report_type": self.metadata.report_type
+                "report_type": self.metadata.report_type,
             },
             "summary": {
                 "overall_success_rate": self.summary.overall_success_rate,
@@ -228,7 +236,7 @@ class InteractiveReport:
                 "total_files_processed": self.summary.total_files_processed,
                 "output_size_mb": self.summary.output_size_mb,
                 "conversion_quality_score": self.summary.conversion_quality_score,
-                "recommended_actions": self.summary.recommended_actions
+                "recommended_actions": self.summary.recommended_actions,
             },
             "feature_analysis": {
                 "features": [f.to_dict() for f in self.feature_analysis.features],
@@ -237,13 +245,18 @@ class InteractiveReport:
                 "impact_assessment_summary": self.feature_analysis.impact_assessment_summary,
                 "total_compatibility_score": self.feature_analysis.total_compatibility_score,
                 "feature_categories": self.feature_analysis.feature_categories,
-                "conversion_patterns": self.feature_analysis.conversion_patterns
+                "conversion_patterns": self.feature_analysis.conversion_patterns,
             },
             "assumptions_report": {
-                "assumptions": [a.to_dict() for a in self.assumptions_report.assumptions],
+                "assumptions": [
+                    a.to_dict() for a in self.assumptions_report.assumptions
+                ],
                 "total_assumptions_count": self.assumptions_report.total_assumptions_count,
                 "impact_distribution": self.assumptions_report.impact_distribution,
-                "category_breakdown": {k: [a.to_dict() for a in v] for k, v in self.assumptions_report.category_breakdown.items()}
+                "category_breakdown": {
+                    k: [a.to_dict() for a in v]
+                    for k, v in self.assumptions_report.category_breakdown.items()
+                },
             },
             "developer_log": {
                 "code_translation_details": self.developer_log.code_translation_details,
@@ -253,11 +266,11 @@ class InteractiveReport:
                 "error_details": self.developer_log.error_details,
                 "optimization_opportunities": self.developer_log.optimization_opportunities,
                 "technical_debt_notes": self.developer_log.technical_debt_notes,
-                "benchmark_comparisons": self.developer_log.benchmark_comparisons
+                "benchmark_comparisons": self.developer_log.benchmark_comparisons,
             },
             "navigation_structure": self.navigation_structure,
             "export_formats": self.export_formats,
-            "user_actions": self.user_actions
+            "user_actions": self.user_actions,
         }
 
     def to_json(self) -> str:
@@ -310,7 +323,9 @@ class LogEntry(TypedDict):
 
 
 # Utility functions
-def create_report_metadata(job_id: str, report_id: Optional[str] = None) -> ReportMetadata:
+def create_report_metadata(
+    job_id: str, report_id: Optional[str] = None
+) -> ReportMetadata:
     """Create report metadata with current timestamp."""
     if report_id is None:
         report_id = f"report_{job_id}_{int(datetime.now().timestamp())}"
@@ -320,7 +335,7 @@ def create_report_metadata(job_id: str, report_id: Optional[str] = None) -> Repo
         job_id=job_id,
         generation_timestamp=datetime.now(),
         version="2.0.0",
-        report_type="comprehensive"
+        report_type="comprehensive",
     )
 
 
@@ -334,9 +349,9 @@ def calculate_quality_score(summary: SummaryReport) -> float:
     failed_weight = 0.0
 
     weighted_score = (
-        (summary.converted_features * success_weight) +
-        (summary.partially_converted_features * partial_weight) +
-        (summary.failed_features * failed_weight)
+        (summary.converted_features * success_weight)
+        + (summary.partially_converted_features * partial_weight)
+        + (summary.failed_features * failed_weight)
     ) / summary.total_features
 
     return round(weighted_score * 100, 1)

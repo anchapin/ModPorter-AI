@@ -4,21 +4,19 @@ Phase 3: Core Logic Completion - 80% Coverage Target
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock
 import sys
 import os
 import numpy as np
-from datetime import datetime
-from typing import Dict, List, Any
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from src.services.conversion_success_prediction import (
     ConversionSuccessPredictionService,
     PredictionType,
     ConversionFeatures,
-    PredictionResult
+    PredictionResult,
 )
 from src.db.models import KnowledgeNode
 
@@ -29,16 +27,24 @@ class TestConversionSuccessPredictionService:
     @pytest.fixture
     def service(self):
         """Create service instance for testing"""
-        with patch('services.conversion_success_prediction.KnowledgeNodeCRUD'), \
-             patch('services.conversion_success_prediction.KnowledgeRelationshipCRUD'), \
-             patch('services.conversion_success_prediction.ConversionPatternCRUD'):
+        with (
+            patch("services.conversion_success_prediction.KnowledgeNodeCRUD"),
+            patch("services.conversion_success_prediction.KnowledgeRelationshipCRUD"),
+            patch("services.conversion_success_prediction.ConversionPatternCRUD"),
+        ):
             service = ConversionSuccessPredictionService()
             # Initialize required attributes
             service.is_trained = True
             service.models = {ptype.value: Mock() for ptype in PredictionType}
             service.preprocessors = {"feature_scaler": Mock()}
-            service.preprocessors["feature_scaler"].transform.return_value = np.array([[1.0, 2.0, 3.0]])
-            service.feature_names = ["expert_validated", "usage_count", "community_rating"]
+            service.preprocessors["feature_scaler"].transform.return_value = np.array(
+                [[1.0, 2.0, 3.0]]
+            )
+            service.feature_names = [
+                "expert_validated",
+                "usage_count",
+                "community_rating",
+            ]
             service.prediction_history = []
             service.training_data = []
             return service
@@ -68,7 +74,7 @@ class TestConversionSuccessPredictionService:
             feature_count=10,
             complexity_score=0.3,
             version_compatibility=0.9,
-            cross_platform_difficulty=0.2
+            cross_platform_difficulty=0.2,
         )
 
     @pytest.fixture
@@ -84,14 +90,14 @@ class TestConversionSuccessPredictionService:
             platform="java",
             expert_validated=True,
             community_rating=4.5,
-            minecraft_version="1.20.0"
+            minecraft_version="1.20.0",
         )
 
     # Test initialization
     def test_service_initialization(self, service):
         """Test service initialization"""
         assert service is not None
-        assert hasattr(service, 'is_trained')
+        assert hasattr(service, "is_trained")
         assert service.is_trained is True
 
     # Test feature encoding
@@ -122,11 +128,11 @@ class TestConversionSuccessPredictionService:
             name="test_block",
             description="Test block",
             metadata=None,
-            properties='{}',
+            properties="{}",
             platform="java",
             expert_validated=False,
             community_rating=0.0,
-            minecraft_version="1.20.0"
+            minecraft_version="1.20.0",
         )
         complexity = service._calculate_complexity(node)
         assert isinstance(complexity, float)
@@ -136,8 +142,7 @@ class TestConversionSuccessPredictionService:
     def test_calculate_cross_platform_difficulty(self, service, sample_knowledge_node):
         """Test cross-platform difficulty calculation"""
         difficulty = service._calculate_cross_platform_difficulty(
-            sample_knowledge_node, 
-            "Bedrock Block"
+            sample_knowledge_node, "Bedrock Block"
         )
         assert isinstance(difficulty, float)
         assert 0 <= difficulty <= 1
@@ -157,12 +162,14 @@ class TestConversionSuccessPredictionService:
         """Test making predictions"""
         # Mock model to return valid prediction
         service.models["overall_success"].predict.return_value = [0.8]
-        service.models["overall_success"].feature_importances_ = np.array([0.1, 0.2, 0.3])
+        service.models["overall_success"].feature_importances_ = np.array(
+            [0.1, 0.2, 0.3]
+        )
 
         result = await service._make_prediction(
             prediction_type=PredictionType.OVERALL_SUCCESS,
             feature_vector=np.array([1.0, 2.0, 3.0]),
-            features=sample_features
+            features=sample_features,
         )
 
         assert isinstance(result, PredictionResult)
@@ -174,11 +181,9 @@ class TestConversionSuccessPredictionService:
         """Test prediction confidence calculation"""
         mock_model = Mock()
         mock_model.predict.return_value = [0.8, 0.8, 0.8]
-        
+
         confidence = service._calculate_prediction_confidence(
-            mock_model,
-            np.array([1.0, 2.0, 3.0]),
-            PredictionType.OVERALL_SUCCESS
+            mock_model, np.array([1.0, 2.0, 3.0]), PredictionType.OVERALL_SUCCESS
         )
         assert isinstance(confidence, float)
         assert 0 <= confidence <= 1
@@ -187,9 +192,7 @@ class TestConversionSuccessPredictionService:
     def test_identify_risk_factors(self, service, sample_features):
         """Test risk factor identification"""
         risks = service._identify_risk_factors(
-            sample_features,
-            PredictionType.OVERALL_SUCCESS,
-            0.3
+            sample_features, PredictionType.OVERALL_SUCCESS, 0.3
         )
         assert isinstance(risks, list)
         assert all(isinstance(risk, str) for risk in risks)
@@ -198,9 +201,7 @@ class TestConversionSuccessPredictionService:
     def test_identify_success_factors(self, service, sample_features):
         """Test success factor identification"""
         factors = service._identify_success_factors(
-            sample_features,
-            PredictionType.OVERALL_SUCCESS,
-            0.8
+            sample_features, PredictionType.OVERALL_SUCCESS, 0.8
         )
         assert isinstance(factors, list)
         assert all(isinstance(factor, str) for factor in factors)
@@ -218,20 +219,20 @@ class TestConversionSuccessPredictionService:
                 risk_factors=[],
                 success_factors=[],
                 recommendations=[],
-                prediction_metadata={}
+                prediction_metadata={},
             )
         }
 
         viability = await service._analyze_conversion_viability(
             java_concept="Java Block",
-            bedrock_concept="Bedrock Block", 
-            predictions=predictions
+            bedrock_concept="Bedrock Block",
+            predictions=predictions,
         )
         assert isinstance(viability, dict)
-        assert 'viability_level' in viability
-        assert 'success_probability' in viability
-        assert 'confidence' in viability
-        assert viability['viability_level'] in ['high', 'medium', 'low']
+        assert "viability_level" in viability
+        assert "success_probability" in viability
+        assert "confidence" in viability
+        assert viability["viability_level"] in ["high", "medium", "low"]
 
     # Test recommendation generation
     def test_get_recommended_action(self, service):
@@ -249,15 +250,20 @@ class TestConversionSuccessPredictionService:
         # Low viability
         action = service._get_recommended_action("low")
         assert isinstance(action, str)
-        assert any(word in action.lower() for word in ["avoid", "alternatives", "expert", "redesign"])
+        assert any(
+            word in action.lower()
+            for word in ["avoid", "alternatives", "expert", "redesign"]
+        )
 
     # Test feature importance
     def test_get_feature_importance(self, service):
         """Test feature importance extraction"""
         mock_model = Mock()
         mock_model.feature_importances_ = np.array([0.3, 0.5, 0.2])
-        
-        importance = service._get_feature_importance(mock_model, PredictionType.OVERALL_SUCCESS)
+
+        importance = service._get_feature_importance(
+            mock_model, PredictionType.OVERALL_SUCCESS
+        )
         assert isinstance(importance, dict)
         assert len(importance) == 3
         assert all(isinstance(v, float) for v in importance.values())
@@ -267,52 +273,59 @@ class TestConversionSuccessPredictionService:
     async def test_train_models(self, service, mock_db_session):
         """Test model training"""
         # Mock training data collection with sufficient samples
-        with patch.object(service, '_collect_training_data') as mock_collect:
+        with patch.object(service, "_collect_training_data") as mock_collect:
             mock_collect.return_value = [
                 {
-                    'java_concept': 'test',
-                    'bedrock_concept': 'test',
-                    'pattern_type': 'direct_conversion',
-                    'minecraft_version': '1.20.0',
-                    'overall_success': 1,
-                    'feature_completeness': 0.8,
-                    'performance_impact': 0.7,
-                    'compatibility_score': 0.9,
-                    'risk_assessment': 0,
-                    'conversion_time': 1.0,
-                    'resource_usage': 0.5,
-                    'expert_validated': True,
-                    'usage_count': 100,
-                    'confidence_score': 0.8,
-                    'features': {}
+                    "java_concept": "test",
+                    "bedrock_concept": "test",
+                    "pattern_type": "direct_conversion",
+                    "minecraft_version": "1.20.0",
+                    "overall_success": 1,
+                    "feature_completeness": 0.8,
+                    "performance_impact": 0.7,
+                    "compatibility_score": 0.9,
+                    "risk_assessment": 0,
+                    "conversion_time": 1.0,
+                    "resource_usage": 0.5,
+                    "expert_validated": True,
+                    "usage_count": 100,
+                    "confidence_score": 0.8,
+                    "features": {},
                 }
             ] * 100  # Create 100 samples
 
             # Mock model training
-            with patch.object(service, '_train_model') as mock_train:
+            with patch.object(service, "_train_model") as mock_train:
                 mock_train.return_value = {
-                    'training_samples': 80,
-                    'test_samples': 20,
-                    'metrics': {'accuracy': 0.8}
+                    "training_samples": 80,
+                    "test_samples": 20,
+                    "metrics": {"accuracy": 0.8},
                 }
 
                 result = await service.train_models(db=mock_db_session)
                 assert isinstance(result, dict)
-                assert any(key in result for key in ['success', 'error', 'models_trained'])
+                assert any(
+                    key in result for key in ["success", "error", "models_trained"]
+                )
 
     # Test conversion success prediction
     @pytest.mark.asyncio
-    async def test_predict_conversion_success(self, service, mock_db_session, sample_features):
+    async def test_predict_conversion_success(
+        self, service, mock_db_session, sample_features
+    ):
         """Test conversion success prediction"""
         # Mock feature extraction process
-        with patch.object(service, '_extract_conversion_features') as mock_extract, \
-             patch.object(service, '_prepare_feature_vector') as mock_prepare, \
-             patch.object(service, '_make_prediction') as mock_predict, \
-             patch.object(service, '_analyze_conversion_viability') as mock_analyze, \
-             patch.object(service, '_generate_conversion_recommendations') as mock_recomm, \
-             patch.object(service, '_identify_issues_mitigations') as mock_issues, \
-             patch.object(service, '_store_prediction') as mock_store:
-
+        with (
+            patch.object(service, "_extract_conversion_features") as mock_extract,
+            patch.object(service, "_prepare_feature_vector") as mock_prepare,
+            patch.object(service, "_make_prediction") as mock_predict,
+            patch.object(service, "_analyze_conversion_viability") as mock_analyze,
+            patch.object(
+                service, "_generate_conversion_recommendations"
+            ) as mock_recomm,
+            patch.object(service, "_identify_issues_mitigations") as mock_issues,
+            patch.object(service, "_store_prediction"),
+        ):
             mock_extract.return_value = sample_features
             mock_prepare.return_value = np.array([1.0, 2.0, 3.0])
             mock_predict.return_value = PredictionResult(
@@ -323,9 +336,13 @@ class TestConversionSuccessPredictionService:
                 risk_factors=["low_complexity"],
                 success_factors=["common_pattern"],
                 recommendations=["proceed"],
-                prediction_metadata={}
+                prediction_metadata={},
             )
-            mock_analyze.return_value = {"viability_level": "high", "success_probability": 0.8, "confidence": 0.9}
+            mock_analyze.return_value = {
+                "viability_level": "high",
+                "success_probability": 0.8,
+                "confidence": 0.9,
+            }
             mock_recomm.return_value = ["Recommended action"]
             mock_issues.return_value = {"issues": [], "mitigations": []}
 
@@ -334,7 +351,7 @@ class TestConversionSuccessPredictionService:
                 bedrock_concept="Bedrock Block",
                 pattern_type="direct_conversion",
                 minecraft_version="1.20.0",
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             assert isinstance(result, dict)
@@ -348,29 +365,26 @@ class TestConversionSuccessPredictionService:
         """Test batch success prediction"""
         requests = [
             {
-                'java_concept': 'Java Block 1',
-                'bedrock_concept': 'Bedrock Block 1',
-                'pattern_type': 'direct_conversion',
-                'minecraft_version': '1.20.0'
+                "java_concept": "Java Block 1",
+                "bedrock_concept": "Bedrock Block 1",
+                "pattern_type": "direct_conversion",
+                "minecraft_version": "1.20.0",
             },
             {
-                'java_concept': 'Java Block 2',
-                'bedrock_concept': 'Bedrock Block 2',
-                'pattern_type': 'entity_conversion',
-                'minecraft_version': '1.20.0'
-            }
+                "java_concept": "Java Block 2",
+                "bedrock_concept": "Bedrock Block 2",
+                "pattern_type": "entity_conversion",
+                "minecraft_version": "1.20.0",
+            },
         ]
 
         # Mock prediction method
-        with patch.object(service, 'predict_conversion_success') as mock_predict:
+        with patch.object(service, "predict_conversion_success") as mock_predict:
             mock_predict.return_value = {
                 "success": True,
                 "predictions": {
-                    "overall_success": {
-                        "predicted_value": 0.8,
-                        "confidence": 0.9
-                    }
-                }
+                    "overall_success": {"predicted_value": 0.8, "confidence": 0.9}
+                },
             }
 
             results = await service.batch_predict_success(requests, db=mock_db_session)
@@ -393,7 +407,7 @@ class TestConversionSuccessPredictionService:
             bedrock_concept="Bedrock Block",
             pattern_type="direct_conversion",
             minecraft_version="1.20.0",
-            db=mock_db_session
+            db=mock_db_session,
         )
 
         assert isinstance(result, dict)
@@ -406,25 +420,26 @@ class TestConversionSuccessPredictionService:
         """Test updating models with feedback"""
         conversion_id = "test_conversion_1"
         actual_result = {"overall_success": 1, "feature_completeness": 0.9}
-        
-        # Add a prediction to history
-        service.prediction_history.append({
-            "conversion_id": conversion_id,
-            "predictions": {
-                "overall_success": {"predicted_value": 0.8}
-            }
-        })
 
-        with patch.object(service, '_update_model_metrics') as mock_update, \
-             patch.object(service, '_create_training_example') as mock_create:
-            
+        # Add a prediction to history
+        service.prediction_history.append(
+            {
+                "conversion_id": conversion_id,
+                "predictions": {"overall_success": {"predicted_value": 0.8}},
+            }
+        )
+
+        with (
+            patch.object(service, "_update_model_metrics") as mock_update,
+            patch.object(service, "_create_training_example") as mock_create,
+        ):
             mock_update.return_value = {"improvement": 0.1}
             mock_create.return_value = {"test": "example"}
 
             result = await service.update_models_with_feedback(
                 conversion_id=conversion_id,
                 actual_result=actual_result,
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             assert isinstance(result, dict)
@@ -445,12 +460,17 @@ class TestConversionSuccessPredictionService:
             platform="java",
             expert_validated=True,
             community_rating=4.5,
-            minecraft_version="1.20.0"
+            minecraft_version="1.20.0",
         )
 
-        with patch('services.conversion_success_prediction.KnowledgeNodeCRUD.search') as mock_search, \
-             patch('services.conversion_success_prediction.KnowledgeRelationshipCRUD.get_by_source') as mock_rels:
-            
+        with (
+            patch(
+                "services.conversion_success_prediction.KnowledgeNodeCRUD.search"
+            ) as mock_search,
+            patch(
+                "services.conversion_success_prediction.KnowledgeRelationshipCRUD.get_by_source"
+            ) as mock_rels,
+        ):
             mock_search.return_value = [java_node]
             mock_rels.return_value = []
 
@@ -459,7 +479,7 @@ class TestConversionSuccessPredictionService:
                 bedrock_concept="Bedrock Block",
                 pattern_type="direct_conversion",
                 minecraft_version="1.20.0",
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             assert isinstance(features, ConversionFeatures)
@@ -472,21 +492,21 @@ class TestConversionSuccessPredictionService:
         """Test training data preparation"""
         training_data = [
             {
-                'java_concept': 'test',
-                'bedrock_concept': 'test',
-                'pattern_type': 'direct_conversion',
-                'minecraft_version': '1.20.0',
-                'overall_success': 1,
-                'feature_completeness': 0.8,
-                'performance_impact': 0.7,
-                'compatibility_score': 0.9,
-                'risk_assessment': 0,
-                'conversion_time': 1.0,
-                'resource_usage': 0.5,
-                'expert_validated': True,
-                'usage_count': 100,
-                'confidence_score': 0.8,
-                'features': {}
+                "java_concept": "test",
+                "bedrock_concept": "test",
+                "pattern_type": "direct_conversion",
+                "minecraft_version": "1.20.0",
+                "overall_success": 1,
+                "feature_completeness": 0.8,
+                "performance_impact": 0.7,
+                "compatibility_score": 0.9,
+                "risk_assessment": 0,
+                "conversion_time": 1.0,
+                "resource_usage": 0.5,
+                "expert_validated": True,
+                "usage_count": 100,
+                "confidence_score": 0.8,
+                "features": {},
             }
         ]
 
@@ -534,7 +554,7 @@ class TestConversionFeatures:
             feature_count=10,
             complexity_score=0.3,
             version_compatibility=0.9,
-            cross_platform_difficulty=0.2
+            cross_platform_difficulty=0.2,
         )
 
         assert features.java_concept == "Java Block"
@@ -568,7 +588,7 @@ class TestPredictionResult:
             risk_factors=["low_complexity"],
             success_factors=["common_pattern"],
             recommendations=["proceed_with_conversion"],
-            prediction_metadata={"model": "random_forest"}
+            prediction_metadata={"model": "random_forest"},
         )
 
         assert result.prediction_type == PredictionType.OVERALL_SUCCESS

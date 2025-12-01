@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+
 try:
     from src.config import settings
 except ImportError:

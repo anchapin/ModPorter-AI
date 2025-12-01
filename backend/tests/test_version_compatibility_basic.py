@@ -6,22 +6,22 @@ This test file improves coverage for version compatibility functionality.
 import pytest
 import sys
 import os
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import Dict, List, Any
+from unittest.mock import Mock, AsyncMock, patch
 
 # Add src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 # Mock magic library before importing modules that use it
-sys.modules['magic'] = Mock()
-sys.modules['magic'].open = Mock(return_value=Mock())
-sys.modules['magic'].from_buffer = Mock(return_value='application/octet-stream')
-sys.modules['magic'].from_file = Mock(return_value='data')
+sys.modules["magic"] = Mock()
+sys.modules["magic"].open = Mock(return_value=Mock())
+sys.modules["magic"].from_buffer = Mock(return_value="application/octet-stream")
+sys.modules["magic"].from_file = Mock(return_value="data")
 
 # Mock other dependencies
-sys.modules['neo4j'] = Mock()
-sys.modules['crewai'] = Mock()
-sys.modules['langchain'] = Mock()
+sys.modules["neo4j"] = Mock()
+sys.modules["crewai"] = Mock()
+sys.modules["langchain"] = Mock()
+
 
 class TestVersionCompatibility:
     """Test class for version compatibility module"""
@@ -40,28 +40,34 @@ class TestVersionCompatibility:
             "compatibility_score": 0.85,
             "features_supported": ["blocks", "entities", "items"],
             "known_issues": [
-                {"issue": "command_block", "severity": "low", "description": "Some commands might not work"}
+                {
+                    "issue": "command_block",
+                    "severity": "low",
+                    "description": "Some commands might not work",
+                }
             ],
-            "recommendations": [
-                "Update to latest version for best compatibility"
-            ]
+            "recommendations": ["Update to latest version for best compatibility"],
         }
 
     def test_import_version_compatibility(self):
         """Test that version compatibility module can be imported"""
         try:
             import api.version_compatibility
+
             assert api.version_compatibility is not None
         except ImportError as e:
             pytest.skip(f"Could not import version_compatibility: {e}")
 
     def test_get_version_compatibility_success(self, mock_db, mock_version_data):
         """Test successful retrieval of version compatibility data"""
-        with patch('src.api.version_compatibility.get_version_compatibility') as mock_get:
+        with patch(
+            "src.api.version_compatibility.get_version_compatibility"
+        ) as mock_get:
             mock_get.return_value = mock_version_data
 
             try:
                 from api.version_compatibility import get_version_compatibility
+
                 result = get_version_compatibility("1.19.4", "1.19.80", mock_db)
 
                 assert result["java_version"] == "1.19.4"
@@ -75,12 +81,17 @@ class TestVersionCompatibility:
 
     def test_get_version_compatibility_not_found(self, mock_db):
         """Test handling when compatibility info is not found"""
-        with patch('src.api.version_compatibility.get_version_compatibility') as mock_get:
+        with patch(
+            "src.api.version_compatibility.get_version_compatibility"
+        ) as mock_get:
             mock_get.return_value = None
 
             try:
                 from api.version_compatibility import get_version_compatibility
-                result = get_version_compatibility("999.999.999", "999.999.999", mock_db)
+
+                result = get_version_compatibility(
+                    "999.999.999", "999.999.999", mock_db
+                )
 
                 assert result is None
                 mock_get.assert_called_once_with("999.999.999", "999.999.999", mock_db)
@@ -136,6 +147,7 @@ class TestVersionCompatibility:
         except ImportError as e:
             pytest.skip(f"Could not import get_compatibility_recommendations: {e}")
 
+
 class TestVersionCompatibilityAPI:
     """Test API endpoints for version compatibility"""
 
@@ -147,7 +159,7 @@ class TestVersionCompatibilityAPI:
         from fastapi import FastAPI
 
         # Mock database dependency at module level
-        with patch('src.api.version_compatibility.get_db') as mock_get_db:
+        with patch("src.api.version_compatibility.get_db") as mock_get_db:
             mock_get_db.return_value = Mock()
 
             from src.api.version_compatibility import router
@@ -160,15 +172,19 @@ class TestVersionCompatibilityAPI:
 
     def test_get_compatibility_endpoint(self, mock_client):
         """Test the GET /compatibility endpoint"""
-        with patch('src.api.version_compatibility.get_version_compatibility') as mock_get:
+        with patch(
+            "src.api.version_compatibility.get_version_compatibility"
+        ) as mock_get:
             mock_get.return_value = {
                 "java_version": "1.19.4",
                 "bedrock_version": "1.19.80",
                 "compatibility_score": 0.85,
-                "features_supported": ["blocks", "entities"]
+                "features_supported": ["blocks", "entities"],
             }
 
-            response = mock_client.get("/api/v1/version-compatibility/compatibility/1.19.4/1.19.80")
+            response = mock_client.get(
+                "/api/v1/version-compatibility/compatibility/1.19.4/1.19.80"
+            )
 
             # For now, just verify the import works and endpoint is reachable
             # The actual functionality can be fixed later
@@ -180,20 +196,26 @@ class TestVersionCompatibilityAPI:
 
     def test_get_compatibility_endpoint_not_found(self, mock_client):
         """Test the GET /compatibility endpoint with non-existent versions"""
-        with patch('src.api.version_compatibility.get_version_compatibility') as mock_get:
+        with patch(
+            "src.api.version_compatibility.get_version_compatibility"
+        ) as mock_get:
             mock_get.return_value = None
 
-            response = mock_client.get("/api/v1/version-compatibility/999.999.999/999.999.999")
+            response = mock_client.get(
+                "/api/v1/version-compatibility/999.999.999/999.999.999"
+            )
 
             assert response.status_code == 404
 
     def test_list_supported_versions(self, mock_client):
         """Test the GET /compatibility/supported endpoint"""
-        with patch('src.api.version_compatibility.list_supported_versions') as mock_list:
+        with patch(
+            "src.api.version_compatibility.list_supported_versions"
+        ) as mock_list:
             mock_list.return_value = [
                 {"version": "1.19.4", "status": "stable"},
                 {"version": "1.20.0", "status": "stable"},
-                {"version": "1.20.1", "status": "beta"}
+                {"version": "1.20.1", "status": "beta"},
             ]
 
             response = mock_client.get("/api/v1/version-compatibility/supported")

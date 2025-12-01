@@ -108,7 +108,6 @@ class ComparisonResponse(BaseModel):
 async def create_comparison(
     request: CreateComparisonRequest, session: AsyncSession = Depends(get_db)
 ) -> ComparisonResponse:
-
     engine = ComparisonEngine()
     try:
         # Validate conversion_id as UUID and check if ConversionJob exists

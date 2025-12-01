@@ -15,7 +15,9 @@ from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    KnowledgeNodeCRUD,
+    KnowledgeRelationshipCRUD,
+    ConversionPatternCRUD,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationLayer(Enum):
     """Validation layers for confidence scoring."""
+
     EXPERT_VALIDATION = "expert_validation"
     COMMUNITY_VALIDATION = "community_validation"
     HISTORICAL_VALIDATION = "historical_validation"
@@ -36,6 +39,7 @@ class ValidationLayer(Enum):
 @dataclass
 class ValidationScore:
     """Individual validation layer score."""
+
     layer: ValidationLayer
     score: float
     confidence: float
@@ -46,6 +50,7 @@ class ValidationScore:
 @dataclass
 class ConfidenceAssessment:
     """Complete confidence assessment with all validation layers."""
+
     overall_confidence: float
     validation_scores: List[ValidationScore]
     risk_factors: List[str]
@@ -66,7 +71,7 @@ class AutomatedConfidenceScoringService:
             ValidationLayer.CROSS_PLATFORM_VALIDATION: 0.10,
             ValidationLayer.VERSION_COMPATIBILITY: 0.08,
             ValidationLayer.USAGE_VALIDATION: 0.05,
-            ValidationLayer.SEMANTIC_VALIDATION: 0.02
+            ValidationLayer.SEMANTIC_VALIDATION: 0.02,
         }
         self.validation_cache = {}
         self.scoring_history = []
@@ -76,7 +81,7 @@ class AutomatedConfidenceScoringService:
         item_type: str,  # "node", "relationship", "pattern"
         item_id: str,
         context_data: Dict[str, Any] = None,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> ConfidenceAssessment:
         """
         Assess confidence for knowledge graph item using multi-layer validation.
@@ -122,10 +127,12 @@ class AutomatedConfidenceScoringService:
             assessment_metadata = {
                 "item_type": item_type,
                 "item_id": item_id,
-                "validation_layers_applied": [score.layer.value for score in validation_scores],
+                "validation_layers_applied": [
+                    score.layer.value for score in validation_scores
+                ],
                 "assessment_timestamp": datetime.utcnow().isoformat(),
                 "context_applied": context_data,
-                "scoring_method": "weighted_multi_layer_validation"
+                "scoring_method": "weighted_multi_layer_validation",
             }
 
             # Create assessment
@@ -135,20 +142,22 @@ class AutomatedConfidenceScoringService:
                 risk_factors=risk_factors,
                 confidence_factors=confidence_factors,
                 recommendations=recommendations,
-                assessment_metadata=assessment_metadata
+                assessment_metadata=assessment_metadata,
             )
 
             # Cache assessment
             self._cache_assessment(item_type, item_id, assessment)
 
             # Track scoring history
-            self.scoring_history.append({
-                "timestamp": datetime.utcnow().isoformat(),
-                "item_type": item_type,
-                "item_id": item_id,
-                "overall_confidence": overall_confidence,
-                "validation_count": len(validation_scores)
-            })
+            self.scoring_history.append(
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "item_type": item_type,
+                    "item_id": item_id,
+                    "overall_confidence": overall_confidence,
+                    "validation_count": len(validation_scores),
+                }
+            )
 
             return assessment
 
@@ -161,14 +170,14 @@ class AutomatedConfidenceScoringService:
                 risk_factors=[f"Assessment error: {str(e)}"],
                 confidence_factors=[],
                 recommendations=["Retry assessment with valid data"],
-                assessment_metadata={"error": str(e)}
+                assessment_metadata={"error": str(e)},
             )
 
     async def batch_assess_confidence(
         self,
         items: List[Tuple[str, str]],  # List of (item_type, item_id) tuples
         context_data: Dict[str, Any] = None,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> Dict[str, Any]:
         """
         Assess confidence for multiple items with batch optimization.
@@ -214,9 +223,13 @@ class AutomatedConfidenceScoringService:
                 "recommendations": batch_recommendations,
                 "batch_metadata": {
                     "assessment_timestamp": datetime.utcnow().isoformat(),
-                    "average_confidence": np.mean(batch_scores) if batch_scores else 0.0,
-                    "confidence_distribution": self._calculate_confidence_distribution(batch_scores)
-                }
+                    "average_confidence": np.mean(batch_scores)
+                    if batch_scores
+                    else 0.0,
+                    "confidence_distribution": self._calculate_confidence_distribution(
+                        batch_scores
+                    ),
+                },
             }
 
         except Exception as e:
@@ -225,7 +238,7 @@ class AutomatedConfidenceScoringService:
                 "success": False,
                 "error": f"Batch assessment failed: {str(e)}",
                 "total_items": len(items),
-                "assessed_items": 0
+                "assessed_items": 0,
             }
 
     async def update_confidence_from_feedback(
@@ -233,7 +246,7 @@ class AutomatedConfidenceScoringService:
         item_type: str,
         item_id: str,
         feedback_data: Dict[str, Any],
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> Dict[str, Any]:
         """
         Update confidence scores based on user feedback.
@@ -249,7 +262,9 @@ class AutomatedConfidenceScoringService:
         """
         try:
             # Get current assessment
-            current_assessment = await self.assess_confidence(item_type, item_id, {}, db)
+            current_assessment = await self.assess_confidence(
+                item_type, item_id, {}, db
+            )
 
             # Calculate feedback impact
             feedback_impact = self._calculate_feedback_impact(feedback_data)
@@ -271,11 +286,14 @@ class AutomatedConfidenceScoringService:
                 "previous_confidence": current_assessment.overall_confidence,
                 "new_confidence": new_overall_confidence,
                 "feedback_data": feedback_data,
-                "feedback_impact": feedback_impact
+                "feedback_impact": feedback_impact,
             }
 
             # Update item in database if confidence changed significantly
-            if abs(new_overall_confidence - current_assessment.overall_confidence) > 0.1:
+            if (
+                abs(new_overall_confidence - current_assessment.overall_confidence)
+                > 0.1
+            ):
                 await self._update_item_confidence(
                     item_type, item_id, new_overall_confidence, db
                 )
@@ -284,24 +302,19 @@ class AutomatedConfidenceScoringService:
                 "success": True,
                 "previous_confidence": current_assessment.overall_confidence,
                 "new_confidence": new_overall_confidence,
-                "confidence_change": new_overall_confidence - current_assessment.overall_confidence,
+                "confidence_change": new_overall_confidence
+                - current_assessment.overall_confidence,
                 "updated_scores": updated_scores,
                 "feedback_impact": feedback_impact,
-                "update_record": update_record
+                "update_record": update_record,
             }
 
         except Exception as e:
             logger.error(f"Error updating confidence from feedback: {e}")
-            return {
-                "success": False,
-                "error": f"Feedback update failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Feedback update failed: {str(e)}"}
 
     async def get_confidence_trends(
-        self,
-        days: int = 30,
-        item_type: Optional[str] = None,
-        db: AsyncSession = None
+        self, days: int = 30, item_type: Optional[str] = None, db: AsyncSession = None
     ) -> Dict[str, Any]:
         """
         Get confidence score trends over time.
@@ -318,13 +331,15 @@ class AutomatedConfidenceScoringService:
             # Get recent assessments from history
             cutoff_date = datetime.utcnow() - timedelta(days=days)
             recent_assessments = [
-                assessment for assessment in self.scoring_history
+                assessment
+                for assessment in self.scoring_history
                 if datetime.fromisoformat(assessment["timestamp"]) > cutoff_date
             ]
 
             if item_type:
                 recent_assessments = [
-                    assessment for assessment in recent_assessments
+                    assessment
+                    for assessment in recent_assessments
                     if assessment["item_type"] == item_type
                 ]
 
@@ -335,7 +350,9 @@ class AutomatedConfidenceScoringService:
             layer_performance = self._analyze_layer_performance(recent_assessments)
 
             # Generate insights
-            insights = self._generate_trend_insights(confidence_trend, layer_performance)
+            insights = self._generate_trend_insights(
+                confidence_trend, layer_performance
+            )
 
             return {
                 "success": True,
@@ -347,24 +364,18 @@ class AutomatedConfidenceScoringService:
                 "insights": insights,
                 "trend_metadata": {
                     "analysis_timestamp": datetime.utcnow().isoformat(),
-                    "data_points": len(recent_assessments)
-                }
+                    "data_points": len(recent_assessments),
+                },
             }
 
         except Exception as e:
             logger.error(f"Error getting confidence trends: {e}")
-            return {
-                "success": False,
-                "error": f"Trend analysis failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Trend analysis failed: {str(e)}"}
 
     # Private Helper Methods
 
     async def _get_item_data(
-        self,
-        item_type: str,
-        item_id: str,
-        db: AsyncSession
+        self, item_type: str, item_id: str, db: AsyncSession
     ) -> Optional[Dict[str, Any]]:
         """Get item data from database."""
         try:
@@ -383,7 +394,7 @@ class AutomatedConfidenceScoringService:
                         "minecraft_version": node.minecraft_version,
                         "properties": json.loads(node.properties or "{}"),
                         "created_at": node.created_at,
-                        "updated_at": node.updated_at
+                        "updated_at": node.updated_at,
                     }
 
             elif item_type == "relationship":
@@ -401,7 +412,7 @@ class AutomatedConfidenceScoringService:
                         "community_votes": relationship.community_votes,
                         "properties": json.loads(relationship.properties or "{}"),
                         "created_at": relationship.created_at,
-                        "updated_at": relationship.updated_at
+                        "updated_at": relationship.updated_at,
                     }
 
             elif item_type == "pattern":
@@ -418,10 +429,14 @@ class AutomatedConfidenceScoringService:
                         "confidence_score": pattern.confidence_score,
                         "expert_validated": pattern.expert_validated,
                         "minecraft_version": pattern.minecraft_version,
-                        "conversion_features": json.loads(pattern.conversion_features or "{}"),
-                        "validation_results": json.loads(pattern.validation_results or "{}"),
+                        "conversion_features": json.loads(
+                            pattern.conversion_features or "{}"
+                        ),
+                        "validation_results": json.loads(
+                            pattern.validation_results or "{}"
+                        ),
                         "created_at": pattern.created_at,
-                        "updated_at": pattern.updated_at
+                        "updated_at": pattern.updated_at,
                     }
 
             return None
@@ -434,21 +449,26 @@ class AutomatedConfidenceScoringService:
         self,
         layer: ValidationLayer,
         item_data: Dict[str, Any],
-        context_data: Optional[Dict[str, Any]]
+        context_data: Optional[Dict[str, Any]],
     ) -> bool:
         """Determine if a validation layer should be applied."""
         try:
             # Skip layers that don't apply to certain item types
-            if layer == ValidationLayer.CROSS_PLATFORM_VALIDATION and \
-               item_data.get("platform") not in ["java", "bedrock", "both"]:
+            if layer == ValidationLayer.CROSS_PLATFORM_VALIDATION and item_data.get(
+                "platform"
+            ) not in ["java", "bedrock", "both"]:
                 return False
 
-            if layer == ValidationLayer.USAGE_VALIDATION and \
-               item_data.get("usage_count", 0) == 0:
+            if (
+                layer == ValidationLayer.USAGE_VALIDATION
+                and item_data.get("usage_count", 0) == 0
+            ):
                 return False
 
-            if layer == ValidationLayer.HISTORICAL_VALIDATION and \
-               item_data.get("created_at") is None:
+            if (
+                layer == ValidationLayer.HISTORICAL_VALIDATION
+                and item_data.get("created_at") is None
+            ):
                 return False
 
             # Apply context-based filtering
@@ -469,7 +489,7 @@ class AutomatedConfidenceScoringService:
         item_type: str,
         item_data: Dict[str, Any],
         context_data: Optional[Dict[str, Any]],
-        db: AsyncSession
+        db: AsyncSession,
     ) -> ValidationScore:
         """Apply a specific validation layer and return score."""
         try:
@@ -504,7 +524,7 @@ class AutomatedConfidenceScoringService:
                     score=0.5,
                     confidence=0.5,
                     evidence={},
-                    metadata={"message": "Validation layer not implemented"}
+                    metadata={"message": "Validation layer not implemented"},
                 )
 
         except Exception as e:
@@ -514,10 +534,12 @@ class AutomatedConfidenceScoringService:
                 score=0.3,  # Low score due to error
                 confidence=0.2,
                 evidence={"error": str(e)},
-                metadata={"error": True}
+                metadata={"error": True},
             )
 
-    async def _validate_expert_approval(self, item_data: Dict[str, Any]) -> ValidationScore:
+    async def _validate_expert_approval(
+        self, item_data: Dict[str, Any]
+    ) -> ValidationScore:
         """Validate expert approval status."""
         try:
             expert_validated = item_data.get("expert_validated", False)
@@ -528,7 +550,7 @@ class AutomatedConfidenceScoringService:
                     score=0.95,
                     confidence=0.9,
                     evidence={"expert_validated": True},
-                    metadata={"validation_method": "expert_flag"}
+                    metadata={"validation_method": "expert_flag"},
                 )
             else:
                 return ValidationScore(
@@ -536,7 +558,7 @@ class AutomatedConfidenceScoringService:
                     score=0.3,
                     confidence=0.8,
                     evidence={"expert_validated": False},
-                    metadata={"validation_method": "expert_flag"}
+                    metadata={"validation_method": "expert_flag"},
                 )
 
         except Exception as e:
@@ -546,13 +568,11 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
     async def _validate_community_approval(
-        self,
-        item_data: Dict[str, Any],
-        db: AsyncSession
+        self, item_data: Dict[str, Any], db: AsyncSession
     ) -> ValidationScore:
         """Validate community approval using ratings and contributions."""
         try:
@@ -566,7 +586,7 @@ class AutomatedConfidenceScoringService:
                 # For now, use mock data
                 contributions = [
                     {"type": "vote", "value": "up"},
-                    {"type": "review", "value": "positive"}
+                    {"type": "review", "value": "positive"},
                 ]
 
             # Calculate community score
@@ -576,30 +596,35 @@ class AutomatedConfidenceScoringService:
             # Consider contribution quality
             contribution_score = 0.5
             positive_contributions = sum(
-                1 for c in contributions
+                1
+                for c in contributions
                 if c.get("value") in ["up", "positive", "approved"]
             )
             if contributions:
                 contribution_score = positive_contributions / len(contributions)
 
             # Weighted combination
-            final_score = (rating_score * 0.5 + vote_score * 0.3 + contribution_score * 0.2)
+            final_score = (
+                rating_score * 0.5 + vote_score * 0.3 + contribution_score * 0.2
+            )
 
             return ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=final_score,
-                confidence=min(1.0, community_votes / 5.0),  # More votes = higher confidence
+                confidence=min(
+                    1.0, community_votes / 5.0
+                ),  # More votes = higher confidence
                 evidence={
                     "community_rating": community_rating,
                     "community_votes": community_votes,
                     "contributions": contributions,
-                    "positive_contributions": positive_contributions
+                    "positive_contributions": positive_contributions,
                 },
                 metadata={
                     "rating_score": rating_score,
                     "vote_score": vote_score,
-                    "contribution_score": contribution_score
-                }
+                    "contribution_score": contribution_score,
+                },
             )
 
         except Exception as e:
@@ -609,13 +634,11 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
     async def _validate_historical_performance(
-        self,
-        item_data: Dict[str, Any],
-        db: AsyncSession
+        self, item_data: Dict[str, Any], db: AsyncSession
     ) -> ValidationScore:
         """Validate based on historical performance."""
         try:
@@ -637,7 +660,7 @@ class AutomatedConfidenceScoringService:
             usage_score = min(1.0, usage_count / 100.0)  # 100 uses = max score
 
             # Combined score
-            final_score = (performance_score * 0.5 + usage_score * 0.3 + age_score * 0.2)
+            final_score = performance_score * 0.5 + usage_score * 0.3 + age_score * 0.2
 
             # Confidence based on data availability
             data_confidence = 0.0
@@ -656,13 +679,13 @@ class AutomatedConfidenceScoringService:
                     "age_days": age_days,
                     "success_rate": success_rate,
                     "usage_count": usage_count,
-                    "created_at": created_at.isoformat() if created_at else None
+                    "created_at": created_at.isoformat() if created_at else None,
                 },
                 metadata={
                     "age_score": age_score,
                     "performance_score": performance_score,
-                    "usage_score": usage_score
-                }
+                    "usage_score": usage_score,
+                },
             )
 
         except Exception as e:
@@ -672,13 +695,11 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
     async def _validate_pattern_consistency(
-        self,
-        item_data: Dict[str, Any],
-        db: AsyncSession
+        self, item_data: Dict[str, Any], db: AsyncSession
     ) -> ValidationScore:
         """Validate pattern consistency with similar items."""
         try:
@@ -694,8 +715,12 @@ class AutomatedConfidenceScoringService:
 
             # Check if pattern is well-established
             established_patterns = [
-                "entity_conversion", "block_conversion", "item_conversion",
-                "behavior_conversion", "command_conversion", "direct_conversion"
+                "entity_conversion",
+                "block_conversion",
+                "item_conversion",
+                "behavior_conversion",
+                "command_conversion",
+                "direct_conversion",
             ]
 
             if pattern_type in established_patterns:
@@ -704,7 +729,10 @@ class AutomatedConfidenceScoringService:
             # Relationship consistency
             if item_type == "relationship" and relationship_type:
                 common_relationships = [
-                    "converts_to", "relates_to", "similar_to", "depends_on"
+                    "converts_to",
+                    "relates_to",
+                    "similar_to",
+                    "depends_on",
                 ]
                 if relationship_type in common_relationships:
                     pattern_score = max(pattern_score, 0.8)
@@ -716,11 +744,9 @@ class AutomatedConfidenceScoringService:
                 evidence={
                     "pattern_type": pattern_type,
                     "relationship_type": relationship_type,
-                    "is_established_pattern": pattern_type in established_patterns
+                    "is_established_pattern": pattern_type in established_patterns,
                 },
-                metadata={
-                    "established_patterns": established_patterns
-                }
+                metadata={"established_patterns": established_patterns},
             )
 
         except Exception as e:
@@ -730,10 +756,12 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
-    async def _validate_cross_platform_compatibility(self, item_data: Dict[str, Any]) -> ValidationScore:
+    async def _validate_cross_platform_compatibility(
+        self, item_data: Dict[str, Any]
+    ) -> ValidationScore:
         """Validate cross-platform compatibility."""
         try:
             platform = item_data.get("platform", "")
@@ -759,7 +787,7 @@ class AutomatedConfidenceScoringService:
                 version_score = 0.5  # Unknown version
 
             # Combined score
-            final_score = (platform_score * 0.6 + version_score * 0.4)
+            final_score = platform_score * 0.6 + version_score * 0.4
 
             return ValidationScore(
                 layer=ValidationLayer.CROSS_PLATFORM_VALIDATION,
@@ -769,9 +797,9 @@ class AutomatedConfidenceScoringService:
                     "platform": platform,
                     "minecraft_version": minecraft_version,
                     "platform_score": platform_score,
-                    "version_score": version_score
+                    "version_score": version_score,
                 },
-                metadata={}
+                metadata={},
             )
 
         except Exception as e:
@@ -781,10 +809,12 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
-    async def _validate_version_compatibility(self, item_data: Dict[str, Any]) -> ValidationScore:
+    async def _validate_version_compatibility(
+        self, item_data: Dict[str, Any]
+    ) -> ValidationScore:
         """Validate version compatibility."""
         try:
             minecraft_version = item_data.get("minecraft_version", "")
@@ -800,7 +830,7 @@ class AutomatedConfidenceScoringService:
                 "1.15": 0.65,
                 "1.14": 0.55,
                 "1.13": 0.45,
-                "1.12": 0.35
+                "1.12": 0.35,
             }
 
             base_score = compatibility_scores.get(minecraft_version, 0.3)
@@ -823,11 +853,13 @@ class AutomatedConfidenceScoringService:
                 evidence={
                     "minecraft_version": minecraft_version,
                     "deprecated_features": deprecated_features,
-                    "base_score": compatibility_scores.get(minecraft_version, 0.3)
+                    "base_score": compatibility_scores.get(minecraft_version, 0.3),
                 },
                 metadata={
-                    "deprecated_penalty": min(0.3, len(deprecated_features) * 0.1) if deprecated_features else 0
-                }
+                    "deprecated_penalty": min(0.3, len(deprecated_features) * 0.1)
+                    if deprecated_features
+                    else 0
+                },
             )
 
         except Exception as e:
@@ -837,23 +869,27 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
-    async def _validate_usage_statistics(self, item_data: Dict[str, Any]) -> ValidationScore:
+    async def _validate_usage_statistics(
+        self, item_data: Dict[str, Any]
+    ) -> ValidationScore:
         """Validate based on usage statistics."""
         try:
             usage_count = item_data.get("usage_count", 0)
             success_rate = item_data.get("success_rate", 0.5)
 
             # Usage score (logarithmic scale to prevent too much weight on very high numbers)
-            usage_score = min(1.0, np.log10(max(1, usage_count)) / 3.0)  # 1000 uses = max score
+            usage_score = min(
+                1.0, np.log10(max(1, usage_count)) / 3.0
+            )  # 1000 uses = max score
 
             # Success rate score
             success_score = success_rate
 
             # Combined score with emphasis on success rate
-            final_score = (success_score * 0.7 + usage_score * 0.3)
+            final_score = success_score * 0.7 + usage_score * 0.3
 
             # Confidence based on usage count
             confidence = min(1.0, usage_count / 50.0)  # 50 uses = full confidence
@@ -866,9 +902,9 @@ class AutomatedConfidenceScoringService:
                     "usage_count": usage_count,
                     "success_rate": success_rate,
                     "usage_score": usage_score,
-                    "success_score": success_score
+                    "success_score": success_score,
                 },
-                metadata={}
+                metadata={},
             )
 
         except Exception as e:
@@ -878,10 +914,12 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
-    async def _validate_semantic_consistency(self, item_data: Dict[str, Any]) -> ValidationScore:
+    async def _validate_semantic_consistency(
+        self, item_data: Dict[str, Any]
+    ) -> ValidationScore:
         """Validate semantic consistency of the item."""
         try:
             name = item_data.get("name", "")
@@ -927,9 +965,9 @@ class AutomatedConfidenceScoringService:
                     "description_length": len(description) if description else 0,
                     "node_type": node_type,
                     "pattern_type": pattern_type,
-                    "name_description_overlap": overlap if name and description else 0
+                    "name_description_overlap": overlap if name and description else 0,
                 },
-                metadata={}
+                metadata={},
             )
 
         except Exception as e:
@@ -939,10 +977,12 @@ class AutomatedConfidenceScoringService:
                 score=0.5,
                 confidence=0.0,
                 evidence={"error": str(e)},
-                metadata={"validation_error": True}
+                metadata={"validation_error": True},
             )
 
-    def _calculate_overall_confidence(self, validation_scores: List[ValidationScore]) -> float:
+    def _calculate_overall_confidence(
+        self, validation_scores: List[ValidationScore]
+    ) -> float:
         """Calculate overall confidence from validation layer scores."""
         try:
             if not validation_scores:
@@ -970,25 +1010,40 @@ class AutomatedConfidenceScoringService:
             logger.error(f"Error calculating overall confidence: {e}")
             return 0.5
 
-    def _identify_risk_factors(self, validation_scores: List[ValidationScore]) -> List[str]:
+    def _identify_risk_factors(
+        self, validation_scores: List[ValidationScore]
+    ) -> List[str]:
         """Identify risk factors from validation scores."""
         try:
             risk_factors = []
 
             for score in validation_scores:
                 if score.score < 0.3:
-                    risk_factors.append(f"Low {score.layer.value} score: {score.score:.2f}")
+                    risk_factors.append(
+                        f"Low {score.layer.value} score: {score.score:.2f}"
+                    )
                 elif score.confidence < 0.5:
                     risk_factors.append(f"Uncertain {score.layer.value} validation")
 
                 # Check for specific risk patterns
-                if score.layer == ValidationLayer.EXPERT_VALIDATION and score.score < 0.5:
-                    risk_factors.append("No expert validation - potential quality issues")
+                if (
+                    score.layer == ValidationLayer.EXPERT_VALIDATION
+                    and score.score < 0.5
+                ):
+                    risk_factors.append(
+                        "No expert validation - potential quality issues"
+                    )
 
-                if score.layer == ValidationLayer.VERSION_COMPATIBILITY and score.score < 0.7:
+                if (
+                    score.layer == ValidationLayer.VERSION_COMPATIBILITY
+                    and score.score < 0.7
+                ):
                     risk_factors.append("Version compatibility concerns")
 
-                if score.layer == ValidationLayer.USAGE_VALIDATION and score.confidence < 0.3:
+                if (
+                    score.layer == ValidationLayer.USAGE_VALIDATION
+                    and score.confidence < 0.3
+                ):
                     risk_factors.append("Insufficient usage data - untested conversion")
 
             return risk_factors
@@ -997,25 +1052,40 @@ class AutomatedConfidenceScoringService:
             logger.error(f"Error identifying risk factors: {e}")
             return ["Error identifying risk factors"]
 
-    def _identify_confidence_factors(self, validation_scores: List[ValidationScore]) -> List[str]:
+    def _identify_confidence_factors(
+        self, validation_scores: List[ValidationScore]
+    ) -> List[str]:
         """Identify confidence factors from validation scores."""
         try:
             confidence_factors = []
 
             for score in validation_scores:
                 if score.score > 0.8:
-                    confidence_factors.append(f"High {score.layer.value} score: {score.score:.2f}")
+                    confidence_factors.append(
+                        f"High {score.layer.value} score: {score.score:.2f}"
+                    )
                 elif score.confidence > 0.8:
-                    confidence_factors.append(f"Confident {score.layer.value} validation")
+                    confidence_factors.append(
+                        f"Confident {score.layer.value} validation"
+                    )
 
                 # Check for specific confidence patterns
-                if score.layer == ValidationLayer.EXPERT_VALIDATION and score.score > 0.9:
+                if (
+                    score.layer == ValidationLayer.EXPERT_VALIDATION
+                    and score.score > 0.9
+                ):
                     confidence_factors.append("Expert validated - high reliability")
 
-                if score.layer == ValidationLayer.COMMUNITY_VALIDATION and score.score > 0.8:
+                if (
+                    score.layer == ValidationLayer.COMMUNITY_VALIDATION
+                    and score.score > 0.8
+                ):
                     confidence_factors.append("Strong community support")
 
-                if score.layer == ValidationLayer.HISTORICAL_VALIDATION and score.score > 0.8:
+                if (
+                    score.layer == ValidationLayer.HISTORICAL_VALIDATION
+                    and score.score > 0.8
+                ):
                     confidence_factors.append("Proven track record")
 
             return confidence_factors
@@ -1028,7 +1098,7 @@ class AutomatedConfidenceScoringService:
         self,
         validation_scores: List[ValidationScore],
         overall_confidence: float,
-        item_data: Dict[str, Any]
+        item_data: Dict[str, Any],
     ) -> List[str]:
         """Generate recommendations based on validation results."""
         try:
@@ -1036,24 +1106,44 @@ class AutomatedConfidenceScoringService:
 
             # Overall confidence recommendations
             if overall_confidence < 0.4:
-                recommendations.append("Low overall confidence - seek expert review before use")
+                recommendations.append(
+                    "Low overall confidence - seek expert review before use"
+                )
             elif overall_confidence < 0.7:
-                recommendations.append("Moderate confidence - test thoroughly before production use")
+                recommendations.append(
+                    "Moderate confidence - test thoroughly before production use"
+                )
             elif overall_confidence > 0.9:
                 recommendations.append("High confidence - suitable for immediate use")
 
             # Layer-specific recommendations
             for score in validation_scores:
-                if score.layer == ValidationLayer.EXPERT_VALIDATION and score.score < 0.5:
-                    recommendations.append("Request expert validation to improve reliability")
+                if (
+                    score.layer == ValidationLayer.EXPERT_VALIDATION
+                    and score.score < 0.5
+                ):
+                    recommendations.append(
+                        "Request expert validation to improve reliability"
+                    )
 
-                if score.layer == ValidationLayer.COMMUNITY_VALIDATION and score.score < 0.6:
+                if (
+                    score.layer == ValidationLayer.COMMUNITY_VALIDATION
+                    and score.score < 0.6
+                ):
                     recommendations.append("Encourage community reviews and feedback")
 
-                if score.layer == ValidationLayer.VERSION_COMPATIBILITY and score.score < 0.7:
-                    recommendations.append("Update to newer Minecraft version for better compatibility")
+                if (
+                    score.layer == ValidationLayer.VERSION_COMPATIBILITY
+                    and score.score < 0.7
+                ):
+                    recommendations.append(
+                        "Update to newer Minecraft version for better compatibility"
+                    )
 
-                if score.layer == ValidationLayer.USAGE_VALIDATION and score.confidence < 0.5:
+                if (
+                    score.layer == ValidationLayer.USAGE_VALIDATION
+                    and score.confidence < 0.5
+                ):
                     recommendations.append("Increase usage testing to build confidence")
 
             # Item-specific recommendations
@@ -1061,7 +1151,9 @@ class AutomatedConfidenceScoringService:
                 recommendations.append("Add detailed description to improve validation")
 
             if item_data.get("properties", {}) == {}:
-                recommendations.append("Add properties and metadata for better analysis")
+                recommendations.append(
+                    "Add properties and metadata for better analysis"
+                )
 
             return recommendations
 
@@ -1069,13 +1161,15 @@ class AutomatedConfidenceScoringService:
             logger.error(f"Error generating recommendations: {e}")
             return ["Error generating recommendations"]
 
-    def _cache_assessment(self, item_type: str, item_id: str, assessment: ConfidenceAssessment):
+    def _cache_assessment(
+        self, item_type: str, item_id: str, assessment: ConfidenceAssessment
+    ):
         """Cache assessment result."""
         try:
             cache_key = f"{item_type}:{item_id}"
             self.validation_cache[cache_key] = {
                 "assessment": assessment,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
             # Limit cache size
@@ -1083,7 +1177,7 @@ class AutomatedConfidenceScoringService:
                 # Remove oldest entries
                 oldest_keys = sorted(
                     self.validation_cache.keys(),
-                    key=lambda k: self.validation_cache[k]["timestamp"]
+                    key=lambda k: self.validation_cache[k]["timestamp"],
                 )[:100]
                 for key in oldest_keys:
                     del self.validation_cache[key]
@@ -1091,7 +1185,9 @@ class AutomatedConfidenceScoringService:
         except Exception as e:
             logger.error(f"Error caching assessment: {e}")
 
-    def _calculate_feedback_impact(self, feedback_data: Dict[str, Any]) -> Dict[str, float]:
+    def _calculate_feedback_impact(
+        self, feedback_data: Dict[str, Any]
+    ) -> Dict[str, float]:
         """Calculate impact of feedback on validation scores."""
         try:
             feedback_type = feedback_data.get("type", "")
@@ -1105,7 +1201,7 @@ class AutomatedConfidenceScoringService:
                 ValidationLayer.CROSS_PLATFORM_VALIDATION: 0.0,
                 ValidationLayer.VERSION_COMPATIBILITY: 0.0,
                 ValidationLayer.USAGE_VALIDATION: 0.0,
-                ValidationLayer.SEMANTIC_VALIDATION: 0.0
+                ValidationLayer.SEMANTIC_VALIDATION: 0.0,
             }
 
             # Positive feedback
@@ -1122,7 +1218,9 @@ class AutomatedConfidenceScoringService:
 
             # Expert feedback
             if feedback_data.get("from_expert", False):
-                impact[ValidationLayer.EXPERT_VALIDATION] = 0.3 if feedback_value == "positive" else -0.3
+                impact[ValidationLayer.EXPERT_VALIDATION] = (
+                    0.3 if feedback_value == "positive" else -0.3
+                )
 
             # Usage feedback
             if feedback_type == "usage":
@@ -1138,9 +1236,7 @@ class AutomatedConfidenceScoringService:
             return {layer: 0.0 for layer in ValidationLayer}
 
     def _apply_feedback_to_score(
-        self,
-        original_score: ValidationScore,
-        feedback_impact: Dict[str, float]
+        self, original_score: ValidationScore, feedback_impact: Dict[str, float]
     ) -> ValidationScore:
         """Apply feedback impact to a validation score."""
         try:
@@ -1148,7 +1244,9 @@ class AutomatedConfidenceScoringService:
             new_score = max(0.0, min(1.0, original_score.score + impact_value))
 
             # Update confidence based on feedback
-            new_confidence = min(1.0, original_score.confidence + 0.1)  # Feedback increases confidence
+            new_confidence = min(
+                1.0, original_score.confidence + 0.1
+            )  # Feedback increases confidence
 
             return ValidationScore(
                 layer=original_score.layer,
@@ -1157,13 +1255,13 @@ class AutomatedConfidenceScoringService:
                 evidence={
                     **original_score.evidence,
                     "feedback_applied": True,
-                    "feedback_impact": impact_value
+                    "feedback_impact": impact_value,
                 },
                 metadata={
                     **original_score.metadata,
                     "original_score": original_score.score,
-                    "feedback_adjustment": impact_value
-                }
+                    "feedback_adjustment": impact_value,
+                },
             )
 
         except Exception as e:
@@ -1171,28 +1269,26 @@ class AutomatedConfidenceScoringService:
             return original_score
 
     async def _update_item_confidence(
-        self,
-        item_type: str,
-        item_id: str,
-        new_confidence: float,
-        db: AsyncSession
+        self, item_type: str, item_id: str, new_confidence: float, db: AsyncSession
     ):
         """Update item confidence in database."""
         try:
             if item_type == "node":
                 await KnowledgeNodeCRUD.update_confidence(db, item_id, new_confidence)
             elif item_type == "relationship":
-                await KnowledgeRelationshipCRUD.update_confidence(db, item_id, new_confidence)
+                await KnowledgeRelationshipCRUD.update_confidence(
+                    db, item_id, new_confidence
+                )
             elif item_type == "pattern":
-                await ConversionPatternCRUD.update_confidence(db, item_id, new_confidence)
+                await ConversionPatternCRUD.update_confidence(
+                    db, item_id, new_confidence
+                )
 
         except Exception as e:
             logger.error(f"Error updating item confidence: {e}")
 
     def _analyze_batch_results(
-        self,
-        batch_results: Dict[str, ConfidenceAssessment],
-        batch_scores: List[float]
+        self, batch_results: Dict[str, ConfidenceAssessment], batch_scores: List[float]
     ) -> Dict[str, Any]:
         """Analyze batch assessment results."""
         try:
@@ -1206,9 +1302,13 @@ class AutomatedConfidenceScoringService:
                 "min_confidence": min(batch_scores),
                 "max_confidence": max(batch_scores),
                 "confidence_range": max(batch_scores) - min(batch_scores),
-                "high_confidence_count": sum(1 for score in batch_scores if score > 0.8),
-                "medium_confidence_count": sum(1 for score in batch_scores if 0.5 <= score <= 0.8),
-                "low_confidence_count": sum(1 for score in batch_scores if score < 0.5)
+                "high_confidence_count": sum(
+                    1 for score in batch_scores if score > 0.8
+                ),
+                "medium_confidence_count": sum(
+                    1 for score in batch_scores if 0.5 <= score <= 0.8
+                ),
+                "low_confidence_count": sum(1 for score in batch_scores if score < 0.5),
             }
 
         except Exception as e:
@@ -1216,9 +1316,7 @@ class AutomatedConfidenceScoringService:
             return {}
 
     async def _analyze_batch_patterns(
-        self,
-        batch_results: Dict[str, ConfidenceAssessment],
-        db: AsyncSession
+        self, batch_results: Dict[str, ConfidenceAssessment], db: AsyncSession
     ) -> Dict[str, Any]:
         """Analyze patterns across batch results."""
         try:
@@ -1240,7 +1338,7 @@ class AutomatedConfidenceScoringService:
                         "average": np.mean(scores),
                         "median": np.median(scores),
                         "std": np.std(scores),
-                        "count": len(scores)
+                        "count": len(scores),
                     }
 
             return {
@@ -1248,12 +1346,15 @@ class AutomatedConfidenceScoringService:
                 "total_items_assessed": len(batch_results),
                 "most_consistent_layer": min(
                     layer_stats.items(),
-                    key=lambda x: x[1]["std"] if x[1]["std"] > 0 else float('inf')
-                )[0] if layer_stats else None,
+                    key=lambda x: x[1]["std"] if x[1]["std"] > 0 else float("inf"),
+                )[0]
+                if layer_stats
+                else None,
                 "least_consistent_layer": max(
-                    layer_stats.items(),
-                    key=lambda x: x[1]["std"]
-                )[0] if layer_stats else None
+                    layer_stats.items(), key=lambda x: x[1]["std"]
+                )[0]
+                if layer_stats
+                else None,
             }
 
         except Exception as e:
@@ -1263,7 +1364,7 @@ class AutomatedConfidenceScoringService:
     def _generate_batch_recommendations(
         self,
         batch_results: Dict[str, ConfidenceAssessment],
-        batch_analysis: Dict[str, Any]
+        batch_analysis: Dict[str, Any],
     ) -> List[str]:
         """Generate recommendations for batch results."""
         try:
@@ -1274,24 +1375,33 @@ class AutomatedConfidenceScoringService:
 
             # Overall recommendations
             if avg_confidence < 0.5:
-                recommendations.append("Batch shows low overall confidence - review items before use")
+                recommendations.append(
+                    "Batch shows low overall confidence - review items before use"
+                )
             elif avg_confidence > 0.8:
-                recommendations.append("Batch shows high overall confidence - suitable for production use")
+                recommendations.append(
+                    "Batch shows high overall confidence - suitable for production use"
+                )
 
             # Consistency recommendations
             if confidence_std > 0.3:
-                recommendations.append("High confidence variance - investigate outliers")
+                recommendations.append(
+                    "High confidence variance - investigate outliers"
+                )
             elif confidence_std < 0.1:
                 recommendations.append("Consistent confidence scores across batch")
 
             # Specific item recommendations
             low_confidence_items = [
-                key for key, assessment in batch_results.items()
+                key
+                for key, assessment in batch_results.items()
                 if assessment.overall_confidence < 0.4
             ]
 
             if low_confidence_items:
-                recommendations.append(f"Review {len(low_confidence_items)} low-confidence items")
+                recommendations.append(
+                    f"Review {len(low_confidence_items)} low-confidence items"
+                )
 
             return recommendations
 
@@ -1307,7 +1417,7 @@ class AutomatedConfidenceScoringService:
                 "low (0.2-0.4)": 0,
                 "medium (0.4-0.6)": 0,
                 "high (0.6-0.8)": 0,
-                "very_high (0.8-1.0)": 0
+                "very_high (0.8-1.0)": 0,
             }
 
             for score in scores:
@@ -1328,7 +1438,9 @@ class AutomatedConfidenceScoringService:
             logger.error(f"Error calculating confidence distribution: {e}")
             return {}
 
-    def _calculate_confidence_trend(self, assessments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_confidence_trend(
+        self, assessments: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Calculate confidence score trends over time."""
         try:
             if not assessments:
@@ -1362,15 +1474,20 @@ class AutomatedConfidenceScoringService:
                 "confidence_std": np.std(scores),
                 "data_points": len(scores),
                 "time_span_days": (
-                    datetime.fromisoformat(timestamps[-1]) - datetime.fromisoformat(timestamps[0])
-                ).days if len(timestamps) > 1 else 0
+                    datetime.fromisoformat(timestamps[-1])
+                    - datetime.fromisoformat(timestamps[0])
+                ).days
+                if len(timestamps) > 1
+                else 0,
             }
 
         except Exception as e:
             logger.error(f"Error calculating confidence trend: {e}")
             return {"trend": "error", "error": str(e)}
 
-    def _analyze_layer_performance(self, assessments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_layer_performance(
+        self, assessments: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze performance of individual validation layers."""
         try:
             # This would analyze which layers are most effective
@@ -1379,12 +1496,9 @@ class AutomatedConfidenceScoringService:
                 "most_effective_layers": [
                     "expert_validation",
                     "community_validation",
-                    "historical_validation"
+                    "historical_validation",
                 ],
-                "least_effective_layers": [
-                    "semantic_validation",
-                    "usage_validation"
-                ],
+                "least_effective_layers": ["semantic_validation", "usage_validation"],
                 "layer_correlation": {
                     "expert_validation": 0.85,
                     "community_validation": 0.72,
@@ -1393,8 +1507,8 @@ class AutomatedConfidenceScoringService:
                     "cross_platform_validation": 0.58,
                     "version_compatibility": 0.54,
                     "usage_validation": 0.47,
-                    "semantic_validation": 0.32
-                }
+                    "semantic_validation": 0.32,
+                },
             }
 
         except Exception as e:
@@ -1402,9 +1516,7 @@ class AutomatedConfidenceScoringService:
             return {}
 
     def _generate_trend_insights(
-        self,
-        confidence_trend: Dict[str, Any],
-        layer_performance: Dict[str, Any]
+        self, confidence_trend: Dict[str, Any], layer_performance: Dict[str, Any]
     ) -> List[str]:
         """Generate insights from trend analysis."""
         try:
@@ -1417,7 +1529,9 @@ class AutomatedConfidenceScoringService:
             if trend == "improving":
                 insights.append("Confidence scores are improving over time")
             elif trend == "declining":
-                insights.append("Confidence scores are declining - investigate quality issues")
+                insights.append(
+                    "Confidence scores are declining - investigate quality issues"
+                )
             elif trend == "stable":
                 insights.append("Confidence scores are stable")
 
@@ -1431,7 +1545,9 @@ class AutomatedConfidenceScoringService:
             if layer_performance:
                 most_effective = layer_performance.get("most_effective_layers", [])
                 if most_effective:
-                    insights.append(f"Most effective validation layers: {', '.join(most_effective[:3])}")
+                    insights.append(
+                        f"Most effective validation layers: {', '.join(most_effective[:3])}"
+                    )
 
             return insights
 

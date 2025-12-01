@@ -6,7 +6,6 @@ service functionality, focusing on core validation methods and business logic.
 """
 
 import pytest
-import numpy as np
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +14,7 @@ from src.services.automated_confidence_scoring import (
     AutomatedConfidenceScoringService,
     ValidationLayer,
     ValidationScore,
-    ConfidenceAssessment
+    ConfidenceAssessment,
 )
 
 
@@ -29,7 +28,7 @@ def mock_db_session():
 @pytest.fixture
 def confidence_service():
     """Create a confidence scoring service instance with mocked dependencies."""
-    with patch('src.services.automated_confidence_scoring.logger'):
+    with patch("src.services.automated_confidence_scoring.logger"):
         service = AutomatedConfidenceScoringService()
         return service
 
@@ -43,19 +42,45 @@ class TestAutomatedConfidenceScoringService:
         def test_init(self, confidence_service):
             """Test service initialization."""
             # Verify layer weights
-            assert confidence_service.layer_weights[ValidationLayer.EXPERT_VALIDATION] == 0.25
-            assert confidence_service.layer_weights[ValidationLayer.COMMUNITY_VALIDATION] == 0.20
-            assert confidence_service.layer_weights[ValidationLayer.HISTORICAL_VALIDATION] == 0.15
-            assert confidence_service.layer_weights[ValidationLayer.PATTERN_VALIDATION] == 0.15
-            assert confidence_service.layer_weights[ValidationLayer.CROSS_PLATFORM_VALIDATION] == 0.10
-            assert confidence_service.layer_weights[ValidationLayer.VERSION_COMPATIBILITY] == 0.05
-            assert confidence_service.layer_weights[ValidationLayer.USAGE_VALIDATION] == 0.05
-            assert confidence_service.layer_weights[ValidationLayer.SEMANTIC_VALIDATION] == 0.05
+            assert (
+                confidence_service.layer_weights[ValidationLayer.EXPERT_VALIDATION]
+                == 0.25
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.COMMUNITY_VALIDATION]
+                == 0.20
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.HISTORICAL_VALIDATION]
+                == 0.15
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.PATTERN_VALIDATION]
+                == 0.15
+            )
+            assert (
+                confidence_service.layer_weights[
+                    ValidationLayer.CROSS_PLATFORM_VALIDATION
+                ]
+                == 0.10
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.VERSION_COMPATIBILITY]
+                == 0.05
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.USAGE_VALIDATION]
+                == 0.05
+            )
+            assert (
+                confidence_service.layer_weights[ValidationLayer.SEMANTIC_VALIDATION]
+                == 0.05
+            )
 
             # Verify cache and history are initialized
-            assert hasattr(confidence_service, 'validation_cache')
-            assert hasattr(confidence_service, 'scoring_history')
-            assert hasattr(confidence_service, 'feedback_history')
+            assert hasattr(confidence_service, "validation_cache")
+            assert hasattr(confidence_service, "scoring_history")
+            assert hasattr(confidence_service, "feedback_history")
 
     class TestConfidenceAssessment:
         """Test cases for confidence assessment methods."""
@@ -64,11 +89,13 @@ class TestAutomatedConfidenceScoringService:
         async def test_assess_confidence(self, confidence_service, mock_db_session):
             """Test confidence assessment for a knowledge graph node."""
             # Mock the helper methods
-            confidence_service._get_item_data = AsyncMock(return_value={
-                "platform": "java",
-                "usage_count": 50,
-                "created_at": datetime.utcnow() - timedelta(days=30)
-            })
+            confidence_service._get_item_data = AsyncMock(
+                return_value={
+                    "platform": "java",
+                    "usage_count": 50,
+                    "created_at": datetime.utcnow() - timedelta(days=30),
+                }
+            )
 
             # Mock validation layer methods
             confidence_service._validate_expert_approval = AsyncMock(
@@ -77,7 +104,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.8,
                     confidence=0.9,
                     evidence={"expert_review": True},
-                    metadata={"validation_method": "expert_check"}
+                    metadata={"validation_method": "expert_check"},
                 )
             )
             confidence_service._validate_community_approval = AsyncMock(
@@ -86,7 +113,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.7,
                     confidence=0.8,
                     evidence={"community_votes": 10},
-                    metadata={"validation_method": "community_check"}
+                    metadata={"validation_method": "community_check"},
                 )
             )
             confidence_service._validate_historical_performance = AsyncMock(
@@ -95,7 +122,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.6,
                     confidence=0.7,
                     evidence={"usage_history": "positive"},
-                    metadata={"validation_method": "historical_check"}
+                    metadata={"validation_method": "historical_check"},
                 )
             )
             confidence_service._validate_pattern_consistency = AsyncMock(
@@ -104,7 +131,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.75,
                     confidence=0.8,
                     evidence={"pattern_match": True},
-                    metadata={"validation_method": "pattern_check"}
+                    metadata={"validation_method": "pattern_check"},
                 )
             )
             confidence_service._validate_cross_platform_compatibility = AsyncMock(
@@ -113,7 +140,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.8,
                     confidence=0.9,
                     evidence={"platform": "both"},
-                    metadata={"validation_method": "platform_check"}
+                    metadata={"validation_method": "platform_check"},
                 )
             )
             confidence_service._validate_version_compatibility = AsyncMock(
@@ -122,7 +149,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.85,
                     confidence=0.9,
                     evidence={"minecraft_version": "latest"},
-                    metadata={"validation_method": "version_check"}
+                    metadata={"validation_method": "version_check"},
                 )
             )
             confidence_service._validate_usage_statistics = AsyncMock(
@@ -131,7 +158,7 @@ class TestAutomatedConfidenceScoringService:
                     score=0.7,
                     confidence=0.8,
                     evidence={"usage_count": 50},
-                    metadata={"validation_method": "usage_stats"}
+                    metadata={"validation_method": "usage_stats"},
                 )
             )
             confidence_service._validate_semantic_consistency = AsyncMock(
@@ -140,22 +167,21 @@ class TestAutomatedConfidenceScoringService:
                     score=0.75,
                     confidence=0.85,
                     evidence={"description_match": True},
-                    metadata={"validation_method": "semantic_check"}
+                    metadata={"validation_method": "semantic_check"},
                 )
             )
 
             # Mock the recommendation generation
-            confidence_service._generate_recommendations = AsyncMock(return_value=[
-                "Test recommendation 1",
-                "Test recommendation 2"
-            ])
+            confidence_service._generate_recommendations = AsyncMock(
+                return_value=["Test recommendation 1", "Test recommendation 2"]
+            )
 
             # Call the method
             assessment = await confidence_service.assess_confidence(
                 item_type="node",
                 item_id="test_item_id",
                 context_data={"test": True},
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             # Verify the result
@@ -177,16 +203,16 @@ class TestAutomatedConfidenceScoringService:
             assert confidence_service.scoring_history[0]["item_id"] == "test_item_id"
 
         @pytest.mark.asyncio
-        async def test_assess_confidence_item_not_found(self, confidence_service, mock_db_session):
+        async def test_assess_confidence_item_not_found(
+            self, confidence_service, mock_db_session
+        ):
             """Test confidence assessment when item is not found."""
             # Mock the helper method to return None
             confidence_service._get_item_data = AsyncMock(return_value=None)
 
             # Call the method and verify default assessment is returned
             assessment = await confidence_service.assess_confidence(
-                item_type="node",
-                item_id="nonexistent_item",
-                db=mock_db_session
+                item_type="node", item_id="nonexistent_item", db=mock_db_session
             )
 
             # Verify default assessment
@@ -208,31 +234,35 @@ class TestAutomatedConfidenceScoringService:
                     score=0.8,
                     confidence=0.9,
                     evidence={"expert_review": True},
-                    metadata={}
+                    metadata={},
                 ),
                 ValidationScore(
                     layer=ValidationLayer.COMMUNITY_VALIDATION,  # weight: 0.20
                     score=0.6,
                     confidence=0.7,
                     evidence={"community_votes": 10},
-                    metadata={}
+                    metadata={},
                 ),
                 ValidationScore(
                     layer=ValidationLayer.HISTORICAL_VALIDATION,  # weight: 0.15
                     score=0.7,
                     confidence=0.8,
                     evidence={"usage_count": 50},
-                    metadata={}
-                )
+                    metadata={},
+                ),
             ]
 
             # Calculate expected overall confidence
             # (0.8*0.9*0.25 + 0.6*0.7*0.2 + 0.7*0.8*0.15) / (0.25 + 0.2 + 0.15)
             # = (0.18 + 0.084 + 0.084) / 0.6 = 0.348 / 0.6 = 0.58
-            expected_confidence = (0.8 * 0.9 * 0.25 + 0.6 * 0.7 * 0.2 + 0.7 * 0.8 * 0.15) / (0.25 + 0.2 + 0.15)
+            expected_confidence = (
+                0.8 * 0.9 * 0.25 + 0.6 * 0.7 * 0.2 + 0.7 * 0.8 * 0.15
+            ) / (0.25 + 0.2 + 0.15)
 
             # Call the method
-            overall_confidence = confidence_service._calculate_overall_confidence(validation_scores)
+            overall_confidence = confidence_service._calculate_overall_confidence(
+                validation_scores
+            )
 
             # Verify the result
             assert abs(overall_confidence - expected_confidence) < 0.01
@@ -246,15 +276,15 @@ class TestAutomatedConfidenceScoringService:
                     score=0.3,  # Low score
                     confidence=0.8,
                     evidence={"expert_review": False},
-                    metadata={}
+                    metadata={},
                 ),
                 ValidationScore(
                     layer=ValidationLayer.VERSION_COMPATIBILITY,
                     score=0.2,  # Low score
                     confidence=0.9,
                     evidence={"version_mismatch": True},
-                    metadata={}
-                )
+                    metadata={},
+                ),
             ]
 
             # Call the method
@@ -274,19 +304,21 @@ class TestAutomatedConfidenceScoringService:
                     score=0.9,  # High score
                     confidence=0.8,
                     evidence={"expert_review": True},
-                    metadata={}
+                    metadata={},
                 ),
                 ValidationScore(
                     layer=ValidationLayer.COMMUNITY_VALIDATION,
                     score=0.8,  # High score
                     confidence=0.9,
                     evidence={"community_votes": 100},
-                    metadata={}
-                )
+                    metadata={},
+                ),
             ]
 
             # Call the method
-            confidence_factors = confidence_service._identify_confidence_factors(validation_scores)
+            confidence_factors = confidence_service._identify_confidence_factors(
+                validation_scores
+            )
 
             # Verify confidence factors are identified
             assert len(confidence_factors) >= 2  # At least one for each high score
@@ -299,7 +331,9 @@ class TestAutomatedConfidenceScoringService:
             confidence_scores = [0.2, 0.3, 0.5, 0.7, 0.8, 0.9]
 
             # Call the method
-            distribution = confidence_service._calculate_confidence_distribution(confidence_scores)
+            distribution = confidence_service._calculate_confidence_distribution(
+                confidence_scores
+            )
 
             # Verify distribution
             assert "very_low (0.0-0.2)" in distribution
@@ -307,11 +341,15 @@ class TestAutomatedConfidenceScoringService:
             assert "medium (0.4-0.6)" in distribution
             assert "high (0.6-0.8)" in distribution
             assert "very_high (0.8-1.0)" in distribution
-            assert distribution["very_low (0.0-0.2)"] == 1/6  # 0.2 is very low (0.0-0.2)
-            assert distribution["low (0.2-0.4)"] == 1/6     # 0.3 is low (0.2-0.4)
-            assert distribution["medium (0.4-0.6)"] == 1/6   # 0.5 is medium (0.4-0.6)
-            assert distribution["high (0.6-0.8)"] == 1/6     # 0.7 is high (0.6-0.8)
-            assert distribution["very_high (0.8-1.0)"] == 2/6 # 0.8 and 0.9 are very high (0.8-1.0)
+            assert (
+                distribution["very_low (0.0-0.2)"] == 1 / 6
+            )  # 0.2 is very low (0.0-0.2)
+            assert distribution["low (0.2-0.4)"] == 1 / 6  # 0.3 is low (0.2-0.4)
+            assert distribution["medium (0.4-0.6)"] == 1 / 6  # 0.5 is medium (0.4-0.6)
+            assert distribution["high (0.6-0.8)"] == 1 / 6  # 0.7 is high (0.6-0.8)
+            assert (
+                distribution["very_high (0.8-1.0)"] == 2 / 6
+            )  # 0.8 and 0.9 are very high (0.8-1.0)
 
         def test_cache_assessment(self, confidence_service):
             """Test caching of assessments."""
@@ -322,7 +360,7 @@ class TestAutomatedConfidenceScoringService:
                 risk_factors=[],
                 confidence_factors=[],
                 recommendations=[],
-                assessment_metadata={}
+                assessment_metadata={},
             )
 
             # Call the method
@@ -332,13 +370,18 @@ class TestAutomatedConfidenceScoringService:
             assert "node:test_item" in confidence_service.validation_cache
             # The assessment is wrapped in a dict with timestamp
             assert "assessment" in confidence_service.validation_cache["node:test_item"]
-            assert confidence_service.validation_cache["node:test_item"]["assessment"] == assessment
+            assert (
+                confidence_service.validation_cache["node:test_item"]["assessment"]
+                == assessment
+            )
 
         def test_calculate_feedback_impact(self, confidence_service):
             """Test calculation of feedback impact."""
             # Test positive feedback
             positive_feedback = {"success": True, "user_rating": 5}
-            positive_impact = confidence_service._calculate_feedback_impact(positive_feedback)
+            positive_impact = confidence_service._calculate_feedback_impact(
+                positive_feedback
+            )
 
             # Verify positive impact on historical validation
             assert positive_impact[ValidationLayer.HISTORICAL_VALIDATION] > 0
@@ -346,7 +389,9 @@ class TestAutomatedConfidenceScoringService:
 
             # Test negative feedback
             negative_feedback = {"success": False, "user_rating": 1}
-            negative_impact = confidence_service._calculate_feedback_impact(negative_feedback)
+            negative_impact = confidence_service._calculate_feedback_impact(
+                negative_feedback
+            )
 
             # Verify negative impact on historical validation
             assert negative_impact[ValidationLayer.HISTORICAL_VALIDATION] < 0
@@ -354,11 +399,15 @@ class TestAutomatedConfidenceScoringService:
 
             # Test expert feedback
             expert_positive_feedback = {"from_expert": True, "value": "positive"}
-            expert_impact = confidence_service._calculate_feedback_impact(expert_positive_feedback)
+            expert_impact = confidence_service._calculate_feedback_impact(
+                expert_positive_feedback
+            )
             assert expert_impact[ValidationLayer.EXPERT_VALIDATION] > 0
 
             expert_negative_feedback = {"from_expert": True, "value": "negative"}
-            expert_negative_impact = confidence_service._calculate_feedback_impact(expert_negative_feedback)
+            expert_negative_impact = confidence_service._calculate_feedback_impact(
+                expert_negative_feedback
+            )
             assert expert_negative_impact[ValidationLayer.EXPERT_VALIDATION] < 0
 
         def test_apply_feedback_to_score(self, confidence_service):
@@ -369,12 +418,14 @@ class TestAutomatedConfidenceScoringService:
                 score=0.7,
                 confidence=0.8,
                 evidence={"expert_review": True},
-                metadata={}
+                metadata={},
             )
 
             # Test positive feedback impact
             positive_impact = {ValidationLayer.EXPERT_VALIDATION: 0.2}
-            updated_score = confidence_service._apply_feedback_to_score(original_score, positive_impact)
+            updated_score = confidence_service._apply_feedback_to_score(
+                original_score, positive_impact
+            )
 
             # Verify the score was increased
             assert updated_score.score > original_score.score
@@ -384,7 +435,9 @@ class TestAutomatedConfidenceScoringService:
 
             # Test negative feedback impact
             negative_impact = {ValidationLayer.EXPERT_VALIDATION: -0.3}
-            updated_score_negative = confidence_service._apply_feedback_to_score(original_score, negative_impact)
+            updated_score_negative = confidence_service._apply_feedback_to_score(
+                original_score, negative_impact
+            )
 
             # Verify the score was decreased but not below 0
             assert 0 <= updated_score_negative.score <= original_score.score
@@ -398,21 +451,21 @@ class TestAutomatedConfidenceScoringService:
             item_data = {
                 "platform": "java",
                 "usage_count": 10,
-                "created_at": datetime.utcnow() - timedelta(days=30)
+                "created_at": datetime.utcnow() - timedelta(days=30),
             }
 
             # All layers should be applied for valid data
             for layer in ValidationLayer:
                 should_apply = await confidence_service._should_apply_layer(
-                        layer, item_data, {}
-                    )
+                    layer, item_data, {}
+                )
                 assert should_apply is True
 
             # Test with invalid platform
             invalid_platform_data = {
                 "platform": "invalid",
                 "usage_count": 10,
-                "created_at": datetime.utcnow() - timedelta(days=30)
+                "created_at": datetime.utcnow() - timedelta(days=30),
             }
 
             should_apply = await confidence_service._should_apply_layer(
@@ -424,7 +477,7 @@ class TestAutomatedConfidenceScoringService:
             no_usage_data = {
                 "platform": "java",
                 "usage_count": 0,
-                "created_at": datetime.utcnow() - timedelta(days=30)
+                "created_at": datetime.utcnow() - timedelta(days=30),
             }
 
             should_apply = await confidence_service._should_apply_layer(
@@ -433,11 +486,7 @@ class TestAutomatedConfidenceScoringService:
             assert should_apply is False
 
             # Test with no creation date
-            no_date_data = {
-                "platform": "java",
-                "usage_count": 10,
-                "created_at": None
-            }
+            no_date_data = {"platform": "java", "usage_count": 10, "created_at": None}
 
             should_apply = await confidence_service._should_apply_layer(
                 ValidationLayer.HISTORICAL_VALIDATION, no_date_data, {}
@@ -445,7 +494,9 @@ class TestAutomatedConfidenceScoringService:
             assert should_apply is False
 
             # Test with skipped validation layers in context
-            context_data = {"skip_validation_layers": [ValidationLayer.EXPERT_VALIDATION.value]}
+            context_data = {
+                "skip_validation_layers": [ValidationLayer.EXPERT_VALIDATION.value]
+            }
 
             should_apply = await confidence_service._should_apply_layer(
                 ValidationLayer.EXPERT_VALIDATION, item_data, context_data
@@ -460,7 +511,9 @@ class TestAutomatedConfidenceScoringService:
             """Test expert validation layer."""
             # Test with expert validation
             expert_validated_data = {"expert_validated": True}
-            score = await confidence_service._validate_expert_approval(expert_validated_data)
+            score = await confidence_service._validate_expert_approval(
+                expert_validated_data
+            )
 
             assert score.layer == ValidationLayer.EXPERT_VALIDATION
             assert score.score > 0.7
@@ -480,7 +533,9 @@ class TestAutomatedConfidenceScoringService:
             """Test cross-platform validation layer."""
             # Test with both platforms
             both_platform_data = {"platform": "both", "minecraft_version": "latest"}
-            score = await confidence_service._validate_cross_platform_compatibility(both_platform_data)
+            score = await confidence_service._validate_cross_platform_compatibility(
+                both_platform_data
+            )
 
             assert score.layer == ValidationLayer.CROSS_PLATFORM_VALIDATION
             assert score.score > 0.8
@@ -489,7 +544,9 @@ class TestAutomatedConfidenceScoringService:
 
             # Test with java only
             java_platform_data = {"platform": "java", "minecraft_version": "1.18.2"}
-            score = await confidence_service._validate_cross_platform_compatibility(java_platform_data)
+            score = await confidence_service._validate_cross_platform_compatibility(
+                java_platform_data
+            )
 
             assert score.layer == ValidationLayer.CROSS_PLATFORM_VALIDATION
             assert 0.6 < score.score < 0.8
@@ -497,8 +554,13 @@ class TestAutomatedConfidenceScoringService:
             assert score.evidence["minecraft_version"] == "1.18.2"
 
             # Test with invalid platform
-            invalid_platform_data = {"platform": "invalid", "minecraft_version": "1.18.2"}
-            score = await confidence_service._validate_cross_platform_compatibility(invalid_platform_data)
+            invalid_platform_data = {
+                "platform": "invalid",
+                "minecraft_version": "1.18.2",
+            }
+            score = await confidence_service._validate_cross_platform_compatibility(
+                invalid_platform_data
+            )
 
             assert score.layer == ValidationLayer.CROSS_PLATFORM_VALIDATION
             assert score.score < 0.5
@@ -508,7 +570,9 @@ class TestAutomatedConfidenceScoringService:
             """Test version compatibility validation layer."""
             # Test with latest version
             latest_version_data = {"minecraft_version": "latest", "properties": {}}
-            score = await confidence_service._validate_version_compatibility(latest_version_data)
+            score = await confidence_service._validate_version_compatibility(
+                latest_version_data
+            )
 
             assert score.layer == ValidationLayer.VERSION_COMPATIBILITY
             assert score.score > 0.8
@@ -516,7 +580,9 @@ class TestAutomatedConfidenceScoringService:
 
             # Test with 1.18 version
             version_data = {"minecraft_version": "1.18.2", "properties": {}}
-            score = await confidence_service._validate_version_compatibility(version_data)
+            score = await confidence_service._validate_version_compatibility(
+                version_data
+            )
 
             assert score.layer == ValidationLayer.VERSION_COMPATIBILITY
             assert 0.6 < score.score < 0.8
@@ -525,9 +591,11 @@ class TestAutomatedConfidenceScoringService:
             # Test with deprecated features
             deprecated_data = {
                 "minecraft_version": "1.18.2",
-                "properties": {"deprecated_features": ["feature1", "feature2"]}
+                "properties": {"deprecated_features": ["feature1", "feature2"]},
             }
-            score = await confidence_service._validate_version_compatibility(deprecated_data)
+            score = await confidence_service._validate_version_compatibility(
+                deprecated_data
+            )
 
             assert score.layer == ValidationLayer.VERSION_COMPATIBILITY
             assert score.score < 0.6  # Should be penalized for deprecated features
@@ -561,21 +629,21 @@ class TestAutomatedConfidenceScoringService:
             good_semantic_data = {
                 "name": "Test Item",
                 "description": "This is a test item for testing purposes",
-                "tags": ["test", "item"]
+                "tags": ["test", "item"],
             }
-            score = await confidence_service._validate_semantic_consistency(good_semantic_data)
+            score = await confidence_service._validate_semantic_consistency(
+                good_semantic_data
+            )
 
             assert score.layer == ValidationLayer.SEMANTIC_VALIDATION
             assert score.score > 0.7
             assert score.confidence > 0.8
 
             # Test with poor semantic consistency
-            poor_semantic_data = {
-                "name": "Item",
-                "description": "",
-                "tags": []
-            }
-            score = await confidence_service._validate_semantic_consistency(poor_semantic_data)
+            poor_semantic_data = {"name": "Item", "description": "", "tags": []}
+            score = await confidence_service._validate_semantic_consistency(
+                poor_semantic_data
+            )
 
             assert score.layer == ValidationLayer.SEMANTIC_VALIDATION
             assert score.score < 0.5
@@ -585,7 +653,9 @@ class TestAutomatedConfidenceScoringService:
         """Test cases for batch operations."""
 
         @pytest.mark.asyncio
-        async def test_batch_assess_confidence(self, confidence_service, mock_db_session):
+        async def test_batch_assess_confidence(
+            self, confidence_service, mock_db_session
+        ):
             """Test batch confidence assessment for multiple items."""
             # Mock the assess_confidence method
             mock_assessments = [
@@ -597,13 +667,13 @@ class TestAutomatedConfidenceScoringService:
                             score=0.8,
                             confidence=0.9,
                             evidence={"expert_review": True},
-                            metadata={}
+                            metadata={},
                         )
                     ],
                     risk_factors=[],
                     confidence_factors=[],
                     recommendations=[],
-                    assessment_metadata={}
+                    assessment_metadata={},
                 ),
                 ConfidenceAssessment(
                     overall_confidence=0.7,
@@ -613,26 +683,32 @@ class TestAutomatedConfidenceScoringService:
                             score=0.7,
                             confidence=0.8,
                             evidence={"community_votes": 10},
-                            metadata={}
+                            metadata={},
                         )
                     ],
                     risk_factors=[],
                     confidence_factors=[],
                     recommendations=[],
-                    assessment_metadata={}
-                )
+                    assessment_metadata={},
+                ),
             ]
 
             # Mock methods
-            confidence_service.assess_confidence = AsyncMock(side_effect=mock_assessments)
-            confidence_service._analyze_batch_patterns = AsyncMock(return_value={"patterns": []})
-            confidence_service._generate_batch_recommendations = MagicMock(return_value=["Batch recommendation"])
+            confidence_service.assess_confidence = AsyncMock(
+                side_effect=mock_assessments
+            )
+            confidence_service._analyze_batch_patterns = AsyncMock(
+                return_value={"patterns": []}
+            )
+            confidence_service._generate_batch_recommendations = MagicMock(
+                return_value=["Batch recommendation"]
+            )
 
             # Call the method
             result = await confidence_service.batch_assess_confidence(
                 items=[("node", "item1"), ("node", "item2")],
                 context_data={"batch": True},
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             # Verify the result
@@ -653,7 +729,9 @@ class TestAutomatedConfidenceScoringService:
         """Test cases for feedback-based confidence updates."""
 
         @pytest.mark.asyncio
-        async def test_update_confidence_from_feedback(self, confidence_service, mock_db_session):
+        async def test_update_confidence_from_feedback(
+            self, confidence_service, mock_db_session
+        ):
             """Test updating confidence based on user feedback."""
             # Mock current assessment
             mock_current_assessment = ConfidenceAssessment(
@@ -664,20 +742,22 @@ class TestAutomatedConfidenceScoringService:
                         score=0.7,
                         confidence=0.8,
                         evidence={"expert_review": True},
-                        metadata={}
+                        metadata={},
                     )
                 ],
                 risk_factors=[],
                 confidence_factors=[],
                 recommendations=[],
-                assessment_metadata={}
+                assessment_metadata={},
             )
 
             # Mock methods
-            confidence_service.assess_confidence = AsyncMock(return_value=mock_current_assessment)
-            confidence_service._calculate_feedback_impact = MagicMock(return_value={
-                ValidationLayer.EXPERT_VALIDATION: 0.2
-            })
+            confidence_service.assess_confidence = AsyncMock(
+                return_value=mock_current_assessment
+            )
+            confidence_service._calculate_feedback_impact = MagicMock(
+                return_value={ValidationLayer.EXPERT_VALIDATION: 0.2}
+            )
             confidence_service._apply_feedback_to_score = MagicMock(
                 return_value=mock_current_assessment.validation_scores[0]
             )
@@ -689,7 +769,7 @@ class TestAutomatedConfidenceScoringService:
                 item_type="node",
                 item_id="test_item",
                 feedback_data=feedback_data,
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             # Verify the result
@@ -708,7 +788,9 @@ class TestAutomatedConfidenceScoringService:
             confidence_service._update_item_confidence.assert_called()
 
         @pytest.mark.asyncio
-        async def test_update_confidence_invalid_item(self, confidence_service, mock_db_session):
+        async def test_update_confidence_invalid_item(
+            self, confidence_service, mock_db_session
+        ):
             """Test updating confidence for a non-existent item."""
             # Mock assess_confidence to return None (item not found)
             confidence_service.assess_confidence = AsyncMock(return_value=None)
@@ -719,7 +801,7 @@ class TestAutomatedConfidenceScoringService:
                 item_type="node",
                 item_id="nonexistent_item",
                 feedback_data=feedback_data,
-                db=mock_db_session
+                db=mock_db_session,
             )
 
             # Verify the result
@@ -734,31 +816,31 @@ class TestAutomatedConfidenceScoringService:
             {"item_type": "node", "item_id": "node_1"},
             {"item_type": "node", "item_id": "node_2"},
             {"item_type": "relationship", "item_id": "rel_1"},
-            {"item_type": "pattern", "item_id": "pattern_1"}
+            {"item_type": "pattern", "item_id": "pattern_1"},
         ]
 
         # Mock individual assessments
-        with patch.object(confidence_service, 'assess_confidence') as mock_assess:
+        with patch.object(confidence_service, "assess_confidence") as mock_assess:
             mock_assess.side_effect = [
                 ConfidenceAssessment(
                     overall_confidence=0.85,
                     validation_scores={},
                     risk_factors=[],
-                    confidence_factors=[]
+                    confidence_factors=[],
                 ),
                 ConfidenceAssessment(
                     overall_confidence=0.72,
                     validation_scores={},
                     risk_factors=["low_usage"],
-                    confidence_factors=["expert_validated"]
+                    confidence_factors=["expert_validated"],
                 ),
                 ConfidenceAssessment(
                     overall_confidence=0.65,
                     validation_scores={},
                     risk_factors=["complex_mapping"],
-                    confidence_factors=["pattern_consistency"]
+                    confidence_factors=["pattern_consistency"],
                 ),
-                None  # Not found
+                None,  # Not found
             ]
 
             results = await confidence_service.batch_assess_confidence(
@@ -774,18 +856,18 @@ class TestAutomatedConfidenceScoringService:
 
     async def test_get_confidence_trends(self, confidence_service, mock_db_session):
         """Test getting confidence trends over time."""
-        with patch.object(confidence_service, '_collect_historical_data') as mock_collect:
+        with patch.object(
+            confidence_service, "_collect_historical_data"
+        ) as mock_collect:
             mock_collect.return_value = [
                 {"date": "2024-01-01", "avg_confidence": 0.75, "item_count": 120},
                 {"date": "2024-01-02", "avg_confidence": 0.78, "item_count": 135},
                 {"date": "2024-01-03", "avg_confidence": 0.82, "item_count": 142},
-                {"date": "2024-01-04", "avg_confidence": 0.80, "item_count": 138}
+                {"date": "2024-01-04", "avg_confidence": 0.80, "item_count": 138},
             ]
 
             trends = await confidence_service.get_confidence_trends(
-                item_type="node",
-                days_back=30,
-                db=mock_db_session
+                item_type="node", days_back=30, db=mock_db_session
             )
 
             assert "trend_data" in trends
@@ -803,10 +885,12 @@ class TestAutomatedConfidenceScoringService:
             "user_reviews": 125,
             "positive_reviews": 118,
             "usage_count": 2500,
-            "reported_issues": 2
+            "reported_issues": 2,
         }
 
-        score = await confidence_service._validate_community_approval(high_community_data)
+        score = await confidence_service._validate_community_approval(
+            high_community_data
+        )
 
         assert score.layer == ValidationLayer.COMMUNITY_VALIDATION
         assert score.score >= 0.8  # High approval
@@ -819,10 +903,12 @@ class TestAutomatedConfidenceScoringService:
             "user_reviews": 45,
             "positive_reviews": 12,
             "usage_count": 150,
-            "reported_issues": 15
+            "reported_issues": 15,
         }
 
-        low_score = await confidence_service._validate_community_approval(low_community_data)
+        low_score = await confidence_service._validate_community_approval(
+            low_community_data
+        )
 
         assert low_score.score <= 0.5  # Low approval
         assert len(low_score.reasons) >= 1
@@ -836,10 +922,12 @@ class TestAutomatedConfidenceScoringService:
             "total_conversions": 156,
             "failed_conversions": 12,
             "avg_implementation_time": 35.5,
-            "avg_complexity": 3.2
+            "avg_complexity": 3.2,
         }
 
-        score = await confidence_service._validate_historical_performance(strong_history_data)
+        score = await confidence_service._validate_historical_performance(
+            strong_history_data
+        )
 
         assert score.layer == ValidationLayer.HISTORICAL_VALIDATION
         assert score.score >= 0.8
@@ -851,10 +939,12 @@ class TestAutomatedConfidenceScoringService:
             "total_conversions": 31,
             "failed_conversions": 17,
             "avg_implementation_time": 125.8,
-            "avg_complexity": 8.7
+            "avg_complexity": 8.7,
         }
 
-        poor_score = await confidence_service._validate_historical_performance(poor_history_data)
+        poor_score = await confidence_service._validate_historical_performance(
+            poor_history_data
+        )
 
         assert poor_score.score <= 0.6
         assert len(poor_score.reasons) >= 1
@@ -869,7 +959,7 @@ class TestAutomatedConfidenceScoringService:
             "matching_features": 12,
             "total_features": 14,
             "pattern_frequency": 0.65,
-            "related_patterns": ["simple_mapping", "block_conversion"]
+            "related_patterns": ["simple_mapping", "block_conversion"],
         }
 
         score = await confidence_service._validate_pattern_consistency(consistent_data)
@@ -885,10 +975,12 @@ class TestAutomatedConfidenceScoringService:
             "matching_features": 3,
             "total_features": 10,
             "pattern_frequency": 0.08,
-            "related_patterns": []
+            "related_patterns": [],
         }
 
-        inconsistent_score = await confidence_service._validate_pattern_consistency(inconsistent_data)
+        inconsistent_score = await confidence_service._validate_pattern_consistency(
+            inconsistent_data
+        )
 
         assert inconsistent_score.score <= 0.5
         assert len(inconsistent_score.reasons) >= 1
@@ -902,10 +994,12 @@ class TestAutomatedConfidenceScoringService:
             "platform_differences": ["minor_syntax"],
             "compatibility_score": 0.91,
             "tested_platforms": ["java", "bedrock"],
-            "compatibility_issues": []
+            "compatibility_issues": [],
         }
 
-        score = await confidence_service._validate_cross_platform_compatibility(compatible_data)
+        score = await confidence_service._validate_cross_platform_compatibility(
+            compatible_data
+        )
 
         assert score.layer == ValidationLayer.CROSS_PLATFORM_VALIDATION
         assert score.score >= 0.8
@@ -918,10 +1012,14 @@ class TestAutomatedConfidenceScoringService:
             "platform_differences": ["major_api_changes", "removed_features"],
             "compatibility_score": 0.23,
             "tested_platforms": ["java"],
-            "compatibility_issues": ["feature_gap", "api_mismatch"]
+            "compatibility_issues": ["feature_gap", "api_mismatch"],
         }
 
-        incompatible_score = await confidence_service._validate_cross_platform_compatibility(incompatible_data)
+        incompatible_score = (
+            await confidence_service._validate_cross_platform_compatibility(
+                incompatible_data
+            )
+        )
 
         assert incompatible_score.score <= 0.4
         assert len(incompatible_score.reasons) >= 2
@@ -934,10 +1032,12 @@ class TestAutomatedConfidenceScoringService:
             "version_range": ["1.19.0", "1.20.5"],
             "deprecated_features": [],
             "breaking_changes": [],
-            "version_stability": 0.95
+            "version_stability": 0.95,
         }
 
-        score = await confidence_service._validate_version_compatibility(compatible_version_data)
+        score = await confidence_service._validate_version_compatibility(
+            compatible_version_data
+        )
 
         assert score.layer == ValidationLayer.VERSION_COMPATIBILITY
         assert score.score >= 0.9
@@ -949,10 +1049,12 @@ class TestAutomatedConfidenceScoringService:
             "version_range": ["1.20.0", "1.21.0"],
             "deprecated_features": ["old_api"],
             "breaking_changes": ["entity_changes", "block_changes"],
-            "version_stability": 0.45
+            "version_stability": 0.45,
         }
 
-        incompatible_score = await confidence_service._validate_version_compatibility(incompatible_version_data)
+        incompatible_score = await confidence_service._validate_version_compatibility(
+            incompatible_version_data
+        )
 
         assert incompatible_score.score <= 0.5
         assert len(incompatible_score.reasons) >= 2
@@ -966,7 +1068,7 @@ class TestAutomatedConfidenceScoringService:
             "successful_implementations": 7950,
             "failed_implementations": 550,
             "avg_user_rating": 4.6,
-            "usage_trend": "increasing"
+            "usage_trend": "increasing",
         }
 
         score = await confidence_service._validate_usage_statistics(high_usage_data)
@@ -982,7 +1084,7 @@ class TestAutomatedConfidenceScoringService:
             "successful_implementations": 28,
             "failed_implementations": 17,
             "avg_user_rating": 2.8,
-            "usage_trend": "decreasing"
+            "usage_trend": "decreasing",
         }
 
         low_score = await confidence_service._validate_usage_statistics(low_usage_data)
@@ -999,10 +1101,12 @@ class TestAutomatedConfidenceScoringService:
             "feature_overlap": 0.87,
             "behavioral_similarity": 0.85,
             "semantic_drift": 0.05,
-            "concept_alignment": 0.94
+            "concept_alignment": 0.94,
         }
 
-        score = await confidence_service._validate_semantic_consistency(consistent_semantic_data)
+        score = await confidence_service._validate_semantic_consistency(
+            consistent_semantic_data
+        )
 
         assert score.layer == ValidationLayer.SEMANTIC_CONSISTENCY
         assert score.score >= 0.85
@@ -1015,10 +1119,12 @@ class TestAutomatedConfidenceScoringService:
             "feature_overlap": 0.45,
             "behavioral_similarity": 0.22,
             "semantic_drift": 0.78,
-            "concept_alignment": 0.35
+            "concept_alignment": 0.35,
         }
 
-        inconsistent_score = await confidence_service._validate_semantic_consistency(inconsistent_semantic_data)
+        inconsistent_score = await confidence_service._validate_semantic_consistency(
+            inconsistent_semantic_data
+        )
 
         assert inconsistent_score.score <= 0.4
         assert len(inconsistent_score.reasons) >= 2
@@ -1031,20 +1137,20 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.9,
                 reasons=["expert_approved"],
-                factors=["expert_reputation", "thorough_review"]
+                factors=["expert_reputation", "thorough_review"],
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.85,
                 reasons=["high_community_rating"],
-                factors=["user_reviews", "usage_stats"]
+                factors=["user_reviews", "usage_stats"],
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.88,
                 reasons=["strong_success_rate"],
-                factors=["historical_performance"]
-            )
+                factors=["historical_performance"],
+            ),
         ]
 
         overall = confidence_service._calculate_overall_confidence(high_scores)
@@ -1056,20 +1162,20 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.95,
                 reasons=["expert_approved"],
-                factors=["expert_reputation"]
+                factors=["expert_reputation"],
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.45,
                 reasons=["low_community_rating"],
-                factors=["poor_reviews"]
+                factors=["poor_reviews"],
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.72,
                 reasons=["moderate_success_rate"],
-                factors=["historical_data"]
-            )
+                factors=["historical_data"],
+            ),
         ]
 
         mixed_overall = confidence_service._calculate_overall_confidence(mixed_scores)
@@ -1083,20 +1189,20 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.3,
                 reasons=["no_expert_approval", "questionable_methodology"],
-                factors=[]
+                factors=[],
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.25,
                 reasons=["very_low_rating", "many_complaints"],
-                factors=[]
+                factors=[],
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.82,
                 reasons=["good_historical_performance"],
-                factors=[]
-            )
+                factors=[],
+            ),
         ]
 
         risk_factors = confidence_service._identify_risk_factors(risk_scores)
@@ -1114,23 +1220,25 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.95,
                 reasons=[],
-                factors=["expert_approved", "thorough_review", "reliable_source"]
+                factors=["expert_approved", "thorough_review", "reliable_source"],
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.88,
                 reasons=[],
-                factors=["high_usage", "positive_reviews", "community_trust"]
+                factors=["high_usage", "positive_reviews", "community_trust"],
             ),
             ValidationScore(
                 layer=ValidationLayer.PATTERN_VALIDATION,
                 score=0.91,
                 reasons=[],
-                factors=["strong_pattern_match", "consistent_structure"]
-            )
+                factors=["strong_pattern_match", "consistent_structure"],
+            ),
         ]
 
-        confidence_factors = confidence_service._identify_confidence_factors(confidence_scores)
+        confidence_factors = confidence_service._identify_confidence_factors(
+            confidence_scores
+        )
 
         assert len(confidence_factors) >= 6
         assert "expert_approved" in confidence_factors
@@ -1144,20 +1252,20 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.3,
                 reasons=["no_expert_review"],
-                factors=[]
+                factors=[],
             ),
             ValidationScore(
                 layer=ValidationLayer.COMMUNITY_VALIDATION,
                 score=0.45,
                 reasons=["low_community_rating"],
-                factors=[]
+                factors=[],
             ),
             ValidationScore(
                 layer=ValidationLayer.HISTORICAL_VALIDATION,
                 score=0.22,
                 reasons=["poor_success_rate"],
-                factors=[]
-            )
+                factors=[],
+            ),
         ]
 
         recommendations = await confidence_service._generate_recommendations(
@@ -1175,20 +1283,26 @@ class TestAutomatedConfidenceScoringService:
         assert len(expert_recs) >= 1
 
         # Should recommend community engagement
-        community_recs = [r for r in recommendations if "community" in r["action"].lower()]
+        community_recs = [
+            r for r in recommendations if "community" in r["action"].lower()
+        ]
         assert len(community_recs) >= 1
 
     def test_edge_case_no_validation_scores(self, confidence_service):
         """Test handling of empty validation scores."""
         empty_scores = []
 
-        overall_confidence = confidence_service._calculate_overall_confidence(empty_scores)
+        overall_confidence = confidence_service._calculate_overall_confidence(
+            empty_scores
+        )
         assert overall_confidence == 0.0
 
         risk_factors = confidence_service._identify_risk_factors(empty_scores)
         assert risk_factors == []
 
-        confidence_factors = confidence_service._identify_confidence_factors(empty_scores)
+        confidence_factors = confidence_service._identify_confidence_factors(
+            empty_scores
+        )
         assert confidence_factors == []
 
     def test_edge_case_extreme_values(self, confidence_service):
@@ -1199,11 +1313,13 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=1.0,
                 reasons=["perfect_validation"],
-                factors=["ideal_conditions"]
+                factors=["ideal_conditions"],
             )
         ]
 
-        perfect_overall = confidence_service._calculate_overall_confidence(perfect_scores)
+        perfect_overall = confidence_service._calculate_overall_confidence(
+            perfect_scores
+        )
         assert perfect_overall == 1.0
 
         # Zero scores
@@ -1212,31 +1328,33 @@ class TestAutomatedConfidenceScoringService:
                 layer=ValidationLayer.EXPERT_VALIDATION,
                 score=0.0,
                 reasons=["complete_failure"],
-                factors=["critical_issues"]
+                factors=["critical_issues"],
             )
         ]
 
         zero_overall = confidence_service._calculate_overall_confidence(zero_scores)
         assert zero_overall == 0.0
 
-    async def test_performance_large_batch_assessment(self, confidence_service, mock_db_session):
+    async def test_performance_large_batch_assessment(
+        self, confidence_service, mock_db_session
+    ):
         """Test performance with large batch assessments."""
         # Create large batch
         large_batch = [
-            {"item_type": "node", "item_id": f"node_{i}"}
-            for i in range(200)
+            {"item_type": "node", "item_id": f"node_{i}"} for i in range(200)
         ]
 
         # Mock individual assessments
-        with patch.object(confidence_service, 'assess_confidence') as mock_assess:
+        with patch.object(confidence_service, "assess_confidence") as mock_assess:
             mock_assess.return_value = ConfidenceAssessment(
                 overall_confidence=0.75,
                 validation_scores={},
                 risk_factors=[],
-                confidence_factors=[]
+                confidence_factors=[],
             )
 
             import time
+
             start_time = time.time()
 
             results = await confidence_service.batch_assess_confidence(
@@ -1263,11 +1381,11 @@ class TestAutomatedConfidenceScoringService:
                     layer=ValidationLayer.EXPERT_VALIDATION,
                     score=0.9,
                     reasons=["expert_approved"],
-                    factors=["thorough_review"]
+                    factors=["thorough_review"],
                 )
             },
             risk_factors=["low_community_rating"],
-            confidence_factors=["expert_validation"]
+            confidence_factors=["expert_validation"],
         )
 
         assert assessment.overall_confidence == 0.85

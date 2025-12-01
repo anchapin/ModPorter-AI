@@ -1,10 +1,11 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select
 import datetime
 import time
 import logging
-import os
+
+from ..db.models import FeatureMapping, BehaviorFile, ConversionJob
 
 from .report_models import (
     SummaryReport,
@@ -19,6 +20,7 @@ from .report_models import (
     LogEntry,
     FullConversionReport,
 )
+
 try:
     from src.db.models import ConversionJob as Job, Addon, Asset, BehaviorFile
 except ImportError:
@@ -245,7 +247,9 @@ class ConversionReportGenerator:
             features = feature_result.scalars().all()
 
             # Get behavior files
-            behavior_stmt = select(BehaviorFile).where(BehaviorFile.addon_id == (addon.id if addon else None))
+            behavior_stmt = select(BehaviorFile).where(
+                BehaviorFile.addon_id == (addon.id if addon else None)
+            )
             behavior_result = await self.db.execute(behavior_stmt)
             behavior_files = behavior_result.scalars().all()
 
@@ -267,7 +271,9 @@ class ConversionReportGenerator:
                     "version": addon.version if addon else None,
                     "uuid": addon.uuid if addon else None,
                     "pack_icon": addon.pack_icon if addon else None,
-                } if addon else None,
+                }
+                if addon
+                else None,
                 "assets_count": len(assets),
                 "assets": [
                     {
@@ -277,7 +283,7 @@ class ConversionReportGenerator:
                         "converted_path": asset.converted_path,
                         "conversion_status": asset.conversion_status,
                         "conversion_notes": asset.conversion_notes,
-                        "file_size": asset.file_size
+                        "file_size": asset.file_size,
                     }
                     for asset in assets
                 ],
@@ -289,7 +295,7 @@ class ConversionReportGenerator:
                         "message": log.message,
                         "timestamp": log.timestamp,
                         "source": log.source,
-                        "details": log.details
+                        "details": log.details,
                     }
                     for log in logs
                 ],
@@ -302,7 +308,7 @@ class ConversionReportGenerator:
                         "conversion_method": feature.conversion_method,
                         "confidence_score": feature.confidence_score,
                         "status": feature.status,
-                        "notes": feature.notes
+                        "notes": feature.notes,
                     }
                     for feature in features
                 ],
@@ -313,10 +319,10 @@ class ConversionReportGenerator:
                         "display_name": bf.display_name,
                         "file_type": bf.file_type,
                         "file_path": bf.file_path,
-                        "content_length": len(bf.content) if bf.content else 0
+                        "content_length": len(bf.content) if bf.content else 0,
                     }
                     for bf in behavior_files
-                ]
+                ],
             }
 
             # Calculate derived statistics
@@ -341,13 +347,19 @@ class ConversionReportGenerator:
 
         # Feature conversion statistics
         total_features = len(features)
-        converted_features = len([f for f in features if f.get("status") == "converted"])
-        partially_converted_features = len([f for f in features if f.get("status") == "partial"])
+        converted_features = len(
+            [f for f in features if f.get("status") == "converted"]
+        )
+        partially_converted_features = len(
+            [f for f in features if f.get("status") == "partial"]
+        )
         failed_features = len([f for f in features if f.get("status") == "failed"])
 
         # Asset conversion statistics
         total_assets = len(assets)
-        successful_assets = len([a for a in assets if a.get("conversion_status") == "success"])
+        successful_assets = len(
+            [a for a in assets if a.get("conversion_status") == "success"]
+        )
 
         # Calculate overall success rate
         overall_success_rate = 0.0
@@ -356,13 +368,21 @@ class ConversionReportGenerator:
             feature_weight = 0.7
             asset_weight = 0.3
 
-            feature_success_rate = (converted_features + (partially_converted_features * 0.5)) / total_features
-            asset_success_rate = successful_assets / total_assets if total_assets > 0 else 1.0
+            feature_success_rate = (
+                converted_features + (partially_converted_features * 0.5)
+            ) / total_features
+            asset_success_rate = (
+                successful_assets / total_assets if total_assets > 0 else 1.0
+            )
 
-            overall_success_rate = (feature_success_rate * feature_weight) + (asset_success_rate * asset_weight)
+            overall_success_rate = (feature_success_rate * feature_weight) + (
+                asset_success_rate * asset_weight
+            )
 
         # Calculate assumptions applied (estimated)
-        assumptions_applied_count = len([f for f in features if f.get("conversion_method") == "assumption_based"])
+        assumptions_applied_count = len(
+            [f for f in features if f.get("conversion_method") == "assumption_based"]
+        )
 
         return {
             "overall_success_rate": round(overall_success_rate * 100, 1),
@@ -376,9 +396,21 @@ class ConversionReportGenerator:
             "quick_statistics": {
                 "files_processed": total_assets,
                 "features_analyzed": total_features,
-                "average_confidence": round(sum(f.get("confidence_score", 0) for f in features) / total_features, 2) if total_features > 0 else 0.0,
-                "errors_encountered": len([l for l in conversion_data.get("logs", []) if l.get("level") == "ERROR"])
-            }
+                "average_confidence": round(
+                    sum(f.get("confidence_score", 0) for f in features)
+                    / total_features,
+                    2,
+                )
+                if total_features > 0
+                else 0.0,
+                "errors_encountered": len(
+                    [
+                        l
+                        for l in conversion_data.get("logs", [])
+                        if l.get("level") == "ERROR"
+                    ]
+                ),
+            },
         }
 
     async def generate_summary_report(self, job_id: str) -> Optional[SummaryReport]:
@@ -392,11 +424,17 @@ class ConversionReportGenerator:
             overall_success_rate=conversion_data.get("overall_success_rate", 0.0),
             total_features=conversion_data.get("total_features", 0),
             converted_features=conversion_data.get("converted_features", 0),
-            partially_converted_features=conversion_data.get("partially_converted_features", 0),
+            partially_converted_features=conversion_data.get(
+                "partially_converted_features", 0
+            ),
             failed_features=conversion_data.get("failed_features", 0),
-            assumptions_applied_count=conversion_data.get("assumptions_applied_count", 0),
+            assumptions_applied_count=conversion_data.get(
+                "assumptions_applied_count", 0
+            ),
             processing_time_seconds=conversion_data.get("processing_time_seconds", 0.0),
-            download_url=f"/api/v1/addons/{conversion_data.get('addon', {}).get('uuid')}/download" if conversion_data.get('addon') else None,
+            download_url=f"/api/v1/addons/{conversion_data.get('addon', {}).get('uuid')}/download"
+            if conversion_data.get("addon")
+            else None,
             quick_statistics=conversion_data.get("quick_statistics", {}),
         )
 

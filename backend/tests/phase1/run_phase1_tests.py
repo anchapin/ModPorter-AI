@@ -16,7 +16,8 @@ import sys
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, Any
+
 
 class Phase1TestRunner:
     """Test runner for Phase 1 services."""
@@ -27,13 +28,15 @@ class Phase1TestRunner:
             "test_knowledge_graph_crud",
             "test_version_compatibility",
             "test_batch_processing",
-            "test_cache"
+            "test_cache",
         ]
         self.results = {}
         self.start_time = None
         self.end_time = None
 
-    def run_all_tests(self, coverage: bool = True, verbose: bool = False) -> Dict[str, Any]:
+    def run_all_tests(
+        self, coverage: bool = True, verbose: bool = False
+    ) -> Dict[str, Any]:
         """
         Run all Phase 1 tests.
 
@@ -65,14 +68,18 @@ class Phase1TestRunner:
 
             # Print intermediate results
             status = "✅ PASSED" if module_result["success"] else "❌ FAILED"
-            print(f"{module}: {status} ({module_result['tests_run']} tests, {module_result['failures']} failures)")
+            print(
+                f"{module}: {status} ({module_result['tests_run']} tests, {module_result['failures']} failures)"
+            )
 
         self.end_time = time.time()
 
         # Generate final summary
         return self.generate_summary(coverage)
 
-    def run_test_module(self, module: str, coverage: bool, verbose: bool) -> Dict[str, Any]:
+    def run_test_module(
+        self, module: str, coverage: bool, verbose: bool
+    ) -> Dict[str, Any]:
         """
         Run tests for a specific module.
 
@@ -86,21 +93,25 @@ class Phase1TestRunner:
         """
         # Build pytest command
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             f"tests/phase1/services/{module}.py",
-            "--tb=short"
+            "--tb=short",
         ]
 
         if verbose:
             cmd.append("-v")
 
         if coverage:
-            cmd.extend([
-                f"--cov=src/services/{module.replace('test_', '')}",
-                "--cov-report=term-missing",
-                "--cov-report=html",
-                f"--cov-report=html:htmlcov_{module}"
-            ])
+            cmd.extend(
+                [
+                    f"--cov=src/services/{module.replace('test_', '')}",
+                    "--cov-report=term-missing",
+                    "--cov-report=html",
+                    f"--cov-report=html:htmlcov_{module}",
+                ]
+            )
 
         # Run the tests
         try:
@@ -108,12 +119,16 @@ class Phase1TestRunner:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5-minute timeout
+                timeout=300,  # 5-minute timeout
             )
 
             # Parse output
             output_lines = result.stdout.split("\n")
-            summary_lines = [line for line in output_lines if "=" in line and ("passed" in line or "failed" in line)]
+            summary_lines = [
+                line
+                for line in output_lines
+                if "=" in line and ("passed" in line or "failed" in line)
+            ]
 
             # Extract test statistics
             tests_run = 0
@@ -124,21 +139,21 @@ class Phase1TestRunner:
                 if "passed" in line:
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part.isdigit() and i+1 < len(parts):
+                        if part.isdigit() and i + 1 < len(parts):
                             tests_run = int(part)
                             break
 
                 if "failed" in line:
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part.isdigit() and i+1 < len(parts):
+                        if part.isdigit() and i + 1 < len(parts):
                             failures = int(part)
                             break
 
                 if "error" in line:
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part.isdigit() and i+1 < len(parts):
+                        if part.isdigit() and i + 1 < len(parts):
                             errors = int(part)
                             break
 
@@ -149,7 +164,7 @@ class Phase1TestRunner:
                 "errors": errors,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "cmd": " ".join(cmd)
+                "cmd": " ".join(cmd),
             }
         except subprocess.TimeoutExpired:
             return {
@@ -159,7 +174,7 @@ class Phase1TestRunner:
                 "errors": 1,
                 "stdout": "",
                 "stderr": "Test execution timed out",
-                "cmd": " ".join(cmd)
+                "cmd": " ".join(cmd),
             }
 
     def generate_summary(self, coverage: bool) -> Dict[str, Any]:
@@ -173,10 +188,14 @@ class Phase1TestRunner:
             Dictionary containing the test summary
         """
         total_tests = sum(result["tests_run"] for result in self.results.values())
-        total_failures = sum(result["failures"] + result["errors"] for result in self.results.values())
+        total_failures = sum(
+            result["failures"] + result["errors"] for result in self.results.values()
+        )
         total_passed = total_tests - total_failures
 
-        successful_modules = sum(1 for result in self.results.values() if result["success"])
+        successful_modules = sum(
+            1 for result in self.results.values() if result["success"]
+        )
         total_modules = len(self.results)
 
         duration = self.end_time - self.start_time
@@ -227,10 +246,12 @@ class Phase1TestRunner:
             "total_failures": total_failures,
             "success_rate": 100 * total_passed / max(total_tests, 1),
             "duration": duration,
-            "results": self.results
+            "results": self.results,
         }
 
-    def run_specific_module(self, module: str, coverage: bool = True, verbose: bool = False) -> Dict[str, Any]:
+    def run_specific_module(
+        self, module: str, coverage: bool = True, verbose: bool = False
+    ) -> Dict[str, Any]:
         """
         Run tests for a specific module.
 
@@ -262,7 +283,9 @@ class Phase1TestRunner:
 
         # Print results
         status = "✅ PASSED" if result["success"] else "❌ FAILED"
-        print(f"{module}: {status} ({result['tests_run']} tests, {result['failures']} failures)")
+        print(
+            f"{module}: {status} ({result['tests_run']} tests, {result['failures']} failures)"
+        )
 
         if not result["success"] and result["stderr"]:
             print("\nSTDERR:")
@@ -307,10 +330,16 @@ def main():
     """Main function to run tests."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run Phase 1 tests for ModPorter-AI backend")
+    parser = argparse.ArgumentParser(
+        description="Run Phase 1 tests for ModPorter-AI backend"
+    )
     parser.add_argument("--module", type=str, help="Run a specific test module")
-    parser.add_argument("--no-coverage", action="store_true", help="Skip coverage reporting")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument(
+        "--no-coverage", action="store_true", help="Skip coverage reporting"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
+    )
 
     args = parser.parse_args()
 
@@ -319,16 +348,13 @@ def main():
     if args.module:
         # Run a specific module
         result = runner.run_specific_module(
-            args.module,
-            coverage=not args.no_coverage,
-            verbose=args.verbose
+            args.module, coverage=not args.no_coverage, verbose=args.verbose
         )
         sys.exit(0 if result["success"] else 1)
     else:
         # Run all modules
         result = runner.run_all_tests(
-            coverage=not args.no_coverage,
-            verbose=args.verbose
+            coverage=not args.no_coverage, verbose=args.verbose
         )
         sys.exit(0 if result["overall_success"] else 1)
 

@@ -13,7 +13,7 @@ import uvicorn
 import os
 import json
 from dotenv import load_dotenv
-import redis.asyncio as aioredis
+from redis.asyncio import Redis as AsyncRedis
 
 # Configure logging using centralized configuration
 from utils.logging_config import setup_logging, get_agent_logger
@@ -30,6 +30,8 @@ setup_logging(
 
 logger = get_agent_logger("main")
 
+# Import AI engine components after logging is configured
+# ruff: noqa: E402
 from crew.conversion_crew import ModPorterConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
@@ -185,7 +187,7 @@ async def startup_event():
     try:
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        redis_client = aioredis.from_url(redis_url, decode_responses=True)
+        redis_client = AsyncRedis.from_url(redis_url, decode_responses=True)
 
         # Test Redis connection
         await redis_client.ping()

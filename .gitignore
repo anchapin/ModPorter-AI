@@ -112,6 +112,7 @@ dist-storybook/
 *.dll
 *.so
 *.dylib
+*.msi
 
 # Additional exclusions for Cline/AI tools
 **/.pnpm/
@@ -162,3 +163,35 @@ bin/
 
 # Agent documentation files
 AGENTS.MD
+
+# Temporary Reports and Logs
+status.txt
+*_report_*.json
+benchmark_results_*.json
+latest_*.json
+benchmarking_cron.conf
+LINTING_REPORT.md
+OPTIMIZATION_DEPLOYMENT_SUMMARY.md
+LOCAL_CI_SETUP_GUIDE.md
+WINDOWS_CI_SETUP.md
+backend/OPTIMIZATION_SUMMARY.md
+
+# Temporary Scripts
+run_debug_tests.ps1
+run_single_test.ps1
+scripts/test-backend-imports.py
+scripts/run-local-tests.bat
+scripts/fix-test-imports*.py
+scripts/check-port-conflicts.py
+scripts/cleanup-ci-resources.*
+scripts/configure-monitoring.sh
+scripts/deploy-staging-optimizations.sh
+scripts/enable-adaptive-optimization.py
+scripts/preflight-check.py
+scripts/run-act-workflow.sh
+scripts/run-local-tests-windows.ps1
+scripts/run_performance_benchmarks.py
+scripts/setup-regular-benchmarking.py
+
+# Garbage
+nul

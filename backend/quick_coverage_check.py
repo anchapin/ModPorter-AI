@@ -21,7 +21,7 @@ def analyze_coverage():
     target_lines = int(total_lines * 0.8)
     needed_lines = target_lines - covered_lines
     
-    print(f"Current Coverage Analysis")
+    print("Current Coverage Analysis")
     print(f"   Current: {current_coverage:.1f}% ({covered_lines}/{total_lines} lines)")
     print(f"   Target: 80% ({target_lines} lines)")
     print(f"   Gap: {needed_lines} additional lines needed ({(needed_lines/total_lines)*100:.1f}%)")
@@ -45,19 +45,19 @@ def analyze_coverage():
             else:
                 high_impact_files.append((file_path, stmts, percent, covered))
     
-    print(f"\nHIGH PRIORITY: Zero Coverage Files (100+ statements)")
+    print("\nHIGH PRIORITY: Zero Coverage Files (100+ statements)")
     zero_coverage_files.sort(key=lambda x: x[1], reverse=True)
     for file_path, stmts in zero_coverage_files[:10]:
         print(f"   {file_path}: {stmts} statements at 0% coverage")
     
-    print(f"\nMEDIUM PRIORITY: Partial Coverage Files (100+ statements)")
+    print("\nMEDIUM PRIORITY: Partial Coverage Files (100+ statements)")
     high_impact_files.sort(key=lambda x: (x[2], -x[1]))  # Sort by coverage, then by size
     for file_path, stmts, percent, covered in high_impact_files[:10]:
         potential = int(stmts * 0.7) - covered
         if potential > 0:
             print(f"   {file_path}: {stmts} stmts at {percent:.1f}% (+{potential} potential lines)")
     
-    print(f"\nGOOD COVERAGE: Already Well-Covered Files")
+    print("\nGOOD COVERAGE: Already Well-Covered Files")
     good_coverage_files.sort(key=lambda x: x[2], reverse=True)
     for file_path, stmts, percent in good_coverage_files[:5]:
         print(f"   {file_path}: {stmts} stmts at {percent:.1f}% coverage")

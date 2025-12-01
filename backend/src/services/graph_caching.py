@@ -20,7 +20,9 @@ from functools import wraps
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.knowledge_graph_crud import (
-    KnowledgeNodeCRUD, KnowledgeRelationshipCRUD, ConversionPatternCRUD
+    KnowledgeNodeCRUD,
+    KnowledgeRelationshipCRUD,
+    ConversionPatternCRUD,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class CacheLevel(Enum):
     """Cache levels in the hierarchy."""
+
     L1_MEMORY = "l1_memory"
     L2_REDIS = "l2_redis"
     L3_DATABASE = "l3_database"
@@ -35,6 +38,7 @@ class CacheLevel(Enum):
 
 class CacheStrategy(Enum):
     """Caching strategies."""
+
     LRU = "lru"
     LFU = "lfu"
     FIFO = "fifo"
@@ -46,6 +50,7 @@ class CacheStrategy(Enum):
 
 class CacheInvalidationStrategy(Enum):
     """Cache invalidation strategies."""
+
     TIME_BASED = "time_based"
     EVENT_DRIVEN = "event_driven"
     MANUAL = "manual"
@@ -56,6 +61,7 @@ class CacheInvalidationStrategy(Enum):
 @dataclass
 class CacheEntry:
     """Entry in cache."""
+
     key: str
     value: Any
     created_at: datetime
@@ -69,6 +75,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """Statistics for cache performance."""
+
     hits: int = 0
     misses: int = 0
     sets: int = 0
@@ -83,11 +90,14 @@ class CacheStats:
 @dataclass
 class CacheConfig:
     """Configuration for cache."""
+
     max_size_mb: float = 100.0
     max_entries: int = 10000
     ttl_seconds: Optional[int] = None
     strategy: CacheStrategy = CacheStrategy.LRU
-    invalidation_strategy: CacheInvalidationStrategy = CacheInvalidationStrategy.TIME_BASED
+    invalidation_strategy: CacheInvalidationStrategy = (
+        CacheInvalidationStrategy.TIME_BASED
+    )
     refresh_interval_seconds: int = 300
     enable_compression: bool = True
     enable_serialization: bool = True
@@ -167,7 +177,9 @@ class LFUCache:
                 # Add new value
                 if len(self.cache) >= self.max_size:
                     # Remove least frequently used
-                    lfu_key = min(self.frequencies.keys(), key=lambda k: self.frequencies[k])
+                    lfu_key = min(
+                        self.frequencies.keys(), key=lambda k: self.frequencies[k]
+                    )
                     self.cache.pop(lfu_key)
                     self.frequencies.pop(lfu_key)
 
@@ -208,7 +220,7 @@ class GraphCachingService:
             "l1_memory": CacheStats(),
             "l2_redis": CacheStats(),
             "l3_database": CacheStats(),
-            "overall": CacheStats()
+            "overall": CacheStats(),
         }
 
         self.cache_configs: Dict[str, CacheConfig] = {
@@ -217,7 +229,7 @@ class GraphCachingService:
             "patterns": CacheConfig(max_size_mb=20.0, ttl_seconds=900),
             "queries": CacheConfig(max_size_mb=10.0, ttl_seconds=300),
             "layouts": CacheConfig(max_size_mb=40.0, ttl_seconds=1800),
-            "clusters": CacheConfig(max_size_mb=15.0, ttl_seconds=1200)
+            "clusters": CacheConfig(max_size_mb=15.0, ttl_seconds=1200),
         }
 
         self.cache_invalidations: Dict[str, List[datetime]] = defaultdict(list)
@@ -231,8 +243,13 @@ class GraphCachingService:
         # Start cleanup thread
         self._start_cleanup_thread()
 
-    def cache(self, cache_type: str = "default", ttl: Optional[int] = None,
-              size_limit: Optional[int] = None, strategy: CacheStrategy = CacheStrategy.LRU):
+    def cache(
+        self,
+        cache_type: str = "default",
+        ttl: Optional[int] = None,
+        size_limit: Optional[int] = None,
+        strategy: CacheStrategy = CacheStrategy.LRU,
+    ):
         """
         Decorator for caching function results.
 
@@ -245,6 +262,7 @@ class GraphCachingService:
         Returns:
             Decorated function with caching
         """
+
         def decorator(func):
             @wraps(func)
             async def wrapper(*args, **kwargs):
@@ -265,10 +283,14 @@ class GraphCachingService:
                 await self.set(cache_type, cache_key, result, ttl)
 
                 # Log performance
-                self._log_cache_operation(cache_type, "set", execution_time, len(str(result)))
+                self._log_cache_operation(
+                    cache_type, "set", execution_time, len(str(result))
+                )
 
                 return result
+
             return wrapper
+
         return decorator
 
     async def get(self, cache_type: str, key: str) -> Optional[Any]:
@@ -323,8 +345,9 @@ class GraphCachingService:
             self._update_cache_stats(cache_type, "miss", 0)
             return None
 
-    async def set(self, cache_type: str, key: str, value: Any,
-                  ttl: Optional[int] = None) -> bool:
+    async def set(
+        self, cache_type: str, key: str, value: Any, ttl: Optional[int] = None
+    ) -> bool:
         """
         Set value in cache.
 
@@ -365,7 +388,10 @@ class GraphCachingService:
                     last_accessed=datetime.utcnow(),
                     size_bytes=size_bytes,
                     ttl_seconds=actual_ttl,
-                    metadata={"cache_type": cache_type, "original_size": len(str(value))}
+                    metadata={
+                        "cache_type": cache_type,
+                        "original_size": len(str(value)),
+                    },
                 )
 
                 # Check if we need to evict entries
@@ -399,9 +425,12 @@ class GraphCachingService:
             logger.error(f"Error setting in cache: {e}")
             return False
 
-    async def invalidate(self, cache_type: Optional[str] = None,
-                       pattern: Optional[str] = None,
-                       cascade: bool = True) -> int:
+    async def invalidate(
+        self,
+        cache_type: Optional[str] = None,
+        pattern: Optional[str] = None,
+        cascade: bool = True,
+    ) -> int:
         """
         Invalidate cache entries.
 
@@ -449,8 +478,10 @@ class GraphCachingService:
 
             # Log invalidation
             self._log_cache_operation(
-                "invalidation", "invalidate",
-                (time.time() - start_time) * 1000, invalidated_count
+                "invalidation",
+                "invalidate",
+                (time.time() - start_time) * 1000,
+                invalidated_count,
             )
 
             return invalidated_count
@@ -477,69 +508,81 @@ class GraphCachingService:
             nodes_start = time.time()
             nodes = await KnowledgeNodeCRUD.get_all(db, limit=1000)
             for node in nodes:
-                await self.set("nodes", f"node:{node.id}", {
-                    "id": str(node.id),
-                    "name": node.name,
-                    "node_type": node.node_type,
-                    "platform": node.platform,
-                    "properties": json.loads(node.properties or "{}")
-                }, ttl=600)
+                await self.set(
+                    "nodes",
+                    f"node:{node.id}",
+                    {
+                        "id": str(node.id),
+                        "name": node.name,
+                        "node_type": node.node_type,
+                        "platform": node.platform,
+                        "properties": json.loads(node.properties or "{}"),
+                    },
+                    ttl=600,
+                )
             warm_up_results["nodes"] = {
                 "count": len(nodes),
-                "time_ms": (time.time() - nodes_start) * 1000
+                "time_ms": (time.time() - nodes_start) * 1000,
             }
 
             # Warm up relationships cache
             rels_start = time.time()
             relationships = await KnowledgeRelationshipCRUD.get_all(db, limit=2000)
             for rel in relationships:
-                await self.set("relationships", f"rel:{rel.id}", {
-                    "id": str(rel.id),
-                    "source_id": rel.source_node_id,
-                    "target_id": rel.target_node_id,
-                    "type": rel.relationship_type,
-                    "confidence_score": rel.confidence_score
-                }, ttl=600)
+                await self.set(
+                    "relationships",
+                    f"rel:{rel.id}",
+                    {
+                        "id": str(rel.id),
+                        "source_id": rel.source_node_id,
+                        "target_id": rel.target_node_id,
+                        "type": rel.relationship_type,
+                        "confidence_score": rel.confidence_score,
+                    },
+                    ttl=600,
+                )
             warm_up_results["relationships"] = {
                 "count": len(relationships),
-                "time_ms": (time.time() - rels_start) * 1000
+                "time_ms": (time.time() - rels_start) * 1000,
             }
 
             # Warm up patterns cache
             patterns_start = time.time()
             patterns = await ConversionPatternCRUD.get_all(db, limit=500)
             for pattern in patterns:
-                await self.set("patterns", f"pattern:{pattern.id}", {
-                    "id": str(pattern.id),
-                    "java_concept": pattern.java_concept,
-                    "bedrock_concept": pattern.bedrock_concept,
-                    "pattern_type": pattern.pattern_type,
-                    "success_rate": pattern.success_rate
-                }, ttl=900)
+                await self.set(
+                    "patterns",
+                    f"pattern:{pattern.id}",
+                    {
+                        "id": str(pattern.id),
+                        "java_concept": pattern.java_concept,
+                        "bedrock_concept": pattern.bedrock_concept,
+                        "pattern_type": pattern.pattern_type,
+                        "success_rate": pattern.success_rate,
+                    },
+                    ttl=900,
+                )
             warm_up_results["patterns"] = {
                 "count": len(patterns),
-                "time_ms": (time.time() - patterns_start) * 1000
+                "time_ms": (time.time() - patterns_start) * 1000,
             }
 
             total_time = (time.time() - start_time) * 1000
             warm_up_results["summary"] = {
                 "total_time_ms": total_time,
                 "total_items_cached": len(nodes) + len(relationships) + len(patterns),
-                "cache_levels_warmed": ["l1_memory", "l2_redis"]
+                "cache_levels_warmed": ["l1_memory", "l2_redis"],
             }
 
             return {
                 "success": True,
                 "warm_up_results": warm_up_results,
-                "message": "Cache warm-up completed successfully"
+                "message": "Cache warm-up completed successfully",
             }
 
         except Exception as e:
             logger.error(f"Error warming up cache: {e}")
-            return {
-                "success": False,
-                "error": f"Cache warm-up failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Cache warm-up failed: {str(e)}"}
 
     async def get_cache_stats(self, cache_type: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -565,7 +608,7 @@ class GraphCachingService:
                         "total_size_bytes": stats.total_size_bytes,
                         "hit_ratio": stats.hit_ratio,
                         "avg_access_time_ms": stats.avg_access_time_ms,
-                        "memory_usage_mb": stats.memory_usage_mb
+                        "memory_usage_mb": stats.memory_usage_mb,
                     }
                 else:
                     all_stats = {}
@@ -579,13 +622,13 @@ class GraphCachingService:
                             "total_size_bytes": stats.total_size_bytes,
                             "hit_ratio": stats.hit_ratio,
                             "avg_access_time_ms": stats.avg_access_time_ms,
-                            "memory_usage_mb": stats.memory_usage_mb
+                            "memory_usage_mb": stats.memory_usage_mb,
                         }
 
                     return {
                         "cache_types": list(self.cache_stats.keys()),
                         "stats": all_stats,
-                        "overall_stats": self._calculate_overall_stats()
+                        "overall_stats": self._calculate_overall_stats(),
                     }
 
         except Exception as e:
@@ -636,24 +679,24 @@ class GraphCachingService:
                         "old_size_mb": config.max_size_mb / 1.2,
                         "new_size_mb": config.max_size_mb,
                         "old_ttl": config.ttl_seconds / 1.5,
-                        "new_ttl": config.ttl_seconds
+                        "new_ttl": config.ttl_seconds,
                     }
 
             elif strategy == "eviction":
                 # Force eviction of old entries
                 for cache_type in self.l1_cache.keys():
                     evicted = await self._evict_expired_entries(cache_type)
-                    optimization_results[cache_type] = {
-                        "evicted_entries": evicted
-                    }
+                    optimization_results[cache_type] = {"evicted_entries": evicted}
 
             elif strategy == "rebalance":
                 # Rebalance cache distribution
-                total_memory = sum(
+                sum(
                     sum(e.size_bytes for e in cache.values())
                     for cache in self.l1_cache.values()
                 )
-                optimal_memory_per_cache = 100 * 1024 * 1024 / len(self.l1_cache)  # 100MB total
+                optimal_memory_per_cache = (
+                    100 * 1024 * 1024 / len(self.l1_cache)
+                )  # 100MB total
 
                 for cache_type, cache_data in self.l1_cache.items():
                     current_memory = sum(e.size_bytes for e in cache_data.values())
@@ -664,28 +707,27 @@ class GraphCachingService:
                         evicted = await self._evict_entries(cache_type, excess_bytes)
                         optimization_results[cache_type] = {
                             "evicted_bytes": excess_bytes,
-                            "evicted_entries": evicted
+                            "evicted_entries": evicted,
                         }
 
             optimization_time = (time.time() - start_time) * 1000
             optimization_results["summary"] = {
                 "strategy": strategy,
                 "time_ms": optimization_time,
-                "cache_types_optimized": list(optimization_results.keys()) if optimization_results != {"summary": {}} else []
+                "cache_types_optimized": list(optimization_results.keys())
+                if optimization_results != {"summary": {}}
+                else [],
             }
 
             return {
                 "success": True,
                 "optimization_results": optimization_results,
-                "message": "Cache optimization completed successfully"
+                "message": "Cache optimization completed successfully",
             }
 
         except Exception as e:
             logger.error(f"Error optimizing cache: {e}")
-            return {
-                "success": False,
-                "error": f"Cache optimization failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Cache optimization failed: {str(e)}"}
 
     # Private Helper Methods
 
@@ -697,7 +739,7 @@ class GraphCachingService:
                 func.__name__,
                 str(args),
                 str(sorted(kwargs.items())),
-                str(id(func))
+                str(id(func)),
             ]
 
             key_string = "|".join(key_parts)
@@ -769,22 +811,13 @@ class GraphCachingService:
 
             if config.strategy == CacheStrategy.LRU:
                 # Sort by last accessed time
-                entries_sorted = sorted(
-                    cache.items(),
-                    key=lambda x: x[1].last_accessed
-                )
+                entries_sorted = sorted(cache.items(), key=lambda x: x[1].last_accessed)
             elif config.strategy == CacheStrategy.LFU:
                 # Sort by access frequency
-                entries_sorted = sorted(
-                    cache.items(),
-                    key=lambda x: x[1].access_count
-                )
+                entries_sorted = sorted(cache.items(), key=lambda x: x[1].access_count)
             else:
                 # Default to LRU
-                entries_sorted = sorted(
-                    cache.items(),
-                    key=lambda x: x[1].last_accessed
-                )
+                entries_sorted = sorted(cache.items(), key=lambda x: x[1].last_accessed)
 
             evicted_count = 0
             freed_bytes = 0
@@ -858,8 +891,9 @@ class GraphCachingService:
         except Exception as e:
             logger.error(f"Error in cascade invalidation: {e}")
 
-    def _update_cache_stats(self, cache_type: str, operation: str,
-                           access_time: float, size: int = 0):
+    def _update_cache_stats(
+        self, cache_type: str, operation: str, access_time: float, size: int = 0
+    ):
         """Update cache statistics."""
         try:
             stats = self.cache_stats.get(cache_type, CacheStats())
@@ -883,24 +917,29 @@ class GraphCachingService:
             # Update average access time
             if stats.hits > 0:
                 stats.avg_access_time_ms = (
-                    (stats.avg_access_time_ms * (stats.hits - 1) + access_time) / stats.hits
-                )
+                    stats.avg_access_time_ms * (stats.hits - 1) + access_time
+                ) / stats.hits
 
             if overall_stats.hits > 0:
                 overall_stats.avg_access_time_ms = (
-                    (overall_stats.avg_access_time_ms * (overall_stats.hits - 1) + access_time) / overall_stats.hits
-                )
+                    overall_stats.avg_access_time_ms * (overall_stats.hits - 1)
+                    + access_time
+                ) / overall_stats.hits
 
             # Calculate hit ratio
             total_requests = stats.hits + stats.misses
             stats.hit_ratio = stats.hits / total_requests if total_requests > 0 else 0
 
             overall_total = overall_stats.hits + overall_stats.misses
-            overall_stats.hit_ratio = overall_stats.hits / overall_total if overall_total > 0 else 0
+            overall_stats.hit_ratio = (
+                overall_stats.hits / overall_total if overall_total > 0 else 0
+            )
 
             # Update memory usage
             stats.memory_usage_mb = stats.total_size_bytes / (1024 * 1024)
-            overall_stats.memory_usage_mb = overall_stats.total_size_bytes / (1024 * 1024)
+            overall_stats.memory_usage_mb = overall_stats.total_size_bytes / (
+                1024 * 1024
+            )
 
             self.cache_stats[cache_type] = stats
             self.cache_stats["overall"] = overall_stats
@@ -908,8 +947,9 @@ class GraphCachingService:
         except Exception as e:
             logger.error(f"Error updating cache stats: {e}")
 
-    def _log_cache_operation(self, cache_type: str, operation: str,
-                           access_time: float, size: int):
+    def _log_cache_operation(
+        self, cache_type: str, operation: str, access_time: float, size: int
+    ):
         """Log cache operation for performance monitoring."""
         try:
             log_entry = {
@@ -917,7 +957,7 @@ class GraphCachingService:
                 "cache_type": cache_type,
                 "operation": operation,
                 "access_time_ms": access_time,
-                "size_bytes": size
+                "size_bytes": size,
             }
 
             self.performance_history.append(log_entry)
@@ -944,7 +984,9 @@ class GraphCachingService:
                 "hit_ratio": overall.hit_ratio,
                 "avg_access_time_ms": overall.avg_access_time_ms,
                 "memory_usage_mb": overall.memory_usage_mb,
-                "cache_levels_active": len([ct for ct in self.cache_stats.keys() if ct != "overall"])
+                "cache_levels_active": len(
+                    [ct for ct in self.cache_stats.keys() if ct != "overall"]
+                ),
             }
 
         except Exception as e:
@@ -954,6 +996,7 @@ class GraphCachingService:
     def _start_cleanup_thread(self):
         """Start background cleanup thread."""
         try:
+
             def cleanup_task():
                 while not self.stop_cleanup:
                     try:

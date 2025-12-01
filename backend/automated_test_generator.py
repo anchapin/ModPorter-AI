@@ -23,11 +23,8 @@ import json
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
-import importlib.util
-import inspect
 from dataclasses import dataclass
 
 # Try to import optional dependencies
@@ -217,7 +214,7 @@ def test_{function_name}_edge_cases():
 
     for case in edge_cases:
         try:
-            result = {function_name}({case if case else ""})
+            result = {function_name}({{case if case else ""}})
             # Should handle edge cases gracefully or raise appropriate exceptions
             {"" if return_type == "None" else "assert result is not None"}
         except (ValueError, TypeError, AttributeError):
@@ -225,7 +222,7 @@ def test_{function_name}_edge_cases():
             pass
         except Exception as e:
             # Unexpected exceptions should be investigated
-            raise AssertionError(f"Unexpected exception for edge case {case}: {e}")
+            raise AssertionError(f"Unexpected exception for edge case {{case}}: {{e}}")
 '''
 
 
@@ -237,7 +234,7 @@ class TemplateTestGenerator:
         """Generate API endpoint tests"""
         endpoint = route_info.get("endpoint", "")
         method = route_info.get("method", "GET")
-        path_params = route_info.get("path_params", [])
+        route_info.get("path_params", [])
 
         test_name = f"test_{method.lower()}_{endpoint.strip('/').replace('/', '_')}"
 
@@ -420,23 +417,23 @@ class PropertyTestGenerator:
             param_names.append(param_name)
 
             if param_type == "int":
-                strategies.append(f"st.integers(min_value=-1000, max_value=1000)")
+                strategies.append("st.integers(min_value=-1000, max_value=1000)")
             elif param_type == "positive_int":
-                strategies.append(f"st.integers(min_value=0, max_value=1000)")
+                strategies.append("st.integers(min_value=0, max_value=1000)")
             elif param_type == "str":
-                strategies.append(f"st.text(min_size=1, max_size=50, alphabet=st.characters(whitelist_categories=('L', 'N', 'Zs')))")
+                strategies.append("st.text(min_size=1, max_size=50, alphabet=st.characters(whitelist_categories=('L', 'N', 'Zs')))")
             elif param_type == "email":
-                strategies.append(f"st.emails()")
+                strategies.append("st.emails()")
             elif param_type == "float":
-                strategies.append(f"st.floats(min_value=-100.0, max_value=100.0, allow_nan=False, allow_infinity=False)")
+                strategies.append("st.floats(min_value=-100.0, max_value=100.0, allow_nan=False, allow_infinity=False)")
             elif param_type == "bool":
-                strategies.append(f"st.booleans()")
+                strategies.append("st.booleans()")
             elif param_type == "list":
-                strategies.append(f"st.lists(st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
+                strategies.append("st.lists(st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
             elif param_type == "dict":
-                strategies.append(f"st.dictionaries(keys=st.text(min_size=1, max_size=10), values=st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
+                strategies.append("st.dictionaries(keys=st.text(min_size=1, max_size=10), values=st.text(min_size=1, max_size=10), min_size=0, max_size=5)")
             else:
-                strategies.append(f"st.just(None)")
+                strategies.append("st.just(None)")
 
         strategy_args = ", ".join([f"{name}={strategy}" for name, strategy in zip(param_names, strategies)])
         param_args = ", ".join(param_names)
@@ -727,17 +724,17 @@ class AutomatedTestGenerator:
         ]
         
         # Add project path
-        project_rel_path = self.project_root.relative_to(Path.cwd())
+        self.project_root.relative_to(Path.cwd())
         content.append(f'sys.path.insert(0, r"{self.project_root}")')
         content.append('')
         
         # Add analysis-specific imports
         for imp in analysis["imports"]:
             if not imp.startswith(("os.", "sys.", "json.", "asyncio")):
-                content.append(f"try:")
+                content.append("try:")
                 content.append(f"    from {imp} import *")
-                content.append(f"except ImportError:")
-                content.append(f"    pass  # Import may not be available in test environment")
+                content.append("except ImportError:")
+                content.append("    pass  # Import may not be available in test environment")
         
         content.extend(imports)
         content.append('')

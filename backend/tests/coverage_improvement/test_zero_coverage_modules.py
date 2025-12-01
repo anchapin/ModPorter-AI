@@ -3,29 +3,28 @@ Simple tests for zero coverage modules
 This test file provides basic coverage for multiple modules to improve overall test coverage.
 """
 
-import pytest
 import sys
 import os
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 
 # Add src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 # Add ai-engine directory to Python path for JavaAnalyzerAgent
-ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine')
+ai_engine_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-engine")
 if ai_engine_path not in sys.path:
     sys.path.insert(0, ai_engine_path)
 
 # Mock magic library before importing modules that use it
-sys.modules['magic'] = Mock()
-sys.modules['magic'].open = Mock(return_value=Mock())
-sys.modules['magic'].from_buffer = Mock(return_value='application/octet-stream')
-sys.modules['magic'].from_file = Mock(return_value='data')
+sys.modules["magic"] = Mock()
+sys.modules["magic"].open = Mock(return_value=Mock())
+sys.modules["magic"].from_buffer = Mock(return_value="application/octet-stream")
+sys.modules["magic"].from_file = Mock(return_value="data")
 
 # Mock other dependencies
-sys.modules['neo4j'] = Mock()
-sys.modules['crewai'] = Mock()
-sys.modules['langchain'] = Mock()
+sys.modules["neo4j"] = Mock()
+sys.modules["crewai"] = Mock()
+sys.modules["langchain"] = Mock()
 
 
 class TestZeroCoverageModules:
@@ -36,6 +35,7 @@ class TestZeroCoverageModules:
         # This just imports the module to increase coverage
         try:
             from api.knowledge_graph import router
+
             assert router is not None
         except ImportError as e:
             # If module can't be imported due to dependencies,
@@ -46,6 +46,7 @@ class TestZeroCoverageModules:
         """Test importing version_compatibility module"""
         try:
             from api.version_compatibility import router
+
             assert router is not None
         except ImportError as e:
             assert "version_compatibility" in str(e)
@@ -54,6 +55,7 @@ class TestZeroCoverageModules:
         """Test importing expert_knowledge_original module"""
         try:
             from api.expert_knowledge_original import router
+
             assert router is not None
         except ImportError as e:
             assert "expert_knowledge" in str(e)
@@ -62,6 +64,7 @@ class TestZeroCoverageModules:
         """Test importing peer_review_fixed module"""
         try:
             from api.peer_review_fixed import router
+
             assert router is not None
         except ImportError as e:
             assert "peer_review" in str(e)
@@ -70,6 +73,7 @@ class TestZeroCoverageModules:
         """Test importing neo4j_config module"""
         try:
             from db.neo4j_config import Neo4jConfig
+
             assert Neo4jConfig is not None
         except ImportError as e:
             assert "neo4j" in str(e)
@@ -78,6 +82,7 @@ class TestZeroCoverageModules:
         """Test JavaAnalyzerAgent initialization"""
         try:
             from agents.java_analyzer import JavaAnalyzerAgent
+
             agent = JavaAnalyzerAgent()
             assert agent is not None
         except ImportError as e:
@@ -86,7 +91,10 @@ class TestZeroCoverageModules:
     def test_import_advanced_visualization_complete(self):
         """Test importing advanced_visualization_complete module"""
         try:
-            from services.advanced_visualization_complete import AdvancedVisualizationService
+            from services.advanced_visualization_complete import (
+                AdvancedVisualizationService,
+            )
+
             assert AdvancedVisualizationService is not None
         except ImportError as e:
             assert "visualization" in str(e)
@@ -95,6 +103,7 @@ class TestZeroCoverageModules:
         """Test importing community_scaling module"""
         try:
             from services.community_scaling import CommunityScalingService
+
             assert CommunityScalingService is not None
         except ImportError as e:
             assert "scaling" in str(e)
@@ -103,6 +112,7 @@ class TestZeroCoverageModules:
         """Test importing comprehensive_report_generator module"""
         try:
             from services.comprehensive_report_generator import ReportGenerator
+
             assert ReportGenerator is not None
         except ImportError as e:
             assert "report" in str(e)
@@ -111,6 +121,7 @@ class TestZeroCoverageModules:
         """Test file_processor module has expected methods"""
         try:
             from file_processor import process_file
+
             assert callable(process_file)
         except ImportError as e:
             assert "file_processor" in str(e)
@@ -123,6 +134,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing expert_knowledge_agent module"""
         try:
             from agents.expert_knowledge_agent import ExpertKnowledgeAgent
+
             assert ExpertKnowledgeAgent is not None
         except ImportError as e:
             assert "expert_knowledge" in str(e)
@@ -131,6 +143,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing qa_agent module"""
         try:
             from agents.qa_agent import QAAgent
+
             assert QAAgent is not None
         except ImportError as e:
             assert "qa_agent" in str(e)
@@ -139,6 +152,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing metrics_collector module"""
         try:
             from benchmarking.metrics_collector import MetricsCollector
+
             assert MetricsCollector is not None
         except ImportError as e:
             assert "metrics_collector" in str(e)
@@ -147,6 +161,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing performance_system module"""
         try:
             from benchmarking.performance_system import PerformanceSystem
+
             assert PerformanceSystem is not None
         except ImportError as e:
             assert "performance_system" in str(e)
@@ -155,6 +170,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing comparison_engine module"""
         try:
             from engines.comparison_engine import ComparisonEngine
+
             assert ComparisonEngine is not None
         except ImportError as e:
             assert "comparison_engine" in str(e)
@@ -163,6 +179,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing monitoring module"""
         try:
             from orchestration.monitoring import OrchestratorMonitor
+
             assert OrchestratorMonitor is not None
         except ImportError as e:
             assert "monitoring" in str(e)
@@ -171,6 +188,7 @@ class TestAIEngineZeroCoverageModules:
         """Test importing agent_optimizer module"""
         try:
             from rl.agent_optimizer import AgentOptimizer
+
             assert AgentOptimizer is not None
         except ImportError as e:
             assert "agent_optimizer" in str(e)

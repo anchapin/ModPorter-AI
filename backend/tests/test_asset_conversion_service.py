@@ -7,12 +7,10 @@ testing all conversion methods, fallback mechanisms, and error handling.
 
 import pytest
 import asyncio
-import tempfile
 import os
 import json
 from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 from sqlalchemy.ext.asyncio import AsyncSession
-from httpx import Response
 
 from src.services.asset_conversion_service import AssetConversionService
 
@@ -50,7 +48,7 @@ def mock_conversion():
 @pytest.fixture
 def asset_service():
     """Create an asset conversion service instance."""
-    with patch('src.services.asset_conversion_service.logger'):
+    with patch("src.services.asset_conversion_service.logger"):
         service = AssetConversionService()
         service.ai_engine_url = "http://test-ai-engine:8001"
         return service
@@ -69,7 +67,9 @@ class TestAssetConversionService:
 
         def test_init_with_env_override(self):
             """Test initialization with environment override."""
-            with patch.dict(os.environ, {"AI_ENGINE_URL": "http://custom-ai-engine:9000"}):
+            with patch.dict(
+                os.environ, {"AI_ENGINE_URL": "http://custom-ai-engine:9000"}
+            ):
                 service = AssetConversionService()
                 assert service.ai_engine_url == "http://custom-ai-engine:9000"
 
@@ -77,20 +77,29 @@ class TestAssetConversionService:
         """Test cases for single asset conversion."""
 
         @pytest.mark.asyncio
-        async def test_convert_asset_success(self, asset_service, mock_db_session, mock_asset):
+        async def test_convert_asset_success(
+            self, asset_service, mock_db_session, mock_asset
+        ):
             """Test successful asset conversion."""
             # Mock database operations
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, '_call_ai_engine_convert_asset') as mock_ai_call:
-
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(
+                    asset_service, "_call_ai_engine_convert_asset"
+                ) as mock_ai_call,
+            ):
                 # Setup mocks
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.return_value = mock_asset
                 mock_crud.update_asset_status.return_value = None
                 mock_ai_call.return_value = {
                     "success": True,
-                    "converted_path": "/test/output/converted_texture.png"
+                    "converted_path": "/test/output/converted_texture.png",
                 }
 
                 # Call the method
@@ -103,22 +112,31 @@ class TestAssetConversionService:
                 assert "successfully" in result["message"]
 
                 # Verify database calls
-                mock_crud.get_asset.assert_called_once_with(mock_db_session, "test_asset_123")
+                mock_crud.get_asset.assert_called_once_with(
+                    mock_db_session, "test_asset_123"
+                )
                 mock_crud.update_asset_status.assert_any_call(
                     mock_db_session, "test_asset_123", "processing"
                 )
                 mock_crud.update_asset_status.assert_any_call(
-                    mock_db_session, "test_asset_123", "converted",
-                    converted_path="/test/output/converted_texture.png"
+                    mock_db_session,
+                    "test_asset_123",
+                    "converted",
+                    converted_path="/test/output/converted_texture.png",
                 )
 
         @pytest.mark.asyncio
         async def test_convert_asset_not_found(self, asset_service, mock_db_session):
             """Test conversion when asset is not found."""
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.return_value = None
 
                 # Should raise ValueError
@@ -126,18 +144,27 @@ class TestAssetConversionService:
                     await asset_service.convert_asset("test_asset_123")
 
         @pytest.mark.asyncio
-        async def test_convert_asset_ai_engine_failure(self, asset_service, mock_db_session, mock_asset):
+        async def test_convert_asset_ai_engine_failure(
+            self, asset_service, mock_db_session, mock_asset
+        ):
             """Test conversion when AI Engine fails."""
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, '_call_ai_engine_convert_asset') as mock_ai_call:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(
+                    asset_service, "_call_ai_engine_convert_asset"
+                ) as mock_ai_call,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.return_value = mock_asset
                 mock_crud.update_asset_status.return_value = None
                 mock_ai_call.return_value = {
                     "success": False,
-                    "error": "AI Engine processing failed"
+                    "error": "AI Engine processing failed",
                 }
 
                 result = await asset_service.convert_asset("test_asset_123")
@@ -148,18 +175,29 @@ class TestAssetConversionService:
 
                 # Verify failed status was set
                 mock_crud.update_asset_status.assert_any_call(
-                    mock_db_session, "test_asset_123", "failed",
-                    error_message="AI Engine processing failed"
+                    mock_db_session,
+                    "test_asset_123",
+                    "failed",
+                    error_message="AI Engine processing failed",
                 )
 
         @pytest.mark.asyncio
-        async def test_convert_asset_exception_handling(self, asset_service, mock_db_session, mock_asset):
+        async def test_convert_asset_exception_handling(
+            self, asset_service, mock_db_session, mock_asset
+        ):
             """Test exception handling during conversion."""
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, '_call_ai_engine_convert_asset') as mock_ai_call:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(
+                    asset_service, "_call_ai_engine_convert_asset"
+                ) as mock_ai_call,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.return_value = mock_asset
                 mock_crud.update_asset_status.return_value = None
                 mock_ai_call.side_effect = Exception("Network error")
@@ -171,38 +209,76 @@ class TestAssetConversionService:
 
                 # Verify failed status was set
                 mock_crud.update_asset_status.assert_any_call(
-                    mock_db_session, "test_asset_123", "failed",
-                    error_message="Conversion error: Network error"
+                    mock_db_session,
+                    "test_asset_123",
+                    "failed",
+                    error_message="Conversion error: Network error",
                 )
 
     class TestConvertAssetsForConversion:
         """Test cases for batch asset conversion."""
 
         @pytest.mark.asyncio
-        async def test_convert_assets_for_conversion_success(self, asset_service, mock_db_session, mock_conversion):
+        async def test_convert_assets_for_conversion_success(
+            self, asset_service, mock_db_session, mock_conversion
+        ):
             """Test successful batch conversion for a conversion."""
             mock_assets = [
-                MagicMock(asset_id="asset_1", asset_type="texture", original_path="/test/texture1.png", original_filename="texture1.png"),
-                MagicMock(asset_id="asset_2", asset_type="sound", original_path="/test/sound1.ogg", original_filename="sound1.ogg"),
-                MagicMock(asset_id="asset_3", asset_type="model", original_path="/test/model1.json", original_filename="model1.json")
+                MagicMock(
+                    asset_id="asset_1",
+                    asset_type="texture",
+                    original_path="/test/texture1.png",
+                    original_filename="texture1.png",
+                ),
+                MagicMock(
+                    asset_id="asset_2",
+                    asset_type="sound",
+                    original_path="/test/sound1.ogg",
+                    original_filename="sound1.ogg",
+                ),
+                MagicMock(
+                    asset_id="asset_3",
+                    asset_type="model",
+                    original_path="/test/model1.json",
+                    original_filename="model1.json",
+                ),
             ]
 
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, 'convert_asset') as mock_convert:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(asset_service, "convert_asset") as mock_convert,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_assets_by_conversion_id.return_value = mock_assets
                 mock_crud.update_conversion_status.return_value = None
 
                 # Mock individual conversions
                 mock_convert.side_effect = [
-                    {"success": True, "asset_id": "asset_1", "converted_path": "/output/texture1.png"},
-                    {"success": True, "asset_id": "asset_2", "converted_path": "/output/sound1.ogg"},
-                    {"success": False, "asset_id": "asset_3", "error": "Conversion failed"}
+                    {
+                        "success": True,
+                        "asset_id": "asset_1",
+                        "converted_path": "/output/texture1.png",
+                    },
+                    {
+                        "success": True,
+                        "asset_id": "asset_2",
+                        "converted_path": "/output/sound1.ogg",
+                    },
+                    {
+                        "success": False,
+                        "asset_id": "asset_3",
+                        "error": "Conversion failed",
+                    },
                 ]
 
-                result = await asset_service.convert_assets_for_conversion("test_conversion_456")
+                result = await asset_service.convert_assets_for_conversion(
+                    "test_conversion_456"
+                )
 
                 assert result["success"] is True
                 assert result["conversion_id"] == "test_conversion_456"
@@ -217,15 +293,24 @@ class TestAssetConversionService:
                 mock_convert.assert_any_call("asset_3")
 
         @pytest.mark.asyncio
-        async def test_convert_assets_for_conversion_no_assets(self, asset_service, mock_db_session, mock_conversion):
+        async def test_convert_assets_for_conversion_no_assets(
+            self, asset_service, mock_db_session, mock_conversion
+        ):
             """Test conversion when no assets found for conversion."""
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_assets_by_conversion_id.return_value = []
 
-                result = await asset_service.convert_assets_for_conversion("test_conversion_456")
+                result = await asset_service.convert_assets_for_conversion(
+                    "test_conversion_456"
+                )
 
                 assert result["success"] is True
                 assert result["total_assets"] == 0
@@ -233,27 +318,54 @@ class TestAssetConversionService:
                 assert result["failed_conversions"] == 0
 
         @pytest.mark.asyncio
-        async def test_convert_assets_for_conversion_partial_failure(self, asset_service, mock_db_session, mock_conversion):
+        async def test_convert_assets_for_conversion_partial_failure(
+            self, asset_service, mock_db_session, mock_conversion
+        ):
             """Test batch conversion with some failures."""
             mock_assets = [
-                MagicMock(asset_id="asset_1", asset_type="texture", original_path="/test/texture1.png", original_filename="texture1.png"),
-                MagicMock(asset_id="asset_2", asset_type="texture", original_path="/test/texture2.png", original_filename="texture2.png")
+                MagicMock(
+                    asset_id="asset_1",
+                    asset_type="texture",
+                    original_path="/test/texture1.png",
+                    original_filename="texture1.png",
+                ),
+                MagicMock(
+                    asset_id="asset_2",
+                    asset_type="texture",
+                    original_path="/test/texture2.png",
+                    original_filename="texture2.png",
+                ),
             ]
 
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, 'convert_asset') as mock_convert:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(asset_service, "convert_asset") as mock_convert,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_assets_by_conversion_id.return_value = mock_assets
 
                 # First conversion succeeds, second fails
                 mock_convert.side_effect = [
-                    {"success": True, "asset_id": "asset_1", "converted_path": "/output/texture1.png"},
-                    {"success": False, "asset_id": "asset_2", "error": "Processing error"}
+                    {
+                        "success": True,
+                        "asset_id": "asset_1",
+                        "converted_path": "/output/texture1.png",
+                    },
+                    {
+                        "success": False,
+                        "asset_id": "asset_2",
+                        "error": "Processing error",
+                    },
                 ]
 
-                result = await asset_service.convert_assets_for_conversion("test_conversion_456")
+                result = await asset_service.convert_assets_for_conversion(
+                    "test_conversion_456"
+                )
 
                 assert result["success"] is True
                 assert result["successful_conversions"] == 1
@@ -272,21 +384,23 @@ class TestAssetConversionService:
             mock_response.json.return_value = {
                 "success": True,
                 "converted_path": "/ai-engine/output/converted_asset.png",
-                "processing_time": 12.5
+                "processing_time": 12.5,
             }
 
-            with patch('httpx.AsyncClient.post') as mock_post:
+            with patch("httpx.AsyncClient.post") as mock_post:
                 mock_post.return_value.__aenter__.return_value = mock_response
 
                 result = await asset_service._call_ai_engine_convert_asset(
                     asset_id="test_asset",
                     asset_type="texture",
                     input_path="/input/texture.png",
-                    original_filename="texture.png"
+                    original_filename="texture.png",
                 )
 
                 assert result["success"] is True
-                assert result["converted_path"] == "/ai-engine/output/converted_asset.png"
+                assert (
+                    result["converted_path"] == "/ai-engine/output/converted_asset.png"
+                )
                 assert result["processing_time"] == 12.5
 
                 # Verify correct API call
@@ -296,8 +410,8 @@ class TestAssetConversionService:
                         "asset_id": "test_asset",
                         "asset_type": "texture",
                         "input_path": "/input/texture.png",
-                        "original_filename": "texture.png"
-                    }
+                        "original_filename": "texture.png",
+                    },
                 )
 
         @pytest.mark.asyncio
@@ -307,14 +421,14 @@ class TestAssetConversionService:
             mock_response.status_code = 500
             mock_response.text = "Internal server error"
 
-            with patch('httpx.AsyncClient.post') as mock_post:
+            with patch("httpx.AsyncClient.post") as mock_post:
                 mock_post.return_value.__aenter__.return_value = mock_response
 
                 result = await asset_service._call_ai_engine_convert_asset(
                     asset_id="test_asset",
                     asset_type="texture",
                     input_path="/input/texture.png",
-                    original_filename="texture.png"
+                    original_filename="texture.png",
                 )
 
                 assert result["success"] is False
@@ -323,34 +437,36 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_call_ai_engine_convert_asset_network_error(self, asset_service):
             """Test AI Engine call with network error."""
-            with patch('httpx.AsyncClient.post') as mock_post:
+            with patch("httpx.AsyncClient.post") as mock_post:
                 mock_post.side_effect = Exception("Network connection failed")
 
                 result = await asset_service._call_ai_engine_convert_asset(
                     asset_id="test_asset",
                     asset_type="texture",
                     input_path="/input/texture.png",
-                    original_filename="texture.png"
+                    original_filename="texture.png",
                 )
 
                 assert result["success"] is False
                 assert "Network connection failed" in result["error"]
 
         @pytest.mark.asyncio
-        async def test_call_ai_engine_convert_asset_invalid_response(self, asset_service):
+        async def test_call_ai_engine_convert_asset_invalid_response(
+            self, asset_service
+        ):
             """Test AI Engine call with invalid response format."""
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"invalid": "response"}
 
-            with patch('httpx.AsyncClient.post') as mock_post:
+            with patch("httpx.AsyncClient.post") as mock_post:
                 mock_post.return_value.__aenter__.return_value = mock_response
 
                 result = await asset_service._call_ai_engine_convert_asset(
                     asset_id="test_asset",
                     asset_type="texture",
                     input_path="/input/texture.png",
-                    original_filename="texture.png"
+                    original_filename="texture.png",
                 )
 
                 assert result["success"] is False
@@ -362,16 +478,18 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_texture(self, asset_service):
             """Test fallback texture conversion."""
-            with patch.object(asset_service, '_fallback_texture_conversion') as mock_texture:
+            with patch.object(
+                asset_service, "_fallback_texture_conversion"
+            ) as mock_texture:
                 mock_texture.return_value = {
                     "success": True,
-                    "output_path": "/fallback/output/texture.png"
+                    "output_path": "/fallback/output/texture.png",
                 }
 
                 result = await asset_service._fallback_conversion(
                     input_path="/input/texture.png",
                     output_path="/output/texture.png",
-                    asset_type="texture"
+                    asset_type="texture",
                 )
 
                 assert result["success"] is True
@@ -381,16 +499,18 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_sound(self, asset_service):
             """Test fallback sound conversion."""
-            with patch.object(asset_service, '_fallback_sound_conversion') as mock_sound:
+            with patch.object(
+                asset_service, "_fallback_sound_conversion"
+            ) as mock_sound:
                 mock_sound.return_value = {
                     "success": True,
-                    "output_path": "/fallback/output/sound.ogg"
+                    "output_path": "/fallback/output/sound.ogg",
                 }
 
                 result = await asset_service._fallback_conversion(
                     input_path="/input/sound.ogg",
                     output_path="/output/sound.ogg",
-                    asset_type="sound"
+                    asset_type="sound",
                 )
 
                 assert result["success"] is True
@@ -400,16 +520,18 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_model(self, asset_service):
             """Test fallback model conversion."""
-            with patch.object(asset_service, '_fallback_model_conversion') as mock_model:
+            with patch.object(
+                asset_service, "_fallback_model_conversion"
+            ) as mock_model:
                 mock_model.return_value = {
                     "success": True,
-                    "output_path": "/fallback/output/model.json"
+                    "output_path": "/fallback/output/model.json",
                 }
 
                 result = await asset_service._fallback_conversion(
                     input_path="/input/model.json",
                     output_path="/output/model.json",
-                    asset_type="model"
+                    asset_type="model",
                 )
 
                 assert result["success"] is True
@@ -419,16 +541,16 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_copy(self, asset_service):
             """Test fallback copy conversion for unknown types."""
-            with patch.object(asset_service, '_fallback_copy_conversion') as mock_copy:
+            with patch.object(asset_service, "_fallback_copy_conversion") as mock_copy:
                 mock_copy.return_value = {
                     "success": True,
-                    "output_path": "/fallback/output/unknown_file.dat"
+                    "output_path": "/fallback/output/unknown_file.dat",
                 }
 
                 result = await asset_service._fallback_conversion(
                     input_path="/input/unknown_file.dat",
                     output_path="/output/unknown_file.dat",
-                    asset_type="unknown"
+                    asset_type="unknown",
                 )
 
                 assert result["success"] is True
@@ -438,16 +560,18 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_failure(self, asset_service):
             """Test fallback conversion failure."""
-            with patch.object(asset_service, '_fallback_texture_conversion') as mock_texture:
+            with patch.object(
+                asset_service, "_fallback_texture_conversion"
+            ) as mock_texture:
                 mock_texture.return_value = {
                     "success": False,
-                    "error": "Unsupported format"
+                    "error": "Unsupported format",
                 }
 
                 result = await asset_service._fallback_conversion(
                     input_path="/input/texture.tiff",
                     output_path="/output/texture.tiff",
-                    asset_type="texture"
+                    asset_type="texture",
                 )
 
                 assert result["success"] is False
@@ -459,12 +583,12 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_texture_conversion_png(self, asset_service):
             """Test PNG texture conversion fallback."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2') as mock_copy:
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2") as mock_copy,
+            ):
                 result = await asset_service._fallback_texture_conversion(
-                    input_path="/input/texture.png",
-                    output_path="/output/texture.png"
+                    input_path="/input/texture.png", output_path="/output/texture.png"
                 )
 
                 assert result["success"] is True
@@ -474,10 +598,10 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_texture_conversion_input_not_found(self, asset_service):
             """Test texture conversion with missing input file."""
-            with patch('os.path.exists', return_value=False):
+            with patch("os.path.exists", return_value=False):
                 result = await asset_service._fallback_texture_conversion(
                     input_path="/nonexistent/texture.png",
-                    output_path="/output/texture.png"
+                    output_path="/output/texture.png",
                 )
 
                 assert result["success"] is False
@@ -486,12 +610,12 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_texture_conversion_copy_error(self, asset_service):
             """Test texture conversion with copy error."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2', side_effect=OSError("Permission denied")):
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2", side_effect=OSError("Permission denied")),
+            ):
                 result = await asset_service._fallback_texture_conversion(
-                    input_path="/input/texture.png",
-                    output_path="/output/texture.png"
+                    input_path="/input/texture.png", output_path="/output/texture.png"
                 )
 
                 assert result["success"] is False
@@ -503,12 +627,12 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_sound_conversion_ogg(self, asset_service):
             """Test OGG sound conversion fallback."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2') as mock_copy:
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2") as mock_copy,
+            ):
                 result = await asset_service._fallback_sound_conversion(
-                    input_path="/input/sound.ogg",
-                    output_path="/output/sound.ogg"
+                    input_path="/input/sound.ogg", output_path="/output/sound.ogg"
                 )
 
                 assert result["success"] is True
@@ -516,11 +640,12 @@ class TestAssetConversionService:
                 mock_copy.assert_called_once()
 
         @pytest.mark.asyncio
-        async def test_fallback_sound_conversion_unsupported_format(self, asset_service):
+        async def test_fallback_sound_conversion_unsupported_format(
+            self, asset_service
+        ):
             """Test sound conversion with unsupported format."""
             result = await asset_service._fallback_sound_conversion(
-                input_path="/input/sound.mp3",
-                output_path="/output/sound.mp3"
+                input_path="/input/sound.mp3", output_path="/output/sound.mp3"
             )
 
             assert result["success"] is False
@@ -532,12 +657,12 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_model_conversion_json(self, asset_service):
             """Test JSON model conversion fallback."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2') as mock_copy:
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2") as mock_copy,
+            ):
                 result = await asset_service._fallback_model_conversion(
-                    input_path="/input/model.json",
-                    output_path="/output/model.json"
+                    input_path="/input/model.json", output_path="/output/model.json"
                 )
 
                 assert result["success"] is True
@@ -547,13 +672,16 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_model_conversion_invalid_json(self, asset_service):
             """Test model conversion with invalid JSON."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('builtins.open', mock_open(read_data="invalid json")), \
-                 patch('json.loads', side_effect=json.JSONDecodeError("Invalid JSON", "", 0)):
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("builtins.open", mock_open(read_data="invalid json")),
+                patch(
+                    "json.loads",
+                    side_effect=json.JSONDecodeError("Invalid JSON", "", 0),
+                ),
+            ):
                 result = await asset_service._fallback_model_conversion(
-                    input_path="/input/invalid.json",
-                    output_path="/output/invalid.json"
+                    input_path="/input/invalid.json", output_path="/output/invalid.json"
                 )
 
                 assert result["success"] is False
@@ -565,12 +693,12 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_copy_conversion_success(self, asset_service):
             """Test successful copy conversion."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2') as mock_copy:
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2") as mock_copy,
+            ):
                 result = await asset_service._fallback_copy_conversion(
-                    input_path="/input/file.dat",
-                    output_path="/output/file.dat"
+                    input_path="/input/file.dat", output_path="/output/file.dat"
                 )
 
                 assert result["success"] is True
@@ -580,10 +708,9 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_copy_conversion_input_not_found(self, asset_service):
             """Test copy conversion with missing input file."""
-            with patch('os.path.exists', return_value=False):
+            with patch("os.path.exists", return_value=False):
                 result = await asset_service._fallback_copy_conversion(
-                    input_path="/nonexistent/file.dat",
-                    output_path="/output/file.dat"
+                    input_path="/nonexistent/file.dat", output_path="/output/file.dat"
                 )
 
                 assert result["success"] is False
@@ -592,12 +719,13 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_copy_conversion_permission_error(self, asset_service):
             """Test copy conversion with permission error."""
-            with patch('os.path.exists', return_value=True), \
-                 patch('shutil.copy2', side_effect=PermissionError("Access denied")):
-
+            with (
+                patch("os.path.exists", return_value=True),
+                patch("shutil.copy2", side_effect=PermissionError("Access denied")),
+            ):
                 result = await asset_service._fallback_copy_conversion(
                     input_path="/input/protected.dat",
-                    output_path="/output/protected.dat"
+                    output_path="/output/protected.dat",
                 )
 
                 assert result["success"] is False
@@ -607,13 +735,22 @@ class TestAssetConversionService:
         """Test edge cases and error conditions."""
 
         @pytest.mark.asyncio
-        async def test_convert_asset_with_malformed_ai_response(self, asset_service, mock_db_session, mock_asset):
+        async def test_convert_asset_with_malformed_ai_response(
+            self, asset_service, mock_db_session, mock_asset
+        ):
             """Test conversion with malformed AI response."""
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, '_call_ai_engine_convert_asset') as mock_ai_call:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(
+                    asset_service, "_call_ai_engine_convert_asset"
+                ) as mock_ai_call,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.return_value = mock_asset
                 mock_crud.update_asset_status.return_value = None
 
@@ -629,23 +766,38 @@ class TestAssetConversionService:
                 assert "Invalid AI response" in result["error"]
 
         @pytest.mark.asyncio
-        async def test_convert_asset_concurrent_conversions(self, asset_service, mock_db_session):
+        async def test_convert_asset_concurrent_conversions(
+            self, asset_service, mock_db_session
+        ):
             """Test handling concurrent asset conversions."""
             # Create multiple assets
-            assets = [MagicMock(asset_id=f"asset_{i}", asset_type="texture",
-                              original_path=f"/input/texture_{i}.png",
-                              original_filename=f"texture_{i}.png") for i in range(5)]
+            assets = [
+                MagicMock(
+                    asset_id=f"asset_{i}",
+                    asset_type="texture",
+                    original_path=f"/input/texture_{i}.png",
+                    original_filename=f"texture_{i}.png",
+                )
+                for i in range(5)
+            ]
 
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, '_call_ai_engine_convert_asset') as mock_ai_call:
-
-                mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(
+                    asset_service, "_call_ai_engine_convert_asset"
+                ) as mock_ai_call,
+            ):
+                mock_session_local.return_value.__aenter__.return_value = (
+                    mock_db_session
+                )
                 mock_crud.get_asset.side_effect = assets
                 mock_crud.update_asset_status.return_value = None
                 mock_ai_call.return_value = {
                     "success": True,
-                    "converted_path": lambda i: f"/output/converted_texture_{i}.png"
+                    "converted_path": lambda i: f"/output/converted_texture_{i}.png",
                 }
 
                 # Run concurrent conversions
@@ -657,7 +809,9 @@ class TestAssetConversionService:
                 assert mock_ai_call.call_count == 5
 
         @pytest.mark.asyncio
-        async def test_convert_assets_for_conversion_empty_conversion_id(self, asset_service):
+        async def test_convert_assets_for_conversion_empty_conversion_id(
+            self, asset_service
+        ):
             """Test batch conversion with empty conversion ID."""
             with pytest.raises(Exception):  # Should handle gracefully
                 await asset_service.convert_assets_for_conversion("")
@@ -665,10 +819,9 @@ class TestAssetConversionService:
         @pytest.mark.asyncio
         async def test_fallback_conversion_with_directory_paths(self, asset_service):
             """Test fallback conversion with directory paths."""
-            with patch('os.path.isdir', return_value=True):
+            with patch("os.path.isdir", return_value=True):
                 result = await asset_service._fallback_copy_conversion(
-                    input_path="/input/directory",
-                    output_path="/output/directory"
+                    input_path="/input/directory", output_path="/output/directory"
                 )
 
                 # Should handle directory copy differently
@@ -682,24 +835,37 @@ class TestAssetConversionService:
             """Test performance with large batch of conversions."""
             # Create 50 mock assets
             mock_assets = [
-                MagicMock(asset_id=f"asset_{i}", asset_type="texture",
-                          original_path=f"/input/texture_{i}.png",
-                          original_filename=f"texture_{i}.png")
+                MagicMock(
+                    asset_id=f"asset_{i}",
+                    asset_type="texture",
+                    original_path=f"/input/texture_{i}.png",
+                    original_filename=f"texture_{i}.png",
+                )
                 for i in range(50)
             ]
 
-            with patch('src.services.asset_conversion_service.crud') as mock_crud, \
-                 patch('src.services.asset_conversion_service.AsyncSessionLocal') as mock_session_local, \
-                 patch.object(asset_service, 'convert_asset') as mock_convert:
-
+            with (
+                patch("src.services.asset_conversion_service.crud") as mock_crud,
+                patch(
+                    "src.services.asset_conversion_service.AsyncSessionLocal"
+                ) as mock_session_local,
+                patch.object(asset_service, "convert_asset") as mock_convert,
+            ):
                 mock_session_local.return_value.__aenter__.return_value = AsyncMock()
                 mock_crud.get_assets_by_conversion_id.return_value = mock_assets
-                mock_convert.return_value = {"success": True, "asset_id": "mock", "converted_path": "/output"}
+                mock_convert.return_value = {
+                    "success": True,
+                    "asset_id": "mock",
+                    "converted_path": "/output",
+                }
 
                 import time
+
                 start_time = time.time()
 
-                result = await asset_service.convert_assets_for_conversion("large_batch_test")
+                result = await asset_service.convert_assets_for_conversion(
+                    "large_batch_test"
+                )
 
                 processing_time = time.time() - start_time
 
@@ -711,7 +877,7 @@ class TestAssetConversionService:
     def test_error_message_formatting(self, asset_service):
         """Test error message formatting and completeness."""
         # This tests that error messages are informative and properly formatted
-        service = AssetConversionService()
+        AssetConversionService()
 
         # Test various error scenarios produce meaningful messages
         test_cases = [
@@ -719,7 +885,7 @@ class TestAssetConversionService:
             ("ai_engine_error", "AI Engine processing failed"),
             ("file_not_found", "Input file not found"),
             ("permission_error", "Permission denied"),
-            ("network_error", "Network connection failed")
+            ("network_error", "Network connection failed"),
         ]
 
         for error_type, expected_content in test_cases:
@@ -729,9 +895,11 @@ class TestAssetConversionService:
     def test_service_configuration_validation(self, asset_service):
         """Test service configuration validation."""
         # Test URL format validation
-        service = AssetConversionService()
+        AssetConversionService()
 
         # Should handle malformed URLs gracefully
         with patch.dict(os.environ, {"AI_ENGINE_URL": "not-a-valid-url"}):
             malformed_service = AssetConversionService()
-            assert malformed_service.ai_engine_url == "not-a-valid-url"  # Should not crash
+            assert (
+                malformed_service.ai_engine_url == "not-a-valid-url"
+            )  # Should not crash

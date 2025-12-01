@@ -1,0 +1,206 @@
+# Simplified Staging Docker Compose Configuration for Optimizations Only
+# This configuration focuses on deploying optimization services for validation
+
+services:
+  # Backend with performance optimizations enabled
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://postgres:staging_password@postgres:5432/modporter_staging
+      - LOG_LEVEL=INFO
+      - JWT_SECRET_KEY=staging_jwt_secret_key_change_in_production
+      - CORS_ORIGINS=http://localhost:8081,http://localhost:3000
+      - RATE_LIMIT_ENABLED=true
+      - MAX_CONNECTIONS=50
+      - METRICS_ENABLED=true
+      - PERFORMANCE_MONITORING_ENABLED=true
+      - ADAPTIVE_OPTIMIZATION_ENABLED=true
+      - BENCHMARKING_ENABLED=true
+      - STAGING_MODE=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - conversion-cache:/app/cache
+      - conversion-outputs:/app/conversion_outputs
+      - temp-uploads:/app/temp_uploads
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis for staging
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-staging-data:/data
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+  # PostgreSQL for staging
+  postgres:
+    image: pgvector/pgvector:pg15
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=modporter_staging
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=staging_password
+      - POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres-staging-data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter_staging"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Performance Benchmark Service
+  benchmark-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.benchmark
+    ports:
+      - "8090:8090"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://postgres:staging_password@postgres:5432/modporter_staging
+      - LOG_LEVEL=INFO
+      - BENCHMARK_TARGET=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+
+  # Optimization Validation Service
+  optimization-validator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.optimization
+    ports:
+      - "8091:8091"
+    environment:
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://postgres:staging_password@postgres:5432/modporter_staging
+      - LOG_LEVEL=INFO
+      - VALIDATION_INTERVAL=300
+      - PERFORMANCE_THRESHOLD_CPU=80
+      - PERFORMANCE_THRESHOLD_MEMORY=85
+      - PERFORMANCE_THRESHOLD_RESPONSE=3000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    volumes:
+      - ./optimization-reports:/app/reports
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/staging/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-staging-data:/prometheus
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=staging_admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - grafana-staging-data:/var/lib/grafana
+      - ./monitoring/staging/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9101:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - modporter-staging-network
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+
+volumes:
+  redis-staging-data:
+    driver: local
+  postgres-staging-data:
+    driver: local
+  conversion-cache:
+    driver: local
+  prometheus-staging-data:
+    driver: local
+  grafana-staging-data:
+    driver: local
+  conversion-outputs:
+    driver: local
+  temp-uploads:
+    driver: local
+
+networks:
+  modporter-staging-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

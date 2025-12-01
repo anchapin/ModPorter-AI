@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Import the actual SearchTool and tool utilities
+# ruff: noqa: E402
 from tools.search_tool import SearchTool
 from tools.tool_utils import get_tool_registry
 from tools.web_search_tool import WebSearchTool

@@ -4,8 +4,6 @@ Analyze coverage progress and identify high-impact modules for improvement
 """
 
 import json
-import ast
-from pathlib import Path
 
 def analyze_coverage_progress():
     """Analyze current coverage and identify next targets"""
@@ -70,7 +68,7 @@ def analyze_coverage_progress():
         potential_gain = module['potential_80_percent_gain']
         print(f"{i:2d}. {file_name:<50} | {module['statements']:4d} stmts | {module['current_coverage']:5.1f}% → 80% (+{potential_gain:.0f} stmts)")
     
-    print(f"\nSUCCESSFUL COVERAGE IMPROVEMENTS:")
+    print("\nSUCCESSFUL COVERAGE IMPROVEMENTS:")
     
     # Show modules with good coverage (>60%)
     good_coverage_modules = []

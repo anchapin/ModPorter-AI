@@ -50,10 +50,10 @@ class FeedbackRequest(BaseModel):
                     "visual_quality": 5,
                     "performance_rating": 5,
                     "ease_of_use": 5,
-                    "agent_specific_feedback": {}
+                    "agent_specific_feedback": {},
                 }
             ]
-        }
+        },
     )
 
 
@@ -76,6 +76,7 @@ class FeedbackResponse(BaseModel):
 
 class TrainingDataResponse(BaseModel):
     """Enhanced training data response with quality metrics"""
+
     job_id: str
     input_file_path: str
     output_file_path: str
@@ -87,8 +88,7 @@ class TrainingDataResponse(BaseModel):
 
 @router.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(
-    feedback: FeedbackRequest,
-    db: AsyncSession = Depends(get_db)
+    feedback: FeedbackRequest, db: AsyncSession = Depends(get_db)
 ):
     """Submit feedback for a conversion job."""
     logger.info(f"Receiving feedback for job {feedback.job_id}")
@@ -101,21 +101,26 @@ async def submit_feedback(
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
     # Validate feedback type
-    valid_feedback_types = ['thumbs_up', 'thumbs_down', 'detailed']
+    valid_feedback_types = ["thumbs_up", "thumbs_down", "detailed"]
     if feedback.feedback_type not in valid_feedback_types:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid feedback type. Must be one of: {', '.join(valid_feedback_types)}"
+            detail=f"Invalid feedback type. Must be one of: {', '.join(valid_feedback_types)}",
         )
 
     # Validate rating scales (1-5)
-    rating_fields = ['quality_rating', 'conversion_accuracy', 'visual_quality', 'performance_rating', 'ease_of_use']
+    rating_fields = [
+        "quality_rating",
+        "conversion_accuracy",
+        "visual_quality",
+        "performance_rating",
+        "ease_of_use",
+    ]
     for field in rating_fields:
         value = getattr(feedback, field, None)
         if value is not None and (value < 1 or value > 5):
             raise HTTPException(
-                status_code=400,
-                detail=f"{field} must be between 1 and 5"
+                status_code=400, detail=f"{field} must be between 1 and 5"
             )
 
     # Check if job exists
@@ -123,16 +128,13 @@ async def submit_feedback(
         job = await crud.get_job(db, feedback.job_id)
     except Exception as e:
         logger.error(f"Database error checking job {feedback.job_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error validating job ID"
-        )
-    
+        raise HTTPException(status_code=500, detail="Error validating job ID")
+
     if not job:
         logger.warning(f"Job not found: {feedback.job_id}")
         raise HTTPException(
             status_code=404,
-            detail=f"Conversion job with ID '{feedback.job_id}' not found"
+            detail=f"Conversion job with ID '{feedback.job_id}' not found",
         )
 
     # Create enhanced feedback with RL training data
@@ -149,7 +151,7 @@ async def submit_feedback(
         visual_quality=feedback.visual_quality,
         performance_rating=feedback.performance_rating,
         ease_of_use=feedback.ease_of_use,
-        agent_specific_feedback=feedback.agent_specific_feedback
+        agent_specific_feedback=feedback.agent_specific_feedback,
     )
 
     return FeedbackResponse(
@@ -166,7 +168,7 @@ async def submit_feedback(
         performance_rating=db_feedback.performance_rating,
         ease_of_use=db_feedback.ease_of_use,
         agent_specific_feedback=db_feedback.agent_specific_feedback,
-        created_at=db_feedback.created_at.isoformat()
+        created_at=db_feedback.created_at.isoformat(),
     )
 
 
@@ -175,10 +177,12 @@ async def get_training_data(
     skip: int = 0,
     limit: int = 100,
     include_quality_metrics: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get enhanced feedback data for RL training."""
-    logger.info(f"Fetching training data: skip={skip}, limit={limit}, include_quality_metrics={include_quality_metrics}")
+    logger.info(
+        f"Fetching training data: skip={skip}, limit={limit}, include_quality_metrics={include_quality_metrics}"
+    )
 
     # Validate parameters
     if skip < 0:
@@ -190,10 +194,7 @@ async def get_training_data(
         feedback_list = await crud.list_all_feedback(db, skip=skip, limit=limit)
     except Exception as e:
         logger.error(f"Database error fetching feedback: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error retrieving training data"
-        )
+        raise HTTPException(status_code=500, detail="Error retrieving training data")
 
     training_data = []
     for feedback in feedback_list:
@@ -204,21 +205,27 @@ async def get_training_data(
             "id": str(feedback.id),
             "job_id": str(feedback.job_id),
             "input_file_path": job.input_data.get("file_path", "") if job else "",
-            "output_file_path": f"conversion_outputs/{feedback.job_id}_converted.mcaddon" if job else "",
+            "output_file_path": f"conversion_outputs/{feedback.job_id}_converted.mcaddon"
+            if job
+            else "",
             "feedback": {
                 "feedback_type": feedback.feedback_type,
                 "user_id": feedback.user_id,
                 "comment": feedback.comment,
-                "quality_rating": getattr(feedback, 'quality_rating', None),
-                "specific_issues": getattr(feedback, 'specific_issues', None),
-                "suggested_improvements": getattr(feedback, 'suggested_improvements', None),
-                "conversion_accuracy": getattr(feedback, 'conversion_accuracy', None),
-                "visual_quality": getattr(feedback, 'visual_quality', None),
-                "performance_rating": getattr(feedback, 'performance_rating', None),
-                "ease_of_use": getattr(feedback, 'ease_of_use', None),
-                "agent_specific_feedback": getattr(feedback, 'agent_specific_feedback', None),
-                "created_at": feedback.created_at.isoformat()
-            }
+                "quality_rating": getattr(feedback, "quality_rating", None),
+                "specific_issues": getattr(feedback, "specific_issues", None),
+                "suggested_improvements": getattr(
+                    feedback, "suggested_improvements", None
+                ),
+                "conversion_accuracy": getattr(feedback, "conversion_accuracy", None),
+                "visual_quality": getattr(feedback, "visual_quality", None),
+                "performance_rating": getattr(feedback, "performance_rating", None),
+                "ease_of_use": getattr(feedback, "ease_of_use", None),
+                "agent_specific_feedback": getattr(
+                    feedback, "agent_specific_feedback", None
+                ),
+                "created_at": feedback.created_at.isoformat(),
+            },
         }
 
         # Add conversion metadata if available
@@ -229,7 +236,7 @@ async def get_training_data(
                 "processing_time_seconds": 30.0,  # Could be calculated from timestamps
                 "target_version": job.input_data.get("target_version", "1.20.0"),
                 "created_at": job.created_at.isoformat(),
-                "updated_at": job.updated_at.isoformat()
+                "updated_at": job.updated_at.isoformat(),
             }
 
         training_data.append(feedback_dict)
@@ -238,7 +245,7 @@ async def get_training_data(
         "data": training_data,
         "total": len(training_data),
         "skip": skip,
-        "limit": limit
+        "limit": limit,
     }
 
 
@@ -249,27 +256,35 @@ async def trigger_rl_training():
         logger.info("Starting manual RL training trigger")
 
         # Dynamic import with better error handling
-        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        ai_engine_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
+        )
         if ai_engine_path not in sys.path:
             sys.path.append(ai_engine_path)
 
         try:
-            from training_manager import fetch_training_data_from_backend, train_model_with_feedback
+            from training_manager import (
+                fetch_training_data_from_backend,
+                train_model_with_feedback,
+            )
         except ImportError as ie:
             logger.error(f"Failed to import RL training components: {ie}")
             raise HTTPException(
-                status_code=503,
-                detail="RL training system is not available"
+                status_code=503, detail="RL training system is not available"
             )
 
         # Fetch training data
         backend_url = os.getenv("MODPORTER_BACKEND_URL", "http://localhost:8000")
         logger.info(f"Fetching training data from {backend_url}")
 
-        training_data = await fetch_training_data_from_backend(backend_url, skip=0, limit=50)
+        training_data = await fetch_training_data_from_backend(
+            backend_url, skip=0, limit=50
+        )
 
         if training_data:
-            logger.info(f"Found {len(training_data)} training items, starting RL training")
+            logger.info(
+                f"Found {len(training_data)} training items, starting RL training"
+            )
             # Run RL training
             result = await train_model_with_feedback(training_data)
             logger.info("RL training completed successfully")
@@ -278,23 +293,20 @@ async def trigger_rl_training():
                 "status": "success",
                 "message": "RL training completed successfully",
                 "training_result": result,
-                "training_data_count": len(training_data)
+                "training_data_count": len(training_data),
             }
         else:
             logger.warning("No training data available for RL training")
             return {
                 "status": "warning",
-                "message": "No training data available for RL training"
+                "message": "No training data available for RL training",
             }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"RL training failed with error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"RL training failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"RL training failed: {str(e)}")
 
 
 @router.get("/ai/performance/agents")
@@ -304,7 +316,9 @@ async def get_agent_performance():
         logger.info("Fetching agent performance metrics")
 
         # Dynamic import with better error handling
-        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        ai_engine_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
+        )
         if ai_engine_path not in sys.path:
             sys.path.append(ai_engine_path)
 
@@ -313,27 +327,24 @@ async def get_agent_performance():
         except ImportError as ie:
             logger.error(f"Failed to import RL optimizer components: {ie}")
             raise HTTPException(
-                status_code=503,
-                detail="Agent performance monitoring is not available"
+                status_code=503, detail="Agent performance monitoring is not available"
             )
 
         optimizer = create_agent_optimizer()
         system_metrics = optimizer.get_system_wide_metrics()
 
-        logger.info(f"Retrieved metrics for {system_metrics.get('total_agents', 0)} agents")
+        logger.info(
+            f"Retrieved metrics for {system_metrics.get('total_agents', 0)} agents"
+        )
 
-        return {
-            "status": "success",
-            "metrics": system_metrics
-        }
+        return {"status": "success", "metrics": system_metrics}
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to get agent performance: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve agent performance: {str(e)}"
+            status_code=500, detail=f"Failed to retrieve agent performance: {str(e)}"
         )
 
 
@@ -344,15 +355,23 @@ async def get_specific_agent_performance(agent_type: str):
         logger.info(f"Fetching performance metrics for agent: {agent_type}")
 
         # Validate agent_type
-        valid_agent_types = ['java_analyzer', 'asset_converter', 'behavior_translator', 'conversion_planner', 'qa_validator']
+        valid_agent_types = [
+            "java_analyzer",
+            "asset_converter",
+            "behavior_translator",
+            "conversion_planner",
+            "qa_validator",
+        ]
         if agent_type not in valid_agent_types:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid agent type. Must be one of: {', '.join(valid_agent_types)}"
+                detail=f"Invalid agent type. Must be one of: {', '.join(valid_agent_types)}",
             )
 
         # Dynamic import with better error handling
-        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        ai_engine_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
+        )
         if ai_engine_path not in sys.path:
             sys.path.append(ai_engine_path)
 
@@ -361,40 +380,48 @@ async def get_specific_agent_performance(agent_type: str):
         except ImportError as ie:
             logger.error(f"Failed to import RL optimizer components: {ie}")
             raise HTTPException(
-                status_code=503,
-                detail="Agent performance monitoring is not available"
+                status_code=503, detail="Agent performance monitoring is not available"
             )
 
         optimizer = create_agent_optimizer()
 
         # Check if we have performance history for this agent
-        if agent_type in optimizer.performance_history and optimizer.performance_history[agent_type]:
+        if (
+            agent_type in optimizer.performance_history
+            and optimizer.performance_history[agent_type]
+        ):
             latest_metrics = optimizer.performance_history[agent_type][-1]
             logger.info(f"Found performance data for {agent_type}")
 
             # Convert to dict safely
-            metrics_dict = latest_metrics.__dict__ if hasattr(latest_metrics, '__dict__') else {}
+            metrics_dict = (
+                latest_metrics.__dict__ if hasattr(latest_metrics, "__dict__") else {}
+            )
 
             return {
                 "status": "success",
                 "agent_type": agent_type,
-                "metrics": metrics_dict
+                "metrics": metrics_dict,
             }
         else:
-            logger.warning(f"No performance data available for agent type: {agent_type}")
+            logger.warning(
+                f"No performance data available for agent type: {agent_type}"
+            )
             return {
                 "status": "warning",
                 "message": f"No performance data available for agent type: {agent_type}",
-                "agent_type": agent_type
+                "agent_type": agent_type,
             }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get performance for agent {agent_type}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to get performance for agent {agent_type}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to retrieve performance for agent {agent_type}: {str(e)}"
+            detail=f"Failed to retrieve performance for agent {agent_type}: {str(e)}",
         )
 
 
@@ -408,19 +435,29 @@ async def compare_agent_performance(agent_types: List[str]):
         if not agent_types or len(agent_types) < 2:
             raise HTTPException(
                 status_code=400,
-                detail="At least 2 agent types are required for comparison"
+                detail="At least 2 agent types are required for comparison",
             )
 
-        valid_agent_types = ['java_analyzer', 'asset_converter', 'behavior_translator', 'conversion_planner', 'qa_validator']
-        invalid_agents = [agent for agent in agent_types if agent not in valid_agent_types]
+        valid_agent_types = [
+            "java_analyzer",
+            "asset_converter",
+            "behavior_translator",
+            "conversion_planner",
+            "qa_validator",
+        ]
+        invalid_agents = [
+            agent for agent in agent_types if agent not in valid_agent_types
+        ]
         if invalid_agents:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid agent types: {invalid_agents}. Must be one of: {', '.join(valid_agent_types)}"
+                detail=f"Invalid agent types: {invalid_agents}. Must be one of: {', '.join(valid_agent_types)}",
             )
 
         # Dynamic import with better error handling
-        ai_engine_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src')
+        ai_engine_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
+        )
         if ai_engine_path not in sys.path:
             sys.path.append(ai_engine_path)
 
@@ -429,8 +466,7 @@ async def compare_agent_performance(agent_types: List[str]):
         except ImportError as ie:
             logger.error(f"Failed to import RL optimizer components: {ie}")
             raise HTTPException(
-                status_code=503,
-                detail="Agent performance comparison is not available"
+                status_code=503, detail="Agent performance comparison is not available"
             )
 
         optimizer = create_agent_optimizer()
@@ -439,18 +475,16 @@ async def compare_agent_performance(agent_types: List[str]):
         logger.info(f"Generated comparison report for {len(agent_types)} agents")
 
         # Convert to dict safely
-        report_dict = comparison_report.__dict__ if hasattr(comparison_report, '__dict__') else {}
+        report_dict = (
+            comparison_report.__dict__ if hasattr(comparison_report, "__dict__") else {}
+        )
 
-        return {
-            "status": "success",
-            "comparison_report": report_dict
-        }
+        return {"status": "success", "comparison_report": report_dict}
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to compare agents {agent_types}: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to compare agents: {str(e)}"
+            status_code=500, detail=f"Failed to compare agents: {str(e)}"
         )

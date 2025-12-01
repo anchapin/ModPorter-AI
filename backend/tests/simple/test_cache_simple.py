@@ -4,32 +4,38 @@ Tests caching functionality without complex async mocking
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
 import sys
 import os
 import uuid
 import datetime
 from fastapi.testclient import TestClient
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Path, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Path
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
 
 # Pydantic models for API requests/responses
 class CacheEntryCreate(BaseModel):
     """Request model for creating a cache entry"""
+
     key: str = Field(..., description="Cache key")
     value: Dict[str, Any] = Field(..., description="Value to cache")
     ttl_seconds: int = Field(default=3600, description="Time to live in seconds")
 
+
 class CacheEntryResponse(BaseModel):
     """Response model for cache entry data"""
+
     key: str = Field(..., description="Cache key")
     value: Dict[str, Any] = Field(..., description="Cached value")
     created_at: str = Field(..., description="Creation timestamp")
     expires_at: str = Field(..., description="Expiration timestamp")
+
 
 # Test database models
 class MockCacheEntry:
@@ -41,25 +47,24 @@ class MockCacheEntry:
         self.created_at = now
         self.expires_at = now + datetime.timedelta(seconds=ttl_seconds)
 
+
 # Mock in-memory cache
 cache_store = {}
+
 
 def mock_get_cache_entry(key):
     """Mock function to get a cache entry by key"""
     return cache_store.get(key)
 
+
 def mock_set_cache_entry(key, value, ttl_seconds=3600):
     """Mock function to set a cache entry"""
     now = datetime.datetime.now()
     expires_at = now + datetime.timedelta(seconds=ttl_seconds)
-    entry = {
-        "key": key,
-        "value": value,
-        "created_at": now,
-        "expires_at": expires_at
-    }
+    entry = {"key": key, "value": value, "created_at": now, "expires_at": expires_at}
     cache_store[key] = entry
     return entry
+
 
 def mock_delete_cache_entry(key):
     """Mock function to delete a cache entry by key"""
@@ -67,6 +72,7 @@ def mock_delete_cache_entry(key):
         del cache_store[key]
         return True
     return False
+
 
 def mock_clear_expired_cache():
     """Mock function to clear expired cache entries"""
@@ -76,8 +82,10 @@ def mock_clear_expired_cache():
         del cache_store[key]
     return len(expired_keys)
 
+
 # Create router with mock endpoints
 router = APIRouter()
+
 
 @router.get("/cache/{key}", response_model=CacheEntryResponse)
 async def get_cache_entry(key: str = Path(..., description="Cache key")):
@@ -90,12 +98,15 @@ async def get_cache_entry(key: str = Path(..., description="Cache key")):
             key=entry["key"],
             value=entry["value"],
             created_at=entry["created_at"].isoformat(),
-            expires_at=entry["expires_at"].isoformat()
+            expires_at=entry["expires_at"].isoformat(),
         )
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get cache entry: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get cache entry: {str(e)}"
+        )
+
 
 @router.post("/cache", response_model=CacheEntryResponse)
 async def set_cache_entry(entry_data: CacheEntryCreate):
@@ -104,16 +115,19 @@ async def set_cache_entry(entry_data: CacheEntryCreate):
         entry = mock_set_cache_entry(
             key=entry_data.key,
             value=entry_data.value,
-            ttl_seconds=entry_data.ttl_seconds
+            ttl_seconds=entry_data.ttl_seconds,
         )
         return CacheEntryResponse(
             key=entry["key"],
             value=entry["value"],
             created_at=entry["created_at"].isoformat(),
-            expires_at=entry["expires_at"].isoformat()
+            expires_at=entry["expires_at"].isoformat(),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to set cache entry: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to set cache entry: {str(e)}"
+        )
+
 
 @router.delete("/cache/{key}")
 async def delete_cache_entry(key: str = Path(..., description="Cache key")):
@@ -126,7 +140,10 @@ async def delete_cache_entry(key: str = Path(..., description="Cache key")):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete cache entry: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete cache entry: {str(e)}"
+        )
+
 
 @router.post("/cache/clear-expired")
 async def clear_expired_cache():
@@ -135,16 +152,21 @@ async def clear_expired_cache():
         count = mock_clear_expired_cache()
         return {"message": f"Cleared {count} expired cache entries"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear expired cache: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear expired cache: {str(e)}"
+        )
+
 
 # Create a FastAPI test app
 app = FastAPI()
 app.include_router(router, prefix="/api")
 
+
 @pytest.fixture
 def client():
     """Create a test client."""
     return TestClient(app)
+
 
 class TestCacheApi:
     """Test cache API endpoints"""
@@ -157,7 +179,7 @@ class TestCacheApi:
             "key": key,
             "value": {"data": "test value"},
             "created_at": datetime.datetime.now(),
-            "expires_at": datetime.datetime.now() + datetime.timedelta(hours=1)
+            "expires_at": datetime.datetime.now() + datetime.timedelta(hours=1),
         }
 
         response = client.get(f"/api/cache/{key}")
@@ -181,7 +203,7 @@ class TestCacheApi:
         entry_data = {
             "key": key,
             "value": {"data": "test data", "type": "string"},
-            "ttl_seconds": 3600
+            "ttl_seconds": 3600,
         }
 
         response = client.post("/api/cache", json=entry_data)
@@ -195,10 +217,7 @@ class TestCacheApi:
     def test_set_cache_entry_minimal(self, client):
         """Test cache entry creation with minimal data."""
         key = str(uuid.uuid4())
-        entry_data = {
-            "key": key,
-            "value": {"minimal": True}
-        }
+        entry_data = {"key": key, "value": {"minimal": True}}
 
         response = client.post("/api/cache", json=entry_data)
 
@@ -221,14 +240,14 @@ class TestCacheApi:
             "key": key,
             "value": {"data": "test"},
             "created_at": datetime.datetime.now(),
-            "expires_at": datetime.datetime.now() + datetime.timedelta(hours=1)
+            "expires_at": datetime.datetime.now() + datetime.timedelta(hours=1),
         }
 
         response = client.delete(f"/api/cache/{key}")
 
         assert response.status_code == 200
         data = response.json()
-        assert f"deleted successfully" in data["message"].lower()
+        assert "deleted successfully" in data["message"].lower()
         # Verify entry is gone
         assert key not in cache_store
 
@@ -253,20 +272,20 @@ class TestCacheApi:
             "key": expired_key1,
             "value": {"data": "expired1"},
             "created_at": now,
-            "expires_at": now - datetime.timedelta(hours=1)
+            "expires_at": now - datetime.timedelta(hours=1),
         }
         cache_store[expired_key2] = {
             "key": expired_key2,
             "value": {"data": "expired2"},
             "created_at": now,
-            "expires_at": now - datetime.timedelta(hours=2)
+            "expires_at": now - datetime.timedelta(hours=2),
         }
         # Add valid entry
         cache_store[valid_key] = {
             "key": valid_key,
             "value": {"data": "valid"},
             "created_at": now,
-            "expires_at": now + datetime.timedelta(hours=1)
+            "expires_at": now + datetime.timedelta(hours=1),
         }
 
         response = client.post("/api/cache/clear-expired")
@@ -290,13 +309,13 @@ class TestCacheApi:
             "key": valid_key1,
             "value": {"data": "valid1"},
             "created_at": now,
-            "expires_at": now + datetime.timedelta(hours=1)
+            "expires_at": now + datetime.timedelta(hours=1),
         }
         cache_store[valid_key2] = {
             "key": valid_key2,
             "value": {"data": "valid2"},
             "created_at": now,
-            "expires_at": now + datetime.timedelta(hours=2)
+            "expires_at": now + datetime.timedelta(hours=2),
         }
 
         response = client.post("/api/cache/clear-expired")

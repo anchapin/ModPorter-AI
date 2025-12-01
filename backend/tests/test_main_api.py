@@ -4,6 +4,7 @@ import io
 
 client = TestClient(app)
 
+
 def test_health_check():
     """
     Tests the /api/v1/health endpoint.
@@ -13,8 +14,9 @@ def test_health_check():
     assert response.json() == {
         "status": "healthy",
         "version": "1.0.0",
-        "timestamp": response.json()["timestamp"]  # Allow for dynamic timestamp
+        "timestamp": response.json()["timestamp"],  # Allow for dynamic timestamp
     }
+
 
 def test_upload_file_success():
     """
@@ -29,6 +31,7 @@ def test_upload_file_success():
     assert "file_id" in json_response
     assert json_response["original_filename"] == "test.zip"
     assert json_response["size"] == len(file_content)
+
 
 def test_upload_file_unsupported_type():
     """

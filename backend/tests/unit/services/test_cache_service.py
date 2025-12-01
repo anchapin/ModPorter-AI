@@ -6,18 +6,22 @@ including error handling, edge cases, and performance considerations.
 """
 
 import pytest
-import asyncio
 import json
 import base64
 from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 # Import the service and mocks
 from src.services.cache import CacheService
 from src.models.cache_models import CacheStats
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+)
 from tests.mocks.redis_mock import create_mock_redis_client
 
 
@@ -32,7 +36,7 @@ class TestCacheService:
     @pytest.fixture
     def cache_service(self, mock_redis_client):
         """Create a CacheService instance with a mock Redis client."""
-        with patch('services.cache.aioredis.from_url', return_value=mock_redis_client):
+        with patch("services.cache.aioredis.from_url", return_value=mock_redis_client):
             service = CacheService()
             service._client = mock_redis_client
             service._redis_available = True
@@ -64,7 +68,7 @@ class TestCacheService:
         def test_init_with_redis_enabled(self):
             """Test initialization with Redis enabled."""
             mock_client = create_mock_redis_client()
-            with patch('services.cache.aioredis.from_url', return_value=mock_client):
+            with patch("services.cache.aioredis.from_url", return_value=mock_client):
                 service = CacheService()
                 assert service._redis_disabled is False
                 assert service._client is mock_client
@@ -80,7 +84,10 @@ class TestCacheService:
 
         def test_init_with_redis_connection_error(self):
             """Test initialization when Redis connection fails."""
-            with patch('services.cache.aioredis.from_url', side_effect=Exception("Connection error")):
+            with patch(
+                "services.cache.aioredis.from_url",
+                side_effect=Exception("Connection error"),
+            ):
                 service = CacheService()
                 assert service._redis_available is False
                 assert service._client is None
@@ -108,7 +115,7 @@ class TestCacheService:
             status = {
                 "progress": 50,
                 "status": "processing",
-                "updated_at": datetime(2023, 1, 1, 12, 0, 0)
+                "updated_at": datetime(2023, 1, 1, 12, 0, 0),
             }
 
             await cache_service.set_job_status(job_id, status)
@@ -161,7 +168,9 @@ class TestCacheService:
             assert result is None
 
         @pytest.mark.asyncio
-        async def test_set_job_status_with_unavailable_redis(self, cache_service_with_unavailable_redis):
+        async def test_set_job_status_with_unavailable_redis(
+            self, cache_service_with_unavailable_redis
+        ):
             """Test setting job status when Redis becomes unavailable."""
             job_id = "test-job-123"
             status = {"progress": 50, "status": "processing"}
@@ -199,7 +208,9 @@ class TestCacheService:
             assert int(cached_progress) == progress
 
             # Verify job was added to active set
-            active_jobs = await cache_service._client.sadd("conversion_jobs:active", job_id)
+            active_jobs = await cache_service._client.sadd(
+                "conversion_jobs:active", job_id
+            )
             assert active_jobs > 0  # At least one job should be in the set
 
         @pytest.mark.asyncio
@@ -300,7 +311,10 @@ class TestCacheService:
         async def test_cache_conversion_result(self, cache_service):
             """Test caching conversion result."""
             mod_hash = "def456"
-            result = {"success": True, "download_url": "http://example.com/addon.mcaddon"}
+            result = {
+                "success": True,
+                "download_url": "http://example.com/addon.mcaddon",
+            }
             ttl = 3600
 
             await cache_service.cache_conversion_result(mod_hash, result, ttl)
@@ -314,7 +328,10 @@ class TestCacheService:
         async def test_get_conversion_result(self, cache_service):
             """Test getting conversion result."""
             mod_hash = "def456"
-            result = {"success": True, "download_url": "http://example.com/addon.mcaddon"}
+            result = {
+                "success": True,
+                "download_url": "http://example.com/addon.mcaddon",
+            }
 
             # First cache the result
             await cache_service.cache_conversion_result(mod_hash, result)
@@ -379,7 +396,7 @@ class TestCacheService:
             expected_key = f"export:{conversion_id}:data"
             cached_data = await cache_service._client.get(expected_key)
             # Should be base64 encoded in Redis
-            decoded_data = base64.b64decode(cached_data.encode('utf-8'))
+            decoded_data = base64.b64decode(cached_data.encode("utf-8"))
             assert decoded_data == export_data
 
         @pytest.mark.asyncio
@@ -485,13 +502,8 @@ class TestCacheService:
                 "string": "test",
                 "number": 42,
                 "datetime": datetime(2023, 1, 1, 12, 0, 0),
-                "nested": {
-                    "datetime": datetime(2023, 6, 15, 8, 30, 0)
-                },
-                "list": [
-                    datetime(2023, 12, 25, 0, 0, 0),
-                    "string"
-                ]
+                "nested": {"datetime": datetime(2023, 6, 15, 8, 30, 0)},
+                "list": [datetime(2023, 12, 25, 0, 0, 0), "string"],
             }
 
             result = cache_service._make_json_serializable(obj)
@@ -505,12 +517,7 @@ class TestCacheService:
 
         def test_make_json_serializable_with_none(self, cache_service):
             """Test JSON serialization with None values."""
-            obj = {
-                "none_value": None,
-                "nested": {
-                    "none_value": None
-                }
-            }
+            obj = {"none_value": None, "nested": {"none_value": None}}
 
             result = cache_service._make_json_serializable(obj)
 
@@ -524,8 +531,8 @@ class TestCacheService:
                 "complex_list": [
                     {"key": "value"},
                     datetime(2023, 1, 1, 12, 0, 0),
-                    None
-                ]
+                    None,
+                ],
             }
 
             result = cache_service._make_json_serializable(obj)

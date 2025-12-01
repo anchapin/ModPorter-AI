@@ -2,9 +2,7 @@
 Tests for types module.
 """
 
-import pytest
 from datetime import datetime
-from typing import List, Dict, Any
 
 from src.custom_types.report_types import (
     ConversionStatus,
@@ -12,7 +10,7 @@ from src.custom_types.report_types import (
     ReportMetadata,
     SummaryReport,
     FeatureAnalysisItem,
-    FeatureAnalysis
+    FeatureAnalysis,
 )
 
 
@@ -40,9 +38,9 @@ class TestReportTypes:
             job_id="test_job_123",
             generation_timestamp=datetime.now(),
             version="2.0.0",
-            report_type="comprehensive"
+            report_type="comprehensive",
         )
-        
+
         assert metadata.report_id == "test_report_123"
         assert metadata.job_id == "test_job_123"
         assert metadata.version == "2.0.0"
@@ -63,9 +61,9 @@ class TestReportTypes:
             total_files_processed=15,
             output_size_mb=2.5,
             conversion_quality_score=0.88,
-            recommended_actions=["Review partial conversions", "Fix failed features"]
+            recommended_actions=["Review partial conversions", "Fix failed features"],
         )
-        
+
         assert report.overall_success_rate == 0.85
         assert report.total_features == 10
         assert report.converted_features == 8
@@ -89,9 +87,9 @@ class TestReportTypes:
             assumptions_used=["assumption1", "assumption2"],
             impact_assessment="low",
             visual_comparison={"before": "image1.png", "after": "image2.png"},
-            technical_notes="Converted with custom mappings"
+            technical_notes="Converted with custom mappings",
         )
-        
+
         assert item.name == "test_feature"
         assert item.original_type == "java_class"
         assert item.converted_type == "bedrock_behavior"
@@ -101,7 +99,7 @@ class TestReportTypes:
         assert item.impact_assessment == "low"
         assert item.visual_comparison["before"] == "image1.png"
         assert item.technical_notes == "Converted with custom mappings"
-        
+
         # Test to_dict method
         item_dict = item.to_dict()
         assert item_dict["name"] == "test_feature"
@@ -117,7 +115,7 @@ class TestReportTypes:
                 status="converted",
                 compatibility_score=0.90,
                 assumptions_used=["assumption1"],
-                impact_assessment="medium"
+                impact_assessment="medium",
             ),
             FeatureAnalysisItem(
                 name="feature2",
@@ -126,19 +124,22 @@ class TestReportTypes:
                 status="failed",
                 compatibility_score=0.0,
                 assumptions_used=[],
-                impact_assessment="high"
-            )
+                impact_assessment="high",
+            ),
         ]
-        
+
         analysis = FeatureAnalysis(
             features=items,
             compatibility_mapping_summary="Most features converted successfully",
             visual_comparisons_overview="See attached images",
-            impact_assessment_summary="Low overall impact"
+            impact_assessment_summary="Low overall impact",
         )
-        
+
         assert len(analysis.features) == 2
-        assert analysis.compatibility_mapping_summary == "Most features converted successfully"
+        assert (
+            analysis.compatibility_mapping_summary
+            == "Most features converted successfully"
+        )
         assert analysis.impact_assessment_summary == "Low overall impact"
 
 
@@ -154,12 +155,12 @@ class TestReportUtilities:
             partially_converted_features=1,
             failed_features=1,
             assumptions_applied_count=2,
-            processing_time_seconds=100.0
+            processing_time_seconds=100.0,
         )
-        
+
         assert report1.quick_statistics == {}
         assert report1.recommended_actions == []
-        
+
         report2 = SummaryReport(
             overall_success_rate=0.9,
             total_features=5,
@@ -169,9 +170,9 @@ class TestReportUtilities:
             assumptions_applied_count=1,
             processing_time_seconds=50.0,
             quick_statistics={"test": "value"},
-            recommended_actions=["action1", "action2"]
+            recommended_actions=["action1", "action2"],
         )
-        
+
         assert report2.quick_statistics == {"test": "value"}
         assert len(report2.recommended_actions) == 2
 
@@ -186,20 +187,26 @@ class TestReportUtilities:
             assumptions_used=[],
             impact_assessment="none",
             visual_comparison=None,
-            technical_notes=None
+            technical_notes=None,
         )
-        
+
         result = item.to_dict()
-        
+
         expected_keys = [
-            "name", "original_type", "converted_type", "status",
-            "compatibility_score", "assumptions_used", "impact_assessment",
-            "visual_comparison", "technical_notes"
+            "name",
+            "original_type",
+            "converted_type",
+            "status",
+            "compatibility_score",
+            "assumptions_used",
+            "impact_assessment",
+            "visual_comparison",
+            "technical_notes",
         ]
-        
+
         for key in expected_keys:
             assert key in result
-        
+
         assert result["name"] == "complete_feature"
         assert result["compatibility_score"] == 1.0
         assert result["visual_comparison"] is None
@@ -209,13 +216,11 @@ class TestReportUtilities:
         """Test edge cases for report types."""
         # Test empty values
         metadata = ReportMetadata(
-            report_id="",
-            job_id="",
-            generation_timestamp=datetime.now()
+            report_id="", job_id="", generation_timestamp=datetime.now()
         )
         assert metadata.report_id == ""
         assert metadata.job_id == ""
-        
+
         # Test zero values in summary report
         summary = SummaryReport(
             overall_success_rate=0.0,
@@ -224,15 +229,14 @@ class TestReportUtilities:
             partially_converted_features=0,
             failed_features=0,
             assumptions_applied_count=0,
-            processing_time_seconds=0.0
+            processing_time_seconds=0.0,
         )
         assert summary.overall_success_rate == 0.0
         assert summary.total_features == 0
-        
+
         # Test empty feature analysis
         empty_analysis = FeatureAnalysis(
-            features=[],
-            compatibility_mapping_summary="No features"
+            features=[], compatibility_mapping_summary="No features"
         )
         assert len(empty_analysis.features) == 0
         assert empty_analysis.compatibility_mapping_summary == "No features"

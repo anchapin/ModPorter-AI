@@ -40,6 +40,7 @@ CONTROL_VARIANTS = {'control', 'sequential', 'baseline'}
 # 1. Import QAAgent:
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
+# ruff: noqa: E402
 from models.smart_assumptions import ConversionPlanComponent, AssumptionReport
 from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
 from utils.logging_config import get_crew_logger, log_performance

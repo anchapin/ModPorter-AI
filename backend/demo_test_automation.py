@@ -7,13 +7,8 @@ This script demonstrates the automated test generation capabilities
 and provides a summary of the automation tools available.
 """
 
-import ast
-import os
 import json
-import subprocess
-import sys
 from pathlib import Path
-from typing import Dict, List, Any
 
 class TestAutomationDemo:
     """Demonstrate test automation capabilities"""
@@ -105,7 +100,7 @@ class TestAutomationDemo:
                 coverage_data = json.load(f)
             
             total = coverage_data.get('totals', {})
-            print(f"✓ Coverage data available")
+            print("✓ Coverage data available")
             print(f"  Overall coverage: {total.get('percent_covered', 0):.1f}%")
             print(f"  Total statements: {total.get('num_statements', 0)}")
             print(f"  Files analyzed: {len(coverage_data.get('files', {}))}")
@@ -120,7 +115,7 @@ class TestAutomationDemo:
             "run_mutation_tests.py": "Mutation testing script"
         }
         
-        print(f"\n✓ Automation tools configured:")
+        print("\n✓ Automation tools configured:")
         for file_name, description in automation_files.items():
             file_path = self.project_root / file_name
             if file_path.exists():
@@ -137,7 +132,7 @@ class TestAutomationDemo:
             "hypothesis": "Property-based testing"
         }
         
-        print(f"\n✓ Dependencies check:")
+        print("\n✓ Dependencies check:")
         for dep, description in dependencies.items():
             try:
                 __import__(dep.replace('-', '_'))
@@ -260,7 +255,7 @@ class TestAutomationDemo:
         hours_saved = (manual_time - automated_time) / 60
         days_saved = hours_saved / 8  # 8-hour workday
         
-        print(f"Example: 20 functions needing tests")
+        print("Example: 20 functions needing tests")
         print(f"  Manual approach: {manual_time} minutes ({manual_time/60:.1f} hours)")
         print(f"  Automated approach: {automated_time} minutes ({automated_time/60:.1f} hours)")
         print(f"  Time saved: {manual_time - automated_time} minutes ({hours_saved:.1f} hours)")

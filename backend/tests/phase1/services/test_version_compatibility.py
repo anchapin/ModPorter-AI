@@ -6,9 +6,8 @@ including compatibility checks, matrix management, and version mapping.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, patch
+from datetime import datetime
 
 from src.services.version_compatibility import VersionCompatibilityService
 from src.db.models import VersionCompatibility
@@ -44,20 +43,13 @@ class TestVersionCompatibilityService:
                     "category": "block_properties",
                     "description": "Some block properties differ between Java and Bedrock",
                     "severity": "medium",
-                    "workaround": "Use alternative properties"
+                    "workaround": "Use alternative properties",
                 }
             ],
-            features_supported=[
-                "basic_blocks",
-                "custom_items",
-                "simple_entities"
-            ],
-            features_unsupported=[
-                "advanced_redstone",
-                "complex_entity_ai"
-            ],
+            features_supported=["basic_blocks", "custom_items", "simple_entities"],
+            features_unsupported=["advanced_redstone", "complex_entity_ai"],
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
 
     @pytest.fixture
@@ -69,22 +61,31 @@ class TestVersionCompatibilityService:
                 "bedrock_version": "1.18.0",
                 "compatibility_score": 0.9,
                 "features_supported": ["basic_blocks", "custom_items"],
-                "features_unsupported": ["advanced_redstone"]
+                "features_unsupported": ["advanced_redstone"],
             },
             {
                 "java_version": "1.19.0",
                 "bedrock_version": "1.19.0",
                 "compatibility_score": 0.85,
-                "features_supported": ["basic_blocks", "custom_items", "advanced_redstone"],
-                "features_unsupported": ["complex_entity_ai"]
+                "features_supported": [
+                    "basic_blocks",
+                    "custom_items",
+                    "advanced_redstone",
+                ],
+                "features_unsupported": ["complex_entity_ai"],
             },
             {
                 "java_version": "1.20.0",
                 "bedrock_version": "1.20.0",
                 "compatibility_score": 0.8,
-                "features_supported": ["basic_blocks", "custom_items", "advanced_redstone", "simple_entities"],
-                "features_unsupported": ["complex_entity_ai", "custom_dimensions"]
-            }
+                "features_supported": [
+                    "basic_blocks",
+                    "custom_items",
+                    "advanced_redstone",
+                    "simple_entities",
+                ],
+                "features_unsupported": ["complex_entity_ai", "custom_dimensions"],
+            },
         ]
 
     @pytest.mark.asyncio
@@ -100,10 +101,14 @@ class TestVersionCompatibilityService:
     ):
         """Test getting compatibility with exact match in database."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return our sample
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=sample_version_compatibility):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=sample_version_compatibility,
+        ):
             # Call the method
-            result = await service.get_compatibility("1.18.2", "1.18.0", mock_db_session)
+            result = await service.get_compatibility(
+                "1.18.2", "1.18.0", mock_db_session
+            )
 
             # Verify the result
             assert result is not None
@@ -121,13 +126,20 @@ class TestVersionCompatibilityService:
     ):
         """Test getting compatibility with no match, falling back to defaults."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return None (no match)
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=None):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=None,
+        ):
             # Mock _get_closest_version_match to return a fallback
-            with patch.object(service, '_get_closest_version_match',
-                             return_value=sample_version_matrix[0]):
+            with patch.object(
+                service,
+                "_get_closest_version_match",
+                return_value=sample_version_matrix[0],
+            ):
                 # Call the method
-                result = await service.get_compatibility("1.21.0", "1.21.0", mock_db_session)
+                result = await service.get_compatibility(
+                    "1.21.0", "1.21.0", mock_db_session
+                )
 
                 # Verify the result uses fallback data
                 assert result is not None
@@ -139,12 +151,16 @@ class TestVersionCompatibilityService:
     async def test_get_compatibility_no_fallback(self, service, mock_db_session):
         """Test getting compatibility with no match and no fallback."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return None
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=None):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=None,
+        ):
             # Mock _get_closest_version_match to return None (no fallback)
-            with patch.object(service, '_get_closest_version_match', return_value=None):
+            with patch.object(service, "_get_closest_version_match", return_value=None):
                 # Call the method
-                result = await service.get_compatibility("1.21.0", "1.21.0", mock_db_session)
+                result = await service.get_compatibility(
+                    "1.21.0", "1.21.0", mock_db_session
+                )
 
                 # Verify no result is returned
                 assert result is None
@@ -155,10 +171,14 @@ class TestVersionCompatibilityService:
     ):
         """Test getting all compatibility data for a Java version."""
         # Mock database query to return compatibility data for Java version
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Call the method
-            result = await service.get_java_version_compatibility("1.19.0", mock_db_session)
+            result = await service.get_java_version_compatibility(
+                "1.19.0", mock_db_session
+            )
 
             # Verify the result
             assert result is not None
@@ -173,10 +193,14 @@ class TestVersionCompatibilityService:
     ):
         """Test getting all compatibility data for a Bedrock version."""
         # Mock database query to return compatibility data for Bedrock version
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Call the method
-            result = await service.get_bedrock_version_compatibility("1.18.0", mock_db_session)
+            result = await service.get_bedrock_version_compatibility(
+                "1.18.0", mock_db_session
+            )
 
             # Verify the result
             assert result is not None
@@ -186,11 +210,15 @@ class TestVersionCompatibilityService:
             assert result[0]["compatibility_score"] == 0.9
 
     @pytest.mark.asyncio
-    async def test_get_compatibility_matrix(self, service, mock_db_session, sample_version_matrix):
+    async def test_get_compatibility_matrix(
+        self, service, mock_db_session, sample_version_matrix
+    ):
         """Test getting the full compatibility matrix."""
         # Mock database query to return the full matrix
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Call the method
             result = await service.get_compatibility_matrix(mock_db_session)
 
@@ -210,16 +238,24 @@ class TestVersionCompatibilityService:
     ):
         """Test creating new compatibility data."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return None (no existing entry)
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=None):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=None,
+        ):
             # Mock VersionCompatibilityCRUD.create_compatibility to return created entry
-            with patch('src.services.version_compatibility.VersionCompatibilityCRUD.create_compatibility',
-                      return_value=sample_version_compatibility):
+            with patch(
+                "src.services.version_compatibility.VersionCompatibilityCRUD.create_compatibility",
+                return_value=sample_version_compatibility,
+            ):
                 # Call the method
                 result = await service.create_or_update_compatibility(
-                    "1.21.0", "1.21.0", 0.75,
-                    ["issue1"], ["feature1"], ["feature2"],
-                    mock_db_session
+                    "1.21.0",
+                    "1.21.0",
+                    0.75,
+                    ["issue1"],
+                    ["feature1"],
+                    ["feature2"],
+                    mock_db_session,
                 )
 
                 # Verify the result
@@ -232,8 +268,10 @@ class TestVersionCompatibilityService:
     ):
         """Test updating existing compatibility data."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return existing entry
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=sample_version_compatibility):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=sample_version_compatibility,
+        ):
             # Mock VersionCompatibilityCRUD.update_compatibility to return updated entry
             updated_entry = VersionCompatibility(
                 id=sample_version_compatibility.id,
@@ -241,21 +279,33 @@ class TestVersionCompatibilityService:
                 bedrock_version="1.18.0",
                 compatibility_score=0.95,  # Updated score
                 issues=[],
-                features_supported=["basic_blocks", "custom_items", "advanced_redstone"],
+                features_supported=[
+                    "basic_blocks",
+                    "custom_items",
+                    "advanced_redstone",
+                ],
                 features_unsupported=["complex_entity_ai"],
                 created_at=sample_version_compatibility.created_at,
-                updated_at=datetime.utcnow()
+                updated_at=datetime.utcnow(),
             )
 
-            with patch('src.services.version_compatibility.VersionCompatibilityCRUD.update_compatibility',
-                      return_value=updated_entry):
+            with patch(
+                "src.services.version_compatibility.VersionCompatibilityCRUD.update_compatibility",
+                return_value=updated_entry,
+            ):
                 # Call the method
                 result = await service.create_or_update_compatibility(
-                    "1.18.2", "1.18.0", 0.95,  # Updated score
+                    "1.18.2",
+                    "1.18.0",
+                    0.95,  # Updated score
                     [],  # No issues
-                    ["basic_blocks", "custom_items", "advanced_redstone"],  # Additional feature
+                    [
+                        "basic_blocks",
+                        "custom_items",
+                        "advanced_redstone",
+                    ],  # Additional feature
                     ["complex_entity_ai"],  # Unsupported feature
-                    mock_db_session
+                    mock_db_session,
                 )
 
                 # Verify the result
@@ -264,7 +314,9 @@ class TestVersionCompatibilityService:
                 assert result.bedrock_version == "1.18.0"
                 assert result.compatibility_score == 0.95  # Updated score
                 assert len(result.issues) == 0  # Updated issues
-                assert "advanced_redstone" in result.features_supported  # Updated features
+                assert (
+                    "advanced_redstone" in result.features_supported
+                )  # Updated features
 
     @pytest.mark.asyncio
     async def test_check_feature_compatibility(
@@ -272,8 +324,10 @@ class TestVersionCompatibilityService:
     ):
         """Test checking if a feature is compatible between versions."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return our sample
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=sample_version_compatibility):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=sample_version_compatibility,
+        ):
             # Test with a supported feature
             result_supported = await service.check_feature_compatibility(
                 "basic_blocks", "1.18.2", "1.18.0", mock_db_session
@@ -298,8 +352,10 @@ class TestVersionCompatibilityService:
     ):
         """Test getting all version pairs compatible with a feature."""
         # Mock database query to return the full matrix
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Call the method for a feature that's supported in some versions
             result = await service.get_compatible_versions_for_feature(
                 "basic_blocks", mock_db_session
@@ -308,7 +364,9 @@ class TestVersionCompatibilityService:
             # Verify the result
             assert result is not None
             assert len(result) == 3  # All three entries support basic_blocks
-            assert all("basic_blocks" in entry["features_supported"] for entry in result)
+            assert all(
+                "basic_blocks" in entry["features_supported"] for entry in result
+            )
 
             # Call the method for a feature that's only supported in some versions
             result_partial = await service.get_compatible_versions_for_feature(
@@ -317,8 +375,13 @@ class TestVersionCompatibilityService:
 
             # Verify the result
             assert result_partial is not None
-            assert len(result_partial) == 2  # Only 1.19.0 and 1.20.0 support advanced_redstone
-            assert all("advanced_redstone" in entry["features_supported"] for entry in result_partial)
+            assert (
+                len(result_partial) == 2
+            )  # Only 1.19.0 and 1.20.0 support advanced_redstone
+            assert all(
+                "advanced_redstone" in entry["features_supported"]
+                for entry in result_partial
+            )
 
     @pytest.mark.asyncio
     async def test_get_version_compatibility_issues(
@@ -326,8 +389,10 @@ class TestVersionCompatibilityService:
     ):
         """Test getting compatibility issues between versions."""
         # Mock VersionCompatibilityCRUD.get_compatibility to return our sample
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=sample_version_compatibility):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=sample_version_compatibility,
+        ):
             # Call the method
             result = await service.get_version_compatibility_issues(
                 "1.18.2", "1.18.0", mock_db_session
@@ -346,8 +411,10 @@ class TestVersionCompatibilityService:
     ):
         """Test getting recommended version pairs for a feature."""
         # Mock database query to return the full matrix
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Call the method for a feature
             result = await service.recommended_version_pairs(
                 "basic_blocks", mock_db_session
@@ -373,8 +440,10 @@ class TestVersionCompatibilityService:
     ):
         """Test getting a path for version transitions."""
         # Mock database query to return the full matrix
-        with patch('src.services.version_compatibility.execute_query',
-                  return_value=sample_version_matrix):
+        with patch(
+            "src.services.version_compatibility.execute_query",
+            return_value=sample_version_matrix,
+        ):
             # Test with compatible versions
             result = await service.get_version_transition_path(
                 "1.18.2", "1.20.0", mock_db_session
@@ -453,17 +522,23 @@ class TestVersionCompatibilityService:
                 "bedrock_version": "1.21.0",
                 "compatibility_score": 0.85,
                 "features_supported": ["basic_blocks"],
-                "features_unsupported": []
+                "features_unsupported": [],
             }
         ]
 
         # Mock CRUD operations
-        with patch('src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility',
-                  return_value=None):
-            with patch('src.services.version_compatibility.VersionCompatibilityCRUD.create_compatibility',
-                      return_value=True):
+        with patch(
+            "src.services.version_compatibility.VersionCompatibilityCRUD.get_compatibility",
+            return_value=None,
+        ):
+            with patch(
+                "src.services.version_compatibility.VersionCompatibilityCRUD.create_compatibility",
+                return_value=True,
+            ):
                 # Call the method
-                result = await service.sync_version_matrix(external_data, mock_db_session)
+                result = await service.sync_version_matrix(
+                    external_data, mock_db_session
+                )
 
                 # Verify the result
                 assert result is not None

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db import crud
+
 # DocumentEmbedding import removed as it's unused
 from models.embedding_models import (
     DocumentEmbeddingCreate,
@@ -15,10 +16,11 @@ from models.embedding_models import (
 
 router = APIRouter()
 
+
 @router.post(
     "/embeddings/",
     response_model=DocumentEmbeddingResponse,
-    status_code=status.HTTP_201_CREATED, # Default to 201, will change to 200 if existing
+    status_code=status.HTTP_201_CREATED,  # Default to 201, will change to 200 if existing
 )
 async def create_or_get_embedding(
     embedding_data: DocumentEmbeddingCreate,
@@ -44,10 +46,15 @@ async def create_or_get_embedding(
     )
     if existing_embedding:
         from fastapi.responses import JSONResponse
+
         # We need to manually convert Pydantic model for JSONResponse
         # existing_response = DocumentEmbeddingResponse.from_orm(existing_embedding) # pydantic v1
-        existing_response = DocumentEmbeddingResponse.model_validate(existing_embedding) # pydantic v2
-        return JSONResponse(content=existing_response.model_dump(), status_code=status.HTTP_200_OK)
+        existing_response = DocumentEmbeddingResponse.model_validate(
+            existing_embedding
+        )  # pydantic v2
+        return JSONResponse(
+            content=existing_response.model_dump(), status_code=status.HTTP_200_OK
+        )
 
     db_embedding = await crud.create_document_embedding(
         db=db,
@@ -55,7 +62,7 @@ async def create_or_get_embedding(
         document_source=embedding_data.document_source,
         content_hash=embedding_data.content_hash,
     )
-    return db_embedding # Will be automatically converted to DocumentEmbeddingResponse with 201 status
+    return db_embedding  # Will be automatically converted to DocumentEmbeddingResponse with 201 status
 
 
 @router.post("/embeddings/search/", response_model=List[DocumentEmbeddingResponse])
@@ -77,10 +84,11 @@ async def search_similar_embeddings(
         limit=search_query.limit,
     )
     if not similar_embeddings:
-        return [] # Return empty list, which is a valid response (200 OK)
+        return []  # Return empty list, which is a valid response (200 OK)
 
     # ORM objects will be automatically converted to DocumentEmbeddingResponse
     return similar_embeddings
+
 
 # Placeholder for future GET by ID, DELETE, etc.
 # @router.get("/embeddings/{embedding_id}", response_model=DocumentEmbeddingResponse)

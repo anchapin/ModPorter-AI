@@ -6,7 +6,6 @@ import os
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import text
 

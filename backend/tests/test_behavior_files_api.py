@@ -1,5 +1,3 @@
-
-
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
@@ -113,7 +111,9 @@ async def test_update_behavior_file_success(mock_crud, mock_behavior_file):
     mock_crud.update_behavior_file_content.return_value = mock_behavior_file
 
     update_data = {"content": updated_content}
-    response = client.put(f"/api/v1/behaviors/{mock_behavior_file.id}", json=update_data)
+    response = client.put(
+        f"/api/v1/behaviors/{mock_behavior_file.id}", json=update_data
+    )
 
     assert response.status_code == 200
     json_response = response.json()

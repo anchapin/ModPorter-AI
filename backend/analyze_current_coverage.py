@@ -19,7 +19,7 @@ def analyze_coverage():
     total_statements = data["totals"]["num_statements"]
     covered_statements = data["totals"]["covered_lines"]
     
-    print(f"=== CURRENT COVERAGE STATUS ===")
+    print("=== CURRENT COVERAGE STATUS ===")
     print(f"Overall coverage: {total_coverage:.1f}%")
     print(f"Total statements: {total_statements}")
     print(f"Covered statements: {covered_statements}")
@@ -46,7 +46,7 @@ def analyze_coverage():
     # Sort by potential impact
     files_data.sort(key=lambda x: x["potential_gain"], reverse=True)
     
-    print(f"\n=== HIGH IMPACT TARGETS FOR 80% COVERAGE ===")
+    print("\n=== HIGH IMPACT TARGETS FOR 80% COVERAGE ===")
     print(f"{'File':<50} {'Coverage':<10} {'Statements':<12} {'Missing':<10} {'Potential':<10}")
     print("-" * 100)
     
@@ -63,7 +63,7 @@ def analyze_coverage():
     print(f"\nTotal potential coverage gain: {total_potential:.0f} statements")
     
     # Specific target recommendations
-    print(f"\n=== RECOMMENDED TARGETS ===")
+    print("\n=== RECOMMENDED TARGETS ===")
     for file_info in files_data[:5]:
         filepath = file_info["path"]
         # Convert to relative path for test generation

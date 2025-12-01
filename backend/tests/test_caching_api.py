@@ -1,5 +1,3 @@
-
-from datetime import datetime
 from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
@@ -13,9 +11,15 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_cache_service():
-    with patch("src.api.caching.graph_caching_service", new_callable=MagicMock) as mock_service:
-        mock_service.get_cache_stats = AsyncMock(return_value={"overall": {"hits": 100, "misses": 20}})
-        mock_service.warm_up = AsyncMock(return_value={"success": True, "warmed_up": 50})
+    with patch(
+        "src.api.caching.graph_caching_service", new_callable=MagicMock
+    ) as mock_service:
+        mock_service.get_cache_stats = AsyncMock(
+            return_value={"overall": {"hits": 100, "misses": 20}}
+        )
+        mock_service.warm_up = AsyncMock(
+            return_value={"success": True, "warmed_up": 50}
+        )
         mock_service.invalidate = AsyncMock(return_value=10)
         mock_service.cache_configs = {
             "nodes": MagicMock(
@@ -29,7 +33,11 @@ def mock_cache_service():
                 enable_serialization=True,
             )
         }
-        mock_service.cache_stats = {"overall": MagicMock(hit_ratio=0.8, memory_usage_mb=50.0, avg_access_time_ms=10.0)}
+        mock_service.cache_stats = {
+            "overall": MagicMock(
+                hit_ratio=0.8, memory_usage_mb=50.0, avg_access_time_ms=10.0
+            )
+        }
         mock_service.l1_cache = {"nodes": {"key1": "value1"}}
         yield mock_service
 

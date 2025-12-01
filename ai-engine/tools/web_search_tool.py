@@ -114,7 +114,7 @@ class WebSearchTool(BaseTool):
         import time
         
         try:
-            logger.info(f"Attempting DuckDuckGo search")
+            logger.info("Attempting DuckDuckGo search")
             
             results = list(self.ddgs.text(
                 query,
@@ -125,7 +125,7 @@ class WebSearchTool(BaseTool):
                 logger.info(f"DuckDuckGo search succeeded, found {len(results)} results")
                 return results
             else:
-                logger.warning(f"DuckDuckGo search returned no results")
+                logger.warning("DuckDuckGo search returned no results")
                 return []
                 
         except Exception as e:

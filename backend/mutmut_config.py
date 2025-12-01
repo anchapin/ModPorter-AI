@@ -9,7 +9,7 @@ to identify weaknesses in test coverage and guide test improvement.
 import os
 import json
 from pathlib import Path
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Any
 
 
 # Mutation testing configuration

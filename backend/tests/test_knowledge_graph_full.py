@@ -7,22 +7,24 @@ import pytest
 import sys
 import os
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Add src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 # Mock the magic library before importing modules that use it
-sys.modules['magic'] = Mock()
-sys.modules['magic'].open = Mock(return_value=Mock())
-sys.modules['magic'].from_buffer = Mock(return_value='application/octet-stream')
-sys.modules['magic'].from_file = Mock(return_value='data')
+sys.modules["magic"] = Mock()
+sys.modules["magic"].open = Mock(return_value=Mock())
+sys.modules["magic"].from_buffer = Mock(return_value="application/octet-stream")
+sys.modules["magic"].from_file = Mock(return_value="data")
 
 # Import the module we're testing
-from api.knowledge_graph import router, get_knowledge_nodes, create_knowledge_node, update_knowledge_node
-from api.knowledge_graph import get_node_relationships, create_knowledge_relationship
-from api.knowledge_graph import get_knowledge_node
+from api.knowledge_graph import (
+    get_knowledge_nodes,
+    create_knowledge_node,
+    update_knowledge_node,
+)
+from api.knowledge_graph import create_knowledge_relationship
 from db.models import KnowledgeNode, KnowledgeRelationship
 
 
@@ -41,7 +43,7 @@ def mock_node_data():
         "type": "concept",
         "title": "Test Concept",
         "description": "A test concept for knowledge graph",
-        "metadata": {"source": "test", "confidence": 0.9}
+        "metadata": {"source": "test", "confidence": 0.9},
     }
 
 
@@ -54,7 +56,7 @@ def mock_relationship_data():
         "target_node_id": "test-node-2",
         "relationship_type": "relates_to",
         "weight": 0.8,
-        "metadata": {"source": "test"}
+        "metadata": {"source": "test"},
     }
 
 
@@ -126,10 +128,7 @@ class TestKnowledgeNodeAPI:
     async def test_create_knowledge_node_error(self, mock_db, mock_node_data):
         """Test error handling when creating a knowledge node"""
         # Arrange
-        invalid_node_data = {
-            "node_type": "invalid_type",
-            "name": "Test Node"
-        }
+        invalid_node_data = {"node_type": "invalid_type", "name": "Test Node"}
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -138,9 +137,11 @@ class TestKnowledgeNodeAPI:
         assert exc_info.value.status_code == 422
         assert "Invalid node_type" in str(exc_info.value.detail)
 
-    @patch('api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id')
-    @patch('api.knowledge_graph_fixed.KnowledgeNodeCRUD.update')
-    async def test_update_knowledge_node_success(self, mock_update_node, mock_get_node, mock_db, mock_node_data):
+    @patch("api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id")
+    @patch("api.knowledge_graph_fixed.KnowledgeNodeCRUD.update")
+    async def test_update_knowledge_node_success(
+        self, mock_update_node, mock_get_node, mock_db, mock_node_data
+    ):
         """Test successful update of a knowledge node"""
         # Arrange
         mock_node = MagicMock(spec=KnowledgeNode)
@@ -171,14 +172,18 @@ class TestKnowledgeNodeAPI:
         mock_get_node.assert_called_once_with(mock_db, "test-node-1")
         mock_update_node.assert_called_once_with(mock_db, "test-node-1", mock_node_data)
 
-    @patch('api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id')
-    async def test_update_knowledge_node_not_found(self, mock_get_node, mock_db, mock_node_data):
+    @patch("api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id")
+    async def test_update_knowledge_node_not_found(
+        self, mock_get_node, mock_db, mock_node_data
+    ):
         """Test update when knowledge node is not found"""
         # Arrange
         mock_get_node.return_value = None
 
         # Act
-        result = await update_knowledge_node("nonexistent-node", mock_node_data, mock_db)
+        result = await update_knowledge_node(
+            "nonexistent-node", mock_node_data, mock_db
+        )
 
         # Assert
         assert result["status"] == "error"
@@ -190,7 +195,7 @@ class TestKnowledgeNodeAPI:
 class TestKnowledgeRelationshipAPI:
     """Test knowledge relationship API endpoints"""
 
-    @patch('api.knowledge_graph.get_all_knowledge_relationships')
+    @patch("api.knowledge_graph.get_all_knowledge_relationships")
     async def test_get_knowledge_relationships_success(self, mock_get_rels, mock_db):
         """Test successful retrieval of knowledge relationships"""
         # Arrange
@@ -212,8 +217,10 @@ class TestKnowledgeRelationshipAPI:
         assert result["data"][0]["target_node_id"] == "node-2"
         mock_get_rels.assert_called_once_with(mock_db)
 
-    @patch('api.knowledge_graph.create_knowledge_relationship_crud')
-    async def test_create_knowledge_relationship_success(self, mock_create_rel, mock_db, mock_relationship_data):
+    @patch("api.knowledge_graph.create_knowledge_relationship_crud")
+    async def test_create_knowledge_relationship_success(
+        self, mock_create_rel, mock_db, mock_relationship_data
+    ):
         """Test successful creation of a knowledge relationship"""
         # Arrange
         mock_rel = MagicMock(spec=KnowledgeRelationship)
@@ -237,7 +244,7 @@ class TestKnowledgeRelationshipAPI:
 class TestKnowledgeGraphSearch:
     """Test knowledge graph search functionality"""
 
-    @patch('api.knowledge_graph.search_knowledge_graph_nodes')
+    @patch("api.knowledge_graph.search_knowledge_graph_nodes")
     async def test_search_knowledge_graph_success(self, mock_search, mock_db):
         """Test successful search of the knowledge graph"""
         # Arrange
@@ -256,7 +263,7 @@ class TestKnowledgeGraphSearch:
         assert result["query"] == "Java"
         mock_search.assert_called_once_with("Java", mock_db, limit=10)
 
-    @patch('api.knowledge_graph.search_knowledge_graph_nodes')
+    @patch("api.knowledge_graph.search_knowledge_graph_nodes")
     async def test_search_knowledge_graph_empty_result(self, mock_search, mock_db):
         """Test search with no results"""
         # Arrange
@@ -274,7 +281,7 @@ class TestKnowledgeGraphSearch:
 class TestKnowledgeGraphAnalytics:
     """Test knowledge graph analytics endpoints"""
 
-    @patch('api.knowledge_graph.get_graph_statistics')
+    @patch("api.knowledge_graph.get_graph_statistics")
     async def test_get_graph_statistics_success(self, mock_stats, mock_db):
         """Test successful retrieval of graph statistics"""
         # Arrange
@@ -282,7 +289,11 @@ class TestKnowledgeGraphAnalytics:
             "total_nodes": 150,
             "total_relationships": 300,
             "node_types": {"concept": 50, "feature": 70, "entity": 30},
-            "relationship_types": {"relates_to": 150, "contains": 100, "similar_to": 50}
+            "relationship_types": {
+                "relates_to": 150,
+                "contains": 100,
+                "similar_to": 50,
+            },
         }
 
         # Act
@@ -295,8 +306,10 @@ class TestKnowledgeGraphAnalytics:
         assert result["data"]["node_types"]["concept"] == 50
         mock_stats.assert_called_once_with(mock_db)
 
-    @patch('api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id')
-    async def test_get_node_by_id_success(self, mock_get_node, mock_db, mock_knowledge_node):
+    @patch("api.knowledge_graph_fixed.KnowledgeNodeCRUD.get_by_id")
+    async def test_get_node_by_id_success(
+        self, mock_get_node, mock_db, mock_knowledge_node
+    ):
         """Test successful retrieval of a node by ID"""
         # Arrange
         mock_get_node.return_value = mock_knowledge_node
@@ -310,8 +323,10 @@ class TestKnowledgeGraphAnalytics:
         assert result["data"]["title"] == "Test Concept"
         mock_get_node.assert_called_once_with(mock_db, "test-node-1")
 
-    @patch('api.knowledge_graph.get_knowledge_relationship_by_id')
-    async def test_get_relationship_by_id_success(self, mock_get_rel, mock_db, mock_knowledge_relationship):
+    @patch("api.knowledge_graph.get_knowledge_relationship_by_id")
+    async def test_get_relationship_by_id_success(
+        self, mock_get_rel, mock_db, mock_knowledge_relationship
+    ):
         """Test successful retrieval of a relationship by ID"""
         # Arrange
         mock_get_rel.return_value = mock_knowledge_relationship
@@ -326,8 +341,10 @@ class TestKnowledgeGraphAnalytics:
         assert result["data"]["target_node_id"] == "test-node-2"
         mock_get_rel.assert_called_once_with("test-rel-1", mock_db)
 
-    @patch('api.knowledge_graph.get_neighbors')
-    async def test_get_neighbors_success(self, mock_get_neighbors, mock_db, mock_knowledge_node):
+    @patch("api.knowledge_graph.get_neighbors")
+    async def test_get_neighbors_success(
+        self, mock_get_neighbors, mock_db, mock_knowledge_node
+    ):
         """Test successful retrieval of node neighbors"""
         # Arrange
         neighbor = MagicMock(spec=KnowledgeNode)
@@ -338,9 +355,7 @@ class TestKnowledgeGraphAnalytics:
         mock_get_neighbors.return_value = {
             "node": mock_knowledge_node,
             "neighbors": [neighbor],
-            "relationships": [
-                {"id": "rel-1", "type": "relates_to", "weight": 0.8}
-            ]
+            "relationships": [{"id": "rel-1", "type": "relates_to", "weight": 0.8}],
         }
 
         # Act
@@ -356,18 +371,14 @@ class TestKnowledgeGraphAnalytics:
 class TestGraphAlgorithms:
     """Test graph algorithm endpoints"""
 
-    @patch('api.knowledge_graph.calculate_shortest_path')
+    @patch("api.knowledge_graph.calculate_shortest_path")
     async def test_get_shortest_path_success(self, mock_path, mock_db):
         """Test successful calculation of shortest path"""
         # Arrange
         node = MagicMock(spec=KnowledgeNode)
         node.id = "node-1"
         node.title = "Node 1"
-        mock_path.return_value = {
-            "path": [node],
-            "length": 1,
-            "path_found": True
-        }
+        mock_path.return_value = {"path": [node], "length": 1, "path_found": True}
 
         # Act
         result = await get_shortest_path("node-1", "node-2", db=mock_db)
@@ -378,14 +389,14 @@ class TestGraphAlgorithms:
         assert len(result["data"]["path"]) == 1
         mock_path.assert_called_once_with("node-1", "node-2", mock_db)
 
-    @patch('api.knowledge_graph.calculate_shortest_path')
+    @patch("api.knowledge_graph.calculate_shortest_path")
     async def test_get_shortest_path_not_found(self, mock_path, mock_db):
         """Test shortest path when no path exists"""
         # Arrange
         mock_path.return_value = {
             "path": [],
-            "length": float('inf'),
-            "path_found": False
+            "length": float("inf"),
+            "path_found": False,
         }
 
         # Act
@@ -396,16 +407,14 @@ class TestGraphAlgorithms:
         assert result["data"]["path_found"] is False
         assert len(result["data"]["path"]) == 0
 
-    @patch('api.knowledge_graph.identify_central_nodes')
+    @patch("api.knowledge_graph.identify_central_nodes")
     async def test_get_central_nodes_success(self, mock_central, mock_db):
         """Test successful identification of central nodes"""
         # Arrange
         node = MagicMock(spec=KnowledgeNode)
         node.id = "central-node"
         node.title = "Central Node"
-        mock_central.return_value = [
-            {"node": node, "centrality_score": 0.9}
-        ]
+        mock_central.return_value = [{"node": node, "centrality_score": 0.9}]
 
         # Act
         result = await get_central_nodes(algorithm="betweenness", limit=10, db=mock_db)
@@ -417,7 +426,7 @@ class TestGraphAlgorithms:
         assert result["data"][0]["centrality_score"] == 0.9
         mock_central.assert_called_once_with("betweenness", mock_db, limit=10)
 
-    @patch('api.knowledge_graph.detect_graph_clusters')
+    @patch("api.knowledge_graph.detect_graph_clusters")
     async def test_get_graph_clusters_success(self, mock_clusters, mock_db):
         """Test successful detection of graph clusters"""
         # Arrange
@@ -425,12 +434,7 @@ class TestGraphAlgorithms:
         node.id = "cluster-node"
         node.title = "Cluster Node"
         mock_clusters.return_value = [
-            {
-                "id": "cluster-1",
-                "nodes": [node],
-                "density": 0.8,
-                "modularity": 0.7
-            }
+            {"id": "cluster-1", "nodes": [node], "density": 0.8, "modularity": 0.7}
         ]
 
         # Act

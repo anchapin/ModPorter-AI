@@ -26,6 +26,57 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
+// Mock navigation to prevent JSDOM "Not implemented: navigation" errors
+// Override JSDOM's internal navigation functions before they can cause errors
+try {
+  // Mock the navigate function at the module level
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const jsdomNotImplemented = require('jsdom/lib/jsdom/browser/not-implemented.js');
+  const originalNotImplemented = jsdomNotImplemented.module.exports;
+
+  // Override the "not implemented" function for navigation
+  jsdomNotImplemented.module.exports = function() {
+    const error = originalNotImplemented.apply(this, arguments);
+    // Swallow navigation errors specifically
+    if (arguments[0] === 'navigation (except hash changes)') {
+      console.warn('Navigation blocked in test environment');
+      return undefined; // Don't throw error
+    }
+    return error;
+  };
+} catch {
+  // Fallback if JSDOM internals aren't available
+  console.warn('Could not override JSDOM navigation errors');
+}
+
+// Mock window.location methods safely using delete + define
+const locationProps = ['assign', 'replace', 'reload'];
+locationProps.forEach(prop => {
+  try {
+    delete window.location[prop];
+    Object.defineProperty(window.location, prop, {
+      value: vi.fn(),
+      writable: true,
+      configurable: true
+    });
+  } catch (error) {
+    // Property might not be configurable, skip it
+    console.warn(`Could not mock location.${prop}:`, error.message);
+  }
+});
+
+// Mock navigator to prevent navigation-related errors
+Object.defineProperty(window, 'navigator', {
+  value: {
+    ...window.navigator,
+    share: vi.fn().mockResolvedValue(undefined),
+    clipboard: {
+      writeText: vi.fn().mockResolvedValue(undefined),
+    },
+  },
+  writable: true,
+});
+
 // Mock fetch implementation to replace MSW
 const mockFetch = vi.fn((url: string, options?: any) => {
   console.log('Mock fetch called:', url, options?.method);

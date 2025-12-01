@@ -6,10 +6,7 @@ This script generates tests for modules with low coverage to increase overall te
 import os
 import sys
 import ast
-import inspect
-import json
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Optional, Any
 from unittest.mock import Mock
 
 # Add src directory to Python path
@@ -72,7 +69,7 @@ def generate_test_for_function(module_name: str, func_info: Dict[str, Any]) -> s
     """Generate a test function for a given function."""
     func_name = func_info['name']
     args = func_info['args']
-    line = func_info['line']
+    func_info['line']
 
     # Create mock arguments based on parameter names
     mock_args = []
@@ -103,7 +100,7 @@ def generate_test_for_function(module_name: str, func_info: Dict[str, Any]) -> s
 
     if args:
         test_lines.append(f"        # Call {func_name} with mock arguments")
-        test_lines.append(f"        try:")
+        test_lines.append("        try:")
         test_lines.append(f"            from {module_name} import {func_name}")
         if len(mock_args) > 0:
             test_lines.append(f"            result = {func_name}({', '.join(mock_args)})")
@@ -114,7 +111,7 @@ def generate_test_for_function(module_name: str, func_info: Dict[str, Any]) -> s
         test_lines.append("        except ImportError as e:")
         test_lines.append("            pytest.skip(f'Could not import {func_name}: {e}')")
     else:
-        test_lines.append(f"        try:")
+        test_lines.append("        try:")
         test_lines.append(f"            from {module_name} import {func_name}")
         test_lines.append(f"            pytest.skip(f'Function {func_name} has no arguments to test')")
         test_lines.append("        except ImportError as e:")
@@ -126,7 +123,7 @@ def generate_test_for_class(module_name: str, class_info: Dict[str, Any]) -> str
     """Generate test functions for a class and its methods."""
     class_name = class_info['name']
     methods = class_info['methods']
-    line = class_info['line']
+    class_info['line']
 
     test_lines = [
         f"    def test_{class_name}_class_import(self):",
@@ -155,7 +152,7 @@ def generate_test_for_class(module_name: str, class_info: Dict[str, Any]) -> str
             f"                assert hasattr(instance, '{method}')",
             "            except Exception:",
             "                # Skip instance creation if it fails",
-            f"                assert True  # At least import worked",
+            "                assert True  # At least import worked",
             "        except ImportError as e:",
             f"            pytest.skip(f'Could not import {class_name}: {{e}}')",
             "",
@@ -175,14 +172,14 @@ def generate_test_file(module_path: str, output_dir: str) -> str:
 
     # Generate test file content
     test_content = [
-        f'"""',
+        '"""',
         f'Generated tests for {module_name}',
-        f'This test file is auto-generated to improve code coverage.',
-        f'',
+        'This test file is auto-generated to improve code coverage.',
+        '',
         'This file tests imports and basic functionality.',
-        f'',
+        '',
         'Note: These tests focus on improving coverage rather than detailed functionality.',
-        f'',
+        '',
         '"""\n',
         'import pytest',
         'import sys',

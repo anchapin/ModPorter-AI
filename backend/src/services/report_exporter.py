@@ -33,8 +33,10 @@ class ReportExporter:
         # Prepare data for template with proper HTML escaping
         context = {
             "report": self._escape_report_data(report.to_dict()),
-            "generation_date": html.escape(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-            "title": html.escape(f"Conversion Report - {report.metadata.job_id}")
+            "generation_date": html.escape(
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ),
+            "title": html.escape(f"Conversion Report - {report.metadata.job_id}"),
         }
 
         # Template substitution with escaped data
@@ -61,23 +63,35 @@ class ReportExporter:
 
         # Summary data
         summary = report.summary
-        csv_content.append(f"Summary,Overall Success Rate,{summary.overall_success_rate}%")
+        csv_content.append(
+            f"Summary,Overall Success Rate,{summary.overall_success_rate}%"
+        )
         csv_content.append(f"Summary,Total Features,{summary.total_features}")
         csv_content.append(f"Summary,Converted Features,{summary.converted_features}")
-        csv_content.append(f"Summary,Partially Converted,{summary.partially_converted_features}")
+        csv_content.append(
+            f"Summary,Partially Converted,{summary.partially_converted_features}"
+        )
         csv_content.append(f"Summary,Failed Features,{summary.failed_features}")
-        csv_content.append(f"Summary,Assumptions Applied,{summary.assumptions_applied_count}")
-        csv_content.append(f"Summary,Processing Time (s),{summary.processing_time_seconds}")
+        csv_content.append(
+            f"Summary,Assumptions Applied,{summary.assumptions_applied_count}"
+        )
+        csv_content.append(
+            f"Summary,Processing Time (s),{summary.processing_time_seconds}"
+        )
         csv_content.append(f"Summary,Quality Score,{summary.conversion_quality_score}")
 
         # Feature analysis
         for feature in report.feature_analysis.features:
             csv_content.append(f"Features,{feature.name},{feature.status}")
-            csv_content.append(f"Features,{feature.name} Compatibility,{feature.compatibility_score}%")
+            csv_content.append(
+                f"Features,{feature.name} Compatibility,{feature.compatibility_score}%"
+            )
 
         # Assumptions
         for assumption in report.assumptions_report.assumptions:
-            csv_content.append(f"Assumptions,{assumption.original_feature},{assumption.impact_level}")
+            csv_content.append(
+                f"Assumptions,{assumption.original_feature},{assumption.impact_level}"
+            )
 
         return "\n".join(csv_content)
 
@@ -107,7 +121,7 @@ class ReportExporter:
             "job_id": report.metadata.job_id,
             "generated_at": report.metadata.generation_timestamp.isoformat(),
             "version": report.metadata.version,
-            "export_formats": list(package.keys())
+            "export_formats": list(package.keys()),
         }
         package["metadata.json"] = json.dumps(metadata, indent=2)
 
@@ -290,6 +304,7 @@ class PDFExporter:
         """Check if PDF export dependencies are available."""
         try:
             import importlib.util
+
             spec = importlib.util.find_spec("weasyprint")  # or reportlab
             return spec is not None
         except ImportError:
@@ -321,5 +336,5 @@ class PDFExporter:
         """Export report to PDF and return as base64 string."""
         pdf_bytes = self.export_to_pdf(report)
         if pdf_bytes:
-            return base64.b64encode(pdf_bytes).decode('utf-8')
+            return base64.b64encode(pdf_bytes).decode("utf-8")
         return None
