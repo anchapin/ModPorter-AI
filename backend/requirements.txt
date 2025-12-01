@@ -42,3 +42,4 @@ black==25.9.0
 
 # Utilities
 python-dotenv==1.2.1
+psutil>=5.9.0
