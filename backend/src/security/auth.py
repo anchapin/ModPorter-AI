@@ -1,18 +1,3 @@
-The bug lies in the standalone `get_current_user` dependency function at the end of the file. It is currently a placeholder that always raises an `HTTPException` indicating "Authentication not initialized" and contains a `TODO` comment. This prevents the module from being directly used in a FastAPI application without modification.
-
-The `SecurityManager` class already provides a robust `get_current_user` method (`SecurityManager.get_current_user`) that correctly handles token verification and user retrieval. The issue is how to expose this functionality as a module-level dependency that can be imported and used directly (e.g., `from auth import get_current_user`).
-
-Given the feedback that a previous fix was marked "INCORRECT," it suggests that simply removing the placeholder was not desired, and a functional, directly importable `get_current_user` is expected.
-
-To fix this, we need to:
-1.  Remove the `TODO` and the placeholder `HTTPException`.
-2.  Provide a mechanism for the application to inject an initialized `SecurityManager` instance into the `auth` module. This is typically done via a global variable that is set during application startup.
-3.  Modify the module-level `get_current_user` to use this globally configured `SecurityManager` instance.
-4.  Add robust error handling and clear guidance for the application developer if the `SecurityManager` is not configured.
-
-This solution introduces `_global_security_manager_instance`, `set_global_security_manager`, and `get_global_security_manager` to manage the singleton `SecurityManager` instance that the module-level `get_current_user` will use.
-
-```python
 """
 Production Security and Authentication System
 Comprehensive security implementation with JWT, RBAC, and session management
