@@ -17,7 +17,7 @@ setup(
         'pgvector>=0.1.1',
         'aiosqlite>=0.19.0',
         'redis[asyncio]==7.0.0',
-        'python-multipart==0.0.20',
+        'python-multipart==0.0.22',
         'tomli==2.3.0',
         'python-magic==0.4.27',
         'httpx==0.28.1',
