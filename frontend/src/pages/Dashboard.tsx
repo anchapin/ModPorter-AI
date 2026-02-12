@@ -3,12 +3,11 @@
  * Comprehensive dashboard with conversion, history, and management features
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ConversionUploadEnhanced } from '../components/ConversionUpload/ConversionUploadEnhanced';
 import { ConversionReportContainer } from '../components/ConversionReport/ConversionReportContainer';
 import { ConversionHistory, useConversionHistory } from '../components/ConversionHistory';
 import { PerformanceBenchmark } from '../components/PerformanceBenchmark';
-import { downloadResult } from '../services/api';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
@@ -61,24 +60,6 @@ export const Dashboard: React.FC = () => {
       error: error
     });
   }, [updateConversion]);
-
-  // Handle download from history
-  const handleHistoryDownload = useCallback(async (jobId: string) => {
-    try {
-      const { blob, filename } = await downloadResult(jobId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      console.error('Download failed:', error);
-      alert(`Failed to download: ${error.message || 'Unknown error'}`);
-    }
-  }, []);
 
   // Update conversion file info
   // const updateConversionInfo = useCallback((jobId: string, filename: string, fileSize?: number) => {

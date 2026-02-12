@@ -60,7 +60,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
 
   // Progress tracking
   const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
-  const [usingWebSocket, setUsingWebSocket] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
 
   // WebSocket and polling refs
@@ -126,7 +125,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     setUploadProgress(0);
     setIsConverting(false);
     setIsUploading(false);
-    setUsingWebSocket(false);
     setError(null);
     setConnectionStatus('disconnected');
   }, [cleanup]);
@@ -150,61 +148,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
 
     return statusMessages[currentStatus.status] || currentStatus.message || 'Processing...';
   }, [currentStatus, isUploading, uploadProgress]);
-
-  // Setup WebSocket or polling for progress tracking
-  const setupProgressTracking = useCallback((jobId: string) => {
-    // Try WebSocket first
-    const ws = createConversionWebSocket(jobId);
-
-    ws.onStatus((status) => {
-      if (!isMountedRef.current) return;
-      setConnectionStatus(status);
-      if (status === 'connected') {
-        setUsingWebSocket(true);
-      }
-    });
-
-    ws.onMessage((data) => {
-      if (!isMountedRef.current) return;
-      console.log('[WebSocket] Progress update:', data);
-      setCurrentStatus(data);
-
-      // Check for terminal states
-      if (data.status === ConversionStatusEnum.COMPLETED) {
-        cleanup();
-        setIsConverting(false);
-        if (onConversionComplete) {
-          onConversionComplete(jobId);
-        }
-      } else if (data.status === ConversionStatusEnum.FAILED) {
-        cleanup();
-        setIsConverting(false);
-        const errorMsg = data.error || data.message || 'Conversion failed';
-        setError(errorMsg);
-        if (onConversionFailed) {
-          onConversionFailed(jobId, errorMsg);
-        }
-      } else if (data.status === ConversionStatusEnum.CANCELLED) {
-        cleanup();
-        setIsConverting(false);
-      }
-    });
-
-    ws.connect();
-    wsRef.current = ws;
-
-    // Fallback polling after 5 seconds if WebSocket doesn't connect
-    const pollingFallbackTimeout = setTimeout(() => {
-      if (isMountedRef.current && connectionStatus !== 'connected') {
-        console.log('[Fallback] Starting polling due to WebSocket connection delay');
-        setUsingWebSocket(false);
-        startPolling(jobId);
-      }
-    }, 5000);
-
-    // Store timeout reference for cleanup
-    return () => clearTimeout(pollingFallbackTimeout);
-  }, [connectionStatus, cleanup, onConversionComplete, onConversionFailed]);
 
   // Start polling as fallback
   const startPolling = useCallback((jobId: string) => {
@@ -246,6 +189,57 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
       }
     }, 3000);
   }, [cleanup, onConversionComplete, onConversionFailed]);
+
+  // Setup WebSocket or polling for progress tracking
+  const setupProgressTracking = useCallback((jobId: string) => {
+    // Try WebSocket first
+    const ws = createConversionWebSocket(jobId);
+
+    ws.onStatus((status) => {
+      if (!isMountedRef.current) return;
+      setConnectionStatus(status);
+    });
+
+    ws.onMessage((data) => {
+      if (!isMountedRef.current) return;
+      console.log('[WebSocket] Progress update:', data);
+      setCurrentStatus(data);
+
+      // Check for terminal states
+      if (data.status === ConversionStatusEnum.COMPLETED) {
+        cleanup();
+        setIsConverting(false);
+        if (onConversionComplete) {
+          onConversionComplete(jobId);
+        }
+      } else if (data.status === ConversionStatusEnum.FAILED) {
+        cleanup();
+        setIsConverting(false);
+        const errorMsg = data.error || data.message || 'Conversion failed';
+        setError(errorMsg);
+        if (onConversionFailed) {
+          onConversionFailed(jobId, errorMsg);
+        }
+      } else if (data.status === ConversionStatusEnum.CANCELLED) {
+        cleanup();
+        setIsConverting(false);
+      }
+    });
+
+    ws.connect();
+    wsRef.current = ws;
+
+    // Fallback polling after 5 seconds if WebSocket doesn't connect
+    const pollingFallbackTimeout = setTimeout(() => {
+      if (isMountedRef.current && connectionStatus !== 'connected') {
+        console.log('[Fallback] Starting polling due to WebSocket connection delay');
+            startPolling(jobId);
+      }
+    }, 5000);
+
+    // Store timeout reference for cleanup
+    return () => clearTimeout(pollingFallbackTimeout);
+  }, [connectionStatus, cleanup, onConversionComplete, onConversionFailed, startPolling]);
 
   // Handle file drop
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {

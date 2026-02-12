@@ -6,10 +6,9 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ConversionUploadEnhanced } from '../ConversionUpload/ConversionUploadEnhanced';
-import { ConversionProgress } from '../ConversionProgress/ConversionProgress';
+import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
-import { getConversionStatus, downloadResult } from '../../services/api';
-import { ConversionStatusEnum } from '../../types/api';
+import { downloadResult } from '../../services/api';
 import './ConversionFlowManager.css';
 
 export interface ConversionFlowState {

@@ -1,11 +1,9 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ConversionUploadReal } from './components/ConversionUpload/ConversionUploadReal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
 import './App.css';
-import styles from './App.module.css';
 
 // Lazy load heavy components
 const DocumentationSimple = lazy(() => import('./pages/DocumentationSimple'));
@@ -19,11 +17,7 @@ const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage')
 
 function App() {
   console.log('App component is rendering...');
-  
-  const handleConversionStart = (data: any) => {
-    console.log('Conversion started:', data);
-  };
-  
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
