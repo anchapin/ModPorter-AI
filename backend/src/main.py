@@ -28,7 +28,7 @@ from services.report_models import InteractiveReport, FullConversionReport # For
 from services.report_generator import ConversionReportGenerator
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
@@ -128,6 +128,7 @@ app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-file
 app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
 app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
+app.include_router(conversions.router)  # Conversions API + WebSocket
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
@@ -271,7 +272,18 @@ async def upload_file(file: UploadFile = File(...)):
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
+    from websocket.progress_handler import ProgressHandler
+
     logger.info(f"Starting AI simulation for job_id: {job_id}")
+
+    # Broadcast initial queued status
+    await ProgressHandler.broadcast_progress(
+        conversion_id=job_id,
+        agent="ConversionWorkflow",
+        status="queued",
+        progress=0,
+        message="Job queued, waiting to start"
+    )
 
     # Temporary directory for simulated pack output
     # Base temp dir for all simulated packs by this job
@@ -312,8 +324,14 @@ async def simulate_ai_conversion(job_id: str):
                 )
 
             try:
-                # Stage 1: Preprocessing -> Processing
-                await asyncio.sleep(2) # Reduced sleep for faster testing
+                # Stage 1: JavaAnalyzerAgent (0-25%)
+                await ProgressHandler.broadcast_agent_start(job_id, "JavaAnalyzerAgent", "Analyzing Java mod structure and dependencies")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_update(job_id, "JavaAnalyzerAgent", 10, "Parsing Java AST...")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_complete(job_id, "JavaAnalyzerAgent", "Java analysis complete")
+
+                # Stage 2: Preprocessing -> Processing
                 job = await crud.update_job_status(session, PyUUID(job_id), "processing")
                 await crud.upsert_progress(session, PyUUID(job_id), 25)
                 mirror = mirror_dict_from_job(job, 25)
@@ -322,26 +340,62 @@ async def simulate_ai_conversion(job_id: str):
                 await cache.set_progress(job_id, 25)
                 logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
-                # Stage 2: Processing -> Postprocessing
-                await asyncio.sleep(3) # Reduced sleep
+                # Stage 3: BedrockArchitectAgent (25-50%)
+                await ProgressHandler.broadcast_agent_start(job_id, "BedrockArchitectAgent", "Designing Bedrock conversion architecture")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_update(job_id, "BedrockArchitectAgent", 35, "Mapping Java components to Bedrock equivalents...")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_complete(job_id, "BedrockArchitectAgent", "Architecture design complete")
+
+                # Stage 4: Processing -> Postprocessing
+                await asyncio.sleep(1)
                 job = await crud.get_job(session, PyUUID(job_id))
                 if job.status == "cancelled":
                     logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                     return
                 job = await crud.update_job_status(session, PyUUID(job_id), "postprocessing")
+                await crud.upsert_progress(session, PyUUID(job_id), 50)
+                mirror = mirror_dict_from_job(job, 50)
+                conversion_jobs_db[job_id] = mirror
+                await cache.set_job_status(job_id, mirror.model_dump())
+                await cache.set_progress(job_id, 50)
+                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 50%")
+
+                # Stage 5: LogicTranslatorAgent (50-75%)
+                await ProgressHandler.broadcast_agent_start(job_id, "LogicTranslatorAgent", "Translating Java logic to JavaScript")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_update(job_id, "LogicTranslatorAgent", 60, "Converting game logic and behaviors...")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_complete(job_id, "LogicTranslatorAgent", "Logic translation complete")
+
+                # Stage 6: AssetConverterAgent (75-90%)
+                await ProgressHandler.broadcast_agent_start(job_id, "AssetConverterAgent", "Converting assets (textures, models, sounds)")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_update(job_id, "AssetConverterAgent", 80, "Processing texture files...")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_complete(job_id, "AssetConverterAgent", "Asset conversion complete")
+
+                # Update to 75% progress
                 await crud.upsert_progress(session, PyUUID(job_id), 75)
+                await cache.set_progress(job_id, 75)
                 mirror = mirror_dict_from_job(job, 75)
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
-                await cache.set_progress(job_id, 75)
-                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 75%")
+                logger.info(f"Job {job_id}: Progress: 75%")
 
-                # Stage 3: Postprocessing -> Completed
-                await asyncio.sleep(2) # Reduced sleep
+                # Stage 7: Postprocessing -> Completed
+                await asyncio.sleep(1)
                 job = await crud.get_job(session, PyUUID(job_id))
                 if job.status == "cancelled":
                     logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                     return
+
+                # Stage 8: PackagingAgent (90-100%)
+                await ProgressHandler.broadcast_agent_start(job_id, "PackagingAgent", "Packaging add-on into .mcaddon file")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_update(job_id, "PackagingAgent", 95, "Creating manifest and packaging files...")
+                await asyncio.sleep(1)
+                await ProgressHandler.broadcast_agent_complete(job_id, "PackagingAgent", "Packaging complete")
 
                 # --- Simulate creating pack structure ---
                 bp_name = f"{original_mod_name} BP"
@@ -429,6 +483,9 @@ async def simulate_ai_conversion(job_id: str):
                 await cache.set_progress(job_id, 100)
                 logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output processed into addon DB. Original ZIP at: {mock_output_filepath}")
 
+                # Broadcast completion to WebSocket clients
+                await ProgressHandler.broadcast_conversion_complete(job_id, result_url)
+
             except Exception as e_inner:
                 logger.error(f"Error during AI simulation processing for job {job_id}: {e_inner}", exc_info=True)
                 job = await crud.update_job_status(session, PyUUID(job_id), "failed")
@@ -437,6 +494,9 @@ async def simulate_ai_conversion(job_id: str):
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
                 logger.error(f"Job {job_id}: Status updated to FAILED due to error in processing.")
+
+                # Broadcast failure to WebSocket clients
+                await ProgressHandler.broadcast_conversion_failed(job_id, str(e_inner))
             finally:
                 # Clean up the temporary simulated pack directory
                 if os.path.exists(simulated_pack_output_path):
