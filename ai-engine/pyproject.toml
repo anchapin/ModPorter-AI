@@ -15,7 +15,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -27,27 +26,27 @@ dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "python-multipart>=0.0.6",
-    
+
     # AI Framework
-    "crewai>=0.140.0",
-    "langchain>=0.3.0", 
+    "crewai>=0.11.0",  # Latest available is 0.11.2
+    "langchain>=0.3.0",
     "langchain-openai>=0.2.0",
     "langchain-ollama>=0.1.0",
     "openai>=1.0.0",
     "sentence-transformers",
-    
+
     # Vector Database (pin version for embedchain compatibility)
     "chromadb<1.2.0",
-    
+
     # Data Processing
     "numpy",
     "python-dotenv",
-    
+
     # Java analysis
     "javalang>=0.13.0",
-    
+
     # File processing
-    "Pillow",
+    "Pillow>=10.0.0",  # For texture conversion
     "pydub",
     
     # HTTP Client
