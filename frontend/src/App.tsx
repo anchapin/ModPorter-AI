@@ -10,6 +10,7 @@ import styles from './App.module.css';
 // Lazy load heavy components
 const DocumentationSimple = lazy(() => import('./pages/DocumentationSimple'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ConvertPage = lazy(() => import('./pages/ConvertPage'));
 const ComparisonView = lazy(() => import('./components/ComparisonView'));
 const BehavioralTestWrapper = lazy(() => import('./components/BehavioralTest/BehavioralTestWrapper'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
@@ -32,19 +33,13 @@ function App() {
 
             <main>
               <Routes>
-                <Route 
-                  path="/" 
+                <Route
+                  path="/"
                   element={
-                    <div className={styles.heroSection}>
-                      <h1 className={styles.heroTitle}>
-                        ModPorter AI
-                      </h1>
-                      <p className={styles.heroDescription}>
-                        Convert Minecraft Java Edition mods to Bedrock Edition add-ons with AI
-                      </p>
-                      <ConversionUploadReal onConversionStart={handleConversionStart} />
-                    </div>
-                  } 
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <ConvertPage />
+                    </Suspense>
+                  }
                 />
                 <Route path="/dashboard" element={
                   <Suspense fallback={<div>Loading Dashboard...</div>}>

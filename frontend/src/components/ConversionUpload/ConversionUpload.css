@@ -549,26 +549,104 @@
   color: #888;
 }
 
+/* Connection Status Badge */
+.connection-status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.connection-status-badge .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.connection-status-badge .status-dot.connecting {
+  background-color: #ffc107;
+}
+
+.connection-status-badge .status-dot.connected {
+  background-color: #28a745;
+  animation: none;
+}
+
+.connection-status-badge .status-dot.disconnected,
+.connection-status-badge .status-dot.error {
+  background-color: #dc3545;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Convert button specific styles */
+.convert-button {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: white;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 240px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+}
+
+.convert-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+.convert-button:disabled {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .conversion-upload {
     padding: 1rem;
     margin: 1rem;
   }
-  
+
   .dropzone {
     height: 200px;
     padding: 20px 15px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .upload-button,
   .cancel-button,
-  .download-button {
+  .download-button,
+  .convert-button {
     width: 100%;
     min-width: auto;
+  }
+
+  .connection-status-badge {
+    font-size: 0.75rem;
   }
 }
