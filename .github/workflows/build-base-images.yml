@@ -77,8 +77,8 @@ jobs:
     - name: Extract Python dependencies hash
       id: deps-hash
       run: |
-        # Create combined hash of all Python requirements
-        HASH=$(cat ai-engine/requirements.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        # Hash only the files actually copied by Dockerfile
+        HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Python deps hash: $HASH"
     
