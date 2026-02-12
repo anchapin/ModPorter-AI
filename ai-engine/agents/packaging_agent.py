@@ -20,6 +20,7 @@ from agents.block_item_generator import BlockItemGenerator
 from agents.entity_converter import EntityConverter
 from agents.file_packager import FilePackager
 from agents.addon_validator import AddonValidator
+from agents.packaging_validator import PackagingValidator
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class PackagingAgent:
         self.entity_converter = EntityConverter()
         self.file_packager = FilePackager()
         self.addon_validator = AddonValidator()
+        self.packaging_validator = PackagingValidator()
         
         # Bedrock package structure templates
         self.manifest_template = {
@@ -122,7 +124,11 @@ class PackagingAgent:
             PackagingAgent.generate_blocks_and_items_tool,
             PackagingAgent.generate_entities_tool,
             PackagingAgent.package_enhanced_addon_tool,
-            PackagingAgent.validate_enhanced_addon_tool
+            PackagingAgent.validate_enhanced_addon_tool,
+            # Comprehensive validation tools (Issue #325)
+            PackagingAgent.validate_mcaddon_structure_tool,
+            PackagingAgent.validate_manifest_schema_tool,
+            PackagingAgent.generate_validation_report_tool
         ]
     
     def generate_manifest(self, mod_info: str, pack_type: str) -> str:
@@ -819,9 +825,148 @@ class PackagingAgent:
             result["addon_path"] = addon_path
             
             logger.info(f"Enhanced validation completed. Score: {result.get('overall_score', 0)}/100")
-            
+
             return json.dumps(result)
-            
+
         except Exception as e:
             logger.error(f"Enhanced validation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+
+    # Comprehensive validation tools (Issue #325)
+
+    @tool
+    @staticmethod
+    def validate_mcaddon_structure_tool(mcaddon_path: str) -> str:
+        """
+        Validate .mcaddon file structure using comprehensive validator.
+
+        Validates:
+        - Correct folder structure (behavior_packs/, resource_packs/)
+        - Manifest files against JSON schemas
+        - UUID uniqueness and format
+        - Block and item definitions
+        - File integrity
+
+        Args:
+            mcaddon_path: Path to .mcaddon file
+
+        Returns:
+            JSON string with validation results
+        """
+        try:
+            agent = PackagingAgent.get_instance()
+            validator = agent.packaging_validator
+
+            result = validator.validate_mcaddon(Path(mcaddon_path))
+
+            # Convert ValidationResult to JSON-serializable dict
+            result_dict = {
+                "is_valid": result.is_valid,
+                "overall_score": result.overall_score,
+                "issues": [
+                    {
+                        "severity": issue.severity.value,
+                        "category": issue.category,
+                        "message": issue.message,
+                        "file_path": str(issue.file_path) if issue.file_path else None,
+                        "suggestion": issue.suggestion
+                    }
+                    for issue in result.issues
+                ],
+                "stats": result.stats,
+                "compatibility": result.compatibility,
+                "file_structure": result.file_structure
+            }
+
+            return json.dumps(result_dict)
+
+        except Exception as e:
+            logger.error(f"Structure validation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+
+    @tool
+    @staticmethod
+    def validate_manifest_schema_tool(manifest_data: str) -> str:
+        """
+        Validate a manifest.json against Bedrock JSON schema.
+
+        Args:
+            manifest_data: JSON string or file path containing manifest
+
+        Returns:
+            JSON string with validation results
+        """
+        try:
+            agent = PackagingAgent.get_instance()
+            validator = agent.packaging_validator
+
+            # Try to parse as file path first, then as JSON data
+            manifest_path = Path(manifest_data)
+            if manifest_path.exists() and manifest_path.is_file():
+                with open(manifest_path, 'r') as f:
+                    manifest = json.load(f)
+            else:
+                manifest = json.loads(manifest_data)
+
+            # Validate using the manifest schema
+            if "manifest" not in validator.schemas:
+                return json.dumps({
+                    "success": False,
+                    "error": "Manifest schema not loaded"
+                })
+
+            try:
+                import jsonschema
+                jsonschema.validate(manifest, validator.schemas["manifest"])
+                return json.dumps({
+                    "success": True,
+                    "valid": True,
+                    "message": "Manifest passes schema validation"
+                })
+            except jsonschema.ValidationError as e:
+                return json.dumps({
+                    "success": True,
+                    "valid": False,
+                    "error": e.message,
+                    "path": list(e.path) if e.path else [],
+                    "schema_path": list(e.schema_path) if e.schema_path else []
+                })
+
+        except json.JSONDecodeError as e:
+            return json.dumps({
+                "success": False,
+                "error": f"Invalid JSON: {e}"
+            })
+        except Exception as e:
+            logger.error(f"Manifest schema validation error: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+
+    @tool
+    @staticmethod
+    def generate_validation_report_tool(mcaddon_path: str) -> str:
+        """
+        Generate a human-readable validation report for .mcaddon file.
+
+        Args:
+            mcaddon_path: Path to .mcaddon file
+
+        Returns:
+            String with formatted validation report
+        """
+        try:
+            agent = PackagingAgent.get_instance()
+            validator = agent.packaging_validator
+
+            result = validator.validate_mcaddon(Path(mcaddon_path))
+            report = validator.generate_report(result)
+
+            return json.dumps({
+                "success": True,
+                "report": report,
+                "is_valid": result.is_valid,
+                "score": result.overall_score
+            })
+
+        except Exception as e:
+            logger.error(f"Report generation error: {e}")
             return json.dumps({"success": False, "error": str(e)})

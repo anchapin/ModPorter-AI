@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Minecraft Bedrock Item Definition",
+  "description": "Schema for Bedrock Edition item definitions in items/ folder",
+  "type": "object",
+  "required": ["format_version", "minecraft:item"],
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$",
+      "description": "Item format version (e.g., '1.20.0')"
+    },
+    "minecraft:item": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "object",
+          "required": ["identifier"],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+:[a-z0-9_]+$",
+              "description": "Item identifier (namespace:name)"
+            },
+            "register_to_create_menu": {
+              "type": "boolean",
+              "description": "Whether to show in creative menu"
+            },
+            "is_experimental": {
+              "type": "boolean",
+              "description": "Whether this is an experimental feature"
+            },
+            "category": {
+              "type": "string",
+              "enum": [
+                "construction",
+                "nature",
+                "equipment",
+                "items",
+                "commands",
+                "redstone",
+                "any"
+              ],
+              "description": "Creative menu category"
+            }
+          }
+        },
+        "components": {
+          "type": "object",
+          "description": "Item components defining behavior",
+          "properties": {
+            "minecraft:display_name": {
+              "type": "object",
+              "properties": {
+                "value": {"type": "string"}
+              }
+            },
+            "minecraft:max_stack_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64,
+              "description": "Maximum items per stack"
+            },
+            "minecraft:durability": {
+              "type": "object",
+              "properties": {
+                "max_durability": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "damage_chance": {
+                  "type": "object",
+                  "properties": {
+                    "min": {"type": "number", "minimum": 0, "maximum": 1},
+                    "max": {"type": "number", "minimum": 0, "maximum": 1}
+                  }
+                }
+              }
+            },
+            "minecraft:repairable": {
+              "type": "object",
+              "properties": {
+                "repair_items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "items": {"type": "array", "items": {"type": "string"}},
+                      "repair_amount": {"type": "number", "minimum": 0}
+                    }
+                  }
+                }
+              }
+            },
+            "minecraft:creative_category": {
+              "type": "object",
+              "properties": {
+                "parent": {"type": "string"},
+                "category": {"type": "string"},
+                "group": {"type": "string"}
+              }
+            },
+            "minecraft:icon": {
+              "type": "object",
+              "properties": {
+                "texture": {"type": "string"},
+                "frame": {"type": "integer"}
+              }
+            },
+            "minecraft:render_offsets": {
+              "type": "object",
+              "properties": {
+                "first_person": {"type": "object"},
+                "third_person": {"type": "object"}
+              }
+            },
+            "minecraft:hand_equipped": {
+              "type": "boolean",
+              "description": "Whether item is rendered as equipment"
+            },
+            "minecraft:cooldown": {
+              "type": "object",
+              "properties": {
+                "category": {"type": "string"},
+                "duration": {"type": "number", "minimum": 0}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
