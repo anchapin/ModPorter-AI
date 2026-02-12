@@ -34,8 +34,15 @@ jobs:
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
+        env:
+          # Redirect API calls to z.ai proxy endpoint
+          ANTHROPIC_BASE_URL: "https://api.z.ai/api/anthropic"
+          # Map z.ai model names to standard Claude model names
+          ANTHROPIC_DEFAULT_OPUS_MODEL: "GLM-4.6"
+          ANTHROPIC_DEFAULT_SONNET_MODEL: "GLM-4.6"
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: "GLM-4.5-Air"
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_api_key: ${{ secrets.Z_AI_API_KEY }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
