@@ -280,7 +280,7 @@ jobs:
       run: |
         echo "🔧 Installing system dependencies..."
         apt-get update -qq
-        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io
+        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io zstd
 
     # Install Ollama for AI model testing
     - name: Install Ollama
