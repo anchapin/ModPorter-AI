@@ -7,8 +7,17 @@ import logging
 import json
 from pathlib import Path
 from PIL import Image
-from pydub import AudioSegment
-from pydub.exceptions import CouldntDecodeError
+
+# Optional audio import (removed in Python 3.14)
+try:
+    from pydub import AudioSegment
+    from pydub.exceptions import CouldntDecodeError
+    HAS_AUDIO_SUPPORT = True
+except ImportError:
+    HAS_AUDIO_SUPPORT = False
+    AudioSegment = None
+    CouldntDecodeError = Exception
+
 from crewai.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine
@@ -103,9 +112,12 @@ class AssetConverterAgent:
         while (power * 2) <= n:
             power *= 2
         return power
-    
-    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str) -> Dict:
-        """Convert a single texture file to Bedrock format with enhanced validation and optimization"""
+
+    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+        """
+        Convert a single texture file to Bedrock format with enhanced validation and optimization.
+        If output_dir is provided, saves the converted texture to disk.
+        """
         # Create a cache key
         cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
         
@@ -253,10 +265,23 @@ class AssetConverterAgent:
                     # Fallback to a simple path if relative path calculation fails
                     converted_path = f"textures/other/{base_name}.png"
 
+            # Save the converted texture if output_dir is provided
+            actual_output_path = None
+            if output_dir is not None:
+                output_dir = Path(output_dir)
+                output_dir.mkdir(parents=True, exist_ok=True)
+                actual_output_path = output_dir / converted_path
+                actual_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Save with optimization
+                img.save(actual_output_path, 'PNG', optimize=True)
+                logger.info(f"Saved converted texture to {actual_output_path}")
+
             result = {
                 'success': True,
                 'original_path': str(texture_path),
-                'converted_path': converted_path,
+                'converted_path': str(actual_output_path) if actual_output_path else converted_path,
+                'relative_path': converted_path,
                 'original_dimensions': original_dimensions,
                 'converted_dimensions': (new_width, new_height),
                 'format': 'png',
@@ -267,10 +292,10 @@ class AssetConverterAgent:
                 'was_valid_png': is_valid_png,
                 'was_fallback': not Path(texture_path).exists()
             }
-            
+
             # Cache the result
             self._conversion_cache[cache_key] = result
-            
+
             return result
         except Exception as e:
             logger.error(f"Texture conversion error for {texture_path}: {e}")
@@ -384,18 +409,36 @@ class AssetConverterAgent:
 
     def convert_textures(self, texture_list: str, output_path: str) -> str:
         """
-        Convert textures to Bedrock-compatible format.
-        
+        Convert textures to Bedrock-compatible format and save to disk.
+
         Args:
-            texture_list: JSON string containing list of texture paths
+            texture_list: JSON string containing list of texture paths or structured data
             output_path: Output directory path
-            
+
         Returns:
             JSON string with conversion results
         """
         try:
-            textures = json.loads(texture_list) if isinstance(texture_list, str) else texture_list
-            
+            # Parse texture_list
+            if isinstance(texture_list, str):
+                data = json.loads(texture_list) if texture_list.startswith('[') or texture_list.startswith('{') else texture_list
+            else:
+                data = texture_list
+
+            # Handle different input formats
+            if isinstance(data, list):
+                # Simple list of texture paths
+                textures = [{"path": path, "usage": "block"} for path in data]
+            elif isinstance(data, dict):
+                # Structured data
+                textures = data.get('textures', [])
+            else:
+                # Single path
+                textures = [{"path": str(data), "usage": "block"}]
+
+            output_path = Path(output_path)
+            output_path.mkdir(parents=True, exist_ok=True)
+
             result = {
                 "converted_textures": [],
                 "total_textures": len(textures),
@@ -403,23 +446,42 @@ class AssetConverterAgent:
                 "failed_conversions": 0,
                 "errors": []
             }
-            
-            for texture_path in textures:
+
+            for texture_data in textures:
                 try:
-                    # Simulate texture conversion
-                    converted_path = Path(output_path) / Path(texture_path).name
-                    result["converted_textures"].append({
-                        "original_path": texture_path,
-                        "converted_path": str(converted_path),
-                        "success": True
-                    })
-                    result["successful_conversions"] += 1
+                    if isinstance(texture_data, str):
+                        texture_path = texture_data
+                        usage = "block"
+                        metadata = {}
+                    else:
+                        texture_path = texture_data.get('path', '')
+                        usage = texture_data.get('usage', 'block')
+                        metadata = texture_data.get('metadata', {})
+
+                    # Convert the texture and save to output directory
+                    conversion_result = self._convert_single_texture(texture_path, metadata, usage, output_path)
+
+                    if conversion_result.get('success'):
+                        result["converted_textures"].append({
+                            "original_path": texture_path,
+                            "converted_path": conversion_result['converted_path'],
+                            "relative_path": conversion_result['relative_path'],
+                            "success": True,
+                            "dimensions": conversion_result['converted_dimensions'],
+                            "resized": conversion_result['resized'],
+                            "optimizations": conversion_result['optimizations_applied']
+                        })
+                        result["successful_conversions"] += 1
+                    else:
+                        result["errors"].append(f"Failed to convert {texture_path}: {conversion_result.get('error', 'Unknown error')}")
+                        result["failed_conversions"] += 1
                 except Exception as e:
-                    result["errors"].append(f"Failed to convert {texture_path}: {e}")
+                    logger.error(f"Error converting texture {texture_data}: {e}")
+                    result["errors"].append(f"Failed to convert {texture_data}: {e}")
                     result["failed_conversions"] += 1
-            
-            return json.dumps(result)
-            
+
+            return json.dumps(result, indent=2)
+
         except Exception as e:
             logger.error(f"Error converting textures: {e}")
             return json.dumps({
@@ -428,7 +490,7 @@ class AssetConverterAgent:
                 "successful_conversions": 0,
                 "failed_conversions": 0,
                 "errors": [str(e)]
-            })
+            }, indent=2)
 
     def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
         """Convert a single audio file to Bedrock format"""
@@ -1039,20 +1101,38 @@ class AssetConverterAgent:
             while (power * 2) <= n:
                 power *= 2
             return power
-        def _convert_single_texture(texture_path: str, metadata: Dict, usage: str) -> Dict:
+        def _convert_single_texture(texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+            """
+            Convert a single texture file to Bedrock format with validation and optimization.
+            If output_dir is provided, saves the converted texture to disk.
+            """
             try:
+                # Check if file exists or generate fallback
                 if not Path(texture_path).exists():
-                    raise FileNotFoundError(f"Texture file not found: {texture_path}")
+                    logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
+                    img = agent._generate_fallback_texture(usage)
+                    original_dimensions = img.size
+                    is_valid_png = False
+                    optimizations_applied = ["Generated fallback texture"]
+                    base_name = f"fallback_{usage}"
+                else:
+                    try:
+                        img = Image.open(texture_path)
+                        original_dimensions = img.size
+                        is_valid_png = img.format == 'PNG'
+                        # Ensure RGBA conversion for consistency
+                        img = img.convert("RGBA")
+                        optimizations_applied = ["Converted to RGBA"] if not is_valid_png else []
+                        base_name = Path(texture_path).stem
+                    except Exception as open_error:
+                        logger.warning(f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture.")
+                        img = agent._generate_fallback_texture(usage)
+                        original_dimensions = img.size
+                        is_valid_png = False
+                        optimizations_applied = ["Generated fallback texture due to open error"]
+                        base_name = f"fallback_{usage}"
 
-                img = Image.open(texture_path)
-                original_dimensions = img.size
-                # Ensure RGBA conversion happens early to correctly assess channels if needed later
-                # and to standardize the image format before any resizing.
-                img = img.convert("RGBA")
-                optimizations_applied = ["Converted to RGBA"]
-
-                width, height = img.size # Use dimensions from RGBA converted image
-
+                width, height = img.size
                 resized = False
 
                 # Safely get constraints, providing defaults if not set
@@ -1085,17 +1165,26 @@ class AssetConverterAgent:
 
                 # Perform resize operation only if dimensions actually changed
                 if resized and (new_width != width or new_height != height):
-                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                    # Use different resampling filters based on upscaling/downscaling
+                    if new_width > width or new_height > height:
+                        # Upscaling - use LANCZOS for better quality
+                        img = img.resize((new_width, new_height), Image.LANCZOS)
+                    else:
+                        # Downscaling - use LANCZOS for better quality
+                        img = img.resize((new_width, new_height), Image.LANCZOS)
                     optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
                 else:
-                    # If no resize occurred, ensure new_width and new_height reflect original (but RGBA converted) dimensions
                     new_width, new_height = img.size
-                    resized = False # Correct resized status if no actual dimension change happened
+                    resized = False
 
-                # MCMETA parsing logic starts
+                # Apply PNG optimization
+                if not is_valid_png or resized:
+                    optimizations_applied.append("Optimized PNG format")
+
+                # MCMETA parsing logic
                 animation_data = None
-                # Ensure texture_path is a string before concatenation, Path objects might handle this differently.
-                mcmeta_path_str = str(texture_path) + ".mcmeta"
+                texture_path_obj = Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
+                mcmeta_path_str = str(texture_path_obj) + ".mcmeta"
                 mcmeta_path = Path(mcmeta_path_str)
 
                 if mcmeta_path.exists() and mcmeta_path.is_file():
@@ -1108,35 +1197,50 @@ class AssetConverterAgent:
                             logger.info(f"Found and parsed animation data for {texture_path}")
                     except json.JSONDecodeError:
                         logger.warning(f"Could not parse .mcmeta file for {texture_path} due to JSON error.")
-                    except Exception as e: # Catching other potential errors like permission issues
+                    except Exception as e:
                         logger.warning(f"Error reading or processing .mcmeta file for {texture_path}: {e}")
-                # MCMETA parsing logic ends
 
-                base_name = Path(texture_path).stem
+                # Determine Bedrock path structure
                 if usage == 'block':
                     converted_path = f"textures/blocks/{base_name}.png"
                 elif usage == 'item':
                     converted_path = f"textures/items/{base_name}.png"
                 elif usage == 'entity':
                     converted_path = f"textures/entity/{base_name}.png"
+                elif usage == 'particle':
+                    converted_path = f"textures/particle/{base_name}.png"
+                elif usage == 'ui':
+                    converted_path = f"textures/ui/{base_name}.png"
                 else:
-                    converted_path = f"textures/{usage}/{base_name}.png"
+                    converted_path = f"textures/other/{base_name}.png"
+
+                # Save the converted texture if output directory is provided
+                actual_output_path = None
+                if output_dir is not None:
+                    output_dir = Path(output_dir)
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    actual_output_path = output_dir / converted_path
+                    actual_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Save with optimization
+                    img.save(actual_output_path, 'PNG', optimize=True)
+                    logger.info(f"Saved converted texture to {actual_output_path}")
 
                 return {
                     'success': True,
                     'original_path': str(texture_path),
-                    'converted_path': converted_path,
+                    'converted_path': str(actual_output_path) if actual_output_path else converted_path,
+                    'relative_path': converted_path,
                     'original_dimensions': original_dimensions,
                     'converted_dimensions': (new_width, new_height),
                     'format': 'png',
                     'resized': resized,
                     'optimizations_applied': optimizations_applied,
                     'bedrock_reference': f"{usage}_{base_name}",
-                    'animation_data': animation_data # New key added
+                    'animation_data': animation_data,
+                    'was_valid_png': is_valid_png,
+                    'was_fallback': not Path(texture_path).exists()
                 }
-            except FileNotFoundError as fnf_error:
-                logger.error(f"Texture conversion error for {texture_path}: {fnf_error}")
-                return {'success': False, 'original_path': str(texture_path), 'error': str(fnf_error)}
             except Exception as e:
                 logger.error(f"Texture conversion error for {texture_path}: {e}", exc_info=True)
                 return {'success': False, 'original_path': str(texture_path), 'error': str(e)}
@@ -1234,7 +1338,8 @@ class AssetConverterAgent:
 
             return result
         try:
-            # Handle both JSON string and plain list formats
+            # Parse texture_data to get output directory
+            output_dir = None
             if isinstance(texture_data, str):
                 if texture_data.startswith('[') or texture_data.startswith('{'):
                     # It's JSON
@@ -1245,21 +1350,31 @@ class AssetConverterAgent:
                     else:
                         # Structured data
                         textures = data.get('textures', [])
+                        output_dir = data.get('output_dir')  # Get output directory from structured data
                 else:
                     # Single path
                     textures = [{"path": texture_data}]
+            elif isinstance(texture_data, dict):
+                # Direct dict format
+                textures = texture_data.get('textures', [])
+                output_dir = texture_data.get('output_dir')
             else:
                 # Assume it's already a list
                 textures = [{"path": path} for path in texture_data]
-            
+
+            # Convert output_dir to Path object if provided
+            if output_dir:
+                output_dir = Path(output_dir)
+
             all_conversion_results = []
-            
+
             for texture_input_data in textures:
                 texture_path = texture_input_data.get('path', '') if isinstance(texture_input_data, dict) else texture_input_data
                 metadata = texture_input_data.get('metadata', {}) if isinstance(texture_input_data, dict) else {}
                 target_usage = texture_input_data.get('usage', 'block') if isinstance(texture_input_data, dict) else 'block'
 
-                result = _convert_single_texture(texture_path, metadata, target_usage)
+                # Pass output directory to conversion function
+                result = _convert_single_texture(texture_path, metadata, target_usage, output_dir)
                 all_conversion_results.append(result)
             
             successful_conversions = [r for r in all_conversion_results if r.get('success')]
