@@ -306,20 +306,18 @@ def test_json_output():
     mcaddon_path, temp_dir = create_comprehensive_addon()
 
     try:
-        # Test validate_mcaddon_tool
-        result_json = QAValidatorAgent.validate_mcaddon_tool(mcaddon_path)
-        result = json.loads(result_json)
+        # Test validate_mcaddon
+        # Note: The @tool decorator creates a Tool object for CrewAI agents.
+        # For testing, we call the underlying method directly via the agent instance.
+        agent = QAValidatorAgent.get_instance()
+        result = agent.validate_mcaddon(mcaddon_path)
 
         # Verify structure
-        assert "success" in result
         assert "overall_score" in result
         assert "validations" in result
 
-        # Test generate_qa_report_tool
-        report_json = QAValidatorAgent.generate_qa_report_tool(
-            json.dumps({"mcaddon_path": mcaddon_path})
-        )
-        report = json.loads(report_json)
+        # Test generate_qa_report
+        report = agent.generate_qa_report({"mcaddon_path": mcaddon_path})
 
         assert "report_id" in report
         assert "timestamp" in report

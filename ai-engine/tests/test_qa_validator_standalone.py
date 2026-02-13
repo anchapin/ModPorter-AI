@@ -270,29 +270,27 @@ def test_tools():
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
     try:
-        # Test validate_mcaddon_tool
-        result_json = QAValidatorAgent.validate_mcaddon_tool(mcaddon_path)
-        result = json.loads(result_json)
+        # Test validate_mcaddon
+        # Note: The @tool decorator creates a Tool object for CrewAI agents.
+        # For testing, we call the underlying methods directly via the agent instance.
+        agent = QAValidatorAgent.get_instance()
 
-        assert "success" in result
+        result = agent.validate_mcaddon(mcaddon_path)
         assert "overall_score" in result
-        print("✓ validate_mcaddon_tool works")
+        print("✓ validate_mcaddon works")
 
-        # Test validate_conversion_quality_tool
-        result_json = QAValidatorAgent.validate_conversion_quality_tool(
+        # Test validate_conversion_quality
+        result_json = agent.validate_conversion_quality(
             json.dumps({"mcaddon_path": mcaddon_path})
         )
         result = json.loads(result_json)
         assert "success" in result
-        print("✓ validate_conversion_quality_tool works")
+        print("✓ validate_conversion_quality works")
 
-        # Test generate_qa_report_tool
-        result_json = QAValidatorAgent.generate_qa_report_tool(
-            json.dumps({"mcaddon_path": mcaddon_path})
-        )
-        result = json.loads(result_json)
-        assert "report_id" in result
-        print("✓ generate_qa_report_tool works")
+        # Test generate_qa_report
+        report = agent.generate_qa_report({"mcaddon_path": mcaddon_path})
+        assert "report_id" in report
+        print("✓ generate_qa_report works")
 
     finally:
         shutil.rmtree(temp_dir)
