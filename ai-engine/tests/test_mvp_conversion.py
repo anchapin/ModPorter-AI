@@ -29,26 +29,63 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import sys
 
-# Add the ai-engine and root directories to the path
+# Add the ai-engine, tests, and root directories to the path
 ai_engine_root = Path(__file__).parent.parent
 project_root = ai_engine_root.parent
+tests_root = Path(__file__).parent
 sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(tests_root))
 
 # Mock the problematic pydub import before importing agents
 import sys
 class MockAudioSegment:
     pass
-sys.modules['pydub'] = type(sys)('pydub')
-sys.modules['pydub'].AudioSegment = MockAudioSegment
-sys.modules['pydub.utils'] = type(sys)('pydub.utils')
+class MockCouldntDecodeError(Exception):
+    pass
+
+pydub_mock = type(sys)('pydub')
+pydub_mock.AudioSegment = MockAudioSegment
+pydub_mock.exceptions = type(sys)('pydub.exceptions')
+pydub_mock.exceptions.CouldntDecodeError = MockCouldntDecodeError
+pydub_mock.utils = type(sys)('pydub.utils')
+
+sys.modules['pydub'] = pydub_mock
+sys.modules['pydub.exceptions'] = pydub_mock.exceptions
+sys.modules['pydub.utils'] = pydub_mock.utils
+
+# Mock crewai
+def tool(func):
+    return func
+sys.modules['crewai'] = type(sys)('crewai')
+sys.modules['crewai'].Agent = type('Agent', (), {})
+sys.modules['crewai'].Crew = type('Crew', (), {})
+sys.modules['crewai'].Task = type('Task', (), {})
+sys.modules['crewai'].LLM = type('LLM', (), {})
+sys.modules['crewai.tools'] = type(sys)('crewai.tools')
+sys.modules['crewai.tools'].tool = tool
+sys.modules['crewai.tools'].BaseTool = type('BaseTool', (), {})
+
+# Mock models.smart_assumptions
+sys.modules['models'] = type(sys)('models')
+sys.modules['models.smart_assumptions'] = type(sys)('models.smart_assumptions')
+sys.modules['models.smart_assumptions'].SmartAssumptionEngine = type('SmartAssumptionEngine', (), {})
+sys.modules['models.smart_assumptions'].AssumptionResult = type('AssumptionResult', (), {})
+sys.modules['models.smart_assumptions'].FeatureContext = type('FeatureContext', (), {})
+
+# Mock models.validation
+sys.modules['models.validation'] = type(sys)('models.validation')
+sys.modules['models.validation'].ManifestValidationResult = type('ManifestValidationResult', (), {})
+sys.modules['models.validation'].SemanticAnalysisResult = type('SemanticAnalysisResult', (), {})
+sys.modules['models.validation'].BehaviorPredictionResult = type('BehaviorPredictionResult', (), {})
+sys.modules['models.validation'].AssetValidationResult = type('AssetValidationResult', (), {})
+sys.modules['models.validation'].ValidationReport = type('ValidationReport', (), {})
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
 
-# Import test fixtures from project root tests
-sys.path.insert(0, str(project_root / "tests"))
+# Import test fixtures from ai-engine fixtures
 from fixtures.test_jar_generator import JarGenerator, create_test_mod_suite
 
 
