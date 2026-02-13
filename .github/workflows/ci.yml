@@ -118,7 +118,8 @@ jobs:
     - name: Calculate dependency hash
       id: deps-hash
       run: |
-        DEPS_HASH=$(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        # Hash only the files actually copied by Dockerfile
+        DEPS_HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
         echo "Dependencies hash: $DEPS_HASH"
 
