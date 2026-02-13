@@ -1,15 +1,14 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ConversionUploadReal } from './components/ConversionUpload/ConversionUploadReal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
 import './App.css';
-import styles from './App.module.css';
 
 // Lazy load heavy components
 const DocumentationSimple = lazy(() => import('./pages/DocumentationSimple'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ConvertPage = lazy(() => import('./pages/ConvertPage'));
 const ComparisonView = lazy(() => import('./components/ComparisonView'));
 const BehavioralTestWrapper = lazy(() => import('./components/BehavioralTest/BehavioralTestWrapper'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
@@ -18,11 +17,7 @@ const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage')
 
 function App() {
   console.log('App component is rendering...');
-  
-  const handleConversionStart = (data: any) => {
-    console.log('Conversion started:', data);
-  };
-  
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
@@ -32,19 +27,13 @@ function App() {
 
             <main>
               <Routes>
-                <Route 
-                  path="/" 
+                <Route
+                  path="/"
                   element={
-                    <div className={styles.heroSection}>
-                      <h1 className={styles.heroTitle}>
-                        ModPorter AI
-                      </h1>
-                      <p className={styles.heroDescription}>
-                        Convert Minecraft Java Edition mods to Bedrock Edition add-ons with AI
-                      </p>
-                      <ConversionUploadReal onConversionStart={handleConversionStart} />
-                    </div>
-                  } 
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <ConvertPage />
+                    </Suspense>
+                  }
                 />
                 <Route path="/dashboard" element={
                   <Suspense fallback={<div>Loading Dashboard...</div>}>

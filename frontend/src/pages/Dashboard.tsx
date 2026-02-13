@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { ConversionUpload } from '../components/ConversionUpload/ConversionUpload';
+import { ConversionUploadEnhanced } from '../components/ConversionUpload/ConversionUploadEnhanced';
 import { ConversionReportContainer } from '../components/ConversionReport/ConversionReportContainer';
 import { ConversionHistory, useConversionHistory } from '../components/ConversionHistory';
 import { PerformanceBenchmark } from '../components/PerformanceBenchmark';
@@ -17,30 +17,27 @@ export const Dashboard: React.FC = () => {
   
   const { addConversion, updateConversion, setHistoryRef } = useConversionHistory();
 
-  // Handle conversion start
-  const handleConversionStart = useCallback((jobId: string) => {
-    console.log('Conversion started:', jobId);
-    
-    // Add to history
+  // Handle conversion start with filename
+  const handleConversionStart = useCallback((jobId: string, filename: string) => {
+    console.log('Conversion started:', jobId, 'File:', filename);
+
+    // Add to history with filename
     addConversion({
       job_id: jobId,
-      original_filename: 'Unknown', // Will be updated when we have the file info
-      status: 'queued',
+      original_filename: filename,
+      status: 'processing',
       created_at: new Date().toISOString(),
       options: {
         smartAssumptions: true,
         includeDependencies: true
       }
     });
-
-    // Update stats
-    // setRecentConversions(prev => prev + 1);
   }, [addConversion]);
 
   // Handle conversion completion
   const handleConversionComplete = useCallback((jobId: string) => {
     console.log('Conversion completed:', jobId);
-    
+
     // Update conversion status
     updateConversion(jobId, {
       status: 'completed',
@@ -50,6 +47,18 @@ export const Dashboard: React.FC = () => {
     // Show the report
     setCurrentJobId(jobId);
     setShowReport(true);
+  }, [updateConversion]);
+
+  // Handle conversion failure
+  const handleConversionFailed = useCallback((jobId: string, error: string) => {
+    console.log('Conversion failed:', jobId, 'Error:', error);
+
+    // Update conversion status
+    updateConversion(jobId, {
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error: error
+    });
   }, [updateConversion]);
 
   // Update conversion file info
@@ -173,9 +182,10 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
             
-            <ConversionUpload
+            <ConversionUploadEnhanced
               onConversionStart={handleConversionStart}
               onConversionComplete={handleConversionComplete}
+              onConversionFailed={handleConversionFailed}
             />
             
             {/* Show conversion report when available */}
