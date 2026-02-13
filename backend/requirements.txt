@@ -20,7 +20,7 @@ aiosqlite>=0.19.0  # For SQLite async support in tests
 redis[asyncio]==7.0.0
 
 # File handling
-python-multipart==0.0.20
+python-multipart==0.0.22
 tomli==2.3.0  # TOML parsing for Python <3.11
 python-magic==0.4.27
 javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent

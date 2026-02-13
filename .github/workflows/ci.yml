@@ -76,6 +76,32 @@ jobs:
       python-image: ${{ steps.image-tags.outputs.python-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
+    - name: Free up disk space
+      run: |
+        echo "🧹 Cleaning up disk space before Docker build"
+        echo "Initial disk usage:"
+        df -h
+
+        # Remove unnecessary packages and files
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+        # Clean Docker cache if exists
+        docker system prune -af --volumes || true
+
+        # Clean package manager caches
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+
+        # Remove large directories we don't need
+        sudo rm -rf /usr/share/doc
+        sudo rm -rf /usr/share/man
+
+        echo "Disk usage after cleanup:"
+        df -h
+
     - name: Checkout code
       uses: actions/checkout@v5
 
