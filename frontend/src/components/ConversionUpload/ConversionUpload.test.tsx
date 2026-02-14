@@ -138,7 +138,8 @@ describe('ConversionUpload Component', () => {
       }, { timeout: 3000 });
 
       // 4. Verify remove button appears (there's no cancel button, just the remove "✕" button)
-      expect(screen.getByRole('button', { name: '✕' })).toBeInTheDocument();
+      // Updated to match new ARIA label
+      expect(screen.getByRole('button', { name: /Remove test-mod.zip/i })).toBeInTheDocument();
     });
 
     test('shows cancel button during conversion', async () => {
@@ -159,7 +160,8 @@ describe('ConversionUpload Component', () => {
       }, { timeout: 3000 });
 
       // Remove file button should be visible but disabled during conversion (it's the "✕" button)
-      const removeButton = screen.getByRole('button', { name: '✕' });
+      // Updated to match new ARIA label
+      const removeButton = screen.getByRole('button', { name: /Remove cancel-mod.zip/i });
       expect(removeButton).toBeInTheDocument();
       expect(removeButton).toBeDisabled(); // Button should be disabled during conversion
     });

@@ -325,7 +325,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       </p>
 
       {error && (
-        <div className="error-message">
+        <div className="error-message" role="alert">
           {error}
         </div>
       )}
@@ -363,6 +363,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                   if (!isProcessing && !isCompleted) setSelectedFile(null);
                 }}
                 disabled={isProcessing || isCompleted}
+                aria-label={`Remove ${selectedFile.name}`}
               >
                 ✕
               </button>
@@ -434,6 +435,8 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                   className="info-button"
                   onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
                   aria-label="Learn more about smart assumptions"
+                  aria-expanded={showSmartAssumptionsInfo}
+                  aria-controls="smart-assumptions-info-legacy"
                   disabled={isProcessing || isCompleted}
                 >
                   ?
@@ -441,7 +444,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               </label>
 
               {showSmartAssumptionsInfo && (
-                <div className="info-panel">
+                <div className="info-panel" id="smart-assumptions-info-legacy">
                   <h4>Smart Assumptions</h4>
                   <p>
                     When enabled, our AI will make intelligent assumptions to convert incompatible features:
