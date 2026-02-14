@@ -140,7 +140,16 @@ async def export_behavior_pack(
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             # Add behavior files
             for file in behavior_files:
-                zip_file.writestr(file.file_path, file.content)
+                # Sanitize file path to prevent Zip Slip
+                # Split by / or \, filter out '..', and rejoin with /
+                parts = file.file_path.replace("\\", "/").split("/")
+                safe_parts = [p for p in parts if p and p != ".."]
+                safe_path = "/".join(safe_parts)
+
+                if not safe_path:
+                    continue
+
+                zip_file.writestr(safe_path, file.content)
             
             # Add export metadata
             zip_file.writestr("export_metadata.json", json.dumps(export_data["metadata"], indent=2))

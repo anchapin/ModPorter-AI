@@ -622,6 +622,10 @@ async def create_behavior_file(
     except ValueError:
         raise ValueError("Invalid conversion_id format")
 
+    # Prevent path traversal attacks
+    if ".." in file_path or file_path.startswith("/") or file_path.startswith("\\"):
+        raise ValueError("Invalid file path: path traversal detected or absolute path used")
+
     behavior_file = models.BehaviorFile(
         conversion_id=conversion_uuid,
         file_path=file_path,
