@@ -199,6 +199,115 @@ class JavaAnalyzerAgent:
         except (OSError, IOError):
             return 0
     
+    def _analyze_sources_batch(self, jar: zipfile.ZipFile, java_sources: List[str]) -> Dict:
+        """
+        Analyze Java sources in a single pass to extract features, dependencies, and metadata.
+        Optimized to parse each file only once and skip files without relevant keywords.
+
+        Args:
+            jar: Opened JAR file
+            java_sources: List of Java source file paths in the JAR
+
+        Returns:
+            Dictionary with keys 'features', 'dependencies', 'metadata'
+        """
+        batch_result = {
+            'features': {
+                'blocks': [], 'items': [], 'entities': [], 'recipes': [],
+                'dimensions': [], 'gui': [], 'machinery': [], 'commands': [], 'events': []
+            },
+            'dependencies': [],
+            'metadata': {}
+        }
+
+        max_files = max(FEATURE_ANALYSIS_FILE_LIMIT, DEPENDENCY_ANALYSIS_FILE_LIMIT, METADATA_AST_FILE_LIMIT)
+
+        # Collect keywords for pre-check
+        feature_keywords = set()
+        for patterns in self.feature_patterns.values():
+            feature_keywords.update(patterns)
+
+        metadata_keywords = {'Mod', 'ModInstance', 'Instance', '@Mod'}
+        dependency_keywords = {'import', 'package'}
+
+        for i, source_path in enumerate(java_sources[:max_files]):
+            try:
+                # Read source file
+                source_code = jar.read(source_path).decode('utf-8')
+
+                # Optimization: Keyword Pre-check
+                need_features = i < FEATURE_ANALYSIS_FILE_LIMIT
+                need_deps = i < DEPENDENCY_ANALYSIS_FILE_LIMIT
+                need_metadata = i < METADATA_AST_FILE_LIMIT
+
+                should_parse = False
+
+                # Check keywords based on needs
+                if need_deps:
+                    if any(k in source_code for k in dependency_keywords):
+                        should_parse = True
+
+                if not should_parse and need_metadata:
+                    if any(k in source_code for k in metadata_keywords):
+                        should_parse = True
+
+                if not should_parse and need_features:
+                    if any(k in source_code for k in feature_keywords):
+                        should_parse = True
+
+                if not should_parse:
+                    # Skip parsing if no relevant keywords found
+                    continue
+
+                # Parse AST
+                tree = self._parse_java_source(source_code)
+                if not tree:
+                    continue
+
+                # Extract Features
+                if need_features:
+                    source_features = self._extract_features_from_ast(tree)
+                    for feature_type, feature_list in source_features.items():
+                        if feature_type in batch_result['features']:
+                            batch_result['features'][feature_type].extend(feature_list)
+
+                # Extract Dependencies
+                if need_deps:
+                    dependencies = self._analyze_dependencies_from_ast(tree)
+                    batch_result['dependencies'].extend(dependencies)
+
+                # Extract Metadata
+                if need_metadata:
+                    source_metadata = self._extract_mod_metadata_from_ast(tree)
+                    batch_result['metadata'].update(source_metadata)
+
+            except Exception as e:
+                logger.warning(f"Error analyzing source file {source_path}: {e}")
+                continue
+
+        # Deduplicate features
+        for feature_type in batch_result['features']:
+            seen = set()
+            unique_features = []
+            for feature in batch_result['features'][feature_type]:
+                feature_key = f"{feature.get('name', '')}_{feature.get('registry_name', '')}"
+                if feature_key not in seen:
+                    seen.add(feature_key)
+                    unique_features.append(feature)
+            batch_result['features'][feature_type] = unique_features
+
+        # Deduplicate dependencies
+        seen_imports = set()
+        unique_dependencies = []
+        for dep in batch_result['dependencies']:
+            import_path = dep.get('import', '')
+            if import_path not in seen_imports:
+                seen_imports.add(import_path)
+                unique_dependencies.append(dep)
+        batch_result['dependencies'] = unique_dependencies
+
+        return batch_result
+
     def analyze_jar_with_ast(self, jar_path: str) -> dict:
         """
         AST-focused analysis: Extract comprehensive mod information using Java AST parsing.
@@ -253,23 +362,13 @@ class JavaAnalyzerAgent:
                 java_sources = [f for f in file_list if f.endswith('.java')]
                 if java_sources:
                     logger.info(f"Found {len(java_sources)} Java source files, analyzing with AST")
-                    result['features'] = self._analyze_features_from_sources(jar, java_sources)
-                    result['dependencies'] = self._analyze_dependencies_from_sources(jar, java_sources)
                     
-                    # Extract metadata from AST
-                    metadata_from_ast = {}
-                    for source_path in java_sources[:METADATA_AST_FILE_LIMIT]:  # Check first 5 files for metadata
-                        try:
-                            source_code = jar.read(source_path).decode('utf-8')
-                            tree = self._parse_java_source(source_code)
-                            if tree:
-                                source_metadata = self._extract_mod_metadata_from_ast(tree)
-                                metadata_from_ast.update(source_metadata)
-                        except Exception as e:
-                            logger.warning(f"Error extracting metadata from {source_path}: {e}")
-                            continue
+                    # Optimized single-pass analysis
+                    batch_results = self._analyze_sources_batch(jar, java_sources)
                     
-                    result['mod_info'].update(metadata_from_ast)
+                    result['features'] = batch_results['features']
+                    result['dependencies'] = batch_results['dependencies']
+                    result['mod_info'].update(batch_results['metadata'])
                 else:
                     logger.info("No Java source files found in JAR, using class-based analysis")
                     # Extract features from class names (existing approach)
@@ -716,10 +815,11 @@ class JavaAnalyzerAgent:
                 java_sources = [f for f in file_list if f.endswith('.java')]
                 if java_sources:
                     logger.info(f"Found {len(java_sources)} Java source files, analyzing with AST")
-                    result["features"] = self._analyze_features_from_sources(jar, java_sources)
                     
-                    # Analyze dependencies from AST
-                    result["dependencies"] = self._analyze_dependencies_from_sources(jar, java_sources)
+                    # Optimized single-pass analysis
+                    batch_results = self._analyze_sources_batch(jar, java_sources)
+                    result["features"] = batch_results['features']
+                    result["dependencies"] = batch_results['dependencies']
                 else:
                     logger.info("No Java source files found in JAR, using class-based analysis")
                     # Extract features from class names (existing approach)
@@ -730,107 +830,6 @@ class JavaAnalyzerAgent:
         
         return result
     
-    def _analyze_features_from_sources(self, jar: zipfile.ZipFile, java_sources: List[str]) -> Dict:
-        """
-        Analyze features from Java source files using AST parsing.
-        
-        Args:
-            jar: Opened JAR file
-            java_sources: List of Java source file paths in the JAR
-            
-        Returns:
-            Dictionary with extracted features
-        """
-        features = {
-            'blocks': [],
-            'items': [],
-            'entities': [],
-            'recipes': [],
-            'dimensions': [],
-            'gui': [],
-            'machinery': [],
-            'commands': [],
-            'events': []
-        }
-        
-        try:
-            for source_path in java_sources[:FEATURE_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
-                try:
-                    # Read source file
-                    source_code = jar.read(source_path).decode('utf-8')
-                    
-                    # Parse AST
-                    tree = self._parse_java_source(source_code)
-                    if tree:
-                        # Extract features from AST
-                        source_features = self._extract_features_from_ast(tree)
-                        
-                        # Merge with overall features
-                        for feature_type, feature_list in source_features.items():
-                            if feature_type in features:
-                                features[feature_type].extend(feature_list)
-                except Exception as e:
-                    logger.warning(f"Error analyzing source file {source_path}: {e}")
-                    continue
-            
-            # Remove duplicates
-            for feature_type in features:
-                seen = set()
-                unique_features = []
-                for feature in features[feature_type]:
-                    feature_key = f"{feature.get('name', '')}_{feature.get('registry_name', '')}"
-                    if feature_key not in seen:
-                        seen.add(feature_key)
-                        unique_features.append(feature)
-                features[feature_type] = unique_features
-            
-            return features
-        except Exception as e:
-            logger.warning(f"Error analyzing features from sources: {e}")
-            return features
-    
-    def _analyze_dependencies_from_sources(self, jar: zipfile.ZipFile, java_sources: List[str]) -> List[Dict]:
-        """
-        Analyze dependencies from Java source files using AST parsing.
-        
-        Args:
-            jar: Opened JAR file
-            java_sources: List of Java source file paths in the JAR
-            
-        Returns:
-            List of dependency information
-        """
-        all_dependencies = []
-        
-        try:
-            for source_path in java_sources[:DEPENDENCY_ANALYSIS_FILE_LIMIT]:  # Limit to first 10 files to prevent performance issues
-                try:
-                    # Read source file
-                    source_code = jar.read(source_path).decode('utf-8')
-                    
-                    # Parse AST
-                    tree = self._parse_java_source(source_code)
-                    if tree:
-                        # Extract dependencies from AST
-                        dependencies = self._analyze_dependencies_from_ast(tree)
-                        all_dependencies.extend(dependencies)
-                except Exception as e:
-                    logger.warning(f"Error analyzing dependencies in {source_path}: {e}")
-                    continue
-            
-            # Remove duplicates
-            seen_imports = set()
-            unique_dependencies = []
-            for dep in all_dependencies:
-                import_path = dep.get('import', '')
-                if import_path not in seen_imports:
-                    seen_imports.add(import_path)
-                    unique_dependencies.append(dep)
-            
-            return unique_dependencies
-        except Exception as e:
-            logger.warning(f"Error analyzing dependencies from sources: {e}")
-            return []
     
     def _extract_features_from_classes(self, file_list: List[str]) -> Dict:
         """

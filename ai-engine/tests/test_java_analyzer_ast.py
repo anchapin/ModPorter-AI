@@ -209,7 +209,8 @@ public class TestBlock {
         with zipfile.ZipFile(jar_with_java_sources, 'r') as jar:
             java_sources = ['src/main/java/com/example/testmod/block/TestBlock.java', 
                            'src/main/java/com/example/testmod/item/TestItem.java']
-            features = analyzer._analyze_features_from_sources(jar, java_sources)
+            batch_result = analyzer._analyze_sources_batch(jar, java_sources)
+            features = batch_result['features']
             
             assert len(features["blocks"]) > 0
             assert len(features["items"]) > 0
