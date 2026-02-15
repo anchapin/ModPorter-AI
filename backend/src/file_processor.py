@@ -6,6 +6,10 @@ import zipfile
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional, Dict
+import asyncio
+import ipaddress
+import socket
+from urllib.parse import urlparse, urljoin
 
 import httpx
 from fastapi import UploadFile
@@ -81,6 +85,52 @@ class FileProcessor:
         if not sanitized:  # If filename became empty after sanitization
             return "default_sanitized_filename"
         return sanitized
+
+    async def _resolve_hostname(self, hostname: str) -> Optional[str]:
+        """Resolves hostname to IP address asynchronously."""
+        loop = asyncio.get_running_loop()
+        try:
+            return await loop.run_in_executor(None, socket.gethostbyname, hostname)
+        except (socket.gaierror, OSError):
+            return None
+
+    async def _is_url_safe(self, url: str) -> bool:
+        """
+        Validates if the URL points to a safe, public IP address (SSRF protection).
+        Checks for private, loopback, link-local, and multicast addresses.
+        """
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+
+            # Check if hostname is an IP address
+            try:
+                ip_obj = ipaddress.ip_address(hostname)
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or str(ip_obj) == "0.0.0.0":
+                    logger.warning(f"Blocked potentially unsafe IP address in URL: {url} (IP: {hostname})")
+                    return False
+                return True
+            except ValueError:
+                # Hostname is not an IP, proceed to resolve
+                pass
+
+            # Resolve hostname to IP
+            ip = await self._resolve_hostname(hostname)
+            if not ip:
+                logger.warning(f"Could not resolve hostname for URL: {url}")
+                return False
+
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or str(ip_obj) == "0.0.0.0":
+                logger.warning(f"Blocked potentially unsafe URL: {url} (Resolved IP: {ip})")
+                return False
+
+            return True
+        except Exception as e:
+            logger.error(f"Error validating URL {url}: {e}")
+            return False
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
         """
@@ -554,81 +604,107 @@ class FileProcessor:
     async def download_from_url(self, url: str, job_id: str) -> DownloadResult:
         """
         Downloads a file from the specified URL.
+        Includes SSRF protection by verifying the destination IP and handling redirects.
         """
         logger.info(f"Starting download from URL: {url} for job_id: {job_id}")
         download_dir = Path(f"/tmp/conversions/{job_id}/uploaded/")
         download_dir.mkdir(parents=True, exist_ok=True)
 
+        current_url = url
+        max_redirects = 10
+        redirect_count = 0
+
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, follow_redirects=True, timeout=30.0)
-                response.raise_for_status()  # Raises HTTPStatusError for 4xx/5xx responses
+            async with httpx.AsyncClient(follow_redirects=False) as client:
+                while redirect_count <= max_redirects:
+                    # Validate URL before request (SSRF Protection)
+                    if not await self._is_url_safe(current_url):
+                        msg = f"Potential SSRF blocked for URL: {current_url}"
+                        logger.warning(msg)
+                        return DownloadResult(success=False, message="Invalid or unsafe URL (SSRF Blocked)")
 
-                # Determine filename
-                content_disposition = response.headers.get("Content-Disposition")
-                filename_from_header = None
-                if content_disposition:
-                    # Parse Content-Disposition header using email.message
-                    msg = EmailMessage()
-                    msg["Content-Disposition"] = content_disposition
-                    filename_from_header = msg.get_param(
-                        "filename", header="Content-Disposition"
-                    )
+                    response = await client.get(current_url, timeout=30.0)
 
-                if filename_from_header:
-                    raw_filename = filename_from_header
-                else:
-                    # Use last part of URL path if no Content-Disposition
-                    url_path = Path(response.url.path)
-                    raw_filename = url_path.name if url_path.name else "downloaded_file"
+                    # Handle Redirects Manually
+                    if 300 <= response.status_code < 400:
+                        location = response.headers.get("Location")
+                        if not location:
+                            msg = f"Redirect without Location header for URL: {current_url}"
+                            logger.error(msg)
+                            return DownloadResult(success=False, message=msg)
 
-                sanitized_filename = self._sanitize_filename(raw_filename)
-                if not sanitized_filename.strip():  # Ensure not just whitespace
-                    sanitized_filename = "downloaded_file_unnamed"
+                        current_url = urljoin(current_url, location)
+                        redirect_count += 1
+                        continue
 
-                # Ensure there's an extension, default if necessary.
-                # This is a simplification; proper type detection is harder.
-                if not Path(sanitized_filename).suffix:
-                    # Try to guess from content-type if possible, otherwise default
-                    content_type = response.headers.get("Content-Type", "").split("/")[
-                        0
-                    ]
-                    if "zip" in content_type:
-                        sanitized_filename += ".zip"
-                    elif (
-                        "java-archive" in content_type or "jar" in content_type
-                    ):  # application/java-archive or application/x-jar
-                        sanitized_filename += ".jar"
-                    else:  # Default or unknown
-                        logger.warning(
-                            f"Could not determine extension for {url} from Content-Type: {content_type}. Defaulting to no specific extension or .bin if needed."
+                    response.raise_for_status()  # Raises HTTPStatusError for 4xx/5xx responses (if not redirect)
+
+                    # Determine filename
+                    content_disposition = response.headers.get("Content-Disposition")
+                    filename_from_header = None
+                    if content_disposition:
+                        # Parse Content-Disposition header using email.message
+                        msg = EmailMessage()
+                        msg["Content-Disposition"] = content_disposition
+                        filename_from_header = msg.get_param(
+                            "filename", header="Content-Disposition"
                         )
-                        # If a specific default like .bin is needed, add it here.
-                        # For now, it might save without one if Path(sanitized_filename).suffix is still empty.
 
-                downloaded_file_path = download_dir / sanitized_filename
+                    if filename_from_header:
+                        raw_filename = filename_from_header
+                    else:
+                        # Use last part of URL path if no Content-Disposition
+                        url_path = Path(str(response.url)) # Use actual final URL
+                        raw_filename = url_path.name if url_path.name else "downloaded_file"
 
-                # Save the file
-                with open(downloaded_file_path, "wb") as f:
-                    async for chunk in response.aiter_bytes():
-                        f.write(chunk)
+                    sanitized_filename = self._sanitize_filename(raw_filename)
+                    if not sanitized_filename.strip():  # Ensure not just whitespace
+                        sanitized_filename = "downloaded_file_unnamed"
 
-                file_size = downloaded_file_path.stat().st_size
-                if file_size == 0:
-                    logger.warning(
-                        f"Downloaded file {downloaded_file_path} is empty for URL: {url}, job_id: {job_id}"
+                    # Ensure there's an extension, default if necessary.
+                    if not Path(sanitized_filename).suffix:
+                        # Try to guess from content-type if possible, otherwise default
+                        content_type = response.headers.get("Content-Type", "").split("/")[
+                            0
+                        ]
+                        if "zip" in content_type:
+                            sanitized_filename += ".zip"
+                        elif (
+                            "java-archive" in content_type or "jar" in content_type
+                        ):  # application/java-archive or application/x-jar
+                            sanitized_filename += ".jar"
+                        else:  # Default or unknown
+                            logger.warning(
+                                f"Could not determine extension for {url} from Content-Type: {content_type}. Defaulting to no specific extension or .bin if needed."
+                            )
+
+                    downloaded_file_path = download_dir / sanitized_filename
+
+                    # Save the file
+                    with open(downloaded_file_path, "wb") as f:
+                        async for chunk in response.aiter_bytes():
+                            f.write(chunk)
+
+                    file_size = downloaded_file_path.stat().st_size
+                    if file_size == 0:
+                        logger.warning(
+                            f"Downloaded file {downloaded_file_path} is empty for URL: {url}, job_id: {job_id}"
+                        )
+
+                    logger.info(
+                        f"Successfully downloaded {sanitized_filename} ({file_size} bytes) to {downloaded_file_path} for job_id: {job_id}"
                     )
-                    # Optionally return success=False or a specific message
+                    return DownloadResult(
+                        success=True,
+                        message=f"File downloaded successfully as {sanitized_filename}",
+                        file_path=downloaded_file_path,
+                        file_name=sanitized_filename,
+                    )
 
-                logger.info(
-                    f"Successfully downloaded {sanitized_filename} ({file_size} bytes) to {downloaded_file_path} for job_id: {job_id}"
-                )
-                return DownloadResult(
-                    success=True,
-                    message=f"File downloaded successfully as {sanitized_filename}",
-                    file_path=downloaded_file_path,
-                    file_name=sanitized_filename,
-                )
+                # Too many redirects
+                msg = f"Too many redirects while downloading from URL: {url}"
+                logger.error(msg)
+                return DownloadResult(success=False, message=msg)
 
         except httpx.TimeoutException:
             msg = f"Timeout while downloading from URL: {url} for job_id: {job_id}"
