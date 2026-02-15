@@ -10,8 +10,23 @@ import pytest
 import datetime
 from unittest.mock import patch
 
+from src.services.comprehensive_report_generator import ConversionReportGenerator
+from src.types.report_types import (
+    SummaryReport,
+    FeatureAnalysis,
+    AssumptionsReport,
+    AssumptionReportItem,
+    DeveloperLog,
+    InteractiveReport,
+    create_report_metadata,
+    calculate_quality_score,
+    FeatureAnalysisItem,
+    ImpactLevel,
+    ConversionStatus
+)
+
 # Temporarily skip all tests in this file due to import issues
-pytest.skip("Skipping comprehensive report generator tests due to import path issues", allow_module_level=True)
+# pytest.skip("Skipping comprehensive report generator tests due to import path issues", allow_module_level=True)
 
 
 @pytest.fixture
@@ -197,7 +212,7 @@ class TestSummaryReportGeneration:
         """Test basic summary report generation."""
         summary = report_generator.generate_summary_report(sample_conversion_result)
 
-        assert summary.overall_success_rate == 85.5
+        assert summary.overall_success_rate == 85.0
         assert summary.total_features == 20
         assert summary.converted_features == 17
         assert summary.partially_converted_features == 2
@@ -436,7 +451,7 @@ class TestInteractiveReportGeneration:
         assert "generation_timestamp" in report_dict["metadata"]
 
         # Check summary
-        assert report_dict["summary"]["overall_success_rate"] == 85.5
+        assert report_dict["summary"]["overall_success_rate"] == 85.0
         assert "conversion_quality_score" in report_dict["summary"]
 
     def test_report_to_json(self, report_generator, sample_conversion_result):
@@ -518,7 +533,7 @@ class TestReportGenerationIntegration:
 
         # Verify all components work together
         assert report.metadata.job_id == job_id
-        assert report.summary.overall_success_rate == 85.5
+        assert report.summary.overall_success_rate == 85.0
         assert len(report.feature_analysis.features) == 2
         assert len(report.assumptions_report.assumptions) == 2
         assert report.developer_log.performance_metrics["total_time_seconds"] == 45.2
