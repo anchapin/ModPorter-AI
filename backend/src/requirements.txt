@@ -2,17 +2,17 @@
 httpx>=0.25.0
 
 # Core Framework (updated for CI fix)
-fastapi==0.128.0
+fastapi==0.129.0
 uvicorn[standard]==0.40.0
 pydantic==2.12.5
-pydantic-settings==2.12.0
+pydantic-settings==2.13.0
 python-dateutil==2.9.0.post0
 
 # Database
 sqlalchemy>=2.0.23
 asyncpg>=0.29
 psycopg2-binary>=2.9.7
-alembic==1.18.0
+alembic==1.18.4
 pgvector>=0.1.1
 aiosqlite>=0.19.0  # For SQLite async support in tests
 
@@ -34,8 +34,8 @@ pytest-cov==7.0.0
 pytest-timeout==2.4.0
 
 # Code Quality
-ruff==0.14.11
-black==25.12.0
+ruff==0.15.1
+black==26.1.0
 
 # Utilities
 python-dotenv==1.2.1
