@@ -3,7 +3,7 @@ import hashlib
 import os
 import logging # Using standard logging
 from typing import Optional, List, Dict, Any # Added List, Dict, Any
-from utils.embedding_generator import EmbeddingGenerator
+from utils.embedding_generator import LocalEmbeddingGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class VectorDBClient:
 
         self.base_url = base_url
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
-        self.embedding_generator = EmbeddingGenerator()
+        self.embedding_generator = LocalEmbeddingGenerator()
         logger.info(f"VectorDBClient initialized with base URL: {self.base_url}")
 
     async def index_document(
