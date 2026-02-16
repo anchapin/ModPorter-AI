@@ -45,31 +45,215 @@ class LogicTranslatorAgent:
             "ArrayList": "Array",
             "HashMap": "Map",
             "Map": "Map",
+            # Enhanced Type Mappings (Issue #332)
+            "Set": "Set",
+            "HashSet": "Set",
+            "TreeSet": "Set",
+            "LinkedList": "Array",
+            "Queue": "Array",
+            "Stack": "Array",
+            "Deque": "Array",
+            "Optional": "null",  # Handle with null checks
+            "OptionalInt": "number | null",
+            "OptionalDouble": "number | null",
+            "OptionalLong": "number | null",
+            # Enum handling - convert to string constants
+            "Enum": "string",
+            # Custom classes become object prototypes
+            "Object": "object",
+            # Collection primitives
+            "Iterator": "Iterator",
+            "Iterable": "Iterable",
+            # File and I/O types
+            "File": "string",  # Path as string
+            "InputStream": "Uint8Array",
+            "OutputStream": "Uint8Array",
+            "Reader": "string",
+            "Writer": "string",
+        }
+        
+        # Enum mappings for common Minecraft enums
+        self.enum_mappings = {
+            # Block-related enums
+            "BlockFace": {"DOWN": "Directions.DOWN", "UP": "Directions.UP", 
+                         "NORTH": "Directions.NORTH", "SOUTH": "Directions.SOUTH",
+                         "EAST": "Directions.EAST", "WEST": "Directions.WEST"},
+            # Direction enums
+            "Direction": {"DOWN": "Directions.DOWN", "UP": "Directions.UP",
+                         "NORTH": "Directions.NORTH", "SOUTH": "Directions.SOUTH",
+                         "EAST": "Directions.EAST", "WEST": "Directions.WEST"},
+            # Entity enums
+            "EntityType": {"ZOMBIE": "minecraft:zombie", "SKELETON": "minecraft:skeleton",
+                          "PLAYER": "minecraft:player"},
+            # Material enums
+            "Material": {"AIR": "minecraft:air", "STONE": "minecraft:stone",
+                        "GRASS": "minecraft:grass", "DIRT": "minecraft:dirt"},
+            # Item enums  
+            "ItemStack": {"EMPTY": "ItemStack.empty()"},
+        }
+        
+        # Null safety patterns
+        self.null_safety_patterns = {
+            "null": "null",
+            "Optional.empty()": "null",
+            "Optional.of(": "/* value */",
+            "Optional.ofNullable(": "/* nullable */",
+            ".orElse(": " ?? ",  # Null coalescing
+            ".orElseGet(": " ?? (",
+            ".isPresent()": " !== null",
+            ".ifPresent(": "if (",
         }
 
+        # Enhanced API Mappings (Issue #332 - API Mapping Expansion)
         self.api_mappings = {
-            # Common Minecraft Java to Bedrock mappings
-            "player.getHealth()": 'player.getComponent("health").currentValue',
-            "player.setHealth()": 'player.getComponent("health").setCurrentValue()',
-            "world.getBlockAt()": "world.getBlock()",
+            # ========== Player API Mappings ==========
+            # Health
+            "player.getHealth()": 'player.getComponent("minecraft:health").currentValue',
+            "player.setHealth()": 'player.getComponent("minecraft:health").setCurrentValue()',
+            "player.getMaxHealth()": 'player.getComponent("minecraft:health").effectiveMax',
+            "player.isDead()": 'player.getComponent("minecraft:health").currentValue <= 0',
+            # Inventory
+            "player.getInventory()": "player.container",
+            "player.getItemInHand()": "player.getComponent('minecraft:equipped_item').item",
+            "player.getSelectedItem()": "player.getComponent('minecraft:equipped_item')",
+            ".getItemStack()": ".getItem()",
+            # Position
+            "player.getLocation()": "player.location",
+            "player.getX()": "player.location.x",
+            "player.getY()": "player.location.y",
+            "player.getZ()": "player.location.z",
+            "player.getWorld()": "player.dimension",
+            "player.getDirection()": "player.direction",
+            # Status
+            "player.isSneaking()": "player.isSneaking",
+            "player.isSprinting()": "player.isSprinting",
+            "player.isFlying()": "player.isFlying",
+            "player.isOnGround()": "player.isOnGround",
+            "player.getExperienceLevel()": "player.level",
+            "player.getFoodLevel()": 'player.getComponent("minecraft:food").foodLevel',
+            "player.getSaturation()": 'player.getComponent("minecraft:food").saturation',
+            # Permissions
+            "player.hasPermission()": "player.hasPermission()",  # Keep as-is for now
+            "player.isOp()": "player.isOp()",
+            
+            # ========== World API Mappings ==========
+            # Blocks
+            "world.getBlockAt(": "world.getBlock(",  # x, y, z
+            "world.setBlock(": "block.setPermutation(",  # Different approach needed
+            "world.getBlockState(": "block.permutation",
+            "world.setBlockState(": "block.setPermutation(",
+            "world.isAirBlock(": "block.typeId === 'minecraft:air'",
+            "world.getTypeId(": "block.typeId",
+            "world.getBiome(": "world.getBiome(",
+            "world.setBiome(": "world.setBiome(",
+            # Time
+            "world.getTime()": "world.getTime()",
+            "world.setTime(": "world.setTime(",
+            "world.getDayTime()": "world.dayTime",
+            "world.setDayTime(": "world.dayTime =",
+            # Weather
+            "world.hasStorm()": "world.isRaining()",
+            "world.setStorm(": "world.setRaining(",
+            "world.getDifficulty()": "world.difficulty",
+            "world.setDifficulty(": "world.difficulty =",
+            # Spawning
+            "world.spawnEntity(": "world.spawnEntity(",
+            "world.spawnParticle(": "world.spawnParticle(",
+            
+            # ========== Entity API Mappings ==========
+            # Movement
+            "entity.getVelocity()": "entity.velocity",
+            "entity.setVelocity(": "entity.velocity =",
+            "entity.teleport(": "entity.teleport(",
             "entity.getLocation()": "entity.location",
+            "entity.setRotation(": "entity.setRotation(",
+            "entity.getPitch()": "entity.rotation.x",
+            "entity.getYaw()": "entity.rotation.y",
+            # Combat
+            "entity.damage(": "applyDamage(",  # Custom function needed
+            "entity.getHealth()": 'entity.getComponent("minecraft:health").currentValue',
+            "entity.setHealth(": 'entity.getComponent("minecraft:health").setCurrentValue(',
+            "entity.getMaxHealth()": 'entity.getComponent("minecraft:health").effectiveMax',
+            "entity.isDead()": 'entity.getComponent("minecraft:health").currentValue <= 0',
+            "entity.remove()": "entity.destroy()",
+            "entity.remove(": "entity.destroy()",
+            # Properties
+            "entity.getType()": "entity.typeId",
+            "entity.getName()": "entity.nameTag",
+            "entity.setCustomName(": "entity.nameTag =",
+            "entity.isSilent()": "entity.isSilent",
+            "entity.setSilent(": "entity.isSilent =",
+            "entity.hasGravity()": "entity.hasGravity",
+            # Inventory
+            "entity.getInventory()": "entity.container",
+            "entity.getEquipment()": "entity.getComponent('minecraft:equipment')",
+            
+            # ========== Item API Mappings ==========
+            # ItemStack
             "ItemStack": "ItemStack",
+            "new ItemStack(": "new ItemStack(",
+            ".getType()": ".typeId",
+            ".setType(": ".typeId =",
+            ".getAmount()": ".amount",
+            ".setAmount(": ".amount =",
+            ".getDurability()": ".getComponent('minecraft:damageable').damage",
+            ".setDurability(": ".getComponent('minecraft:damageable').damage =",
+            ".getItemMeta()": ".getComponent('minecraft:item')",
+            ".setItemMeta(": "// Item meta not directly supported",
+            ".hasItemMeta()": ".hasComponent('minecraft:item')",
+            ".isEmpty()": ".amount === 0",
+            # Item usage
+            "item.canPickup()": "item.canPlaceOn",  # Approximate
+            ".pickup(": "// Pickup not directly supported",
+            
+            # ========== Block API Mappings ==========
+            # Block state
+            "block.getType()": "block.typeId",
+            "block.getTypeId()": "block.typeId",
+            "block.setType(": "block.setType(",
+            "block.getData()": "block.permutation",
+            "block.getState(": "block.permutation",
+            "block.setState(": "block.setPermutation(",
+            "block.getLocation()": "block.location",
+            "block.getX()": "block.location.x",
+            "block.getY()": "block.location.y",
+            "block.getZ()": "block.location.z",
+            "block.getWorld()": "block.dimension",
+            # Block properties
+            "block.isEmpty()": "block.typeId === 'minecraft:air'",
+            "block.isSolid()": "// Block solidity check not directly supported",
+            "block.getLightLevel()": "block.getLight()",
+            # Block physics
+            "block.breakNaturally(": "block.destroy()",
+            "block.breakNaturally(": "block.destroy()",
+            "BlockPosition": "BlockLocation",
+            # Material
             "Material": "MinecraftItemType",
+            
+            # ========== Common Java to JS Conversions ==========
+            "System.out.println": "console.log",
+            "System.out.print": "console.log",
+            "System.err.println": "console.error",
+            "Thread.sleep(": "await new Promise(r => setTimeout(r,",  # Convert ms to ms
+            "Math.random()": "Math.random()",
+            "Math.abs(": "Math.abs(",
+            "Math.max(": "Math.max(",
+            "Math.min(": "Math.min(",
+            
+            # ========== Event Handler Mappings ==========
+            "PlayerInteractEvent": "world.afterEvents.playerInteractWithBlock",
+            "BlockBreakEvent": "world.afterEvents.playerBreakBlock",
+            "BlockPlaceEvent": "world.afterEvents.blockPlace",
+            "EntitySpawnEvent": "world.afterEvents.entitySpawn",
+            "EntityDeathEvent": "world.afterEvents.entityDie",
+            "PlayerJoinEvent": "world.afterEvents.playerJoin",
+            "PlayerLeaveEvent": "world.afterEvents.playerLeave",
+            "PlayerChatEvent": "world.afterEvents.chatSend",
+            "PlayerCommandPreprocessEvent": "world.afterEvents.commandExecute",
+            "EntityDamageEvent": "world.afterEvents.entityHit",
+            "ItemUseEvent": "world.afterEvents.itemUse",
+            "ItemUseOnEvent": "world.afterEvents.itemUseOn",
         }
-        self.api_mappings.update(
-            {
-                # Player Data
-                "player.getDisplayNameString()": "player.nameTag",
-                "player.isSneaking()": "player.isSneaking",
-                "player.experienceLevel": "player.level",
-                "player.getFoodStats().getFoodLevel()": 'player.getComponent("minecraft:food").foodLevel',
-                # ItemStack Operations
-                ".getCount()": ".amount",
-                ".isEmpty()": "",  # Special handling in _convert_java_body_to_javascript
-                # World
-                "world.isAirBlock(": "world.getBlock(",  # Needs suffix handling in _convert_java_body_to_javascript
-            }
-        )
 
     def _get_javascript_type(self, java_type):
         """Convert Java type to JavaScript type"""
@@ -689,3 +873,220 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
                 "error": str(e),
                 "warnings": []
             }
+
+    # ========== Enhanced Event Handler Generation (Issue #332) ==========
+    
+    def generate_block_break_event_handler(self, class_name: str) -> str:
+        """Generate block break event handler"""
+        return f"""// Block break event handler
+world.afterEvents.playerBreakBlock.subscribe((event) => {{
+  const block = event.brokenBlockPermutation.type;
+  const player = event.player;
+  const dimension = event.player.dimension;
+  
+  // Custom block break logic here
+  // event.brokenBlockPermutation - The block that was broken
+  // event.player - The player who broke the block
+}});"""
+
+    def generate_block_place_event_handler(self, class_name: str) -> str:
+        """Generate block place event handler"""
+        return f"""// Block place event handler
+world.afterEvents.blockPlace.subscribe((event) => {{
+  const block = event.block;
+  const player = event.player;
+  const permutation = event.permutation;
+  
+  // Custom block place logic here
+  // event.block - The block that was placed
+  // event.player - The player who placed the block
+}});"""
+
+    def generate_entity_spawn_event_handler(self, class_name: str) -> str:
+        """Generate entity spawn event handler"""
+        return f"""// Entity spawn event handler
+world.afterEvents.entitySpawn.subscribe((event) => {{
+  const entity = event.entity;
+  const entityType = entity.typeId;
+  
+  // Custom entity spawn logic here
+  // event.entity - The entity that spawned
+  // event.entity.typeId - Type of entity (e.g., 'minecraft:zombie')
+}});"""
+
+    def generate_entity_death_event_handler(self, class_name: str) -> str:
+        """Generate entity death event handler"""
+        return f"""// Entity death event handler
+world.afterEvents.entityDie.subscribe((event) => {{
+  const entity = event.entity;
+  const damageSource = event.damageSource;
+  
+  // Custom entity death logic here
+  // event.entity - The entity that died
+  // event.damageSource - What caused the death
+}});"""
+
+    def generate_player_join_event_handler(self, class_name: str) -> str:
+        """Generate player join event handler"""
+        return f"""// Player join event handler
+world.afterEvents.playerJoin.subscribe((event) => {{
+  const player = event.player;
+  const playerName = player.nameTag;
+  
+  // Custom player join logic here
+  // event.player - The player who joined
+  // event.player.nameTag - Player's display name
+}});"""
+
+    def generate_player_leave_event_handler(self, class_name: str) -> str:
+        """Generate player leave event handler"""
+        return f"""// Player leave event handler
+world.afterEvents.playerLeave.subscribe((event) => {{
+  const playerName = event.playerName;
+  
+  // Custom player leave logic here
+  // event.playerName - Name of player who left
+}});"""
+
+    def generate_chat_event_handler(self, class_name: str) -> str:
+        """Generate chat/command event handler"""
+        return f"""// Chat event handler
+world.afterEvents.chatSend.subscribe((event) => {{
+  const message = event.message;
+  const sender = event.sender;
+  
+  // Custom chat logic here
+  // event.message - The chat message
+  // event.sender - The player who sent it
+  // To cancel: event.cancel = true;
+}});"""
+
+    def generate_command_event_handler(self, class_name: str) -> str:
+        """Generate command execute event handler"""
+        return f"""// Command execute event handler
+world.afterEvents.commandExecute.subscribe((event) => {{
+  const command = event.command;
+  const source = event.source;
+  
+  // Custom command logic here
+  // event.command - The command that was run
+  // event.source - Who ran the command
+  // To cancel: event.cancel = true;
+}});"""
+
+    def generate_tick_event_handler(self, class_name: str) -> str:
+        """Generate tick/update event handler"""
+        return f"""// Tick event handler (runs every tick)
+world.beforeEvents.tick.subscribe((event) => {{
+  // Custom tick logic here
+  // Runs every game tick (~20 times per second)
+  // Use sparingly for performance
+}});"""
+
+    def generate_item_use_event_handler(self, class_name: str) -> str:
+        """Generate item use event handler"""
+        return f"""// Item use event handler
+world.afterEvents.itemUse.subscribe((event) => {{
+  const itemStack = event.itemStack;
+  const player = event.source;
+  
+  // Custom item use logic here
+  // event.itemStack - The item that was used
+  // event.source - The player who used it
+}});"""
+
+    def generate_item_use_on_event_handler(self, class_name: str) -> str:
+        """Generate item use on block event handler"""
+        return f"""// Item use on block event handler
+world.afterEvents.itemUseOn.subscribe((event) => {{
+  const itemStack = event.itemStack;
+  const block = event.block;
+  const player = event.player;
+  
+  // Custom item use on block logic here
+  // event.itemStack - The item that was used
+  // event.block - The block it was used on
+  // event.player - The player who used it
+}});"""
+
+    def generate_all_event_handlers(self, class_name: str) -> dict:
+        """Generate all event handler templates for a class"""
+        return {
+            "block_break": self.generate_block_break_event_handler(class_name),
+            "block_place": self.generate_block_place_event_handler(class_name),
+            "entity_spawn": self.generate_entity_spawn_event_handler(class_name),
+            "entity_death": self.generate_entity_death_event_handler(class_name),
+            "player_join": self.generate_player_join_event_handler(class_name),
+            "player_leave": self.generate_player_leave_event_handler(class_name),
+            "chat": self.generate_chat_event_handler(class_name),
+            "command": self.generate_command_event_handler(class_name),
+            "tick": self.generate_tick_event_handler(class_name),
+            "item_use": self.generate_item_use_event_handler(class_name),
+            "item_use_on": self.generate_item_use_on_event_handler(class_name),
+        }
+
+    def translate_complex_type(self, java_type: str) -> str:
+        """Translate complex Java types to JavaScript with proper handling"""
+        # Handle generic types like List<String>, Map<String, Integer>
+        if '<' in java_type:
+            base_type = java_type.split('<')[0]
+            generic_types = java_type.split('<')[1].rstrip('>')
+            
+            if base_type in ['List', 'ArrayList', 'Collection']:
+                return f"Array<{self._translate_generic_type(generic_types)}>"
+            elif base_type in ['Map', 'HashMap']:
+                key_type, value_type = generic_types.split(',')
+                return f"Map<{self._translate_generic_type(key_type)}, {self._translate_generic_type(value_type)}>"
+            elif base_type == 'Set':
+                return f"Set<{self._translate_generic_type(generic_types)}>"
+        
+        # Fall back to simple type mapping
+        return self.type_mappings.get(java_type, java_type)
+
+    def _translate_generic_type(self, generic_type: str) -> str:
+        """Translate a generic type parameter"""
+        generic_type = generic_type.strip()
+        
+        # Handle primitive wrappers
+        type_mapping = {
+            'String': 'string',
+            'Integer': 'number',
+            'Double': 'number',
+            'Float': 'number',
+            'Boolean': 'boolean',
+            'Object': 'object',
+            'Integer': 'number',
+        }
+        
+        return type_mapping.get(generic_type, generic_type)
+
+    def apply_null_safety(self, java_code: str) -> str:
+        """Apply null safety transformations to Java code"""
+        js_code = java_code
+        
+        # Replace Optional patterns with JavaScript equivalents
+        for pattern, replacement in self.null_safety_patterns.items():
+            js_code = js_code.replace(pattern, replacement)
+        
+        # Additional null safety transformations
+        # Java: if (obj != null) → JS: if (obj)
+        js_code = js_code.replace('!= null', '!== null')
+        js_code = js_code.replace('== null', '=== null')
+        
+        # Java: obj.nullCheck() → JS: obj
+        js_code = js_code.replace('.notNull()', '')
+        
+        # Java: Objects.requireNonNull() → // Required
+        js_code = js_code.replace('Objects.requireNonNull(', '// Required: ')
+        
+        return js_code
+
+    def convert_enum_usage(self, enum_type: str, enum_value: str) -> str:
+        """Convert enum usage to JavaScript/Bedrock equivalent"""
+        if enum_type in self.enum_mappings:
+            enum_map = self.enum_mappings[enum_type]
+            if enum_value in enum_map:
+                return enum_map[enum_value]
+        
+        # Fallback: return as string constant
+        return f"{enum_type}.{enum_value}"
