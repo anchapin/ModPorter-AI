@@ -42,6 +42,30 @@ class MockModule:
 sys.modules['pydub'] = MockModule()
 sys.modules['pydub.exceptions'] = MockModule()
 sys.modules['pydub.utils'] = MockModule()
+
+# Mock crewai to avoid dependency issues in tests
+class MockCrewAI:
+    class tools:
+        @staticmethod
+        def tool(func):
+            return func
+        class BaseTool:
+            pass
+    class Agent:
+        pass
+    class Task:
+        pass
+    class Crew:
+        pass
+    BaseTool = tools.BaseTool
+
+sys.modules['crewai'] = MockCrewAI()
+sys.modules['crewai.tools'] = MockCrewAI.tools
+sys.modules['crewai.tools.BaseTool'] = MockCrewAI.tools.BaseTool
+
+# Mock local tools package to prevent import conflicts
+sys.modules['tools'] = MockModule()
+
 os.environ['TESTING'] = 'true'
 
 # Now import agents
