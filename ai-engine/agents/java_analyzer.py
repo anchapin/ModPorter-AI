@@ -9,7 +9,7 @@ from crewai.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from utils.embedding_generator import EmbeddingGenerator
+from utils.embedding_generator import LocalEmbeddingGenerator
 from utils.logging_config import get_agent_logger, log_performance
 import os
 import zipfile
@@ -37,7 +37,7 @@ class JavaAnalyzerAgent:
     def __init__(self):
         self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
-        self.embedding_generator = EmbeddingGenerator() # Added EmbeddingGenerator instantiation
+        self.embedding_generator = LocalEmbeddingGenerator() # Added EmbeddingGenerator instantiation
         
         # File patterns for different types of mod files
         self.file_patterns = {

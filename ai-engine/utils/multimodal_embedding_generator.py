@@ -13,7 +13,7 @@ import numpy as np
 from pathlib import Path
 
 # Import the existing embedding generator as base
-from utils.embedding_generator import EmbeddingGenerator
+from utils.embedding_generator import LocalEmbeddingGenerator
 from utils.advanced_chunker import Chunk, ChunkType
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class CodeAwareEmbeddingGenerator:
     """
     
     def __init__(self):
-        self.base_generator = EmbeddingGenerator()
+        self.base_generator = LocalEmbeddingGenerator()
         self.code_keywords = self._load_code_keywords()
         self.java_patterns = self._load_java_patterns()
     
@@ -323,7 +323,7 @@ class MultiModalEmbeddingGenerator:
     """
     
     def __init__(self):
-        self.text_generator = EmbeddingGenerator()
+        self.text_generator = LocalEmbeddingGenerator()
         self.code_generator = CodeAwareEmbeddingGenerator()
         self.image_generator = ImageEmbeddingGenerator()
         
