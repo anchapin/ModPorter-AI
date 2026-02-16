@@ -1,0 +1,61 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ item_name }}",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "{{ texture_name | default(item_name) }}"
+      },
+      "minecraft:display_name": {
+        "value": "{{ display_name | default(item_name | title) }}"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:durability": {
+        "max_durability": {{ max_durability | default(80) }}
+      },
+      "minecraft:armor": {
+        "protection": {{ protection | default(2) }},
+        "texture_type": "{{ texture_type | default('generic') }}"
+      },
+      "minecraft:enchantable": {
+        "slot": "{{ armor_slot | default('armor') }}",
+        "value": {{ enchantment_value | default(15) }}
+      },
+      "minecraft:repair_items": [
+        {% for repair_item in repair_items %}{
+          "items": ["{{ repair_item }}"]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]{% if knockback_resistance %},
+      "minecraft:knockback_resistance": {
+        "value": {{ knockback_resistance }}
+      }{% endif %}{% if armor_toughness %},
+      "minecraft:armor_toughness": {
+        "value": {{ armor_toughness }}
+      }{% endif %}{% if set_bonus %},
+      "minecraft:equipable": {
+        "slot": "{{ armor_slot }}",
+        "on_equip": {
+          "event": "equip_set_bonus"
+        }
+      }{% endif %}
+    }{% if set_bonus %},
+    "events": {
+      "equip_set_bonus": {
+        "sequence": [
+          {
+            "set_static_cell": {
+              "cell_name": "{{ namespace }}:armor_set_bonus",
+              "value": {{ set_bonus.value | default(1) }}
+            }
+          }
+        ]
+      }
+    }{% endif %}
+  }
+}

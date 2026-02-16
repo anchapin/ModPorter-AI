@@ -1,0 +1,45 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ item_name }}",
+      "menu_category": {
+        "category": "{{ menu_category | default('items') }}"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "{{ texture_name | default(item_name) }}"
+      },
+      "minecraft:display_name": {
+        "value": "{{ display_name | default(item_name | title) }}"
+      },
+      "minecraft:max_stack_size": {{ max_stack_size | default(1) }},
+      "minecraft:rarity": "{{ rarity | default('rare') }}",
+      "minecraft:item_storage": {
+        "slot_count": {{ storage_slots | default(27) }},
+        "container": {{ container_type | default("inventory") }}
+      }{% if item_lock %},
+      "minecraft:item_lock": {
+        "mode": "{{ item_lock }}"
+      }{% endif %}{% if keep_on_death %},
+      "minecraft:keep_on_death": {
+        "keep_on_death": true
+      }{% endif %}{% if can_destroy_in_creative %},
+      "minecraft:can_destroy_in_creative": {
+        "value": false
+      }{% endif %}{% if custom_data %},
+      "minecraft:custom_components": [
+        {% for component in custom_components %}{{ component | tojson }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]{% endif %}
+    }{% if ability %},
+    "events": {
+      "{{ ability.event }}": {
+        "sequence": [
+          {{ ability.action | tojson }}
+        ]
+      }
+    }{% endif %}
+  }
+}

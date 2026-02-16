@@ -1,0 +1,32 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_smithing_transform": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ recipe_name }}"
+    },
+    "tags": ["smithing_table"],
+    "template": {
+      "item": "{{ template.item }}",
+      "data": {{ template.data | default(0) }}
+    },
+    "base": {
+      "item": "{{ base.item }}",
+      "data": {{ base.data | default(0) }}
+    },
+    "addition": {
+      "item": "{{ addition.item }}",
+      "data": {{ addition.data | default(0) }}
+    },
+    "result": {
+      "item": "{{ result.item }}",
+      "data": {{ result.data | default(0) }}
+    }{% if unlock_context %},
+    "unlock": [
+      {% for unlock in unlock_context %}{
+        "item": "{{ unlock.item }}",
+        "data": {{ unlock.data | default(0) }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]{% endif %}
+  }
+}

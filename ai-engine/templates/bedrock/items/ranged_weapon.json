@@ -1,0 +1,87 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ item_name }}",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "{{ texture_name | default(item_name) }}"
+      },
+      "minecraft:display_name": {
+        "value": "{{ display_name | default(item_name | title) }}"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:durability": {
+        "max_durability": {{ max_durability | default(384) }}
+      },
+      "minecraft:enchantable": {
+        "slot": "bow",
+        "value": {{ enchantment_value | default(15) }}
+      },
+      "minecraft:repair_items": [
+        {% for repair_item in repair_items %}{
+          "items": ["{{ repair_item }}"]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]{% if is_bow %},
+      "minecraft:bow": {
+        "chargeable": {
+          "charge_up_event": {
+            "event": "start_charge"
+          },
+          "release_use_event": {
+            "event": "release"
+          },
+          "max_charge": {{ max_charge | default(1.0) }}
+        }
+      }{% elif is_crossbow %},
+      "minecraft:crossbow": {
+        "chargeable": {
+          "charge_up_event": {
+            "event": "start_charge"
+          },
+          "release_use_event": {
+            "event": "release"
+          },
+          "max_charge": {{ max_charge | default(1.0) }}
+        },
+        "projectiles": [
+          {% for projectile in projectiles %}{{ projectile | tojson }}{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% endif %}{% if velocity %},
+      "minecraft:shooter": {
+        "charge": {{ velocity }},
+        "def": {{ projectile | default("minecraft:arrow") }}
+      }{% endif %}{% if pull_duration %},
+      "minecraft:pull_duration": {
+        "value": {{ pull_duration }}
+      }{% endif %}
+    }{% if events %},
+    "events": {
+      "start_charge": {
+        "sequence": [
+          {
+            "set_item_aging": {
+              "duration": 1
+            }
+          }
+        ]
+      },
+      "release": {
+        "sequence": [
+          {
+            "shoot": {
+              "value": {{ projectile_count | default(1) }},
+              "component": "minecraft:projectile"
+            }
+          }
+        ]
+      }
+    }{% endif %}
+  }
+}

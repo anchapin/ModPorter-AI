@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "{{ namespace }}:{{ recipe_name }}"
+    },
+    "tags": {{ tags | tojson }},
+    "ingredients": [
+      {% for ingredient in ingredients %}{
+        "item": "{{ ingredient.item }}",
+        "data": {{ ingredient.data | default(0) }}{% if ingredient.count %},
+        "count": {{ ingredient.count }}{% endif %}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    "result": {
+      "item": "{{ result.item }}",
+      "data": {{ result.data | default(0) }},
+      "count": {{ result.count | default(1) }}
+    }{% if unlock_context %},
+    "unlock": [
+      {% for unlock in unlock_context %}{
+        "item": "{{ unlock.item }}",
+        "data": {{ unlock.data | default(0) }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]{% endif %}
+  }
+}

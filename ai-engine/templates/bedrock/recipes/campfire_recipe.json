@@ -1,10 +1,10 @@
 {
   "format_version": "1.20.10",
-  "minecraft:recipe_furnace": {
+  "minecraft:recipe_campfire_cooking": {
     "description": {
       "identifier": "{{ namespace }}:{{ recipe_name }}"
     },
-    "tags": {{ tags | tojson }},
+    "tags": ["campfire"],
     "input": {
       "item": "{{ input.item }}",
       "data": {{ input.data | default(0) }}
