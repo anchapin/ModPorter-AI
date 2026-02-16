@@ -55,8 +55,7 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
-                # from db import models
-                # from db import models as db_models  # Ensure this imports models.py
+                from db import models
                 from sqlalchemy import text
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
@@ -88,7 +87,9 @@ def project_root():
     project_root = backend_dir.parent    # project root
     return project_root
 
-@pytest.fixture(scope="function")
+import pytest_asyncio
+
+@pytest_asyncio.fixture(scope="function")
 async def db_session():
     """Create a database session for each test with transaction rollback."""
     async with test_engine.begin() as connection:
