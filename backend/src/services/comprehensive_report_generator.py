@@ -73,6 +73,11 @@ class ConversionReportGenerator:
         feature_categories = {}
         conversion_patterns = []
 
+        # Optimization: Calculate summary stats in the main loop to avoid repeated iterations
+        successful_count = 0
+        visual_changes_count = 0
+        with_assumptions_count = 0
+
         for feature_data in features_data:
             # Calculate compatibility score
             compatibility_score = self._calculate_compatibility_score(feature_data)
@@ -91,6 +96,14 @@ class ConversionReportGenerator:
                 technical_notes=feature_data.get("technical_notes")
             )
 
+            # Update summary stats
+            if "success" in feature_item.status.lower():
+                successful_count += 1
+            if feature_item.visual_comparison:
+                visual_changes_count += 1
+            if feature_item.assumptions_used:
+                with_assumptions_count += 1
+
             feature_items.append(feature_item)
 
             # Categorize features
@@ -105,13 +118,14 @@ class ConversionReportGenerator:
                 conversion_patterns.append(pattern)
 
         # Calculate average compatibility
-        avg_compatibility = total_compatibility / len(features_data) if features_data else 0.0
+        total_features = len(features_data)
+        avg_compatibility = total_compatibility / total_features if total_features > 0 else 0.0
 
         return FeatureAnalysis(
             features=feature_items,
-            compatibility_mapping_summary=self._generate_compatibility_summary(feature_items),
-            visual_comparisons_overview=self._generate_visual_overview(feature_items),
-            impact_assessment_summary=self._generate_impact_summary(feature_items),
+            compatibility_mapping_summary=self._generate_compatibility_summary(total_features, successful_count, avg_compatibility),
+            visual_comparisons_overview=self._generate_visual_overview(total_features, visual_changes_count),
+            impact_assessment_summary=self._generate_impact_summary(total_features, with_assumptions_count),
             total_compatibility_score=round(avg_compatibility, 1),
             feature_categories=feature_categories,
             conversion_patterns=conversion_patterns
@@ -255,46 +269,36 @@ class ConversionReportGenerator:
         else:
             return None
 
-    def _generate_compatibility_summary(self, features: List[FeatureAnalysisItem]) -> str:
+    def _generate_compatibility_summary(self, total_features: int, successful_count: int, avg_compatibility: float) -> str:
         """Generate compatibility mapping summary."""
-        if not features:
+        if total_features == 0:
             return "No features analyzed."
 
-        total_features = len(features)
-        successful = sum(1 for f in features if "success" in f.status.lower())
-        avg_compatibility = sum(f.compatibility_score for f in features) / total_features
-
         return (
-            f"Analyzed {total_features} features with {successful} successful conversions. "
+            f"Analyzed {total_features} features with {successful_count} successful conversions. "
             f"Average compatibility score: {avg_compatibility:.1f}%. "
             f"Most features were successfully mapped with minimal assumptions required."
         )
 
-    def _generate_visual_overview(self, features: List[FeatureAnalysisItem]) -> str:
+    def _generate_visual_overview(self, total_features: int, visual_changes_count: int) -> str:
         """Generate visual comparisons overview."""
-        visual_changes = sum(1 for f in features if f.visual_comparison)
-        total_features = len(features)
-
-        if visual_changes == 0:
+        if visual_changes_count == 0:
             return "No significant visual changes detected in the conversion."
 
-        percentage = (visual_changes / total_features) * 100
+        percentage = (visual_changes_count / total_features) * 100 if total_features > 0 else 0
         return (
-            f"{visual_changes} out of {total_features} features ({percentage:.1f}%) "
+            f"{visual_changes_count} out of {total_features} features ({percentage:.1f}%) "
             f"have visual changes. Most changes are minor and maintain gameplay functionality."
         )
 
-    def _generate_impact_summary(self, features: List[FeatureAnalysisItem]) -> str:
+    def _generate_impact_summary(self, total_features: int, with_assumptions_count: int) -> str:
         """Generate impact assessment summary."""
-        with_assumptions = sum(1 for f in features if f.assumptions_used)
-        total_features = len(features)
-
-        if with_assumptions == 0:
+        if with_assumptions_count == 0:
             return "No assumptions were required for feature conversion."
 
-        percentage = (with_assumptions / total_features) * 100
+        percentage = (with_assumptions_count / total_features) * 100 if total_features > 0 else 0
         return (
-            f"{with_assumptions} out of {total_features} features ({percentage:.1f}%) "
+            f"{with_assumptions_count} out of {total_features} features ({percentage:.1f}%) "
             f"required smart assumptions. Impact is generally low to medium on core functionality."
         )
 
