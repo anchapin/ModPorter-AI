@@ -131,7 +131,7 @@ class LocalEmbeddingGenerator(EmbeddingGenerator):
     """Local embedding generator using sentence-transformers or similar."""
     
     def __init__(self, model: str = "all-MiniLM-L6-v2", dimensions: int = 384):
-        self.model_name = model
+        self._model_name = model
         self._dimensions = dimensions
         self._model = None
         self._init_model()
