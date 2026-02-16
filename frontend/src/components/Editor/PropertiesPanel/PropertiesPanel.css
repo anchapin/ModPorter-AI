@@ -143,3 +143,27 @@
   padding: 6px 0;
   border-bottom: 1px solid #e0e0e0;
 }
+
+/* Button to create behavior object */
+.create-behavior-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-behavior-button:hover {
+  background-color: #45a049;
+}
+
+.create-behavior-button:active {
+  background-color: #3d8b40;
+}
