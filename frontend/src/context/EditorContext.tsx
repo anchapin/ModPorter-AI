@@ -17,6 +17,7 @@ interface EditorState {
   deleteAsset: (assetId: string) => void;
   selectedRecipeId: string | null;
   setSelectedRecipeId: (recipeId: string | null) => void;
+  updateRecipe: (recipeId: string, updatedRecipeData: any) => void;
   setAddonData: (data: AddonDetails | null) => void; // Changed to AddonDetails | null
 }
 
@@ -120,6 +121,32 @@ export const EditorProvider: React.FC<EditorProviderProps> = ({ children }) => {
     });
   }, []);
 
+  const updateRecipe = useCallback((recipeId: string, updatedRecipeData: any) => {
+    setAddonData(prev => {
+      if (!prev) return null;
+      
+      const recipeIndex = prev.recipes.findIndex(recipe => recipe.id === recipeId);
+      if (recipeIndex === -1) {
+        console.warn(`updateRecipe: Recipe with id ${recipeId} not found.`);
+        return prev;
+      }
+
+      // Create a new recipes array with the updated recipe
+      const updatedRecipes = [...prev.recipes];
+      updatedRecipes[recipeIndex] = {
+        ...updatedRecipes[recipeIndex],
+        data: updatedRecipeData,
+        updated_at: new Date().toISOString()
+      };
+
+      return {
+        ...prev,
+        recipes: updatedRecipes,
+        updated_at: new Date().toISOString(),
+      };
+    });
+  }, []);
+
   // const setAddonDataManual = (data: AddonDetails) => { // Example if manual setting is needed
   //   setAddonData(data);
   // };
@@ -137,6 +164,7 @@ export const EditorProvider: React.FC<EditorProviderProps> = ({ children }) => {
     deleteAsset,
     selectedRecipeId,
     setSelectedRecipeId: setSelectedRecipeIdState,
+    updateRecipe,
     setAddonData: setAddonData, // Expose the state setter
   };
 

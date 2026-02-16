@@ -90,3 +90,47 @@
   flex-grow: 1; /* Take available space */
   max-height: 200px; /* Or adjust as needed */
 }
+
+/* Recipe Editor Form Styling */
+.recipe-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.recipe-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recipe-field label {
+  font-weight: bold;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.recipe-field input[type="text"] {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.recipe-field input[type="text"]:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
+}
+
+.recipe-field input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.recipe-json-display h5 {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: bold;
+}
