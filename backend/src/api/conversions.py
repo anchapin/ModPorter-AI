@@ -48,6 +48,7 @@ router = APIRouter()
 TEMP_UPLOADS_DIR = os.getenv("TEMP_UPLOADS_DIR", "temp_uploads")
 CONVERSION_OUTPUTS_DIR = os.getenv("CONVERSION_OUTPUTS_DIR", "conversion_outputs")
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB chunks for chunked uploads
 ALLOWED_EXTENSIONS = {".jar", ".zip"}
 
 # Cache service
@@ -117,6 +118,34 @@ class ConversionListResponse(BaseModel):
     total: int = Field(..., description="Total number of conversions")
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
+
+
+# Resumable Upload Models
+class ChunkUploadInitResponse(BaseModel):
+    """Response for initializing a chunked upload."""
+    upload_id: str = Field(..., description="Unique identifier for this upload session")
+    chunk_size: int = Field(..., description="Size of each chunk in bytes")
+    total_size: int = Field(..., description="Total file size in bytes")
+    filename: str = Field(..., description="Original filename")
+    message: str = Field(..., description="Status message")
+
+
+class ChunkUploadResponse(BaseModel):
+    """Response for chunk upload."""
+    upload_id: str = Field(..., description="Upload session ID")
+    chunk_number: int = Field(..., description="Current chunk number (1-indexed)")
+    chunks_received: int = Field(..., description="Total chunks received")
+    total_chunks: int = Field(..., description="Total expected chunks")
+    progress: float = Field(..., description="Upload progress (0-100)")
+
+
+class UploadProgressResponse(BaseModel):
+    """Response for upload progress check."""
+    upload_id: str
+    received_bytes: int
+    total_bytes: int
+    progress: float
+    status: str
 
 
 # Helper Functions
@@ -675,3 +704,349 @@ async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get
         media_type="application/zip",
         filename=download_filename,
     )
+
+
+# Chunked/Resumable Upload Endpoints
+@router.post(
+    "/api/v1/uploads/init",
+    response_model=ChunkUploadInitResponse,
+    tags=["uploads"],
+)
+async def init_chunked_upload(
+    filename: str = Form(..., description="Original filename"),
+    total_size: int = Form(..., description="Total file size in bytes"),
+):
+    """
+    Initialize a resumable/chunked upload session.
+    
+    For large files, use this endpoint to start a chunked upload session.
+    Returns an upload_id to be used in subsequent chunk upload requests.
+    
+    **Benefits:**
+    - Supports resumable uploads (resume from where left off)
+    - Better for large files (100MB+)
+    - Progress tracking per chunk
+    
+    **Request:** multipart/form-data
+    - filename: Original filename
+    - total_size: Total file size in bytes
+    
+    **Response:**
+    ```json
+    {
+      "upload_id": "uuid-v4",
+      "chunk_size": 5242880,
+      "total_size": 104857600,
+      "filename": "large_mod.jar",
+      "message": "Upload session initialized"
+    }
+    ```
+    """
+    # Validate file size
+    if total_size > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
+        )
+    
+    # Validate file type
+    safe_filename = sanitize_filename(filename)
+    is_valid, error_msg = validate_file_type(safe_filename)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+    
+    # Generate upload ID
+    upload_id = str(uuid.uuid4())
+    
+    # Store upload metadata in cache
+    upload_metadata = {
+        "upload_id": upload_id,
+        "filename": safe_filename,
+        "total_size": total_size,
+        "chunk_size": CHUNK_SIZE,
+        "chunks_received": 0,
+        "status": "in_progress",
+    }
+    
+    await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+    
+    # Create temporary directory for chunks
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    os.makedirs(chunks_dir, exist_ok=True)
+    
+    return ChunkUploadInitResponse(
+        upload_id=upload_id,
+        chunk_size=CHUNK_SIZE,
+        total_size=total_size,
+        filename=safe_filename,
+        message="Upload session initialized. Use upload_id in subsequent chunk requests."
+    )
+
+
+@router.post(
+    "/api/v1/uploads/{upload_id}/chunk",
+    response_model=ChunkUploadResponse,
+    tags=["uploads"],
+)
+async def upload_chunk(
+    upload_id: str,
+    chunk_number: int = Form(..., description="Chunk number (1-indexed)"),
+    total_chunks: int = Form(..., description="Total number of chunks"),
+    chunk: UploadFile = File(..., description="Chunk data"),
+):
+    """
+    Upload a single chunk of a resumable upload.
+    
+    **Request:** multipart/form-data
+    - chunk_number: Current chunk number (1-indexed)
+    - total_chunks: Total number of chunks expected
+    - chunk: Binary chunk data
+    
+    **Response:**
+    ```json
+    {
+      "upload_id": "uuid-v4",
+      "chunk_number": 1,
+      "chunks_received": 1,
+      "total_chunks": 20,
+      "progress": 5.0
+    }
+    ```
+    """
+    # Get upload metadata
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    
+    if not upload_metadata:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload session not found. Initialize with /api/v1/uploads/init first."
+        )
+    
+    if upload_metadata.get("status") != "in_progress":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Upload session is {upload_metadata.get('status')}"
+        )
+    
+    # Validate chunk size
+    chunk_data = await chunk.read()
+    if len(chunk_data) > CHUNK_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chunk size exceeds maximum of {CHUNK_SIZE} bytes"
+        )
+    
+    # Save chunk to disk
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    chunk_path = os.path.join(chunks_dir, f"chunk_{chunk_number:04d}")
+    
+    with open(chunk_path, "wb") as f:
+        f.write(chunk_data)
+    
+    # Update chunks received count
+    chunks_received = upload_metadata.get("chunks_received", 0) + 1
+    upload_metadata["chunks_received"] = chunks_received
+    await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+    
+    # Calculate progress
+    progress = (chunks_received / total_chunks) * 100
+    
+    return ChunkUploadResponse(
+        upload_id=upload_id,
+        chunk_number=chunk_number,
+        chunks_received=chunks_received,
+        total_chunks=total_chunks,
+        progress=round(progress, 2)
+    )
+
+
+@router.get(
+    "/api/v1/uploads/{upload_id}/progress",
+    response_model=UploadProgressResponse,
+    tags=["uploads"],
+)
+async def get_upload_progress(upload_id: str):
+    """
+    Get the progress of a resumable upload.
+    
+    **Response:**
+    ```json
+    {
+      "upload_id": "uuid-v4",
+      "received_bytes": 5242880,
+      "total_bytes": 104857600,
+      "progress": 5.0,
+      "status": "in_progress"
+    }
+    ```
+    """
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    
+    if not upload_metadata:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload session not found"
+        )
+    
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    received_bytes = 0
+    
+    if os.path.exists(chunks_dir):
+        for chunk_file in os.listdir(chunks_dir):
+            chunk_path = os.path.join(chunks_dir, chunk_file)
+            if os.path.isfile(chunk_path):
+                received_bytes += os.path.getsize(chunk_path)
+    
+    total_bytes = upload_metadata.get("total_size", 0)
+    progress = (received_bytes / total_bytes * 100) if total_bytes > 0 else 0
+    
+    return UploadProgressResponse(
+        upload_id=upload_id,
+        received_bytes=received_bytes,
+        total_bytes=total_bytes,
+        progress=round(progress, 2),
+        status=upload_metadata.get("status", "unknown")
+    )
+
+
+@router.post(
+    "/api/v1/uploads/{upload_id}/complete",
+    response_model=ConversionCreateResponse,
+    tags=["uploads"],
+)
+async def complete_chunked_upload(
+    upload_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Complete a resumable upload by combining all chunks.
+    
+    This endpoint combines all uploaded chunks into the final file
+    and creates a conversion job.
+    """
+    # Get upload metadata
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    
+    if not upload_metadata:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload session not found"
+        )
+    
+    if upload_metadata.get("status") != "in_progress":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Upload session is {upload_metadata.get('status')}"
+        )
+    
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    safe_filename = upload_metadata["filename"]
+    total_size = upload_metadata["total_size"]
+    
+    # Combine chunks
+    file_id = str(uuid.uuid4())
+    file_ext = os.path.splitext(safe_filename)[1]
+    saved_filename = f"{file_id}{file_ext}"
+    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
+    
+    try:
+        with open(file_path, "wb") as outfile:
+            # Read chunks in order
+            chunk_number = 1
+            while True:
+                chunk_path = os.path.join(chunks_dir, f"chunk_{chunk_number:04d}")
+                if not os.path.exists(chunk_path):
+                    break
+                with open(chunk_path, "rb") as infile:
+                    outfile.write(infile.read())
+                chunk_number += 1
+        
+        # Verify file size
+        actual_size = os.path.getsize(file_path)
+        if actual_size != total_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File size mismatch. Expected {total_size}, got {actual_size}"
+            )
+        
+        # Update upload status
+        upload_metadata["status"] = "completed"
+        await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+        
+        # Create conversion job
+        job = await crud.create_job(
+            session=db,
+            file_id=file_id,
+            original_filename=safe_filename,
+            target_version="1.20.0",
+            options={},
+            commit=True,
+        )
+        
+        conversion_id = str(job.id)
+        
+        # Cache job status
+        await cache.set_job_status(
+            conversion_id,
+            {
+                "conversion_id": conversion_id,
+                "status": "queued",
+                "progress": 0,
+                "original_filename": safe_filename,
+            },
+        )
+        await cache.set_progress(conversion_id, 0)
+        
+        # Clean up chunks
+        shutil.rmtree(chunks_dir, ignore_errors=True)
+        
+        return ConversionCreateResponse(
+            conversion_id=conversion_id,
+            status="queued",
+            estimated_time_seconds=1800,
+            created_at=job.created_at,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to complete chunked upload: {e}")
+        # Clean up on failure
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        shutil.rmtree(chunks_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to complete upload: {str(e)}"
+        )
+
+
+@router.delete(
+    "/api/v1/uploads/{upload_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["uploads"],
+)
+async def cancel_upload(upload_id: str):
+    """
+    Cancel a resumable upload session.
+    
+    Deletes all uploaded chunks and cleans up the upload session.
+    """
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    
+    if not upload_metadata:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Upload session not found"
+        )
+    
+    # Update status to cancelled
+    upload_metadata["status"] = "cancelled"
+    await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+    
+    # Clean up chunks
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    shutil.rmtree(chunks_dir, ignore_errors=True)
+    
+    return None
