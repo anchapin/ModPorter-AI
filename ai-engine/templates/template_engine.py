@@ -240,8 +240,8 @@ class JinjaTemplate(BaseTemplate):
         """Add template-specific enhancements to context."""
         enhanced = context.copy()
         
-        # Add defaults from metadata
-        defaults = self.metadata.get('defaults', {})
+        # Add defaults from metadata (support both 'defaults' and 'default_values')
+        defaults = self.metadata.get('defaults') or self.metadata.get('default_values', {})
         for key, value in defaults.items():
             if key not in enhanced:
                 enhanced[key] = value
