@@ -176,6 +176,61 @@ class SmartAssumptionEngine:
                 impact=AssumptionImpact.MEDIUM,
                 description="Map to existing Bedrock entity with similar characteristics",
                 implementation_notes="Preserve appearance, adapt behavior to Bedrock limitations"
+            ),
+            
+            # Phase 2: New Smart Assumptions
+            SmartAssumption(
+                java_feature="Custom Biomes",
+                inconvertible_aspect="No Bedrock biome API for creating custom biomes",
+                bedrock_workaround="Create large structure with terrain features in existing biome",
+                impact=AssumptionImpact.HIGH,
+                description="Recreate biome features as a large structure with terrain generation in an existing biome",
+                implementation_notes="Preserve unique terrain features, vegetation, and ambient elements as structure decorations"
+            ),
+            
+            SmartAssumption(
+                java_feature="Custom Enchantments",
+                inconvertible_aspect="Limited enchantment system in Bedrock",
+                bedrock_workaround="Add as item attributes or exclude with note",
+                impact=AssumptionImpact.MEDIUM,
+                description="Map to Bedrock item attributes if possible, otherwise exclude with explanation",
+                implementation_notes="Some enchantments can be approximated using item components or attributes"
+            ),
+            
+            SmartAssumption(
+                java_feature="Custom Redstone",
+                inconvertible_aspect="Different redstone behavior in Bedrock",
+                bedrock_workaround="Simplify to basic on/off or exclude",
+                impact=AssumptionImpact.MEDIUM,
+                description="Convert complex redstone circuits to basic on/off mechanisms or exclude with note",
+                implementation_notes="Document original logic for manual implementation in Bedrock"
+            ),
+            
+            SmartAssumption(
+                java_feature="Fluid Systems",
+                inconvertible_aspect="No custom fluid support in Bedrock",
+                bedrock_workaround="Use lava/water with visual similarity or exclude",
+                impact=AssumptionImpact.HIGH,
+                description="Replace custom fluids with similar vanilla fluids or exclude with explanation",
+                implementation_notes="Custom fluid mechanics cannot be ported, only visual representation"
+            ),
+            
+            SmartAssumption(
+                java_feature="Custom Particles",
+                inconvertible_aspect="Limited particle system in Bedrock",
+                bedrock_workaround="Use closest Bedrock particle or exclude",
+                impact=AssumptionImpact.LOW,
+                description="Map to closest available Bedrock particle effect or exclude",
+                implementation_notes="Most custom particles will need manual reassignment"
+            ),
+            
+            SmartAssumption(
+                java_feature="Custom Sounds",
+                inconvertible_aspect="Custom sound format not supported",
+                bedrock_workaround="Use similar vanilla sounds or exclude",
+                impact=AssumptionImpact.LOW,
+                description="Map to similar vanilla sounds or exclude with note",
+                implementation_notes="Custom sound files will need manual reassignment to vanilla equivalents"
             )
         ]
     
@@ -218,7 +273,14 @@ class SmartAssumptionEngine:
                        (feature_word == 'screen' and 'gui' in assumption_word) or \
                        ('dimension' in feature_word and 'dimensions' in assumption_word) or \
                        (feature_word == 'machinery' and 'machinery' in assumption_word) or \
-                       (feature_word == 'machine' and 'machinery' in assumption_word):
+                       (feature_word == 'machine' and 'machinery' in assumption_word) or \
+                       # Phase 2 new matches
+                       ('biome' in feature_word and 'biomes' in assumption_word) or \
+                       ('enchant' in feature_word and 'enchantments' in assumption_word) or \
+                       ('redstone' in feature_word and 'redstone' in assumption_word) or \
+                       ('fluid' in feature_word and 'fluid' in assumption_word) or \
+                       ('particle' in feature_word and 'particles' in assumption_word) or \
+                       ('sound' in feature_word and 'sounds' in assumption_word):
                         match_score += 10
                         specific_matches += 1
                     # Exact word matches (but not 'custom' alone)
