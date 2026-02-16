@@ -87,9 +87,28 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReportIssue = () => {
-    const errorDetails = this.state.error ? 
-      `Error: ${this.state.error.message}\nStack: ${this.state.error.stack}` : 
-      'Unknown error occurred';
+    // Safely extract error message, handling cases where error.message might be an object
+    const getErrorMessage = (error: Error | null): string => {
+      if (!error) return 'Unknown error occurred';
+      
+      const message = error.message;
+      // Handle case where message is an object (causes "Cannot convert object to primitive value")
+      if (typeof message === 'object' && message !== null) {
+        try {
+          return JSON.stringify(message);
+        } catch {
+          return 'Error message is an object that could not be stringified';
+        }
+      }
+      return String(message);
+    };
+
+    const errorMessage = getErrorMessage(this.state.error);
+    const errorStack = this.state.error?.stack ? 
+      (typeof this.state.error.stack === 'object' ? JSON.stringify(this.state.error.stack) : this.state.error.stack) 
+      : 'No stack trace available';
+    
+    const errorDetails = `Error: ${errorMessage}\nStack: ${errorStack}`;
     
     const githubUrl = `https://github.com/anchapin/ModPorter-AI/issues/new?title=Frontend Error&body=${encodeURIComponent(errorDetails)}`;
     window.open(githubUrl, '_blank');
@@ -140,15 +159,15 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary>🔍 Error Details (Development)</summary>
                 <div className="error-stack">
                   <h4>Error Message:</h4>
-                  <pre>{this.state.error.message}</pre>
+                  <pre>{typeof this.state.error.message === 'object' ? JSON.stringify(this.state.error.message) : String(this.state.error.message)}</pre>
                   
                   <h4>Stack Trace:</h4>
-                  <pre>{this.state.error.stack}</pre>
+                  <pre>{typeof this.state.error.stack === 'object' ? JSON.stringify(this.state.error.stack) : String(this.state.error.stack)}</pre>
                   
                   {this.state.errorInfo && (
                     <>
                       <h4>Component Stack:</h4>
-                      <pre>{this.state.errorInfo.componentStack}</pre>
+                      <pre>{typeof this.state.errorInfo.componentStack === 'object' ? JSON.stringify(this.state.errorInfo.componentStack) : String(this.state.errorInfo.componentStack)}</pre>
                     </>
                   )}
                 </div>
