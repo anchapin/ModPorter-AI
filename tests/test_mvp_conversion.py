@@ -29,10 +29,13 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import sys
 
-# Add the ai-engine, tests, and root directories to the path
-ai_engine_root = Path(__file__).parent.parent
-project_root = ai_engine_root.parent
+# Add the ai-engine directory to the path for agent imports
+# ai-engine is at: project_root/ai-engine
+ai_engine_root = Path(__file__).parent.parent / "ai-engine"
+project_root = Path(__file__).parent.parent
 tests_root = Path(__file__).parent
+
+# Add ai-engine to sys.path so 'agents' and 'fixtures' imports work
 sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(tests_root))
