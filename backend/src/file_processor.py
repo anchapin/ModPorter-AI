@@ -3,6 +3,10 @@ import os
 import re
 import shutil
 import zipfile
+import socket
+import ipaddress
+import urllib.parse
+import asyncio
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional, Dict
@@ -81,6 +85,49 @@ class FileProcessor:
         if not sanitized:  # If filename became empty after sanitization
             return "default_sanitized_filename"
         return sanitized
+
+    async def _is_safe_url(self, url: str) -> bool:
+        """
+        Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
+        """
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
+                return False
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+
+            # Run blocking DNS resolution in executor
+            loop = asyncio.get_running_loop()
+            # Use getaddrinfo to support both IPv4 and IPv6
+            try:
+                infos = await loop.run_in_executor(None, socket.getaddrinfo, hostname, None)
+            except socket.gaierror:
+                logger.warning(f"Could not resolve hostname: {hostname}")
+                return False
+
+            for info in infos:
+                ip = info[4][0]
+                # Strip IPv6 scope ID if present (e.g. fe80::1%eth0 -> fe80::1)
+                if "%" in ip:
+                    ip = ip.split("%")[0]
+
+                try:
+                    ip_obj = ipaddress.ip_address(ip)
+                    if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
+                        logger.warning(f"Blocked attempt to access private IP: {ip} for hostname: {hostname}")
+                        return False
+                except ValueError:
+                    # Fail securely if IP cannot be parsed
+                    logger.warning(f"Could not parse IP address: {ip} for hostname: {hostname}")
+                    return False
+            return True
+        except Exception as e:
+            # Don't log full URL in exception either
+            logger.error(f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}")
+            return False
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
         """
@@ -555,13 +602,50 @@ class FileProcessor:
         """
         Downloads a file from the specified URL.
         """
-        logger.info(f"Starting download from URL: {url} for job_id: {job_id}")
+        parsed_url = urllib.parse.urlparse(url)
+        sanitized_url = f"{parsed_url.scheme}://{parsed_url.hostname}{parsed_url.path}"
+        logger.info(f"Starting download from URL: {sanitized_url} for job_id: {job_id}")
         download_dir = Path(f"/tmp/conversions/{job_id}/uploaded/")
         download_dir.mkdir(parents=True, exist_ok=True)
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, follow_redirects=True, timeout=30.0)
+                current_url = url
+                response = None
+
+                # Manual redirect handling with SSRF protection
+                for _ in range(5):  # Max 5 redirects
+                    if not await self._is_safe_url(current_url):
+                        # Sanitize URL for logging (strip query params/fragments)
+                        parsed_unsafe = urllib.parse.urlparse(current_url)
+                        sanitized_unsafe = f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
+                        msg = f"Unsafe URL detected: {sanitized_unsafe}"
+                        logger.warning(msg)
+                        return DownloadResult(success=False, message="Unsafe URL detected")
+
+                    response = await client.get(current_url, follow_redirects=False, timeout=30.0)
+
+                    if 300 <= response.status_code < 400:
+                        location = response.headers.get("Location")
+                        if not location:
+                            break
+                        # Handle relative URLs in redirects
+                        current_url = urllib.parse.urljoin(current_url, location)
+                        parsed_redirect = urllib.parse.urlparse(current_url)
+                        # Sanitize redirect URL for logging
+                        logger.info(f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}")
+                        continue
+                    else:
+                        break
+                else:
+                    msg = "Too many redirects during download"
+                    logger.warning(msg)
+                    return DownloadResult(success=False, message=msg)
+
+                if response is None:
+                    # Should not happen unless initial loop logic is flawed
+                    return DownloadResult(success=False, message="Download failed: internal error")
+
                 response.raise_for_status()  # Raises HTTPStatusError for 4xx/5xx responses
 
                 # Determine filename
@@ -616,7 +700,7 @@ class FileProcessor:
                 file_size = downloaded_file_path.stat().st_size
                 if file_size == 0:
                     logger.warning(
-                        f"Downloaded file {downloaded_file_path} is empty for URL: {url}, job_id: {job_id}"
+                        f"Downloaded file {downloaded_file_path} is empty for URL: {sanitized_url}, job_id: {job_id}"
                     )
                     # Optionally return success=False or a specific message
 

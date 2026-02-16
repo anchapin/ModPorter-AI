@@ -2,6 +2,7 @@ import pytest
 import httpx
 import shutil
 import logging
+import socket
 from pathlib import Path
 from unittest import mock  # For mock.patch
 
@@ -15,7 +16,10 @@ logger = logging.getLogger(__name__)
 @pytest.fixture
 def file_processor():
     """Pytest fixture to provide a FileProcessor instance."""
-    return FileProcessor()
+    fp = FileProcessor()
+    # Mock _is_safe_url to always return True by default for existing tests to avoid network calls
+    fp._is_safe_url = mock.AsyncMock(return_value=True)
+    return fp
 
 
 @pytest.fixture
@@ -48,7 +52,7 @@ def temp_job_dirs(mock_job_id):
 
 class TestFileProcessor:
     @pytest.mark.asyncio
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_disposition(
         self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
     ):
@@ -89,12 +93,17 @@ class TestFileProcessor:
         assert result.file_name == "example.zip"
         assert expected_file_path.read_bytes() == b"file content"
 
-        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_once_with(
-            url, follow_redirects=True, timeout=30.0
+        # Check call arguments. Note: follow_redirects is now False due to manual handling
+        # But wait, we mocked _is_safe_url, so the loop runs.
+        # The loop calls client.get(..., follow_redirects=False).
+
+        # Verify that get was called with follow_redirects=False
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+            url, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_url_path_filename(
         self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
     ):
@@ -127,7 +136,7 @@ class TestFileProcessor:
         assert expected_file_path.read_bytes() == b"jar content"
 
     @pytest.mark.asyncio
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_type_extension(
         self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
     ):
@@ -162,7 +171,7 @@ class TestFileProcessor:
         "status_code, error_type_expected",
         [(404, "HTTP error 404"), (500, "HTTP error 500"), (403, "HTTP error 403")],
     )
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_http_errors(
         self,
         MockAsyncClient,
@@ -216,7 +225,7 @@ class TestFileProcessor:
             ),  # Simulate an issue during file write
         ],
     )
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_network_io_exceptions(
         self,
         MockAsyncClient,
@@ -263,7 +272,7 @@ class TestFileProcessor:
         assert error_message_expected_part.lower() in result.message.lower()
 
     @pytest.mark.asyncio
-    @mock.patch("src.file_processor.httpx.AsyncClient")
+    @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_empty_file(
         self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
     ):
@@ -284,7 +293,7 @@ class TestFileProcessor:
         )
 
         url = "http://example.com/empty.zip"
-        with mock.patch("src.file_processor.logger.warning") as mock_logger_warning:
+        with mock.patch("file_processor.logger.warning") as mock_logger_warning:
             result = await file_processor.download_from_url(url, mock_job_id)
 
             # FileProcessor creates its own directory structure at /tmp/conversions/{job_id}/uploaded/
@@ -299,6 +308,49 @@ class TestFileProcessor:
             mock_logger_warning.assert_any_call(
                 f"Downloaded file {expected_file_path} is empty for URL: {url}, job_id: {mock_job_id}"
             )
+
+    @pytest.mark.asyncio
+    @mock.patch("file_processor.socket.getaddrinfo")
+    async def test_is_safe_url_public_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _is_safe_url with a public IP."""
+        fp = FileProcessor() # Use real instance, not mocked fixture
+
+        # Mock public IP for example.com
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))]
+
+        result = await fp._is_safe_url("http://example.com/file.zip")
+        assert result is True
+
+    @pytest.mark.asyncio
+    @mock.patch("file_processor.socket.getaddrinfo")
+    async def test_is_safe_url_private_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _is_safe_url blocks private IP."""
+        fp = FileProcessor()
+
+        # Mock private IP
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('192.168.1.1', 80))]
+
+        result = await fp._is_safe_url("http://internal.com/secret.zip")
+        assert result is False
+
+    @pytest.mark.asyncio
+    @mock.patch("file_processor.socket.getaddrinfo")
+    async def test_is_safe_url_loopback_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _is_safe_url blocks loopback IP."""
+        fp = FileProcessor()
+
+        # Mock loopback IP
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 80))]
+
+        result = await fp._is_safe_url("http://localhost/config")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_is_safe_url_bad_scheme(self, temp_job_dirs):
+        fp = FileProcessor()
+        result = await fp._is_safe_url("ftp://example.com/file.zip")
+        assert result is False
+
 
     # --- Tests for validate_downloaded_file ---
     @pytest.mark.asyncio
@@ -408,7 +460,7 @@ class TestFileProcessor:
 
         assert job_dir_path.exists()
 
-        with mock.patch("src.file_processor.shutil.rmtree") as mock_rmtree:
+        with mock.patch("file_processor.shutil.rmtree") as mock_rmtree:
             result = file_processor.cleanup_temp_files(mock_job_id)
 
             assert result is True
@@ -428,9 +480,9 @@ class TestFileProcessor:
         if job_dir_path.exists():
             shutil.rmtree(job_dir_path)
 
-        with mock.patch("src.file_processor.shutil.rmtree") as mock_rmtree:
+        with mock.patch("file_processor.shutil.rmtree") as mock_rmtree:
             with mock.patch.object(
-                logging.getLogger("src.file_processor"), "info"
+                logging.getLogger("file_processor"), "info"
             ) as mock_logger_info:
                 result = file_processor.cleanup_temp_files(mock_job_id)
 
@@ -441,10 +493,10 @@ class TestFileProcessor:
                 )
 
     @mock.patch(
-        "src.file_processor.shutil.rmtree",
+        "file_processor.shutil.rmtree",
         side_effect=PermissionError("Test permission error"),
     )
-    @mock.patch.object(logging.getLogger("src.file_processor"), "error")
+    @mock.patch.object(logging.getLogger("file_processor"), "error")
     def test_cleanup_temp_files_permission_error(
         self, mock_logger_error, mock_rmtree, file_processor, mock_job_id
     ):
@@ -472,9 +524,9 @@ class TestFileProcessor:
             pass  # If cleanup fails, that's okay for the test
 
     @mock.patch(
-        "src.file_processor.shutil.rmtree", side_effect=Exception("Test generic error")
+        "file_processor.shutil.rmtree", side_effect=Exception("Test generic error")
     )
-    @mock.patch.object(logging.getLogger("src.file_processor"), "error")
+    @mock.patch.object(logging.getLogger("file_processor"), "error")
     def test_cleanup_temp_files_generic_error(
         self, mock_logger_error, mock_rmtree, file_processor, mock_job_id
     ):
