@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
 from db import crud
 from services.cache import CacheService
+from services.error_handlers import register_exception_handlers
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -87,6 +88,9 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(feedback_router, prefix="/api/v1")
+
+# Register custom exception handlers for comprehensive error handling
+register_exception_handlers(app)
 
 # Pydantic models for API documentation
 
