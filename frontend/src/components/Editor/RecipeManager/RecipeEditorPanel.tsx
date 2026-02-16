@@ -2,15 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useEditorContext } from '../../../context/EditorContext';
 import './RecipeManager.css'; // Shared CSS
 
-interface RecipeData {
-  description?: string;
-  tags?: string[];
-  group?: string;
-  'input'?: any;
-  output?: any;
-  [key: string]: any;
-}
-
 export const RecipeEditorPanel: React.FC = () => {
   const { addonData, selectedRecipeId, updateRecipe } = useEditorContext();
   
@@ -20,21 +11,10 @@ export const RecipeEditorPanel: React.FC = () => {
   const [group, setGroup] = useState<string>('');
   const [showJsonPreview, setShowJsonPreview] = useState<boolean>(true);
 
-  if (!selectedRecipeId) {
-    return <div className="recipe-editor-empty">Select a recipe to view its details.</div>;
-  }
+  // Find selected recipe - safe to do here as it doesn't affect hooks
+  const selectedRecipe = addonData?.recipes?.find(recipe => recipe.id === selectedRecipeId);
 
-  if (!addonData || !addonData.recipes) {
-    return <div className="recipe-editor-empty">Addon data not available.</div>;
-  }
-
-  const selectedRecipe = addonData.recipes.find(recipe => recipe.id === selectedRecipeId);
-
-  if (!selectedRecipe) {
-    return <div className="recipe-editor-empty">Selected recipe not found.</div>;
-  }
-
-  // Initialize form fields from recipe data
+  // Initialize form fields from recipe data - MUST be before any returns
   useEffect(() => {
     if (selectedRecipe?.data) {
       setDescription(selectedRecipe.data.description || '');
@@ -42,6 +22,15 @@ export const RecipeEditorPanel: React.FC = () => {
       setGroup(selectedRecipe.data.group || '');
     }
   }, [selectedRecipe]);
+
+  // Use conditional rendering instead of early returns to satisfy hooks rules
+  if (!selectedRecipeId) {
+    return <div className="recipe-editor-empty">Select a recipe to view its details.</div>;
+  }
+
+  if (!selectedRecipe) {
+    return <div className="recipe-editor-empty">Selected recipe not found.</div>;
+  }
 
   const handleDescriptionChange = (value: string) => {
     setDescription(value);
