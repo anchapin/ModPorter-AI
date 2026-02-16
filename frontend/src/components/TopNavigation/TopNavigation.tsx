@@ -18,11 +18,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
 
   const navigationLinks = [
     { to: '/', label: 'Convert' },
+    { to: '/dashboard', label: 'Dashboard' },
     { to: '/comparison', label: 'Comparison' },
     { to: '/behavioral-test', label: 'Behavioral Test' },
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
-    { to: '/docs', label: 'Documentation' }
+    { to: '/docs', label: 'Documentation' },
+    { to: '/settings', label: '⚙️' }
   ];
 
   return (

@@ -14,6 +14,7 @@ const BehavioralTestWrapper = lazy(() => import('./components/BehavioralTest/Beh
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ExperimentsPage = lazy(() => import('./pages/ExperimentsPage'));
 const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
   console.log('App component is rendering...');
@@ -80,6 +81,11 @@ function App() {
                     <EditorPage />
                   </Suspense>
                 } /> {/* Added Behavior Editor Route */}
+                <Route path="/settings" element={
+                  <Suspense fallback={<div>Loading Settings...</div>}>
+                    <Settings />
+                  </Suspense>
+                } />
               </Routes>
             </main>
           </div>
