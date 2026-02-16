@@ -11,6 +11,8 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import json
 
+from crewai.tools import BaseTool
+
 logger = logging.getLogger(__name__)
 
 
