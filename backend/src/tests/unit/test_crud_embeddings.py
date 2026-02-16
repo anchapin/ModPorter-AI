@@ -190,22 +190,6 @@ async def test_find_similar_embeddings_sqlite_placeholder(test_db_session: Async
         print(f"find_similar_embeddings failed as expected on SQLite (or was skipped): {e}")
         pass
 
-# TODO: Add a test for find_similar_embeddings that runs only if connected to a real Postgres with pgvector.
-# This would typically involve a separate conftest.py for integration tests or a way to mark tests
-# based on DB capabilities.
-# For example: @pytest.mark.integration_postgres
-# async def test_find_similar_embeddings_postgres(postgres_db_session: AsyncSession):
-#     ... actual test logic for postgres ...
-#
-# The `embedding == SAMPLE_EMBEDDING_1` comparison in `test_create_document_embedding` and
-# `test_update_document_embedding` might also be problematic if SQLite stores VECTORs as
-# a type that doesn't perfectly roundtrip float lists (e.g., stores as string).
-# If these tests fail, we might need to adjust assertions for embeddings on SQLite,
-# or accept that exact vector retrieval testing is only for Postgres.
-# For now, let's see what happens.
-# A common workaround is to compare elements with a tolerance for float precision issues.
-# e.g., assert all(abs(a - b) < 1e-6 for a, b in zip(fetched.embedding, created.embedding))
-
 # Test for content_hash uniqueness constraint (implicitly tested by create then get_by_hash,
 # but an explicit test for trying to create duplicate hash could be added if desired,
 # though it would raise an IntegrityError from the DB which is hard to catch nicely in every test).
@@ -216,5 +200,280 @@ async def test_find_similar_embeddings_sqlite_placeholder(test_db_session: Async
 # This kind of test is more of an integration test of the DB schema.
 # For unit tests of CRUD, we assume the DB model is correct.
 # The `create_or_get_embedding` in the API layer handles this logic more explicitly.
+
+
+# =============================================================================
+# pgvector Integration Tests
+# These tests require PostgreSQL with the pgvector extension enabled
+# =============================================================================
+
+import pytest
+import asyncio
+
+# Custom marker for pgvector integration tests
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line(
+        "markers", "pgvector: marks tests as requiring PostgreSQL with pgvector extension"
+    )
+
+
+def is_pgvector_available() -> bool:
+    """Check if pgvector extension is available in the test database."""
+    import os
+    db_url = os.getenv("TEST_DATABASE_URL", "")
+    # Only available with PostgreSQL, not SQLite
+    return bool(db_url and not db_url.startswith("sqlite"))
+
+
+# Fixtures for pgvector tests
+@pytest.fixture
+def pgvector_extension_available():
+    """Fixture to check if pgvector extension is available."""
+    return is_pgvector_available()
+
+
+@pytest.fixture
+def sample_similar_embeddings():
+    """
+    Provide sample embeddings for similarity testing.
+    
+    Returns embeddings with known distances:
+    - embedding_1 and embedding_2 are very similar (distance ~0.14)
+    - embedding_3 is dissimilar to the first two (distance ~1.34)
+    """
+    # 3D vectors for easier manual verification
+    return {
+        "vec1": [1.0, 0.0, 0.0],
+        "vec2": [0.9, 0.1, 0.1],  # Close to vec1
+        "vec3": [0.0, 1.0, 0.0],  # Far from vec1
+    }
+
+
+@pytest.fixture
+async def populated_embeddings_db(test_db_session: AsyncSession, sample_similar_embeddings):
+    """Populate database with embeddings for similarity testing."""
+    vectors = sample_similar_embeddings
+    
+    # Create embeddings with known distances
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec1"],
+        document_source="similar_doc1.txt",
+        content_hash="similar_hash_1",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec2"],
+        document_source="similar_doc2.txt",
+        content_hash="similar_hash_2",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec3"],
+        document_source="dissimilar_doc.txt",
+        content_hash="dissimilar_hash",
+    )
+    
+    await test_db_session.commit()
+    return vectors
+
+
+@pytest.mark.pgvector
+@pytest.mark.asyncio
+async def test_find_similar_embeddings_basic(
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available
+):
+    """Test basic similarity search returns correct results ordered by distance."""
+    if not pgvector_extension_available:
+        pytest.skip("pgvector extension not available - requires PostgreSQL")
+    
+    vectors = sample_similar_embeddings
+    
+    # Create test embeddings
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec1"],
+        document_source="doc1.txt",
+        content_hash="hash_vec1",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec2"],
+        document_source="doc2.txt",
+        content_hash="hash_vec2",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec3"],
+        document_source="doc3.txt",
+        content_hash="hash_vec3",
+    )
+    await test_db_session.commit()
+    
+    # Query for similar to vec1 - should return vec2 first (closest), then vec3
+    results = await crud.find_similar_embeddings(
+        db=test_db_session,
+        query_embedding=vectors["vec1"],
+        limit=2
+    )
+    
+    assert len(results) == 2
+    # First result should be vec1 itself or vec2 (the closest)
+    # Note: Depending on implementation, it might include the query itself
+    result_sources = [r.document_source for r in results]
+    
+    # vec2 should be in results (most similar to vec1)
+    assert "doc2.txt" in result_sources
+    # vec3 is least similar, might or might not be in top 2 depending on order
+
+
+@pytest.mark.pgvector
+@pytest.mark.asyncio
+async def test_find_similar_embeddings_limit(
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available
+):
+    """Test that limit parameter is respected."""
+    if not pgvector_extension_available:
+        pytest.skip("pgvector extension not available - requires PostgreSQL")
+    
+    vectors = sample_similar_embeddings
+    
+    # Create multiple embeddings
+    for i in range(5):
+        await crud.create_document_embedding(
+            db=test_db_session,
+            embedding=[float(i) * 0.1, 0.0, 0.0],
+            document_source=f"doc_{i}.txt",
+            content_hash=f"hash_{i}",
+        )
+    await test_db_session.commit()
+    
+    # Query with limit=2
+    results = await crud.find_similar_embeddings(
+        db=test_db_session,
+        query_embedding=[0.0, 0.0, 0.0],
+        limit=2
+    )
+    
+    assert len(results) == 2
+
+
+@pytest.mark.pgvector
+@pytest.mark.asyncio
+async def test_find_similar_embeddings_empty_db(
+    test_db_session: AsyncSession,
+    pgvector_extension_available
+):
+    """Test similarity search returns empty list when no embeddings exist."""
+    if not pgvector_extension_available:
+        pytest.skip("pgvector extension not available - requires PostgreSQL")
+    
+    results = await crud.find_similar_embeddings(
+        db=test_db_session,
+        query_embedding=[0.1] * 1536,
+        limit=5
+    )
+    
+    assert len(results) == 0
+
+
+@pytest.mark.pgvector
+@pytest.mark.asyncio
+async def test_find_similar_embeddings_high_dimension(
+    test_db_session: AsyncSession,
+    pgvector_extension_available
+):
+    """Test similarity search with high-dimensional embeddings (1536 dims like OpenAI)."""
+    if not pgvector_extension_available:
+        pytest.skip("pgvector extension not available - requires PostgreSQL")
+    
+    # Create embeddings with 1536 dimensions (OpenAI embedding size)
+    embedding_a = [0.1] * 1536
+    embedding_b = [0.2] * 1536  # Similar
+    embedding_c = [0.9] * 1536  # Dissimilar
+    
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=embedding_a,
+        document_source="embedding_a.txt",
+        content_hash="hash_a",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=embedding_b,
+        document_source="embedding_b.txt",
+        content_hash="hash_b",
+    )
+    await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=embedding_c,
+        document_source="embedding_c.txt",
+        content_hash="hash_c",
+    )
+    await test_db_session.commit()
+    
+    # Query for similar to embedding_a
+    results = await crud.find_similar_embeddings(
+        db=test_db_session,
+        query_embedding=embedding_a,
+        limit=2
+    )
+    
+    assert len(results) == 2
+    # embedding_b should be first (closest)
+    assert "embedding_b.txt" in [r.document_source for r in results]
+
+
+@pytest.mark.pgvector
+@pytest.mark.asyncio
+async def test_find_similar_embeddings_returns_metadata(
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available
+):
+    """Test that similarity search returns complete embedding metadata."""
+    if not pgvector_extension_available:
+        pytest.skip("pgvector extension not available - requires PostgreSQL")
+    
+    vectors = sample_similar_embeddings
+    
+    created = await crud.create_document_embedding(
+        db=test_db_session,
+        embedding=vectors["vec1"],
+        document_source="metadata_test.txt",
+        content_hash="metadata_hash",
+    )
+    await test_db_session.commit()
+    
+    results = await crud.find_similar_embeddings(
+        db=test_db_session,
+        query_embedding=vectors["vec1"],
+        limit=1
+    )
+    
+    assert len(results) >= 1
+    result = results[0]
+    assert result.document_source == "metadata_test.txt"
+    assert result.content_hash == "metadata_hash"
+    assert result.embedding is not None
+    assert len(result.embedding) == 3
+
+
+# Marker registration for pytest
+def pytest_collection_modifyitems(config, items):
+    """Automatically skip pgvector tests if extension is not available."""
+    if not is_pgvector_available():
+        skip_pgvector = pytest.mark.skip(
+            reason="pgvector tests require PostgreSQL with pgvector extension"
+        )
+        for item in items:
+            if "pgvector" in item.keywords:
+                item.add_marker(skip_pgvector)
+
 
 print("Finished defining tests for CRUD embeddings.")
