@@ -1,0 +1,37 @@
+{
+  "template_type": "passive_mob",
+  "category": "entities",
+  "description": "Passive mob entity template with breeding, feeding, and behavior components",
+  "required_parameters": [
+    "namespace",
+    "entity_name"
+  ],
+  "optional_parameters": {
+    "max_health": 10,
+    "movement_speed": 0.25,
+    "entity_family": "passive",
+    "is_spawnable": true,
+    "is_summonable": true,
+    "is_experimental": false,
+    "can_be_bred": true,
+    "can_be_tamed": false,
+    "drops_items": true,
+    "can_path_over_water": false,
+    "avoid_water": true,
+    "baby_scale": 0.5
+  },
+  "default_values": {
+    "max_health": 10,
+    "movement_speed": 0.25,
+    "entity_family": "passive",
+    "is_spawnable": true,
+    "is_summonable": true,
+    "is_experimental": false,
+    "can_be_bred": true,
+    "can_be_tamed": false,
+    "drops_items": true,
+    "can_path_over_water": false,
+    "avoid_water": true,
+    "baby_scale": 0.5
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "template_type": "crafting_recipe",
+  "category": "recipes",
+  "description": "Shaped crafting recipe template for crafting table recipes",
+  "required_parameters": [
+    "namespace",
+    "recipe_name",
+    "pattern",
+    "recipe_keys",
+    "result"
+  ],
+  "optional_parameters": {
+    "tags": ["crafting_table"],
+    "unlock_context": []
+  },
+  "default_values": {
+    "tags": ["crafting_table"],
+    "unlock_context": []
+  }
+}

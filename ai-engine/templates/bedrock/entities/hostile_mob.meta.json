@@ -1,0 +1,35 @@
+{
+  "template_type": "hostile_mob",
+  "category": "entities",
+  "description": "Hostile mob entity template with attack behaviors and combat components",
+  "required_parameters": [
+    "namespace",
+    "entity_name"
+  ],
+  "optional_parameters": {
+    "max_health": 20,
+    "movement_speed": 0.3,
+    "entity_family": "hostile",
+    "attack_damage": 4,
+    "is_spawnable": true,
+    "is_summonable": true,
+    "is_experimental": false,
+    "can_break_doors": false,
+    "spawns_in_dark": true,
+    "attack_cooldown": 0.0,
+    "follow_range": 16.0
+  },
+  "default_values": {
+    "max_health": 20,
+    "movement_speed": 0.3,
+    "entity_family": "hostile",
+    "attack_damage": 4,
+    "is_spawnable": true,
+    "is_summonable": true,
+    "is_experimental": false,
+    "can_break_doors": false,
+    "spawns_in_dark": true,
+    "attack_cooldown": 0.0,
+    "follow_range": 16.0
+  }
+}
