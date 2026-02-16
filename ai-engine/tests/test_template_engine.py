@@ -287,6 +287,93 @@ class TestTemplateEngine:
         passive_template = self.engine.get_template(TemplateType.PASSIVE_MOB)
         assert passive_template.metadata is not None
 
+    def test_entity_template_rendering(self):
+        """Test entity template rendering."""
+        # Test passive mob template
+        template = self.engine.get_template(TemplateType.PASSIVE_MOB)
+        context = {
+            "namespace": "test_mod",
+            "entity_name": "cow",
+            "max_health": 10,
+            "entity_family": "passive"
+        }
+        
+        result = template.render(context)
+        data = json.loads(result)
+        assert "minecraft:entity" in data
+        assert data["minecraft:entity"]["description"]["identifier"] == "test_mod:cow"
+        
+        # Test hostile mob template
+        template = self.engine.get_template(TemplateType.HOSTILE_MOB)
+        context = {
+            "namespace": "test_mod",
+            "entity_name": "zombie",
+            "max_health": 20,
+            "entity_family": "hostile"
+        }
+        
+        result = template.render(context)
+        data = json.loads(result)
+        assert "minecraft:entity" in data
+        assert data["minecraft:entity"]["description"]["identifier"] == "test_mod:zombie"
+
+    def test_entity_template_selection(self):
+        """Test entity template selection logic."""
+        # Test hostile mob selection
+        hostile_properties = {"hostile": True, "attack": True}
+        template_type = self.engine.selector.select_template("entity", hostile_properties)
+        assert template_type == TemplateType.HOSTILE_MOB
+        
+        # Test passive mob fallback
+        passive_properties = {"passive": True, "friendly": True}
+        template_type = self.engine.selector.select_template("entity", passive_properties)
+        assert template_type == TemplateType.PASSIVE_MOB
+
+    def test_recipe_template_rendering(self):
+        """Test recipe template rendering."""
+        # Test crafting recipe template
+        template = self.engine.get_template(TemplateType.CRAFTING_RECIPE)
+        context = {
+            "namespace": "test_mod",
+            "recipe_name": "diamond_pickaxe",
+            "pattern": ["XXX", " X ", " X "],
+            "recipe_keys": {
+                "X": {"item": "minecraft:diamond", "count": 3}
+            },
+            "result": {"item": "minecraft:diamond_pickaxe", "count": 1}
+        }
+        
+        result = template.render(context)
+        data = json.loads(result)
+        assert "minecraft:recipe_shaped" in data
+        assert data["minecraft:recipe_shaped"]["description"]["identifier"] == "test_mod:diamond_pickaxe"
+        
+        # Test smelting recipe template
+        template = self.engine.get_template(TemplateType.SMELTING_RECIPE)
+        context = {
+            "namespace": "test_mod",
+            "recipe_name": "iron_ingot",
+            "tags": ["furnace"],
+            "input": {"item": "minecraft:iron_ore"},
+            "output": {"item": "minecraft:iron_ingot", "count": 1}
+        }
+        
+        result = template.render(context)
+        data = json.loads(result)
+        assert "minecraft:recipe_furnace" in data
+
+    def test_recipe_template_selection(self):
+        """Test recipe template selection logic."""
+        # Test smelting recipe selection
+        smelt_properties = {"smelt": True, "furnace": True}
+        template_type = self.engine.selector.select_template("recipe", smelt_properties)
+        assert template_type == TemplateType.SMELTING_RECIPE
+        
+        # Test crafting recipe fallback
+        craft_properties = {"craft": True, "shaped": True}
+        template_type = self.engine.selector.select_template("recipe", craft_properties)
+        assert template_type == TemplateType.CRAFTING_RECIPE
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
