@@ -26,6 +26,7 @@ from uuid import UUID as PyUUID # For addon_id path parameter
 from models import addon_models as pydantic_addon_models # For addon Pydantic models
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 from services.report_generator import ConversionReportGenerator
+from services.structured_logging import get_logger, set_correlation_id, LogContext
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions
@@ -33,9 +34,8 @@ from api import performance, behavioral_testing, validation, comparison, embeddi
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+logger = get_logger(__name__)
 
 load_dotenv()
 
