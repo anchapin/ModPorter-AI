@@ -1,4 +1,4 @@
-﻿name: CI - Integration Tests (Optimized)
+name: CI - Integration Tests (Optimized)
 
 on:
   pull_request:
@@ -40,7 +40,7 @@ jobs:
       docker: ${{ steps.changes.outputs.docker }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: changes
         with:
@@ -76,34 +76,8 @@ jobs:
       python-image: ${{ steps.image-tags.outputs.python-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
-    - name: Free up disk space
-      run: |
-        echo "🧹 Cleaning up disk space before Docker build"
-        echo "Initial disk usage:"
-        df -h
-
-        # Remove unnecessary packages and files
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
-        # Clean Docker cache if exists
-        docker system prune -af --volumes || true
-
-        # Clean package manager caches
-        sudo apt-get clean
-        sudo apt-get autoremove -y
-
-        # Remove large directories we don't need
-        sudo rm -rf /usr/share/doc
-        sudo rm -rf /usr/share/man
-
-        echo "Disk usage after cleanup:"
-        df -h
-
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -118,8 +92,7 @@ jobs:
     - name: Calculate dependency hash
       id: deps-hash
       run: |
-        # Hash only the files actually copied by Dockerfile
-        DEPS_HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+        DEPS_HASH=$(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)
         echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
         echo "Dependencies hash: $DEPS_HASH"
 
@@ -217,7 +190,7 @@ jobs:
       continue-on-error: true
       
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
 
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
@@ -234,7 +207,7 @@ jobs:
     # Multi-level caching strategy
     - name: Cache Python packages (L1 - pip cache)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}
@@ -244,7 +217,7 @@ jobs:
 
     - name: Cache Python packages (L2 - site-packages)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: |
           ~/.local/lib/python${{ env.PYTHON_VERSION }}/site-packages
@@ -255,7 +228,7 @@ jobs:
           ${{ runner.os }}-site-packages-
 
     - name: Cache test artifacts
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: |
           ai-engine/.pytest_cache
@@ -307,52 +280,28 @@ jobs:
       run: |
         echo "🔧 Installing system dependencies..."
         apt-get update -qq
-        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io zstd
+        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io
 
-    # Install Ollama for AI model testing
     # Install Ollama for AI model testing
     - name: Install Ollama
       run: |
-        echo "🤖 Installing Ollama with retry logic..."
+        echo "🤖 Installing Ollama..."
         curl -fsSL https://ollama.com/install.sh | sh
+        
         # Install and start Ollama service
         ollama serve &
+        
         # Wait for Ollama to start
-        sleep 15
-        # Pull model with retry logic
-        echo "📥 Pulling llama3.2 model with retry logic..."
-        MAX_RETRIES=3
-        RETRY_DELAY=30
-        MODEL_PULLED=false
-        for i in $(seq 1 $MAX_RETRIES); do
-          echo "Attempt $i of $MAX_RETRIES to pull llama3.2..."
-          # Use timeout and background process (20 minutes)
-          timeout 1200 ollama pull llama3.2 &&
-          {
-            echo "✅ Model pull successful!"
-            MODEL_PULLED=true
-            break
-          } ||
-          {
-            echo "❌ Model pull failed (attempt $i)"
-            if [ $i -eq $MAX_RETRIES ]; then
-              echo "🚨 All retry attempts failed"
-              echo "⚠️ Continuing without llama3.2 model - tests will skip model-dependent features"
-              break
-            fi
-            echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
-            sleep $RETRY_DELAY
-          }
-        done
+        sleep 10
+        
+        # Pull the required model
+        echo "📥 Pulling llama3.2 model..."
+        ollama pull llama3.2
+        
         # Verify installation
-        echo "Final Ollama status:"
-        ollama list || echo "⚠️ Cannot list models - model may not be available"
-        # Set environment variable for tests
-        if [ "$MODEL_PULLED" = "true" ]; then
-          echo "MODEL_AVAILABLE=true" >> $GITHUB_ENV
-        else
-          echo "MODEL_AVAILABLE=false" >> $GITHUB_ENV
-        fi
+        ollama list
+
+    # Verify Python environment
     - name: Verify Python environment
       run: |
         echo "🔍 Python environment verification..."
@@ -490,7 +439,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -508,7 +457,7 @@ jobs:
 
   # Prepare Node.js base image for frontend
   prepare-node-base:
-    name: Prepare Node Base Image
+    name: Prepare Node Base Image  
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
@@ -519,34 +468,8 @@ jobs:
       node-image: ${{ steps.image-tags.outputs.node-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
-    - name: Free up disk space
-      run: |
-        echo "🧹 Cleaning up disk space before Docker build"
-        echo "Initial disk usage:"
-        df -h
-
-        # Remove unnecessary packages and files
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
-        # Clean Docker cache if exists
-        docker system prune -af --volumes || true
-
-        # Clean package manager caches
-        sudo apt-get clean
-        sudo apt-get autoremove -y
-
-        # Remove large directories we don't need
-        sudo rm -rf /usr/share/doc
-        sudo rm -rf /usr/share/man
-
-        echo "Disk usage after cleanup:"
-        df -h
-
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
 
     - name: Calculate Node dependencies hash
       id: deps-hash
@@ -598,7 +521,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
 
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
@@ -607,7 +530,7 @@ jobs:
 
     # Multi-level caching for Node.js
     - name: Cache Node.js packages (L1 - npm cache)
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: ~/.npm
         key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
@@ -616,7 +539,7 @@ jobs:
           ${{ runner.os }}-npm-cache-
 
     - name: Cache Node.js packages (L2 - node_modules)
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: |
           node_modules
@@ -629,7 +552,7 @@ jobs:
 
     - name: Cache build artifacts
       if: matrix.test-type == 'build'
-      uses: actions/cache@v5
+      uses: actions/cache@v4
       with:
         path: |
           frontend/dist
@@ -678,7 +601,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v5
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -717,7 +640,7 @@ jobs:
     needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
 
     - name: Calculate performance metrics
       id: metrics
