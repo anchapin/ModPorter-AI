@@ -42,6 +42,19 @@ export const PropertiesPanel: React.FC = () => {
     }
   };
 
+  const handleCreateBehavior = () => {
+    if (selectedBlockId && selectedBlock) {
+      // Create a default behavior object
+      const defaultBehavior = {
+        id: `${selectedBlock.identifier}_behavior`,
+        description: `Behavior for ${selectedBlock.identifier}`
+      };
+      
+      // Use updateBlockProperty to set the behavior
+      updateBlockProperty(selectedBlockId, "behavior", defaultBehavior);
+    }
+  };
+
   const handleJsonChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>,
     setter: React.Dispatch<React.SetStateAction<string>>
@@ -157,10 +170,13 @@ export const PropertiesPanel: React.FC = () => {
           ) : (
              <div className="property-item">
                 <span className="property-label">Behavior:</span>
-                <span className="property-value">
-                  No behavior defined.
-                  {/* TODO: Add button to create behavior object */}
-                </span>
+                <button 
+                  className="create-behavior-button"
+                  onClick={handleCreateBehavior}
+                  title="Create behavior object"
+                >
+                  + Create Behavior
+                </button>
             </div>
           )}
         </div>
