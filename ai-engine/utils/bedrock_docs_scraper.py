@@ -13,19 +13,21 @@ import hashlib
 import aiofiles
 
 from models.document import Document
+import robotexclusionparser
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 class BedrockDocsScraper:
     """
     Enhanced Bedrock documentation scraper with improved parsing, indexing, and error handling.
     Supports multiple content types and provides structured data extraction.
+    Includes robots.txt compliance checking.
     """
     
     def __init__(self, rate_limit_seconds: float = 1.0, cache_ttl_seconds: int = 86400, 
-                 output_dir: Optional[str] = None):
+                 output_dir: Optional[str] = None, respect_robots_txt: bool = True):
         self.target_urls = {
             "learn_minecraft_creator": "https://learn.microsoft.com/en-us/minecraft/creator/",
             "bedrock_dev_docs": "https://bedrock.dev/docs/",
@@ -51,12 +53,19 @@ class BedrockDocsScraper:
         self.failed_urls: Set[str] = set()
         self.content_index: Dict[str, Dict] = {}
         
+        # Robots.txt compliance
+        self.respect_robots_txt = respect_robots_txt
+        self.robots_cache: Dict[str, robotexclusionparser.RobotFileParser] = {}
+        self.robots_cache_ttl = 86400  # 24 hours
+        self.crawl_delays: Dict[str, float] = {}  # Domain -> crawl-delay
+        self.last_request_time: Dict[str, float] = {}  # Domain -> last request timestamp
+        
         # Enhanced HTTP client with better error handling
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(30.0, connect=10.0),
             follow_redirects=True,
             headers={
-                'User-Agent': 'ModPorter-AI Bedrock Documentation Scraper v2.0.0',
+                'User-Agent': 'ModPorter-AI Bedrock Documentation Scraper v2.1.0',
                 'Accept': 'text/html,application/json,text/plain,*/*',
                 'Accept-Language': 'en-US,en;q=0.9'
             }
@@ -79,20 +88,138 @@ class BedrockDocsScraper:
             "total_urls_scraped": 0,
             "total_documents_created": 0,
             "failed_requests": 0,
+            "robots_blocked_requests": 0,
             "api_examples_found": 0,
             "json_schemas_found": 0,
             "content_types": {}
         }
+    
+    async def _check_robots_txt(self, url: str) -> bool:
+        """
+        Check if URL is allowed by robots.txt.
+        
+        Args:
+            url: The URL to check
+            
+        Returns:
+            True if allowed, False if blocked by robots.txt
+        """
+        if not self.respect_robots_txt:
+            return True
+            
+        parsed = urlparse(url)
+        domain = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Check if we have cached robots.txt for this domain
+        if domain in self.robots_cache:
+            robots_parser = self.robots_cache[domain]
+            try:
+                allowed = robots_parser.is_allowed('ModPorter-AI Bedrock Documentation Scraper v2.1.0', url)
+                if not allowed:
+                    logger.debug(f"URL blocked by robots.txt: {url}")
+                    self.stats["robots_blocked_requests"] += 1
+                return allowed
+            except Exception as e:
+                logger.warning(f"Error checking robots.txt for {url}: {e}")
+                return True  # Allow on error
+        
+        # Fetch and parse robots.txt
+        await self._fetch_robots_txt(domain)
+        
+        # Check again after fetching
+        if domain in self.robots_cache:
+            robots_parser = self.robots_cache[domain]
+            try:
+                allowed = robots_parser.is_allowed('ModPorter-AI Bedrock Documentation Scraper v2.1.0', url)
+                if not allowed:
+                    logger.debug(f"URL blocked by robots.txt: {url}")
+                    self.stats["robots_blocked_requests"] += 1
+                return allowed
+            except Exception as e:
+                logger.warning(f"Error checking robots.txt for {url}: {e}")
+                return True
+        
+        return True
+    
+    async def _fetch_robots_txt(self, domain: str) -> None:
+        """
+        Fetch and parse robots.txt for a domain.
+        
+        Args:
+            domain: The domain to fetch robots.txt for
+        """
+        robots_url = f"{domain}/robots.txt"
+        
+        try:
+            response = await self.client.get(robots_url, timeout=10.0)
+            if response.status_code == 200:
+                robots_content = response.text
+                
+                # Parse robots.txt
+                robots_parser = robotexclusionparser.RobotFileParser()
+                robots_parser.parse(robots_content.splitlines())
+                
+                # Cache the parser
+                self.robots_cache[domain] = robots_parser
+                
+                # Extract crawl-delay if present
+                crawl_delay = robots_parser.get_crawl_delay('ModPorter-AI Bedrock Documentation Scraper v2.1.0')
+                if crawl_delay:
+                    self.crawl_delays[domain] = crawl_delay
+                    logger.info(f"Domain {domain} has crawl-delay: {crawl_delay}s")
+                
+                logger.debug(f"Successfully fetched and parsed robots.txt for {domain}")
+            else:
+                # No robots.txt or error - allow all
+                logger.debug(f"No robots.txt found for {domain} (status: {response.status_code})")
+                self.robots_cache[domain] = None
+                
+        except Exception as e:
+            logger.warning(f"Failed to fetch robots.txt for {domain}: {e}")
+            self.robots_cache[domain] = None
+    
+    async def _apply_crawl_delay(self, url: str) -> None:
+        """
+        Apply crawl delay based on robots.txt crawl-delay directive.
+        
+        Args:
+            url: The URL being requested
+        """
+        parsed = urlparse(url)
+        domain = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Check for crawl-delay
+        crawl_delay = self.crawl_delays.get(domain, self.rate_limit_seconds)
+        
+        # Check last request time for this domain
+        if domain in self.last_request_time:
+            time_since_last = datetime.now().timestamp() - self.last_request_time[domain]
+            if time_since_last < crawl_delay:
+                wait_time = crawl_delay - time_since_last
+                logger.debug(f"Rate limiting {domain}, waiting {wait_time:.2f}s")
+                await asyncio.sleep(wait_time)
+        
+        # Update last request time
+        self.last_request_time[domain] = datetime.now().timestamp()
 
 
     async def _fetch_url(self, url: str) -> Optional[httpx.Response]:
         """
-        Enhanced URL fetching with caching, rate limiting, and comprehensive error handling.
+        Enhanced URL fetching with caching, rate limiting, robots.txt compliance, and comprehensive error handling.
         """
         if not validators.url(url):
             logger.warning(f"Invalid URL: {url}")
             self.stats["failed_requests"] += 1
             return None
+
+        # Check robots.txt before fetching
+        if not await self._check_robots_txt(url):
+            logger.info(f"URL blocked by robots.txt: {url}")
+            self.failed_urls.add(url)
+            return None
+
+        # Apply crawl delay based on robots.txt
+        await self._apply_crawl_delay(url)
 
         # Check cache first
         if url in self.cache:
@@ -104,9 +231,6 @@ class BedrockDocsScraper:
             else:
                 logger.debug(f"Cache expired for {url}, refetching")
                 del self.cache[url]
-
-        # Implement rate limiting
-        await asyncio.sleep(self.rate_limit_seconds)
 
         try:
             logger.info(f"Fetching URL: {url}")
