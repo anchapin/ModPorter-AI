@@ -513,15 +513,17 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         {!isFinished && (
           <div className={`conversion-options ${isProcessing || isCompleted ? 'disabled-options' : ''}`}>
             <div className="option-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={smartAssumptions}
-                  onChange={(e) => setSmartAssumptions(e.target.checked)}
-                  disabled={isProcessing || isCompleted}
-                />
-                <span className="checkmark"></span>
-                Enable Smart Assumptions
+              <div className="checkbox-with-info">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={smartAssumptions}
+                    onChange={(e) => setSmartAssumptions(e.target.checked)}
+                    disabled={isProcessing || isCompleted}
+                  />
+                  <span className="checkmark"></span>
+                  Enable Smart Assumptions
+                </label>
                 <button
                   type="button"
                   className="info-button"
@@ -531,7 +533,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 >
                   ?
                 </button>
-              </label>
+              </div>
 
               {showSmartAssumptionsInfo && (
                 <div className="info-panel">
