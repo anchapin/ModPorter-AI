@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ConversionAsset } from '../../types/api';
 import * as api from '../../services/api';
+import { Button } from '../ui/button';
 import './ConversionAssets.css';
 
 interface ConversionAssetsListProps {
@@ -24,6 +25,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     assetType: '',
     status: ''
   });
+  const [processingAssetId, setProcessingAssetId] = useState<string | null>(null);
 
   const loadAssets = useCallback(async () => {
     try {
@@ -55,6 +57,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
       return;
     }
 
+    setProcessingAssetId(assetId);
     try {
       await api.deleteConversionAsset(assetId);
       await loadAssets(); // Refresh the list
@@ -62,10 +65,13 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete asset';
       alert(`Error deleting asset: ${errorMessage}`);
+    } finally {
+      setProcessingAssetId(null);
     }
   };
 
   const handleConvertAsset = async (assetId: string) => {
+    setProcessingAssetId(assetId);
     try {
       await api.convertConversionAsset(assetId);
       await loadAssets(); // Refresh to show updated status
@@ -73,6 +79,8 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to convert asset';
       alert(`Error converting asset: ${errorMessage}`);
+    } finally {
+      setProcessingAssetId(null);
     }
   };
 
@@ -146,9 +154,9 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
             <option value="converted">Converted</option>
             <option value="failed">Failed</option>
           </select>
-          <button onClick={loadAssets} className="refresh-button">
+          <Button onClick={loadAssets} className="refresh-button">
             🔄 Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -194,36 +202,39 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
 
               <div className="asset-card-actions">
                 {asset.status === 'pending' && (
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleConvertAsset(asset.id);
                     }}
                     className="action-button convert-button"
+                    loading={processingAssetId === asset.id}
                   >
                     Convert
-                  </button>
+                  </Button>
                 )}
                 {asset.status === 'failed' && (
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleConvertAsset(asset.id);
                     }}
                     className="action-button retry-button"
+                    loading={processingAssetId === asset.id}
                   >
                     Retry
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteAsset(asset.id);
                   }}
                   className="action-button delete-button"
+                  loading={processingAssetId === asset.id}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
 
               <div className="asset-card-footer">
