@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { useNotification } from '../NotificationSystem';
+import { useSuccessNotification, useErrorNotification, useWarningNotification, useInfoNotification } from '../NotificationSystem';
 import './AdvancedOptionsPanel.css';
 
 export interface AdvancedOptions {
@@ -46,7 +46,10 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
   onChange
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const notification = useNotification();
+  const successNotification = useSuccessNotification();
+  const errorNotification = useErrorNotification();
+  const warningNotification = useWarningNotification();
+  const infoNotification = useInfoNotification();
 
   const handleChange = useCallback((key: keyof AdvancedOptions, value: any) => {
     const newOptions = { ...options, [key]: value };
@@ -55,13 +58,13 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
 
   const handleReset = useCallback(() => {
     onChange(DEFAULT_OPTIONS);
-    notification.info('Advanced options reset to defaults');
-  }, [onChange, notification]);
+    infoNotification('Advanced options reset to defaults');
+  }, [onChange, infoNotification]);
 
   const handleSavePreset = useCallback(() => {
     localStorage.setItem('advancedOptions', JSON.stringify(options));
-    notification.success('Options preset saved');
-  }, [options, notification]);
+    successNotification('Options preset saved');
+  }, [options, successNotification]);
 
   const handleLoadPreset = useCallback(() => {
     const saved = localStorage.getItem('advancedOptions');
@@ -69,14 +72,14 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
       try {
         const parsed = JSON.parse(saved);
         onChange(parsed);
-        notification.success('Options preset loaded');
-      } catch (e) {
-        notification.error('Failed to load preset');
+        successNotification('Options preset loaded');
+      } catch {
+        errorNotification('Failed to load preset');
       }
     } else {
-      notification.warning('No saved preset found');
+      warningNotification('No saved preset found');
     }
-  }, [onChange, notification]);
+  }, [onChange, successNotification, errorNotification, warningNotification]);
 
   return (
     <div className="advanced-options-panel">

@@ -4,10 +4,9 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { useNotification } from '../NotificationSystem';
+import { useSuccessNotification, useErrorNotification } from '../NotificationSystem';
 import { 
-  uploadFile, 
-  startConversion, 
+  convertMod, 
   getConversionStatus, 
   downloadResult 
 } from '../../services/api';
@@ -26,17 +25,16 @@ export interface BatchConversionItem {
 
 interface BatchConversionManagerProps {
   onComplete?: (jobIds: string[]) => void;
-  onError?: (error: string) => void;
 }
 
 export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
-  onComplete,
-  onError
+  onComplete
 }) => {
   const [items, setItems] = useState<BatchConversionItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [maxConcurrent, setMaxConcurrent] = useState(3);
-  const notification = useNotification();
+  const successNotification = useSuccessNotification();
+  const errorNotification = useErrorNotification();
 
   // Handle file selection
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -58,9 +56,9 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     setItems(prev => [...prev, ...newItems]);
     
     if (newItems.length > 0) {
-      notification.success(`Added ${newItems.length} file(s) to batch`);
+      successNotification(`Added ${newItems.length} file(s) to batch`);
     }
-  }, [notification]);
+  }, [successNotification]);
 
   // Remove item from batch
   const removeItem = useCallback((id: string) => {
@@ -72,88 +70,6 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     setItems([]);
     setIsConverting(false);
   }, []);
-
-  // Process a single conversion
-  const processConversion = async (
-    item: BatchConversionItem,
-    index: number
-  ): Promise<BatchConversionItem> => {
-    try {
-      // Update status to uploading
-      setItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, status: 'uploading', progress: 10 } : i
-      ));
-
-      // Upload file
-      const { file_id } = await uploadFile(item.file);
-      
-      // Update status to converting
-      setItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, status: 'converting', progress: 30 } : i
-      ));
-
-      // Start conversion
-      const { job_id } = await startConversion({
-        file_id,
-        original_filename: item.filename
-      });
-
-      // Update with job ID
-      setItems(prev => prev.map(i => 
-        i.id === item.id ? { ...i, jobId: job_id, progress: 50 } : i
-      ));
-
-      // Poll for completion
-      let completed = false;
-      let attempts = 0;
-      const maxAttempts = 300; // 5 minutes max
-
-      while (!completed && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const status = await getConversionStatus(job_id);
-        
-        setItems(prev => prev.map(i => 
-          i.id === item.id ? { 
-            ...i, 
-            progress: 50 + Math.floor((status.progress / 100) * 40) 
-          } : i
-        ));
-
-        if (status.status === 'completed') {
-          completed = true;
-          setItems(prev => prev.map(i => 
-            i.id === item.id ? { 
-              ...i, 
-              status: 'completed',
-              progress: 100,
-              resultUrl: `/api/v1/conversions/${job_id}/download`
-            } : i
-          ));
-        } else if (status.status === 'failed') {
-          throw new Error(status.error || 'Conversion failed');
-        }
-        
-        attempts++;
-      }
-
-      if (!completed) {
-        throw new Error('Conversion timed out');
-      }
-
-      return items.find(i => i.id === item.id)!;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Unknown error';
-      setItems(prev => prev.map(i => 
-        i.id === item.id ? { 
-          ...i, 
-          status: 'failed',
-          error: errorMessage 
-        } : i
-      ));
-      throw error;
-    }
-  };
 
   // Start batch conversion
   const startBatchConversion = useCallback(async () => {
@@ -171,11 +87,30 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
       await Promise.all(
         batch.map(async (item) => {
           try {
-            const result = await processConversion(item, i);
-            if (result.jobId) {
-              completedJobIds.push(result.jobId);
+            // Inline conversion logic to avoid dependency issue
+            setItems(prev => prev.map(x => x.id === item.id ? { ...x, status: 'converting' as const, progress: 20 } : x));
+            const conversionResponse = await convertMod({ file: item.file });
+            const jobId = conversionResponse.job_id;
+            setItems(prev => prev.map(x => x.id === item.id ? { ...x, jobId, progress: 40 } : x));
+            
+            // Poll for completion
+            let completed = false;
+            let attempts = 0;
+            while (!completed && attempts < 300) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              const status = await getConversionStatus(jobId);
+              setItems(prev => prev.map(x => x.id === item.id ? { ...x, progress: 40 + Math.floor((status.progress / 100) * 50) } : x));
+              if (status.status === 'completed') {
+                completed = true;
+                setItems(prev => prev.map(x => x.id === item.id ? { ...x, status: 'completed' as const, progress: 100, resultUrl: `/api/v1/conversions/${jobId}/download` } : x));
+              } else if (status.status === 'failed') {
+                throw new Error(status.error || 'Conversion failed');
+              }
+              attempts++;
             }
-          } catch (error) {
+            if (!completed) throw new Error('Conversion timed out');
+            completedJobIds.push(jobId);
+          } catch {
             failedIds.push(item.id);
           }
         })
@@ -185,14 +120,14 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     setIsConverting(false);
     
     if (completedJobIds.length > 0) {
-      notification.success(`Batch conversion completed: ${completedJobIds.length} succeeded`);
+      successNotification(`Batch conversion completed: ${completedJobIds.length} succeeded`);
       onComplete?.(completedJobIds);
     }
     
     if (failedIds.length > 0) {
-      notification.error(`Batch conversion failed: ${failedIds.length} failed`);
+      errorNotification(`Batch conversion failed: ${failedIds.length} failed`);
     }
-  }, [items, maxConcurrent, notification, onComplete]);
+  }, [items, maxConcurrent, successNotification, errorNotification, onComplete]);
 
   // Download all completed conversions as ZIP
   const downloadAll = useCallback(async () => {
