@@ -89,7 +89,7 @@ def test_full_texture_conversion_pipeline():
 
             # Verify dimensions
             dimensions = converted['dimensions']
-            assert img.size == dimensions, f"Dimension mismatch for {output_path}: expected {dimensions}, got {img.size}"
+            assert list(img.size) == dimensions, f"Dimension mismatch for {output_path}: expected {dimensions}, got {img.size}"
 
             print(f"  - Dimensions: {dimensions}")
             print(f"  - Resized: {converted['resized']}")
@@ -111,7 +111,7 @@ def test_full_texture_conversion_pipeline():
         # Verify power-of-2 resizing was applied to custom_block.png
         custom_block_result = next(r for r in result['converted_textures'] if 'custom_block' in r['converted_path'])
         assert custom_block_result['resized'] is True, "custom_block.png should have been resized"
-        assert custom_block_result['dimensions'] == (64, 64), f"Expected (64, 64), got {custom_block_result['dimensions']}"
+        assert tuple(custom_block_result['dimensions']) == (64, 64), f"Expected (64, 64), got {custom_block_result['dimensions']}"
         print(f"✓ Power-of-2 resizing verified: 33x45 → {custom_block_result['dimensions']}")
 
         print("\n=== All Tests Passed ===")

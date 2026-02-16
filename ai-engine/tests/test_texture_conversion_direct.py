@@ -157,7 +157,7 @@ def test_convert_textures_method():
         # Verify custom.png was resized to power of 2
         custom_result = next(r for r in result['converted_textures'] if 'custom' in r['converted_path'])
         assert custom_result['resized'] is True
-        assert custom_result['dimensions'] == (64, 64)  # 33 -> 64, 45 -> 64
+        assert tuple(custom_result['dimensions']) == (64, 64)  # 33 -> 64, 45 -> 64
         print(f"✓ Power-of-2 resize verified: {custom_result['dimensions']}")
 
         print("\n=== Test Passed ===\n")
