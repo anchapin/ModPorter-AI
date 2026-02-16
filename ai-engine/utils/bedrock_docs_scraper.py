@@ -13,7 +13,7 @@ import hashlib
 import aiofiles
 
 from models.document import Document
-import robotexclusionparser
+from urllib import robotparser
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class BedrockDocsScraper:
         
         # Robots.txt compliance
         self.respect_robots_txt = respect_robots_txt
-        self.robots_cache: Dict[str, robotexclusionparser.RobotFileParser] = {}
+        self.robots_cache: Dict[str, robotparser.RobotFileParser] = {}
         self.robots_cache_ttl = 86400  # 24 hours
         self.crawl_delays: Dict[str, float] = {}  # Domain -> crawl-delay
         self.last_request_time: Dict[str, float] = {}  # Domain -> last request timestamp
@@ -156,8 +156,9 @@ class BedrockDocsScraper:
                 robots_content = response.text
                 
                 # Parse robots.txt
-                robots_parser = robotexclusionparser.RobotFileParser()
-                robots_parser.parse(robots_content.splitlines())
+                robots_parser = robotparser.RobotFileParser()
+                robots_parser.set_url(robots_url)
+                robots_parser.read()
                 
                 # Cache the parser
                 self.robots_cache[domain] = robots_parser
