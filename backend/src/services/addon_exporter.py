@@ -236,7 +236,36 @@ def generate_recipe_json(recipe: pydantic_addon_models.AddonRecipe) -> Dict[str,
     return recipe.data
 
 
+def generate_sounds_json(sound_assets: List[pydantic_addon_models.AddonAsset]) -> Dict[str, Any]:
+    """
+    Generates the sounds.json file for the resource pack.
+    This defines sound definitions that can be referenced in behavior pack.
+    """
+    sounds_data = {}
+    
+    for asset in sound_assets:
+        # Extract sound name from original_filename (without extension)
+        sound_name = os.path.splitext(asset.original_filename)[0] if asset.original_filename else \
+                     os.path.splitext(os.path.basename(asset.path))[0]
+        
+        # Get the sound file path relative to sounds folder
+        sound_path = asset.original_filename if asset.original_filename else os.path.basename(asset.path)
+        
+        sounds_data[sound_name] = {
+            "sounds": [
+                {
+                    "name": f"sounds/{sound_name}",
+                    "volume": 1.0,
+                    "pitch": 1.0
+                }
+            ]
+        }
+    
+    return sounds_data
+
+
 # --- End of imports ---
+
 
 # Main ZIP creation function (to be completed)
 def create_mcaddon_zip(
@@ -327,7 +356,61 @@ def create_mcaddon_zip(
                     # Log or handle missing asset file
                     print(f"Warning: Asset file not found on disk: {asset_disk_path}")
 
-        # TODO: Handle other asset types like sounds, models in their respective folders.
+        # Handle sound assets (.ogg, .wav files)
+        sound_assets = [asset for asset in addon_pydantic.assets if asset.type == "sound"]
+        if sound_assets:
+            for asset in sound_assets:
+                # Sound assets go to RP/sounds/ folder
+                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                
+                # Determine path within ZIP for RP
+                if asset.original_filename:
+                    zip_sound_path = os.path.join(rp_folder_name, "sounds", asset.original_filename)
+                else:
+                    zip_sound_path = os.path.join(rp_folder_name, "sounds", os.path.basename(asset.path))
+                
+                if os.path.exists(asset_disk_path):
+                    zf.write(asset_disk_path, zip_sound_path)
+                else:
+                    print(f"Warning: Sound asset file not found on disk: {asset_disk_path}")
+            
+            # Generate sounds.json for sound definitions
+            sounds_json = generate_sounds_json(sound_assets)
+            zf.writestr(f"{rp_folder_name}/sounds.json", json.dumps(sounds_json, indent=2))
+
+        # Handle 3D model assets (.geo.json, .json models)
+        model_assets = [asset for asset in addon_pydantic.assets if asset.type == "model"]
+        if model_assets:
+            for asset in model_assets:
+                # Model assets go to RP/models/ folder
+                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                
+                # Determine path within ZIP for RP
+                if asset.original_filename:
+                    zip_model_path = os.path.join(rp_folder_name, "models", asset.original_filename)
+                else:
+                    zip_model_path = os.path.join(rp_folder_name, "models", os.path.basename(asset.path))
+                
+                if os.path.exists(asset_disk_path):
+                    zf.write(asset_disk_path, zip_model_path)
+                else:
+                    print(f"Warning: Model asset file not found on disk: {asset_disk_path}")
+
+        # Handle entity/creeper geometry assets
+        entity_assets = [asset for asset in addon_pydantic.assets if asset.type == "entity"]
+        if entity_assets:
+            for asset in entity_assets:
+                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                
+                if asset.original_filename:
+                    zip_entity_path = os.path.join(rp_folder_name, "entity", asset.original_filename)
+                else:
+                    zip_entity_path = os.path.join(rp_folder_name, "entity", os.path.basename(asset.path))
+                
+                if os.path.exists(asset_disk_path):
+                    zf.write(asset_disk_path, zip_entity_path)
+                else:
+                    print(f"Warning: Entity asset file not found on disk: {asset_disk_path}")
 
     zip_buffer.seek(0)
     return zip_buffer
