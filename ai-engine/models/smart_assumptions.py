@@ -274,7 +274,6 @@ class SmartAssumptionEngine:
                        ('dimension' in feature_word and 'dimensions' in assumption_word) or \
                        (feature_word == 'machinery' and 'machinery' in assumption_word) or \
                        (feature_word == 'machine' and 'machinery' in assumption_word) or \
-                       # Phase 2 new matches
                        ('biome' in feature_word and 'biomes' in assumption_word) or \
                        ('enchant' in feature_word and 'enchantments' in assumption_word) or \
                        ('redstone' in feature_word and 'redstone' in assumption_word) or \
