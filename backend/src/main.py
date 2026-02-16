@@ -26,7 +26,7 @@ from uuid import UUID as PyUUID # For addon_id path parameter
 from models import addon_models as pydantic_addon_models # For addon Pydantic models
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 from services.report_generator import ConversionReportGenerator
-from services.structured_logging import get_logger, set_correlation_id, LogContext
+from services.error_handlers import register_exception_handlers
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions
@@ -34,8 +34,9 @@ from api import performance, behavioral_testing, validation, comparison, embeddi
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
 
-# Configure structured logging
-logger = get_logger(__name__)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -129,6 +130,9 @@ app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-
 app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
 app.include_router(conversions.router)  # Conversions API + WebSocket
+
+# Register exception handlers for comprehensive error handling
+register_exception_handlers(app)
 
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
