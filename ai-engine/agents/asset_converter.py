@@ -18,7 +18,16 @@ except ImportError:
     AudioSegment = None
     CouldntDecodeError = Exception
 
-from crewai.tools import tool
+# Optional crewai import for tools decorator
+try:
+    from crewai.tools import tool
+    HAS_CREWAI = True
+except ImportError:
+    # Define a no-op decorator when crewai is not available
+    def tool(func):
+        return func
+    HAS_CREWAI = False
+
 from models.smart_assumptions import (
     SmartAssumptionEngine
 )
