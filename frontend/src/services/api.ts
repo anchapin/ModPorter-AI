@@ -180,26 +180,19 @@ export const uploadAddonAsset = async (addonId: string, file: File, assetType: s
 };
 
 export const replaceAddonAsset = async (addonId: string, assetId: string, file: File): Promise<AddonAsset> => {
-  // TODO: Replace with actual API call: PUT /addons/{addonId}/assets/{assetId}
-  console.log(`API: Mock replacing asset for addonId: ${addonId}, assetId: ${assetId}, file: ${file.name}`);
+  const formData = new FormData();
+  formData.append('file', file);
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Find the asset in the mocked AddonDetails (if it were fetched and stored locally for mock)
-      // For now, just return a new object as if it were updated.
-      const updatedAsset: AddonAsset = {
-        id: assetId,
-        addon_id: addonId,
-        type: 'texture_block', // Assuming type doesn't change or is re-evaluated by backend
-        path: `simulated/updated_path/${file.name}`,
-        original_filename: file.name,
-        created_at: new Date(Date.now() - 100000).toISOString(), // Older created_at
-        updated_at: new Date().toISOString(), // New updated_at
-      };
-      console.log("API: Mock asset updated", updatedAsset);
-      resolve(updatedAsset);
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/addons/${addonId}/assets/${assetId}`, {
+    method: 'PUT',
+    body: formData,
   });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Failed to replace asset' }));
+    throw new ApiError(errorData.detail || `Asset replacement failed (status: ${response.status})`, response.status);
+  }
+  return response.json();
 };
 
 export const deleteAddonAssetAPI = async (addonId: string, assetId: string): Promise<void> => {
