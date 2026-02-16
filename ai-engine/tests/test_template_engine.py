@@ -136,6 +136,156 @@ class TestTemplateEngine:
         invalid_context = {"namespace": "test"}
         # With metadata loaded, this should fail
         assert not template.validate_context(invalid_context)
+    
+    def test_entity_template_selection(self):
+        """Test entity template selection based on properties."""
+        # Test hostile mob selection
+        hostile_properties = {"hostile": True, "aggressive": True}
+        template_type = self.engine.selector.select_template("entity", hostile_properties)
+        assert template_type == TemplateType.HOSTILE_MOB
+        
+        # Test passive mob selection
+        passive_properties = {"passive": True, "peaceful": True}
+        template_type = self.engine.selector.select_template("entity", passive_properties)
+        assert template_type == TemplateType.PASSIVE_MOB
+        
+        # Test NPC selection
+        npc_properties = {"npc": True, "villager": True}
+        template_type = self.engine.selector.select_template("entity", npc_properties)
+        assert template_type == TemplateType.NPC
+        
+        # Test projectile selection
+        projectile_properties = {"projectile": True, "arrow": True}
+        template_type = self.engine.selector.select_template("entity", projectile_properties)
+        assert template_type == TemplateType.PROJECTILE
+    
+    def test_hostile_mob_template_rendering(self):
+        """Test hostile mob template renders correctly."""
+        context = {
+            "namespace": "test_mod",
+            "entity_name": "evil_zombie",
+            "max_health": 30,
+            "attack_damage": 5,
+            "movement_speed": 0.25
+        }
+        
+        result = self.engine.render_template(
+            feature_type="entity",
+            properties={"hostile": True},
+            context=context
+        )
+        
+        # Verify it's valid JSON
+        data = json.loads(result)
+        assert "minecraft:entity" in data
+        assert data["minecraft:entity"]["description"]["identifier"] == "test_mod:evil_zombie"
+        # Verify hostile characteristics
+        assert "minecraft:attack" in data["minecraft:entity"]["components"]
+        assert data["minecraft:entity"]["components"]["minecraft:attack"]["damage"] == 5
+    
+    def test_passive_mob_template_rendering(self):
+        """Test passive mob template renders correctly."""
+        context = {
+            "namespace": "test_mod",
+            "entity_name": "friendly_cow",
+            "can_be_bred": True,
+            "drops_items": True
+        }
+        
+        result = self.engine.render_template(
+            feature_type="entity",
+            properties={"passive": True},
+            context=context
+        )
+        
+        # Verify it's valid JSON
+        data = json.loads(result)
+        assert "minecraft:entity" in data
+        assert data["minecraft:entity"]["description"]["identifier"] == "test_mod:friendly_cow"
+        # Verify passive characteristics
+        assert "minecraft:behavior.panic" in data["minecraft:entity"]["components"]
+    
+    def test_tool_template_rendering(self):
+        """Test tool item template renders correctly."""
+        context = {
+            "namespace": "test_mod",
+            "item_name": "diamond_pickaxe",
+            "max_durability": 500
+        }
+        
+        result = self.engine.render_template(
+            feature_type="item",
+            properties={"tool": True, "pickaxe": True},
+            context=context
+        )
+        
+        # Verify it's valid JSON
+        data = json.loads(result)
+        assert "minecraft:item" in data
+        assert data["minecraft:item"]["description"]["identifier"] == "test_mod:diamond_pickaxe"
+        # Verify tool characteristics
+        assert "minecraft:durability" in data["minecraft:item"]["components"]
+        assert data["minecraft:item"]["components"]["minecraft:durability"]["max_durability"] == 500
+    
+    def test_armor_template_rendering(self):
+        """Test armor item template renders correctly."""
+        context = {
+            "namespace": "test_mod",
+            "item_name": "diamond_helmet",
+            "armor_slot": "head",
+            "defense": 6
+        }
+        
+        result = self.engine.render_template(
+            feature_type="item",
+            properties={"armor": True, "helmet": True},
+            context=context
+        )
+        
+        # Verify it's valid JSON
+        data = json.loads(result)
+        assert "minecraft:item" in data
+        assert data["minecraft:item"]["description"]["identifier"] == "test_mod:diamond_helmet"
+    
+    def test_consumable_template_rendering(self):
+        """Test consumable item template renders correctly."""
+        context = {
+            "namespace": "test_mod",
+            "item_name": "golden_apple",
+            "max_stack_size": 64,
+            "use_duration": 32
+        }
+        
+        result = self.engine.render_template(
+            feature_type="item",
+            properties={"food": True, "consumable": True},
+            context=context
+        )
+        
+        # Verify it's valid JSON
+        data = json.loads(result)
+        assert "minecraft:item" in data
+        assert data["minecraft:item"]["description"]["identifier"] == "test_mod:golden_apple"
+        # Verify consumable characteristics
+        assert "minecraft:use_duration" in data["minecraft:item"]["components"]
+    
+    def test_tool_metadata_loaded(self):
+        """Test tool template has metadata with defaults."""
+        template = self.engine.get_template(TemplateType.TOOL)
+        assert template.metadata is not None
+        assert "defaults" in template.metadata
+        # Verify defaults are applied
+        defaults = template.metadata["defaults"]
+        assert defaults["max_stack_size"] == 1
+        assert defaults["max_durability"] == 250
+    
+    def test_entity_metadata_loaded(self):
+        """Test entity templates have metadata."""
+        hostile_template = self.engine.get_template(TemplateType.HOSTILE_MOB)
+        assert hostile_template.metadata is not None
+        
+        passive_template = self.engine.get_template(TemplateType.PASSIVE_MOB)
+        assert passive_template.metadata is not None
 
 
 if __name__ == "__main__":

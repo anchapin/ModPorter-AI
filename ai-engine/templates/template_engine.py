@@ -395,6 +395,11 @@ class TemplateEngine:
             category_dir = self.templates_dir / category.value
             if category_dir.exists():
                 for template_file in category_dir.glob('*.json'):
+                    # Skip .meta.json and variant files (basic_block_bp.json, basic_block_rp.json)
+                    if template_file.name.endswith('.meta.json'):
+                        continue
+                    if '_bp.json' in template_file.name or '_rp.json' in template_file.name:
+                        continue
                     template_type = self._map_filename_to_type(template_file.name)
                     if template_type:
                         self.template_cache[template_type] = JinjaTemplate(

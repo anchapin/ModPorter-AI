@@ -4,8 +4,7 @@
   "description": "Tool template with durability, mining speeds, and enchantability",
   "required_parameters": [
     "namespace",
-    "item_name",
-    "texture_name"
+    "item_name"
   ],
   "optional_parameters": [
     "display_name",
