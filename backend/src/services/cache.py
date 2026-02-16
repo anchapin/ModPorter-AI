@@ -15,6 +15,15 @@ class CacheService:
     CACHE_MOD_ANALYSIS_PREFIX = "cache:mod_analysis:"
     CACHE_CONVERSION_RESULT_PREFIX = "cache:conversion_result:"
     CACHE_ASSET_CONVERSION_PREFIX = "cache:asset_conversion:"
+    
+    # Default TTL configurations (in seconds)
+    DEFAULT_TTL_MOD_ANALYSIS = int(os.getenv("CACHE_TTL_MOD_ANALYSIS", "3600"))  # 1 hour
+    DEFAULT_TTL_CONVERSION_RESULT = int(os.getenv("CACHE_TTL_CONVERSION_RESULT", "7200"))  # 2 hours
+    DEFAULT_TTL_ASSET_CONVERSION = int(os.getenv("CACHE_TTL_ASSET_CONVERSION", "3600"))  # 1 hour
+    DEFAULT_TTL_JOB_STATUS = int(os.getenv("CACHE_TTL_JOB_STATUS", "300"))  # 5 minutes
+    
+    # Cache size limits
+    MAX_CACHE_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "1000"))
 
     def __init__(self) -> None:
         # Check if Redis is disabled for tests
@@ -30,6 +39,7 @@ class CacheService:
                     settings.redis_url, decode_responses=True
                 )
                 self._redis_available = True
+                logger.info("Redis cache initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize Redis client: {e}")
                 self._client = None
@@ -261,3 +271,109 @@ class CacheService:
         except Exception as e:
             logger.warning(f"Redis operation failed for delete_export_data: {e}")
             self._redis_available = False
+
+    # Enhanced caching methods for Issue #381
+    
+    async def cache_conversion_by_hash(
+        self, mod_content: bytes, result: dict, ttl_seconds: Optional[int] = None
+    ) -> str:
+        """
+        Cache conversion result by computing hash of mod content.
+        
+        Args:
+            mod_content: The mod file content bytes
+            result: The conversion result to cache
+            ttl_seconds: Optional TTL, defaults to DEFAULT_TTL_CONVERSION_RESULT
+            
+        Returns:
+            The hash key used for caching
+        """
+        import hashlib
+        
+        if ttl_seconds is None:
+            ttl_seconds = self.DEFAULT_TTL_CONVERSION_RESULT
+        
+        # Compute SHA256 hash of mod content
+        mod_hash = hashlib.sha256(mod_content).hexdigest()
+        
+        # Cache the result
+        await self.cache_conversion_result(mod_hash, result, ttl_seconds)
+        
+        logger.info(f"Cached conversion result with hash: {mod_hash[:16]}...")
+        return mod_hash
+
+    async def get_cached_conversion_by_hash(self, mod_content: bytes) -> Optional[dict]:
+        """
+        Retrieve cached conversion result by computing hash of mod content.
+        
+        Args:
+            mod_content: The mod file content bytes
+            
+        Returns:
+            Cached conversion result or None if not found
+        """
+        import hashlib
+        
+        mod_hash = hashlib.sha256(mod_content).hexdigest()
+        result = await self.get_conversion_result(mod_hash)
+        
+        if result:
+            logger.info(f"Cache hit for conversion hash: {mod_hash[:16]}...")
+        else:
+            logger.info(f"Cache miss for conversion hash: {mod_hash[:16]}...")
+            
+        return result
+
+    async def invalidate_conversion_cache(self, mod_hash: str) -> None:
+        """
+        Invalidate a specific conversion result cache.
+        
+        Args:
+            mod_hash: The hash key of the conversion to invalidate
+        """
+        key = f"{self.CACHE_CONVERSION_RESULT_PREFIX}{mod_hash}"
+        await self.invalidate_cache(key)
+        logger.info(f"Invalidated conversion cache for hash: {mod_hash[:16]}...")
+
+    async def invalidate_mod_analysis_cache(self, mod_hash: str) -> None:
+        """
+        Invalidate a specific mod analysis cache.
+        
+        Args:
+            mod_hash: The hash key of the mod analysis to invalidate
+        """
+        key = f"{self.CACHE_MOD_ANALYSIS_PREFIX}{mod_hash}"
+        await self.invalidate_cache(key)
+        logger.info(f"Invalidated mod analysis cache for hash: {mod_hash[:16]}...")
+
+    async def clear_all_caches(self) -> None:
+        """
+        Clear all cached data (use with caution).
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+        try:
+            patterns = [
+                f"{self.CACHE_MOD_ANALYSIS_PREFIX}*",
+                f"{self.CACHE_CONVERSION_RESULT_PREFIX}*",
+                f"{self.CACHE_ASSET_CONVERSION_PREFIX}*",
+            ]
+            for pattern in patterns:
+                keys = await self._client.keys(pattern)
+                if keys:
+                    await self._client.delete(*keys)
+            logger.warning("All caches cleared")
+        except Exception as e:
+            logger.error(f"Failed to clear caches: {e}")
+
+    def get_cache_hit_rate(self) -> float:
+        """
+        Calculate cache hit rate.
+        
+        Returns:
+            Hit rate as a percentage (0-100)
+        """
+        total = self._cache_hits + self._cache_misses
+        if total == 0:
+            return 0.0
+        return (self._cache_hits / total) * 100
