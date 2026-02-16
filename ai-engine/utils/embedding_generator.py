@@ -57,7 +57,7 @@ class OpenAIEmbeddingGenerator(EmbeddingGenerator):
     
     def __init__(self, model: str = "text-embedding-ada-002", dimensions: int = 1536):
         self.model = model
-        self.dimensions = dimensions
+        self._dimensions = dimensions
         self._client = None
         self._init_client()
     
@@ -88,7 +88,7 @@ class OpenAIEmbeddingGenerator(EmbeddingGenerator):
             return EmbeddingResult(
                 embedding=embedding,
                 model=self.model,
-                dimensions=self.dimensions,
+                dimensions=self._dimensions,
                 token_count=response.usage.total_tokens
             )
         except Exception as e:
@@ -111,7 +111,7 @@ class OpenAIEmbeddingGenerator(EmbeddingGenerator):
                 results.append(EmbeddingResult(
                     embedding=embedding,
                     model=self.model,
-                    dimensions=self.dimensions
+                    dimensions=self._dimensions
                 ))
             return results
         except Exception as e:
