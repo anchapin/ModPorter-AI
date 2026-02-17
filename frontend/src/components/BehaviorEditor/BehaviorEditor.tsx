@@ -32,8 +32,6 @@ import { LootTableEditor } from './LootTableEditor';
 import { LogicBuilder } from './LogicBuilder';
 import { TemplateSelector } from './TemplateSelector/TemplateSelector';
 import { BedrockDocsPanel } from '../Editor/BedrockDocsPanel';
-------- REPLACE
-
 
 import { BehaviorTemplate } from '../../services/api';
 import {

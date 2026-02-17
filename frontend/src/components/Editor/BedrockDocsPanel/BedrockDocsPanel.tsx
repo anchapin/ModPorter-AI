@@ -1,13 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Box,
   Typography,
   TextField,
   InputAdornment,
   Tabs,
   Tab,
   List,
-  ListItem,
   ListItemButton,
   ListItemText,
   Collapse,
@@ -243,7 +241,7 @@ const categoryInfo: Record<string, { label: string; icon: React.ReactNode }> = {
 export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
   className = '',
   onInsertSnippet,
-  currentFileType = 'entity_behavior',
+  currentFileType: _currentFileType = 'entity_behavior',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -293,18 +291,6 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
   // Toggle doc expansion
   const toggleDoc = (docId: string) => {
     setExpandedDoc(expandedDoc === docId ? null : docId);
-  };
-
-  // Get category from file type
-  const getCategoryFromFileType = (fileType: string): string => {
-    const typeMap: Record<string, string> = {
-      entity_behavior: 'entity',
-      block_behavior: 'block',
-      item_behavior: 'item',
-      recipe: 'recipe',
-      loot_table: 'loot_table',
-    };
-    return typeMap[fileType] || 'component';
   };
 
   return (
