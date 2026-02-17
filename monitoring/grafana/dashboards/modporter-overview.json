@@ -20,42 +20,108 @@
             "legendFormat": "{{job}} Status"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
       },
       {
         "id": 2,
-        "title": "API Response Times",
-        "type": "graph",
+        "title": "Active Conversions",
+        "type": "stat",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"modporter-backend\"}[5m]))",
-            "legendFormat": "95th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"modporter-backend\"}[5m]))",
-            "legendFormat": "50th percentile"
+            "expr": "modporter_active_conversions",
+            "legendFormat": "Active"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
       },
       {
         "id": 3,
+        "title": "Conversion Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "modporter_conversion_success_rate",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 50, "color": "orange"},
+                {"value": 80, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Avg Conversion Time",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_average_conversion_time_seconds",
+            "legendFormat": "Avg Time (s)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "API Response Times (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.25, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "25th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 6,
         "title": "Conversion Queue",
         "type": "graph",
         "targets": [
           {
             "expr": "modporter_conversion_queue_size",
             "legendFormat": "Queue Size"
-          },
-          {
-            "expr": "rate(modporter_conversions_total[5m])",
-            "legendFormat": "Conversion Rate"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
       },
       {
-        "id": 4,
+        "id": 7,
+        "title": "Conversion Funnel",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "sum(rate(modporter_conversion_jobs_total[5m])) by (status)",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "showUnfilled": true
+        }
+      },
+      {
+        "id": 8,
         "title": "Resource Usage",
         "type": "graph",
         "targets": [
@@ -64,8 +130,110 @@
             "legendFormat": "{{name}} CPU %"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "LLM Token Usage (tokens/min)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_llm_tokens_total[5m]) * 60",
+            "legendFormat": "{{model}} - {{prompt_completion}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "LLM API Cost ($/hour)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_llm_cost_dollars[1h])",
+            "legendFormat": "{{model}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 11,
+        "title": "Error Rate (errors/min)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_errors_total[5m]) * 60",
+            "legendFormat": "{{error_category}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32}
+      },
+      {
+        "id": 12,
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(rate(modporter_cache_operations_total{operation=\"hit\"}[5m]) / rate(modporter_cache_operations_total[5m])) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 30, "color": "orange"},
+                {"value": 50, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Conversion Jobs by Target Version",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum(rate(modporter_conversion_jobs_total[1h])) by (target_version)",
+            "legendFormat": "{{target_version}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 40}
+      },
+      {
+        "id": 14,
+        "title": "Database Operation Latency (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(modporter_db_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}} - {{table}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 40}
+      },
+      {
+        "id": 15,
+        "title": "Agent Execution Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum(rate(modporter_agent_executions_total[5m])) by (agent_name, status)",
+            "format": "table",
+            "legendFormat": "{{agent_name}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48}
       }
-    ]
+    ],
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s",
+    "links": []
   }
 }
