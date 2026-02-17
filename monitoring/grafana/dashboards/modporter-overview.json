@@ -2,7 +2,7 @@
   "dashboard": {
     "id": null,
     "title": "ModPorter AI - Production Overview",
-    "tags": ["modporter", "production"],
+    "tags": ["modporter", "production", "conversion"],
     "timezone": "browser",
     "refresh": "30s",
     "time": {
@@ -12,19 +12,74 @@
     "panels": [
       {
         "id": 1,
-        "title": "System Overview",
-        "type": "stat",
+        "title": "Conversion Success Rate",
+        "type": "gauge",
         "targets": [
           {
-            "expr": "up{job=~\"modporter.*\"}",
-            "legendFormat": "{{job}} Status"
+            "expr": "modporter_conversion_success_rate",
+            "legendFormat": "Success Rate %"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 60, "color": "orange"},
+                {"value": 80, "color": "yellow"},
+                {"value": 90, "color": "green"}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
       },
       {
         "id": 2,
-        "title": "API Response Times",
+        "title": "Active Conversions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_active_conversions",
+            "legendFormat": "Active"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Queue Size",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_conversion_queue_size",
+            "legendFormat": "Queue"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Avg Conversion Time",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_average_conversion_time_seconds",
+            "legendFormat": "Avg Time"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "API Response Times (p95)",
         "type": "graph",
         "targets": [
           {
@@ -36,35 +91,91 @@
             "legendFormat": "50th percentile"
           }
         ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
-      },
-      {
-        "id": 3,
-        "title": "Conversion Queue",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "modporter_conversion_queue_size",
-            "legendFormat": "Queue Size"
-          },
-          {
-            "expr": "rate(modporter_conversions_total[5m])",
-            "legendFormat": "Conversion Rate"
-          }
-        ],
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
       },
       {
-        "id": 4,
-        "title": "Resource Usage",
-        "type": "graph",
+        "id": 6,
+        "title": "Conversion Duration Distribution",
+        "type": "heatmap",
         "targets": [
           {
-            "expr": "rate(container_cpu_usage_seconds_total{name=~\"modporter.*\"}[5m]) * 100",
-            "legendFormat": "{{name}} CPU %"
+            "expr": "rate(modporter_conversion_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}"
           }
         ],
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 7,
+        "title": "Conversions Completed",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_conversions_completed_total",
+            "legendFormat": "Completed"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Conversions Failed",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "modporter_conversions_failed_total",
+            "legendFormat": "Failed"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "HTTP Requests by Status",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_http_requests_total{job=\"modporter-backend\"}[5m])",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 10,
+        "title": "LLM API Cost ($/hour)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_llm_cost_dollars[1h])",
+            "legendFormat": "{{model}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 11,
+        "title": "LLM Token Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(modporter_llm_tokens_total[5m])",
+            "legendFormat": "{{model}} - {{prompt_completion}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 12,
+        "title": "Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\"modporter.*\"}",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 32}
       }
     ]
   }

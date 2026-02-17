@@ -1,0 +1,125 @@
+# Prometheus Alert Rules for ModPorter AI
+# Issue #457 - Monitoring Dashboards with Grafana/Prometheus
+
+groups:
+  - name: modporter_conversion_alerts
+    interval: 30s
+    rules:
+      # Conversion Success Rate Alert
+      - alert: ConversionSuccessRateLow
+        expr: modporter_conversion_success_rate < 80
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Conversion success rate is below 80%"
+          description: "Current success rate: {{ $value | printf \"%.1f\" }}%. Check failed conversions for patterns."
+
+      # High Conversion Failure Rate
+      - alert: ConversionFailureRateHigh
+        expr: rate(modporter_conversion_jobs_total{status="failed"}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High conversion failure rate detected"
+          description: "Failed conversion rate: {{ $value | printf \"%.2f\" }}/s"
+
+      # Conversion Queue Backlog
+      - alert: ConversionQueueBacklog
+        expr: modporter_conversion_queue_size > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Conversion queue backlog detected"
+          description: "Queue size: {{ $value }} jobs. Consider scaling workers."
+
+      # Long Running Conversion
+      - alert: LongRunningConversion
+        expr: modporter_conversion_duration_seconds > 600
+        for: 2m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "Conversion taking longer than expected"
+          description: "Conversion has been running for {{ $value | printf \"%.0f\" }} seconds"
+
+  - name: modporter_api_alerts
+    interval: 30s
+    rules:
+      # High Error Rate
+      - alert: APIHighErrorRate
+        expr: rate(modporter_http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High API error rate detected"
+          description: "5xx error rate: {{ $value | printf \"%.2f\" }}/s"
+
+      # High Response Time
+      - alert: APIHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="modporter-backend"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "API response time is high"
+          description: "95th percentile: {{ $value | printf \"%.2f\" }}s"
+
+  - name: modporter_llm_alerts
+    interval: 60s
+    rules:
+      # High LLM Cost
+      - alert: HighLLMCost
+        expr: rate(modporter_llm_cost_dollars[1h]) > 10
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High LLM API cost detected"
+          description: "Current cost rate: ${{ $value | printf \"%.2f\" }}/hour"
+
+      # LLM Token Usage Spike
+      - alert: LLMTokenUsageSpike
+        expr: rate(modporter_llm_tokens_total[15m]) > 100000
+        for: 5m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "High LLM token usage detected"
+          description: "Token rate: {{ $value | printf \"%.0f\" }}/min"
+
+  - name: modporter_system_alerts
+    interval: 30s
+    rules:
+      # Service Down
+      - alert: ServiceDown
+        expr: up{job=~"modporter.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "High memory usage on {{ $labels.name }}"
+          description: "Memory usage: {{ $value | printf \"%.1f\" }}%"
