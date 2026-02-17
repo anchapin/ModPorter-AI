@@ -30,5 +30,5 @@ RUN mkdir -p /app/conversion_outputs /app/logs
 # Expose port
 EXPOSE 8001
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Run the application (main.py at root level)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]

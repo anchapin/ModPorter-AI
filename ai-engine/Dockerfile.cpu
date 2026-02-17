@@ -17,7 +17,7 @@ RUN python3.11 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml README.md /tmp/
-COPY src /tmp/src
+COPY . /tmp/
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 # Install all dependencies, including CPU-only extras, from pyproject.toml
@@ -59,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 EXPOSE 8001
 
 # Use modern uvicorn settings
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]
