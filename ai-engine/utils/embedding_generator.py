@@ -5,9 +5,12 @@ This module provides embedding generation capabilities for the RAG system,
 connecting to vector database for knowledge retrieval.
 """
 
+import hashlib
 import json
 import logging
 import os
+import threading
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -15,6 +18,13 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# Constants for embedding validation
+SUPPORTED_DIMENSIONS = {1536, 384, 768, 512, 256}
+DEFAULT_DIMENSION = 1536
+CACHE_MAX_SIZE = 10000
+CACHE_TTL_SECONDS = 3600  # 1 hour
+
 
 
 @dataclass
@@ -473,3 +483,79 @@ class RAGEmbeddingService:
 def create_rag_embedding_service(provider: str = "auto") -> RAGEmbeddingService:
     """Factory function to create RAG embedding service."""
     return RAGEmbeddingService(provider=provider)
+
+
+class EmbeddingCache:
+    """Thread-safe LRU cache for embeddings with TTL support."""
+    
+    def __init__(self, max_size: int = CACHE_MAX_SIZE, ttl_seconds: int = CACHE_TTL_SECONDS):
+        self._cache: Dict[str, tuple] = {}
+        self._max_size = max_size
+        self._ttl_seconds = ttl_seconds
+        self._lock = threading.Lock()
+        self._hits = 0
+        self._misses = 0
+    
+    def _get_cache_key(self, text: str, model: str) -> str:
+        text_hash = hashlib.sha256(text.encode()).hexdigest()
+        return f"{model}:{text_hash}"
+    
+    def get(self, text: str, model: str) -> Optional[np.ndarray]:
+        key = self._get_cache_key(text, model)
+        with self._lock:
+            if key in self._cache:
+                embedding, timestamp = self._cache[key]
+                if time.time() - timestamp < self._ttl_seconds:
+                    self._hits += 1
+                    return embedding
+                else:
+                    del self._cache[key]
+            self._misses += 1
+            return None
+    
+    def put(self, text: str, model: str, embedding: np.ndarray):
+        key = self._get_cache_key(text, model)
+        with self._lock:
+            if len(self._cache) >= self._max_size:
+                oldest_key = min(self._cache.keys(), key=lambda k: self._cache[k][1])
+                del self._cache[oldest_key]
+            self._cache[key] = (embedding.copy(), time.time())
+    
+    def clear(self):
+        with self._lock:
+            self._cache.clear()
+            self._hits = 0
+            self._misses = 0
+    
+    def get_stats(self) -> Dict[str, Any]:
+        with self._lock:
+            total = self._hits + self._misses
+            hit_rate = self._hits / total if total > 0 else 0
+            return {
+                'size': len(self._cache),
+                'max_size': self._max_size,
+                'hits': self._hits,
+                'misses': self._misses,
+                'hit_rate': hit_rate
+            }
+
+
+def validate_embedding_dimensions(embedding: np.ndarray, expected_dimensions: int) -> bool:
+    if embedding is None:
+        return False
+    if not isinstance(embedding, np.ndarray):
+        return False
+    actual_dims = embedding.shape[0] if embedding.ndim > 0 else 0
+    return actual_dims == expected_dimensions
+
+
+def get_embedding_config() -> Dict[str, Any]:
+    return {
+        'provider': os.getenv('EMBEDDING_PROVIDER', 'auto'),
+        'openai_model': os.getenv('OPENAI_EMBEDDING_MODEL', 'text-embedding-ada-002'),
+        'local_model': os.getenv('LOCAL_EMBEDDING_MODEL', 'all-MiniLM-L6-v2'),
+        'dimensions': int(os.getenv('EMBEDDING_DIMENSIONS', str(DEFAULT_DIMENSION))),
+        'cache_enabled': os.getenv('EMBEDDING_CACHE_ENABLED', 'true').lower() == 'true',
+        'cache_size': int(os.getenv('EMBEDDING_CACHE_SIZE', str(CACHE_MAX_SIZE))),
+        'cache_ttl': int(os.getenv('EMBEDDING_CACHE_TTL', str(CACHE_TTL_SECONDS)))
+    }
