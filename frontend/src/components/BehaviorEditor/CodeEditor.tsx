@@ -38,6 +38,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const validationDisposablesRef = useRef<editor.IEditorDisposable[]>([]);
 
   // Check if content has unsaved changes
   const hasUnsavedChanges = content !== originalContent;
@@ -155,17 +156,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [handleSave]);
 
   // Live JSON validation for Bedrock files
-  const validateJsonContent = useCallback((content: string, filePath: string): { valid: boolean; errors: string[] } => {
+  const validateJsonContent = useCallback((content: string): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    const extension = filePath.split('.').pop()?.toLowerCase();
     
-    if (extension === 'json') {
-      try {
-        JSON.parse(content);
-      } catch (e) {
-        if (e instanceof SyntaxError) {
-          errors.push(e.message);
-        }
+    try {
+      JSON.parse(content);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        errors.push(e.message);
       }
     }
     
@@ -193,15 +191,43 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     // Add JSON validation on content change for JSON files
     const jsonExtension = filePath.split('.').pop()?.toLowerCase();
     if (jsonExtension === 'json') {
-      editor.onDidChangeModelContent(() => {
+      const disposable = editor.onDidChangeModelContent(() => {
         const currentContent = editor.getValue();
-        const validation = validateJsonContent(currentContent, filePath);
+        const validation = validateJsonContent(currentContent);
+        
+        // Use Monaco's marker API to show errors in the editor
+        const model = editor.getModel();
+        if (model) {
+          const markers = validation.errors.map(error => ({
+            severity: 8, // Error severity
+            message: error,
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: 1,
+            endColumn: 1,
+          }));
+          (window as any).monaco?.editor?.setModelMarkers(model, 'json-validation', markers);
+        }
+        
         if (!validation.valid) {
           console.log('JSON validation errors:', validation.errors);
         }
       });
+      
+      // Store disposable for cleanup
+      validationDisposablesRef.current.push(disposable);
     }
   };
+
+  // Cleanup disposables on unmount
+  useEffect(() => {
+    return () => {
+      validationDisposablesRef.current.forEach(disposable => {
+        disposable.dispose();
+      });
+      validationDisposablesRef.current = [];
+    };
+  }, []);
 
   // Show empty state when no file is selected
   if (!fileId) {
