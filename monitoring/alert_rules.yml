@@ -79,7 +79,7 @@ groups:
     rules:
       # High LLM Cost
       - alert: HighLLMCost
-        expr: rate(modporter_llm_cost_dollars[1h]) > 10
+        expr: rate(modporter_llm_cost_dollars[1h]) * 3600 > 10
         for: 10m
         labels:
           severity: warning
@@ -90,7 +90,7 @@ groups:
 
       # LLM Token Usage Spike
       - alert: LLMTokenUsageSpike
-        expr: rate(modporter_llm_tokens_total[15m]) > 100000
+        expr: rate(modporter_llm_tokens_total[15m]) * 60 > 100000
         for: 5m
         labels:
           severity: info
@@ -115,7 +115,7 @@ groups:
 
       # High Memory Usage
       - alert: HighMemoryUsage
-        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
         for: 5m
         labels:
           severity: warning
