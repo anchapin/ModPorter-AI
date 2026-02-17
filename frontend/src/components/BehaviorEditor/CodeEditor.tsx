@@ -154,6 +154,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
+  // Live JSON validation for Bedrock files
+  const validateJsonContent = useCallback((content: string, filePath: string): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    
+    if (extension === 'json') {
+      try {
+        JSON.parse(content);
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          errors.push(e.message);
+        }
+      }
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }, []);
+
   // Configure Monaco editor
   const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
@@ -171,6 +189,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       tabSize: 2,
       insertSpaces: true,
     });
+    
+    // Add JSON validation on content change for JSON files
+    const jsonExtension = filePath.split('.').pop()?.toLowerCase();
+    if (jsonExtension === 'json') {
+      editor.onDidChangeModelContent(() => {
+        const currentContent = editor.getValue();
+        const validation = validateJsonContent(currentContent, filePath);
+        if (!validation.valid) {
+          console.log('JSON validation errors:', validation.errors);
+        }
+      });
+    }
   };
 
   // Show empty state when no file is selected
