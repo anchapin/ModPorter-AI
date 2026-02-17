@@ -33,18 +33,22 @@ class ErrorResponse(BaseModel):
 
 class ModPorterException(Exception):
     """Base exception for ModPorter-specific errors"""
+    default_user_message = "An error occurred. Please try again."
+    default_error_type = "internal_error"
+    default_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    
     def __init__(
         self,
         message: str,
-        user_message: str = "An error occurred. Please try again.",
-        error_type: str = "internal_error",
-        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+        user_message: Optional[str] = None,
+        error_type: Optional[str] = None,
+        status_code: Optional[int] = None,
         details: Optional[Dict[str, Any]] = None
     ):
         self.message = message
-        self.user_message = user_message
-        self.error_type = error_type
-        self.status_code = status_code
+        self.user_message = user_message or getattr(self, 'default_user_message', self.default_user_message)
+        self.error_type = error_type or getattr(self, 'default_error_type', self.default_error_type)
+        self.status_code = status_code or getattr(self, 'default_status_code', self.default_status_code)
         self.details = details or {}
         super().__init__(self.message)
 
@@ -141,70 +145,30 @@ class RateLimitException(ModPorterException):
 
 class ParseError(ModPorterException):
     """Exception raised when parsing fails (e.g., invalid mod file format)"""
-    def __init__(
-        self,
-        message: str,
-        user_message: str = "Unable to parse the mod file. Please ensure it's a valid Java mod archive.",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            user_message=user_message,
-            error_type="parse_error",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            details=details
-        )
+    default_user_message = "Unable to parse the mod file. Please ensure it's a valid Java mod archive."
+    default_error_type = "parse_error"
+    default_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class AssetError(ModPorterException):
     """Exception raised when asset processing fails"""
-    def __init__(
-        self,
-        message: str,
-        user_message: str = "Failed to process mod assets. Some textures or models may not have converted.",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            user_message=user_message,
-            error_type="asset_error",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            details=details
-        )
+    default_user_message = "Failed to process mod assets. Some textures or models may not have converted."
+    default_error_type = "asset_error"
+    default_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class LogicError(ModPorterException):
     """Exception raised when mod logic cannot be translated"""
-    def __init__(
-        self,
-        message: str,
-        user_message: str = "Some mod logic could not be converted. The mod may not function identically.",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            user_message=user_message,
-            error_type="logic_error",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            details=details
-        )
+    default_user_message = "Some mod logic could not be converted. The mod may not function identically."
+    default_error_type = "logic_error"
+    default_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class PackageError(ModPorterException):
     """Exception raised when packaging the mod fails"""
-    def __init__(
-        self,
-        message: str,
-        user_message: str = "Failed to package the converted mod. Please try again.",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            user_message=user_message,
-            error_type="package_error",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            details=details
-        )
+    default_user_message = "Failed to package the converted mod. Please try again."
+    default_error_type = "package_error"
+    default_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 def create_error_response(
@@ -325,13 +289,9 @@ def register_exception_handlers(app):
     from fastapi.exceptions import RequestValidationError
     
     # Register base exception handlers
+    # Note: ParseError, AssetError, LogicError, PackageError are handled
+    # automatically by ModPorterException handler via isinstance dispatch
     app.add_exception_handler(ModPorterException, modporter_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
-    
-    # Register error category handlers (Issue #455)
-    app.add_exception_handler(ParseError, modporter_exception_handler)
-    app.add_exception_handler(AssetError, modporter_exception_handler)
-    app.add_exception_handler(LogicError, modporter_exception_handler)
-    app.add_exception_handler(PackageError, modporter_exception_handler)
