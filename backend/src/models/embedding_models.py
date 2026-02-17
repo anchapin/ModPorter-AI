@@ -26,3 +26,8 @@ class EmbeddingSearchQuery(BaseModel):
 
 class EmbeddingSearchResult(BaseModel): # For consistent response structure if needed, though list of DocumentEmbeddingResponse is also fine
     results: List[DocumentEmbeddingResponse]
+
+class EmbeddingGenerateRequest(BaseModel):
+    """Request model for generating embeddings."""
+    texts: List[str]
+    provider: str = "auto"  # "openai", "local", or "auto"
