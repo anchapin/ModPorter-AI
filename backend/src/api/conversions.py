@@ -39,6 +39,7 @@ from db import crud
 from websocket.manager import manager
 from websocket.progress_handler import ProgressHandler, AgentStatus
 from services.cache import CacheService
+from services.task_queue import enqueue_task, TaskPriority
 
 logger = logging.getLogger(__name__)
 
@@ -410,13 +411,25 @@ async def create_conversion(
             detail="Failed to create conversion job",
         )
 
-    # Start background conversion task
-    # TODO: Integrate with actual AI Engine or simulation
-    # For now, we'll update status to queued
-    from fastapi.background import BackgroundTasks
-
-    # Note: Background tasks should be added by the caller (main.py)
-    # We'll just return the conversion details
+    # Enqueue conversion task to async task queue for background processing
+    # This enables concurrent conversions and better resource management
+    try:
+        await enqueue_task(
+            name="conversion",
+            payload={
+                "conversion_id": conversion_id,
+                "file_id": file_id,
+                "file_path": file_path,
+                "original_filename": safe_filename,
+                "target_version": conversion_options.target_version,
+                "options": conversion_options.dict(),
+            },
+            priority=TaskPriority.NORMAL
+        )
+        logger.info(f"Conversion task enqueued for job: {conversion_id}")
+    except Exception as e:
+        # Log but don't fail - conversion is still created, can be picked up by worker
+        logger.warning(f"Failed to enqueue conversion task: {e}")
 
     # Cache job status
     await cache.set_job_status(
