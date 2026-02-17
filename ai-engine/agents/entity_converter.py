@@ -13,6 +13,14 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
+class MobCategory(Enum):
+    """Categories for different mob types in Bedrock."""
+    HOSTILE = "hostile"
+    PASSIVE = "passive"
+    NEUTRAL = "neutral"
+    BOSS = "boss"
+
+
 class EntityType(Enum):
     PASSIVE = "passive"
     NEUTRAL = "neutral"
@@ -138,6 +146,247 @@ class EntityConverter:
         
         logger.info(f"Successfully converted {len(bedrock_entities)} entities")
         return bedrock_entities
+    
+    # Specialized Entity Template Methods for Issue #452
+    
+    def generate_hostile_mob(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock hostile mob definition with AI behaviors.
+        
+        Args:
+            java_entity: Java hostile mob definition
+            
+        Returns:
+            Bedrock hostile mob entity definition
+        """
+        return self._create_hostile_mob_entity(java_entity)
+    
+    def generate_passive_mob(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock passive mob definition with AI behaviors.
+        
+        Args:
+            java_entity: Java passive mob definition
+            
+        Returns:
+            Bedrock passive mob entity definition
+        """
+        return self._create_passive_mob_entity(java_entity)
+    
+    def _create_hostile_mob_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a Bedrock hostile mob entity with aggressive AI behaviors."""
+        entity_id = java_entity.get('id', 'unknown_hostile')
+        namespace = java_entity.get('namespace', 'modporter')
+        full_id = f"{namespace}:{entity_id}"
+        
+        # Parse base properties
+        properties = self._parse_java_entity_properties(java_entity)
+        properties.entity_type = EntityType.HOSTILE
+        
+        # Create entity definition
+        bedrock_entity = {
+            "format_version": "1.19.0",
+            "minecraft:entity": {
+                "description": {
+                    "identifier": full_id,
+                    "is_spawnable": java_entity.get('spawnable', True),
+                    "is_summonable": java_entity.get('summonable', True),
+                    "is_experimental": False
+                },
+                "component_groups": {},
+                "components": {},
+                "events": {}
+            }
+        }
+        
+        components = bedrock_entity["minecraft:entity"]["components"]
+        
+        # Base components
+        components.update(self.base_components.copy())
+        
+        # Apply properties
+        self._apply_entity_properties(components, properties)
+        
+        # Add hostile-specific AI behaviors
+        self._add_hostile_ai_behaviors(components, java_entity)
+        
+        # Add attack behavior
+        if java_entity.get('can_attack', True):
+            components["minecraft:attack"] = {
+                "damage": properties.attack_damage if properties.attack_damage > 0 else 4.0
+            }
+        
+        # Add hostile type family
+        components["minecraft:type_family"]["family"] = ["mob", "monster", "hostile"]
+        
+        # Hostile mobs usually have spawn egg
+        if java_entity.get('has_spawn_egg', True):
+            components["minecraft:spawn_egg"] = {
+                "base_color": java_entity.get('spawn_egg_primary', "#5A1D1D"),
+                "overlay_color": java_entity.get('spawn_egg_secondary', "#1D1D1D")
+            }
+        
+        # Add loot table
+        if 'loot_table' in java_entity:
+            components["minecraft:loot"] = {"table": java_entity['loot_table']}
+        
+        return bedrock_entity
+    
+    def _create_passive_mob_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a Bedrock passive mob entity with peaceful AI behaviors."""
+        entity_id = java_entity.get('id', 'unknown_passive')
+        namespace = java_entity.get('namespace', 'modporter')
+        full_id = f"{namespace}:{entity_id}"
+        
+        # Parse base properties
+        properties = self._parse_java_entity_properties(java_entity)
+        properties.entity_type = EntityType.PASSIVE
+        
+        # Create entity definition
+        bedrock_entity = {
+            "format_version": "1.19.0",
+            "minecraft:entity": {
+                "description": {
+                    "identifier": full_id,
+                    "is_spawnable": java_entity.get('spawnable', True),
+                    "is_summonable": java_entity.get('summonable', True),
+                    "is_experimental": False
+                },
+                "component_groups": {},
+                "components": {},
+                "events": {}
+            }
+        }
+        
+        components = bedrock_entity["minecraft:entity"]["components"]
+        
+        # Base components
+        components.update(self.base_components.copy())
+        
+        # Apply properties
+        self._apply_entity_properties(components, properties)
+        
+        # Add passive-specific AI behaviors (no attack, peaceful)
+        self._add_passive_ai_behaviors(components, java_entity)
+        
+        # Remove attack capabilities for passive mobs
+        if "minecraft:attack" in components:
+            del components["minecraft:attack"]
+        
+        # Add passive type family
+        components["minecraft:type_family"]["family"] = ["mob", "passive"]
+        
+        # Passive mobs have spawn egg
+        if java_entity.get('has_spawn_egg', True):
+            components["minecraft:spawn_egg"] = {
+                "base_color": java_entity.get('spawn_egg_primary', "#1D5D1D"),
+                "overlay_color": java_entity.get('spawn_egg_secondary', "#FFFFFF")
+            }
+        
+        # Add breed behavior if applicable
+        if java_entity.get('can_breed', True):
+            components["minecraft:behavior.breed"] = {"priority": 4}
+        
+        # Add tameable component if applicable
+        if java_entity.get('is_tameable', False):
+            components["minecraft:tameable"] = {
+                "probability": java_entity.get('tame_probability', 0.33),
+                "tame_event": {
+                    "event": "minecraft:on_tame",
+                    "target": "self"
+                }
+            }
+        
+        # Add loot table (for when passive mobs are killed)
+        if 'loot_table' in java_entity:
+            components["minecraft:loot"] = {"table": java_entity['loot_table']}
+        
+        return bedrock_entity
+    
+    def _add_hostile_ai_behaviors(self, components: Dict[str, Any], java_entity: Dict[str, Any]):
+        """Add AI behaviors specific to hostile mobs."""
+        # Melee attack behavior
+        components["minecraft:behavior.melee_attack"] = {
+            "priority": 3,
+            "speed_multiplier": 1.0,
+            "track_target": True,
+            "reach_multiplier": 0.8
+        }
+        
+        # Look at target
+        components["minecraft:behavior.look_at_player"] = {
+            "priority": 5,
+            "look_distance": 8.0,
+            "look_time": [2, 4]
+        }
+        
+        # Move towards target
+        components["minecraft:behavior.move_towards_target"] = {
+            "priority": 4,
+            "speed_multiplier": 1.0,
+            "target_distance": 4.0
+        }
+        
+        # Wander when idle
+        components["minecraft:behavior.wander"] = {
+            "priority": 6,
+            "speed_multiplier": 0.8,
+            "wander_distance": 10,
+            "start_chance": 0.2
+        }
+        
+        # Panic when hurt
+        components["minecraft:behavior.panic"] = {
+            "priority": 1,
+            "speed_multiplier": 1.25,
+            "panic_sound": "mob.hostile.hurt"
+        }
+        
+        # Add Java entity's custom behaviors
+        if 'behaviors' in java_entity:
+            self._add_entity_behaviors(components, java_entity)
+        
+        # Add custom AI goals
+        if 'ai_goals' in java_entity:
+            self._add_ai_goals(components, java_entity['ai_goals'])
+    
+    def _add_passive_ai_behaviors(self, components: Dict[str, Any], java_entity: Dict[str, Any]):
+        """Add AI behaviors specific to passive mobs."""
+        # Follow player if tamed
+        components["minecraft:behavior.follow_player"] = {
+            "priority": 6,
+            "speed_multiplier": 1.0,
+            "start_distance": 5.0,
+            "stop_distance": 2.0
+        }
+        
+        # Random look around
+        components["minecraft:behavior.random_look_around"] = {
+            "priority": 8,
+            "look_distance": 6.0,
+            "look_time": [4, 8]
+        }
+        
+        # Random wander
+        components["minecraft:behavior.wander"] = {
+            "priority": 7,
+            "speed_multiplier": 0.5,
+            "wander_distance": 5,
+            "start_chance": 0.3
+        }
+        
+        # Float (swimming idle)
+        components["minecraft:behavior.float"] = {
+            "priority": 0
+        }
+        
+        # Add Java entity's custom behaviors
+        if 'behaviors' in java_entity:
+            self._add_entity_behaviors(components, java_entity)
+        
+        # Add custom AI goals
+        if 'ai_goals' in java_entity:
+            self._add_ai_goals(components, java_entity['ai_goals'])
     
     def _convert_java_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a single Java entity to Bedrock format."""
