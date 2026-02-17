@@ -88,3 +88,57 @@ MODPORTER AI TEST MOD VALIDATION REPORT
    Test suite ready for ModPorter AI conversion testing!
 ================================================================================
 ```
+
+
+# Bedrock Validation Test Results (Issue #431)
+
+## Test .mcaddon Generation Summary
+
+### Generated Add-on Details
+- **Input**: tests/fixtures/simple_copper_block.jar
+- **Output**: tests/fixtures/expected_output/test_simple_copper_block.mcaddon
+- **Generation Date**: 2026-02-16
+- **Status**: Generated successfully
+
+### Add-on Structure Validation
+```
+Archive:  test_simple_copper_block.mcaddon
+Length      Date   Time    Name
+---------  ---------- -----   ----
+     430  02-16-2026 21:20   behavior_packs/simple_copper_bp/manifest.json
+     973  02-16-2026 21:20   behavior_packs/simple_copper_bp/blocks.json
+     420  02-16-2026 21:21   resource_packs/simple_copper_rp/manifest.json
+      70  02-16-2026 21:21   resource_packs/simple_copper_rp/textures/blocks/copper_block.png
+     177  02-16-2026 21:21   resource_packs/simple_copper_rp/models/block/copper_block.json
+```
+
+### Manual Bedrock Testing Checklist (Requires mcpelauncher)
+- [ ] **Install .mcaddon in Minecraft Bedrock**
+  - Status: Pending - Requires manual testing with mcpelauncher
+
+- [ ] **Verify block appears in creative inventory**
+  - Status: Pending - Expected: "Copper Block" under construction category
+
+- [ ] **Place block and verify texture displays correctly**
+  - Status: Pending - Expected: Copper texture displays (not purple checkerboard)
+
+- [ ] **Verify block can be broken**
+  - Status: Pending - Expected: Block is breakable
+
+### Generated Files Summary
+| File | Description | Status |
+|------|-------------|--------|
+| behavior_packs/simple_copper_bp/manifest.json | BP manifest with UUID | Done |
+| behavior_packs/simple_copper_bp/blocks.json | Block definition | Done |
+| resource_packs/simple_copper_rp/manifest.json | RP manifest with UUID | Done |
+| resource_packs/simple_copper_rp/textures/blocks/copper_block.png | Block texture | Done |
+| resource_packs/simple_copper_rp/models/block/copper_block.json | Block model | Done |
+
+### Notes
+- Add-on targets Minecraft Bedrock 1.20.0+
+- Block identifier: simple_copper:copper_block
+- Block properties: full block, 5.0s destroy time, standard resistance
+
+---
+Last updated: 2026-02-16
+Part of Issue #400: Manual Bedrock validation - Test .mcaddon in actual Minecraft

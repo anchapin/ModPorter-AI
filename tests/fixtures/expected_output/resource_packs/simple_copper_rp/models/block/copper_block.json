@@ -1,0 +1,9 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:block_model": {
+    "parent": "minecraft:block/cube_all",
+    "textures": {
+      "all": "textures/blocks/copper_block"
+    }
+  }
+}
