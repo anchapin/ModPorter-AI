@@ -287,5 +287,24 @@ def log_error_with_context(logger: logging.Logger, error: Exception,
     logger.error(str(error), exc_info=True, extra=extra)
 
 
-# Default logger instance
-logger = get_logger(__name__)
+# Default logger instance - lazy initialization to avoid import errors in test environments
+def _get_default_logger():
+    """Lazy initialization of default logger."""
+    return get_logger(__name__)
+
+# Module-level logger property for lazy access
+class _LazyLogger:
+    """Lazy proxy for the default logger."""
+    _instance = None
+    
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = get_logger(__name__)
+        return getattr(self._instance, name)
+    
+    def __call__(self, *args, **kwargs):
+        if self._instance is None:
+            self._instance = get_logger(__name__)
+        return self._instance(*args, **kwargs)
+
+logger = _LazyLogger()
