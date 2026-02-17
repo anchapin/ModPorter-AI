@@ -1,2 +1,3 @@
-export { Settings, useSettings } from './Settings';
+import { Settings, useSettings } from './Settings';
+export { Settings, useSettings };
 export default Settings;
