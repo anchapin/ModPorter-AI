@@ -51,6 +51,67 @@ class ItemProperties:
     can_always_eat: bool = False
 
 
+@dataclass
+class ToolProperties(ItemProperties):
+    """Properties specific to tool items."""
+    tool_type: str = "generic"  # pickaxe, axe, shovel, hoe, sword
+    mining_speed: float = 1.0
+    mining_level: int = 1  # wood=1, stone=2, iron=3, diamond=4, netherite=5
+    enchantable: bool = True
+    attack_damage: float = 1.0
+    attack_speed: float = 1.0
+
+
+@dataclass
+class ArmorProperties(ItemProperties):
+    """Properties specific to armor items."""
+    armor_type: str = "generic"  # helmet, chestplate, leggings, boots
+    armor_value: int = 1
+    toughness: float = 0.0
+    enchantable: bool = True
+    knockback_resistance: float = 0.0
+    equipped_ability: Optional[str] = None
+
+
+@dataclass
+class ConsumableProperties(ItemProperties):
+    """Properties specific to consumable items."""
+    effect: Optional[str] = None
+    effect_duration: int = 0  # in ticks
+    effect_amplifier: int = 0
+    particle_on_consume: Optional[str] = None
+    use_animation: bool = True
+    container_entity: Optional[str] = None  # for potions
+
+
+@dataclass
+class RangedWeaponProperties(ItemProperties):
+    """Properties specific to ranged weapons."""
+    ammo_item: Optional[str] = None
+    ammo_count: int = 1
+    projectile_item: Optional[str] = None
+    shoot_power: float = 1.0
+    shoot_range: float = 20.0
+    charge_time: float = 1.0
+    allow_offhand: bool = False
+
+
+@dataclass
+class RareItemProperties(ItemProperties):
+    """Properties for special/rare items with unique properties."""
+    rarity: str = "common"  # common, uncommon, rare, epic, legendary
+    item_properties: Dict[str, Any] = None
+    enchantments: List[Dict[str, Any]] = None
+    can_destroy_blocks: bool = False
+    creative_category: Optional[str] = None
+    
+    def __post_init__(self):
+        if self.item_properties is None:
+            self.item_properties = {}
+        if self.enchantments is None:
+            self.enchantments = []
+
+
 class BlockItemGenerator:
     """
     Generator for Bedrock block and item definition files.
@@ -171,6 +232,458 @@ class BlockItemGenerator:
         
         logger.info(f"Successfully converted {len(bedrock_recipes)} recipes")
         return bedrock_recipes
+    
+    # Specialized Item Template Methods for Issue #451
+    
+    def generate_tool_item(self, java_item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock tool item definition from Java tool.
+        
+        Args:
+            java_item: Java tool item definition
+            
+        Returns:
+            Bedrock tool item definition
+        """
+        tool_props = self._parse_tool_properties(java_item)
+        return self._create_bedrock_tool(java_item, tool_props)
+    
+    def generate_armor_item(self, java_item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock armor item definition from Java armor.
+        
+        Args:
+            java_item: Java armor item definition
+            
+        Returns:
+            Bedrock armor item definition
+        """
+        armor_props = self._parse_armor_properties(java_item)
+        return self._create_bedrock_armor(java_item, armor_props)
+    
+    def generate_consumable_item(self, java_item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock consumable item definition from Java consumable.
+        
+        Args:
+            java_item: Java consumable item definition
+            
+        Returns:
+            Bedrock consumable item definition
+        """
+        consumable_props = self._parse_consumable_properties(java_item)
+        return self._create_bedrock_consumable(java_item, consumable_props)
+    
+    def generate_ranged_weapon_item(self, java_item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock ranged weapon item definition from Java ranged weapon.
+        
+        Args:
+            java_item: Java ranged weapon definition
+            
+        Returns:
+            Bedrock ranged weapon item definition
+        """
+        ranged_props = self._parse_ranged_weapon_properties(java_item)
+        return self._create_bedrock_ranged_weapon(java_item, ranged_props)
+    
+    def generate_rare_item(self, java_item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock rare/special item definition from Java special item.
+        
+        Args:
+            java_item: Java rare item definition
+            
+        Returns:
+            Bedrock rare item definition
+        """
+        rare_props = self._parse_rare_item_properties(java_item)
+        return self._create_bedrock_rare_item(java_item, rare_props)
+    
+    def _parse_tool_properties(self, java_item: Dict[str, Any]) -> ToolProperties:
+        """Parse Java tool properties."""
+        props = ToolProperties()
+        
+        if 'properties' in java_item:
+            java_props = java_item['properties']
+            props.stack_size = java_props.get('max_stack_size', 1)
+            props.durability = java_props.get('max_damage', 100)
+            props.tool_type = java_props.get('tool_type', 'generic')
+            props.mining_speed = java_props.get('mining_speed', 1.0)
+            props.mining_level = java_props.get('mining_level', 1)
+            props.attack_damage = java_props.get('attack_damage', 1.0)
+            props.attack_speed = java_props.get('attack_speed', 1.0)
+            props.is_tool = True
+        
+        return props
+    
+    def _parse_armor_properties(self, java_item: Dict[str, Any]) -> ArmorProperties:
+        """Parse Java armor properties."""
+        props = ArmorProperties()
+        
+        if 'properties' in java_item:
+            java_props = java_item['properties']
+            props.stack_size = java_props.get('max_stack_size', 1)
+            props.durability = java_props.get('max_damage', 100)
+            props.armor_type = java_props.get('armor_type', 'generic')
+            props.armor_value = java_props.get('armor_value', 1)
+            props.toughness = java_props.get('toughness', 0.0)
+        
+        return props
+    
+    def _parse_consumable_properties(self, java_item: Dict[str, Any]) -> ConsumableProperties:
+        """Parse Java consumable properties."""
+        props = ConsumableProperties()
+        
+        if 'properties' in java_item:
+            java_props = java_item['properties']
+            props.stack_size = java_props.get('max_stack_size', 64)
+            props.is_food = True
+            props.nutrition = java_props.get('nutrition', 1)
+            props.saturation = java_props.get('saturation', 0.6)
+            props.can_always_eat = java_props.get('can_always_eat', False)
+            props.effect = java_props.get('effect')
+            props.effect_duration = java_props.get('effect_duration', 0)
+            props.effect_amplifier = java_props.get('effect_amplifier', 0)
+            props.container_entity = java_props.get('container_entity')
+        
+        return props
+    
+    def _parse_ranged_weapon_properties(self, java_item: Dict[str, Any]) -> RangedWeaponProperties:
+        """Parse Java ranged weapon properties."""
+        props = RangedWeaponProperties()
+        
+        if 'properties' in java_item:
+            java_props = java_item['properties']
+            props.stack_size = java_props.get('max_stack_size', 1)
+            props.durability = java_props.get('max_damage', 100)
+            props.ammo_item = java_props.get('ammo_item')
+            props.ammo_count = java_props.get('ammo_count', 1)
+            props.projectile_item = java_props.get('projectile_item')
+            props.shoot_power = java_props.get('shoot_power', 1.0)
+            props.shoot_range = java_props.get('shoot_range', 20.0)
+            props.charge_time = java_props.get('charge_time', 1.0)
+        
+        return props
+    
+    def _parse_rare_item_properties(self, java_item: Dict[str, Any]) -> RareItemProperties:
+        """Parse Java rare/special item properties."""
+        props = RareItemProperties()
+        
+        if 'properties' in java_item:
+            java_props = java_item['properties']
+            props.stack_size = java_props.get('max_stack_size', 1)
+            props.durability = java_props.get('max_damage')
+            props.rarity = java_props.get('rarity', 'common')
+            props.item_properties = java_props.get('item_properties', {})
+            props.enchantments = java_props.get('enchantments', [])
+            props.can_destroy_blocks = java_props.get('can_destroy_blocks', False)
+        
+        return props
+    
+    def _create_bedrock_tool(self, java_item: Dict[str, Any], props: ToolProperties) -> Dict[str, Any]:
+        """Create Bedrock tool item definition."""
+        item_id = java_item.get('id', 'unknown_tool')
+        namespace = java_item.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Map tool types to Bedrock item components
+        tool_component_map = {
+            'pickaxe': 'minecraft:mining_speed',
+            'axe': 'minecraft:mining_speed',
+            'shovel': 'minecraft:mining_speed',
+            'hoe': 'minecraft:mining_speed',
+            'sword': 'minecraft:attack_damage'
+        }
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {}
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Icon
+        components["minecraft:icon"] = {"texture": item_id}
+        
+        # Stack size (tools are typically 1)
+        components["minecraft:max_stack_size"] = props.stack_size
+        
+        # Durability
+        if props.durability:
+            components["minecraft:durability"] = {"max_durability": props.durability}
+            components["minecraft:repairable"] = {
+                "repair_items": [
+                    {"items": [full_id], "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"}
+                ]
+            }
+        
+        # Tool-specific components
+        if props.tool_type in tool_component_map:
+            component_name = tool_component_map[props.tool_type]
+            if component_name == 'minecraft:mining_speed':
+                components[component_name] = {"speed": props.mining_speed}
+            elif component_name == 'minecraft:attack_damage':
+                components[component_name] = {"damage": props.attack_damage}
+        
+        # Weapon/Tool cooldown
+        if props.tool_type == 'sword':
+            components["minecraft:weapon"] = {"offhand_usable": True}
+        
+        # Enchantments
+        if props.enchantable:
+            components["minecraft:enchantable"] = {"slot": "all"}
+        
+        # Category
+        components["minecraft:creative_category"] = {"category": "itemGroup.name.tools"}
+        
+        return bedrock_item
+    
+    def _create_bedrock_armor(self, java_item: Dict[str, Any], props: ArmorProperties) -> Dict[str, Any]:
+        """Create Bedrock armor item definition."""
+        item_id = java_item.get('id', 'unknown_armor')
+        namespace = java_item.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Map armor types to Bedrock armor components
+        armor_slot_map = {
+            'helmet': 'minecraft:armor',
+            'chestplate': 'minecraft:armor',
+            'leggings': 'minecraft:armor',
+            'boots': 'minecraft:armor'
+        }
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {}
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Icon
+        components["minecraft:icon"] = {"texture": item_id}
+        
+        # Stack size
+        components["minecraft:max_stack_size"] = props.stack_size
+        
+        # Durability
+        if props.durability:
+            components["minecraft:durability"] = {"max_durability": props.durability}
+            components["minecraft:repairable"] = {
+                "repair_items": [
+                    {"items": [full_id], "repair_amount": "context.other->q.remaining_durability + 0.1 * context.other->q.max_durability"}
+                ]
+            }
+        
+        # Armor value
+        if props.armor_type in armor_slot_map:
+            components["minecraft:armor"] = {
+                "slot": props.armor_type,
+                "texture_type": "generic",
+                "protection": props.armor_value
+            }
+        
+        # Toughness
+        if props.toughness > 0:
+            components["minecraft:armor_toughness"] = {"toughness": props.toughness}
+        
+        # Knockback resistance
+        if props.knockback_resistance > 0:
+            components["minecraft:knockback_resistance"] = {"value": props.knockback_resistance}
+        
+        # Enchantments
+        if props.enchantable:
+            components["minecraft:enchantable"] = {"slot": "armor"}
+        
+        # Category
+        components["minecraft:creative_category"] = {"category": "itemGroup.name.combat"}
+        
+        return bedrock_item
+    
+    def _create_bedrock_consumable(self, java_item: Dict[str, Any], props: ConsumableProperties) -> Dict[str, Any]:
+        """Create Bedrock consumable item definition."""
+        item_id = java_item.get('id', 'unknown_consumable')
+        namespace = java_item.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {}
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Icon
+        components["minecraft:icon"] = {"texture": item_id}
+        
+        # Stack size
+        components["minecraft:max_stack_size"] = props.stack_size
+        
+        # Food component (required for consumables)
+        food_component = {
+            "nutrition": props.nutrition,
+            "saturation_modifier": props.saturation
+        }
+        if props.can_always_eat:
+            food_component["can_always_eat"] = True
+        if props.use_animation:
+            food_component["using_converts_to"] = java_item.get('container_item', 'minecraft:bowl')
+        
+        components["minecraft:food"] = food_component
+        
+        # Effect (using potion component for effects)
+        if props.effect:
+            components["minecraft:potion"] = {
+                "id": props.effect,
+                "duration": props.effect_duration / 20.0,  # Convert ticks to seconds
+                "amplifier": props.effect_amplifier
+            }
+        
+        # Particle effect
+        if props.particle_on_consume:
+            components["minecraft:particle_on_consume"] = {"particle": props.particle_on_consume}
+        
+        # Category
+        category = "itemGroup.name.food"
+        if props.container_entity:
+            category = "itemGroup.name.brewing"
+        components["minecraft:creative_category"] = {"category": category}
+        
+        return bedrock_item
+    
+    def _create_bedrock_ranged_weapon(self, java_item: Dict[str, Any], props: RangedWeaponProperties) -> Dict[str, Any]:
+        """Create Bedrock ranged weapon item definition."""
+        item_id = java_item.get('id', 'unknown_ranged')
+        namespace = java_item.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {}
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Icon
+        components["minecraft:icon"] = {"texture": item_id}
+        
+        # Stack size
+        components["minecraft:max_stack_size"] = props.stack_size
+        
+        # Durability
+        if props.durability:
+            components["minecraft:durability"] = {"max_durability": props.durability}
+            components["minecraft:repairable"] = {
+                "repair_items": [
+                    {"items": [full_id], "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"}
+                ]
+            }
+        
+        # Ranged attack component
+        if props.projectile_item:
+            components["minecraft:shooter"] = {
+                "ammunition": [
+                    {
+                        "item": props.projectile_item,
+                        "max_use_count": props.ammo_count
+                    }
+                ]
+            }
+        
+        # Offhand usability
+        if props.allow_offhand:
+            components["minecraft:weapon"] = {"offhand_usable": True}
+        
+        # Category
+        components["minecraft:creative_category"] = {"category": "itemGroup.name.combat"}
+        
+        return bedrock_item
+    
+    def _create_bedrock_rare_item(self, java_item: Dict[str, Any], props: RareItemProperties) -> Dict[str, Any]:
+        """Create Bedrock rare/special item definition."""
+        item_id = java_item.get('id', 'unknown_rare')
+        namespace = java_item.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Map rarity to display colors
+        rarity_colors = {
+            'common': '#FFFFFF',
+            'uncommon': '#55FF55',
+            'rare': '#5555FF',
+            'epic': '#FF55FF',
+            'legendary': '#FFAA00'
+        }
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {}
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Icon with rarity color overlay
+        icon_component = {"texture": item_id}
+        color = rarity_colors.get(props.rarity, '#FFFFFF')
+        components["minecraft:icon"] = icon_component
+        
+        # Stack size
+        components["minecraft:max_stack_size"] = props.stack_size
+        
+        # Durability
+        if props.durability:
+            components["minecraft:durability"] = {"max_durability": props.durability}
+        
+        # Custom item properties
+        for key, value in props.item_properties.items():
+            components[key] = value
+        
+        # Enchantments
+        if props.enchantments:
+            components["minecraft:enchantable"] = {"slot": "all"}
+            for enchant in props.enchantments:
+                enchant_id = enchant.get('id', 'minecraft:unbreaking')
+                level = enchant.get('level', 1)
+                components[f"minecraft:{enchant_id}"] = {"level": level}
+        
+        # Block destruction ability
+        if props.can_destroy_blocks:
+            components["minecraft:can_destroy_in_creative"] = True
+        
+        # Custom category or default
+        category = props.creative_category or "itemGroup.name.misc"
+        components["minecraft:creative_category"] = {"category": category}
+        
+        return bedrock_item
     
     def _convert_java_block(self, java_block: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a single Java block to Bedrock format."""
