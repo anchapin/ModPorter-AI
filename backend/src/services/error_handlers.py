@@ -22,6 +22,13 @@ from .structured_logging import correlation_id_var, set_correlation_id
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Import metrics for error tracking (Issue #455)
+try:
+    from .metrics import record_error
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+
 
 class ErrorResponse(BaseModel):
     """Structured error response model"""
@@ -328,6 +335,15 @@ def create_error_response(
     )
 
 
+def _record_error_metric(error_category: str, error_type: str, source: str = "api"):
+    """Record error metrics if metrics are available."""
+    if METRICS_AVAILABLE:
+        try:
+            record_error(error_category, error_type, source)
+        except Exception:
+            pass  # Don't let metrics errors affect normal flow
+
+
 async def modporter_exception_handler(
     request: Request,
     exc: ModPorterException
@@ -336,6 +352,13 @@ async def modporter_exception_handler(
     error_response = create_error_response(exc, request)
     logger.error(
         f"[{error_response.error_id}] {error_response.error_type}: {error_response.message}"
+    )
+    
+    # Record error metric
+    _record_error_metric(
+        error_category=error_response.error_category,
+        error_type=error_response.error_type,
+        source="api"
     )
     
     return JSONResponse(
@@ -354,6 +377,14 @@ async def http_exception_handler(
         f"[{error_response.error_id}] HTTP {exc.status_code}: {error_response.message}"
     )
     
+    # Only record 4xx/5xx errors as metrics
+    if exc.status_code >= 400:
+        _record_error_metric(
+            error_category=error_response.error_category,
+            error_type="HTTPException",
+            source="api"
+        )
+    
     return JSONResponse(
         status_code=exc.status_code,
         content=error_response.model_dump()
@@ -368,6 +399,13 @@ async def validation_exception_handler(
     error_response = create_error_response(exc, request)
     logger.warning(
         f"[{error_response.error_id}] Validation error: {error_response.message}"
+    )
+    
+    # Record validation error metric
+    _record_error_metric(
+        error_category="validation_error",
+        error_type="RequestValidationError",
+        source="api"
     )
     
     return JSONResponse(
@@ -385,6 +423,13 @@ async def generic_exception_handler(
     logger.error(
         f"[{error_response.error_id}] Unhandled exception: {error_response.message}",
         exc_info=True
+    )
+    
+    # Record unhandled exception metric
+    _record_error_metric(
+        error_category=error_response.error_category,
+        error_type=type(exc).__name__,
+        source="api"
     )
     
     return JSONResponse(

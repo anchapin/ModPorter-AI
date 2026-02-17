@@ -191,6 +191,41 @@ conversions_failed_total = Gauge(
     registry=registry
 )
 
+# ============================================
+# Error Metrics (for Issue #455)
+# ============================================
+
+# Error counter by category
+error_total = Counter(
+    'modporter_errors_total',
+    'Total errors by category',
+    ['error_category', 'error_type', 'source'],
+    registry=registry
+)
+
+# Error rate (errors per minute)
+error_rate = Gauge(
+    'modporter_error_rate_per_minute',
+    'Current error rate per minute',
+    registry=registry
+)
+
+# Retry attempts counter
+retry_attempts_total = Counter(
+    'modporter_retry_attempts_total',
+    'Total retry attempts',
+    ['error_category', 'function_name'],
+    registry=registry
+)
+
+# Successful retries counter
+successful_retries_total = Counter(
+    'modporter_successful_retries_total',
+    'Total successful retries',
+    ['error_category', 'function_name'],
+    registry=registry
+)
+
 
 # ============================================
 # Internal Tracking (thread-safe)
@@ -330,6 +365,60 @@ def update_queue_size(size: int):
 def update_active_conversions(count: int):
     """Update the active conversions gauge."""
     active_conversions.set(count)
+
+
+def record_error(
+    error_category: str,
+    error_type: str = "Exception",
+    source: str = "unknown"
+):
+    """
+    Record an error metric.
+    
+    Args:
+        error_category: Category of error (parse_error, asset_error, logic_error, etc.)
+        error_type: Type of exception (ValueError, RuntimeError, etc.)
+        source: Source of error (api, conversion, agent, etc.)
+    """
+    error_total.labels(
+        error_category=error_category,
+        error_type=error_type,
+        source=source
+    ).inc()
+
+
+def record_retry_attempt(
+    error_category: str,
+    function_name: str
+):
+    """
+    Record a retry attempt.
+    
+    Args:
+        error_category: Category of error that triggered retry
+        function_name: Name of function being retried
+    """
+    retry_attempts_total.labels(
+        error_category=error_category,
+        function_name=function_name
+    ).inc()
+
+
+def record_successful_retry(
+    error_category: str,
+    function_name: str
+):
+    """
+    Record a successful retry (after initial failure).
+    
+    Args:
+        error_category: Category of error that was retried
+        function_name: Name of function that succeeded on retry
+    """
+    successful_retries_total.labels(
+        error_category=error_category,
+        function_name=function_name
+    ).inc()
 
 
 def get_metrics() -> bytes:
