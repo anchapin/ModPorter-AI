@@ -152,7 +152,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     }
   }, [currentConversionId, validateFile, resetConversionState]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'application/java-archive': ['.jar'],
@@ -325,8 +325,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
       </p>
 
       {error && (
-        <div className="error-message" role="alert">
-          {error}
+        <div className="error-message" role="alert" aria-live="polite">
+          <span className="error-icon" aria-hidden="true">⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
@@ -376,15 +377,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               <button
                 type="button"
                 className="browse-button"
-                onClick={() => {
-                  // Hack to trigger file input:
-                  // Query for the input element and click it.
-                  // This assumes the input element is a descendant of the form.
-                  // A more robust solution might involve passing a ref from getInputProps.
-                  const fileInput = document.querySelector('input[type="file"][aria-label="File upload"]');
-                  if (fileInput instanceof HTMLElement) {
-                    fileInput.click();
-                  }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  open();
                 }}
                 disabled={isProcessing || isCompleted}
               >
