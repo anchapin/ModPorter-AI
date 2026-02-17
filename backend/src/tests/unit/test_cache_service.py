@@ -57,7 +57,7 @@ async def test_cache_mod_analysis_success(cache_service: CacheService):
     )
     expected_key = f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}{MOD_HASH}"
     # Use the service's own serializer method for expected value
-    expected_value = json.dumps(cache_service._make_json_serializable(ANALYSIS_DATA))
+    expected_value = json.dumps(ANALYSIS_DATA, default=cache_service._json_encoder_default)
     cache_service._client.set.assert_called_once_with(
         expected_key, expected_value, ex=DEFAULT_TTL
     )
@@ -77,14 +77,15 @@ async def test_get_mod_analysis_hit(cache_service: CacheService):
 
     expected_key = f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}{MOD_HASH}"
     # Use the service's own serializer method for stored value consistency
-    stored_value = json.dumps(cache_service._make_json_serializable(ANALYSIS_DATA))
+    stored_value = json.dumps(ANALYSIS_DATA, default=cache_service._json_encoder_default)
     cache_service._client.get.return_value = stored_value
 
     result = await cache_service.get_mod_analysis(MOD_HASH)
 
     cache_service._client.get.assert_called_once_with(expected_key)
     # Compare after serializing expected if it contains datetime or other special types
-    assert result == cache_service._make_json_serializable(ANALYSIS_DATA)
+    expected_result = json.loads(json.dumps(ANALYSIS_DATA, default=cache_service._json_encoder_default))
+    assert result == expected_result
     # Verify cache hit counter is incremented
     assert cache_service._cache_hits == 1
     assert cache_service._cache_misses == 0
@@ -122,7 +123,7 @@ async def test_cache_conversion_result_success(cache_service: CacheService):
     )
     expected_key = f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}{MOD_HASH}"
     expected_value = json.dumps(
-        cache_service._make_json_serializable(CONVERSION_RESULT)
+        CONVERSION_RESULT, default=cache_service._json_encoder_default
     )
     cache_service._client.set.assert_called_once_with(
         expected_key, expected_value, ex=DEFAULT_TTL
@@ -142,13 +143,14 @@ async def test_get_conversion_result_hit(cache_service: CacheService):
     }
 
     expected_key = f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}{MOD_HASH}"
-    stored_value = json.dumps(cache_service._make_json_serializable(CONVERSION_RESULT))
+    stored_value = json.dumps(CONVERSION_RESULT, default=cache_service._json_encoder_default)
     cache_service._client.get.return_value = stored_value
 
     result = await cache_service.get_conversion_result(MOD_HASH)
 
     cache_service._client.get.assert_called_once_with(expected_key)
-    assert result == cache_service._make_json_serializable(CONVERSION_RESULT)
+    expected_result = json.loads(json.dumps(CONVERSION_RESULT, default=cache_service._json_encoder_default))
+    assert result == expected_result
 
 
 @pytest.mark.asyncio

@@ -48,20 +48,13 @@ class CacheService:
         self._cache_hits = 0
         self._cache_misses = 0
 
-    def _make_json_serializable(self, obj):
+    def _json_encoder_default(self, obj):
         """
-        Recursively convert non-serializable types (e.g., datetime) to JSON-serializable formats.
+        Default encoder for json.dumps to handle non-serializable types.
         """
-        if isinstance(obj, dict):
-            return {
-                key: self._make_json_serializable(value) for key, value in obj.items()
-            }
-        elif isinstance(obj, list):
-            return [self._make_json_serializable(item) for item in obj]
-        elif isinstance(obj, datetime):
+        if isinstance(obj, datetime):
             return obj.isoformat()
-        else:
-            return obj
+        raise TypeError(f"Type {type(obj)} not serializable")
 
     async def set_job_status(self, job_id: str, status: dict) -> None:
         if not self._redis_available or self._redis_disabled:
@@ -69,7 +62,7 @@ class CacheService:
         try:
             await self._client.set(
                 f"conversion_jobs:{job_id}:status",
-                json.dumps(self._make_json_serializable(status)),
+                json.dumps(status, default=self._json_encoder_default),
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for set_job_status: {e}")
@@ -112,7 +105,7 @@ class CacheService:
         try:
             key = f"{self.CACHE_MOD_ANALYSIS_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(self._make_json_serializable(analysis)), ex=ttl_seconds
+                key, json.dumps(analysis, default=self._json_encoder_default), ex=ttl_seconds
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_mod_analysis: {e}")
@@ -137,7 +130,7 @@ class CacheService:
         try:
             key = f"{self.CACHE_CONVERSION_RESULT_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(self._make_json_serializable(result)), ex=ttl_seconds
+                key, json.dumps(result, default=self._json_encoder_default), ex=ttl_seconds
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_conversion_result: {e}")
