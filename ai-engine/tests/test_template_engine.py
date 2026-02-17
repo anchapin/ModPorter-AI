@@ -77,9 +77,9 @@ class TestTemplateEngine:
     def test_render_basic_block(self, template_engine):
         """Test rendering a basic block template."""
         context = {
-            'identifier': 'modpack:copper_block',
-            'display_name': 'Copper Block',
-            'texture': 'copper_block'
+            'namespace': 'modpack',
+            'block_name': 'copper_block',
+            'texture_name': 'copper_block'
         }
         
         # Render behavior pack template
@@ -96,9 +96,8 @@ class TestTemplateEngine:
     def test_render_item(self, template_engine):
         """Test rendering an item template."""
         context = {
-            'identifier': 'modpack:copper_sword',
-            'display_name': 'Copper Sword',
-            'texture': 'copper_sword'
+            'namespace': 'modpack',
+            'item_name': 'copper_sword'
         }
         
         result = template_engine.render_template(
@@ -113,8 +112,10 @@ class TestTemplateEngine:
     def test_render_recipe(self, template_engine):
         """Test rendering a recipe template."""
         context = {
+            'namespace': 'modpack',
+            'recipe_name': 'copper_block',
             'pattern': ['XXX', 'XXX', 'XXX'],
-            'key': {'X': 'minecraft:copper_ingot'},
+            'recipe_keys': {'X': 'minecraft:copper_ingot'},
             'result': 'modpack:copper_block'
         }
         
