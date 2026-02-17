@@ -242,7 +242,7 @@ describe('FeatureAnalysis Component', () => {
     expect(screen.getByText('Direct Translation')).toBeInTheDocument();
   });
 
-  it.skip('handles search functionality - TODO: Fix component filtering logic', async () => {
+  it('handles search functionality ', async () => {
     render(
       <FeatureAnalysis 
         analysis={mockFeatureAnalysis} 
@@ -264,7 +264,7 @@ describe('FeatureAnalysis Component', () => {
     });
   });
 
-  it.skip('handles status filtering - TODO: Fix component filtering logic', async () => {
+  it('handles status filtering ', async () => {
     render(
       <FeatureAnalysis 
         analysis={mockFeatureAnalysis} 
@@ -286,7 +286,7 @@ describe('FeatureAnalysis Component', () => {
     });
   });
 
-  it.skip('expands feature details when clicked - TODO: Fix DOM element selection', () => {
+  it('expands feature details when clicked ', () => {
     render(
       <FeatureAnalysis 
         analysis={mockFeatureAnalysis} 
@@ -390,7 +390,7 @@ describe('DeveloperLog Component', () => {
     expect(screen.getByText('🚀 Optimization Opportunities')).toBeInTheDocument();
   });
 
-  it.skip('shows performance metrics correctly - TODO: Fix metrics rendering', () => {
+  it('shows performance metrics correctly ', () => {
     render(
       <DeveloperLog 
         log={mockDeveloperLog} 
@@ -463,7 +463,7 @@ describe('DeveloperLog Component', () => {
   });
 });
 
-describe.skip('EnhancedConversionReport Component', () => {
+describe('EnhancedConversionReport Component', () => {
   beforeEach(() => {
     // Clear any existing DOM elements before each test
     document.body.innerHTML = '';
