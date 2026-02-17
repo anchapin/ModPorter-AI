@@ -16,6 +16,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: pgvector/pgvector:pg15
@@ -55,27 +56,42 @@ jobs:
       with:
         node-version: '20.19.0'
 
-    - name: Cache Python dependencies
+    - name: Cache Python dependencies (backend)
       uses: actions/cache@v5
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-backend-${{ hashFiles('backend/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-backend-
+
+    - name: Cache Python dependencies (ai-engine)
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-ai-engine-
 
     - name: Cache Node dependencies
       uses: actions/cache@v5
       with:
         path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
 
     - name: Install backend dependencies
       run: |
         cd backend
+        pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
     - name: Install AI engine dependencies
+      timeout-minutes: 15
       run: |
         cd ai-engine
+        pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
