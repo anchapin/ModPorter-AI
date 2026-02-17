@@ -1,21 +1,74 @@
 import httpx
 import hashlib
 import os
-import logging # Using standard logging
-from typing import Optional, List, Dict, Any # Added List, Dict, Any
-from utils.embedding_generator import LocalEmbeddingGenerator
+import logging
+from typing import Optional, List, Dict, Any
+from utils.embedding_generator import (
+    LocalEmbeddingGenerator,
+    OpenAIEmbeddingGenerator,
+    EmbeddingGenerator,
+    EmbeddingCache,
+    get_embedding_config,
+)
 
 logger = logging.getLogger(__name__)
 
+
 class VectorDBClient:
-    def __init__(self, base_url: str = None, timeout: float = 30.0):
+    """
+    Vector database client that generates real embeddings using either
+    local sentence-transformers or OpenAI models, then stores/searches
+    via the backend embeddings API.
+
+    Supports:
+    - Local embeddings (sentence-transformers/all-MiniLM-L6-v2) - default, no API key needed
+    - OpenAI embeddings (text-embedding-ada-002) - requires OPENAI_API_KEY
+    - Auto mode: tries OpenAI first, falls back to local
+    - Embedding caching for performance
+    - Backend /embeddings/generate endpoint as remote fallback
+    """
+
+    def __init__(self, base_url: str = None, timeout: float = 30.0, provider: str = None):
         if base_url is None:
             base_url = os.environ.get("BACKEND_API_URL", "http://backend:8000/api/v1")
 
         self.base_url = base_url
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
-        self.embedding_generator = LocalEmbeddingGenerator()
-        logger.info(f"VectorDBClient initialized with base URL: {self.base_url}")
+
+        # Initialize embedding generator based on provider config
+        config = get_embedding_config()
+        self._provider = provider or config.get("provider", "auto")
+        self.embedding_generator = self._create_embedding_generator()
+
+        # Initialize embedding cache for performance
+        self._cache = EmbeddingCache(
+            max_size=config.get("cache_size", 10000),
+            ttl_seconds=config.get("cache_ttl", 3600),
+        )
+
+        logger.info(
+            f"VectorDBClient initialized with base URL: {self.base_url}, "
+            f"embedding provider: {self._provider}, "
+            f"model: {self.embedding_generator.model_name}"
+        )
+
+    def _create_embedding_generator(self) -> EmbeddingGenerator:
+        """Create the appropriate embedding generator based on provider setting."""
+        if self._provider == "openai":
+            gen = OpenAIEmbeddingGenerator()
+            if gen._client is not None:
+                return gen
+            logger.warning("OpenAI client unavailable, falling back to local embeddings")
+            return LocalEmbeddingGenerator()
+        elif self._provider == "local":
+            return LocalEmbeddingGenerator()
+        else:  # auto
+            gen = OpenAIEmbeddingGenerator()
+            if gen._client is not None:
+                logger.info("Using OpenAI embedding generator (auto-detected)")
+                return gen
+            logger.info("OpenAI unavailable, using local embedding generator")
+            return LocalEmbeddingGenerator()
 
     async def index_document(
         self, document_content: str, document_source: str
@@ -36,20 +89,29 @@ class VectorDBClient:
         try:
             content_hash = hashlib.md5(document_content.encode("utf-8")).hexdigest()
 
-            text_to_embed = [document_content] # generate_embeddings expects a list
-            embeddings_list = await self.embedding_generator.generate_embeddings(text_to_embed)
+            # Check cache first
+            cached = self._cache.get(document_content, self.embedding_generator.model_name)
+            if cached is not None:
+                actual_vector = cached.tolist()
+                logger.debug(f"Using cached embedding for source '{document_source}'")
+            else:
+                # Generate real embedding using configured provider
+                result = self.embedding_generator.generate_embedding(document_content)
 
-            if not embeddings_list or embeddings_list[0] is None:
-                logger.error(f"Failed to generate embeddings for document source '{document_source}'.")
-                return False
+                if result is None:
+                    logger.error(f"Failed to generate embedding for document source '{document_source}'.")
+                    return False
 
-            actual_vector = embeddings_list[0].tolist() # Convert numpy array to list
-            actual_dimension = self.embedding_generator.get_embedding_dimension()
+                # Cache the embedding for future use
+                self._cache.put(document_content, self.embedding_generator.model_name, result.embedding)
+                actual_vector = result.embedding.tolist()
 
-            if actual_dimension and len(actual_vector) != actual_dimension:
-                 logger.warning(f"Generated embedding dimension {len(actual_vector)} does not match expected dimension {actual_dimension} from generator for source '{document_source}'.")
-            # If DEFAULT_EMBEDDING_DIMENSION is still critical for the backend, ensure model compatibility.
-            # For now, we trust the dimension from the generator.
+            expected_dimension = self.embedding_generator.dimensions
+            if expected_dimension and len(actual_vector) != expected_dimension:
+                logger.warning(
+                    f"Generated embedding dimension {len(actual_vector)} does not match "
+                    f"expected dimension {expected_dimension} for source '{document_source}'."
+                )
 
             payload = {
                 "embedding": actual_vector,
@@ -106,13 +168,21 @@ class VectorDBClient:
         """
         logger.info(f"Searching for: '{query_text[:100]}...' with top_k={top_k}")
         try:
-            text_to_embed = [query_text]
-            embeddings_list = await self.embedding_generator.generate_embeddings(text_to_embed)
+            # Check cache for query embedding
+            cached = self._cache.get(query_text, self.embedding_generator.model_name)
+            if cached is not None:
+                query_embedding = cached.tolist()
+                logger.debug("Using cached query embedding")
+            else:
+                # Generate real embedding for the query
+                result = self.embedding_generator.generate_embedding(query_text)
 
-            if not embeddings_list or embeddings_list[0] is None:
-                logger.error(f"Failed to generate query embedding for: '{query_text[:100]}...'")
-                return []
-            query_embedding = embeddings_list[0].tolist()
+                if result is None:
+                    logger.error(f"Failed to generate query embedding for: '{query_text[:100]}...'")
+                    return []
+
+                self._cache.put(query_text, self.embedding_generator.model_name, result.embedding)
+                query_embedding = result.embedding.tolist()
 
             payload = {
                 "query_embedding": query_embedding,

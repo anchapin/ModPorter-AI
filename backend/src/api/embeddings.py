@@ -11,6 +11,7 @@ from models.embedding_models import (
     DocumentEmbeddingCreate,
     DocumentEmbeddingResponse,
     EmbeddingSearchQuery,
+    EmbeddingGenerateRequest,
 )
 
 router = APIRouter()
@@ -81,6 +82,91 @@ async def search_similar_embeddings(
 
     # ORM objects will be automatically converted to DocumentEmbeddingResponse
     return similar_embeddings
+
+# Generate embeddings endpoint
+@router.post(
+    "/embeddings/generate",
+    response_model=List[float],
+    status_code=status.HTTP_200_OK,
+)
+async def generate_embeddings(
+    request: EmbeddingGenerateRequest,
+):
+    """
+    Generate embeddings for text using configured embedding provider.
+    
+    This endpoint allows clients to generate embeddings without providing pre-computed vectors.
+    Supports both OpenAI and local sentence-transformers models.
+    
+    Request body:
+    ```json
+    {
+        "texts": ["text to embed", "another text"],
+        "provider": "openai" | "local" | "auto"  (optional, default: "auto")
+    }
+    ```
+    
+    Returns:
+    ```json
+    [
+        [0.1, 0.2, ...],  // embedding vector 1
+        [0.3, 0.4, ...]   // embedding vector 2
+    ]
+    ```
+    """
+    # Import embedding generator
+    import sys
+    import os
+    
+    # Add ai-engine to path for embedding generator
+    ai_engine_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine")
+    if ai_engine_path not in sys.path:
+        sys.path.insert(0, ai_engine_path)
+    
+    try:
+        from utils.embedding_generator import LocalEmbeddingGenerator, OpenAIEmbeddingGenerator
+        
+        # Determine provider
+        provider = request.provider or "auto"
+        
+        # Create generator based on provider
+        if provider == "openai":
+            generator = OpenAIEmbeddingGenerator()
+        elif provider == "local":
+            generator = LocalEmbeddingGenerator()
+        else:  # auto
+            # Try OpenAI first, fallback to local
+            generator = OpenAIEmbeddingGenerator()
+            if generator._client is None:
+                generator = LocalEmbeddingGenerator()
+        
+        # Generate embeddings
+        results = generator.generate_embeddings(request.texts)
+        
+        # Convert to list format
+        embeddings = []
+        for result in results:
+            if result is not None:
+                embeddings.append(result.embedding.tolist())
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate embeddings",
+                )
+        
+        return embeddings
+        
+    except ImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Embedding generator not available: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating embeddings: {str(e)}",
+        )
+
 
 # Placeholder for future GET by ID, DELETE, etc.
 # @router.get("/embeddings/{embedding_id}", response_model=DocumentEmbeddingResponse)
