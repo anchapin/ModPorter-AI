@@ -8,7 +8,7 @@ import zipfile
 from pathlib import Path
 import pytest
 
-from backend.src.services.modpack_parser import (
+from src.services.modpack_parser import (
     CurseForgeModpackParser,
     ModrinthModpackParser,
     parse_modpack,
