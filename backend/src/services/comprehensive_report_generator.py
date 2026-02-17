@@ -132,10 +132,11 @@ class ConversionReportGenerator:
         )
 
     def generate_assumptions_report(self, assumptions_data: List[Dict[str, Any]]) -> AssumptionsReport:
-        """Generate detailed assumptions report."""
+        """Generate detailed assumptions report with What Changed section."""
         assumption_items = []
         impact_distribution = {"low": 0, "medium": 0, "high": 0}
         category_breakdown = {}
+        what_changed = []
 
         for assumption_data in assumptions_data:
             # Create assumption item
@@ -164,11 +165,43 @@ class ConversionReportGenerator:
                 category_breakdown[category] = []
             category_breakdown[category].append(assumption_item)
 
+            # Build What Changed entry from assumption data
+            original = assumption_data.get("original_feature", "")
+            converted = assumption_data.get("bedrock_equivalent", "")
+            reason = assumption_data.get("user_explanation", "")
+            
+            # Determine category based on assumption type
+            assumption_type_lower = assumption_item.assumption_type.lower()
+            if "biome" in assumption_type_lower:
+                what_category = "Custom Biome"
+            elif "enchant" in assumption_type_lower:
+                what_category = "Custom Enchantment"
+            elif "redstone" in assumption_type_lower:
+                what_category = "Redstone Logic"
+            elif "fluid" in assumption_type_lower:
+                what_category = "Fluid System"
+            elif "dimension" in assumption_type_lower:
+                what_category = "Dimension"
+            elif "machinery" in assumption_type_lower:
+                what_category = "Machinery"
+            elif "gui" in assumption_type_lower:
+                what_category = "GUI/HUD"
+            else:
+                what_category = "General"
+            
+            what_changed.append({
+                "category": what_category,
+                "original": original,
+                "converted": converted,
+                "reason": reason
+            })
+
         return AssumptionsReport(
             assumptions=assumption_items,
             total_assumptions_count=len(assumption_items),
             impact_distribution=impact_distribution,
-            category_breakdown=category_breakdown
+            category_breakdown=category_breakdown,
+            what_changed=what_changed
         )
 
     def generate_developer_log(self, log_data: Dict[str, Any]) -> DeveloperLog:

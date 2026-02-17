@@ -147,6 +147,7 @@ class AssumptionsReport:
     total_assumptions_count: int = 0
     impact_distribution: Dict[str, int] = None
     category_breakdown: Dict[str, List[AssumptionReportItem]] = None
+    what_changed: List[Dict[str, str]] = None
 
     def __post_init__(self):
         if self.impact_distribution is None:
@@ -154,6 +155,19 @@ class AssumptionsReport:
         if self.category_breakdown is None:
             self.category_breakdown = {}
         self.total_assumptions_count = len(self.assumptions)
+        if self.what_changed is None:
+            self.what_changed = []
+    
+    def add_what_changed(self, category: str, original: str, converted: str, reason: str = ""):
+        """Add an entry to the What Changed section."""
+        if self.what_changed is None:
+            self.what_changed = []
+        self.what_changed.append({
+            "category": category,
+            "original": original,
+            "converted": converted,
+            "reason": reason
+        })
 
 
 @dataclass
@@ -243,7 +257,8 @@ class InteractiveReport:
                 "assumptions": [a.to_dict() for a in self.assumptions_report.assumptions],
                 "total_assumptions_count": self.assumptions_report.total_assumptions_count,
                 "impact_distribution": self.assumptions_report.impact_distribution,
-                "category_breakdown": {k: [a.to_dict() for a in v] for k, v in self.assumptions_report.category_breakdown.items()}
+                "category_breakdown": {k: [a.to_dict() for a in v] for k, v in self.assumptions_report.category_breakdown.items()},
+                "what_changed": self.assumptions_report.what_changed or []
             },
             "developer_log": {
                 "code_translation_details": self.developer_log.code_translation_details,
