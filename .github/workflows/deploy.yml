@@ -64,6 +64,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-backend-
 
+    - name: Cache Python packages (backend)
+      uses: actions/cache@v5
+      with:
+        path: ~/.local/lib/python3.11/site-packages
+        key: ${{ runner.os }}-site-packages-backend-${{ hashFiles('backend/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-site-packages-backend-
+
     - name: Cache Python dependencies (ai-engine)
       uses: actions/cache@v5
       with:
@@ -72,28 +80,36 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-ai-engine-
 
+    - name: Cache Python packages (ai-engine)
+      uses: actions/cache@v5
+      with:
+        path: ~/.local/lib/python3.11/site-packages
+        key: ${{ runner.os }}-site-packages-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-site-packages-ai-engine-
+
     - name: Cache Node dependencies
       uses: actions/cache@v5
       with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        path: |
+          ~/.npm
+          frontend/node_modules
+        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
 
     - name: Install backend dependencies
       run: |
         cd backend
-        pip install --upgrade pip setuptools wheel
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+        pip install --upgrade pip setuptools wheel --no-cache-dir
+        pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
 
     - name: Install AI engine dependencies
       timeout-minutes: 15
       run: |
         cd ai-engine
-        pip install --upgrade pip setuptools wheel
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+        pip install --upgrade pip setuptools wheel --no-cache-dir
+        pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
 
     - name: Install frontend dependencies
       run: |
