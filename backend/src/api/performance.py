@@ -4,7 +4,7 @@ import time
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from models import (
     BenchmarkRunRequest,
@@ -19,13 +19,10 @@ from models import (
 
 router = APIRouter()
 
-# In-memory storage for POC (replace with database interaction later)
 mock_benchmark_runs: Dict[str, Dict[str, Any]] = {}
 mock_benchmark_reports: Dict[str, Dict[str, Any]] = {}
 
-# Load scenarios from JSON files
 def load_scenarios_from_files():
-    """Load benchmark scenarios from JSON files in ai-engine/src/benchmarking/scenarios/"""
     scenarios = {}
     scenarios_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ai-engine', 'src', 'benchmarking', 'scenarios')
 
@@ -41,7 +38,6 @@ def load_scenarios_from_files():
                 except Exception as e:
                     print(f"Error loading scenario from {filepath}: {e}")
 
-    # Fallback scenarios if files don't exist
     if not scenarios:
         scenarios = {
             "baseline_idle_001": {
@@ -69,29 +65,22 @@ def load_scenarios_from_files():
 mock_scenarios = load_scenarios_from_files()
 
 def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str = "desktop"):
-    """
-    Function to integrate with the actual PerformanceBenchmarkingSystem in ai-engine.
-    Currently simulates execution but includes proper integration structure.
-    """
     print(f"Starting benchmark run {run_id} for scenario {scenario_id} on {device_type}...")
 
-    # Update status to running
     mock_benchmark_runs[run_id].update({
         "status": "running",
         "progress": 0.0,
-        "current_stage": "initializing"
+        "current_stage": "initializing",
+        "started_at": datetime.now(timezone.utc).isoformat()
     })
 
     try:
-        # TODO: Import and integrate with actual PerformanceBenchmarkingSystem
-        # from ai_engine.src.benchmarking.performance_system import PerformanceBenchmarkingSystem
-        # benchmark_system = PerformanceBenchmarkingSystem()
-
         scenario = mock_scenarios.get(scenario_id)
         if not scenario:
             raise ValueError(f"Scenario {scenario_id} not found")
 
-        # Simulate the benchmark execution stages
+        duration_seconds = scenario.get("duration_seconds", 300)
+        
         stages = [
             ("initializing", 10),
             ("collecting_baseline", 30),
@@ -105,9 +94,8 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
                 "progress": progress,
                 "current_stage": stage_name
             })
-            time.sleep(1)  # Simulate work
+            time.sleep(1)
 
-        # Simulate successful completion with detailed results
         benchmark_result = PerformanceBenchmark(
             id=run_id,
             scenario_id=scenario_id,
@@ -120,7 +108,6 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
             status="completed"
         )
 
-        # Mock performance metrics
         metrics = [
             PerformanceMetric(
                 benchmark_id=run_id,
@@ -179,7 +166,7 @@ Overall Performance Score: {benchmark_result.overall_score}/100
 
 Key Improvements:
 - CPU usage improved by 16.67% (Java: 60% → Bedrock: 50%)
-- Memory usage improved by 10.0% (Java: 200MB → Bedrock: 180MB)
+- Memory usage improved by 10.0% (Java: 200MB → 180MB)
 
 Analysis: {analysis['identified_issues'][0]}
 Recommendations: {analysis['optimization_suggestions'][0]}
@@ -188,7 +175,9 @@ Recommendations: {analysis['optimization_suggestions'][0]}
         mock_benchmark_runs[run_id].update({
             "status": "completed",
             "progress": 100.0,
-            "current_stage": "completed"
+            "current_stage": "completed",
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": duration_seconds
         })
 
         mock_benchmark_reports[run_id] = {
@@ -211,9 +200,6 @@ Recommendations: {analysis['optimization_suggestions'][0]}
 
 @router.post("/run", response_model=BenchmarkRunResponse, status_code=202)
 async def run_benchmark_endpoint(request: BenchmarkRunRequest, background_tasks: BackgroundTasks):
-    """
-    Triggers a new performance benchmark run for a given scenario.
-    """
     if request.scenario_id not in mock_scenarios:
         raise HTTPException(status_code=404, detail=f"Scenario ID '{request.scenario_id}' not found.")
 
@@ -236,28 +222,49 @@ async def run_benchmark_endpoint(request: BenchmarkRunRequest, background_tasks:
         message=f"Benchmark run accepted for scenario '{request.scenario_id}'. Check status at /status/{run_id}"
     )
 
+
 @router.get("/status/{run_id}", response_model=BenchmarkStatusResponse)
 async def get_benchmark_status_endpoint(run_id: str):
-    """
-    Retrieves the status of an ongoing or completed benchmark run.
-    """
     run_info = mock_benchmark_runs.get(run_id)
     if not run_info:
         raise HTTPException(status_code=404, detail=f"Benchmark run ID '{run_id}' not found.")
+
+    estimated_completion = None
+    progress = run_info.get("progress", 0.0)
+    status = run_info.get("status", "unknown")
+    started_at = run_info.get("started_at")
+    
+    if status == "running" and progress > 0 and progress < 100:
+        scenario_id = run_info.get("scenario_id")
+        scenario = mock_scenarios.get(scenario_id)
+        duration_seconds = scenario.get("duration_seconds", 300) if scenario else 300
+        
+        if started_at:
+            try:
+                start_time = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                current_time = datetime.now(timezone.utc)
+                elapsed_seconds = (current_time - start_time).total_seconds()
+                
+                if progress > 5:
+                    estimated_total = elapsed_seconds / (progress / 100)
+                    remaining_seconds = estimated_total - elapsed_seconds
+                    if remaining_seconds > 0:
+                        completion_time = current_time.timestamp() + remaining_seconds
+                        estimated_completion = completion_time
+            except Exception:
+                pass
 
     return BenchmarkStatusResponse(
         run_id=run_id,
         status=run_info["status"],
         progress=run_info.get("progress", 0.0),
         current_stage=run_info.get("current_stage", "unknown"),
-        estimated_completion=None  # TODO: Calculate based on progress
+        estimated_completion=estimated_completion
     )
+
 
 @router.get("/report/{run_id}", response_model=BenchmarkReportResponse)
 async def get_benchmark_report_endpoint(run_id: str):
-    """
-    Retrieves the performance benchmark report for a completed run.
-    """
     run_info = mock_benchmark_runs.get(run_id)
     if not run_info:
         raise HTTPException(status_code=404, detail=f"Benchmark run ID '{run_id}' not found.")
@@ -287,11 +294,9 @@ async def get_benchmark_report_endpoint(run_id: str):
         optimization_suggestions=report_data["analysis"].get("optimization_suggestions", [])
     )
 
+
 @router.get("/scenarios", response_model=List[ScenarioDefinition])
 async def list_benchmark_scenarios_endpoint():
-    """
-    Lists available benchmark scenarios.
-    """
     scenarios = []
     for scenario_id, scenario_data in mock_scenarios.items():
         scenarios.append(ScenarioDefinition(
@@ -305,11 +310,9 @@ async def list_benchmark_scenarios_endpoint():
         ))
     return scenarios
 
+
 @router.post("/scenarios", response_model=ScenarioDefinition, status_code=201)
 async def create_custom_scenario_endpoint(request: CustomScenarioRequest):
-    """
-    Creates a custom benchmark scenario.
-    """
     scenario_id = f"custom_{str(uuid.uuid4()).replace('-', '')[:8]}"
 
     scenario_data = {
@@ -328,12 +331,9 @@ async def create_custom_scenario_endpoint(request: CustomScenarioRequest):
 
     return ScenarioDefinition(**scenario_data)
 
+
 @router.get("/history", response_model=List[Dict[str, Any]])
 async def get_benchmark_history_endpoint(limit: int = 50, offset: int = 0):
-    """
-    Retrieves historical benchmark run data for performance tracking.
-    """
-    # Convert to list and sort by creation time
     all_runs = []
     for run_id, run_data in mock_benchmark_runs.items():
         if run_data.get("status") == "completed":
@@ -349,8 +349,5 @@ async def get_benchmark_history_endpoint(limit: int = 50, offset: int = 0):
                 "network_score": report_data.get("benchmark", {}).get("network_score", 0)
             })
 
-    # Sort by creation time (newest first)
     all_runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-
-    # Apply pagination
     return all_runs[offset:offset + limit]
