@@ -203,6 +203,43 @@ class VectorDBClient:
             logger.error(f"An unexpected error occurred during search for '{query_text[:100]}...': {e}")
         return []
 
+    async def get_embedding(self, text: str) -> Optional[List[float]]:
+        """
+        Generate an embedding for the given text.
+        
+        This method provides direct access to embedding generation functionality,
+        supporting both OpenAI and local embedding models.
+        
+        Args:
+            text: The text content to generate an embedding for.
+            
+        Returns:
+            A list of floats representing the embedding vector, or None if
+            embedding generation failed.
+        """
+        try:
+            # Check cache first
+            cached = self._cache.get(text, self.embedding_generator.model_name)
+            if cached is not None:
+                logger.debug("Using cached embedding")
+                return cached.tolist()
+            
+            # Generate embedding using the configured provider
+            result = self.embedding_generator.generate_embedding(text)
+            
+            if result is None:
+                logger.error(f"Failed to generate embedding for text: {text[:50]}...")
+                return None
+            
+            # Cache the embedding
+            self._cache.put(text, self.embedding_generator.model_name, result.embedding)
+            
+            logger.info(f"Generated embedding of dimension {len(result.embedding)} using {self.embedding_generator.model_name}")
+            return result.embedding.tolist()
+        except Exception as e:
+            logger.error(f"Error generating embedding: {e}")
+            return None
+
     async def close(self):
         """Closes the underlying HTTPX client."""
         await self.client.aclose()
