@@ -21,7 +21,8 @@ import {
   Add,
   CheckCircle,
   Error as ErrorIcon,
-  Close
+  Close,
+  MenuBook
 } from '@mui/icons-material';
 import { BehaviorFileTree } from './BehaviorFileTree';
 import { CodeEditor } from './CodeEditor';
@@ -30,6 +31,9 @@ import { RecipeBuilder } from './RecipeBuilder';
 import { LootTableEditor } from './LootTableEditor';
 import { LogicBuilder } from './LogicBuilder';
 import { TemplateSelector } from './TemplateSelector/TemplateSelector';
+import { BedrockDocsPanel } from '../Editor/BedrockDocsPanel';
+------- REPLACE
+
 
 import { BehaviorTemplate } from '../../services/api';
 import {
@@ -72,6 +76,16 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   
   // State management
   const [showExportDialog, setShowExportDialog] = useState(false);
+  
+  // Bedrock Docs Panel state
+  const [showDocsPanel, setShowDocsPanel] = useState(false);
+  
+  // Handle inserting code snippets from docs panel
+  const handleInsertSnippet = useCallback((snippet: string) => {
+    console.log('Insert snippet:', snippet);
+    // The CodeEditor component handles content changes via onContentChange
+    // This callback can be used to insert text at cursor position
+  }, []);
   
   // Enhanced UI state hooks
   const { error: uiError, setError: setUIError, toast } = useUIState();
@@ -250,14 +264,26 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             {selectedFile && (
-              <Button
-                variant="outlined"
-                startIcon={<Add />}
-                onClick={() => setShowTemplateDialog(true)}
-                size="small"
-              >
-                Templates
-              </Button>
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={() => setShowTemplateDialog(true)}
+                  size="small"
+                >
+                  Templates
+                </Button>
+                <Tooltip title="Toggle Bedrock API Docs">
+                  <Button
+                    variant={showDocsPanel ? 'contained' : 'outlined'}
+                    startIcon={<MenuBook />}
+                    onClick={() => setShowDocsPanel(!showDocsPanel)}
+                    size="small"
+                  >
+                    Docs
+                  </Button>
+                </Tooltip>
+              </>
             )}
             <Button
               variant="outlined"
@@ -399,6 +425,16 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
             </div>
           )}
         </div>
+
+        {/* Bedrock Docs Panel */}
+        {showDocsPanel && (
+          <div className="docs-panel-sidebar">
+            <BedrockDocsPanel
+              currentFileType={selectedFile?.type}
+              onInsertSnippet={handleInsertSnippet}
+            />
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
