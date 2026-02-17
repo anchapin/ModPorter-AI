@@ -30,7 +30,7 @@ from services.error_handlers import register_exception_handlers
 from services.rate_limiter import RateLimitMiddleware, get_rate_limiter, init_rate_limiter, close_rate_limiter
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions
+from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions, mod_imports
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
@@ -148,6 +148,7 @@ app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-
 app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
 app.include_router(conversions.router)  # Conversions API + WebSocket
+app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
