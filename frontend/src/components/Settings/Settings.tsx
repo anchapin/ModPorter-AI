@@ -84,7 +84,6 @@ export const Settings: React.FC<SettingsProps> = ({
 
   // Save API key status (masked, never the actual key)
   const saveApiKey = (keyName: string, value: string) => {
-    const hasKey = value.length > 0;
     const newKeys = { ...apiKeys, [keyName]: value };
     setApiKeys(newKeys);
     
