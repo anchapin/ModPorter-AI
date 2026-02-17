@@ -96,13 +96,22 @@ class CodeAwareEmbeddingGenerator:
             Enhanced embedding result with code-specific metadata
         """
         import time
+        import asyncio
+        import inspect
         start_time = time.time()
         
         # Enhance the code content with context
         enhanced_content = self._enhance_code_context(chunk)
         
-        # Generate base embedding
-        embeddings = await self.base_generator.generate_embeddings([enhanced_content])
+        # Generate base embedding - handle sync/async
+        try:
+            if inspect.iscoroutinefunction(self.base_generator.generate_embeddings):
+                embeddings = await self.base_generator.generate_embeddings([enhanced_content])
+            else:
+                embeddings = await asyncio.to_thread(self.base_generator.generate_embeddings, [enhanced_content])
+        except Exception as e:
+            logger.error(f"Error generating code embedding: {e}")
+            return None
         
         if not embeddings or embeddings[0] is None:
             logger.error(f"Failed to generate embedding for code chunk: {chunk.chunk_id}")
@@ -357,17 +366,31 @@ class MultiModalEmbeddingGenerator:
         import time
         start_time = time.time()
         
-        embeddings = await self.text_generator.generate_embeddings([text])
+        # Handle both sync and async embedding generators
+        try:
+            # Try async first
+            import inspect
+            if inspect.iscoroutinefunction(self.text_generator.generate_embeddings):
+                embeddings = await self.text_generator.generate_embeddings([text])
+            else:
+                # It's a sync function, run it in a thread pool
+                import asyncio
+                embeddings = await asyncio.to_thread(self.text_generator.generate_embeddings, [text])
+        except Exception as e:
+            logger.error(f"Error generating text embedding: {e}")
+            return None
         
         if embeddings is None or len(embeddings) == 0:
             logger.error("Failed to generate text embedding")
             return None
         
         processing_time = (time.time() - start_time) * 1000
-        
+
+        # generate_embeddings returns a list of EmbeddingResult, extract the embedding
+        embedding_result = embeddings[0]
         return EmbeddingResult(
-            embedding=embeddings[0],
-            model_used=self.text_generator.model_name,
+            embedding=embedding_result.embedding,
+            model_used=embedding_result.model,
             strategy=strategy,
             confidence=0.7,  # Default confidence for text
             processing_time_ms=processing_time,
