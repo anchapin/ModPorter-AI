@@ -222,7 +222,7 @@ Components organized by feature in `frontend/src/components/`:
 - `SearchTool`: CrewAI tool for semantic search
 - `KnowledgeBaseAgent`: RAG-enabled agent for knowledge retrieval
 
-**Implementation**: Uses local sentence-transformers model (all-MiniLM-L6-v2) by default, with OpenAI (text-embedding-ada-002) support. Backend provides `/api/v1/embeddings/generate` endpoint for on-demand embedding generation.
+**Implementation**: Uses local sentence-transformers model (all-MiniLM-L6-v2) by default, with OpenAI (text-embedding-ada-002) support. Configurable via `EMBEDDING_PROVIDER` env var (`auto`, `local`, `openai`). Backend provides `/api/v1/embeddings/generate` endpoint for on-demand embedding generation. VectorDBClient includes embedding caching (LRU with TTL) for performance.
 
 ## Environment Variables
 
