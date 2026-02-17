@@ -199,7 +199,7 @@ class RateLimiter:
         
         # Token bucket algorithm for burst handling
         # Refill tokens based on time elapsed
-        time_passed = current_state.last_request
+        time_passed = current_time - state.last_request
         tokens_to_add = (current_time - time_passed) * (config.requests_per_minute / 60.0)
         state.tokens = min(config.burst_size, state.tokens + tokens_to_add)
         state.last_request = current_time
