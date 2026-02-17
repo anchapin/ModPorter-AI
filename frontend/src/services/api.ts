@@ -880,3 +880,173 @@ export const behaviorExportAPI = {
     return response.json();
   },
 };
+
+// --- Mod Imports API Functions ---
+
+export interface URLParseResult {
+  platform: 'curseforge' | 'modrinth' | 'unknown';
+  mod_id?: string;
+  slug?: string;
+  url: string;
+  is_valid: boolean;
+  error?: string;
+}
+
+export interface ModInfo {
+  platform: string;
+  mod_id: string;
+  name: string;
+  description?: string;
+  author?: string;
+  download_count?: number;
+  game_versions?: string[];
+  loaders?: string[];
+  thumbnail_url?: string;
+  url: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ModFile {
+  file_id: string;
+  version: string;
+  game_versions: string[];
+  loaders?: string[];
+  file_name: string;
+  file_size: number;
+  download_url?: string;
+  release_type?: string;
+  created_at?: string;
+}
+
+export interface ImportRequest {
+  url: string;
+  target_version?: string;
+}
+
+export interface ImportResponse {
+  status: 'success' | 'error';
+  message: string;
+  mod_info?: ModInfo;
+  file_id?: string;
+}
+
+export const modImportsAPI = {
+  // Parse a CurseForge or Modrinth URL
+  parseURL: async (url: string): Promise<URLParseResult> => {
+    const response = await fetch(`${API_BASE_URL}/mods/parse-url?${new URLSearchParams({ url })}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to parse URL' }));
+      throw new ApiError(errorData.detail || 'Failed to parse URL', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Search mods on a platform
+  searchMods: async (params: {
+    query: string;
+    platform: 'curseforge' | 'modrinth';
+    game_version?: string;
+    loader?: string;
+    sort_order?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ModInfo[]> => {
+    const searchParams = new URLSearchParams({
+      query: params.query,
+      platform: params.platform,
+    });
+    
+    if (params.game_version) searchParams.append('game_version', params.game_version);
+    if (params.loader) searchParams.append('loader', params.loader);
+    if (params.sort_order) searchParams.append('sort_order', params.sort_order);
+    if (params.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params.limit !== undefined) searchParams.append('limit', params.limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/mods/search?${searchParams}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to search mods' }));
+      throw new ApiError(errorData.detail || 'Failed to search mods', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get mod info
+  getModInfo: async (platform: 'curseforge' | 'modrinth', modId: string): Promise<ModInfo> => {
+    const response = await fetch(`${API_BASE_URL}/mods/${platform}/mod/${modId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to get mod info' }));
+      throw new ApiError(errorData.detail || 'Failed to get mod info', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get mod files/versions
+  getModFiles: async (
+    platform: 'curseforge' | 'modrinth',
+    modId: string,
+    gameVersion?: string
+  ): Promise<ModFile[]> => {
+    const searchParams = new URLSearchParams();
+    if (gameVersion) searchParams.append('game_version', gameVersion);
+
+    const response = await fetch(
+      `${API_BASE_URL}/mods/${platform}/mod/${modId}/files?${searchParams}`
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to get mod files' }));
+      throw new ApiError(errorData.detail || 'Failed to get mod files', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Import mod from URL
+  importMod: async (request: ImportRequest): Promise<ImportResponse> => {
+    const response = await fetch(`${API_BASE_URL}/mods/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to import mod' }));
+      throw new ApiError(errorData.detail || 'Failed to import mod', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get categories for a platform
+  getCategories: async (platform: 'curseforge' | 'modrinth'): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/mods/categories/${platform}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to get categories' }));
+      throw new ApiError(errorData.detail || 'Failed to get categories', response.status);
+    }
+    
+    return response.json();
+  },
+
+  // Get Modrinth loaders
+  getLoaders: async (): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/mods/loaders`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to get loaders' }));
+      throw new ApiError(errorData.detail || 'Failed to get loaders', response.status);
+    }
+    
+    return response.json();
+  },
+};
