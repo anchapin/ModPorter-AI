@@ -792,7 +792,7 @@ async def init_chunked_upload(
     tags=["uploads"],
 )
 async def upload_chunk(
-    upload_id: str,
+    upload_id: UUID,
     chunk_number: int = Form(..., description="Chunk number (1-indexed)"),
     total_chunks: int = Form(..., description="Total number of chunks"),
     chunk: UploadFile = File(..., description="Chunk data"),
@@ -816,8 +816,9 @@ async def upload_chunk(
     }
     ```
     """
+    upload_id_str = str(upload_id)
     # Get upload metadata
-    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
     
     if not upload_metadata:
         raise HTTPException(
@@ -840,7 +841,7 @@ async def upload_chunk(
         )
     
     # Save chunk to disk
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     chunk_path = os.path.join(chunks_dir, f"chunk_{chunk_number:04d}")
     
     with open(chunk_path, "wb") as f:
@@ -849,13 +850,13 @@ async def upload_chunk(
     # Update chunks received count
     chunks_received = upload_metadata.get("chunks_received", 0) + 1
     upload_metadata["chunks_received"] = chunks_received
-    await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+    await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
     
     # Calculate progress
     progress = (chunks_received / total_chunks) * 100
     
     return ChunkUploadResponse(
-        upload_id=upload_id,
+        upload_id=upload_id_str,
         chunk_number=chunk_number,
         chunks_received=chunks_received,
         total_chunks=total_chunks,
@@ -868,7 +869,7 @@ async def upload_chunk(
     response_model=UploadProgressResponse,
     tags=["uploads"],
 )
-async def get_upload_progress(upload_id: str):
+async def get_upload_progress(upload_id: UUID):
     """
     Get the progress of a resumable upload.
     
@@ -883,7 +884,8 @@ async def get_upload_progress(upload_id: str):
     }
     ```
     """
-    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    upload_id_str = str(upload_id)
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
     
     if not upload_metadata:
         raise HTTPException(
@@ -891,7 +893,7 @@ async def get_upload_progress(upload_id: str):
             detail="Upload session not found"
         )
     
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     received_bytes = 0
     
     if os.path.exists(chunks_dir):
@@ -904,7 +906,7 @@ async def get_upload_progress(upload_id: str):
     progress = (received_bytes / total_bytes * 100) if total_bytes > 0 else 0
     
     return UploadProgressResponse(
-        upload_id=upload_id,
+        upload_id=upload_id_str,
         received_bytes=received_bytes,
         total_bytes=total_bytes,
         progress=round(progress, 2),
@@ -918,7 +920,7 @@ async def get_upload_progress(upload_id: str):
     tags=["uploads"],
 )
 async def complete_chunked_upload(
-    upload_id: str,
+    upload_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -927,8 +929,9 @@ async def complete_chunked_upload(
     This endpoint combines all uploaded chunks into the final file
     and creates a conversion job.
     """
+    upload_id_str = str(upload_id)
     # Get upload metadata
-    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
     
     if not upload_metadata:
         raise HTTPException(
@@ -942,7 +945,7 @@ async def complete_chunked_upload(
             detail=f"Upload session is {upload_metadata.get('status')}"
         )
     
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     safe_filename = upload_metadata["filename"]
     total_size = upload_metadata["total_size"]
     
@@ -974,7 +977,7 @@ async def complete_chunked_upload(
         
         # Update upload status
         upload_metadata["status"] = "completed"
-        await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+        await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
         
         # Create conversion job
         job = await crud.create_job(
@@ -1027,13 +1030,14 @@ async def complete_chunked_upload(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["uploads"],
 )
-async def cancel_upload(upload_id: str):
+async def cancel_upload(upload_id: UUID):
     """
     Cancel a resumable upload session.
     
     Deletes all uploaded chunks and cleans up the upload session.
     """
-    upload_metadata = await cache.get_job_status(f"upload:{upload_id}")
+    upload_id_str = str(upload_id)
+    upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
     
     if not upload_metadata:
         raise HTTPException(
@@ -1043,10 +1047,10 @@ async def cancel_upload(upload_id: str):
     
     # Update status to cancelled
     upload_metadata["status"] = "cancelled"
-    await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
+    await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
     
     # Clean up chunks
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
+    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     shutil.rmtree(chunks_dir, ignore_errors=True)
     
     return None

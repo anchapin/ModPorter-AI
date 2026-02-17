@@ -48,20 +48,13 @@ class CacheService:
         self._cache_hits = 0
         self._cache_misses = 0
 
-    def _make_json_serializable(self, obj):
+    def _json_encoder_default(self, obj):
         """
-        Recursively convert non-serializable types (e.g., datetime) to JSON-serializable formats.
+        Default encoder for json.dumps to handle non-serializable types.
         """
-        if isinstance(obj, dict):
-            return {
-                key: self._make_json_serializable(value) for key, value in obj.items()
-            }
-        elif isinstance(obj, list):
-            return [self._make_json_serializable(item) for item in obj]
-        elif isinstance(obj, datetime):
+        if isinstance(obj, datetime):
             return obj.isoformat()
-        else:
-            return obj
+        raise TypeError(f"Type {type(obj)} not serializable")
 
     async def set_job_status(self, job_id: str, status: dict) -> None:
         if not self._redis_available or self._redis_disabled:
@@ -69,7 +62,7 @@ class CacheService:
         try:
             await self._client.set(
                 f"conversion_jobs:{job_id}:status",
-                json.dumps(self._make_json_serializable(status)),
+                json.dumps(status, default=self._json_encoder_default),
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for set_job_status: {e}")
@@ -112,7 +105,7 @@ class CacheService:
         try:
             key = f"{self.CACHE_MOD_ANALYSIS_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(self._make_json_serializable(analysis)), ex=ttl_seconds
+                key, json.dumps(analysis, default=self._json_encoder_default), ex=ttl_seconds
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_mod_analysis: {e}")
@@ -137,7 +130,7 @@ class CacheService:
         try:
             key = f"{self.CACHE_CONVERSION_RESULT_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(self._make_json_serializable(result)), ex=ttl_seconds
+                key, json.dumps(result, default=self._json_encoder_default), ex=ttl_seconds
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_conversion_result: {e}")
@@ -377,3 +370,47 @@ class CacheService:
         if total == 0:
             return 0.0
         return (self._cache_hits / total) * 100
+
+    # Progress tracking from AI Engine
+    
+    async def get_ai_engine_progress(self, job_id: str) -> Optional[dict]:
+        """
+        Get the latest progress update from AI Engine for a job.
+        
+        Args:
+            job_id: The conversion job ID
+            
+        Returns:
+            Progress data dict or None if not available
+        """
+        if not self._redis_available or self._redis_disabled:
+            return None
+        try:
+            key = f"ai_engine:progress:{job_id}"
+            raw = await self._client.get(key)
+            return json.loads(raw) if raw else None
+        except Exception as e:
+            logger.warning(f"Redis operation failed for get_ai_engine_progress: {e}")
+            return None
+
+    async def subscribe_to_ai_engine_progress(self, job_id: str):
+        """
+        Subscribe to real-time progress updates from AI Engine.
+        
+        Args:
+            job_id: The conversion job ID
+            
+        Returns:
+            Redis pub/sub channel for progress updates
+        """
+        if not self._redis_available or self._redis_disabled:
+            return None
+        try:
+            pubsub = self._client.pubsub()
+            channel = f"ai_engine:progress:{job_id}"
+            await pubsub.subscribe(channel)
+            logger.info(f"Subscribed to AI Engine progress channel: {channel}")
+            return pubsub
+        except Exception as e:
+            logger.warning(f"Failed to subscribe to AI Engine progress: {e}")
+            return None
