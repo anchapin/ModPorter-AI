@@ -734,7 +734,10 @@ class TestMVPEndToEndConversion:
 
             # Assertions for validation results
             assert validation_result['overall_score'] > 0, "QA validation should return a score"
-            assert validation_result['status'] in ['pass', 'partial', 'fail'], "Status should be valid"
+
+            # Status must reflect an acceptable QA outcome when enforcing the score threshold
+            assert validation_result['status'] in ['pass', 'partial'], \
+                f"Status {validation_result['status']} is not acceptable for a passing QA result"
 
             # Require at least 70% overall score for passing
             assert validation_result['overall_score'] >= 70, \
@@ -749,6 +752,11 @@ class TestMVPEndToEndConversion:
             manifest = validation_result['validations'].get('manifest', {})
             assert manifest.get('status') in ['pass', 'partial'], \
                 f"Manifest validation failed: {manifest.get('errors', [])}"
+
+            # Content validation should pass (as documented in docstring)
+            content = validation_result['validations'].get('content', {})
+            assert content.get('status') in ['pass', 'partial'], \
+                f"Content validation failed: {content.get('errors', [])}"
 
             print("\n✅ TEST PASSED: QA Validator Integration")
 
