@@ -38,11 +38,13 @@ class Screenshot:
     game_version: str
     test_name: str
     hash: str
+    edition: Optional[str] = None  # Explicit game edition (e.g. "java", "bedrock")
 
 
 @dataclass
 class GameplayComparisonResult:
     """Results from comparing gameplay between Java and Bedrock."""
+    conversion_id: str
     java_screenshots: List[Screenshot]
     bedrock_screenshots: List[Screenshot]
     visual_diffs: List[Dict]
@@ -202,7 +204,8 @@ class GameplayTestRunner:
                 timestamp=timestamp,
                 game_version=game_version,
                 test_name=test_name,
-                hash=file_hash
+                hash=file_hash,
+                edition=game_edition
             )
             print(f"  📸 Screenshot captured: {filename}")
             return screenshot
@@ -211,10 +214,12 @@ class GameplayTestRunner:
             return None
     
     def get_screenshots(self, game_edition: Optional[str] = None) -> List[Screenshot]:
-        """Get all captured screenshots."""
-        if game_edition:
-            return [s for s in self.screenshots if game_edition in s.path]
-        return self.screenshots
+        """Get all captured screenshots, optionally filtered by game edition."""
+        if game_edition is None:
+            return self.screenshots
+        
+        # Filter on the structured edition field instead of doing substring matches on the path
+        return [s for s in self.screenshots if s.edition == game_edition]
 
 
 class ScreenshotComparator:
