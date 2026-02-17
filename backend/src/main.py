@@ -27,6 +27,7 @@ from models import addon_models as pydantic_addon_models # For addon Pydantic mo
 from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
 from services.report_generator import ConversionReportGenerator
 from services.error_handlers import register_exception_handlers
+from services.rate_limiter import RateLimitMiddleware, get_rate_limiter, init_rate_limiter, close_rate_limiter
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions
@@ -117,6 +118,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting middleware (Issue #456)
+# Initialize rate limiter and add middleware
+@app.on_event("startup")
+async def startup_event():
+    """Initialize rate limiter on startup"""
+    await init_rate_limiter()
+    rate_limiter = await get_rate_limiter()
+    app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+    logger.info("Rate limiting middleware initialized")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close rate limiter on shutdown"""
+    await close_rate_limiter()
+    logger.info("Rate limiter closed")
 
 # Include API routers
 app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
