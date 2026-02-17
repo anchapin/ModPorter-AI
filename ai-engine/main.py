@@ -34,6 +34,15 @@ from crew.conversion_crew import ModPorterConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
 
+# Import progress callback for real-time updates
+try:
+    from utils.progress_callback import create_progress_callback, cleanup_progress_callback
+    PROGRESS_CALLBACK_AVAILABLE = True
+except ImportError:
+    PROGRESS_CALLBACK_AVAILABLE = False
+    create_progress_callback = None
+    cleanup_progress_callback = None
+
 # Initialize GPU configuration
 gpu_config = get_gpu_config()
 optimize_for_inference()
@@ -295,6 +304,8 @@ async def list_jobs():
 async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str, Any], experiment_variant: Optional[str] = None):
     """Process a conversion job using the AI crew"""
     
+    progress_callback = None
+    
     try:
         # Get current job status
         job_status = await job_manager.get_job_status(job_id)
@@ -311,6 +322,14 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         
         logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
         
+        # Create progress callback for real-time updates if available
+        if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
+            try:
+                progress_callback = await create_progress_callback(job_id)
+                logger.info(f"Progress callback created for job {job_id}")
+            except Exception as e:
+                logger.warning(f"Failed to create progress callback: {e}")
+        
         # Prepare output path
         output_path = options.get("output_path")
         if not output_path:
@@ -322,8 +341,11 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         try:
-            # Initialize conversion crew with variant if specified
-            crew = ModPorterConversionCrew(variant_id=experiment_variant)
+            # Initialize conversion crew with variant if specified and pass progress callback
+            crew = ModPorterConversionCrew(
+                variant_id=experiment_variant,
+                progress_callback=progress_callback
+            )
             logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
             
             # Update status for analysis stage
@@ -422,6 +444,14 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 await job_manager.set_job_status(job_id, job_status)
             except Exception as status_error:
                 logger.error(f"Failed to update job status after error: {status_error}", exc_info=True)
+    finally:
+        # Clean up progress callback
+        if progress_callback and PROGRESS_CALLBACK_AVAILABLE and cleanup_progress_callback:
+            try:
+                await cleanup_progress_callback(job_id)
+                logger.info(f"Cleaned up progress callback for job {job_id}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup progress callback: {e}")
 
 if __name__ == "__main__":
     uvicorn.run(
