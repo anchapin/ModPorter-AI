@@ -1,0 +1,44 @@
+{
+  "format_version": [1, 1, 0],
+  "simple_copper_block": {
+    "description": {
+      "identifier": "simple_copper:copper_block"
+    },
+    "components": {
+      "minecraft:creative_category": {
+        "category": "construction"
+      },
+      "minecraft:display_name": {
+        "name": "Copper Block"
+      },
+      "minecraft:block_light_emission": {
+        "emission": 0
+      },
+      "minecraft:block_light_absorption": {
+        "absorption": 15
+      },
+      "minecraft:destroy_time": {
+        "destroy_time": 5
+      },
+      "minecraft:explosion_resistance": {
+        "resistance": 6
+      },
+      "minecraft:friction": {
+        "friction": 0.6
+      },
+      "minecraft:map_color": {
+        "color": "#b87333"
+      },
+      "minecraft:queued_ticking": {
+        "looping": true,
+        "tick_chance": 0.0,
+        "on_tick": {
+          "event": "simple_copper:tick"
+        }
+      }
+    },
+    "events": {
+      "simple_copper:tick": {}
+    }
+  }
+}
