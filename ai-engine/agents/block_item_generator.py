@@ -51,6 +51,78 @@ class ItemProperties:
     can_always_eat: bool = False
 
 
+class ToolType(Enum):
+    PICKAXE = "pickaxe"
+    AXE = "axe"
+    SHOVEL = "shovel"
+    HOE = "hoe"
+    SWORD = "sword"
+    SHEARS = "shears"
+    BOW = "bow"
+    CROSSBOW = "crossbow"
+    TRIDENT = "trident"
+
+
+class ArmorType(Enum):
+    HELMET = "helmet"
+    CHESTPLATE = "chestplate"
+    LEGGINGS = "leggings"
+    BOOTS = "boots"
+
+
+@dataclass
+class ToolProperties:
+    """Properties for tool items (pickaxe, axe, shovel, hoe, sword)"""
+    tool_type: ToolType = ToolType.PICKAXE
+    mining_level: int = 1
+    durability: int = 250
+    mining_speed: float = 1.0
+    attack_damage: float = 1.0
+    enchantable: bool = True
+
+
+@dataclass
+class ArmorProperties:
+    """Properties for armor items (helmet, chestplate, leggings, boots)"""
+    armor_type: ArmorType = ArmorType.CHESTPLATE
+    armor_value: int = 1
+    durability: int = 100
+    enchantable: bool = True
+
+
+@dataclass
+class ConsumableProperties:
+    """Properties for consumable items (food, potions)"""
+    nutrition: int = 1
+    saturation: float = 0.6
+    can_always_eat: bool = False
+    drink: bool = False
+    effect: Optional[str] = None
+    effect_duration: int = 0
+    effect_amplifier: int = 0
+
+
+@dataclass
+class RangedWeaponProperties:
+    """Properties for ranged weapons (bows, crossbows)"""
+    damage: float = 9.0
+    draw_speed: float = 1.0
+    durability: int = 384
+    enchantable: bool = True
+    infinite_arrows: bool = False
+
+
+@dataclass
+class RareItemProperties:
+    """Properties for rare/special items with enchantments"""
+    stack_size: int = 1
+    durability: Optional[int] = None
+    enchantable: bool = True
+    enchantment_level: int = 1
+    is_rare: bool = True
+    lore: Optional[str] = None
+
+
 class BlockItemGenerator:
     """
     Generator for Bedrock block and item definition files.
@@ -171,8 +243,403 @@ class BlockItemGenerator:
         
         logger.info(f"Successfully converted {len(bedrock_recipes)} recipes")
         return bedrock_recipes
+
+    def generate_tool_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock tool item definition.
+        
+        Args:
+            data: Dictionary containing tool data with keys:
+                - id: Item identifier
+                - namespace: Item namespace
+                - properties: ToolProperties or dict with tool properties
+        
+        Returns:
+            Bedrock item definition JSON
+        """
+        item_id = data.get('id', 'unknown_tool')
+        namespace = data.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Parse properties
+        props = data.get('properties', {})
+        if isinstance(props, dict):
+            tool_props = ToolProperties(
+                tool_type=ToolType(props.get('tool_type', 'pickaxe')),
+                mining_level=props.get('mining_level', 1),
+                durability=props.get('durability', 250),
+                mining_speed=props.get('mining_speed', 1.0),
+                attack_damage=props.get('attack_damage', 1.0),
+                enchantable=props.get('enchantable', True)
+            )
+        else:
+            tool_props = props
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {
+                    "minecraft:max_stack_size": 1,
+                    "minecraft:icon": {
+                        "texture": item_id
+                    },
+                    "minecraft:durability": {
+                        "max_durability": tool_props.durability
+                    },
+                    "minecraft:mining_speed": tool_props.mining_speed,
+                    "minecraft:damage": tool_props.attack_damage,
+                    "minecraft:creative_category": {
+                        "category": self.creative_categories["tools"]
+                    }
+                }
+            }
+        }
+        
+        # Add repairable component
+        components = bedrock_item["minecraft:item"]["components"]
+        components["minecraft:repairable"] = {
+            "repair_items": [
+                {
+                    "items": [full_id],
+                    "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"
+                }
+            ]
+        }
+        
+        # Add enchantable component
+        if tool_props.enchantable:
+            components["minecraft:enchantable"] = {
+                "slot": "all"
+            }
+        
+        # Add tool component for proper tool behavior
+        components["minecraft:tool"] = {
+            "tier": tool_props.mining_level
+        }
+        
+        return bedrock_item
+
+    def generate_armor_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock armor item definition.
+        
+        Args:
+            data: Dictionary containing armor data with keys:
+                - id: Item identifier
+                - namespace: Item namespace
+                - properties: ArmorProperties or dict with armor properties
+        
+        Returns:
+            Bedrock item definition JSON
+        """
+        item_id = data.get('id', 'unknown_armor')
+        namespace = data.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Parse properties
+        props = data.get('properties', {})
+        if isinstance(props, dict):
+            armor_props = ArmorProperties(
+                armor_type=ArmorType(props.get('armor_type', 'chestplate')),
+                armor_value=props.get('armor_value', 1),
+                durability=props.get('durability', 100),
+                enchantable=props.get('enchantable', True)
+            )
+        else:
+            armor_props = props
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {
+                    "minecraft:max_stack_size": 1,
+                    "minecraft:icon": {
+                        "texture": item_id
+                    },
+                    "minecraft:durability": {
+                        "max_durability": armor_props.durability
+                    },
+                    "minecraft:armor": {
+                        "slot": armor_props.armor_type.value,
+                        "protection": armor_props.armor_value
+                    },
+                    "minecraft:creative_category": {
+                        "category": self.creative_categories["combat"]
+                    }
+                }
+            }
+        }
+        
+        # Add repairable component
+        components = bedrock_item["minecraft:item"]["components"]
+        components["minecraft:repairable"] = {
+            "repair_items": [
+                {
+                    "items": [full_id],
+                    "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"
+                }
+            ]
+        }
+        
+        # Add enchantable component
+        if armor_props.enchantable:
+            components["minecraft:enchantable"] = {
+                "slot": "armor"
+            }
+        
+        return bedrock_item
+
+    def generate_consumable_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock consumable item definition (food, potions).
+        
+        Args:
+            data: Dictionary containing consumable data with keys:
+                - id: Item identifier
+                - namespace: Item namespace
+                - properties: ConsumableProperties or dict with consumable properties
+        
+        Returns:
+            Bedrock item definition JSON
+        """
+        item_id = data.get('id', 'unknown_consumable')
+        namespace = data.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Parse properties
+        props = data.get('properties', {})
+        if isinstance(props, dict):
+            consumable_props = ConsumableProperties(
+                nutrition=props.get('nutrition', 1),
+                saturation=props.get('saturation', 0.6),
+                can_always_eat=props.get('can_always_eat', False),
+                drink=props.get('drink', False),
+                effect=props.get('effect'),
+                effect_duration=props.get('effect_duration', 0),
+                effect_amplifier=props.get('effect_amplifier', 0)
+            )
+        else:
+            consumable_props = props
+        
+        # Determine category based on drink flag
+        category = self.creative_categories["brewing"] if consumable_props.drink else self.creative_categories["food"]
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {
+                    "minecraft:max_stack_size": 64,
+                    "minecraft:icon": {
+                        "texture": item_id
+                    },
+                    "minecraft:food": {
+                        "nutrition": consumable_props.nutrition,
+                        "saturation_modifier": consumable_props.saturation,
+                        "can_always_eat": consumable_props.can_always_eat
+                    },
+                    "minecraft:creative_category": {
+                        "category": category
+                    }
+                }
+            }
+        }
+        
+        # Add potion effect if specified
+        if consumable_props.effect:
+            components = bedrock_item["minecraft:item"]["components"]
+            components["minecraft:food"]["effects"] = [
+                {
+                    "name": consumable_props.effect,
+                    "duration": consumable_props.effect_duration,
+                    "amplifier": consumable_props.effect_amplifier
+                }
+            ]
+        
+        return bedrock_item
+
+    def generate_ranged_weapon_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock ranged weapon item definition (bow, crossbow).
+        
+        Args:
+            data: Dictionary containing ranged weapon data with keys:
+                - id: Item identifier
+                - namespace: Item namespace
+                - properties: RangedWeaponProperties or dict with weapon properties
+        
+        Returns:
+            Bedrock item definition JSON
+        """
+        item_id = data.get('id', 'unknown_ranged')
+        namespace = data.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Parse properties
+        props = data.get('properties', {})
+        if isinstance(props, dict):
+            weapon_props = RangedWeaponProperties(
+                damage=props.get('damage', 9.0),
+                draw_speed=props.get('draw_speed', 1.0),
+                durability=props.get('durability', 384),
+                enchantable=props.get('enchantable', True),
+                infinite_arrows=props.get('infinite_arrows', False)
+            )
+        else:
+            weapon_props = props
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {
+                    "minecraft:max_stack_size": 1,
+                    "minecraft:icon": {
+                        "texture": item_id
+                    },
+                    "minecraft:durability": {
+                        "max_durability": weapon_props.durability
+                    },
+                    "minecraft:damage": weapon_props.damage,
+                    "minecraft:creative_category": {
+                        "category": self.creative_categories["combat"]
+                    }
+                }
+            }
+        }
+        
+        # Add repairable component
+        components = bedrock_item["minecraft:item"]["components"]
+        components["minecraft:repairable"] = {
+            "repair_items": [
+                {
+                    "items": [full_id],
+                    "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"
+                }
+            ]
+        }
+        
+        # Add enchantable component
+        if weapon_props.enchantable:
+            components["minecraft:enchantable"] = {
+                "slot": "bow"
+            }
+        
+        # Add ranged weapon component
+        components["minecraft:ranged_weapon"] = {
+            "max_draw_duration": weapon_props.draw_speed,
+            "speed_multiplier": weapon_props.draw_speed,
+            "charged": False
+        }
+        
+        if weapon_props.infinite_arrows:
+            components["minecraft:infinite"] = {}
+        
+        return bedrock_item
+
+    def generate_rare_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a Bedrock rare/special item definition with enchantments.
+        
+        Args:
+            data: Dictionary containing rare item data with keys:
+                - id: Item identifier
+                - namespace: Item namespace
+                - properties: RareItemProperties or dict with rare item properties
+        
+        Returns:
+            Bedrock item definition JSON
+        """
+        item_id = data.get('id', 'unknown_rare')
+        namespace = data.get('namespace', 'modporter')
+        full_id = f"{namespace}:{item_id}"
+        
+        # Parse properties
+        props = data.get('properties', {})
+        if isinstance(props, dict):
+            rare_props = RareItemProperties(
+                stack_size=props.get('stack_size', 1),
+                durability=props.get('durability'),
+                enchantable=props.get('enchantable', True),
+                enchantment_level=props.get('enchantment_level', 1),
+                is_rare=props.get('is_rare', True),
+                lore=props.get('lore')
+            )
+        else:
+            rare_props = props
+        
+        bedrock_item = {
+            "format_version": "1.19.0",
+            "minecraft:item": {
+                "description": {
+                    "identifier": full_id,
+                    "register_to_creative_menu": True
+                },
+                "components": {
+                    "minecraft:max_stack_size": rare_props.stack_size,
+                    "minecraft:icon": {
+                        "texture": item_id
+                    },
+                    "minecraft:creative_category": {
+                        "category": self.creative_categories["misc"]
+                    }
+                }
+            }
+        }
+        
+        components = bedrock_item["minecraft:item"]["components"]
+        
+        # Add durability if specified
+        if rare_props.durability:
+            components["minecraft:durability"] = {
+                "max_durability": rare_props.durability
+            }
+            components["minecraft:repairable"] = {
+                "repair_items": [
+                    {
+                        "items": [full_id],
+                        "repair_amount": "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability"
+                    }
+                ]
+            }
+        
+        # Add enchantable component
+        if rare_props.enchantable:
+            components["minecraft:enchantable"] = {
+                "slot": "all",
+                "value": rare_props.enchantment_level
+            }
+        
+        # Add lore display
+        if rare_props.lore:
+            components["minecraft:display_name"] = {
+                "value": rare_props.lore
+            }
+        
+        # Add item locked for creative mode (rare items)
+        if rare_props.is_rare:
+            components["minecraft:can_place_on"] = {
+                "predicates": {}
+            }
+        
+        return bedrock_item
     
     def _convert_java_block(self, java_block: Dict[str, Any]) -> Dict[str, Any]:
+
         """Convert a single Java block to Bedrock format."""
         block_id = java_block.get('id', 'unknown_block')
         namespace = java_block.get('namespace', 'modporter')
