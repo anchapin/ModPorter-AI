@@ -25,9 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python3.11 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy project files
+# Copy project files (root-level structure with main.py)
 COPY pyproject.toml README.md /app/
-COPY src /app/src
+COPY . /app/
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir .[gpu-nvidia]
@@ -66,7 +66,7 @@ RUN wget -q -O /tmp/rocm.gpg.key https://repo.radeon.com/rocm/rocm.gpg.key && \
 
 # Copy project files
 COPY pyproject.toml README.md /app/
-COPY src /app/src
+COPY . /app/
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir .[gpu-amd]
@@ -92,7 +92,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy project files
 COPY pyproject.toml README.md /app/
-COPY src /app/src
+COPY . /app/
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir .[cpu-only] --extra-index-url https://download.pytorch.org/whl/cpu
@@ -153,8 +153,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN adduser --disabled-password --gecos '' appuser
 RUN mkdir -p /app/models /app/cache
 
-# Copy only necessary application files with correct permissions
-COPY --from=builder-${GPU_TYPE} --chown=appuser:appuser /app/src /app/src
+# Copy application files (root-level with main.py)
+COPY --chown=appuser:appuser . /app/
 USER appuser
 
 # Verify GPU setup based on type
@@ -173,5 +173,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 EXPOSE 8001
 
-# Use modern uvicorn settings
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]
+# Use modern uvicorn settings (main.py at root level)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--access-log"]
