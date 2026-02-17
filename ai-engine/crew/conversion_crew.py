@@ -44,6 +44,14 @@ from models.smart_assumptions import ConversionPlanComponent, AssumptionReport
 from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
 from utils.logging_config import get_crew_logger, log_performance
 
+# Import progress callback for real-time updates
+try:
+    from utils.progress_callback import ProgressCallback
+    PROGRESS_CALLBACK_AVAILABLE = True
+except ImportError:
+    PROGRESS_CALLBACK_AVAILABLE = False
+    ProgressCallback = None
+
 # Use enhanced crew logger
 logger = get_crew_logger()
 
@@ -54,9 +62,12 @@ class ModPorterConversionCrew:
     Following PRD Section 3.0.3: CrewAI framework implementation
     """
     
-    def __init__(self, model_name: str = "gpt-4", variant_id: str = None):
+    def __init__(self, model_name: str = "gpt-4", variant_id: str = None, progress_callback: Optional["ProgressCallback"] = None):
         # Store variant ID
         self.variant_id = variant_id
+        
+        # Store progress callback for real-time updates
+        self.progress_callback = progress_callback
         
         # Initialize enhanced orchestration crew
         self.enhanced_crew = None
@@ -523,13 +534,27 @@ class ModPorterConversionCrew:
             verbose=True
         )
     
+    async def _report_progress(self, agent: str, status: str, progress: int, message: str):
+        """Send progress update via callback if available"""
+        if self.progress_callback:
+            try:
+                await self.progress_callback.send_progress(
+                    agent=agent,
+                    status=status,
+                    progress=progress,
+                    message=message
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send progress update: {e}")
+
     @log_performance("mod_conversion")
     def convert_mod(
         self, 
         mod_path: Path, 
         output_path: Path,
         smart_assumptions: bool = True,
-        include_dependencies: bool = True
+        include_dependencies: bool = True,
+        job_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute the full conversion process
@@ -539,6 +564,7 @@ class ModPorterConversionCrew:
             output_path: Path for converted output
             smart_assumptions: Enable smart assumption processing
             include_dependencies: Include dependency analysis
+            job_id: Optional job ID for progress tracking
             
         Returns:
             Conversion result following PRD Feature 3 format
@@ -550,6 +576,18 @@ class ModPorterConversionCrew:
                                  output_path=str(output_path),
                                  smart_assumptions=smart_assumptions,
                                  include_dependencies=include_dependencies)
+        
+        # Send initial progress if callback available
+        if self.progress_callback:
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._report_progress("ConversionWorkflow", "in_progress", 0, "Starting conversion process"))
+                else:
+                    loop.run_until_complete(self._report_progress("ConversionWorkflow", "in_progress", 0, "Starting conversion process"))
+            except Exception as e:
+                logger.warning(f"Failed to send initial progress: {e}")
         
         # Check if we should use enhanced orchestration
         if self.use_enhanced_orchestration and self.enhanced_crew:
