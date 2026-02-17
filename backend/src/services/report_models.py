@@ -59,6 +59,7 @@ class AssumptionDetail(TypedDict):
 
 class AssumptionsReport(TypedDict):
     assumptions: List[AssumptionDetail]
+    what_changed: Optional[List[Dict[str, str]]]
 
 
 class LogEntry(TypedDict):

@@ -239,6 +239,8 @@ class ConversionReportGenerator:
         self, assumptions_detail_data: List[Dict[str, Any]]
     ) -> AssumptionsReport:
         assumption_details: List[AssumptionDetail] = []
+        what_changed = []
+        
         for ad in assumptions_detail_data:
             detail = AssumptionDetail(
                 assumption_id=ad.get(
@@ -252,7 +254,28 @@ class ConversionReportGenerator:
                 technical_notes=ad.get("technical_notes"),
             )
             assumption_details.append(detail)
-        return AssumptionsReport(assumptions=assumption_details)
+            
+            # Build What Changed entry
+            assumption_type_lower = ad.get("description", "").lower()
+            if "biome" in assumption_type_lower:
+                what_category = "Custom Biome"
+            elif "enchant" in assumption_type_lower:
+                what_category = "Custom Enchantment"
+            elif "redstone" in assumption_type_lower:
+                what_category = "Redstone Logic"
+            elif "fluid" in assumption_type_lower:
+                what_category = "Fluid System"
+            else:
+                what_category = "General"
+            
+            what_changed.append({
+                "category": what_category,
+                "original": ad.get("feature_affected", ""),
+                "converted": ad.get("description", ""),
+                "reason": ad.get("user_explanation", "")
+            })
+        
+        return AssumptionsReport(assumptions=assumption_details, what_changed=what_changed)
 
     def generate_developer_log(self, dev_logs_data: Dict[str, Any]) -> DeveloperLog:
         return DeveloperLog(
