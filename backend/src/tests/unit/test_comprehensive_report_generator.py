@@ -11,7 +11,7 @@ import datetime
 from unittest.mock import patch
 
 from src.services.comprehensive_report_generator import ConversionReportGenerator
-from src.types.report_types import (
+from src.schemas.report_types import (
     SummaryReport,
     FeatureAnalysis,
     AssumptionsReport,

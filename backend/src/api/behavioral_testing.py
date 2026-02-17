@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import behavioral testing framework components
 try:
@@ -148,7 +148,7 @@ async def create_behavioral_test(
             failed_scenarios=0,
             behavioral_score=None,
             execution_time_ms=0,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(timezone.utc),
         )
 
     except Exception as e:
@@ -178,7 +178,7 @@ async def get_behavioral_test(test_id: UUID):
             failed_scenarios=1,
             behavioral_score=0.75,
             execution_time_ms=15000,
-            created_at=datetime.now(datetime.UTC),
+            created_at=datetime.now(timezone.utc),
         )
 
     except Exception as e:
@@ -253,7 +253,7 @@ async def get_test_report(test_id: UUID, format: str = "json"):
             "scenarios_failed_or_with_issues": 1,
             "total_execution_time_ms": 15000,
             "total_issues_detected": 1,
-            "generated_at": datetime.now(datetime.UTC).isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         return mock_report
