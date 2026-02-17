@@ -45,7 +45,7 @@ http_request_duration_seconds = Histogram(
 conversion_jobs_total = Counter(
     'modporter_conversion_jobs_total',
     'Total conversion jobs',
-    ['status', 'target_version'],
+    ['status', 'target_version', 'mod_type'],
     registry=registry
 )
 
@@ -53,7 +53,7 @@ conversion_jobs_total = Counter(
 conversion_duration_seconds = Histogram(
     'modporter_conversion_duration_seconds',
     'Conversion duration in seconds',
-    ['target_version'],
+    ['target_version', 'mod_type'],
     buckets=[10, 30, 60, 120, 300, 600, 900, 1800],
     registry=registry
 )
@@ -177,6 +177,14 @@ average_conversion_time_seconds = Gauge(
     registry=registry
 )
 
+# Average conversion time by mod type
+average_conversion_time_by_mod_type = Gauge(
+    'modporter_average_conversion_time_by_mod_type_seconds',
+    'Average conversion time in seconds by mod type',
+    ['target_version', 'mod_type'],
+    registry=registry
+)
+
 # Total conversions completed
 conversions_completed_total = Gauge(
     'modporter_conversions_completed_total',
@@ -250,12 +258,13 @@ class MetricsTracker:
             return
         
         self._conversion_times = defaultdict(list)
+        self._conversion_times_by_mod_type = defaultdict(list)
         self._success_count = 0
         self._failure_count = 0
         self._lock = threading.Lock()
         self._initialized = True
     
-    def record_conversion(self, duration_seconds: float, success: bool, target_version: str):
+    def record_conversion(self, duration_seconds: float, success: bool, target_version: str, mod_type: str = "unknown"):
         """Record a conversion for metrics tracking."""
         with self._lock:
             if success:
@@ -263,10 +272,16 @@ class MetricsTracker:
             else:
                 self._failure_count += 1
             
-            # Keep only last 1000 conversion times
+            # Keep only last 1000 conversion times by target version
             self._conversion_times[target_version].append(duration_seconds)
             if len(self._conversion_times[target_version]) > 1000:
                 self._conversion_times[target_version] = self._conversion_times[target_version][-1000:]
+            
+            # Keep conversion times by mod type for average by mod type tracking
+            mod_type_key = f"{target_version}:{mod_type}"
+            self._conversion_times_by_mod_type[mod_type_key].append(duration_seconds)
+            if len(self._conversion_times_by_mod_type[mod_type_key]) > 1000:
+                self._conversion_times_by_mod_type[mod_type_key] = self._conversion_times_by_mod_type[mod_type_key][-1000:]
             
             # Update gauge metrics
             total = self._success_count + self._failure_count
@@ -281,6 +296,15 @@ class MetricsTracker:
             if all_times:
                 avg_time = sum(all_times) / len(all_times)
                 average_conversion_time_seconds.set(avg_time)
+            
+            # Calculate and update average conversion time by mod type
+            for key, times in self._conversion_times_by_mod_type.items():
+                if times:
+                    parts = key.split(':', 1)
+                    if len(parts) == 2:
+                        tv, mt = parts
+                        avg_time_mod = sum(times) / len(times)
+                        average_conversion_time_by_mod_type.labels(target_version=tv, mod_type=mt).set(avg_time_mod)
             
             # Update total counts
             conversions_completed_total.set(self._success_count)
@@ -315,13 +339,20 @@ def record_http_request(method: str, endpoint: str, status: int, duration: float
     http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
 
 
-def record_conversion_job(status: str, target_version: str = "1.20.0", duration: Optional[float] = None):
-    """Record a conversion job metric."""
-    conversion_jobs_total.labels(status=status, target_version=target_version).inc()
+def record_conversion_job(status: str, target_version: str = "1.20.0", mod_type: str = "unknown", duration: Optional[float] = None):
+    """Record a conversion job metric.
+    
+    Args:
+        status: Status of the conversion (completed, failed, pending)
+        target_version: Target Minecraft version
+        mod_type: Type of mod being converted (modpack, texture, schematic, etc.)
+        duration: Duration of the conversion in seconds
+    """
+    conversion_jobs_total.labels(status=status, target_version=target_version, mod_type=mod_type).inc()
     
     if duration is not None:
-        conversion_duration_seconds.labels(target_version=target_version).observe(duration)
-        metrics_tracker.record_conversion(duration, status == "completed", target_version)
+        conversion_duration_seconds.labels(target_version=target_version, mod_type=mod_type).observe(duration)
+        metrics_tracker.record_conversion(duration, status == "completed", target_version, mod_type)
 
 
 def record_agent_execution(agent_name: str, status: str, duration: Optional[float] = None):
