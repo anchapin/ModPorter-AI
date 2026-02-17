@@ -89,7 +89,7 @@ from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
 
 # Import test fixtures from ai-engine fixtures
-from fixtures.test_jar_generator import JarGenerator, create_test_mod_suite
+from fixtures.test_jar_generator import TestJarGenerator as JarGenerator, create_test_mod_suite
 
 
 class TestMVPEndToEndConversion:
