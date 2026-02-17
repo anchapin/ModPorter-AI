@@ -12,13 +12,16 @@ Issue: #495 (Phase 4b)
 import os
 import json
 import re
-import hashlib
-import requests
+import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import urlparse
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SourceType(Enum):
@@ -386,15 +389,25 @@ class FeatureChecklistGenerator:
         features = []
         
         category_mapping = {
-            "Mechanics": ["crafting", "smelting", "breeding"],
-            "Tools": ["tool", "utility"],
-            "Adventure": ["dimension", "biome", "structure"],
-            "Mobs": ["entity", "mob", "spawning"],
-            "Magic": ["spell", "effect", "potion"],
-            "Technology": ["machine", "automation", "energy"]
+            "mechanics": ["crafting", "smelting", "breeding"],
+            "tools": ["tool", "utility"],
+            "adventure": ["dimension", "biome", "structure"],
+            "mobs": ["entity", "mob", "spawning"],
+            "magic": ["spell", "effect", "potion"],
+            "technology": ["machine", "automation", "energy"]
         }
         
-        for category in categories:
+        # Normalize categories: handle both dicts (CurseForge) and strings (Modrinth)
+        normalized_categories = []
+        for cat in categories:
+            if isinstance(cat, dict):
+                # CurseForge format: {"name": "Mechanics"}
+                normalized_categories.append(cat.get('name', '').lower())
+            elif isinstance(cat, str):
+                # Modrinth format: "mechanics"
+                normalized_categories.append(cat.lower())
+        
+        for category in normalized_categories:
             if category in category_mapping:
                 features.extend(category_mapping[category])
         
@@ -772,22 +785,22 @@ class OnlineResearchAgent:
                 f"Review {len(unclear)} unclear features for accuracy."
             )
         
-        # Add specific recommendations
-        if 'dimension' in missing:
+        # Add specific recommendations - use substring matching for robustness
+        if any("dimension" in feature.lower() for feature in missing):
             recommendations.append(
                 "Custom dimensions are not supported in Bedrock. Consider using structures or custom worlds."
             )
-        
-        if 'enchanting' in missing:
+
+        if any("enchant" in feature.lower() for feature in missing):
             recommendations.append(
                 "Enchanting systems may need to be converted to alternative mechanics in Bedrock."
             )
-        
-        if 'custom block' in missing:
+
+        if any("custom block" in feature.lower() for feature in missing):
             recommendations.append(
                 "Check that all custom blocks have proper behavior definitions."
             )
-        
+
         return recommendations
     
     def export_research_report(
