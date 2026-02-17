@@ -41,7 +41,6 @@ interface BedrockDocItem {
 interface BedrockDocsPanelProps {
   className?: string;
   onInsertSnippet?: (snippet: string) => void;
-  currentFileType?: string;
 }
 
 // Comprehensive Bedrock API documentation data
@@ -241,7 +240,6 @@ const categoryInfo: Record<string, { label: string; icon: React.ReactNode }> = {
 export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
   className = '',
   onInsertSnippet,
-  currentFileType: _currentFileType = 'entity_behavior',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);

@@ -428,7 +428,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
         {showDocsPanel && (
           <div className="docs-panel-sidebar">
             <BedrockDocsPanel
-              currentFileType={selectedFile?.type}
+              
               onInsertSnippet={handleInsertSnippet}
             />
           </div>
