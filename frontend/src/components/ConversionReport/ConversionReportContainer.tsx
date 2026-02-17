@@ -32,9 +32,14 @@ export const ConversionReportContainer: React.FC<ConversionReportContainerProps>
       setLoading(true);
       setError(null);
 
-      // Fetch the conversion report from the backend
-      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/report`);
+      // Try new conversions endpoint first, fall back to legacy jobs endpoint
+      let response = await fetch(`${API_BASE_URL}/conversions/${jobId}/report`);
       
+      if (response.status === 404) {
+        // Fallback to legacy endpoint
+        response = await fetch(`${API_BASE_URL}/jobs/${jobId}/report`);
+      }
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Conversion report not found. Please ensure the conversion completed successfully.');

@@ -23,7 +23,10 @@ export class ConversionWebSocket {
 
   constructor(private jobId: string) {
     // Determine WebSocket URL based on environment
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    // Use VITE_API_BASE_URL if set, otherwise derive from API_BASE_URL or default
+    const apiBase = import.meta.env.VITE_API_BASE_URL 
+      || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') : null)
+      || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
     this.url = apiBase.replace(/^http/, 'ws') + `/api/v1/conversions/${this.jobId}/ws`;
   }
 

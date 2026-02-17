@@ -29,11 +29,14 @@ class ApiError extends Error {
   }
 }
 
+/**
+ * Upload a file separately (legacy endpoint, kept for backward compatibility).
+ */
 export const uploadFile = async (file: File): Promise<UploadResponse> => {
   const formData = new FormData();
-  formData.append('file', file); // Match backend parameter name 'file'
+  formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/upload`, { // Corrected endpoint
+  const response = await fetch(`${API_BASE_URL}/upload`, {
     method: 'POST',
     body: formData,
   });
@@ -46,25 +49,68 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
   return response.json();
 };
 
+/**
+ * Start a new mod conversion job.
+ * 
+ * Uses POST /api/v1/conversions with multipart form data (file + options).
+ * This is the new unified endpoint that handles upload + conversion in one step.
+ * Falls back to legacy /upload + /convert flow if the new endpoint is unavailable.
+ */
 export const convertMod = async (params: InitiateConversionParams): Promise<ConversionResponse> => {
   if (!params.file) {
-    // As per instructions, conversion via modUrl alone without a file upload step is not currently supported
-    // by the backend's /api/v1/convert endpoint (which is start_conversion).
     throw new Error("File is required for conversion.");
   }
 
-  // Step 1: Upload the file
+  // Build conversion options
+  const options = {
+    assumptions: params.smartAssumptions ? 'aggressive' : 'conservative',
+    target_version: params.target_version || '1.20.0',
+  };
+
+  // Try new unified endpoint first: POST /api/v1/conversions (multipart form)
+  try {
+    const formData = new FormData();
+    formData.append('file', params.file);
+    formData.append('options', JSON.stringify(options));
+
+    const response = await fetch(`${API_BASE_URL}/conversions`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      // Map new API response to ConversionResponse format
+      return {
+        job_id: data.conversion_id,
+        status: data.status,
+        message: `Conversion started. Estimated time: ${Math.round(data.estimated_time_seconds / 60)} minutes`,
+        progress: 0,
+      } as ConversionResponse;
+    }
+
+    // If 404, the new endpoint doesn't exist yet — fall through to legacy
+    if (response.status !== 404) {
+      const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
+      throw new ApiError(errorData.detail || 'Conversion failed', response.status);
+    }
+  } catch (err) {
+    // If it's an ApiError (non-404), rethrow
+    if (err instanceof ApiError) throw err;
+    // Otherwise fall through to legacy endpoint
+    console.warn('[API] New /conversions endpoint unavailable, falling back to legacy flow');
+  }
+
+  // Legacy fallback: upload file first, then start conversion
   const uploadResponse = await uploadFile(params.file);
 
-  // Step 2: Construct the backend request payload
   const backendRequestPayload = {
     file_id: uploadResponse.file_id,
     original_filename: uploadResponse.original_filename,
-    target_version: params.target_version, // Pass through target_version
+    target_version: params.target_version,
     options: {
       smartAssumptions: params.smartAssumptions,
       includeDependencies: params.includeDependencies,
-      // modUrl can be part of options if needed by backend logic tied to a file_id
       ...(params.modUrl && { modUrl: params.modUrl }),
     },
   };
@@ -85,7 +131,40 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   return response.json();
 };
 
+/**
+ * Get the status of a conversion job.
+ * 
+ * Tries GET /api/v1/conversions/{id} first (new endpoint),
+ * falls back to GET /api/v1/convert/{id}/status (legacy).
+ */
 export const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+  // Try new endpoint first
+  try {
+    const response = await fetch(`${API_BASE_URL}/conversions/${jobId}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Map new API response to ConversionStatus format
+      return {
+        job_id: data.conversion_id,
+        status: data.status,
+        progress: data.progress,
+        message: data.message,
+        created_at: data.created_at,
+        error: data.error,
+        stage: data.status,
+      } as ConversionStatus;
+    }
+
+    if (response.status !== 404) {
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(errorData.detail || 'Failed to get status', response.status);
+    }
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+  }
+
+  // Legacy fallback
   const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
   
   if (!response.ok) {
@@ -96,16 +175,28 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
   return response.json();
 };
 
+/**
+ * Download the converted .mcaddon file.
+ * 
+ * Tries GET /api/v1/conversions/{id}/download first (new endpoint),
+ * falls back to GET /api/v1/convert/{id}/download (legacy).
+ */
 export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filename: string }> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
+  // Try new endpoint first, fall back to legacy
+  let response = await fetch(`${API_BASE_URL}/conversions/${jobId}/download`);
   
+  if (response.status === 404) {
+    // Fallback to legacy endpoint
+    response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
+  }
+
   if (!response.ok) {
     throw new ApiError('Download failed', response.status);
   }
 
   // Extract filename from Content-Disposition header
   const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
-  let filename = `converted-mod-${jobId}.mcaddon`; // fallback to UUID-based name
+  let filename = `converted-mod-${jobId}.mcaddon`;
   
   if (contentDisposition) {
     const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
@@ -118,12 +209,26 @@ export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filen
   return { blob, filename };
 };
 
+/**
+ * Cancel a conversion job.
+ * 
+ * Tries DELETE /api/v1/conversions/{id} first (new endpoint),
+ * falls back to DELETE /api/v1/convert/{id} (legacy).
+ */
 export const cancelJob = async (jobId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/convert/${jobId}`, {
+  // Try new endpoint first
+  let response = await fetch(`${API_BASE_URL}/conversions/${jobId}`, {
     method: 'DELETE',
   });
 
-  if (!response.ok) {
+  if (response.status === 404) {
+    // Fallback to legacy endpoint
+    response = await fetch(`${API_BASE_URL}/convert/${jobId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  if (!response.ok && response.status !== 204) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
     throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
   }
