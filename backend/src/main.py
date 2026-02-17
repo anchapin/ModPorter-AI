@@ -5,7 +5,7 @@ from db.base import get_db, AsyncSessionLocal
 from db import crud
 from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from pydantic import BaseModel, Field
 from services import addon_exporter # For .mcaddon export
 from services import conversion_parser # For parsing converted pack output
@@ -33,6 +33,7 @@ from api import performance, behavioral_testing, validation, comparison, embeddi
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
+from services.metrics import get_metrics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1171,4 +1172,13 @@ async def export_addon_mcaddon(
         media_type="application/zip", # Standard for .mcaddon which is a zip file
         headers={"Content-Disposition": f"attachment; filename=\"{download_filename}\""}
     )
+
+
+# Metrics endpoint for Prometheus scraping
+@app.get("/api/v1/metrics", tags=["monitoring"])
+async def metrics():
+    """
+    Prometheus metrics endpoint.
+    """
+    return Response(content=get_metrics(), media_type="text/plain")
 
