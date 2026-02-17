@@ -377,3 +377,47 @@ class CacheService:
         if total == 0:
             return 0.0
         return (self._cache_hits / total) * 100
+
+    # Progress tracking from AI Engine
+    
+    async def get_ai_engine_progress(self, job_id: str) -> Optional[dict]:
+        """
+        Get the latest progress update from AI Engine for a job.
+        
+        Args:
+            job_id: The conversion job ID
+            
+        Returns:
+            Progress data dict or None if not available
+        """
+        if not self._redis_available or self._redis_disabled:
+            return None
+        try:
+            key = f"ai_engine:progress:{job_id}"
+            raw = await self._client.get(key)
+            return json.loads(raw) if raw else None
+        except Exception as e:
+            logger.warning(f"Redis operation failed for get_ai_engine_progress: {e}")
+            return None
+
+    async def subscribe_to_ai_engine_progress(self, job_id: str):
+        """
+        Subscribe to real-time progress updates from AI Engine.
+        
+        Args:
+            job_id: The conversion job ID
+            
+        Returns:
+            Redis pub/sub channel for progress updates
+        """
+        if not self._redis_available or self._redis_disabled:
+            return None
+        try:
+            pubsub = self._client.pubsub()
+            channel = f"ai_engine:progress:{job_id}"
+            await pubsub.subscribe(channel)
+            logger.info(f"Subscribed to AI Engine progress channel: {channel}")
+            return pubsub
+        except Exception as e:
+            logger.warning(f"Failed to subscribe to AI Engine progress: {e}")
+            return None
