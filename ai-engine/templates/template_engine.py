@@ -40,6 +40,8 @@ class TemplateType(Enum):
     ARMOR = "armor"
     CONSUMABLE = "consumable"
     DECORATIVE = "decorative"
+    RANGED_WEAPON = "ranged_weapon"
+    RARE_ITEM = "rare_item"
     
     # Entity types
     PASSIVE_MOB = "passive_mob"
@@ -49,7 +51,13 @@ class TemplateType(Enum):
     
     # Recipe types
     CRAFTING_RECIPE = "crafting_recipe"
+    SHAPELESS_RECIPE = "shapeless_recipe"
     SMELTING_RECIPE = "smelting_recipe"
+    BLASTING_RECIPE = "blasting_recipe"
+    SMOKING_RECIPE = "smoking_recipe"
+    CAMPFIRE_RECIPE = "campfire_recipe"
+    STONECUTTER_RECIPE = "stonecutter_recipe"
+    SMITHING_RECIPE = "smithing_recipe"
     BREWING_RECIPE = "brewing_recipe"
     CUSTOM_RECIPE = "custom_recipe"
 
@@ -126,7 +134,10 @@ class TemplateSelector:
             return TemplateType.TOOL
             
         # Check for weapon functionality
-        if any(keyword in str(properties).lower() for keyword in ['weapon', 'sword', 'bow', 'damage', 'attack']):
+        if any(keyword in str(properties).lower() for keyword in ['weapon', 'sword', 'damage', 'attack']):
+            # Check for ranged weapon
+            if any(keyword in str(properties).lower() for keyword in ['bow', 'crossbow', 'gun', 'ranged']):
+                return TemplateType.RANGED_WEAPON
             return TemplateType.WEAPON
             
         # Check for armor functionality
@@ -136,6 +147,10 @@ class TemplateSelector:
         # Check for consumable functionality
         if any(keyword in str(properties).lower() for keyword in ['food', 'consumable', 'potion', 'drink', 'eat']):
             return TemplateType.CONSUMABLE
+            
+        # Check for rare item
+        if any(keyword in str(properties).lower() for keyword in ['rare', 'legendary', 'epic']):
+            return TemplateType.RARE_ITEM
             
         return TemplateType.BASIC_ITEM
     
@@ -157,9 +172,33 @@ class TemplateSelector:
     
     def _select_recipe_template(self, properties: Dict[str, Any]) -> TemplateType:
         """Select recipe template based on properties."""
+        # Check for shapeless recipes
+        if any(keyword in str(properties).lower() for keyword in ['shapeless']):
+            return TemplateType.SHAPELESS_RECIPE
+            
         # Check for smelting recipes
         if any(keyword in str(properties).lower() for keyword in ['smelt', 'furnace', 'cook']):
             return TemplateType.SMELTING_RECIPE
+            
+        # Check for blasting recipes
+        if any(keyword in str(properties).lower() for keyword in ['blast', 'blast_furnace']):
+            return TemplateType.BLASTING_RECIPE
+            
+        # Check for smoking recipes
+        if any(keyword in str(properties).lower() for keyword in ['smoke', 'smoker']):
+            return TemplateType.SMOKING_RECIPE
+            
+        # Check for campfire recipes
+        if any(keyword in str(properties).lower() for keyword in ['campfire']):
+            return TemplateType.CAMPFIRE_RECIPE
+            
+        # Check for stonecutter recipes
+        if any(keyword in str(properties).lower() for keyword in ['stonecutter', 'cut']):
+            return TemplateType.STONECUTTER_RECIPE
+            
+        # Check for smithing recipes
+        if any(keyword in str(properties).lower() for keyword in ['smith', 'smithing', 'anvil']):
+            return TemplateType.SMITHING_RECIPE
             
         # Check for brewing recipes
         if any(keyword in str(properties).lower() for keyword in ['brew', 'potion', 'brewing']):
@@ -266,12 +305,20 @@ class JinjaTemplate(BaseTemplate):
             TemplateType.ARMOR: TemplateCategory.ITEMS,
             TemplateType.CONSUMABLE: TemplateCategory.ITEMS,
             TemplateType.DECORATIVE: TemplateCategory.ITEMS,
+            TemplateType.RANGED_WEAPON: TemplateCategory.ITEMS,
+            TemplateType.RARE_ITEM: TemplateCategory.ITEMS,
             TemplateType.PASSIVE_MOB: TemplateCategory.ENTITIES,
             TemplateType.HOSTILE_MOB: TemplateCategory.ENTITIES,
             TemplateType.NPC: TemplateCategory.ENTITIES,
             TemplateType.PROJECTILE: TemplateCategory.ENTITIES,
             TemplateType.CRAFTING_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.SHAPELESS_RECIPE: TemplateCategory.RECIPES,
             TemplateType.SMELTING_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.BLASTING_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.SMOKING_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.CAMPFIRE_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.STONECUTTER_RECIPE: TemplateCategory.RECIPES,
+            TemplateType.SMITHING_RECIPE: TemplateCategory.RECIPES,
             TemplateType.BREWING_RECIPE: TemplateCategory.RECIPES,
             TemplateType.CUSTOM_RECIPE: TemplateCategory.RECIPES,
         }
@@ -446,7 +493,7 @@ class TemplateEngine:
         """Get category for template type."""
         if template_type.value.endswith('_block'):
             return TemplateCategory.BLOCKS
-        elif template_type.value.endswith('_item') or template_type.value in ['tool', 'weapon', 'armor', 'consumable', 'decorative']:
+        elif template_type.value.endswith('_item') or template_type.value in ['tool', 'weapon', 'armor', 'consumable', 'decorative', 'ranged_weapon', 'rare_item']:
             return TemplateCategory.ITEMS
         elif template_type.value.endswith('_mob') or template_type.value in ['npc', 'projectile']:
             return TemplateCategory.ENTITIES

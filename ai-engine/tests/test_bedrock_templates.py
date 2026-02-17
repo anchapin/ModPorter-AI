@@ -134,15 +134,44 @@ class TestBedrockTemplates:
         data = json.loads(result)
         assert 'minecraft:recipe_shaped' in data or 'type' in data
     
-    @pytest.mark.skip(reason="Shapeless recipe template requires additional template type implementation")
     def test_shapeless_recipe(self, template_engine):
         """Test shapeless recipe generates valid JSON."""
-        pass
+        context = {
+            'namespace': 'mod',
+            'recipe_name': 'torch',
+            'tags': ['crafting_table'],
+            'ingredients': [
+                {'item': 'minecraft:coal'},
+                {'item': 'minecraft:stick'}
+            ],
+            'result': {'item': 'minecraft:torch', 'count': 4}
+        }
+        result = template_engine.render_template(
+            'recipe',
+            {'type': 'shapeless'},
+            context
+        )
+        data = json.loads(result)
+        assert 'minecraft:recipe_shapeless' in data or 'type' in data
     
-    @pytest.mark.skip(reason="Smelting recipe template requires additional template type implementation")
     def test_smelting_recipe(self, template_engine):
         """Test smelting recipe generates valid JSON."""
-        pass
+        context = {
+            'namespace': 'mod',
+            'recipe_name': 'iron_ingot',
+            'input': {'item': 'minecraft:iron_ore'},
+            'output': {'item': 'minecraft:iron_ingot'},
+            'tags': ['furnace'],
+            'cooking_time': 200,
+            'experience': 0.7
+        }
+        result = template_engine.render_template(
+            'recipe',
+            {'type': 'smelting'},
+            context
+        )
+        data = json.loads(result)
+        assert 'minecraft:recipe_furnace' in data or 'type' in data
     
     def test_container_block_template(self, template_engine):
         """Test container block template generates valid JSON."""
@@ -187,6 +216,8 @@ class TestBedrockTemplates:
         assert TemplateType.ARMOR.value == 'armor'
         assert TemplateType.CONSUMABLE.value == 'consumable'
         assert TemplateType.CRAFTING_RECIPE.value == 'crafting_recipe'
+        assert TemplateType.SHAPELESS_RECIPE.value == 'shapeless_recipe'
+        assert TemplateType.SMELTING_RECIPE.value == 'smelting_recipe'
     
     def test_template_category_enum(self):
         """Test TemplateCategory enum contains expected values."""
@@ -233,6 +264,16 @@ class TestTemplateSelector:
         """Test selecting interactive block template."""
         template = selector.select_template('block', {'interactive': True, 'click': True})
         assert template == TemplateType.INTERACTIVE_BLOCK
+    
+    def test_select_shapeless_recipe(self, selector):
+        """Test selecting shapeless recipe template."""
+        template = selector.select_template('recipe', {'type': 'shapeless'})
+        assert template == TemplateType.SHAPELESS_RECIPE
+    
+    def test_select_smelting_recipe(self, selector):
+        """Test selecting smelting recipe template."""
+        template = selector.select_template('recipe', {'type': 'smelting'})
+        assert template == TemplateType.SMELTING_RECIPE
 
 
 if __name__ == "__main__":
