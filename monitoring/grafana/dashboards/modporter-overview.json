@@ -105,12 +105,12 @@
       },
       {
         "id": 7,
-        "title": "Conversion Funnel",
+        "title": "Conversion Funnel by Mod Type",
         "type": "bargauge",
         "targets": [
           {
-            "expr": "sum(rate(modporter_conversion_jobs_total[5m])) by (status)",
-            "legendFormat": "{{status}}"
+            "expr": "sum(rate(modporter_conversion_jobs_total[5m])) by (status, mod_type)",
+            "legendFormat": "{{status}} - {{mod_type}}"
           }
         ],
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
@@ -158,12 +158,12 @@
       },
       {
         "id": 11,
-        "title": "Error Rate (errors/min)",
+        "title": "Error Rate by Category (errors/min)",
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(modporter_errors_total[5m]) * 60",
-            "legendFormat": "{{error_category}} - {{error_type}}"
+            "expr": "sum(rate(modporter_errors_total[5m])) by (error_category) * 60",
+            "legendFormat": "{{error_category}}"
           }
         ],
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32}
@@ -207,6 +207,31 @@
       },
       {
         "id": 14,
+        "title": "Average Conversion Time by Mod Type",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "modporter_average_conversion_time_by_mod_type_seconds",
+            "format": "table",
+            "legendFormat": "{{target_version}} - {{mod_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 40}
+      },
+      {
+        "id": 15,
+        "title": "Conversion Jobs by Mod Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum(rate(modporter_conversion_jobs_total[1h])) by (mod_type)",
+            "legendFormat": "{{mod_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 40}
+      },
+      {
+        "id": 16,
         "title": "Database Operation Latency (p95)",
         "type": "graph",
         "targets": [
@@ -215,10 +240,22 @@
             "legendFormat": "{{operation}} - {{table}}"
           }
         ],
-        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 40}
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 48}
       },
       {
-        "id": 15,
+        "id": 17,
+        "title": "Conversion Duration Histogram by Mod Type",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(modporter_conversion_duration_seconds_bucket[5m])",
+            "legendFormat": "{{target_version}} - {{mod_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 48}
+      },
+      {
+        "id": 18,
         "title": "Agent Execution Status",
         "type": "table",
         "targets": [
@@ -228,11 +265,11 @@
             "legendFormat": "{{agent_name}} - {{status}}"
           }
         ],
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48}
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 56}
       }
     ],
     "schemaVersion": 27,
-    "version": 1,
+    "version": 2,
     "refresh": "30s",
     "links": []
   }
