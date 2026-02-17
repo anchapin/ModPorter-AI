@@ -87,6 +87,7 @@ sys.modules['models.validation'].ValidationReport = type('ValidationReport', (),
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
+from agents.qa_validator import QAValidatorAgent
 
 # Import test fixtures from ai-engine fixtures
 from fixtures.test_jar_generator import TestJarGenerator as JarGenerator, create_test_mod_suite
@@ -653,7 +654,106 @@ class TestMVPEndToEndConversion:
         print("\n✅ TEST PASSED: Performance Benchmarks")
 
     # ========================================
-    # Test Case 7: Coverage Validation
+    # Test Case 7: QA Validator Integration (Issue #447)
+    # ========================================
+
+    def test_qa_validator_integration(self, simple_copper_block_jar):
+        """
+        Test QAValidatorAgent validation of the converted .mcaddon file.
+
+        This test validates the output using QAValidatorAgent as specified
+        in Issue #447's requirement to "Validate output .mcaddon with QAValidatorAgent".
+
+        Expected Results:
+        - QA validation runs successfully
+        - Overall quality score >= 70%
+        - Structural validation passes
+        - Manifest validation passes
+        - Content validation passes
+        """
+        print("\n" + "="*70)
+        print("TEST: QA Validator Integration (Issue #447)")
+        print("="*70)
+
+        # Initialize QA validator
+        qa_validator = QAValidatorAgent()
+
+        # Run full conversion pipeline
+        analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
+        assert analysis_result['success'], "Analysis failed"
+
+        with tempfile.TemporaryDirectory() as build_dir:
+            build_result = self.bedrock_builder.build_block_addon_mvp(
+                registry_name=analysis_result['registry_name'],
+                texture_path=analysis_result['texture_path'],
+                jar_path=simple_copper_block_jar,
+                output_dir=build_dir
+            )
+
+            assert build_result['success'], "Build failed"
+
+            mcaddon_path = self.temp_path / "qa_validated.mcaddon"
+            package_result = self.packaging_agent.build_mcaddon_mvp(
+                temp_dir=build_dir,
+                output_path=str(mcaddon_path),
+                mod_name="simple_copper"
+            )
+
+            assert package_result['success'], "Packaging failed"
+            assert mcaddon_path.exists(), "mcaddon file not created"
+
+            # Validate with QAValidatorAgent
+            print("\n[QA Validation] Running QAValidatorAgent...")
+            validation_result = qa_validator.validate_mcaddon(str(mcaddon_path))
+
+            # Print validation results
+            print(f"\n  Overall Score: {validation_result['overall_score']}/100")
+            print(f"  Status: {validation_result['status']}")
+            print(f"  Validation Time: {validation_result.get('validation_time', 0):.2f}s")
+
+            # Print category results
+            print("\n  Category Scores:")
+            for category, config in qa_validator.validation_categories.items():
+                val = validation_result['validations'].get(category, {})
+                status = val.get('status', 'unknown')
+                checks = val.get('checks', 0)
+                passed = val.get('passed', 0)
+                print(f"    {category}: {status} ({passed}/{checks} checks passed)")
+
+            # Print issues if any
+            if validation_result.get('issues'):
+                print("\n  Issues Found:")
+                for issue in validation_result['issues'][:5]:
+                    print(f"    - [{issue['severity']}] {issue['message']}")
+
+            # Print recommendations
+            if validation_result.get('recommendations'):
+                print("\n  Recommendations:")
+                for rec in validation_result['recommendations'][:3]:
+                    print(f"    - {rec}")
+
+            # Assertions for validation results
+            assert validation_result['overall_score'] > 0, "QA validation should return a score"
+            assert validation_result['status'] in ['pass', 'partial', 'fail'], "Status should be valid"
+
+            # Require at least 70% overall score for passing
+            assert validation_result['overall_score'] >= 70, \
+                f"Quality score {validation_result['overall_score']} is below 70% threshold"
+
+            # Structural validation should pass
+            structural = validation_result['validations'].get('structural', {})
+            assert structural.get('status') in ['pass', 'partial'], \
+                f"Structural validation failed: {structural.get('errors', [])}"
+
+            # Manifest validation should pass
+            manifest = validation_result['validations'].get('manifest', {})
+            assert manifest.get('status') in ['pass', 'partial'], \
+                f"Manifest validation failed: {manifest.get('errors', [])}"
+
+            print("\n✅ TEST PASSED: QA Validator Integration")
+
+    # ========================================
+    # Test Case 8: Coverage Validation
     # ========================================
 
     def test_conversion_pipeline_coverage(self, simple_copper_block_jar):
