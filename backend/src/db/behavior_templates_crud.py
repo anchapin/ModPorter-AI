@@ -2,7 +2,7 @@ from typing import Optional, List
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
-from datetime import datetime
+from datetime import datetime, timezone
 
 from db import models
 
@@ -125,7 +125,7 @@ async def update_behavior_template(
     }
     
     if update_values:
-        update_values['updated_at'] = datetime.now(datetime.UTC)
+        update_values['updated_at'] = datetime.now(timezone.utc)
         
         stmt = (
             update(models.BehaviorTemplate)
@@ -194,7 +194,7 @@ async def apply_behavior_template(
             "template_id": str(template.id),
             "template_name": template.name,
             "template_version": template.version,
-            "generated_at": datetime.now(datetime.UTC).isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
 
     # Determine file type based on category

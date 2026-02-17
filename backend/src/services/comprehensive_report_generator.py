@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional
 import time
 import logging
 
-from ..types.report_types import (
+from ..schemas.report_types import (
     InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
     AssumptionsReport, AssumptionReportItem, DeveloperLog, ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
 )

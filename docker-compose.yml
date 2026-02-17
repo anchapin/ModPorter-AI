@@ -22,7 +22,7 @@ services:
     ports:
       - "8080:8000"
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
       - LOG_LEVEL=INFO
@@ -32,6 +32,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
+      - ./backend/src:/app/src
       - conversion-cache:/app/cache
       - temp-uploads:/app/temp_uploads
       - conversion-outputs:/app/conversion_outputs

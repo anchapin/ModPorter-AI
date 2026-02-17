@@ -8,7 +8,7 @@ import base64
 import html
 from typing import Dict, Any, Optional
 from datetime import datetime
-from ..types.report_types import InteractiveReport
+from ..schemas.report_types import InteractiveReport
 
 
 class ReportExporter:
