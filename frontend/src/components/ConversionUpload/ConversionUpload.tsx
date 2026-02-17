@@ -13,6 +13,7 @@ import {
   ConversionStatusEnum
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
+import { parseModUrl, getPlatformInfo } from '../../utils/urlParser';
 import './ConversionUpload.css';
 
 // Configuration constants
@@ -405,6 +406,29 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               className="url-input"
               disabled={!!selectedFile || isProcessing || isCompleted}
             />
+            {modUrl && (
+              <div className="url-platform-indicator" style={{
+                marginTop: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                backgroundColor: getPlatformInfo(parseModUrl(modUrl).platform).bgColor,
+                color: getPlatformInfo(parseModUrl(modUrl).platform).color,
+                fontSize: '14px',
+                fontWeight: 500
+              }}>
+                {parseModUrl(modUrl).isValid ? (
+                  <>
+                    <span>{getPlatformInfo(parseModUrl(modUrl).name} detected</span>
+                    <span style={{ opacity: 0.7 }}>• {parseModUrl(modUrl).slug}</span>
+                  </>
+                ) : (
+                  <span style={{ color: '#ef4444' }}>Invalid URL - Supported: CurseForge, Modrinth</span>
+                )}
+              </div>
+            )}
             <div className="supported-sites">
               <span>Supported: CurseForge • Modrinth</span>
             </div>
