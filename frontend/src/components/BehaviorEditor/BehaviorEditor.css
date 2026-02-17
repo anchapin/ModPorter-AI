@@ -336,3 +336,21 @@
     flex: 1;
   }
 }
+
+/* Bedrock Docs Panel Sidebar */
+.docs-panel-sidebar {
+  width: 380px;
+  min-width: 300px;
+  max-width: 500px;
+  background: #1e1e1e;
+  border-left: 1px solid #3c3c3c;
+  overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+@media (prefers-color-scheme: light) {
+  .docs-panel-sidebar {
+    background: #ffffff;
+    border-left: 1px solid #e0e0e0;
+  }
+}
