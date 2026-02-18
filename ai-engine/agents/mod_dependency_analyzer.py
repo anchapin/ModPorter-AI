@@ -436,13 +436,54 @@ class ModDependencyAnalyzer:
         Mods with no dependencies come first, followed by their dependents.
         """
         # Calculate in-degree for each mod
+        # We want dependencies to be loaded BEFORE dependents.
+        # Standard topological sort on A->B (A depends on B) gives B then A if we consider edges as "must load before".
+        # But our graph.edges are "A depends on B".
+        # So A needs B. B must come first.
+        # In-degree based on "Depends On" edges:
+        # A->B. In-degree(A)=0, In-degree(B)=1.
+        # Queue initial: [A]. Pop A. Decrement B. Queue: [B]. Result: A, B. (Dependent, Dependency) -> WRONG.
+
+        # We want to reverse the logic: A depends on B implies B->A dependency edge for load order.
+        # Or simpler: count in-degree using reverse_edges (B->A).
+        # B->A. In-degree(B)=0, In-degree(A)=1.
+        # Queue initial: [B]. Pop B. Decrement A. Queue: [A]. Result: B, A. (Dependency, Dependent) -> CORRECT.
+
         in_degree = {mod_id: 0 for mod_id in graph.mods}
         for mod_id in graph.mods:
-            for dep_id in graph.edges.get(mod_id, []):
-                in_degree[dep_id] = in_degree.get(dep_id, 0) + 1
+            # Use reverse_edges to count incoming dependencies (i.e. number of mods that must load before this one)
+            # Actually, reverse_edges[B] = [A] means A depends on B.
+            # If we iterate graph.edges (A->B), we are saying A needs B.
+            # So B is a prerequisite for A.
+            # We want to find mods that have NO prerequisites first.
+            # A mod has no prerequisites if it has no outgoing "depends on" edges?
+            # A->B. A has 1 outgoing. B has 0 outgoing.
+            # B is a leaf in "Depends On" graph.
+            # Topological sort usually processes nodes with in-degree 0.
+            # If we reverse the graph (B->A, B is prerequisite for A), then B has in-degree 0.
+            pass
+
+        # Let's count "how many unsatisfied dependencies does this mod have?"
+        # If A depends on B (A->B), A has 1 dependency. B has 0.
+        # We should load B first.
+        # So we want to pick mods with 0 unsatisfied dependencies.
+        # That corresponds to out-degree in "Depends On" graph (A->B).
+        # A has out-degree 1. B has out-degree 0.
+        # So we pick B.
+        # When B is picked, we satisfy dependency for A. A's count becomes 0. Pick A.
+        # So we need to track out-degree.
+
+        dependency_count = {mod_id: 0 for mod_id in graph.mods}
+        dependents_map = defaultdict(list) # Who depends on key?
+
+        for mod_id in graph.mods:
+            dependencies = graph.edges.get(mod_id, [])
+            dependency_count[mod_id] = len(dependencies)
+            for dep_id in dependencies:
+                dependents_map[dep_id].append(mod_id)
         
-        # Start with mods that have no dependencies
-        queue = [mod_id for mod_id, degree in in_degree.items() if degree == 0]
+        # Start with mods that have no dependencies (out-degree 0)
+        queue = [mod_id for mod_id, count in dependency_count.items() if count == 0]
         load_order = []
         
         while queue:
@@ -451,10 +492,10 @@ class ModDependencyAnalyzer:
             current = queue.pop(0)
             load_order.append(current)
             
-            # Decrease in-degree for dependents
-            for dependent in graph.reverse_edges.get(current, []):
-                in_degree[dependent] -= 1
-                if in_degree[dependent] == 0:
+            # For every mod that depends on current, decrement their dependency count
+            for dependent in dependents_map.get(current, []):
+                dependency_count[dependent] -= 1
+                if dependency_count[dependent] == 0:
                     queue.append(dependent)
         
         # If we haven't visited all mods, there are cycles
