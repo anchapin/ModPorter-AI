@@ -421,7 +421,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               }}>
                 {parseModUrl(modUrl).isValid ? (
                   <>
-                    <span>{getPlatformInfo(parseModUrl(modUrl).name} detected</span>
+                    <span>{getPlatformInfo(parseModUrl(modUrl).platform).name} detected</span>
                     <span style={{ opacity: 0.7 }}>• {parseModUrl(modUrl).slug}</span>
                   </>
                 ) : (

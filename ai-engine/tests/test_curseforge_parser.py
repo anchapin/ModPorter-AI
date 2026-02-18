@@ -12,7 +12,7 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from ai_engine.agents.curseforge_parser import (
+from agents.curseforge_parser import (
     CurseForgeManifestParser,
     CurseForgeParserAgent,
 )

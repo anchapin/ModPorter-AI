@@ -12,7 +12,7 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from ai_engine.agents.modrinth_parser import (
+from agents.modrinth_parser import (
     ModrinthPackParser,
     ModrinthParserAgent,
 )
