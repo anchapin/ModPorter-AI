@@ -8,6 +8,22 @@ from typing import Dict, Any, List
 
 from models import addon_models as pydantic_addon_models # For type hinting with Pydantic models
 
+def _sanitize_filename(filename: str) -> str:
+    """
+    Sanitizes a filename to prevent path traversal and remove dangerous characters.
+    """
+    if not filename:
+        return "default_filename"
+    # Remove directory paths
+    filename = os.path.basename(filename)
+    # Remove dangerous characters
+    # Allow alphanumeric, dot, underscore, hyphen
+    filename = "".join(c for c in filename if c.isalnum() or c in "._-")
+    # Ensure not empty
+    if not filename:
+        return "default_sanitized_filename"
+    return filename
+
 # Constants for manifest versions, can be updated as needed
 MIN_ENGINE_VERSION_RP = [1, 16, 0]
 MIN_ENGINE_VERSION_BP = [1, 16, 0]
@@ -171,8 +187,9 @@ def generate_terrain_texture_json(addon_assets: List[pydantic_addon_models.Addon
             # asset.path might be "textures/blocks/my_block.png" (if stored with this intent)
             # or we derive from original_filename.
 
-            texture_name = os.path.splitext(asset.original_filename)[0] if asset.original_filename else \
-                           os.path.splitext(os.path.basename(asset.path))[0]
+            original_name = _sanitize_filename(asset.original_filename) if asset.original_filename else \
+                            _sanitize_filename(os.path.basename(asset.path))
+            texture_name = os.path.splitext(original_name)[0]
 
             # Path in terrain_texture.json is relative to the "textures" folder of the RP
             # e.g., "textures/blocks/my_custom_block_texture"
@@ -245,11 +262,14 @@ def generate_sounds_json(sound_assets: List[pydantic_addon_models.AddonAsset]) -
     
     for asset in sound_assets:
         # Extract sound name from original_filename (without extension)
-        sound_name = os.path.splitext(asset.original_filename)[0] if asset.original_filename else \
-                     os.path.splitext(os.path.basename(asset.path))[0]
+        original_name = _sanitize_filename(asset.original_filename) if asset.original_filename else \
+                        _sanitize_filename(os.path.basename(asset.path))
+        sound_name = os.path.splitext(original_name)[0]
         
         # Get the sound file path relative to sounds folder
-        sound_path = asset.original_filename if asset.original_filename else os.path.basename(asset.path)
+        # Note: In Bedrock resource packs, the "name" in sounds.json is typically the path without extension,
+        # relative to the root of the RP (but usually matching the folder structure).
+        # We'll stick to the previous logic but with sanitized name.
         
         sounds_data[sound_name] = {
             "sounds": [
@@ -344,9 +364,9 @@ def create_mcaddon_zip(
                     zip_texture_path_parts = ["textures", "misc"]
 
                 if asset.original_filename:
-                    zip_texture_path_parts.append(asset.original_filename)
+                    zip_texture_path_parts.append(_sanitize_filename(asset.original_filename))
                 else: # Fallback if original_filename is somehow missing
-                    zip_texture_path_parts.append(os.path.basename(asset.path))
+                    zip_texture_path_parts.append(_sanitize_filename(os.path.basename(asset.path)))
 
                 zip_path = os.path.join(rp_folder_name, *zip_texture_path_parts)
 
@@ -364,10 +384,9 @@ def create_mcaddon_zip(
                 asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
                 
                 # Determine path within ZIP for RP
-                if asset.original_filename:
-                    zip_sound_path = os.path.join(rp_folder_name, "sounds", asset.original_filename)
-                else:
-                    zip_sound_path = os.path.join(rp_folder_name, "sounds", os.path.basename(asset.path))
+                safe_filename = _sanitize_filename(asset.original_filename) if asset.original_filename else \
+                                _sanitize_filename(os.path.basename(asset.path))
+                zip_sound_path = os.path.join(rp_folder_name, "sounds", safe_filename)
                 
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_sound_path)
@@ -386,10 +405,9 @@ def create_mcaddon_zip(
                 asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
                 
                 # Determine path within ZIP for RP
-                if asset.original_filename:
-                    zip_model_path = os.path.join(rp_folder_name, "models", asset.original_filename)
-                else:
-                    zip_model_path = os.path.join(rp_folder_name, "models", os.path.basename(asset.path))
+                safe_filename = _sanitize_filename(asset.original_filename) if asset.original_filename else \
+                                _sanitize_filename(os.path.basename(asset.path))
+                zip_model_path = os.path.join(rp_folder_name, "models", safe_filename)
                 
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_model_path)
@@ -402,10 +420,9 @@ def create_mcaddon_zip(
             for asset in entity_assets:
                 asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
                 
-                if asset.original_filename:
-                    zip_entity_path = os.path.join(rp_folder_name, "entity", asset.original_filename)
-                else:
-                    zip_entity_path = os.path.join(rp_folder_name, "entity", os.path.basename(asset.path))
+                safe_filename = _sanitize_filename(asset.original_filename) if asset.original_filename else \
+                                _sanitize_filename(os.path.basename(asset.path))
+                zip_entity_path = os.path.join(rp_folder_name, "entity", safe_filename)
                 
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_entity_path)
