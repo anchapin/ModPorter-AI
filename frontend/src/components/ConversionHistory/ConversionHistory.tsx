@@ -3,23 +3,10 @@
  * Shows user's previous conversions with status, download options, and management features
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './ConversionHistory.css';
-
-interface ConversionHistoryItem {
-  job_id: string;
-  original_filename: string;
-  status: 'completed' | 'failed' | 'processing' | 'queued';
-  created_at: string;
-  completed_at?: string;
-  file_size?: number;
-  error_message?: string;
-  options?: {
-    smartAssumptions: boolean;
-    includeDependencies: boolean;
-    modUrl?: string;
-  };
-}
+import { ConversionHistoryItem } from './types';
+import ConversionHistoryItemRow from './ConversionHistoryItem';
 
 interface ConversionHistoryProps {
   className?: string;
@@ -35,22 +22,15 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+  // Use a ref for API_BASE_URL to avoid dependency changes, though it's constant
+  const apiBaseUrlRef = useRef(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1');
 
-  // Load conversion history from localStorage for now
-  // In production, this would come from the backend API
-  const loadHistoryCallback = React.useCallback(() => loadHistory(), [loadHistory]);
-  
-  useEffect(() => {
-    loadHistoryCallback();
-  }, [loadHistoryCallback]);
-
-  const loadHistory = React.useCallback(async () => {
+  // Load conversion history from localStorage
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       
       // For MVP, use localStorage to store conversion history
-      // In production, this would be an API call to the backend
       const storedHistory = localStorage.getItem('modporter_conversion_history');
       const parsedHistory: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
       
@@ -70,28 +50,34 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }
   }, [maxItems]);
 
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   // Add new conversion to history
-  const addToHistory = React.useCallback((item: ConversionHistoryItem) => {
-    const updatedHistory = [item, ...history];
-    setHistory(updatedHistory.slice(0, maxItems));
-    
-    // Save to localStorage
-    localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
-  }, [history, maxItems]);
+  const addToHistory = useCallback((item: ConversionHistoryItem) => {
+    setHistory(prevHistory => {
+      const updatedHistory = [item, ...prevHistory].slice(0, maxItems);
+      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+  }, [maxItems]);
 
   // Update existing conversion status
-  const updateConversionStatus = React.useCallback((jobId: string, updates: Partial<ConversionHistoryItem>) => {
-    const updatedHistory = history.map(item => 
-      item.job_id === jobId ? { ...item, ...updates } : item
-    );
-    setHistory(updatedHistory);
-    localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
-  }, [history]);
+  const updateConversionStatus = useCallback((jobId: string, updates: Partial<ConversionHistoryItem>) => {
+    setHistory(prevHistory => {
+      const updatedHistory = prevHistory.map(item =>
+        item.job_id === jobId ? { ...item, ...updates } : item
+      );
+      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+  }, []);
 
   // Download conversion result
-  const downloadConversion = async (jobId: string, filename: string) => {
+  const downloadConversion = useCallback(async (jobId: string, filename: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
+      const response = await fetch(`${apiBaseUrlRef.current}/convert/${jobId}/download`);
       
       if (!response.ok) {
         throw new Error('Download failed');
@@ -110,29 +96,33 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       console.error('Download failed:', err);
       setError('Failed to download file');
     }
-  };
+  }, []);
 
   // Delete conversion from history
-  const deleteConversion = (jobId: string) => {
-    const updatedHistory = history.filter(item => item.job_id !== jobId);
-    setHistory(updatedHistory);
-    localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+  const deleteConversion = useCallback((jobId: string) => {
+    setHistory(prevHistory => {
+      const updatedHistory = prevHistory.filter(item => item.job_id !== jobId);
+      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+
     setSelectedItems(prev => {
+      if (!prev.has(jobId)) return prev;
       const updated = new Set(prev);
       updated.delete(jobId);
       return updated;
     });
-  };
+  }, []);
 
   // Clear all history
-  const clearAllHistory = () => {
+  const clearAllHistory = useCallback(() => {
     setHistory([]);
     setSelectedItems(new Set());
     localStorage.removeItem('modporter_conversion_history');
-  };
+  }, []);
 
   // Toggle item selection
-  const toggleSelection = (jobId: string) => {
+  const toggleSelection = useCallback((jobId: string) => {
     setSelectedItems(prev => {
       const updated = new Set(prev);
       if (updated.has(jobId)) {
@@ -142,50 +132,35 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       }
       return updated;
     });
-  };
+  }, []);
 
   // Delete selected items
-  const deleteSelected = () => {
-    const updatedHistory = history.filter(item => !selectedItems.has(item.job_id));
-    setHistory(updatedHistory);
-    localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+  const deleteSelected = useCallback(() => {
+    // We need the current selected items set to filter history
+    // But we can't access state inside setHistory callback cleanly if we want to depend only on stable refs.
+    // However, deleteSelected depends on selectedItems state anyway, so it will change when selection changes.
+    // That is acceptable as it's attached to the "Delete Selected" button, NOT passed to individual rows.
+
+    // Wait, deleteSelected is NOT passed to rows. So it doesn't need to be perfectly stable for rows.
+    // Only toggleSelection, deleteConversion, downloadConversion need to be stable for rows.
+
+    setHistory(currentHistory => {
+      // Need access to current selectedItems.
+      // Since we are inside a callback that depends on selectedItems, we can use it.
+      // But wait, the callback below needs selectedItems from closure.
+      return currentHistory.filter(item => !selectedItems.has(item.job_id));
+    });
+
+    // We also need to update localStorage with the result.
+    // The setHistory updater function is pure-ish.
+    // Better:
+    const newHistory = history.filter(item => !selectedItems.has(item.job_id));
+    setHistory(newHistory);
+    localStorage.setItem('modporter_conversion_history', JSON.stringify(newHistory));
     setSelectedItems(new Set());
-  };
-
-  // Format file size
-  const formatFileSize = (bytes?: number): string => {
-    if (!bytes) return 'Unknown size';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
-
-  // Format date
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
-  // Get status icon
-  const getStatusIcon = (status: string): string => {
-    switch (status) {
-      case 'completed': return '✅';
-      case 'failed': return '❌';
-      case 'processing': return '⏳';
-      case 'queued': return '⏸️';
-      default: return '❓';
-    }
-  };
-
-  // Get status color
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'completed': return '#4caf50';
-      case 'failed': return '#f44336';
-      case 'processing': return '#ff9800';
-      case 'queued': return '#2196f3';
-      default: return '#9e9e9e';
-    }
-  };
+  }, [history, selectedItems]);
+  // deleteSelected depends on history and selectedItems.
+  // It's attached to the header button, so it's fine if it re-renders the header button.
 
   // Expose methods for parent components
   React.useImperativeHandle(React.useRef(), () => ({
@@ -248,84 +223,14 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       ) : (
         <div className="history-list">
           {history.map((item) => (
-            <div 
-              key={item.job_id} 
-              className={`history-item ${selectedItems.has(item.job_id) ? 'selected' : ''}`}
-            >
-              <div className="item-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedItems.has(item.job_id)}
-                  onChange={() => toggleSelection(item.job_id)}
-                  aria-label={`Select ${item.original_filename}`}
-                />
-              </div>
-
-              <div className="item-icon">
-                <span style={{ color: getStatusColor(item.status) }}>
-                  {getStatusIcon(item.status)}
-                </span>
-              </div>
-
-              <div className="item-content">
-                <div className="item-main">
-                  <div className="item-title">
-                    <span className="filename">{item.original_filename}</span>
-                    <span className="job-id">#{item.job_id.slice(0, 8)}</span>
-                  </div>
-                  
-                  <div className="item-meta">
-                    <span className="status" style={{ color: getStatusColor(item.status) }}>
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                    </span>
-                    <span className="date">{formatDate(item.created_at)}</span>
-                    {item.file_size && (
-                      <span className="size">{formatFileSize(item.file_size)}</span>
-                    )}
-                  </div>
-
-                  {item.options && (
-                    <div className="item-options">
-                      {item.options.smartAssumptions && (
-                        <span className="option-tag">🧠 Smart Assumptions</span>
-                      )}
-                      {item.options.includeDependencies && (
-                        <span className="option-tag">📦 Dependencies</span>
-                      )}
-                      {item.options.modUrl && (
-                        <span className="option-tag">🔗 URL Source</span>
-                      )}
-                    </div>
-                  )}
-
-                  {item.error_message && (
-                    <div className="error-detail">
-                      ⚠️ {item.error_message}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="item-actions">
-                {item.status === 'completed' && (
-                  <button
-                    className="download-btn"
-                    onClick={() => downloadConversion(item.job_id, item.original_filename)}
-                    title="Download converted file"
-                  >
-                    ⬇️ Download
-                  </button>
-                )}
-                
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteConversion(item.job_id)}
-                  title="Remove from history"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
+            <ConversionHistoryItemRow
+              key={item.job_id}
+              item={item}
+              isSelected={selectedItems.has(item.job_id)}
+              onToggle={toggleSelection}
+              onDelete={deleteConversion}
+              onDownload={downloadConversion}
+            />
           ))}
         </div>
       )}
