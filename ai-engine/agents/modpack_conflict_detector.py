@@ -127,10 +127,12 @@ class ModpackConflictDetector:
     
     # Mods that are known to be incompatible with each other
     KNOWN_CONFLICTS = {
-        # Forge-only mods
-        "jei": ["roughlyenoughitems", "emi"],
-        "justenoughitems": ["roughlyenoughitems", "emi"],
-        "rei": ["roughlyenoughitems", "emi"],
+        # Forge-only mods / Item Viewers
+        "jei": ["roughlyenoughitems", "emi", "rei"],
+        "justenoughitems": ["roughlyenoughitems", "emi", "rei"],
+        "rei": ["roughlyenoughitems", "emi", "jei", "justenoughitems"],
+        "roughlyenoughitems": ["jei", "justenoughitems", "rei", "emi"],
+        "emi": ["jei", "justenoughitems", "rei", "roughlyenoughitems"],
         # Energy conflicts
         "ic2": ["thermalexpansion", "immersiveengineering"],
         # Inventory conflicts

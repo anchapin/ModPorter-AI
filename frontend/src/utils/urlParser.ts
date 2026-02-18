@@ -33,8 +33,8 @@ export function parseModUrl(url: string): ParsedModURL {
 
   // Try CurseForge patterns
   const curseforgePatterns = [
-    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/mods\/([^\/?]+)/i,
-    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/modpacks\/([^\/?]+)/i,  // Modpacks
+    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/mods\/([^/?]+)/i,
+    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/modpacks\/([^/?]+)/i,  // Modpacks
   ];
 
   for (const pattern of curseforgePatterns) {
@@ -52,8 +52,8 @@ export function parseModUrl(url: string): ParsedModURL {
 
   // Try Modrinth patterns
   const modrinthPatterns = [
-    /(?:https?:\/\/)?(?:www\.)?modrinth\.com\/(mod|resourcepack|plugin|pack)\/([^\/?]+)/i,
-    /(?:https?:\/\/)?modrinth\.com\/([^\/?]+)/i,  // Short URL
+    /(?:https?:\/\/)?(?:www\.)?modrinth\.com\/(mod|resourcepack|plugin|pack)\/([^/?]+)/i,
+    /(?:https?:\/\/)?modrinth\.com\/([^/?]+)/i,  // Short URL
   ];
 
   for (const pattern of modrinthPatterns) {

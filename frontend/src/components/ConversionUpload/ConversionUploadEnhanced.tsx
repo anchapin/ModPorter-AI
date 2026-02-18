@@ -466,7 +466,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 disabled={isProcessing || isCompleted}
                 aria-label={`Remove ${selectedFile.name}`}
               >
-                ✕
+              <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (
@@ -497,6 +497,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             </div>
             <input
               type="url"
+              aria-label="Modpack URL"
               value={modUrl}
               onChange={handleUrlChange}
               placeholder="https://www.curseforge.com/minecraft/mc-mods/your-mod or https://modrinth.com/mod/your-mod"

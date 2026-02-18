@@ -64,7 +64,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     });
 
     // Find the remove button
-    const removeButton = screen.getByText('✕');
+    const removeButton = screen.getByText('✕').closest('button');
 
     // Check if it has an aria-label
     expect(removeButton).toHaveAttribute('aria-label', 'Remove test-mod.jar');
@@ -84,5 +84,11 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
     const errorMessage = screen.getByText(/Please enter a valid URL/i).closest('.error-message');
     expect(errorMessage).toHaveAttribute('role', 'alert');
+  });
+
+  test('URL input has an accessible label', () => {
+    render(<ConversionUploadEnhanced />);
+    const urlInput = screen.getByLabelText('Modpack URL');
+    expect(urlInput).toBeInTheDocument();
   });
 });

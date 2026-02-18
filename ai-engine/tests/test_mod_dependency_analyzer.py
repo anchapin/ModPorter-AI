@@ -9,7 +9,7 @@ Issue: #498 - Implement Mod Dependency Analysis & Resolution (Phase 5c)
 """
 
 import pytest
-from ai_engine.agents.mod_dependency_analyzer import (
+from agents.mod_dependency_analyzer import (
     ModDependencyAnalyzer,
     DependencyType,
     ConflictResolution,
