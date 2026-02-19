@@ -479,7 +479,7 @@ class ModDependencyAnalyzer:
 
         return load_order
 
-        def _generate_warnings(
+    def _generate_warnings(
         self,
         graph: DependencyGraph,
         circular_deps: List[CircularDependency],
