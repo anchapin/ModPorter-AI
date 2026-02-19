@@ -219,6 +219,10 @@ class CurseForgeService:
         """
         import re
         
+        # Handle None or empty input
+        if not url:
+            return None
+        
         # Pattern for CurseForge mod URLs
         pattern = r'(?:https?://)?(?:www\.)?curseforge\.com/minecraft/mods/([^/?]+)'
         match = re.search(pattern, url, re.IGNORECASE)
