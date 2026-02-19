@@ -18,6 +18,24 @@ from .quality_scorer import ConversionQualityScorer, QualityMetrics, create_qual
 from .reward_system import RewardSignalGenerator, RewardSignal, create_reward_generator
 from .training_loop import RLTrainingLoop, TrainingEpisode, TrainingMetrics, create_training_loop
 from .agent_optimizer import AgentPerformanceOptimizer, AgentPerformanceMetrics, AgentComparisonReport, create_agent_optimizer
+from .data_collection import (
+    DataCollectionStore,
+    DataCollectionPipeline,
+    ConversionExample,
+    LabelingTask,
+    CollectionMetrics,
+    LabelStatus,
+    ConversionOutcome,
+    get_data_collection_pipeline,
+    collect_conversion,
+    # Constants
+    OUTCOME_SUCCESS_THRESHOLD,
+    OUTCOME_PARTIAL_THRESHOLD,
+    AUTO_LABEL_THRESHOLD_EXCELLENT,
+    AUTO_LABEL_THRESHOLD_GOOD,
+    AUTO_LABEL_THRESHOLD_ACCEPTABLE,
+    TRAINING_DATA_TARGET,
+)
 
 __version__ = "1.0.0"
 __author__ = "ModPorter AI Team"
@@ -62,6 +80,8 @@ __all__ = [
     'RewardSignalGenerator', 
     'RLTrainingLoop',
     'AgentPerformanceOptimizer',
+    'DataCollectionStore',
+    'DataCollectionPipeline',
     
     # Data classes
     'QualityMetrics',
@@ -70,6 +90,21 @@ __all__ = [
     'TrainingMetrics',
     'AgentPerformanceMetrics',
     'AgentComparisonReport',
+    'ConversionExample',
+    'LabelingTask',
+    'CollectionMetrics',
+    
+    # Enums
+    'LabelStatus',
+    'ConversionOutcome',
+    
+    # Constants
+    'OUTCOME_SUCCESS_THRESHOLD',
+    'OUTCOME_PARTIAL_THRESHOLD',
+    'AUTO_LABEL_THRESHOLD_EXCELLENT',
+    'AUTO_LABEL_THRESHOLD_GOOD',
+    'AUTO_LABEL_THRESHOLD_ACCEPTABLE',
+    'TRAINING_DATA_TARGET',
     
     # Factory functions
     'create_quality_scorer',
@@ -78,4 +113,6 @@ __all__ = [
     'create_agent_optimizer',
     'create_rl_system',
     'create_async_rl_system',
+    'get_data_collection_pipeline',
+    'collect_conversion',
 ]
