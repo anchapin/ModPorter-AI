@@ -2451,6 +2451,270 @@ class AssetConverterAgent:
                     img.putpixel((x, y), (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50), 255))
         
         return img
+
+    def detect_texture_atlas(self, texture_path: str) -> Dict:
+        """
+        Detect if a texture is a texture atlas (combined multiple textures).
+        
+        Args:
+            texture_path: Path to the texture file
+            
+        Returns:
+            Dict with atlas detection results
+        """
+        try:
+            path = Path(texture_path)
+            if not path.exists():
+                return {'is_atlas': False, 'error': 'File not found'}
+            
+            img = Image.open(texture_path)
+            width, height = img.size
+            
+            # Common atlas indicators
+            is_atlas = False
+            atlas_type = None
+            tile_size = 16  # Default tile size
+            
+            # Check for common atlas patterns
+            # 1. Square textures that are multiples of 16x16
+            if width == height and width > 16:
+                # Could be an atlas if it's a large square
+                if width >= 64:  # At least 4x4 tiles
+                    is_atlas = True
+                    atlas_type = 'grid'
+                    tile_size = 16
+            
+            # 2. Check for common atlas sizes (256x256, 512x512, etc.)
+            common_atlas_sizes = [256, 512, 1024]
+            if width in common_atlas_sizes or height in common_atlas_sizes:
+                is_atlas = True
+                atlas_type = 'grid'
+            
+            # 3. Check for non-square but multiple-of-16 dimensions
+            if width != height and (width % 16 == 0 or height % 16 == 0):
+                if width >= 64 or height >= 64:
+                    is_atlas = True
+                    atlas_type = 'strip'  # Horizontal or vertical strip
+            
+            # Calculate grid dimensions
+            tiles_x = width // tile_size if tile_size > 0 else 1
+            tiles_y = height // tile_size if tile_size > 0 else 1
+            
+            return {
+                'is_atlas': is_atlas,
+                'atlas_type': atlas_type,
+                'width': width,
+                'height': height,
+                'tile_size': tile_size,
+                'tiles_x': tiles_x,
+                'tiles_y': tiles_y,
+                'total_tiles': tiles_x * tiles_y if is_atlas else 1
+            }
+            
+        except Exception as e:
+            logger.error(f"Error detecting texture atlas: {e}")
+            return {'is_atlas': False, 'error': str(e)}
+
+    def extract_texture_atlas(self, atlas_path: str, output_dir: str, 
+                              tile_size: int = 16, naming_pattern: str = "tile_{x}_{y}") -> Dict:
+        """
+        Extract individual textures from a texture atlas.
+        
+        Args:
+            atlas_path: Path to the atlas texture file
+            output_dir: Directory to save extracted textures
+            tile_size: Size of each tile (default 16x16)
+            naming_pattern: Pattern for naming extracted files
+            
+        Returns:
+            Dict with extraction results
+        """
+        try:
+            path = Path(atlas_path)
+            if not path.exists():
+                return {'success': False, 'error': 'Atlas file not found'}
+            
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+            
+            img = Image.open(atlas_path)
+            width, height = img.size
+            
+            # Ensure RGBA mode
+            img = img.convert("RGBA")
+            
+            tiles_x = width // tile_size
+            tiles_y = height // tile_size
+            
+            extracted_tiles = []
+            
+            for y in range(tiles_y):
+                for x in range(tiles_x):
+                    # Calculate crop box
+                    left = x * tile_size
+                    upper = y * tile_size
+                    right = left + tile_size
+                    lower = upper + tile_size
+                    
+                    # Crop the tile
+                    tile = img.crop((left, upper, right, lower))
+                    
+                    # Check if tile is not empty (has non-transparent pixels)
+                    tile_data = list(tile.getdata())
+                    has_content = any(pixel[3] > 0 for pixel in tile_data)
+                    
+                    if has_content:
+                        # Generate filename
+                        tile_name = naming_pattern.format(x=x, y=y, index=y * tiles_x + x)
+                        tile_filename = f"{tile_name}.png"
+                        tile_path = output_path / tile_filename
+                        
+                        # Save the tile
+                        tile.save(tile_path, 'PNG', optimize=True)
+                        
+                        extracted_tiles.append({
+                            'path': str(tile_path),
+                            'name': tile_name,
+                            'grid_x': x,
+                            'grid_y': y,
+                            'index': y * tiles_x + x,
+                            'size': tile_size
+                        })
+            
+            return {
+                'success': True,
+                'atlas_path': atlas_path,
+                'output_dir': str(output_path),
+                'total_tiles': tiles_x * tiles_y,
+                'extracted_count': len(extracted_tiles),
+                'extracted_tiles': extracted_tiles,
+                'tile_size': tile_size
+            }
+            
+        except Exception as e:
+            logger.error(f"Error extracting texture atlas: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
+        """
+        Parse .mcmeta file for texture atlas animation or configuration data.
+        
+        Args:
+            mcmeta_path: Path to the .mcmeta file
+            
+        Returns:
+            Dict with parsed metadata
+        """
+        try:
+            path = Path(mcmeta_path)
+            if not path.exists():
+                return {'success': False, 'error': 'Mcmeta file not found'}
+            
+            with open(path, 'r') as f:
+                metadata = json.load(f)
+            
+            result = {
+                'success': True,
+                'path': mcmeta_path,
+                'animation': None,
+                'villager': None,
+                'custom': {}
+            }
+            
+            # Parse animation data
+            if 'animation' in metadata:
+                anim = metadata['animation']
+                result['animation'] = {
+                    'interpolate': anim.get('interpolate', False),
+                    'width': anim.get('width'),
+                    'height': anim.get('height'),
+                    'frametime': anim.get('frametime', 1),
+                    'frames': anim.get('frames', [])
+                }
+            
+            # Parse villager metadata (for entity textures)
+            if 'villager' in metadata:
+                result['villager'] = metadata['villager']
+            
+            # Store any other custom metadata
+            for key, value in metadata.items():
+                if key not in ['animation', 'villager']:
+                    result['custom'][key] = value
+            
+            return result
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in mcmeta file: {e}")
+            return {'success': False, 'error': f'Invalid JSON: {e}'}
+        except Exception as e:
+            logger.error(f"Error parsing mcmeta file: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def convert_atlas_to_bedrock(self, atlas_path: str, output_dir: str, 
+                                  texture_names: List[str] = None) -> Dict:
+        """
+        Convert a texture atlas to individual Bedrock-compatible textures.
+        
+        Args:
+            atlas_path: Path to the atlas texture
+            output_dir: Output directory for extracted textures
+            texture_names: Optional list of names for each tile
+            
+        Returns:
+            Dict with conversion results
+        """
+        try:
+            # First detect if it's an atlas
+            detection = self.detect_texture_atlas(atlas_path)
+            
+            if not detection['is_atlas']:
+                # Not an atlas, just convert as single texture
+                return self._convert_single_texture(atlas_path, {}, 'block', Path(output_dir))
+            
+            # Extract the atlas
+            extraction = self.extract_texture_atlas(
+                atlas_path, 
+                output_dir, 
+                tile_size=detection['tile_size']
+            )
+            
+            if not extraction['success']:
+                return extraction
+            
+            # Convert each extracted tile
+            converted_textures = []
+            for tile in extraction['extracted_tiles']:
+                # Determine texture name
+                if texture_names and tile['index'] < len(texture_names):
+                    name = texture_names[tile['index']]
+                else:
+                    name = tile['name']
+                
+                # Convert the tile
+                result = self._convert_single_texture(
+                    tile['path'], 
+                    {}, 
+                    'block', 
+                    Path(output_dir)
+                )
+                
+                if result['success']:
+                    result['texture_name'] = name
+                    converted_textures.append(result)
+            
+            return {
+                'success': True,
+                'atlas_path': atlas_path,
+                'output_dir': output_dir,
+                'total_extracted': extraction['extracted_count'],
+                'total_converted': len(converted_textures),
+                'converted_textures': converted_textures,
+                'atlas_info': detection
+            }
+            
+        except Exception as e:
+            logger.error(f"Error converting texture atlas: {e}")
+            return {'success': False, 'error': str(e)}
         
     def clear_cache(self):
         """Clear the conversion cache"""
