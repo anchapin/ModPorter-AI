@@ -663,11 +663,14 @@ class JavaAnalyzerAgent:
                 if isinstance(node, javalang.tree.ClassDeclaration):
                     # Check if it's a block class
                     if 'Block' in node.name and not node.name.startswith('Abstract'):
-                        features['blocks'].append({
+                        block_info = {
                             'name': node.name,
                             'registry_name': self._class_name_to_registry_name(node.name),
-                            'methods': [method.name for method in node.methods]
-                        })
+                            'methods': [method.name for method in node.methods],
+                            'properties': self._extract_block_properties_from_ast(node)
+                        }
+                        features['blocks'].append(block_info)
+                        logger.debug(f"Extracted block: {node.name} with properties: {block_info['properties']}")
                     
                     # Check if it's an item class
                     elif 'Item' in node.name and not node.name.startswith('Abstract'):
@@ -714,6 +717,95 @@ class JavaAnalyzerAgent:
         except Exception as e:
             logger.warning(f"Error extracting features from AST: {e}")
             return features
+    
+    def _extract_block_properties_from_ast(self, class_node: javalang.tree.ClassDeclaration) -> Dict:
+        """
+        Extract block properties from a Block class AST node.
+        
+        Analyzes constructor and method calls to extract:
+        - Material type (METAL, STONE, WOOD, etc.)
+        - Hardness value
+        - Explosion resistance
+        - Sound type
+        - Light emission
+        - Tool requirements
+        
+        Args:
+            class_node: ClassDeclaration node for a Block class
+            
+        Returns:
+            Dictionary with extracted block properties
+        """
+        properties = {
+            'material': 'stone',  # Default
+            'hardness': 1.0,
+            'explosion_resistance': 0.0,
+            'sound_type': 'stone',
+            'light_level': 0,
+            'requires_tool': False
+        }
+        
+        try:
+            # Look for constructor calls and method chains
+            for path, node in javalang.ast.walk_tree(class_node):
+                # Look for method invocations like .strength(), .sound(), etc.
+                if isinstance(node, javalang.tree.MethodInvocation):
+                    method_name = node.name.lower()
+                    
+                    # Extract hardness and resistance from .strength(hardness, resistance)
+                    if method_name == 'strength':
+                        if node.arguments and len(node.arguments) >= 1:
+                            # Try to extract hardness value
+                            hardness_arg = node.arguments[0]
+                            if hasattr(hardness_arg, 'value'):
+                                try:
+                                    properties['hardness'] = float(hardness_arg.value.rstrip('Ff'))
+                                except (ValueError, AttributeError):
+                                    pass
+                            if len(node.arguments) >= 2:
+                                resistance_arg = node.arguments[1]
+                                if hasattr(resistance_arg, 'value'):
+                                    try:
+                                        properties['explosion_resistance'] = float(resistance_arg.value.rstrip('Ff'))
+                                    except (ValueError, AttributeError):
+                                        pass
+                    
+                    # Extract sound type from .sound(SoundType.XXX)
+                    elif method_name == 'sound':
+                        if node.arguments and len(node.arguments) >= 1:
+                            sound_arg = node.arguments[0]
+                            if hasattr(sound_arg, 'qualifier') and hasattr(sound_arg, 'member'):
+                                # SoundType.COPPER -> 'copper'
+                                sound_name = sound_arg.member.lower() if sound_arg.member else 'stone'
+                                properties['sound_type'] = sound_name
+                    
+                    # Check for tool requirements
+                    elif 'requirescorrecttool' in method_name or 'requires_tool' in method_name:
+                        properties['requires_tool'] = True
+                    
+                    # Extract light level from .lightLevel() or .luminance()
+                    elif method_name in ['lightlevel', 'luminance', 'emitslight']:
+                        if node.arguments and len(node.arguments) >= 1:
+                            light_arg = node.arguments[0]
+                            if hasattr(light_arg, 'value'):
+                                try:
+                                    properties['light_level'] = int(float(light_arg.value.rstrip('Ff')))
+                                except (ValueError, AttributeError):
+                                    pass
+                
+                # Look for Material.XXX in method calls like Properties.of(Material.METAL)
+                elif isinstance(node, javalang.tree.MemberReference):
+                    # Check for Material.XXX pattern
+                    if hasattr(node, 'qualifier') and node.qualifier == 'Material':
+                        material_name = node.member.lower() if node.member else 'stone'
+                        properties['material'] = material_name
+            
+            logger.debug(f"Extracted block properties: {properties}")
+            return properties
+            
+        except Exception as e:
+            logger.warning(f"Error extracting block properties from AST: {e}")
+            return properties
     
     def _extract_mod_metadata_from_ast(self, tree: javalang.ast.Node) -> Dict:
         """
