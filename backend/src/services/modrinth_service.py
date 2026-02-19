@@ -264,6 +264,10 @@ class ModrinthService:
         """
         import re
         
+        # Handle None or empty input
+        if not url:
+            return None
+        
         # Pattern for Modrinth URLs
         patterns = [
             r'(?:https?://)?(?:www\.)?modrinth\.com/(mod|resourcepack|plugin|pack)/([^/?]+)',
