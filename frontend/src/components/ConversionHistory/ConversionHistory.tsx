@@ -3,7 +3,7 @@
  * Shows user's previous conversions with status, download options, and management features
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { triggerDownload } from '../../services/api';
 import './ConversionHistory.css';
 import { ConversionHistoryItem } from './types';
@@ -73,7 +73,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   }, []);
 
   // Download conversion result
-  const downloadConversion = useCallback(async (jobId: string, _filename: string) => {
+  const downloadConversion = useCallback(async (jobId: string) => {
     try {
       await triggerDownload(jobId);
     } catch (err) {
