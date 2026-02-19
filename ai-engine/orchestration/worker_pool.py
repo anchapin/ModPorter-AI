@@ -138,8 +138,12 @@ class WorkerPool:
                     future.cancel()
                     logger.debug(f"Cancelled task {task_id}")
         
-        # Shutdown executor
-        self.executor.shutdown(wait=wait, timeout=timeout)
+        # Shutdown executor (timeout parameter not available in all Python versions)
+        try:
+            self.executor.shutdown(wait=wait, timeout=timeout)
+        except TypeError:
+            # Fallback for Python versions that don't support timeout parameter
+            self.executor.shutdown(wait=wait)
         self.executor = None
         
         # Stop monitoring thread
