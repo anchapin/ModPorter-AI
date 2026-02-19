@@ -594,7 +594,8 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 className="convert-button"
                 disabled={isProcessing || (!selectedFile && !modUrl)}
               >
-                {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : isProcessing ? 'Processing...' : 'Upload'}
+                {isProcessing && <span className="conversion-spinner" aria-hidden="true"></span>}
+                {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : isProcessing ? 'Processing...' : 'Upload & Convert'}
               </button>
 
               {isProcessing && (
