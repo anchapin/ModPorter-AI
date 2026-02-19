@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ConversionStatus } from '../../types/api';
 import { getConversionStatus } from '../../services/api'; // Import the API service
 import './ConversionProgress.css';
+
 // SVG icons as inline components for better compatibility
 const CheckmarkIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
@@ -14,6 +15,27 @@ const PendingIcon = () => (
     <circle cx="12" cy="12" r="10"/>
   </svg>
 );
+
+const SpinnerIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px" className="spinner-icon">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" opacity="0.3"/>
+    <path d="M12 2v4c3.31 0 6 2.69 6 6h4c0-5.52-4.48-10-10-10z"/>
+  </svg>
+);
+
+// Agent status interface for detailed tracking
+interface AgentStatus {
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  message?: string;
+}
+
+// Extended conversion status with agent details
+interface ExtendedConversionStatus extends ConversionStatus {
+  agents?: AgentStatus[];
+  current_agent?: string;
+}
 
 // Define the props for the component
 export interface ConversionProgressProps {
@@ -50,10 +72,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
   const [usingWebSocket, setUsingWebSocket] = useState<boolean>(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentStatus[]>([]);
 
   const webSocketRef = useRef<WebSocket | null>(null);
   const pollingIntervalRef = useRef<number | null>(null);
   const currentStatusRef = useRef<string>('queued');
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  
+  // Maximum reconnection attempts before falling back to polling
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const RECONNECT_DELAY_BASE = 1000; // 1 second base delay
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
   const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
@@ -64,6 +92,19 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       pollingIntervalRef.current = null;
       console.log('Polling stopped.');
     }
+  };
+
+  const clearReconnectTimeout = () => {
+    if (reconnectTimeoutRef.current) {
+      window.clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  };
+
+  // Calculate exponential backoff delay
+  const getReconnectDelay = (attempt: number): number => {
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s (max)
+    return Math.min(RECONNECT_DELAY_BASE * Math.pow(2, attempt), 16000);
   };
 
   const updateProgressData = useCallback((newData: ConversionStatus) => {
@@ -106,6 +147,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     // Cleanup function to be called when component unmounts or conversionId changes
     const cleanup = () => {
       console.log(`Cleaning up resources for conversion ID: ${jobId}`);
+      clearReconnectTimeout();
       if (webSocketRef.current) {
         webSocketRef.current.onclose = null; // Avoid triggering onclose logic during cleanup
         webSocketRef.current.onerror = null;
@@ -120,13 +162,22 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       });
       setUsingWebSocket(false);
       setConnectionError(null);
+      setAgents([]);
     };
 
     cleanup(); // Clean up previous connection/polling before starting new one
 
-    const connectWebSocket = () => {
+    const connectWebSocket = (attempt: number = 0) => {
+      // Check if we've exceeded max reconnection attempts
+      if (attempt >= MAX_RECONNECT_ATTEMPTS) {
+        console.log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Falling back to polling.`);
+        setConnectionError(`Unable to establish WebSocket connection after ${MAX_RECONNECT_ATTEMPTS} attempts. Using polling fallback.`);
+        startPolling();
+        return;
+      }
+
       const wsUrl = `${WS_BASE_URL}/ws/v1/convert/${jobId}/progress`;
-      console.log(`Attempting to connect WebSocket: ${wsUrl}`);
+      console.log(`Attempting to connect WebSocket (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS}): ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       webSocketRef.current = ws;
 
@@ -135,6 +186,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         setUsingWebSocket(true);
         setConnectionError(null); // Clear any previous errors
         stopPolling(); // Stop polling if WebSocket connects successfully
+        clearReconnectTimeout();
         // Optionally, fetch initial status once via HTTP to ensure no missed updates
         getConversionStatus(jobId).then(updateProgressData).catch(console.error);
       };
@@ -144,6 +196,13 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
           const data = JSON.parse(event.data as string);
           // The server sends the full ConversionStatus object as a JSON string
           console.log('WebSocket message received:', data);
+          
+          // Handle extended status with agent information
+          const extendedData = data as ExtendedConversionStatus;
+          if (extendedData.agents) {
+            setAgents(extendedData.agents);
+          }
+          
           updateProgressData(data as ConversionStatus);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -153,24 +212,37 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       ws.onerror = (error) => {
         console.error(`WebSocket error for ${jobId}:`, error);
         // Don't setConnectionError here, as onclose will handle fallback
-        // ws.close(); // Ensure it's closed if not already
       };
 
       ws.onclose = (event) => {
         console.log(`WebSocket closed for ${jobId}. Code: ${event.code}, Reason: ${event.reason}`);
         webSocketRef.current = null; // Clear the ref
-        // Only start polling if the closure was unexpected and not a terminal state
+        
+        // Only attempt reconnection if the closure was unexpected and not a terminal state
         if (currentStatusRef.current !== 'completed' && currentStatusRef.current !== 'failed' && currentStatusRef.current !== 'cancelled') {
-            setConnectionError('WebSocket connection lost. Attempting to use polling.');
+          const nextAttempt = attempt + 1;
+          
+          if (nextAttempt < MAX_RECONNECT_ATTEMPTS) {
+            const delay = getReconnectDelay(attempt);
+            console.log(`Scheduling WebSocket reconnection attempt ${nextAttempt + 1} in ${delay}ms`);
+            setConnectionError(`Connection lost. Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${nextAttempt + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+            
+            reconnectTimeoutRef.current = window.setTimeout(() => {
+              connectWebSocket(nextAttempt);
+            }, delay);
+          } else {
+            // Fall back to polling after max attempts
+            setConnectionError('WebSocket connection failed. Using polling fallback.');
             startPolling();
+          }
         } else {
-            setUsingWebSocket(false); // Ensure this is reset for terminal states
+          setUsingWebSocket(false); // Ensure this is reset for terminal states
         }
       };
     };
 
     // Initial connection attempt
-    connectWebSocket();
+    connectWebSocket(0);
 
     return cleanup; // Return the cleanup function
 
@@ -259,6 +331,40 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
           );
         })}
       </ul>
+
+      {/* Agent-Level Progress (if available) */}
+      {agents.length > 0 && (
+        <div className="agents-progress">
+          <h5>Agent Progress</h5>
+          <div className="agents-list">
+            {agents.map((agent, index) => (
+              <div key={index} className={`agent-item agent-${agent.status}`}>
+                <div className="agent-header">
+                  <div className="agent-icon">
+                    {agent.status === 'completed' && <CheckmarkIcon />}
+                    {agent.status === 'running' && <SpinnerIcon />}
+                    {agent.status === 'pending' && <PendingIcon />}
+                    {agent.status === 'failed' && <span className="error-icon">✕</span>}
+                  </div>
+                  <span className="agent-name">{agent.name}</span>
+                  <span className="agent-status">{agent.status}</span>
+                </div>
+                {agent.status === 'running' && (
+                  <div className="agent-progress-bar">
+                    <div 
+                      className="agent-progress-fill"
+                      style={{ width: `${Math.min(agent.progress, 100)}%` }}
+                    />
+                  </div>
+                )}
+                {agent.message && (
+                  <div className="agent-message">{agent.message}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Overall Progress Bar */}
       <div className="progress-bar-container">
