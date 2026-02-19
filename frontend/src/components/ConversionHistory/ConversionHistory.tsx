@@ -3,7 +3,8 @@
  * Shows user's previous conversions with status, download options, and management features
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { triggerDownload } from '../../services/api';
 import './ConversionHistory.css';
 import { ConversionHistoryItem } from './types';
 import ConversionHistoryItemRow from './ConversionHistoryItem';
@@ -21,9 +22,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-
-  // Use a ref for API_BASE_URL to avoid dependency changes, though it's constant
-  const apiBaseUrlRef = useRef(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1');
 
   // Load conversion history from localStorage
   const loadHistory = useCallback(async () => {
@@ -75,23 +73,9 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   }, []);
 
   // Download conversion result
-  const downloadConversion = useCallback(async (jobId: string, filename: string) => {
+  const downloadConversion = useCallback(async (jobId: string) => {
     try {
-      const response = await fetch(`${apiBaseUrlRef.current}/convert/${jobId}/download`);
-      
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename.endsWith('.mcaddon') ? filename : `${filename}.mcaddon`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await triggerDownload(jobId);
     } catch (err) {
       console.error('Download failed:', err);
       setError('Failed to download file');
