@@ -1,8 +1,10 @@
 """
 Logic Translator Agent for Java to JavaScript code conversion
+Enhanced for Issue #546: Block Generation from Java block analysis
 """
 
-from typing import List
+from typing import List, Dict, Any, Optional
+import os
 
 import json
 from crewai.tools import tool
@@ -11,10 +13,197 @@ from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
 from agents.java_analyzer import JavaAnalyzerAgent
-from utils.logging_config import get_agent_logger
+from utils.logging_config import get_agent_logger, log_performance
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
+
+
+# ========== Bedrock Block Templates (Issue #546) ==========
+# Templates for generating valid Bedrock block JSON files
+
+BEDROCK_BLOCK_TEMPLATES = {
+    "basic": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "{{ menu_category }}"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 3.0,
+                "minecraft:explosion_resistance": 6.0,
+                "minecraft:unit_cube": {},
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "opaque"
+                    }
+                }
+            }
+        }
+    },
+    "metal": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "construction"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 5.0,
+                "minecraft:explosion_resistance": 6.0,
+                "minecraft:unit_cube": {},
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "opaque"
+                    }
+                }
+            }
+        }
+    },
+    "stone": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "construction"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 3.0,
+                "minecraft:explosion_resistance": 6.0,
+                "minecraft:unit_cube": {},
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "opaque"
+                    }
+                }
+            }
+        }
+    },
+    "wood": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "construction"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 2.0,
+                "minecraft:explosion_resistance": 3.0,
+                "minecraft:unit_cube": {},
+                "minecraft:flammable": {
+                    "catch_chance_modifier": 5,
+                    "destroy_chance_modifier": 20
+                },
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "opaque"
+                    }
+                }
+            }
+        }
+    },
+    "glass": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "construction"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 0.3,
+                "minecraft:explosion_resistance": 0.3,
+                "minecraft:unit_cube": {},
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "blend"
+                    }
+                }
+            }
+        }
+    },
+    "light_emitting": {
+        "format_version": "1.20.10",
+        "minecraft:block": {
+            "description": {
+                "identifier": "{{ namespace }}:{{ block_name }}",
+                "menu_category": {
+                    "category": "construction"
+                }
+            },
+            "components": {
+                "minecraft:destroy_time": 3.0,
+                "minecraft:explosion_resistance": 6.0,
+                "minecraft:unit_cube": {},
+                "minecraft:light_emission": 15,
+                "minecraft:material_instances": {
+                    "*": {
+                        "texture": "{{ texture_name }}",
+                        "render_method": "opaque"
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Java to Bedrock block property mappings
+JAVA_TO_BEDROCK_BLOCK_PROPERTIES = {
+    # Material types
+    "Material.METAL": {"template": "metal", "destroy_time": 5.0, "explosion_resistance": 6.0},
+    "Material.STONE": {"template": "stone", "destroy_time": 3.0, "explosion_resistance": 6.0},
+    "Material.WOOD": {"template": "wood", "destroy_time": 2.0, "explosion_resistance": 3.0, "flammable": True},
+    "Material.GLASS": {"template": "glass", "destroy_time": 0.3, "explosion_resistance": 0.3},
+    "Material.EARTH": {"template": "basic", "destroy_time": 0.5, "explosion_resistance": 0.5},
+    "Material.GRASS": {"template": "basic", "destroy_time": 0.6, "explosion_resistance": 0.6},
+    "Material.SAND": {"template": "basic", "destroy_time": 0.5, "explosion_resistance": 0.5},
+    "Material.CLOTH": {"template": "basic", "destroy_time": 0.8, "explosion_resistance": 0.8, "flammable": True},
+    "Material.ICE": {"template": "glass", "destroy_time": 0.5, "explosion_resistance": 0.5},
+    "Material.AIR": {"template": "basic", "destroy_time": 0.0, "explosion_resistance": 0.0},
+    
+    # Sound types (for texture hints)
+    "SoundType.METAL": {"sound_category": "metal"},
+    "SoundType.STONE": {"sound_category": "stone"},
+    "SoundType.WOOD": {"sound_category": "wood"},
+    "SoundType.GLASS": {"sound_category": "glass"},
+    "SoundType.SAND": {"sound_category": "sand"},
+    "SoundType.GRAVEL": {"sound_category": "gravel"},
+    "SoundType.GRASS": {"sound_category": "grass"},
+    
+    # Tool types
+    "ToolType.PICKAXE": {"requires_tool": "pickaxe", "tool_tier": "stone"},
+    "ToolType.AXE": {"requires_tool": "axe", "tool_tier": "wood"},
+    "ToolType.SHOVEL": {"requires_tool": "shovel", "tool_tier": "wood"},
+    "ToolType.HOE": {"requires_tool": "hoe", "tool_tier": "wood"},
+}
+
+# Common Java block property methods to Bedrock equivalents
+JAVA_BLOCK_METHOD_MAPPINGS = {
+    "strength": "minecraft:destroy_time",
+    "hardness": "minecraft:destroy_time", 
+    "resistance": "minecraft:explosion_resistance",
+    "lightLevel": "minecraft:light_emission",
+    "lightValue": "minecraft:light_emission",
+    "luminance": "minecraft:light_emission",
+    "sound": "minecraft:block_sound",
+    "friction": "minecraft:friction",
+    "slipperiness": "minecraft:friction",
+}
 
 
 class LogicTranslatorAgent:
@@ -299,6 +488,10 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.generate_event_handlers_tool,
             LogicTranslatorAgent.validate_javascript_syntax_tool,
             LogicTranslatorAgent.translate_crafting_recipe_tool,
+            # Block generation tools (Issue #546)
+            LogicTranslatorAgent.generate_bedrock_block_tool,
+            LogicTranslatorAgent.validate_block_json_tool,
+            LogicTranslatorAgent.map_block_properties_tool,
         ]
     
     def translate_java_code(self, java_code: str, code_type: str) -> str:
@@ -1090,3 +1283,338 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         
         # Fallback: return as string constant
         return f"{enum_type}.{enum_value}"
+
+    # ========== Block Generation Methods (Issue #546) ==========
+    
+    @log_performance("generate_bedrock_block")
+    def generate_bedrock_block_json(
+        self, 
+        java_block_analysis: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate valid Bedrock block JSON from Java block analysis.
+        
+        Args:
+            java_block_analysis: Analysis data from JavaAnalyzerAgent containing:
+                - name: Block class name
+                - registry_name: Block registry name (e.g., "copper_block")
+                - properties: Block properties (material, hardness, etc.)
+            namespace: Namespace for the block identifier
+            use_rag: Whether to use RAG tool for Bedrock documentation queries
+            
+        Returns:
+            Dictionary with generated block JSON and metadata
+        """
+        try:
+            logger.info(f"Generating Bedrock block JSON for: {java_block_analysis.get('name', 'unknown')}")
+            
+            # Extract block information from analysis
+            block_name = java_block_analysis.get('registry_name', 'unknown_block')
+            if ':' in block_name:
+                namespace, block_name = block_name.split(':', 1)
+            
+            properties = java_block_analysis.get('properties', {})
+            
+            # Determine the best template based on material
+            template_type = self._determine_block_template(properties)
+            template = BEDROCK_BLOCK_TEMPLATES.get(template_type, BEDROCK_BLOCK_TEMPLATES['basic'])
+            
+            # Build block JSON
+            block_json = self._build_block_json(
+                template=template,
+                namespace=namespace,
+                block_name=block_name,
+                properties=properties
+            )
+            
+            # Validate the generated JSON
+            validation_result = self._validate_block_json(block_json)
+            
+            # Log translation decisions
+            translation_log = {
+                "original_java_block": java_block_analysis.get('name', 'unknown'),
+                "template_used": template_type,
+                "properties_mapped": list(properties.keys()),
+                "validation_passed": validation_result['is_valid']
+            }
+            logger.info(f"Block generation complete: {translation_log}")
+            
+            return {
+                "success": True,
+                "block_json": block_json,
+                "block_name": f"{namespace}:{block_name}",
+                "validation": validation_result,
+                "translation_log": translation_log,
+                "warnings": validation_result.get('warnings', [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating Bedrock block JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "block_json": None,
+                "warnings": [f"Block generation failed: {str(e)}"]
+            }
+    
+    def _determine_block_template(self, properties: Dict[str, Any]) -> str:
+        """Determine the best block template based on properties."""
+        material = properties.get('material', 'stone').lower()
+        
+        # Check for light emission first (higher priority)
+        if properties.get('light_level', 0) > 0:
+            return 'light_emitting'
+        
+        # Map material to template
+        material_template_map = {
+            'metal': 'metal',
+            'stone': 'stone',
+            'wood': 'wood',
+            'glass': 'glass',
+            'ice': 'glass',
+            'cloth': 'wood',  # Flammable like wood
+            'earth': 'basic',
+            'grass': 'basic',
+            'sand': 'basic',
+        }
+        
+        return material_template_map.get(material, 'basic')
+    
+    def _build_block_json(
+        self, 
+        template: Dict[str, Any],
+        namespace: str,
+        block_name: str,
+        properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build the final block JSON from template and properties."""
+        import copy
+        
+        # Deep copy the template to avoid mutations
+        block_json = copy.deepcopy(template)
+        
+        # Set identifier
+        block_json['minecraft:block']['description']['identifier'] = f"{namespace}:{block_name}"
+        
+        # Get components reference
+        components = block_json['minecraft:block']['components']
+        
+        # Apply properties
+        if 'hardness' in properties or 'destroy_time' in properties:
+            components['minecraft:destroy_time'] = properties.get('hardness', properties.get('destroy_time', 3.0))
+        
+        if 'explosion_resistance' in properties:
+            components['minecraft:explosion_resistance'] = properties['explosion_resistance']
+        
+        if 'light_level' in properties and properties['light_level'] > 0:
+            components['minecraft:light_emission'] = properties['light_level']
+        
+        # Set texture name (use block name as default)
+        texture_name = properties.get('texture_name', block_name)
+        if 'minecraft:material_instances' in components:
+            components['minecraft:material_instances']['*']['texture'] = texture_name
+        
+        # Handle flammable property
+        if properties.get('flammable', False) and 'minecraft:flammable' not in components:
+            components['minecraft:flammable'] = {
+                "catch_chance_modifier": 5,
+                "destroy_chance_modifier": 20
+            }
+        
+        # Set menu category
+        menu_category = properties.get('menu_category', 'construction')
+        block_json['minecraft:block']['description']['menu_category'] = {
+            "category": menu_category
+        }
+        
+        return block_json
+    
+    def _validate_block_json(self, block_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate generated block JSON against Bedrock schema requirements."""
+        errors = []
+        warnings = []
+        
+        # Check required fields
+        if 'format_version' not in block_json:
+            errors.append("Missing 'format_version' field")
+        
+        if 'minecraft:block' not in block_json:
+            errors.append("Missing 'minecraft:block' field")
+        else:
+            mc_block = block_json['minecraft:block']
+            
+            # Check description
+            if 'description' not in mc_block:
+                errors.append("Missing 'description' in minecraft:block")
+            else:
+                desc = mc_block['description']
+                if 'identifier' not in desc:
+                    errors.append("Missing 'identifier' in description")
+                elif not ':' in desc['identifier']:
+                    warnings.append("Identifier should include namespace (e.g., 'namespace:block_name')")
+            
+            # Check components
+            if 'components' not in mc_block:
+                errors.append("Missing 'components' in minecraft:block")
+            else:
+                components = mc_block['components']
+                
+                # Check for required components
+                if 'minecraft:destroy_time' not in components:
+                    warnings.append("Missing 'minecraft:destroy_time' - block will have default hardness")
+                
+                if 'minecraft:material_instances' not in components:
+                    warnings.append("Missing 'minecraft:material_instances' - block may not render correctly")
+        
+        return {
+            "is_valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings
+        }
+    
+    def map_java_block_properties_to_bedrock(
+        self, 
+        java_properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Map Java block properties to Bedrock equivalents.
+        
+        Args:
+            java_properties: Dictionary of Java block properties
+            
+        Returns:
+            Dictionary with Bedrock-compatible properties
+        """
+        bedrock_properties = {}
+        
+        # Map material type
+        material = java_properties.get('material', 'stone')
+        if f"Material.{material.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+            mapping = JAVA_TO_BEDROCK_BLOCK_PROPERTIES[f"Material.{material.upper()}"]
+            bedrock_properties.update(mapping)
+        
+        # Map hardness/destroy_time
+        if 'hardness' in java_properties:
+            bedrock_properties['hardness'] = java_properties['hardness']
+        
+        # Map explosion resistance
+        if 'explosion_resistance' in java_properties:
+            bedrock_properties['explosion_resistance'] = java_properties['explosion_resistance']
+        
+        # Map light level
+        if 'light_level' in java_properties and java_properties['light_level'] > 0:
+            bedrock_properties['light_level'] = min(java_properties['light_level'], 15)
+        
+        # Map sound type
+        sound_type = java_properties.get('sound_type', 'stone')
+        if f"SoundType.{sound_type.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+            bedrock_properties['sound_category'] = sound_type
+        
+        # Map tool requirements
+        if java_properties.get('requires_tool', False):
+            tool_type = java_properties.get('tool_type', 'pickaxe')
+            if f"ToolType.{tool_type.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+                bedrock_properties['requires_tool'] = tool_type
+        
+        return bedrock_properties
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_block_tool(block_data: str) -> str:
+        """
+        Generate Bedrock block JSON from Java block analysis.
+        
+        Args:
+            block_data: JSON string containing Java block analysis data
+            
+        Returns:
+            JSON string with generated Bedrock block JSON
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(block_data)
+            java_analysis = data.get('java_block_analysis', data)
+            namespace = data.get('namespace', 'modporter')
+            use_rag = data.get('use_rag', True)
+            
+            result = agent.generate_bedrock_block_json(
+                java_block_analysis=java_analysis,
+                namespace=namespace,
+                use_rag=use_rag
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "block_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def validate_block_json_tool(block_json_data: str) -> str:
+        """
+        Validate a Bedrock block JSON against schema requirements.
+        
+        Args:
+            block_json_data: JSON string containing the block JSON to validate
+            
+        Returns:
+            JSON string with validation results
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(block_json_data)
+            block_json = data.get('block_json', data)
+            
+            result = agent._validate_block_json(block_json)
+            
+            return json.dumps({
+                "success": True,
+                "validation": result
+            })
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    @tool
+    @staticmethod
+    def map_block_properties_tool(properties_data: str) -> str:
+        """
+        Map Java block properties to Bedrock equivalents.
+        
+        Args:
+            properties_data: JSON string containing Java block properties
+            
+        Returns:
+            JSON string with mapped Bedrock properties
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(properties_data)
+            java_properties = data.get('java_properties', data)
+            
+            result = agent.map_java_block_properties_to_bedrock(java_properties)
+            
+            return json.dumps({
+                "success": True,
+                "bedrock_properties": result
+            })
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    def get_block_generation_tools(self) -> List:
+        """Get block generation tools available to this agent."""
+        return [
+            LogicTranslatorAgent.generate_bedrock_block_tool,
+            LogicTranslatorAgent.validate_block_json_tool,
+            LogicTranslatorAgent.map_block_properties_tool
+        ]
