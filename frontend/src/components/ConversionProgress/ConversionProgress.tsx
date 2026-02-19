@@ -72,7 +72,6 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
   const [usingWebSocket, setUsingWebSocket] = useState<boolean>(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
   const [agents, setAgents] = useState<AgentStatus[]>([]);
 
   const webSocketRef = useRef<WebSocket | null>(null);
@@ -163,7 +162,6 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       });
       setUsingWebSocket(false);
       setConnectionError(null);
-      setReconnectAttempts(0);
       setAgents([]);
     };
 
@@ -187,7 +185,6 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         console.log(`WebSocket connected for ${jobId}`);
         setUsingWebSocket(true);
         setConnectionError(null); // Clear any previous errors
-        setReconnectAttempts(0); // Reset reconnect attempts on successful connection
         stopPolling(); // Stop polling if WebSocket connects successfully
         clearReconnectTimeout();
         // Optionally, fetch initial status once via HTTP to ensure no missed updates
@@ -224,7 +221,6 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         // Only attempt reconnection if the closure was unexpected and not a terminal state
         if (currentStatusRef.current !== 'completed' && currentStatusRef.current !== 'failed' && currentStatusRef.current !== 'cancelled') {
           const nextAttempt = attempt + 1;
-          setReconnectAttempts(nextAttempt);
           
           if (nextAttempt < MAX_RECONNECT_ATTEMPTS) {
             const delay = getReconnectDelay(attempt);
