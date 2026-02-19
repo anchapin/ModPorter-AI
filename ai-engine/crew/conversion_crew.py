@@ -1,15 +1,19 @@
 """
 ModPorter AI Conversion Crew
 Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
+Enhanced for Issue #547: Connect Agents for MVP Pipeline
 """
 
 from crewai import Agent, Task, Crew, Process
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TypedDict, Literal
 import json
 import os
 from pathlib import Path
 import tempfile
 import shutil
+import time
+from dataclasses import dataclass, field
+from enum import Enum
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_architect import BedrockArchitectAgent
@@ -977,4 +981,346 @@ class ModPorterConversionCrew:
                 'assumption_count': len(self.smart_assumption_engine.assumption_table) if self.smart_assumption_engine else 0
             },
             'crew_ready': hasattr(self, 'crew') and self.crew is not None
+        }
+
+    # ========== MVP Pipeline Methods (Issue #547) ==========
+    # Block-focused workflow for Java Analyzer → Logic Translator pipeline
+    
+    @dataclass
+    class PipelineProgress:
+        """Track progress through the MVP pipeline"""
+        stage: str
+        stage_number: int
+        total_stages: int
+        status: Literal["pending", "in_progress", "completed", "failed"]
+        message: str
+        timestamp: float = field(default_factory=time.time)
+        details: Dict[str, Any] = field(default_factory=dict)
+    
+    class PipelineStage(Enum):
+        """Stages in the MVP conversion pipeline"""
+        INITIALIZE = 0
+        ANALYZE_JAVA = 1
+        TRANSLATE_BLOCK = 2
+        GENERATE_BEDROCK = 3
+        VALIDATE_OUTPUT = 4
+        FINALIZE = 5
+    
+    def _log_pipeline_progress(
+        self, 
+        stage: "ModPorterConversionCrew.PipelineStage",
+        status: Literal["pending", "in_progress", "completed", "failed"],
+        message: str,
+        details: Dict[str, Any] = None
+    ) -> PipelineProgress:
+        """
+        Log progress for the MVP pipeline.
+        
+        Args:
+            stage: Current pipeline stage
+            status: Status of the stage
+            message: Human-readable progress message
+            details: Additional details about the progress
+            
+        Returns:
+            PipelineProgress object for tracking
+        """
+        progress = self.PipelineProgress(
+            stage=stage.name,
+            stage_number=stage.value,
+            total_stages=len(self.PipelineStage),
+            status=status,
+            message=message,
+            details=details or {}
+        )
+        
+        logger.info(f"[MVP Pipeline] Stage {stage.value}/{len(self.PipelineStage)} - {stage.name}: {status} - {message}")
+        
+        # Send progress via callback if available
+        if self.progress_callback:
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._report_progress(
+                        agent="MVP_Pipeline",
+                        status=status,
+                        progress=int((stage.value / len(self.PipelineStage)) * 100),
+                        message=message
+                    ))
+            except Exception as e:
+                logger.warning(f"Failed to send progress update: {e}")
+        
+        return progress
+    
+    def convert_block_mvp(
+        self,
+        java_block_path: Path,
+        output_path: Path,
+        namespace: str = "modporter"
+    ) -> Dict[str, Any]:
+        """
+        MVP Block Conversion Pipeline: Java Block → Bedrock Block.
+        
+        This method implements a focused pipeline for converting simple Java blocks
+        to Bedrock format, following the workflow:
+        1. Analyze Java block with JavaAnalyzerAgent
+        2. Translate block properties with LogicTranslatorAgent
+        3. Generate Bedrock block JSON
+        4. Validate output
+        
+        Args:
+            java_block_path: Path to Java mod file containing block
+            output_path: Path for output Bedrock block files
+            namespace: Namespace for block identifier
+            
+        Returns:
+            Dictionary with conversion results including:
+            - status: 'completed' or 'failed'
+            - block_json: Generated Bedrock block JSON
+            - analysis: Java block analysis results
+            - validation: Validation results
+            - progress_log: List of progress updates
+        """
+        progress_log = []
+        result = {
+            'status': 'pending',
+            'block_json': None,
+            'analysis': None,
+            'translation': None,
+            'validation': None,
+            'progress_log': progress_log,
+            'errors': []
+        }
+        
+        try:
+            # Stage 0: Initialize
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.INITIALIZE,
+                "in_progress",
+                f"Initializing MVP block conversion for {java_block_path}"
+            ))
+            
+            # Validate input path
+            if not java_block_path.exists():
+                raise FileNotFoundError(f"Java block file not found: {java_block_path}")
+            
+            # Create output directory if needed
+            output_path.mkdir(parents=True, exist_ok=True)
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.INITIALIZE,
+                "completed",
+                "Pipeline initialized successfully"
+            ))
+            
+            # Stage 1: Analyze Java Block
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.ANALYZE_JAVA,
+                "in_progress",
+                "Analyzing Java block structure and properties"
+            ))
+            
+            # Use JavaAnalyzerAgent to analyze the block
+            analysis_result = self.java_analyzer_agent.analyze_jar_for_mvp(str(java_block_path))
+            
+            if not analysis_result.get('success', False):
+                raise RuntimeError(f"Java analysis failed: {analysis_result.get('errors', ['Unknown error'])}")
+            
+            result['analysis'] = analysis_result
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.ANALYZE_JAVA,
+                "completed",
+                f"Analyzed block: {analysis_result.get('registry_name', 'unknown')}",
+                details={'registry_name': analysis_result.get('registry_name')}
+            ))
+            
+            # Stage 2: Translate Block Properties
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.TRANSLATE_BLOCK,
+                "in_progress",
+                "Translating Java block properties to Bedrock format"
+            ))
+            
+            # Prepare block analysis for translation
+            block_analysis = {
+                'name': analysis_result.get('registry_name', 'unknown_block').split(':')[-1],
+                'registry_name': analysis_result.get('registry_name', 'unknown:block'),
+                'properties': analysis_result.get('properties', {}),
+                'texture_path': analysis_result.get('texture_path')
+            }
+            
+            # Use LogicTranslatorAgent to generate Bedrock block JSON
+            translation_result = self.logic_translator_agent.generate_bedrock_block_json(
+                java_block_analysis=block_analysis,
+                namespace=namespace,
+                use_rag=True
+            )
+            
+            if not translation_result.get('success', False):
+                raise RuntimeError(f"Block translation failed: {translation_result.get('error', 'Unknown error')}")
+            
+            result['translation'] = translation_result
+            result['block_json'] = translation_result.get('block_json')
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.TRANSLATE_BLOCK,
+                "completed",
+                f"Generated Bedrock block: {translation_result.get('block_name', 'unknown')}",
+                details={'block_name': translation_result.get('block_name')}
+            ))
+            
+            # Stage 3: Generate Bedrock Files
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.GENERATE_BEDROCK,
+                "in_progress",
+                "Writing Bedrock block files"
+            ))
+            
+            # Write block JSON to output path
+            block_name = translation_result.get('block_name', 'unknown:block').split(':')[-1]
+            block_file_path = output_path / f"{block_name}.json"
+            
+            with open(block_file_path, 'w') as f:
+                json.dump(result['block_json'], f, indent=2)
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.GENERATE_BEDROCK,
+                "completed",
+                f"Written block file: {block_file_path}",
+                details={'file_path': str(block_file_path)}
+            ))
+            
+            # Stage 4: Validate Output
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.VALIDATE_OUTPUT,
+                "in_progress",
+                "Validating generated Bedrock block"
+            ))
+            
+            # Validate the generated block JSON
+            validation_result = self.logic_translator_agent._validate_block_json(result['block_json'])
+            result['validation'] = validation_result
+            
+            if not validation_result.get('is_valid', False):
+                logger.warning(f"Block validation warnings: {validation_result.get('warnings', [])}")
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.VALIDATE_OUTPUT,
+                "completed",
+                f"Validation {'passed' if validation_result.get('is_valid') else 'completed with warnings'}",
+                details=validation_result
+            ))
+            
+            # Stage 5: Finalize
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.FINALIZE,
+                "in_progress",
+                "Finalizing conversion"
+            ))
+            
+            result['status'] = 'completed'
+            result['output_path'] = str(block_file_path)
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.FINALIZE,
+                "completed",
+                "MVP block conversion completed successfully"
+            ))
+            
+            logger.info(f"MVP block conversion completed: {java_block_path} → {block_file_path}")
+            
+        except Exception as e:
+            error_msg = f"MVP pipeline failed: {str(e)}"
+            logger.error(error_msg)
+            result['status'] = 'failed'
+            result['errors'].append(error_msg)
+            
+            progress_log.append(self._log_pipeline_progress(
+                self.PipelineStage.FINALIZE,
+                "failed",
+                error_msg
+            ))
+        
+        return result
+    
+    def convert_blocks_batch_mvp(
+        self,
+        java_mod_paths: List[Path],
+        output_dir: Path,
+        namespace: str = "modporter"
+    ) -> Dict[str, Any]:
+        """
+        Batch convert multiple Java blocks to Bedrock format.
+        
+        Args:
+            java_mod_paths: List of paths to Java mod files
+            output_dir: Directory for output files
+            namespace: Namespace for block identifiers
+            
+        Returns:
+            Dictionary with batch conversion results
+        """
+        results = {
+            'total': len(java_mod_paths),
+            'successful': 0,
+            'failed': 0,
+            'conversions': []
+        }
+        
+        for mod_path in java_mod_paths:
+            try:
+                conversion = self.convert_block_mvp(
+                    java_block_path=mod_path,
+                    output_path=output_dir,
+                    namespace=namespace
+                )
+                
+                if conversion['status'] == 'completed':
+                    results['successful'] += 1
+                else:
+                    results['failed'] += 1
+                
+                results['conversions'].append({
+                    'input': str(mod_path),
+                    'status': conversion['status'],
+                    'output': conversion.get('output_path'),
+                    'errors': conversion.get('errors', [])
+                })
+                
+            except Exception as e:
+                results['failed'] += 1
+                results['conversions'].append({
+                    'input': str(mod_path),
+                    'status': 'failed',
+                    'errors': [str(e)]
+                })
+        
+        return results
+    
+    def get_pipeline_status(self) -> Dict[str, Any]:
+        """
+        Get the current status of the MVP pipeline.
+        
+        Returns:
+            Dictionary with pipeline status information
+        """
+        return {
+            'pipeline_type': 'mvp_block_conversion',
+            'stages': [stage.name for stage in self.PipelineStage],
+            'agents': {
+                'java_analyzer': {
+                    'available': hasattr(self, 'java_analyzer_agent'),
+                    'tools': ['analyze_jar_for_mvp', 'analyze_jar_with_ast']
+                },
+                'logic_translator': {
+                    'available': hasattr(self, 'logic_translator_agent'),
+                    'tools': ['generate_bedrock_block_json', '_validate_block_json']
+                }
+            },
+            'supported_features': [
+                'basic_blocks',
+                'textured_blocks',
+                'blocks_with_properties'
+            ]
         }
