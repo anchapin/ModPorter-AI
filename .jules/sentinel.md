@@ -15,3 +15,11 @@
 1. Sanitize all filenames used in `zipfile` operations using `os.path.basename` to strip directory components.
 2. Restrict filenames to a safe allowlist (alphanumeric, `._-`).
 3. Apply sanitization consistently across all file types (textures, sounds, models, etc.).
+
+## 2026-02-16 - Rate Limiter Race Condition
+**Vulnerability:** Race condition in `RateLimitMiddleware` where a shared `RateLimiter` instance's configuration was modified per-request.
+**Learning:** In asynchronous frameworks like FastAPI/Starlette, middleware runs concurrently. Modifying shared state (like a singleton service's configuration) based on request attributes leads to isolation violations, where one request's settings bleed into others.
+**Prevention:**
+1. Never modify shared service state in middleware.
+2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
+3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
