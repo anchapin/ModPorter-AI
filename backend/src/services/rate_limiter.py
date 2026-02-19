@@ -104,7 +104,11 @@ class RateLimiter:
         
         return f"ip:{ip}"
     
-    def _get_user_config(self, request: Request) -> RateLimitConfig:
+    def _get_user_config(
+        self,
+        request: Request,
+        base_config: Optional[RateLimitConfig] = None
+    ) -> RateLimitConfig:
         """Get rate limit config for specific user (can be overridden per user)"""
         # Check for premium users who might have higher limits
         user_tier = getattr(request.state, 'user_tier', 'free')
@@ -116,12 +120,13 @@ class RateLimiter:
                 burst_size=50
             )
         
-        return self.config
+        return base_config if base_config else self.config
     
     async def check_rate_limit(
         self,
         request: Request,
-        endpoint: Optional[str] = None
+        endpoint: Optional[str] = None,
+        override_config: Optional[RateLimitConfig] = None
     ) -> tuple[bool, Dict[str, any]]:
         """
         Check if request is within rate limits.
@@ -130,7 +135,7 @@ class RateLimiter:
             Tuple of (is_allowed, metadata_dict)
         """
         client_key = self._get_client_key(request)
-        config = self._get_user_config(request)
+        config = self._get_user_config(request, base_config=override_config)
         
         current_time = time.time()
         
@@ -304,53 +309,47 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 limiter_config = config
                 break
         
-        # Apply custom config if set
-        if limiter_config:
-            original_config = self.rate_limiter.config
-            self.rate_limiter.config = limiter_config
+        # Apply custom config if set (passed as override_config)
         
-        try:
-            is_allowed, metadata = await self.rate_limiter.check_rate_limit(request)
+        is_allowed, metadata = await self.rate_limiter.check_rate_limit(
+            request,
+            override_config=limiter_config
+        )
+
+        if not is_allowed:
+            logger.warning(
+                f"Rate limit exceeded for {self.rate_limiter._get_client_key(request)} "
+                f"on {request.url.path}"
+            )
             
-            if not is_allowed:
-                logger.warning(
-                    f"Rate limit exceeded for {self.rate_limiter._get_client_key(request)} "
-                    f"on {request.url.path}"
-                )
-                
-                response = JSONResponse(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    content={
-                        "error": "rate_limit_exceeded",
-                        "message": "Too many requests. Please slow down.",
-                        "retry_after": metadata.get("retry_after", 60),
-                        "rate_limit": {
-                            "limit": metadata["limit_minute"],
-                            "remaining": metadata["remaining_minute"],
-                            "reset_at": metadata["reset_at_minute"]
-                        }
-                    },
-                    headers={
-                        "X-RateLimit-Limit": str(metadata["limit_minute"]),
-                        "X-RateLimit-Remaining": str(metadata["remaining_minute"]),
-                        "X-RateLimit-Reset": str(metadata["reset_at_minute"]),
-                        "Retry-After": str(metadata.get("retry_after", 60))
+            response = JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "error": "rate_limit_exceeded",
+                    "message": "Too many requests. Please slow down.",
+                    "retry_after": metadata.get("retry_after", 60),
+                    "rate_limit": {
+                        "limit": metadata["limit_minute"],
+                        "remaining": metadata["remaining_minute"],
+                        "reset_at": metadata["reset_at_minute"]
                     }
-                )
-                return response
-            
-            # Add rate limit headers to successful responses
-            response = await call_next(request)
-            response.headers["X-RateLimit-Limit"] = str(metadata["limit_minute"])
-            response.headers["X-RateLimit-Remaining"] = str(metadata["remaining_minute"])
-            response.headers["X-RateLimit-Reset"] = str(metadata["reset_at_minute"])
-            
+                },
+                headers={
+                    "X-RateLimit-Limit": str(metadata["limit_minute"]),
+                    "X-RateLimit-Remaining": str(metadata["remaining_minute"]),
+                    "X-RateLimit-Reset": str(metadata["reset_at_minute"]),
+                    "Retry-After": str(metadata.get("retry_after", 60))
+                }
+            )
             return response
-            
-        finally:
-            # Restore original config
-            if limiter_config:
-                self.rate_limiter.config = original_config
+
+        # Add rate limit headers to successful responses
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(metadata["limit_minute"])
+        response.headers["X-RateLimit-Remaining"] = str(metadata["remaining_minute"])
+        response.headers["X-RateLimit-Reset"] = str(metadata["reset_at_minute"])
+
+        return response
 
 
 # Global rate limiter instance
