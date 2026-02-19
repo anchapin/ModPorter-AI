@@ -131,6 +131,38 @@ class TestConversionExample:
         assert example.content_hash != ""
         assert len(example.content_hash) == 16
     
+    def test_example_hash_differs_by_mod_loader(self):
+        """Hash should differ for the same mod when the loader is different."""
+        example_forge = ConversionExample(
+            example_id="test_forge",
+            job_id="job_001",
+            original_mod_path="/path/to/mod.jar",
+            converted_addon_path="/path/to/addon.mcaddon",
+            mod_name="TestMod",
+            mod_version="1.0.0",
+            minecraft_version="1.20.4",
+            mod_loader="forge",
+            conversion_time_seconds=30.0,
+            conversion_outcome=ConversionOutcome.SUCCESS
+        )
+        
+        example_fabric = ConversionExample(
+            example_id="test_fabric",
+            job_id="job_001",
+            original_mod_path="/path/to/mod.jar",
+            converted_addon_path="/path/to/addon.mcaddon",
+            mod_name="TestMod",
+            mod_version="1.0.0",
+            minecraft_version="1.20.4",
+            mod_loader="fabric",
+            conversion_time_seconds=30.0,
+            conversion_outcome=ConversionOutcome.SUCCESS
+        )
+        
+        assert example_forge.content_hash
+        assert example_fabric.content_hash
+        assert example_forge.content_hash != example_fabric.content_hash
+    
     def test_example_to_dict(self, sample_example):
         """Test converting example to dictionary."""
         data = sample_example.to_dict()
@@ -443,24 +475,39 @@ class TestGetFunctions:
     """Tests for module-level get functions."""
     
     def test_get_data_collection_pipeline(self):
-        """Test getting the singleton pipeline."""
-        pipeline = get_data_collection_pipeline()
+        """Test getting the singleton pipeline and verify singleton behavior."""
+        pipeline1 = get_data_collection_pipeline()
+        pipeline2 = get_data_collection_pipeline()
         
-        assert pipeline is not None
-        assert isinstance(pipeline, DataCollectionPipeline)
+        assert pipeline1 is not None
+        assert isinstance(pipeline1, DataCollectionPipeline)
+        # Ensure singleton behavior: multiple calls return the same instance
+        assert pipeline1 is pipeline2
     
     @pytest.mark.asyncio
-    async def test_collect_conversion_function(self):
-        """Test the convenience collect_conversion function."""
-        example = await collect_conversion(
-            job_id="job_convenience",
-            original_mod_path="/path/to/mod.jar",
-            converted_addon_path="/path/to/addon.mcaddon",
-            conversion_metadata={"status": "completed"}
-        )
+    async def test_collect_conversion_function(self, temp_db_path):
+        """Test the convenience collect_conversion function with isolated database."""
+        # Use a fresh pipeline with isolated database to avoid shared state
+        from rl.data_collection import DataCollectionPipeline, _data_collection_pipeline
+        import rl.data_collection as module
         
-        assert example is not None
-        assert example.job_id == "job_convenience"
+        # Reset singleton for isolated test
+        original = module._data_collection_pipeline
+        module._data_collection_pipeline = DataCollectionPipeline(db_path=temp_db_path)
+        
+        try:
+            example = await collect_conversion(
+                job_id="job_convenience_isolated",
+                original_mod_path="/path/to/mod.jar",
+                converted_addon_path="/path/to/addon.mcaddon",
+                conversion_metadata={"status": "completed"}
+            )
+            
+            assert example is not None
+            assert example.job_id == "job_convenience_isolated"
+        finally:
+            # Restore original singleton
+            module._data_collection_pipeline = original
 
 
 class TestEdgeCases:

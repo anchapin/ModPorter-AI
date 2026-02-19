@@ -15,13 +15,28 @@ import sqlite3
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict, field
 from enum import Enum
 import asyncio
-import aiofiles
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Module-level Constants
+# ============================================================================
+
+# Outcome determination thresholds
+OUTCOME_SUCCESS_THRESHOLD = 0.8  # Minimum quality score for successful conversion
+OUTCOME_PARTIAL_THRESHOLD = 0.5  # Minimum quality score for partial conversion
+
+# Auto-labeling thresholds
+AUTO_LABEL_THRESHOLD_EXCELLENT = 0.9  # Quality score for "excellent" label
+AUTO_LABEL_THRESHOLD_GOOD = 0.75  # Quality score for "good" label
+AUTO_LABEL_THRESHOLD_ACCEPTABLE = 0.6  # Quality score for "acceptable" label
+
+# Training data target
+TRAINING_DATA_TARGET = 1000  # Target number of labeled examples for RL training
 
 
 class LabelStatus(Enum):
@@ -94,8 +109,8 @@ class ConversionExample:
             self.content_hash = self._compute_hash()
     
     def _compute_hash(self) -> str:
-        """Compute a hash for deduplication."""
-        content = f"{self.mod_name}:{self.mod_version}:{self.minecraft_version}"
+        """Compute a hash for deduplication, including mod_loader to distinguish Forge vs Fabric conversions."""
+        content = f"{self.mod_name}:{self.mod_version}:{self.minecraft_version}:{self.mod_loader}"
         return hashlib.sha256(content.encode()).hexdigest()[:16]
     
     def to_dict(self) -> Dict[str, Any]:
@@ -169,6 +184,9 @@ class DataCollectionStore:
     def _init_db(self):
         """Initialize the database schema."""
         with sqlite3.connect(self.db_path) as conn:
+            # Enable foreign key constraints for referential integrity
+            conn.execute("PRAGMA foreign_keys = ON")
+            
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversion_examples (
                     example_id TEXT PRIMARY KEY,
@@ -252,6 +270,12 @@ class DataCollectionStore:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_quality_score 
                 ON conversion_examples(quality_score)
+            """)
+            
+            # Create index on job_id for efficient lookups during user feedback processing
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_conversion_examples_job_id 
+                ON conversion_examples(job_id)
             """)
             
             conn.commit()
@@ -547,26 +571,28 @@ class DataCollectionStore:
     def export_training_data(
         self, 
         output_path: str,
-        format: str = "jsonl"
+        export_format: str = "jsonl",
+        min_quality: float = 0.5
     ) -> int:
         """
         Export training data to a file.
         
         Args:
             output_path: Path to write the export
-            format: Export format ('jsonl' or 'json')
+            export_format: Export format ('jsonl' or 'json')
+            min_quality: Minimum quality score for exported examples
             
         Returns:
             Number of examples exported
         """
-        examples = self.get_training_data()
+        examples = self.get_training_data(min_quality=min_quality)
         
         if not examples:
             logger.warning("No training data to export")
             return 0
         
         try:
-            if format == "jsonl":
+            if export_format == "jsonl":
                 with open(output_path, 'w') as f:
                     for example in examples:
                         f.write(json.dumps(example.to_dict()) + '\n')
@@ -647,8 +673,8 @@ class DataCollectionPipeline:
             extracted_features=mod_info.get('features', [])
         )
         
-        # Save to store
-        self.store.save_example(example)
+        # Save to store using a background thread to avoid blocking the event loop
+        await asyncio.to_thread(self.store.save_example, example)
         
         logger.info(f"Collected conversion example: {example.example_id}")
         
@@ -703,14 +729,16 @@ class DataCollectionPipeline:
         Returns:
             True if feedback was processed successfully
         """
-        # Find example by job_id
-        example = self._find_example_by_job_id(job_id)
+        # Find example by job_id without blocking the event loop
+        example = await asyncio.to_thread(self._find_example_by_job_id, job_id)
         
         if not example:
             logger.warning(f"No example found for job {job_id}")
             return False
         
-        return self.store.add_user_feedback(
+        # Store user feedback using a background thread to avoid blocking
+        return await asyncio.to_thread(
+            self.store.add_user_feedback,
             example.example_id,
             feedback_type,
             comment,
@@ -906,7 +934,8 @@ class DataCollectionPipeline:
         
         count = self.store.export_training_data(
             str(output_path),
-            output_format
+            output_format,
+            min_quality
         )
         
         if count > 0:
