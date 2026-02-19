@@ -560,6 +560,7 @@ class GameplayComparisonAgent:
         )
         
         return GameplayComparisonResult(
+            conversion_id=conversion_id,
             java_screenshots=self.test_runner.get_screenshots("java"),
             bedrock_screenshots=self.test_runner.get_screenshots("bedrock"),
             visual_diffs=visual_diffs,
@@ -656,6 +657,7 @@ class GameplayComparisonAgent:
     ) -> GameplayComparisonResult:
         """Create an error result."""
         return GameplayComparisonResult(
+            conversion_id=conversion_id,
             java_screenshots=[],
             bedrock_screenshots=[],
             visual_diffs=[],
@@ -725,6 +727,7 @@ if __name__ == '__main__':
     
     # Create a mock result for demonstration
     mock_result = GameplayComparisonResult(
+        conversion_id="demo_conv",
         java_screenshots=[],
         bedrock_screenshots=[],
         visual_diffs=[],
