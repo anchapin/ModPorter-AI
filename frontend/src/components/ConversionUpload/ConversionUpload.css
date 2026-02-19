@@ -68,8 +68,35 @@
 .dropzone.drag-active {
   background-color: #ebf4ff;
   border-color: #2563eb;
+  border-style: solid;
   transform: scale(1.02);
   box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+  animation: drag-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes drag-pulse {
+  0%, 100% {
+    border-color: #2563eb;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+  }
+  50% {
+    border-color: #60a5fa;
+    box-shadow: 0 12px 35px rgba(37, 99, 235, 0.25);
+  }
+}
+
+/* Drag active icon animation */
+.dropzone.drag-active .upload-icon-large {
+  animation: bounce 0.6s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .dropzone.file-selected {
