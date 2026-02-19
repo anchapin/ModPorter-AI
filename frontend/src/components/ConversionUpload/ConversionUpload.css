@@ -635,6 +635,9 @@
   transition: all 0.3s ease;
   min-width: 240px;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .convert-button:hover:not(:disabled) {
@@ -648,6 +651,22 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Spinner for button */
+.conversion-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: conversion-spin 1s ease-in-out infinite;
+}
+
+@keyframes conversion-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive design */
