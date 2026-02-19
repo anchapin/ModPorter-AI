@@ -180,6 +180,8 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
  * 
  * Tries GET /api/v1/conversions/{id}/download first (new endpoint),
  * falls back to GET /api/v1/convert/{id}/download (legacy).
+ *
+ * @deprecated Use triggerDownload() instead to avoid loading large files into memory.
  */
 export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filename: string }> => {
   // Try new endpoint first, fall back to legacy
@@ -207,6 +209,41 @@ export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filen
 
   const blob = await response.blob();
   return { blob, filename };
+};
+
+/**
+ * Trigger a direct download of the conversion result.
+ * Avoids loading the file into memory as a blob.
+ */
+export const triggerDownload = async (jobId: string): Promise<void> => {
+  // Try new endpoint first
+  let downloadUrl = `${API_BASE_URL}/conversions/${jobId}/download`;
+
+  try {
+    const response = await fetch(downloadUrl, { method: 'HEAD' });
+    if (!response.ok && response.status === 404) {
+      // Fallback to legacy endpoint if new one not found
+      downloadUrl = `${API_BASE_URL}/convert/${jobId}/download`;
+    }
+  } catch (err) {
+    // If HEAD fails (e.g. CORS or network), try legacy as fallback
+    // But if it's network error, legacy will likely fail too.
+    // Proceeding with optimistic assumption.
+    console.warn('Failed to check download URL, trying legacy fallback', err);
+    downloadUrl = `${API_BASE_URL}/convert/${jobId}/download`;
+  }
+
+  // Create hidden link and click it
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+
+  // Clean up after a short delay to ensure click registered
+  setTimeout(() => {
+    document.body.removeChild(a);
+  }, 100);
 };
 
 /**

@@ -10,6 +10,7 @@ vi.mock('../../services/api', () => ({
   getConversionStatus: vi.fn(),
   cancelJob: vi.fn(),
   downloadResult: vi.fn(),
+  triggerDownload: vi.fn(),
 }));
 
 // Mock the WebSocket service
