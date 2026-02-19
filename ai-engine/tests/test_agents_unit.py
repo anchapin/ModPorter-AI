@@ -424,20 +424,15 @@ class TestRAGAgents:
     @pytest.fixture
     def mock_tools(self):
         """Create mock tools with proper CrewAI tool interface"""
-        # Use Tool class directly instead of decorator to avoid decorator issues
-        from crewai.tools import Tool
+        # Create a simple mock tool object
+        from unittest.mock import MagicMock
         
-        def mock_search_tool_func(query: str) -> str:
-            """Mock search tool for testing"""
-            return f"Mock result for: {query}"
+        mock_tool = MagicMock()
+        mock_tool.name = "search_tool"
+        mock_tool.description = "Mock search tool for testing"
+        mock_tool.func = lambda query: f"Mock result for: {query}"
         
-        tool = Tool(
-            name="search_tool",
-            description="Mock search tool for testing",
-            func=mock_search_tool_func
-        )
-        
-        return [tool]
+        return [mock_tool]
     
     def test_rag_agents_initialization(self, rag_agents):
         """Test RAGAgents initializes correctly"""
