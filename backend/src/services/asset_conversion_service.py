@@ -24,12 +24,13 @@ class AssetConversionService:
     def __init__(self):
         self.ai_engine_url = AI_ENGINE_URL
 
-    async def convert_asset(self, asset_id: str) -> Dict[str, Any]:
+    async def convert_asset(self, asset_id: str, client: httpx.AsyncClient = None) -> Dict[str, Any]:
         """
         Convert a single asset using the AI Engine.
 
         Args:
             asset_id: ID of the asset to convert
+            client: Optional httpx.AsyncClient to reuse
 
         Returns:
             Dictionary with conversion result information
@@ -53,7 +54,8 @@ class AssetConversionService:
                     asset_id=asset_id,
                     asset_type=asset.asset_type,
                     input_path=asset.original_path,
-                    original_filename=asset.original_filename
+                    original_filename=asset.original_filename,
+                    client=client
                 )
 
                 if conversion_result.get("success"):
@@ -141,14 +143,15 @@ class AssetConversionService:
             # Process assets in parallel (with limited concurrency)
             semaphore = asyncio.Semaphore(3)  # Limit to 3 concurrent conversions
 
-            async def convert_single_asset(asset):
-                async with semaphore:
-                    result = await self.convert_asset(str(asset.id))
-                    return result
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                async def convert_single_asset(asset):
+                    async with semaphore:
+                        result = await self.convert_asset(str(asset.id), client=client)
+                        return result
 
-            # Execute conversions
-            tasks = [convert_single_asset(asset) for asset in assets]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+                # Execute conversions
+                tasks = [convert_single_asset(asset) for asset in assets]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Process results
             for result in results:
@@ -176,7 +179,8 @@ class AssetConversionService:
         asset_id: str,
         asset_type: str,
         input_path: str,
-        original_filename: str
+        original_filename: str,
+        client: httpx.AsyncClient = None
     ) -> Dict[str, Any]:
         """
         Call the AI Engine to convert a specific asset.
@@ -186,6 +190,7 @@ class AssetConversionService:
             asset_type: Type of asset (texture, model, sound, etc.)
             input_path: Path to the original asset file
             original_filename: Original filename of the asset
+            client: Optional httpx.AsyncClient to reuse
 
         Returns:
             Dictionary with conversion result
@@ -205,32 +210,29 @@ class AssetConversionService:
                 "original_filename": original_filename
             }
 
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                # Check if AI Engine is available
-                try:
-                    health_response = await client.get(f"{self.ai_engine_url}/api/v1/health")
-                    if health_response.status_code != 200:
-                        return await self._fallback_conversion(asset_type, input_path, output_path)
-                except Exception:
-                    return await self._fallback_conversion(asset_type, input_path, output_path)
-
-                # Call AI Engine asset conversion endpoint
-                response = await client.post(
+            async def _do_request(c):
+                return await c.post(
                     f"{self.ai_engine_url}/api/v1/convert/asset",
                     json=request_data
                 )
 
-                if response.status_code == 200:
-                    result = response.json()
-                    return {
-                        "success": True,
-                        "converted_path": result.get("converted_path", output_path),
-                        "metadata": result.get("metadata", {})
-                    }
-                else:
-                    error_msg = f"AI Engine returned {response.status_code}: {response.text}"
-                    logger.error(f"AI Engine error for asset {asset_id}: {error_msg}")
-                    return await self._fallback_conversion(asset_type, input_path, output_path)
+            if client:
+                response = await _do_request(client)
+            else:
+                async with httpx.AsyncClient(timeout=120.0) as new_client:
+                    response = await _do_request(new_client)
+
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "converted_path": result.get("converted_path", output_path),
+                    "metadata": result.get("metadata", {})
+                }
+            else:
+                error_msg = f"AI Engine returned {response.status_code}: {response.text}"
+                logger.error(f"AI Engine error for asset {asset_id}: {error_msg}")
+                return await self._fallback_conversion(asset_type, input_path, output_path)
 
         except Exception as e:
             logger.error(f"Error calling AI Engine for asset {asset_id}: {e}")
