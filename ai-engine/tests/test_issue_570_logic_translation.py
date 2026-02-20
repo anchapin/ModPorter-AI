@@ -713,7 +713,7 @@ console.log(`Märchen ${message}`);  // German text
 
     def test_very_long_line(self, validator):
         """Test handling of very long lines"""
-        long_line = f"const x = "{'a' * 1000}";"
+        long_line = 'const x = "{" + ("a" * 1000) + "}";'
 
         result = validator.validate(long_line)
 
