@@ -18,8 +18,10 @@ import logging
 from unittest.mock import Mock, patch, MagicMock
 from typing import List, Dict, Any
 
-# Use relative imports to avoid models package name conflicts
-from ..models.smart_assumptions import (
+# Import modules explicitly to avoid package name conflicts
+# This prevents Python from treating this as a relative import beyond top-level package
+from models import smart_assumptions
+from models.smart_assumptions import (
     SmartAssumptionEngine,
     SmartAssumption,
     AssumptionImpact,
