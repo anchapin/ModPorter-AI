@@ -82,6 +82,7 @@ export const ConversionHistoryItem = memo(({
             className="download-btn"
             onClick={() => onDownload(item.job_id, item.original_filename)}
             title="Download converted file"
+            aria-label={`Download ${item.original_filename}`}
           >
             ⬇️ Download
           </button>
@@ -91,6 +92,7 @@ export const ConversionHistoryItem = memo(({
           className="delete-btn"
           onClick={() => onDelete(item.job_id)}
           title="Remove from history"
+          aria-label={`Remove ${item.original_filename} from history`}
         >
           🗑️
         </button>
