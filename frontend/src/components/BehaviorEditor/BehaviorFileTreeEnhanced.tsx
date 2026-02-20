@@ -25,7 +25,8 @@ import {
   Rename,
   Download,
   Copy,
-  Folder as FolderIcon
+  Folder as FolderIcon,
+  type RenameIcon
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
 
