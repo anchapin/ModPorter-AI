@@ -279,6 +279,7 @@ export const Dashboard: React.FC = () => {
               ref={setHistoryRef}
               className="dashboard-history"
               maxItems={100}
+              onStartNewConversion={() => setActiveTab('convert')}
             />
           </div>
         )}

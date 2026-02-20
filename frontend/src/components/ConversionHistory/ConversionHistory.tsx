@@ -12,16 +12,29 @@ import ConversionHistoryItemRow from './ConversionHistoryItem';
 interface ConversionHistoryProps {
   className?: string;
   maxItems?: number;
+  onStartNewConversion?: () => void;
 }
 
 export const ConversionHistory: React.FC<ConversionHistoryProps> = ({ 
   className = '',
-  maxItems = 50 
+  maxItems = 50,
+  onStartNewConversion
 }) => {
   const [history, setHistory] = useState<ConversionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Confirmation states
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Reset confirmDelete when selection is cleared
+  useEffect(() => {
+    if (selectedItems.size === 0) {
+      setConfirmDelete(false);
+    }
+  }, [selectedItems.size]);
 
   // Load conversion history from localStorage
   const loadHistory = useCallback(async () => {
@@ -52,11 +65,19 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     loadHistory();
   }, [loadHistory]);
 
+  // Sync state to localStorage whenever history changes
+  // This ensures deletions and updates are persisted without side effects in updaters
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('modporter_conversion_history', JSON.stringify(history));
+    }
+  }, [history, loading]);
+
   // Add new conversion to history
   const addToHistory = useCallback((item: ConversionHistoryItem) => {
     setHistory(prevHistory => {
       const updatedHistory = [item, ...prevHistory].slice(0, maxItems);
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      // LocalStorage sync handled by useEffect
       return updatedHistory;
     });
   }, [maxItems]);
@@ -67,7 +88,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       const updatedHistory = prevHistory.map(item =>
         item.job_id === jobId ? { ...item, ...updates } : item
       );
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      // LocalStorage sync handled by useEffect
       return updatedHistory;
     });
   }, []);
@@ -86,7 +107,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const deleteConversion = useCallback((jobId: string) => {
     setHistory(prevHistory => {
       const updatedHistory = prevHistory.filter(item => item.job_id !== jobId);
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
       return updatedHistory;
     });
 
@@ -102,7 +122,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const clearAllHistory = useCallback(() => {
     setHistory([]);
     setSelectedItems(new Set());
-    localStorage.removeItem('modporter_conversion_history');
+    setConfirmClear(false);
+    // LocalStorage sync handled by useEffect
   }, []);
 
   // Toggle item selection
@@ -120,31 +141,13 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Delete selected items
   const deleteSelected = useCallback(() => {
-    // We need the current selected items set to filter history
-    // But we can't access state inside setHistory callback cleanly if we want to depend only on stable refs.
-    // However, deleteSelected depends on selectedItems state anyway, so it will change when selection changes.
-    // That is acceptable as it's attached to the "Delete Selected" button, NOT passed to individual rows.
-
-    // Wait, deleteSelected is NOT passed to rows. So it doesn't need to be perfectly stable for rows.
-    // Only toggleSelection, deleteConversion, downloadConversion need to be stable for rows.
-
     setHistory(currentHistory => {
-      // Need access to current selectedItems.
-      // Since we are inside a callback that depends on selectedItems, we can use it.
-      // But wait, the callback below needs selectedItems from closure.
-      return currentHistory.filter(item => !selectedItems.has(item.job_id));
+      const newHistory = currentHistory.filter(item => !selectedItems.has(item.job_id));
+      return newHistory;
     });
-
-    // We also need to update localStorage with the result.
-    // The setHistory updater function is pure-ish.
-    // Better:
-    const newHistory = history.filter(item => !selectedItems.has(item.job_id));
-    setHistory(newHistory);
-    localStorage.setItem('modporter_conversion_history', JSON.stringify(newHistory));
     setSelectedItems(new Set());
-  }, [history, selectedItems]);
-  // deleteSelected depends on history and selectedItems.
-  // It's attached to the header button, so it's fine if it re-renders the header button.
+    setConfirmDelete(false);
+  }, [selectedItems]);
 
   // Expose methods for parent components
   React.useImperativeHandle(React.useRef(), () => ({
@@ -155,7 +158,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   if (loading) {
     return (
-      <div className={`conversion-history loading ${className}`}>
+      <div className={`conversion-history loading ${className}`} role="status" aria-label="Loading history">
         <div className="loading-spinner">⏳ Loading conversion history...</div>
       </div>
     );
@@ -173,36 +176,88 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         {history.length > 0 && (
           <div className="history-actions">
             {selectedItems.size > 0 && (
+              confirmDelete ? (
+                <div className="confirm-actions" role="alertdialog" aria-label="Confirm delete selected">
+                    <span className="confirm-text">Delete {selectedItems.size} items?</span>
+                    <button
+                      className="delete-selected-btn"
+                      onClick={deleteSelected}
+                      aria-label="Yes, delete selected items"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="cancel-btn"
+                      onClick={() => setConfirmDelete(false)}
+                      aria-label="Cancel delete"
+                    >
+                      No
+                    </button>
+                </div>
+              ) : (
+                <button
+                  className="delete-selected-btn"
+                  onClick={() => setConfirmDelete(true)}
+                  title={`Delete ${selectedItems.size} selected items`}
+                  aria-label={`Delete ${selectedItems.size} selected items`}
+                >
+                  🗑️ Delete Selected ({selectedItems.size})
+                </button>
+              )
+            )}
+
+            {confirmClear ? (
+                <div className="confirm-actions" role="alertdialog" aria-label="Confirm clear all history">
+                    <span className="confirm-text">Clear all?</span>
+                    <button
+                      className="clear-all-btn"
+                      onClick={clearAllHistory}
+                      aria-label="Yes, clear all history"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="cancel-btn"
+                      onClick={() => setConfirmClear(false)}
+                      aria-label="Cancel clear all"
+                    >
+                      No
+                    </button>
+                </div>
+            ) : (
               <button 
-                className="delete-selected-btn"
-                onClick={deleteSelected}
-                title={`Delete ${selectedItems.size} selected items`}
+                className="clear-all-btn"
+                onClick={() => setConfirmClear(true)}
+                title="Clear all history"
+                aria-label="Clear all history"
               >
-                🗑️ Delete Selected ({selectedItems.size})
+                🧹 Clear All
               </button>
             )}
-            <button 
-              className="clear-all-btn"
-              onClick={clearAllHistory}
-              title="Clear all history"
-            >
-              🧹 Clear All
-            </button>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="error-message">
+        <div className="error-message" role="alert">
           ⚠️ {error}
         </div>
       )}
 
       {history.length === 0 ? (
-        <div className="empty-history">
-          <div className="empty-icon">📭</div>
+        <div className="empty-history" role="status">
+          <div className="empty-icon" aria-hidden="true">📭</div>
           <p>No conversions yet</p>
           <p className="empty-subtitle">Your conversion history will appear here</p>
+          {onStartNewConversion && (
+            <button
+              className="start-new-btn"
+              onClick={onStartNewConversion}
+              aria-label="Start a new conversion"
+            >
+              Start New Conversion
+            </button>
+          )}
         </div>
       ) : (
         <div className="history-list">
