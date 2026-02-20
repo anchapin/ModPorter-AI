@@ -4,6 +4,15 @@ Addresses Issue #571: Add comprehensive unit tests for conflict resolution,
 documentation, validation, and logging.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure ai-engine directory is in path first (before any other models package)
+# This is critical for CI environments where backend/src/models might conflict
+ai_engine_root = Path(__file__).parent.parent
+if str(ai_engine_root) not in sys.path:
+    sys.path.insert(0, str(ai_engine_root))
+
 import pytest
 import logging
 from unittest.mock import Mock, patch, MagicMock
