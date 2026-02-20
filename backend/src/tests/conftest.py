@@ -135,3 +135,13 @@ def client():
 
         # Clean up dependency override
         app.dependency_overrides.clear()
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter state between tests to avoid interference."""
+    # Import here to avoid circular imports
+    from services.rate_limiter import _rate_limiter
+    if _rate_limiter:
+        # Clear the local state dictionary
+        _rate_limiter._local_state.clear()
+    yield

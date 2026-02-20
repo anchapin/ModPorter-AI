@@ -304,12 +304,35 @@ jobs:
             ;;
         esac
 
-    # Install system dependencies for health checks
+    # Install system dependencies for health checks (only if not already available)
     - name: Install system dependencies
       run: |
-        echo "🔧 Installing system dependencies..."
-        apt-get update -qq
-        apt-get install -y -qq netcat-traditional netcat-openbsd curl docker.io docker.io zstd
+        echo "🔧 Checking system dependencies..."
+        # Check if nc (netcat) is available
+        if ! command -v nc &> /dev/null; then
+          echo "netcat not found, attempting to install..."
+          # Only try apt-get if we have proper permissions (not in container job)
+          if [ -w /var/lib/apt/lists ]; then
+            apt-get update -qq
+            apt-get install -y -qq netcat-openbsd curl
+          else
+            echo "⚠️ Cannot install netcat (no write permissions to /var/lib/apt/lists)"
+            echo "netcat should be available in the container image"
+          fi
+        else
+          echo "✅ netcat is already available: $(nc -h 2>&1 | head -1 || true)"
+        fi
+        # Check if curl is available
+        if ! command -v curl &> /dev/null; then
+          echo "curl not found, attempting to install..."
+          if [ -w /var/lib/apt/lists ]; then
+            apt-get install -y -qq curl
+          else
+            echo "⚠️ Cannot install curl (no write permissions to /var/lib/apt/lists)"
+          fi
+        else
+          echo "✅ curl is already available"
+        fi
 
     # Install Ollama for AI model testing
     # Install Ollama for AI model testing
