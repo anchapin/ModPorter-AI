@@ -157,7 +157,8 @@ jobs:
       run: |
         cd ai-engine
         # Run tests with timeout and exclude slow AI tests in CI
-        python -m pytest tests/ -v --cov=. --cov-report=xml --timeout=240 -m "not slow and not ai"
+        # Use -c flag to ensure ai-engine/pytest.ini is used instead of root pytest.ini
+        python -m pytest -c pytest.ini tests/ -v --cov=. --cov-report=xml --timeout=240 -m "not slow and not ai"
 
     - name: Run frontend tests
       run: |
