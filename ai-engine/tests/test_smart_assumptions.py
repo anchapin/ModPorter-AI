@@ -18,7 +18,8 @@ import logging
 from unittest.mock import Mock, patch, MagicMock
 from typing import List, Dict, Any
 
-from models.smart_assumptions import (
+# Use relative imports to avoid models package name conflicts
+from ..models.smart_assumptions import (
     SmartAssumptionEngine,
     SmartAssumption,
     AssumptionImpact,
