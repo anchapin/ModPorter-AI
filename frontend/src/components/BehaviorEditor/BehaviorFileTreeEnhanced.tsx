@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   IconButton,
   TextField,
@@ -22,11 +22,8 @@ import {
   InsertDriveFile,
   Add,
   Delete,
-  Rename,
-  Download,
   Copy,
-  Folder as FolderIcon,
-  type RenameIcon
+  Folder as FolderIcon
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
 

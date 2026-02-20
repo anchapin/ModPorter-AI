@@ -102,7 +102,7 @@ export class BedrockSchemaLoader {
   }
 
   getSchemaForFile(filePath: string): any | null {
-    for (const [_uri, definition] of this.schemas.entries()) {
+    for (const [definition] of this.schemas.entries()) {
       if (definition.fileMatch) {
         for (const pattern of definition.fileMatch) {
           if (this.matchPattern(filePath, pattern)) {
