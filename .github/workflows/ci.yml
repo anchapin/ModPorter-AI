@@ -315,6 +315,13 @@ jobs:
     # Install Ollama for AI model testing
     - name: Install Ollama
       run: |
+        echo "🔧 Installing zstd (required for Ollama extraction)..."
+        if [ -w /var/lib/apt/lists ]; then
+          apt-get update -qq && apt-get install -y -qq zstd
+        else
+          echo "⚠️ Cannot install zstd (no write permissions to /var/lib/apt/lists)"
+          echo "⚠️ Ollama installation may fail without zstd"
+        fi
         echo "🤖 Installing Ollama with retry logic..."
         curl -fsSL https://ollama.com/install.sh | sh
         # Install and start Ollama service
