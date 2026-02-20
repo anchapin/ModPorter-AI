@@ -5,6 +5,7 @@ documentation, validation, and logging.
 """
 
 import sys
+import importlib.util
 from pathlib import Path
 
 # Ensure ai-engine directory is in path first (before any other models package)
@@ -12,6 +13,18 @@ from pathlib import Path
 ai_engine_root = Path(__file__).parent.parent
 if str(ai_engine_root) not in sys.path:
     sys.path.insert(0, str(ai_engine_root))
+
+# Remove any cached 'models' module that might be from a different location
+# This is necessary because conftest.py may have already imported a different models package
+if 'models' in sys.modules:
+    # Check if it's the wrong models package
+    models_module = sys.modules['models']
+    if hasattr(models_module, '__file__') and models_module.__file__:
+        if 'ai-engine' not in models_module.__file__:
+            # Remove all models-related modules from cache
+            to_remove = [k for k in sys.modules.keys() if k == 'models' or k.startswith('models.')]
+            for k in to_remove:
+                del sys.modules[k]
 
 import pytest
 import logging
