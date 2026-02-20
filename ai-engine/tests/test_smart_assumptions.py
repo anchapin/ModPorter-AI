@@ -837,3 +837,206 @@ class TestIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestAssumptionManagement:
+    """Test assumption management functionality (add, remove, query)"""
+
+    @pytest.fixture
+    def engine(self):
+        """Create a SmartAssumptionEngine instance"""
+        return SmartAssumptionEngine()
+
+    def test_add_assumption(self, engine):
+        """Test adding a new assumption"""
+        new_assumption = SmartAssumption(
+            java_feature="Test Feature",
+            inconvertible_aspect="Cannot convert",
+            bedrock_workaround="Use workaround",
+            impact=AssumptionImpact.MEDIUM,
+            description="Test description",
+            implementation_notes="Test notes"
+        )
+
+        initial_count = len(engine.assumption_table)
+        engine.add_assumption(new_assumption)
+        final_count = len(engine.assumption_table)
+
+        assert final_count == initial_count + 1
+        assert engine.get_assumption_by_java_feature("Test Feature") is not None
+
+    def test_add_assumption_duplicate(self, engine):
+        """Test that adding a duplicate assumption overwrites existing one"""
+        original = SmartAssumption(
+            java_feature="Custom Dimensions",  # Already exists
+            inconvertible_aspect="Original inconvertible aspect",
+            bedrock_workaround="Original workaround",
+            impact=AssumptionImpact.HIGH,
+            description="Original description",
+            implementation_notes="Original notes"
+        )
+
+        engine.add_assumption(original)
+        # Should still work, just overwrite with warning
+
+        # Verify we can retrieve it
+        retrieved = engine.get_assumption_by_java_feature("Custom Dimensions")
+        assert retrieved is not None
+
+    def test_add_assumptions_batch(self, engine):
+        """Test adding multiple assumptions at once"""
+        new_assumptions = [
+            SmartAssumption(
+                java_feature=f"Feature {i}",
+                inconvertible_aspect=f"Cannot convert {i}",
+                bedrock_workaround=f"Use workaround {i}",
+                impact=AssumptionImpact.MEDIUM,
+                description=f"Description {i}",
+                implementation_notes=f"Notes {i}"
+            )
+            for i in range(3)
+        ]
+
+        initial_count = len(engine.assumption_table)
+        engine.add_assumptions_batch(new_assumptions)
+        final_count = len(engine.assumption_table)
+
+        assert final_count == initial_count + 3
+
+    def test_remove_assumption(self, engine):
+        """Test removing an assumption"""
+        initial_count = len(engine.assumption_table)
+
+        # Add a test assumption first
+        test_assumption = SmartAssumption(
+            java_feature="Test Remove Me",
+            inconvertible_aspect="Test",
+            bedrock_workaround="Test",
+            impact=AssumptionImpact.LOW,
+            description="Test",
+            implementation_notes="Test"
+        )
+        engine.add_assumption(test_assumption)
+        after_add_count = len(engine.assumption_table)
+
+        # Remove it
+        result = engine.remove_assumption("Test Remove Me")
+        after_remove_count = len(engine.assumption_table)
+
+        assert result is True
+        assert after_add_count == initial_count + 1
+        assert after_remove_count == initial_count
+        assert engine.get_assumption_by_java_feature("Test Remove Me") is None
+
+    def test_remove_assumption_nonexistent(self, engine):
+        """Test removing a non-existent assumption"""
+        initial_count = len(engine.assumption_table)
+        result = engine.remove_assumption("Does Not Exist")
+        final_count = len(engine.assumption_table)
+
+        assert result is False
+        assert final_count == initial_count
+
+    def test_get_assumption_by_java_feature(self, engine):
+        """Test retrieving assumption by exact Java feature name"""
+        assumption = engine.get_assumption_by_java_feature("Custom Dimensions")
+
+        assert assumption is not None
+        assert assumption.java_feature == "Custom Dimensions"
+
+    def test_get_assumption_by_java_feature_not_found(self, engine):
+        """Test retrieving non-existent assumption"""
+        assumption = engine.get_assumption_by_java_feature("Does Not Exist")
+
+        assert assumption is None
+
+    def test_get_assumptions_by_impact(self, engine):
+        """Test filtering assumptions by impact level"""
+        high_impact = engine.get_assumptions_by_impact(AssumptionImpact.HIGH)
+        medium_impact = engine.get_assumptions_by_impact(AssumptionImpact.MEDIUM)
+        low_impact = engine.get_assumptions_by_impact(AssumptionImpact.LOW)
+
+        assert len(high_impact) > 0
+        assert len(medium_impact) > 0
+        assert len(low_impact) > 0
+
+        # Verify all returned assumptions have correct impact
+        for assumption in high_impact:
+            assert assumption.impact == AssumptionImpact.HIGH
+        for assumption in medium_impact:
+            assert assumption.impact == AssumptionImpact.MEDIUM
+        for assumption in low_impact:
+            assert assumption.impact == AssumptionImpact.LOW
+
+    def test_get_impact_summary(self, engine):
+        """Test getting impact summary"""
+        summary = engine.get_impact_summary()
+
+        assert "low" in summary
+        assert "medium" in summary
+        assert "high" in summary
+
+        # Verify counts match
+        total = summary["low"] + summary["medium"] + summary["high"]
+        assert total == len(engine.assumption_table)
+
+    def test_add_invalid_assumption_raises(self, engine):
+        """Test that adding an invalid assumption raises ValueError"""
+        invalid_assumption = SmartAssumption(
+            java_feature="",  # Invalid: empty
+            inconvertible_aspect="Test",
+            bedrock_workaround="Test",
+            impact=AssumptionImpact.MEDIUM,
+            description="Test",
+            implementation_notes="Test"
+        )
+
+        with pytest.raises(ValueError):
+            engine.add_assumption(invalid_assumption)
+
+    def test_validate_single_assumption_valid(self, engine):
+        """Test validation of a valid assumption"""
+        assumption = SmartAssumption(
+            java_feature="Test Feature",
+            inconvertible_aspect="Cannot convert",
+            bedrock_workaround="Use workaround",
+            impact=AssumptionImpact.MEDIUM,
+            description="Test description",
+            implementation_notes="Test notes"
+        )
+
+        # Should not raise exception
+        engine._validate_single_assumption(assumption)
+
+    def test_validate_single_assumption_missing_java_feature(self, engine):
+        """Test validation rejects assumption with missing java_feature"""
+        assumption = SmartAssumption(
+            java_feature="",  # Empty
+            inconvertible_aspect="Cannot convert",
+            bedrock_workaround="Use workaround",
+            impact=AssumptionImpact.MEDIUM,
+            description="Test description",
+            implementation_notes="Test notes"
+        )
+
+        with pytest.raises(ValueError) as exc_info:
+            engine._validate_single_assumption(assumption)
+
+        assert "java_feature" in str(exc_info.value).lower()
+
+    def test_validate_single_assumption_empty_match_patterns(self, engine):
+        """Test validation rejects assumption with empty match_patterns"""
+        assumption = SmartAssumption(
+            java_feature="Test Feature",
+            inconvertible_aspect="Cannot convert",
+            bedrock_workaround="Use workaround",
+            impact=AssumptionImpact.MEDIUM,
+            description="Test description",
+            implementation_notes="Test notes",
+            match_patterns=[]  # Empty
+        )
+
+        with pytest.raises(ValueError) as exc_info:
+            engine._validate_single_assumption(assumption)
+
+        assert "match_patterns" in str(exc_info.value).lower()
