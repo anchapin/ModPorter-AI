@@ -3,11 +3,12 @@
  * Tests for ProgressContext including state management, WebSocket integration, and memory leak detection
  */
 
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { vi, describe, beforeEach, afterEach, test, expect } from 'vitest';
 import React from 'react';
 import { ProgressProvider, useProgress, useProgressState, useProgressActions } from './ProgressContext';
 import { ConversionStatus } from '../types/api';
+import { createConversionWebSocket } from '../services/websocket';
 
 // Mock the WebSocket service
 vi.mock('../services/websocket', () => ({
@@ -536,7 +537,6 @@ describe('ProgressContext', () => {
 
   describe('Memory Leak Detection', () => {
     test('should clean up WebSocket on unmount', () => {
-      const { createConversionWebSocket } = require('../services/websocket');
       const mockWebSocket = {
         onMessage: vi.fn(),
         onStatus: vi.fn(),
@@ -573,7 +573,6 @@ describe('ProgressContext', () => {
     });
 
     test('should disconnect from previous job when connecting to new job', () => {
-      const { createConversionWebSocket } = require('../services/websocket');
       const mockWebSocket1 = {
         onMessage: vi.fn(),
         onStatus: vi.fn(),
@@ -626,11 +625,12 @@ describe('ProgressContext', () => {
     test('should not create memory leaks with rapid status updates', () => {
       const TestComponent = () => {
         const { actions } = useProgress();
-        const updateCountRef = React.useRef(0);
+        const [updateCount, setUpdateCount] = React.useState(0);
 
         const handleRapidUpdates = () => {
           // Simulate rapid updates
           for (let i = 0; i < 100; i++) {
+            setUpdateCount(i + 1);
             actions.updateStatus({
               job_id: 'test-job',
               status: 'processing',
@@ -648,7 +648,7 @@ describe('ProgressContext', () => {
 
         return (
           <div>
-            <div>Update count: {updateCountRef.current}</div>
+            <div>Update count: {updateCount}</div>
             <div>History length: {useProgressState().history.length}</div>
             <button onClick={handleRapidUpdates}>Rapid Updates</button>
           </div>
