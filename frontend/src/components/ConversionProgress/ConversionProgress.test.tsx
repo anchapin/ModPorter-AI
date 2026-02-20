@@ -1,8 +1,10 @@
-import { render, screen, act, waitFor } from '@testing-library/react';
+import React from 'react';
+import { render, screen, act } from '@testing-library/react';
 import { vi, describe, beforeEach, test, expect, afterEach } from 'vitest';
 import ConversionProgress from './ConversionProgress';
 import { getConversionStatus } from '../../services/api';
 import { ProgressProvider } from '../../contexts/ProgressContext';
+import { createConversionWebSocket } from '../../services/websocket';
 
 // Mock the API service
 vi.mock('../../services/api', () => ({
@@ -285,7 +287,6 @@ describe('ConversionProgress', () => {
   });
 
   test('calls createConversionWebSocket when jobId provided', () => {
-    const { createConversionWebSocket } = require('../../services/websocket');
 
     act(() => {
       renderWithProvider(<ConversionProgress jobId="test-job-123" />);
