@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
+    netcat-openbsd \
     libffi-dev \
     libssl-dev \
     libmagic-dev \
@@ -54,6 +55,7 @@ FROM python:3.11-slim
 # Updated 2025-07-12: Added libmagic-dev for python-magic compatibility
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    netcat-openbsd \
     libmagic1 \
     && apt-get autoremove -y \
     && apt-get clean \

@@ -105,7 +105,7 @@ def client():
     # Mock the init_db function to prevent re-initialization during TestClient startup
     with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
-        from main import app
+        from src.main import app
         from db.base import get_db
         # from db import models
 
@@ -135,3 +135,13 @@ def client():
 
         # Clean up dependency override
         app.dependency_overrides.clear()
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter state between tests to avoid interference."""
+    # Import here to avoid circular imports
+    from services.rate_limiter import _rate_limiter
+    if _rate_limiter:
+        # Clear the local state dictionary
+        _rate_limiter._local_state.clear()
+    yield
