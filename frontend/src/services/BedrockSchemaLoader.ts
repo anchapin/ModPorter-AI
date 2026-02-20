@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor';
-import bedrockBlockSchema from '../../schemas/bedrock_block_schema.json';
+import bedrockBlockSchema from '../schemas/bedrock_block_schema.json';
 
 export interface SchemaDefinition {
   uri: string;
