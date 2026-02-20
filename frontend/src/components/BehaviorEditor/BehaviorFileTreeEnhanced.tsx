@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Box,
   IconButton,
   TextField,
   InputAdornment,
@@ -18,7 +17,6 @@ import {
 } from '@mui/material';
 import {
   Search,
-  MoreVert,
   FolderOpen,
   Folder,
   InsertDriveFile,
@@ -27,7 +25,6 @@ import {
   Rename,
   Download,
   Copy,
-  ContentCopy,
   Folder as FolderIcon
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
@@ -311,7 +308,7 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     event.dataTransfer.setData('text/plain', node.path);
   };
 
-  const handleDragOver = (event: React.DragEvent, node: BehaviorFileTreeNode) => {
+  const handleDragOver = (event: React.DragEvent, _node: BehaviorFileTreeNode) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };

@@ -23,9 +23,10 @@ export function useUndoRedo<T>(initialState: T, options: UndoRedoOptions = {}) {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  const historyRef = useRef<HistoryItem<T>[]>([{ data: initialState, timestamp: Date.now() }]);
+  const initialTimestamp = Date.now();
+  const historyRef = useRef<HistoryItem<T>[]>([{ data: initialState, timestamp: initialTimestamp }]);
   const currentIndexRef = useRef(0);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   const updateCanStates = useCallback(() => {
     setCanUndo(currentIndexRef.current > 0);

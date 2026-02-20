@@ -17,8 +17,7 @@ import {
   MoreVert,
   FileCopy,
   FileDownload,
-  FileUpload,
-  History
+  FileUpload
 } from '@mui/icons-material';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { bedrockSchemaLoader } from '../../services/BedrockSchemaLoader';
@@ -320,8 +319,6 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
     const jsonExtension = filePath.split('.').pop()?.toLowerCase();
     if (jsonExtension === 'json') {
       const disposable = editor.onDidChangeModelContent(() => {
-        const currentContent = editor.getValue();
-
         // Use Monaco's JSON language features for validation
         const model = editor.getModel();
         if (model) {
