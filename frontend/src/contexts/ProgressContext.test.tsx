@@ -643,7 +643,7 @@ describe('ProgressContext', () => {
               created_at: new Date().toISOString()
             });
           }
-          updateCountRef.current = 100;
+          setUpdateCount(100);
         };
 
         return (
