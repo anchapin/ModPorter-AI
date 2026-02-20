@@ -105,7 +105,7 @@ def client():
     # Mock the init_db function to prevent re-initialization during TestClient startup
     with patch('db.init_db.init_db', new_callable=AsyncMock):
         # Import dependencies
-        from main import app
+        from src.main import app
         from db.base import get_db
         # from db import models
 

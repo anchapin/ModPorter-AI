@@ -293,7 +293,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Endpoints with different limits
         self.endpoint_limits = {
             "/api/v1/conversions": RateLimitConfig(requests_per_minute=10, requests_per_hour=100),
-            "/api/v1/uploads/init": RateLimitConfig(requests_per_minute=20, requests_per_hour=200),
+            "/api/v1/upload": RateLimitConfig(requests_per_minute=20, requests_per_hour=200),
         }
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -356,8 +356,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 _rate_limiter: Optional[RateLimiter] = None
 
 
-async def get_rate_limiter() -> RateLimiter:
-    """Get or create the global rate limiter instance"""
+def create_global_limiter() -> RateLimiter:
+    """Create the global rate limiter instance synchronously"""
     global _rate_limiter
     
     if _rate_limiter is None:
@@ -367,15 +367,30 @@ async def get_rate_limiter() -> RateLimiter:
             burst_size=10
         )
         _rate_limiter = RateLimiter(config=config)
-        await _rate_limiter.initialize()
     
     return _rate_limiter
+
+
+async def get_rate_limiter() -> RateLimiter:
+    """Get or create the global rate limiter instance"""
+    global _rate_limiter
+
+    if _rate_limiter is None:
+        create_global_limiter()
+        if _rate_limiter:
+            await _rate_limiter.initialize()
+
+    return _rate_limiter  # type: ignore
 
 
 async def init_rate_limiter():
     """Initialize the rate limiter on app startup"""
     global _rate_limiter
-    _rate_limiter = await get_rate_limiter()
+    if _rate_limiter is None:
+        create_global_limiter()
+
+    if _rate_limiter:
+        await _rate_limiter.initialize()
 
 
 async def close_rate_limiter():
@@ -383,6 +398,7 @@ async def close_rate_limiter():
     global _rate_limiter
     if _rate_limiter:
         await _rate_limiter.close()
+        _rate_limiter = None
 
 
 # Convenience function for checking rate limits
