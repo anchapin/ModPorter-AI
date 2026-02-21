@@ -10,11 +10,17 @@ import {
   Select,
   MenuItem,
   TextField,
-  Alert
+  Alert,
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import {
-  Save
+  Save,
+  Undo,
+  Redo,
+  History
 } from '@mui/icons-material';
+import { useUndoRedo } from '../../../hooks/useUndoRedo';
 import { RecipeGrid } from './RecipeGrid';
 import { ItemLibrary } from './ItemLibrary';
 import { RecipeValidation } from './RecipeValidation';
@@ -66,7 +72,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   availableItems = [],
   readOnly = false
 }) => {
-  const [currentRecipe, setCurrentRecipe] = useState<Recipe>({
+  const initialRecipeState: Recipe = {
     id: '',
     identifier: '',
     type: 'shaped',
@@ -81,6 +87,18 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     group: '',
     tags: [],
     ...initialRecipe
+  };
+
+  const {
+    state: currentRecipe,
+    updateState: setCurrentRecipe,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useUndoRedo<Recipe>(initialRecipeState, {
+    maxHistory: 50,
+    enableDebounce: false
   });
 
   const [selectedItem, setSelectedItem] = useState<RecipeItem | null>(null);
@@ -125,7 +143,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   // Handle recipe field changes
   const handleFieldChange = useCallback((field: keyof Recipe, value: any) => {
     const updatedRecipe = { ...currentRecipe, [field]: value };
-    setCurrentRecipe(updatedRecipe);
+    setCurrentRecipe(updatedRecipe, `Update ${field}`);
     onRecipeChange(updatedRecipe);
   }, [currentRecipe, onRecipeChange]);
 
@@ -135,11 +153,11 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const slotRow = newPattern[slot.y];
     const updatedSlot = { ...slot, item };
     newPattern[slot.y] = [...slotRow.slice(0, slot.x), updatedSlot, ...slotRow.slice(slot.x + 1)];
-    
+
     const updatedRecipe = { ...currentRecipe, pattern: newPattern };
-    setCurrentRecipe(updatedRecipe);
+    setCurrentRecipe(updatedRecipe, 'Place item in grid');
     onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange]);
+  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
 
   // Handle item removal from grid
   const handleItemRemove = useCallback((slot: RecipeSlot) => {
@@ -147,11 +165,11 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const slotRow = newPattern[slot.y];
     const updatedSlot = { ...slot, item: null };
     newPattern[slot.y] = [...slotRow.slice(0, slot.x), updatedSlot, ...slotRow.slice(slot.x + 1)];
-    
+
     const updatedRecipe = { ...currentRecipe, pattern: newPattern };
-    setCurrentRecipe(updatedRecipe);
+    setCurrentRecipe(updatedRecipe, 'Remove item from grid');
     onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange]);
+  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
 
 
 
@@ -174,9 +192,30 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
           <Typography variant="h6">
             Recipe Builder
           </Typography>
-          <Box display="flex" gap={1}>
-            {/* Undo/Redo functionality temporarily disabled */}
-          </Box>
+          <Box display="flex" gap={1} alignItems="center">
+            <Tooltip title="Undo (Ctrl+Z)">
+              <IconButton
+                size="small"
+                onClick={undo}
+                disabled={!canUndo || readOnly}
+              >
+                <Undo fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Redo (Ctrl+Y)">
+              <IconButton
+                size="small"
+                onClick={redo}
+                disabled={!canRedo || readOnly}
+              >
+                <Redo fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="History">
+              <IconButton size="small" disabled>
+                <History fontSize="small" />
+              </IconButton>
+            </Tooltip>
             {onRecipeSave && (
               <Button
                 variant="contained"
@@ -188,6 +227,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
               </Button>
             )}
           </Box>
+        </Box>
       </Paper>
 
       <Grid container spacing={2}>
