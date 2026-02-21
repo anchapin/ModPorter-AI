@@ -1,11 +1,13 @@
-# ai-engine/src/models/__init__.py
+# ai-engine/models/__init__.py
 from .smart_assumptions import (
     SmartAssumption, 
     SmartAssumptionEngine, 
     FeatureContext, 
     AssumptionResult, 
     ConversionPlanComponent, 
+    ConversionPlan,
     AssumptionReport,
+    AppliedAssumptionReportItem,
     AssumptionImpact
 )
 from .comparison import ComparisonResult, FeatureMapping
@@ -23,7 +25,9 @@ __all__ = [
     "FeatureContext",
     "AssumptionResult",
     "ConversionPlanComponent",
+    "ConversionPlan",
     "AssumptionReport",
+    "AppliedAssumptionReportItem",
     "AssumptionImpact",
     "ComparisonResult",
     "FeatureMapping",
