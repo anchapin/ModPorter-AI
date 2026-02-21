@@ -6,6 +6,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { ConversionStatus } from '../types/api';
 import { createConversionWebSocket, ConversionWebSocket } from '../services/websocket';
+import { PROGRESS_STORAGE_KEY, CONNECTION_STATUS, MEMORY_LEAK_DETECTION_CONFIG, ERROR_MESSAGES } from '../constants/progressConstants';
+import { PROGRESS_STORAGE_KEY, CONNECTION_STATUS, MEMORY_LEAK_DETECTION_CONFIG, ERROR_MESSAGES } from '../constants/progressConstants';
 
 // Progress context state
 export interface ProgressState {
@@ -290,6 +292,7 @@ export const useProgress = (): ProgressContextValue => {
  */
 export const useProgressState = (): ProgressState => {
   const { state } = useProgress();
+  state.storageKey = PROGRESS_STORAGE_KEY;
   return state;
 };
 
