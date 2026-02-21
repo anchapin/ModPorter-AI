@@ -27,10 +27,7 @@ jobs:
         
       - name: Generate diagrams
         run: |
-          if find docs -name "*.md" -print0 | xargs -0 grep -l '```mermaid' > /dev/null; then
-            find docs -name "*.md" -exec sh -c 'if grep -q "```mermaid" "$1"; then mmdc -i "$1" -o "${1%.md}-diagram.png" --no-sandbox || echo "Failed to generate diagram for $1"; fi' _ {} \;
-          else
-            echo "No Mermaid diagrams found in documentation"
+          if find docs -name "*.md" -print0 -exec sh -c 'if grep -q "```mermaid" "$1"; then mmdc -i "$1" -o "${1%.md}-diagram.png" --no-sandbox; else echo "No Mermaid diagrams found"; fi' _ {} \;
           fi
           
       - name: Deploy to GitHub Pages
