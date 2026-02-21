@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   IconButton,
   TextField,
@@ -505,14 +505,16 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
               <ListItemText>Open</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleRename(contextMenu.node)} disabled={readOnly}>
-              <ListItemIcon><Rename fontSize="small" /></ListItemIcon>
               <ListItemText>Rename</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleDownload(contextMenu.node)}>
               <ListItemIcon><Download fontSize="small" /></ListItemIcon>
               <ListItemText>Download</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleDownload(contextMenu.node)}>
+            <MenuItem onClick={() => {
+              navigator.clipboard.writeText(contextMenu.node.path);
+              handleCloseContextMenu();
+            }}>
               <ListItemIcon><Copy fontSize="small" /></ListItemIcon>
               <ListItemText>Copy Path</ListItemText>
             </MenuItem>
@@ -533,7 +535,6 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
               <ListItemText>New Folder</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleRename(contextMenu.node)} disabled={readOnly}>
-              <ListItemIcon><Rename fontSize="small" /></ListItemIcon>
               <ListItemText>Rename</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleDelete(contextMenu.node)} disabled={readOnly}>
