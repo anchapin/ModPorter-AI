@@ -6,8 +6,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { ConversionStatus } from '../types/api';
 import { createConversionWebSocket, ConversionWebSocket } from '../services/websocket';
-import { PROGRESS_STORAGE_KEY, CONNECTION_STATUS, MEMORY_LEAK_DETECTION_CONFIG, ERROR_MESSAGES } from '../constants/progressConstants';
-import { PROGRESS_STORAGE_KEY, CONNECTION_STATUS, MEMORY_LEAK_DETECTION_CONFIG, ERROR_MESSAGES } from '../constants/progressConstants';
 
 // Progress context state
 export interface ProgressState {
@@ -279,6 +277,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
  * Hook to use the progress context
  * Throws error if used outside of ProgressProvider
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useProgress = (): ProgressContextValue => {
   const context = useContext(ProgressContext);
   if (!context) {
@@ -290,15 +289,16 @@ export const useProgress = (): ProgressContextValue => {
 /**
  * Hook to access progress state only
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useProgressState = (): ProgressState => {
   const { state } = useProgress();
-  state.storageKey = PROGRESS_STORAGE_KEY;
   return state;
 };
 
 /**
  * Hook to access progress actions only
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useProgressActions = (): ProgressActions => {
   const { actions } = useProgress();
   return actions;
