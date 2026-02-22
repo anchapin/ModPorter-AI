@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 def file_processor():
     """Pytest fixture to provide a FileProcessor instance."""
     fp = FileProcessor()
-    # Mock _is_safe_url to always return True by default for existing tests to avoid network calls
-    fp._is_safe_url = mock.AsyncMock(return_value=True)
+    # Mock _resolve_and_validate to return a safe IP by default
+    fp._resolve_and_validate = mock.AsyncMock(return_value="93.184.216.34")
     return fp
 
 
@@ -97,9 +97,10 @@ class TestFileProcessor:
         # But wait, we mocked _is_safe_url, so the loop runs.
         # The loop calls client.get(..., follow_redirects=False).
 
-        # Verify that get was called with follow_redirects=False
+        # Verify that get was called with follow_redirects=False and IP pinning
+        expected_url = "http://93.184.216.34/download.zip"
         MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
-            url, follow_redirects=False, timeout=30.0
+            expected_url, headers={"Host": "example.com"}, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio
@@ -135,6 +136,12 @@ class TestFileProcessor:
         assert result.file_name == "another_example.jar"
         assert expected_file_path.read_bytes() == b"jar content"
 
+        # Verify IP pinning
+        expected_url = "http://93.184.216.34/another_example.jar"
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+            expected_url, headers={"Host": "example.com"}, follow_redirects=False, timeout=30.0
+        )
+
     @pytest.mark.asyncio
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_type_extension(
@@ -165,6 +172,12 @@ class TestFileProcessor:
         assert result.file_path == expected_file_path
         assert result.file_name == "some_file_no_ext"
         assert expected_file_path.read_bytes() == b"java archive"
+
+        # Verify IP pinning
+        expected_url = "http://93.184.216.34/some_file_no_ext"
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+            expected_url, headers={"Host": "example.com"}, follow_redirects=False, timeout=30.0
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
