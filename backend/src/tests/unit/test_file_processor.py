@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 def file_processor():
     """Pytest fixture to provide a FileProcessor instance."""
     fp = FileProcessor()
-    # Mock _is_safe_url to always return True by default for existing tests to avoid network calls
-    fp._is_safe_url = mock.AsyncMock(return_value=True)
+    # Mock _resolve_safe_ip to always return a safe IP by default
+    fp._resolve_safe_ip = mock.AsyncMock(return_value="93.184.216.34")
     return fp
 
 
@@ -94,12 +94,14 @@ class TestFileProcessor:
         assert expected_file_path.read_bytes() == b"file content"
 
         # Check call arguments. Note: follow_redirects is now False due to manual handling
-        # But wait, we mocked _is_safe_url, so the loop runs.
+        # But wait, we mocked _resolve_safe_ip, so the loop runs.
         # The loop calls client.get(..., follow_redirects=False).
 
-        # Verify that get was called with follow_redirects=False
+        # Verify that get was called with rewritten URL (using IP) and Host header
+        expected_url = "http://93.184.216.34/download.zip"
+        expected_headers = {"Host": "example.com"}
         MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
-            url, follow_redirects=False, timeout=30.0
+            expected_url, headers=expected_headers, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio
@@ -311,45 +313,107 @@ class TestFileProcessor:
 
     @pytest.mark.asyncio
     @mock.patch("file_processor.socket.getaddrinfo")
-    async def test_is_safe_url_public_ip(self, mock_getaddrinfo, temp_job_dirs):
-        """Test _is_safe_url with a public IP."""
+    async def test_resolve_safe_ip_public_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _resolve_safe_ip with a public IP."""
         fp = FileProcessor() # Use real instance, not mocked fixture
 
         # Mock public IP for example.com
         mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))]
 
-        result = await fp._is_safe_url("http://example.com/file.zip")
-        assert result is True
+        result = await fp._resolve_safe_ip("http://example.com/file.zip")
+        assert result == "93.184.216.34"
 
     @pytest.mark.asyncio
     @mock.patch("file_processor.socket.getaddrinfo")
-    async def test_is_safe_url_private_ip(self, mock_getaddrinfo, temp_job_dirs):
-        """Test _is_safe_url blocks private IP."""
+    async def test_resolve_safe_ip_private_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _resolve_safe_ip blocks private IP."""
         fp = FileProcessor()
 
         # Mock private IP
         mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('192.168.1.1', 80))]
 
-        result = await fp._is_safe_url("http://internal.com/secret.zip")
-        assert result is False
+        result = await fp._resolve_safe_ip("http://internal.com/secret.zip")
+        assert result is None
 
     @pytest.mark.asyncio
     @mock.patch("file_processor.socket.getaddrinfo")
-    async def test_is_safe_url_loopback_ip(self, mock_getaddrinfo, temp_job_dirs):
-        """Test _is_safe_url blocks loopback IP."""
+    async def test_resolve_safe_ip_loopback_ip(self, mock_getaddrinfo, temp_job_dirs):
+        """Test _resolve_safe_ip blocks loopback IP."""
         fp = FileProcessor()
 
         # Mock loopback IP
         mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 80))]
 
-        result = await fp._is_safe_url("http://localhost/config")
-        assert result is False
+        result = await fp._resolve_safe_ip("http://localhost/config")
+        assert result is None
 
     @pytest.mark.asyncio
-    async def test_is_safe_url_bad_scheme(self, temp_job_dirs):
+    async def test_resolve_safe_ip_bad_scheme(self, temp_job_dirs):
         fp = FileProcessor()
-        result = await fp._is_safe_url("ftp://example.com/file.zip")
-        assert result is False
+        result = await fp._resolve_safe_ip("ftp://example.com/file.zip")
+        assert result is None
+
+    @pytest.mark.asyncio
+    @mock.patch("file_processor.httpx.AsyncClient")
+    async def test_download_http_uses_ip_pinning(
+        self, MockAsyncClient, file_processor, mock_job_id
+    ):
+        """Test that HTTP requests use the pinned IP and Host header."""
+        # Setup mock
+        mock_response = mock.AsyncMock(spec=httpx.Response)
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "application/zip"}
+        mock_response.url = httpx.URL("http://example.com/file.zip")
+        # Need a generator for aiter_bytes
+        async def mock_iter():
+            yield b"content"
+        mock_response.aiter_bytes = mock_iter
+
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
+
+        # Call
+        url = "http://example.com/file.zip"
+        await file_processor.download_from_url(url, mock_job_id)
+
+        # Verify
+        # Expected URL uses the mocked IP "93.184.216.34"
+        expected_url = "http://93.184.216.34/file.zip"
+        expected_headers = {"Host": "example.com"}
+
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+            expected_url, headers=expected_headers, follow_redirects=False, timeout=30.0
+        )
+
+    @pytest.mark.asyncio
+    @mock.patch("file_processor.httpx.AsyncClient")
+    async def test_download_https_preserves_hostname(
+        self, MockAsyncClient, file_processor, mock_job_id
+    ):
+        """Test that HTTPS requests use the original hostname (no IP pinning)."""
+        # Setup mock
+        mock_response = mock.AsyncMock(spec=httpx.Response)
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "application/zip"}
+        mock_response.url = httpx.URL("https://example.com/file.zip")
+        async def mock_iter():
+            yield b"content"
+        mock_response.aiter_bytes = mock_iter
+
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
+
+        # Call
+        url = "https://example.com/file.zip"
+        await file_processor.download_from_url(url, mock_job_id)
+
+        # Verify
+        # Expected URL uses original hostname
+        expected_url = "https://example.com/file.zip"
+        # Headers should be empty (default)
+        expected_headers = {}
+
+        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+            expected_url, headers=expected_headers, follow_redirects=False, timeout=30.0
+        )
 
 
     # --- Tests for validate_downloaded_file ---
