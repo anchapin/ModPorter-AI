@@ -14,6 +14,7 @@ import {
   ConversionStatusEnum
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
+import { ConversionOptions } from './ConversionOptions';
 import './ConversionUpload.css';
 
 // Configuration constants
@@ -56,7 +57,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentConversionId, setCurrentConversionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
 
   // Progress tracking
   const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
@@ -504,61 +504,13 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
 
         {/* Configuration Options */}
         {!isFinished && (
-          <div className={`conversion-options ${isProcessing || isCompleted ? 'disabled-options' : ''}`}>
-            <div className="option-group">
-              <div className="checkbox-with-info">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={smartAssumptions}
-                    onChange={(e) => setSmartAssumptions(e.target.checked)}
-                    disabled={isProcessing || isCompleted}
-                  />
-                  <span className="checkmark"></span>
-                  Enable Smart Assumptions
-                </label>
-                <button
-                  type="button"
-                  className="info-button"
-                  onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
-                  aria-label="Learn more about smart assumptions"
-                  aria-expanded={showSmartAssumptionsInfo}
-                  aria-controls="smart-assumptions-info"
-                  disabled={isProcessing || isCompleted}
-                >
-                  ?
-                </button>
-              </div>
-
-              {showSmartAssumptionsInfo && (
-                <div className="info-panel" id="smart-assumptions-info">
-                  <h4>Smart Assumptions</h4>
-                  <p>
-                    When enabled, our AI will make intelligent assumptions to convert incompatible features:
-                  </p>
-                  <ul>
-                    <li>Custom dimensions → Large structures in existing dimensions</li>
-                    <li>Complex machinery → Simplified blocks with similar functionality</li>
-                    <li>Custom GUIs → Book or sign-based interfaces</li>
-                  </ul>
-                  <p>This increases conversion success rate but may alter some mod features.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="option-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={includeDependencies}
-                  onChange={(e) => setIncludeDependencies(e.target.checked)}
-                  disabled={isProcessing || isCompleted}
-                />
-                <span className="checkmark"></span>
-                Include Dependencies
-              </label>
-            </div>
-          </div>
+          <ConversionOptions
+            smartAssumptions={smartAssumptions}
+            setSmartAssumptions={setSmartAssumptions}
+            includeDependencies={includeDependencies}
+            setIncludeDependencies={setIncludeDependencies}
+            disabled={isProcessing || isCompleted}
+          />
         )}
 
         {/* Progress Display */}
