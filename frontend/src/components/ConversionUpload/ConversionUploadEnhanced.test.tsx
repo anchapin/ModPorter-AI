@@ -142,4 +142,33 @@ describe('ConversionUploadEnhanced Accessibility', () => {
         expect(spinner).toHaveAttribute('aria-hidden', 'true');
     });
   });
+
+  test('Focus moves to Browse Files button after removing a file', async () => {
+    const user = userEvent.setup();
+    render(<ConversionUploadEnhanced />);
+
+    // Upload a file
+    const file = new File(['dummy content'], 'test-mod.jar', { type: 'application/java-archive' });
+    const fileInput = screen.getByLabelText(/file upload/i);
+    await user.upload(fileInput, file);
+
+    // Wait for the file preview to appear
+    await waitFor(() => {
+      expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
+    });
+
+    // Find the remove button
+    const removeButton = screen.getByText('✕').closest('button');
+
+    // Click remove
+    fireEvent.click(removeButton!);
+
+    // Wait for browse button
+    const browseButton = await screen.findByText('Browse Files');
+
+    // Check focus
+    await waitFor(() => {
+      expect(document.activeElement).toBe(browseButton.closest('button'));
+    });
+  });
 });
