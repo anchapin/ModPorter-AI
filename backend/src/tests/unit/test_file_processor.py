@@ -19,6 +19,8 @@ def file_processor():
     fp = FileProcessor()
     # Mock _is_safe_url to always return True by default for existing tests to avoid network calls
     fp._is_safe_url = mock.AsyncMock(return_value=True)
+    # Mock _resolve_safe_ip to return a predictable IP (also prevents real DNS resolution)
+    fp._resolve_safe_ip = mock.AsyncMock(return_value="1.2.3.4")
     return fp
 
 
@@ -98,8 +100,10 @@ class TestFileProcessor:
         # The loop calls client.get(..., follow_redirects=False).
 
         # Verify that get was called with follow_redirects=False
+        # AND with the pinned IP logic (URL replaced, Host header added)
+        expected_pinned_url = "http://1.2.3.4/download.zip"
         MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
-            url, follow_redirects=False, timeout=30.0
+            expected_pinned_url, headers={"Host": "example.com"}, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio
