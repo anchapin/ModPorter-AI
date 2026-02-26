@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ConversionUploadEnhanced } from './ConversionUploadEnhanced';
 import { describe, test, expect, vi } from 'vitest';
 import { convertMod } from '../../services/api';
+import { ProgressProvider } from '../../contexts/ProgressContext';
 
 // Mock the API calls
 vi.mock('../../services/api', () => ({
@@ -17,16 +18,25 @@ vi.mock('../../services/api', () => ({
 // Mock the WebSocket service
 vi.mock('../../services/websocket', () => ({
   createConversionWebSocket: vi.fn(() => ({
-    onStatus: vi.fn(),
-    onMessage: vi.fn(),
+    onStatus: vi.fn(() => vi.fn()),
+    onMessage: vi.fn(() => vi.fn()),
     connect: vi.fn(),
     destroy: vi.fn(),
   })),
 }));
 
+// Helper to render with providers
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <ProgressProvider>
+      {ui}
+    </ProgressProvider>
+  );
+};
+
 describe('ConversionUploadEnhanced Accessibility', () => {
   test('Smart Assumptions info button has correct accessibility attributes', () => {
-    render(<ConversionUploadEnhanced />);
+    renderWithProviders(<ConversionUploadEnhanced />);
 
     // Find the info button
     const infoButton = screen.getByText('?');
@@ -52,7 +62,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
   test('Remove file button has accessible name', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProviders(<ConversionUploadEnhanced />);
 
     // Upload a file
     const file = new File(['dummy content'], 'test-mod.jar', { type: 'application/java-archive' });
@@ -74,7 +84,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
   test('Error message has role="alert"', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProviders(<ConversionUploadEnhanced />);
 
     // Trigger an error via invalid URL
     const urlInput = screen.getByPlaceholderText(/curseforge/i);
@@ -89,14 +99,14 @@ describe('ConversionUploadEnhanced Accessibility', () => {
   });
 
   test('URL input has an accessible label', () => {
-    render(<ConversionUploadEnhanced />);
+    renderWithProviders(<ConversionUploadEnhanced />);
     const urlInput = screen.getByLabelText('Modpack URL');
     expect(urlInput).toBeInTheDocument();
   });
 
   test('Button shows spinner when processing', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProviders(<ConversionUploadEnhanced />);
 
     // Check initial button text
     const submitButton = screen.getByText('Upload & Convert');
@@ -114,12 +124,6 @@ describe('ConversionUploadEnhanced Accessibility', () => {
       expect(submitButton).not.toBeDisabled();
     });
 
-    // Mock the convertMod function to return a promise that doesn't resolve immediately
-    // or resolves after a delay to allow us to check the loading state
-    // Note: The existing mock is a simple fn(), we might need to adjust it or just rely on state changes
-    // But since we are mocking module '../services/api', we rely on how it was mocked at top of file.
-    // It is `convertMod: vi.fn()`.
-
     // Mock the convertMod function
     vi.mocked(convertMod).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ job_id: '123' } as any), 100)));
 
@@ -129,17 +133,27 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     // Check for spinner
     await waitFor(() => {
         // Check if button text changed (either Uploading or Processing, depending on timing)
-        // Since the mock resolves fast, it likely goes to Processing
         const button = screen.getByRole('button', { name: /Processing|Uploading/i });
         expect(button).toBeInTheDocument();
 
         // Check if spinner exists by class name
-        // React Testing Library doesn't recommend querying by class, but for this specific visual element it's acceptable
-        // or we can query by aria-hidden, but that's not specific enough.
-        // We can check if the span with class conversion-spinner is present in the document.
         const spinner = document.querySelector('.conversion-spinner');
         expect(spinner).toBeInTheDocument();
         expect(spinner).toHaveAttribute('aria-hidden', 'true');
     });
+  });
+
+  test('Checkboxes are keyboard focusable', () => {
+    renderWithProviders(<ConversionUploadEnhanced />);
+
+    const smartAssumptionsCheckbox = screen.getByLabelText(/Enable Smart Assumptions/i);
+    const dependenciesCheckbox = screen.getByLabelText(/Include Dependencies/i);
+
+    // Focus the checkbox
+    smartAssumptionsCheckbox.focus();
+    expect(smartAssumptionsCheckbox).toHaveFocus();
+
+    dependenciesCheckbox.focus();
+    expect(dependenciesCheckbox).toHaveFocus();
   });
 });
