@@ -47,7 +47,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       
       // Sort by creation date (newest first)
       const sortedHistory = parsedHistory.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        b.created_at.localeCompare(a.created_at)
       );
       
       setHistory(sortedHistory.slice(0, maxItems));
