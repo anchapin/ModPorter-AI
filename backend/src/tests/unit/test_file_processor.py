@@ -17,8 +17,10 @@ logger = logging.getLogger(__name__)
 def file_processor():
     """Pytest fixture to provide a FileProcessor instance."""
     fp = FileProcessor()
-    # Mock _resolve_safe_ip to always return a safe IP by default
-    fp._resolve_safe_ip = mock.AsyncMock(return_value="93.184.216.34")
+    # Mock _is_safe_url to always return True by default for existing tests to avoid network calls
+    fp._is_safe_url = mock.AsyncMock(return_value=True)
+    # Mock _resolve_safe_ip to return a predictable IP (also prevents real DNS resolution)
+    fp._resolve_safe_ip = mock.AsyncMock(return_value="1.2.3.4")
     return fp
 
 
@@ -97,11 +99,11 @@ class TestFileProcessor:
         # But wait, we mocked _resolve_safe_ip, so the loop runs.
         # The loop calls client.get(..., follow_redirects=False).
 
-        # Verify that get was called with rewritten URL (using IP) and Host header
-        expected_url = "http://93.184.216.34/download.zip"
-        expected_headers = {"Host": "example.com"}
+        # Verify that get was called with follow_redirects=False
+        # AND with the pinned IP logic (URL replaced, Host header added)
+        expected_pinned_url = "http://1.2.3.4/download.zip"
         MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
-            expected_url, headers=expected_headers, follow_redirects=False, timeout=30.0
+            expected_pinned_url, headers={"Host": "example.com"}, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio

@@ -1,14 +1,12 @@
 # Current Tasks
 
 ## In Progress
-- None
+- 🔄 🛡️ Sentinel: Submit changes
 
 ## Pending
 - None
 
 ## Completed
-- ✅ Implement focus management for file removal in ConversionUploadEnhanced component
-- ✅ Verify focus management with tests
-
----
-*Last updated: 2026-02-24*
+- ✅ 🛡️ Sentinel: Scan codebase for security vulnerabilities
+- ✅ 🛡️ Sentinel: Fix identified security vulnerability (SSRF/DNS Pinning)
+- ✅ 🛡️ Sentinel: Verify fix and add regression test
