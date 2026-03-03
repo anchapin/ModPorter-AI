@@ -1,10 +1,10 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 🛡️ Sentinel: Submit changes
+- 🔄 Merge PR #629 - Resolve conflicts
 
 ## Pending
-- None
+- 
 
 ## Completed
 - ✅ 🛡️ Sentinel: Scan codebase for security vulnerabilities
