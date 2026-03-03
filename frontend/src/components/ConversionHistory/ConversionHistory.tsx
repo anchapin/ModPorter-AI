@@ -190,6 +190,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                       className="cancel-btn"
                       onClick={() => setConfirmDelete(false)}
                       aria-label="Cancel delete"
+                      autoFocus
                     >
                       No
                     </button>
@@ -220,6 +221,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                       className="cancel-btn"
                       onClick={() => setConfirmClear(false)}
                       aria-label="Cancel clear all"
+                      autoFocus
                     >
                       No
                     </button>

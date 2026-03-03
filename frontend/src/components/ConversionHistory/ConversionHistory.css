@@ -115,6 +115,11 @@
   border-color: #bdbdbd;
 }
 
+.cancel-btn:focus-visible {
+  outline: 2px solid #bdbdbd;
+  outline-offset: 2px;
+}
+
 /* Action Buttons */
 .delete-selected-btn,
 .clear-all-btn {
@@ -139,6 +144,11 @@
   transform: translateY(-1px);
 }
 
+.delete-selected-btn:focus-visible {
+  outline: 2px solid #f57c00;
+  outline-offset: 2px;
+}
+
 .clear-all-btn {
   background: #fce4ec;
   color: #c2185b;
@@ -149,6 +159,11 @@
   background: #c2185b;
   color: white;
   transform: translateY(-1px);
+}
+
+.clear-all-btn:focus-visible {
+  outline: 2px solid #c2185b;
+  outline-offset: 2px;
 }
 
 /* Error Message */
@@ -382,6 +397,11 @@
   box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
+.download-btn:focus-visible {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
+}
+
 .delete-btn {
   background: #fce4ec;
   color: #c2185b;
@@ -393,6 +413,11 @@
   color: white;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(233, 30, 99, 0.3);
+}
+
+.delete-btn:focus-visible {
+  outline: 2px solid #e91e63;
+  outline-offset: 2px;
 }
 
 /* Responsive Design */
