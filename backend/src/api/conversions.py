@@ -201,15 +201,15 @@ async def validate_file_size(file: UploadFile) -> tuple[bool, str]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    # Check size using seek/tell (O(1) instead of O(N) read)
-    # file.file is a SpooledTemporaryFile which supports seek/tell synchronously
-    file.file.seek(0, 2)
-    file_size = file.file.tell()
+    # Get file size using O(1) seek instead of O(N) iteration
+    # Seek to end of file to get size
+    file.file.seek(0, 2)  # SEEK_END
+    total_size = file.file.tell()
 
-    # Reset file pointer
+    # Reset file pointer to beginning for subsequent reads
     await file.seek(0)
 
-    if file_size > MAX_UPLOAD_SIZE:
+    if total_size > MAX_UPLOAD_SIZE:
         return False, f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
 
     return True, ""

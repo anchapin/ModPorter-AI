@@ -1,12 +1,6 @@
 import json
-from typing import Dict, List, Set, Any
-# Import from models package
-try:
-    from models.comparison import ComparisonResult, FeatureMapping
-except ImportError:
-    # Fallback for standalone use
-    ComparisonResult = None
-    FeatureMapping = None
+from typing import Dict, List, Set
+from ..models.comparison import ComparisonResult, FeatureMapping
 
 class ComparisonEngine:
     def __init__(self):

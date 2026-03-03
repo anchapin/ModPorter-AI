@@ -336,14 +336,6 @@
   position: absolute;
 }
 
-/* Accessible focus state for custom checkbox */
-.checkbox-label input[type="checkbox"]:focus + .checkmark,
-.checkbox-label input[type="checkbox"]:focus-visible + .checkmark {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2563eb;
-  border-color: #2563eb;
-  z-index: 1;
-}
-
 .checkbox-label .checkmark {
   position: relative;
   display: inline-block;
