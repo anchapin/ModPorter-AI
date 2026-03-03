@@ -6,8 +6,9 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
-    strategy:
+        if: ${{ github.ref == 'refs/heads/main' }}
+        runs-on: ubuntu-latest
+        strategy:
       matrix:
         service: [frontend, backend, ai-engine]
         include:
