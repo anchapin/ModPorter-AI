@@ -117,6 +117,7 @@
 
 .cancel-btn:focus-visible {
   outline: 3px solid #9e9e9e;
+  outline: 2px solid #bdbdbd;
   outline-offset: 2px;
 }
 
@@ -146,6 +147,7 @@
 
 .delete-selected-btn:focus-visible {
   outline: 3px solid #ffcc02;
+  outline: 2px solid #f57c00;
   outline-offset: 2px;
 }
 
@@ -163,6 +165,7 @@
 
 .clear-all-btn:focus-visible {
   outline: 3px solid #f8bbd9;
+  outline: 2px solid #c2185b;
   outline-offset: 2px;
 }
 
@@ -404,6 +407,7 @@
 
 .download-btn:focus-visible {
   outline: 3px solid #81c784;
+  outline: 2px solid #4caf50;
   outline-offset: 2px;
 }
 
@@ -422,6 +426,7 @@
 
 .delete-btn:focus-visible {
   outline: 3px solid #f48fb1;
+  outline: 2px solid #e91e63;
   outline-offset: 2px;
 }
 
