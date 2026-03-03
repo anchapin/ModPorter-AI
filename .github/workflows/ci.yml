@@ -522,7 +522,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -710,7 +710,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}

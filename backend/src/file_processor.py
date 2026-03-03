@@ -139,21 +139,24 @@ class FileProcessor:
     async def _is_safe_url(self, url: str) -> bool:
         """
         Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
+        Returns the safe IP address if valid, None otherwise.
         """
         try:
             parsed = urllib.parse.urlparse(url)
-            if parsed.scheme not in ('http', 'https'):
+            if parsed.scheme not in ("http", "https"):
                 logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
-                return False
+                return None
             hostname = parsed.hostname
             if not hostname:
-                return False
+                return None
 
             return (await self._resolve_safe_ip(hostname)) is not None
         except Exception as e:
             # Don't log full URL in exception either
-            logger.error(f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}")
-            return False
+            logger.error(
+                f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}"
+            )
+            return None
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
         """
@@ -689,7 +692,9 @@ class FileProcessor:
                         current_url = urllib.parse.urljoin(current_url, location)
                         parsed_redirect = urllib.parse.urlparse(current_url)
                         # Sanitize redirect URL for logging
-                        logger.info(f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}")
+                        logger.info(
+                            f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}"
+                        )
                         continue
                     else:
                         break
