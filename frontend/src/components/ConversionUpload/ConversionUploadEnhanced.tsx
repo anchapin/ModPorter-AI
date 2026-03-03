@@ -68,6 +68,19 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
+  // Focus management refs
+  const browseButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFileRef = useRef<File | null>(null);
+
+  // Focus management effect
+  useEffect(() => {
+    // If a file was previously selected and now it's null (removed), focus the browse button
+    if (previousFileRef.current && !selectedFile) {
+      browseButtonRef.current?.focus();
+    }
+    previousFileRef.current = selectedFile;
+  }, [selectedFile]);
+
   // File validation
   const validateFile = useCallback((file: File): { isValid: boolean; error?: string } => {
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -473,6 +486,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               <div className="upload-icon-large" aria-hidden="true">☁️</div>
               <h3>{isDragActive ? "Drop file to upload 📂" : "Drag & drop your modpack here"}</h3>
               <button
+                ref={browseButtonRef}
                 type="button"
                 className="browse-button"
                 onClick={(e) => {
