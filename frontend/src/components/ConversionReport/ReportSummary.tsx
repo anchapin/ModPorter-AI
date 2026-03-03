@@ -3,7 +3,7 @@
  * Part of Issue #10 - Conversion Report Generation System
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import type { SummaryReport } from '../../types/api';
 import styles from './ConversionReport.module.css';
 
@@ -144,7 +144,8 @@ const RecommendedActions: React.FC<{ actions: string[] }> = ({ actions }) => {
   );
 };
 
-export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
+// PERFORMANCE OPTIMIZATION: Memoize ReportSummary to prevent unnecessary re-renders when parent component updates other state
+export const ReportSummary: React.FC<ReportSummaryProps> = memo(({ summary }) => {
   const {
     overall_success_rate,
     total_features,
@@ -257,4 +258,6 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
       <RecommendedActions actions={recommended_actions || []} />
     </div>
   );
-};
+});
+
+ReportSummary.displayName = 'ReportSummary';
