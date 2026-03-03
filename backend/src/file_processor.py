@@ -86,7 +86,57 @@ class FileProcessor:
             return "default_sanitized_filename"
         return sanitized
 
-    async def _resolve_safe_ip(self, url: str) -> Optional[str]:
+    async def _resolve_safe_ip(self, hostname: str) -> Optional[str]:
+        """
+        Resolves a hostname to an IP address and verifies it is not private/loopback.
+        Returns the IP address string if safe, None otherwise.
+        """
+        try:
+            # Run blocking DNS resolution in executor
+            loop = asyncio.get_running_loop()
+            # Use getaddrinfo to support both IPv4 and IPv6
+            try:
+                infos = await loop.run_in_executor(None, socket.getaddrinfo, hostname, None)
+            except socket.gaierror:
+                logger.warning(f"Could not resolve hostname: {hostname}")
+                return None
+
+            # Pick the first valid IP (ipv4/ipv6) that is safe.
+            # Security best practice: Verify ALL IPs returned if we can't control which one is used.
+            # But since we will use the specific IP returned here for connection (pinning),
+            # we just need to ensure the one we return is safe.
+
+            for info in infos:
+                ip = info[4][0]
+                # Strip IPv6 scope ID if present (e.g. fe80::1%eth0 -> fe80::1)
+                if "%" in ip:
+                    ip = ip.split("%")[0]
+
+                try:
+                    ip_obj = ipaddress.ip_address(ip)
+                    if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
+                        logger.warning(f"Blocked attempt to access private IP: {ip} for hostname: {hostname}")
+                        # If ANY resolved IP is private, we should probably be suspicious and block the hostname entirely.
+                        # This prevents DNS rebinding attacks where one IP is safe and another is not.
+                        return None
+                except ValueError:
+                    # Fail securely if IP cannot be parsed
+                    logger.warning(f"Could not parse IP address: {ip} for hostname: {hostname}")
+                    return None
+
+            # If we get here, all IPs checked out. Return the first one.
+            if infos:
+                first_ip = infos[0][4][0]
+                if "%" in first_ip:
+                    first_ip = first_ip.split("%")[0]
+                return first_ip
+            return None
+
+        except Exception as e:
+            logger.error(f"Error resolving IP for hostname {hostname}: {e}")
+            return None
+
+    async def _is_safe_url(self, url: str) -> bool:
         """
         Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
         Returns the safe IP address if valid, None otherwise.
@@ -100,41 +150,7 @@ class FileProcessor:
             if not hostname:
                 return None
 
-            # Run blocking DNS resolution in executor
-            loop = asyncio.get_running_loop()
-            # Use getaddrinfo to support both IPv4 and IPv6
-            try:
-                infos = await loop.run_in_executor(
-                    None, socket.getaddrinfo, hostname, None
-                )
-            except socket.gaierror:
-                logger.warning(f"Could not resolve hostname: {hostname}")
-                return None
-
-            safe_ip = None
-            for info in infos:
-                ip = info[4][0]
-                # Strip IPv6 scope ID if present (e.g. fe80::1%eth0 -> fe80::1)
-                if "%" in ip:
-                    ip = ip.split("%")[0]
-
-                try:
-                    ip_obj = ipaddress.ip_address(ip)
-                    if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
-                        logger.warning(
-                            f"Blocked attempt to access private IP: {ip} for hostname: {hostname}"
-                        )
-                        return None
-                    # Pick the first safe IP found
-                    if safe_ip is None:
-                        safe_ip = ip
-                except ValueError:
-                    # Fail securely if IP cannot be parsed
-                    logger.warning(
-                        f"Could not parse IP address: {ip} for hostname: {hostname}"
-                    )
-                    return None
-            return safe_ip
+            return (await self._resolve_safe_ip(hostname)) is not None
         except Exception as e:
             # Don't log full URL in exception either
             logger.error(
@@ -628,59 +644,45 @@ class FileProcessor:
 
                 # Manual redirect handling with SSRF protection
                 for _ in range(5):  # Max 5 redirects
-                    safe_ip = await self._resolve_safe_ip(current_url)
-                    if not safe_ip:
-                        # Sanitize URL for logging (strip query params/fragments)
-                        parsed_unsafe = urllib.parse.urlparse(current_url)
-                        sanitized_unsafe = f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
-                        msg = f"Unsafe URL detected: {sanitized_unsafe}"
-                        logger.warning(msg)
-                        return DownloadResult(
-                            success=False, message="Unsafe URL detected"
-                        )
+                    parsed_current = urllib.parse.urlparse(current_url)
+                    if parsed_current.scheme not in ('http', 'https'):
+                        return DownloadResult(success=False, message="Unsafe URL scheme")
 
-                    parsed_url = urllib.parse.urlparse(current_url)
                     request_url = current_url
                     headers = {}
 
-                    # For HTTP, use the resolved IP to prevent DNS rebinding attacks (TOCTOU).
-                    # For HTTPS, we must use the hostname to allow TLS SNI and certificate validation.
-                    # Connecting to an IP for HTTPS would cause certificate validation failure unless
-                    # we disable it (insecure) or have complex custom verification logic.
-                    # TLS validation itself protects against rebinding to a malicious internal server
-                    # unless that server also possesses a valid certificate for the attacker's hostname.
-                    if parsed_url.scheme == "http":
+                    if parsed_current.scheme == 'http' and parsed_current.hostname:
+                        # DNS Pinning for HTTP: Resolve IP and use it directly
+                        safe_ip = await self._resolve_safe_ip(parsed_current.hostname)
+                        if not safe_ip:
+                            # Sanitize URL for logging
+                            sanitized_unsafe = f"{parsed_current.scheme}://{parsed_current.hostname}{parsed_current.path}"
+                            msg = f"Unsafe or unresolvable hostname detected: {sanitized_unsafe}"
+                            logger.warning(msg)
+                            return DownloadResult(success=False, message="Unsafe URL detected")
+
                         # Rewrite URL to use IP
-                        netloc = safe_ip
-                        # Handle IPv6 brackets
-                        if ":" in safe_ip:
-                            netloc = f"[{safe_ip}]"
+                        safe_ip_str = safe_ip
+                        if ':' in safe_ip_str:
+                            safe_ip_str = f"[{safe_ip_str}]"
 
-                        if parsed_url.port:
-                            netloc = f"{netloc}:{parsed_url.port}"
+                        netloc = safe_ip_str
+                        if parsed_current.port:
+                            netloc = f"{safe_ip_str}:{parsed_current.port}"
 
-                        # Construct new URL with IP
-                        request_url = urllib.parse.urlunparse(
-                            (
-                                parsed_url.scheme,
-                                netloc,
-                                parsed_url.path,
-                                parsed_url.params,
-                                parsed_url.query,
-                                parsed_url.fragment,
-                            )
-                        )
-                        headers["Host"] = parsed_url.hostname
-                        logger.debug(
-                            f"Using pinned IP {safe_ip} for HTTP request to {parsed_url.hostname}"
-                        )
+                        # Use _replace to update netloc with IP, keeping path/params/query
+                        request_url = parsed_current._replace(netloc=netloc).geturl()
+                        headers['Host'] = parsed_current.hostname
+                    else:
+                        # For HTTPS, rely on _is_safe_url (which calls _resolve_safe_ip) and TLS validation
+                        if not await self._is_safe_url(current_url):
+                            # Sanitize URL for logging
+                            sanitized_unsafe = f"{parsed_current.scheme}://{parsed_current.hostname}{parsed_current.path}"
+                            msg = f"Unsafe URL detected: {sanitized_unsafe}"
+                            logger.warning(msg)
+                            return DownloadResult(success=False, message="Unsafe URL detected")
 
-                    response = await client.get(
-                        request_url,
-                        headers=headers,
-                        follow_redirects=False,
-                        timeout=30.0,
-                    )
+                    response = await client.get(request_url, headers=headers, follow_redirects=False, timeout=30.0)
 
                     if 300 <= response.status_code < 400:
                         location = response.headers.get("Location")
