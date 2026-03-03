@@ -467,11 +467,33 @@ async def import_mod(
         os.makedirs(temp_dir, exist_ok=True)
         file_path = os.path.join(temp_dir, f"{file_id}.jar")
         
+        # Max file size: 100MB
+        MAX_IMPORT_SIZE = 100 * 1024 * 1024
+        downloaded_size = 0
+
         async with httpx.AsyncClient(timeout=300.0) as client:
-            async with client.stream("GET", download_url) as response:
+            async with client.stream("GET", download_url, follow_redirects=True) as response:
                 response.raise_for_status()
+
+                # Check Content-Length header if available
+                content_length = response.headers.get("Content-Length")
+                if content_length and int(content_length) > MAX_IMPORT_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File size exceeds limit of {MAX_IMPORT_SIZE // (1024 * 1024)}MB"
+                    )
+
                 with open(file_path, "wb") as f:
                     async for chunk in response.aiter_bytes(chunk_size=8192):
+                        downloaded_size += len(chunk)
+                        if downloaded_size > MAX_IMPORT_SIZE:
+                            # Clean up partial file
+                            f.close()
+                            os.remove(file_path)
+                            raise HTTPException(
+                                status_code=413,
+                                detail=f"File size exceeds limit of {MAX_IMPORT_SIZE // (1024 * 1024)}MB"
+                            )
                         f.write(chunk)
         
         return ImportResponse(
