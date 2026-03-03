@@ -15,6 +15,22 @@ from models.smart_assumptions import (
 from agents.java_analyzer import JavaAnalyzerAgent
 from utils.logging_config import get_agent_logger, log_performance
 
+# Import validation and warning modules (Issue #570)
+try:
+    from engines.javascript_validator import (
+        JavaScriptValidator,
+        ValidationResult
+    )
+    from engines.translation_warnings import (
+        TranslationWarningDetector,
+        WarningReport,
+        ImpactLevel
+    )
+    VALIDATION_AVAILABLE = True
+except ImportError:
+    VALIDATION_AVAILABLE = False
+    logger.warning("Validation modules not available. Some features may be limited.")
+
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
 
@@ -220,6 +236,14 @@ class LogicTranslatorAgent:
         self.java_analyzer_agent = (
             JavaAnalyzerAgent()
         )  # Added JavaAnalyzerAgent initialization
+
+        # Initialize validation modules (Issue #570)
+        if VALIDATION_AVAILABLE:
+            self.js_validator = JavaScriptValidator(api_mappings=self.api_mappings)
+            self.warning_detector = TranslationWarningDetector()
+        else:
+            self.js_validator = None
+            self.warning_detector = None
 
         # Java to JavaScript conversion mappings
         self.type_mappings = {
@@ -481,7 +505,7 @@ class LogicTranslatorAgent:
 
     def get_tools(self) -> List:
         """Get tools available to this agent"""
-        return [
+        tools = [
             LogicTranslatorAgent.translate_java_method_tool,
             LogicTranslatorAgent.convert_java_class_tool,
             LogicTranslatorAgent.map_java_apis_tool,
@@ -493,6 +517,16 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool,
         ]
+
+        # Add validation and warning tools (Issue #570)
+        if VALIDATION_AVAILABLE:
+            tools.extend([
+                LogicTranslatorAgent.validate_javascript_comprehensive_tool,
+                LogicTranslatorAgent.analyze_translation_warnings_tool,
+                LogicTranslatorAgent.generate_user_facing_report_tool,
+            ])
+
+        return tools
     
     def translate_java_code(self, java_code: str, code_type: str) -> str:
         """
@@ -1618,3 +1652,327 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool
         ]
+
+    # ========== Issue #570: Enhanced Validation and Warning Tools ==========
+
+    @tool
+    @staticmethod
+    def validate_javascript_comprehensive_tool(js_data: str) -> str:
+        """
+        Comprehensive JavaScript validation including syntax, semantics, API correctness,
+        and Bedrock compatibility.
+
+        Args:
+            js_data: JSON string containing:
+                - javascript_code: The JavaScript code to validate
+                - context: Optional context about the code (feature_type, etc.)
+
+        Returns:
+            JSON string with validation results
+        """
+        agent = LogicTranslatorAgent.get_instance()
+
+        if not VALIDATION_AVAILABLE or agent.js_validator is None:
+            return json.dumps({
+                "success": False,
+                "error": "JavaScript validation module not available"
+            })
+
+        try:
+            data = json.loads(js_data)
+            javascript_code = data.get('javascript_code', '')
+            context = data.get('context', {})
+
+            # Perform comprehensive validation
+            result = agent.js_validator.validate(javascript_code, context)
+
+            return json.dumps({
+                "success": True,
+                "validation_result": {
+                    "is_valid": result.is_valid,
+                    "score": result.score,
+                    "statistics": result.statistics
+                },
+                "issues": [
+                    {
+                        "severity": issue.severity.value,
+                        "category": issue.category,
+                        "message": issue.message,
+                        "line_number": issue.line_number,
+                        "suggestion": issue.suggestion,
+                        "code_snippet": issue.code_snippet
+                    }
+                    for issue in result.issues
+                ],
+                "breakdown": {
+                    "syntax_errors": len(result.syntax_errors),
+                    "semantic_errors": len(result.semantic_errors),
+                    "api_warnings": len(result.api_warnings),
+                    "security_warnings": len(result.security_warnings)
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error validating JavaScript: {e}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+
+    @tool
+    @staticmethod
+    def analyze_translation_warnings_tool(java_data: str) -> str:
+        """
+        Analyze Java code for potential translation warnings and functionality loss.
+
+        Args:
+            java_data: JSON string containing:
+                - java_code: The Java source code to analyze
+                - feature_type: Optional feature type (block, item, entity, etc.)
+                - translated_javascript: Optional translated JavaScript for comparison
+
+        Returns:
+            JSON string with warning report
+        """
+        agent = LogicTranslatorAgent.get_instance()
+
+        if not VALIDATION_AVAILABLE or agent.warning_detector is None:
+            return json.dumps({
+                "success": False,
+                "error": "Warning detector module not available"
+            })
+
+        try:
+            data = json.loads(java_data)
+            java_code = data.get('java_code', '')
+            feature_type = data.get('feature_type')
+            translated_javascript = data.get('translated_javascript')
+
+            # Analyze original Java code
+            if translated_javascript:
+                report = agent.warning_detector.analyze_translated_javascript(
+                    translated_javascript,
+                    java_code
+                )
+            else:
+                report = agent.warning_detector.analyze_java_code(
+                    java_code,
+                    feature_type
+                )
+
+            # Convert warnings to serializable format
+            warnings_serializable = [
+                {
+                    "category": w.category,
+                    "java_feature": w.java_feature,
+                    "bedrock_status": w.bedrock_status,
+                    "impact": w.impact.value,
+                    "user_explanation": w.user_explanation,
+                    "technical_notes": w.technical_notes,
+                    "workarounds": w.workarounds,
+                    "code_reference": w.code_reference
+                }
+                for w in report.warnings
+            ]
+
+            return json.dumps({
+                "success": True,
+                "warning_report": {
+                    "warnings": warnings_serializable,
+                    "critical_count": report.critical_count,
+                    "high_count": report.high_count,
+                    "medium_count": report.medium_count,
+                    "low_count": report.low_count,
+                    "overall_assessment": report.overall_assessment,
+                    "recommendations": report.recommendations
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error analyzing translation warnings: {e}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+
+    @tool
+    @staticmethod
+    def generate_user_facing_report_tool(report_data: str) -> str:
+        """
+        Generate user-facing report from validation and warning results.
+
+        Args:
+            report_data: JSON string containing:
+                - validation_result: Optional validation result
+                - warning_report: Optional warning report
+                - translation_metadata: Optional metadata about the translation
+
+        Returns:
+            JSON string with formatted user-facing report
+        """
+        agent = LogicTranslatorAgent.get_instance()
+
+        if not VALIDATION_AVAILABLE or agent.warning_detector is None:
+            return json.dumps({
+                "success": False,
+                "error": "Warning detector module not available"
+            })
+
+        try:
+            data = json.loads(report_data)
+            validation_result = data.get('validation_result')
+            warning_report_data = data.get('warning_report')
+            translation_metadata = data.get('translation_metadata', {})
+
+            # Build user-facing report
+            report_sections = []
+
+            # Add overall summary
+            overall_score = validation_result.get('score', 0.0) if validation_result else 0.0
+            if overall_score >= 0.9:
+                summary = "Translation appears excellent with high quality Bedrock JavaScript."
+            elif overall_score >= 0.7:
+                summary = "Translation is good with minor issues that may need review."
+            elif overall_score >= 0.5:
+                summary = "Translation is acceptable but has issues that should be addressed."
+            else:
+                summary = "Translation has significant issues requiring manual review and fixes."
+
+            report_sections.append({
+                "section": "Overall Assessment",
+                "content": summary,
+                "score": overall_score
+            })
+
+            # Add validation findings
+            if validation_result:
+                stats = validation_result.get('statistics', {})
+                report_sections.append({
+                    "section": "Code Quality",
+                    "content": f"Validation score: {overall_score:.2f}/1.0",
+                    "details": {
+                        "total_issues": stats.get('total_issues', 0),
+                        "errors": stats.get('error_count', 0),
+                        "warnings": stats.get('warning_count', 0),
+                        "syntax_issues": stats.get('by_category', {}).get('syntax', 0),
+                        "api_issues": stats.get('by_category', {}).get('api', 0)
+                    }
+                })
+
+            # Add functionality warnings
+            if warning_report_data:
+                report_sections.append({
+                    "section": "Functionality Assessment",
+                    "content": warning_report_data.get('overall_assessment', ''),
+                    "details": {
+                        "critical_issues": warning_report_data.get('critical_count', 0),
+                        "high_issues": warning_report_data.get('high_count', 0),
+                        "medium_issues": warning_report_data.get('medium_count', 0),
+                        "low_issues": warning_report_data.get('low_count', 0)
+                    }
+                })
+
+                # Add recommendations
+                if warning_report_data.get('recommendations'):
+                    report_sections.append({
+                        "section": "Recommendations",
+                        "content": "Recommended actions:",
+                        "details": warning_report_data.get('recommendations', [])
+                    })
+
+            # Add translation metadata
+            if translation_metadata:
+                report_sections.append({
+                    "section": "Translation Details",
+                    "content": "Technical information about the translation",
+                    "details": translation_metadata
+                })
+
+            from datetime import datetime
+            return json.dumps({
+                "success": True,
+                "user_report": {
+                    "sections": report_sections,
+                    "generated_at": str(datetime.now()),
+                    "version": "1.0"
+                }
+            })
+        except Exception as e:
+            logger.error(f"Error generating user-facing report: {e}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+
+    def validate_translation_with_comprehensive_checks(
+        self,
+        java_code: str,
+        javascript_code: str,
+        feature_type: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Perform comprehensive validation of a translation.
+
+        Args:
+            java_code: Original Java source code
+            javascript_code: Translated JavaScript code
+            feature_type: Optional feature type
+
+        Returns:
+            Dictionary with validation results
+        """
+        result = {
+            "success": True,
+            "validation": None,
+            "warnings": None,
+            "overall_score": 0.0,
+            "recommendations": []
+        }
+
+        # Perform JavaScript validation
+        if VALIDATION_AVAILABLE and self.js_validator:
+            validation = self.js_validator.validate(javascript_code, {
+                'feature_type': feature_type
+            })
+            result["validation"] = {
+                "is_valid": validation.is_valid,
+                "score": validation.score,
+                "statistics": validation.statistics
+            }
+            result["overall_score"] = validation.score
+
+        # Analyze translation warnings
+        if VALIDATION_AVAILABLE and self.warning_detector:
+            warning_report = self.warning_detector.analyze_translated_javascript(
+                javascript_code,
+                java_code
+            )
+            result["warnings"] = {
+                "critical_count": warning_report.critical_count,
+                "high_count": warning_report.high_count,
+                "medium_count": warning_report.medium_count,
+                "low_count": warning_report.low_count,
+                "overall_assessment": warning_report.overall_assessment
+            }
+
+            # Add recommendations
+            if warning_report.recommendations:
+                result["recommendations"].extend(warning_report.recommendations)
+
+        # Combine scores
+        if result["validation"]:
+            val_score = result["validation"]["score"]
+            warn_penalty = (result["warnings"]["critical_count"] * 0.2 +
+                           result["warnings"]["high_count"] * 0.1 +
+                           result["warnings"]["medium_count"] * 0.05)
+            result["overall_score"] = max(0.0, val_score - warn_penalty)
+
+        # Final validation
+        if result["overall_score"] < 0.5:
+            result["recommendations"].append(
+                "Translation quality is low. Manual review and fixes strongly recommended."
+            )
+        elif result["warnings"]["critical_count"] > 0:
+            result["recommendations"].append(
+                "Critical functionality loss detected. Review warnings carefully."
+            )
+
+        return result
