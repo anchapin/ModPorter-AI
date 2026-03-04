@@ -910,3 +910,531 @@ class EnsembleReRanker:
             result.rank = i + 1
         
         return combined_results
+
+
+class CrossEncoderReRanker:
+    """
+    Cross-encoder based re-ranker for improved search result ranking.
+    
+    This re-ranker uses a cross-encoder neural network to score query-document
+    pairs more accurately than bi-encoders. Cross-encoders consider the full
+    context of both query and document together, providing more nuanced relevance scoring.
+    
+    Cross-encoders are typically more accurate but slower than bi-encoders,
+    so they are used for re-ranking a smaller set of candidate results.
+    """
+    
+    # Default cross-encoder models optimized for semantic search
+    DEFAULT_MODELS = {
+        'msmarco': 'cross-encoder/ms-marco-MiniLM-L-6-v2',
+        'msmarco-large': 'cross-encoder/ms-marco-MiniLM-L-12-v2',
+        'quora': 'cross-encoder/quora-roberta-base',
+        'scientific': 'cross-encoder/stsb-roberta-base',
+        'robust': 'cross-encoder/roberta-base-MRPC'
+    }
+    
+    def __init__(
+        self,
+        model_name: str = 'msmarco',
+        device: str = 'cpu',
+        max_length: int = 512,
+        batch_size: int = 32,
+        use_pretrained: bool = True
+    ):
+        """
+        Initialize the cross-encoder re-ranker.
+        
+        Args:
+            model_name: Name of the cross-encoder model or path to local model
+            device: Device to run the model on ('cpu', 'cuda', or 'mps')
+            max_length: Maximum sequence length for tokenization
+            batch_size: Batch size for scoring multiple documents
+            use_pretrained: Whether to load a pretrained model or create a new one
+        """
+        self.model_name = model_name
+        self.device = device
+        self.max_length = max_length
+        self.batch_size = batch_size
+        self.model = None
+        self.tokenizer = None
+        self.use_pretrained = use_pretrained
+        
+        # Lazy loading - model will be loaded on first use
+        self._is_loaded = False
+        
+        # Model configuration
+        self._config = {
+            'model_name': model_name,
+            'device': device,
+            'max_length': max_length,
+            'batch_size': batch_size
+        }
+        
+        logger.info(f"CrossEncoderReRanker initialized with model: {model_name}")
+    
+    def _load_model(self):
+        """Load the cross-encoder model and tokenizer."""
+        if self._is_loaded:
+            return
+        
+        try:
+            from sentence_transformers import CrossEncoder
+            
+            # Determine full model name
+            if self.model_name in self.DEFAULT_MODELS:
+                full_model_name = self.DEFAULT_MODELS[self.model_name]
+            else:
+                full_model_name = self.model_name
+            
+            # Load the model
+            self.model = CrossEncoder(
+                full_model_name,
+                max_length=self.max_length,
+                device=self.device
+            )
+            
+            self._is_loaded = True
+            logger.info(f"Cross-encoder model loaded: {full_model_name}")
+            
+        except ImportError:
+            logger.warning("sentence-transformers not installed. Using fallback scoring.")
+            self._is_loaded = False
+        except Exception as e:
+            logger.warning(f"Failed to load cross-encoder model: {e}. Using fallback scoring.")
+            self._is_loaded = False
+    
+    def rerank(
+        self,
+        query: str,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """
+        Re-rank search results using cross-encoder scoring.
+        
+        Args:
+            query: The original search query
+            results: List of search results to re-rank
+            top_k: Number of top results to return (default: all)
+            
+        Returns:
+            List of re-ranked results
+        """
+        if not results:
+            return []
+        
+        # Load model if needed
+        self._load_model()
+        
+        # If model not loaded, return original results with fallback scoring
+        if not self._is_loaded:
+            return self._fallback_rerank(query, results, top_k)
+        
+        # Prepare query-document pairs for scoring
+        pairs = []
+        for result in results:
+            doc_content = result.matched_content or ""
+            if hasattr(result.document, 'content'):
+                doc_content = result.document.content[:1000]  # Limit length
+            pairs.append([query, doc_content])
+        
+        try:
+            # Get cross-encoder scores
+            scores = self.model.predict(pairs, batch_size=self.batch_size)
+            
+            # If scores is a single value, convert to list
+            if isinstance(scores, float):
+                scores = [scores]
+            
+            # Create re-ranking results
+            reranked_results = []
+            for i, (result, score) in enumerate(zip(results, scores)):
+                reranked_results.append(ReRankingResult(
+                    document=result.document,
+                    original_rank=result.rank,
+                    new_rank=0,  # Will be set after sorting
+                    original_score=result.final_score,
+                    final_score=float(score),
+                    relevance_features={
+                        'cross_encoder_score': float(score),
+                        'semantic_similarity': result.similarity_score,
+                        'keyword_match': result.keyword_score
+                    }
+                ))
+            
+            # Sort by cross-encoder score
+            reranked_results.sort(key=lambda x: x.final_score, reverse=True)
+            
+            # Update new ranks
+            for i, result in enumerate(reranked_results):
+                result.new_rank = i + 1
+            
+            # Return top_k results if specified
+            if top_k is not None and top_k < len(reranked_results):
+                return reranked_results[:top_k]
+            
+            return reranked_results
+            
+        except Exception as e:
+            logger.error(f"Error during cross-encoder reranking: {e}")
+            return self._fallback_rerank(query, results, top_k)
+    
+    def _fallback_rerank(
+        self,
+        query: str,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """
+        Fallback reranking using simple combination of existing scores.
+        """
+        # Combine similarity and keyword scores
+        combined_scores = []
+        for result in results:
+            combined = 0.7 * result.similarity_score + 0.3 * result.keyword_score
+            combined_scores.append(combined)
+        
+        # Create reranking results
+        reranked_results = []
+        for i, (result, score) in enumerate(zip(results, combined_scores)):
+            reranked_results.append(ReRankingResult(
+                document=result.document,
+                original_rank=result.rank,
+                new_rank=0,
+                original_score=result.final_score,
+                final_score=score,
+                relevance_features={
+                    'combined_score': score,
+                    'semantic_similarity': result.similarity_score,
+                    'keyword_match': result.keyword_score
+                }
+            ))
+        
+        # Sort by combined score
+        reranked_results.sort(key=lambda x: x.final_score, reverse=True)
+        
+        # Update ranks
+        for i, result in enumerate(reranked_results):
+            result.new_rank = i + 1
+        
+        if top_k is not None and top_k < len(reranked_results):
+            return reranked_results[:top_k]
+        
+        return reranked_results
+    
+    def get_config(self) -> Dict[str, Any]:
+        """Get the current configuration."""
+        return self._config.copy()
+    
+    @property
+    def is_loaded(self) -> bool:
+        """Check if model is loaded."""
+        return self._is_loaded
+
+
+class NeuralReRanker:
+    """
+    Neural network-based re-ranker using bi-encoder embeddings.
+    
+    This re-ranker uses sentence transformer embeddings to compute
+    semantic similarity between query and documents for re-ranking.
+    """
+    
+    DEFAULT_EMBEDDING_MODELS = [
+        'all-MiniLM-L6-v2',
+        'all-mpnet-base-v2',
+        'multi-qa-mpnet-base-dot-v1'
+    ]
+    
+    def __init__(
+        self,
+        embedding_model: str = 'all-MiniLM-L6-v2',
+        device: str = 'cpu',
+        score_combination: str = 'weighted'
+    ):
+        """
+        Initialize the neural re-ranker.
+        
+        Args:
+            embedding_model: Name of the embedding model
+            device: Device to run embeddings on
+            score_combination: How to combine scores ('weighted', 'rrf', 'additive')
+        """
+        self.embedding_model = embedding_model
+        self.device = device
+        self.score_combination = score_combination
+        self.model = None
+        self._is_loaded = False
+        
+        logger.info(f"NeuralReRanker initialized with model: {embedding_model}")
+    
+    def _load_model(self):
+        """Load the embedding model."""
+        if self._is_loaded:
+            return
+        
+        try:
+            from sentence_transformers import SentenceTransformer
+            
+            self.model = SentenceTransformer(self.embedding_model, device=self.device)
+            self._is_loaded = True
+            logger.info(f"Embedding model loaded: {self.embedding_model}")
+            
+        except ImportError:
+            logger.warning("sentence-transformers not installed")
+            self._is_loaded = False
+    
+    def rerank(
+        self,
+        query: str,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """
+        Re-rank results using neural embeddings.
+        """
+        if not results:
+            return []
+        
+        self._load_model()
+        
+        if not self._is_loaded:
+            return self._fallback_rerank(query, results, top_k)
+        
+        # Get document contents
+        docs = []
+        for result in results:
+            content = result.matched_content or ""
+            if hasattr(result.document, 'content'):
+                content = result.document.content[:1000]
+            docs.append(content)
+        
+        try:
+            # Encode query and documents
+            query_embedding = self.model.encode(query, convert_to_tensor=True)
+            doc_embeddings = self.model.encode(docs, convert_to_tensor=True)
+            
+            # Compute cosine similarity
+            from sentence_transformers import util
+            scores = util.cos_sim(query_embedding, doc_embeddings)[0].tolist()
+            
+            # Create reranking results
+            reranked_results = []
+            for i, (result, score) in enumerate(zip(results, scores)):
+                reranked_results.append(ReRankingResult(
+                    document=result.document,
+                    original_rank=result.rank,
+                    new_rank=0,
+                    original_score=result.final_score,
+                    final_score=float(score),
+                    relevance_features={
+                        'neural_similarity': float(score),
+                        'original_similarity': result.similarity_score,
+                        'keyword_score': result.keyword_score
+                    }
+                ))
+            
+            # Sort by neural similarity
+            reranked_results.sort(key=lambda x: x.final_score, reverse=True)
+            
+            # Update ranks
+            for i, r in enumerate(reranked_results):
+                r.new_rank = i + 1
+            
+            if top_k:
+                return reranked_results[:top_k]
+            return reranked_results
+            
+        except Exception as e:
+            logger.error(f"Neural reranking error: {e}")
+            return self._fallback_rerank(query, results, top_k)
+    
+    def _fallback_rerank(
+        self,
+        query: str,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """Fallback to simple score combination."""
+        return self._simple_rerank(results, top_k)
+    
+    def _simple_rerank(
+        self,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """Simple re-ranking based on existing scores."""
+        reranked = []
+        for i, r in enumerate(results):
+            combined = 0.6 * r.similarity_score + 0.4 * r.keyword_score
+            reranked.append(ReRankingResult(
+                document=r.document,
+                original_rank=r.rank,
+                new_rank=0,
+                original_score=r.final_score,
+                final_score=combined,
+                relevance_features={'combined': combined}
+            ))
+        
+        reranked.sort(key=lambda x: x.final_score, reverse=True)
+        for i, r in enumerate(reranked):
+            r.new_rank = i + 1
+        
+        return reranked[:top_k] if top_k else reranked
+
+
+class HybridReRanker:
+    """
+    Hybrid re-ranker combining multiple re-ranking strategies.
+    
+    This re-ranker combines cross-encoder, neural, and feature-based
+    reranking to achieve better overall relevance ranking.
+    """
+    
+    def __init__(
+        self,
+        rerankers: List[Any] = None,
+        weights: List[float] = None,
+        strategy: str = 'weighted'
+    ):
+        """
+        Initialize hybrid re-ranker.
+        
+        Args:
+            rerankers: List of re-ranker instances
+            weights: Weights for each re-ranker's scores
+            strategy: Combination strategy ('weighted', 'rrf', 'cascade')
+        """
+        self.rerankers = rerankers or []
+        self.weights = weights or [1.0] * len(self.rerankers)
+        self.strategy = strategy
+        
+        # Ensure weights match rerankers
+        if len(self.weights) != len(self.rerankers):
+            self.weights = [1.0 / len(self.rerankers)] * len(self.rerankers)
+        
+        logger.info(f"HybridReRanker initialized with {len(self.rerankers)} rerankers")
+    
+    def rerank(
+        self,
+        query: str,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """
+        Re-rank using multiple strategies.
+        """
+        if not results:
+            return []
+        
+        if not self.rerankers:
+            return self._simple_rerank(results, top_k)
+        
+        # Get scores from each reranker
+        all_scores = []
+        for reranker in self.rerankers:
+            try:
+                reranked = reranker.rerank(query, results)
+                scores = [r.final_score for r in reranked]
+                all_scores.append(scores)
+            except Exception as e:
+                logger.warning(f"Reranker failed: {e}")
+                all_scores.append(None)
+        
+        # Combine scores based on strategy
+        if self.strategy == 'weighted':
+            combined = self._weighted_combination(results, all_scores)
+        elif self.strategy == 'rrf':
+            combined = self._rrf_combination(results, all_scores)
+        else:
+            combined = self._weighted_combination(results, all_scores)
+        
+        # Create final results
+        final_results = []
+        for i, (result, score) in enumerate(zip(results, combined)):
+            final_results.append(ReRankingResult(
+                document=result.document,
+                original_rank=result.rank,
+                new_rank=0,
+                original_score=result.final_score,
+                final_score=score,
+                relevance_features={
+                    'hybrid_score': score,
+                    'reranker_count': len([s for s in all_scores if s])
+                }
+            ))
+        
+        # Sort by combined score
+        final_results.sort(key=lambda x: x.final_score, reverse=True)
+        
+        # Update ranks
+        for i, r in enumerate(final_results):
+            r.new_rank = i + 1
+        
+        return final_results[:top_k] if top_k else final_results
+    
+    def _weighted_combination(
+        self,
+        results: List[SearchResult],
+        all_scores: List[List[float]]
+    ) -> List[float]:
+        """Weighted combination of scores."""
+        combined = [0.0] * len(results)
+        total_weight = 0.0
+        
+        for scores, weight in zip(all_scores, self.weights):
+            if scores is None:
+                continue
+            for i, score in enumerate(scores):
+                combined[i] += score * weight
+            total_weight += weight
+        
+        # Normalize
+        if total_weight > 0:
+            combined = [s / total_weight * len(self.weights) for s in combined]
+        
+        return combined
+    
+    def _rrf_combination(
+        self,
+        results: List[SearchResult],
+        all_scores: List[List[float]]
+    ) -> List[float]:
+        """Reciprocal Rank Fusion combination."""
+        k = 60  # RRF parameter
+        
+        combined = [0.0] * len(results)
+        
+        for scores in all_scores:
+            if scores is None:
+                continue
+            # Sort indices by score
+            ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+            for rank, idx in enumerate(ranked_indices):
+                combined[idx] += 1.0 / (k + rank + 1)
+        
+        return combined
+    
+    def _simple_rerank(
+        self,
+        results: List[SearchResult],
+        top_k: int = None
+    ) -> List[ReRankingResult]:
+        """Simple fallback reranking."""
+        reranked = []
+        for i, r in enumerate(results):
+            combined = 0.5 * r.similarity_score + 0.5 * r.keyword_score
+            reranked.append(ReRankingResult(
+                document=r.document,
+                original_rank=r.rank,
+                new_rank=0,
+                original_score=r.final_score,
+                final_score=combined,
+                relevance_features={'fallback': combined}
+            ))
+        
+        reranked.sort(key=lambda x: x.final_score, reverse=True)
+        for i, r in enumerate(reranked):
+            r.new_rank = i + 1
+        
+        return reranked[:top_k] if top_k else reranked
