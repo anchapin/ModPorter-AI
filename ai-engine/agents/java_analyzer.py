@@ -16,12 +16,14 @@ import zipfile
 from pathlib import Path
 import time
 import javalang
+
+# Make javassist optional - will be used for bytecode analysis if available
 try:
     import javassist
     JAVASSIST_AVAILABLE = True
 except ImportError:
+    javassist = None
     JAVASSIST_AVAILABLE = False
-    logger.warning("javassist not available, bytecode analysis disabled")
 
 # Constants for file analysis limits
 FEATURE_ANALYSIS_FILE_LIMIT = 10
@@ -674,7 +676,7 @@ class JavaAnalyzerAgent:
         Returns:
             Dictionary with extracted class information
         """
-        if not JAVASSIST_AVAILABLE:
+        if not JAVASSIST_AVAILABLE or javassist is None:
             return {'error': 'javassist not available'}
         
         class_info = {
