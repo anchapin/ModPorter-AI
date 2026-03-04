@@ -38,7 +38,7 @@ def get_install_requires():
         "sentence-transformers>=2.2.0",
 
         # Vector Database (pin version for embedchain compatibility)
-        "chromadb<1.6.0",
+        "chromadb<1.2.0",
 
         # Data Processing
         "numpy",

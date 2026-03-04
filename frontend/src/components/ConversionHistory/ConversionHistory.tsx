@@ -46,10 +46,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       const parsedHistory: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
       
       // Sort by creation date (newest first)
-      // ⚡ Bolt optimization: ISO 8601 strings are lexicographically sortable.
-      // Using localeCompare avoids instantiating Date objects, making sorting ~4-6x faster for large lists.
       const sortedHistory = parsedHistory.sort((a, b) => 
-        b.created_at.localeCompare(a.created_at)
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       
       setHistory(sortedHistory.slice(0, maxItems));
@@ -192,7 +190,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                       className="cancel-btn"
                       onClick={() => setConfirmDelete(false)}
                       aria-label="Cancel delete"
-                      autoFocus
                     >
                       No
                     </button>
@@ -223,7 +220,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                       className="cancel-btn"
                       onClick={() => setConfirmClear(false)}
                       aria-label="Cancel clear all"
-                      autoFocus
                     >
                       No
                     </button>

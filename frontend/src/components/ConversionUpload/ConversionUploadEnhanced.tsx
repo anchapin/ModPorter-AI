@@ -14,7 +14,6 @@ import {
   ConversionStatusEnum
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
-import { formatFileSize } from '../../utils/formatters';
 import './ConversionUpload.css';
 
 // Configuration constants
@@ -67,19 +66,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const wsRef = useRef<ReturnType<typeof createConversionWebSocket> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
-
-  // Focus management refs
-  const browseButtonRef = useRef<HTMLButtonElement>(null);
-  const previousFileRef = useRef<File | null>(null);
-
-  // Focus management effect
-  useEffect(() => {
-    // If a file was previously selected and now it's null (removed), focus the browse button
-    if (previousFileRef.current && !selectedFile) {
-      browseButtonRef.current?.focus();
-    }
-    previousFileRef.current = selectedFile;
-  }, [selectedFile]);
 
   // File validation
   const validateFile = useCallback((file: File): { isValid: boolean; error?: string } => {
@@ -424,12 +410,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const isCancelled = currentStatus?.status === ConversionStatusEnum.CANCELLED;
   const isFinished = isCompleted || isFailed || isCancelled;
 
-  const getFileIcon = (fileName: string) => {
-    if (fileName.toLowerCase().endsWith('.jar')) return '☕';
-    if (fileName.toLowerCase().endsWith('.zip')) return '🗜️';
-    return '📦';
-  };
-
   return (
     <div className="conversion-upload">
       <h2>Convert Your Modpack</h2>
@@ -462,10 +442,10 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             </div>
           ) : selectedFile ? (
             <div className="file-preview">
-              <div className="file-icon" aria-hidden="true">{getFileIcon(selectedFile.name)}</div>
+              <div className="file-icon">📦</div>
               <div className="file-info">
                 <div className="file-name">{selectedFile.name}</div>
-                <div className="file-size">{formatFileSize(selectedFile.size)}</div>
+                <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
                 <div className="status">{getStatusMessage()}</div>
               </div>
               <button
@@ -483,10 +463,9 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             </div>
           ) : (
             <div className="upload-prompt initial-prompt">
-              <div className="upload-icon-large" aria-hidden="true">☁️</div>
-              <h3>{isDragActive ? "Drop file to upload 📂" : "Drag & drop your modpack here"}</h3>
+              <div className="upload-icon-large">☁️</div>
+              <h3>Drag & drop your modpack here</h3>
               <button
-                ref={browseButtonRef}
                 type="button"
                 className="browse-button"
                 onClick={(e) => {

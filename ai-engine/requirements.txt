@@ -15,7 +15,7 @@ sentence-transformers>=2.2.0
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
-chromadb<1.6.0
+chromadb<1.5.0
 
 # Data Processing
 numpy

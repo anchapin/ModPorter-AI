@@ -86,12 +86,19 @@ class FileProcessor:
             return "default_sanitized_filename"
         return sanitized
 
-    async def _resolve_safe_ip(self, hostname: str) -> Optional[str]:
+    async def _is_safe_url(self, url: str) -> bool:
         """
-        Resolves a hostname to an IP address and verifies it is not private/loopback.
-        Returns the IP address string if safe, None otherwise.
+        Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
         """
         try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
+                return False
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+
             # Run blocking DNS resolution in executor
             loop = asyncio.get_running_loop()
             # Use getaddrinfo to support both IPv4 and IPv6
@@ -99,12 +106,7 @@ class FileProcessor:
                 infos = await loop.run_in_executor(None, socket.getaddrinfo, hostname, None)
             except socket.gaierror:
                 logger.warning(f"Could not resolve hostname: {hostname}")
-                return None
-
-            # Pick the first valid IP (ipv4/ipv6) that is safe.
-            # Security best practice: Verify ALL IPs returned if we can't control which one is used.
-            # But since we will use the specific IP returned here for connection (pinning),
-            # we just need to ensure the one we return is safe.
+                return False
 
             for info in infos:
                 ip = info[4][0]
@@ -116,47 +118,16 @@ class FileProcessor:
                     ip_obj = ipaddress.ip_address(ip)
                     if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
                         logger.warning(f"Blocked attempt to access private IP: {ip} for hostname: {hostname}")
-                        # If ANY resolved IP is private, we should probably be suspicious and block the hostname entirely.
-                        # This prevents DNS rebinding attacks where one IP is safe and another is not.
-                        return None
+                        return False
                 except ValueError:
                     # Fail securely if IP cannot be parsed
                     logger.warning(f"Could not parse IP address: {ip} for hostname: {hostname}")
-                    return None
-
-            # If we get here, all IPs checked out. Return the first one.
-            if infos:
-                first_ip = infos[0][4][0]
-                if "%" in first_ip:
-                    first_ip = first_ip.split("%")[0]
-                return first_ip
-            return None
-
-        except Exception as e:
-            logger.error(f"Error resolving IP for hostname {hostname}: {e}")
-            return None
-
-    async def _is_safe_url(self, url: str) -> bool:
-        """
-        Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
-        Returns the safe IP address if valid, None otherwise.
-        """
-        try:
-            parsed = urllib.parse.urlparse(url)
-            if parsed.scheme not in ("http", "https"):
-                logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
-                return None
-            hostname = parsed.hostname
-            if not hostname:
-                return None
-
-            return (await self._resolve_safe_ip(hostname)) is not None
+                    return False
+            return True
         except Exception as e:
             # Don't log full URL in exception either
-            logger.error(
-                f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}"
-            )
-            return None
+            logger.error(f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}")
+            return False
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
         """
@@ -644,45 +615,15 @@ class FileProcessor:
 
                 # Manual redirect handling with SSRF protection
                 for _ in range(5):  # Max 5 redirects
-                    parsed_current = urllib.parse.urlparse(current_url)
-                    if parsed_current.scheme not in ('http', 'https'):
-                        return DownloadResult(success=False, message="Unsafe URL scheme")
+                    if not await self._is_safe_url(current_url):
+                        # Sanitize URL for logging (strip query params/fragments)
+                        parsed_unsafe = urllib.parse.urlparse(current_url)
+                        sanitized_unsafe = f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
+                        msg = f"Unsafe URL detected: {sanitized_unsafe}"
+                        logger.warning(msg)
+                        return DownloadResult(success=False, message="Unsafe URL detected")
 
-                    request_url = current_url
-                    headers = {}
-
-                    if parsed_current.scheme == 'http' and parsed_current.hostname:
-                        # DNS Pinning for HTTP: Resolve IP and use it directly
-                        safe_ip = await self._resolve_safe_ip(parsed_current.hostname)
-                        if not safe_ip:
-                            # Sanitize URL for logging
-                            sanitized_unsafe = f"{parsed_current.scheme}://{parsed_current.hostname}{parsed_current.path}"
-                            msg = f"Unsafe or unresolvable hostname detected: {sanitized_unsafe}"
-                            logger.warning(msg)
-                            return DownloadResult(success=False, message="Unsafe URL detected")
-
-                        # Rewrite URL to use IP
-                        safe_ip_str = safe_ip
-                        if ':' in safe_ip_str:
-                            safe_ip_str = f"[{safe_ip_str}]"
-
-                        netloc = safe_ip_str
-                        if parsed_current.port:
-                            netloc = f"{safe_ip_str}:{parsed_current.port}"
-
-                        # Use _replace to update netloc with IP, keeping path/params/query
-                        request_url = parsed_current._replace(netloc=netloc).geturl()
-                        headers['Host'] = parsed_current.hostname
-                    else:
-                        # For HTTPS, rely on _is_safe_url (which calls _resolve_safe_ip) and TLS validation
-                        if not await self._is_safe_url(current_url):
-                            # Sanitize URL for logging
-                            sanitized_unsafe = f"{parsed_current.scheme}://{parsed_current.hostname}{parsed_current.path}"
-                            msg = f"Unsafe URL detected: {sanitized_unsafe}"
-                            logger.warning(msg)
-                            return DownloadResult(success=False, message="Unsafe URL detected")
-
-                    response = await client.get(request_url, headers=headers, follow_redirects=False, timeout=30.0)
+                    response = await client.get(current_url, follow_redirects=False, timeout=30.0)
 
                     if 300 <= response.status_code < 400:
                         location = response.headers.get("Location")
@@ -692,9 +633,7 @@ class FileProcessor:
                         current_url = urllib.parse.urljoin(current_url, location)
                         parsed_redirect = urllib.parse.urlparse(current_url)
                         # Sanitize redirect URL for logging
-                        logger.info(
-                            f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}"
-                        )
+                        logger.info(f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}")
                         continue
                     else:
                         break

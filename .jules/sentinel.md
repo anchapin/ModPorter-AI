@@ -23,12 +23,3 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
-
-## 2026-02-17 - TOCTOU DNS Rebinding Prevention
-**Vulnerability:** Time-of-Check Time-of-Use (TOCTOU) vulnerability in URL validation allowing DNS Rebinding attacks. Validating a URL's IP and then requesting it allows an attacker to change the DNS record between the check and the request.
-**Learning:** Checking `_is_safe_url(url)` is insufficient because `httpx.get(url)` performs a new DNS resolution. Pinning the connection to the validated IP is required for HTTP. For HTTPS, strict pinning is complex due to SNI/Cert validation, but TLS validation generally mitigates rebinding to non-TLS internal services.
-**Prevention:**
-1. Resolve the hostname to a safe IP first (`_resolve_safe_ip`).
-2. For HTTP: Rewrite the URL to use the safe IP (`http://<safe_ip>/path`) and set the `Host` header to the original hostname.
-3. For HTTPS: Use the original hostname but rely on strict certificate verification (hostname matching) to prevent connection to internal services lacking the attacker's certificate.
-4. Ensure mocking in tests simulates this behavior by returning the IP string, not just a boolean.
