@@ -22,7 +22,7 @@ import {
   InsertDriveFile,
   Add,
   Delete,
-  Copy,
+  ContentCopy,
   Folder as FolderIcon,
   Download
 } from '@mui/icons-material';
