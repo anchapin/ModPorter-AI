@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export interface HistoryItem<T> {
   data: T;
@@ -23,7 +23,8 @@ export function useUndoRedo<T>(initialState: T, options: UndoRedoOptions = {}) {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  const initialTimestamp = useMemo(() => Date.now(), []);
+  // Use a constant timestamp to avoid impure function during render
+  const initialTimestamp = 0;
   const historyRef = useRef<HistoryItem<T>[]>([{ data: initialState, timestamp: initialTimestamp }]);
   const currentIndexRef = useRef(0);
   const debounceTimerRef = useRef<number | null>(null);

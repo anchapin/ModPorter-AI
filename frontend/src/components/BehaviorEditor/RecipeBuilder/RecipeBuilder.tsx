@@ -145,7 +145,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     const updatedRecipe = { ...currentRecipe, [field]: value };
     setCurrentRecipe(updatedRecipe, `Update ${field}`);
     onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange]);
+  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
 
   // Handle item placement in grid
   const handleItemPlace = useCallback((slot: RecipeSlot, item: RecipeItem) => {

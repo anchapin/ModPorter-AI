@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   IconButton,
   TextField,
@@ -22,8 +22,9 @@ import {
   InsertDriveFile,
   Add,
   Delete,
-  Copy,
-  Folder as FolderIcon
+  ContentCopy,
+  Folder as FolderIcon,
+  Download
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
 
@@ -515,7 +516,7 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
               navigator.clipboard.writeText(contextMenu.node.path);
               handleCloseContextMenu();
             }}>
-              <ListItemIcon><Copy fontSize="small" /></ListItemIcon>
+              <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
               <ListItemText>Copy Path</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleDelete(contextMenu.node)} disabled={readOnly}>

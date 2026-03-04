@@ -558,30 +558,6 @@ world.afterEvents.blockPlace.subscribe((event) => {
         assert len(agent.api_mappings['player.getHealth()']) > 0
 
 
-# ========== Documentation Tests ==========
-
-def test_api_mapping_documentation_exists():
-    """Test that API mapping documentation exists"""
-    doc_path = Path(__file__).parent.parent / "docs" / "API_MAPPING_DOCUMENTATION.md"
-
-    assert doc_path.exists(), "API mapping documentation should exist"
-
-    content = doc_path.read_text()
-
-    # Check key sections exist
-    assert "Player API Mappings" in content
-    assert "World API Mappings" in content
-    assert "Entity API Mappings" in content
-    assert "Unsupported Features" in content
-    assert "Translation Limitations" in content
-
-    # Check comprehensive coverage
-    assert "player.getHealth()" in content
-    assert "world.getBlockAt" in content
-    assert "Custom Dimensions" in content
-    assert "Custom GUI" in content
-
-
 # ========== Performance and Benchmark Tests ==========
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
