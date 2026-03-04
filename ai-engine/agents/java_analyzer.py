@@ -16,6 +16,12 @@ import zipfile
 from pathlib import Path
 import time
 import javalang
+try:
+    import javassist
+    JAVASSIST_AVAILABLE = True
+except ImportError:
+    JAVASSIST_AVAILABLE = False
+    logger.warning("javassist not available, bytecode analysis disabled")
 
 # Constants for file analysis limits
 FEATURE_ANALYSIS_FILE_LIMIT = 10
@@ -283,6 +289,13 @@ class JavaAnalyzerAgent:
 
             except Exception as e:
                 logger.warning(f"Error analyzing source file {source_path}: {e}")
+                # Try to extract features from class names as fallback
+                if need_features:
+                    class_name = source_path.split('/')[-1].replace('.java', '')
+                    fallback_features = self._extract_features_from_class_name(class_name)
+                    for feature_type, feature_list in fallback_features.items():
+                        if feature_type in batch_result['features']:
+                            batch_result['features'][feature_type].extend(feature_list)
                 continue
 
         # Deduplicate features
@@ -370,9 +383,22 @@ class JavaAnalyzerAgent:
                     result['dependencies'] = batch_results['dependencies']
                     result['mod_info'].update(batch_results['metadata'])
                 else:
-                    logger.info("No Java source files found in JAR, using class-based analysis")
-                    # Extract features from class names (existing approach)
-                    result['features'] = self._extract_features_from_classes(file_list)
+                    logger.info("No Java source files found in JAR, attempting bytecode analysis")
+                    
+                    # First try bytecode analysis if javassist is available
+                    if JAVASSIST_AVAILABLE:
+                        bytecode_features = self._analyze_classes_with_bytecode(jar, file_list)
+                        if bytecode_features and (bytecode_features.get('blocks') or bytecode_features.get('items') or bytecode_features.get('entities')):
+                            logger.info(f"Bytecode analysis found {len(bytecode_features['blocks'])} blocks, {len(bytecode_features['items'])} items")
+                            result['features'] = bytecode_features
+                        else:
+                            logger.info("Bytecode analysis yielded no results, falling back to class name analysis")
+                            result['features'] = self._extract_features_from_classes(file_list)
+                    else:
+                        logger.info("Javassist not available, using class name-based analysis")
+                        # Extract features from class names (existing approach)
+                        result['features'] = self._extract_features_from_classes(file_list)
+                    
                     result['dependencies'] = []  # No dependency analysis without sources
                 
                 # Mark as successful
@@ -634,6 +660,274 @@ class JavaAnalyzerAgent:
         except Exception as e:
             logger.warning(f"Failed to parse Java source: {e}")
             return None
+    
+    def _analyze_bytecode_class(self, class_data: bytes, class_name: str) -> Dict:
+        """
+        Analyze a Java class file using Javassist to extract class information.
+        
+        This provides fallback analysis when Java source files are not available.
+        
+        Args:
+            class_data: Raw bytecode data from .class file
+            class_name: Full class name (e.g., 'com/example/MyBlock')
+            
+        Returns:
+            Dictionary with extracted class information
+        """
+        if not JAVASSIST_AVAILABLE:
+            return {'error': 'javassist not available'}
+        
+        class_info = {
+            'name': class_name,
+            'superclass': None,
+            'interfaces': [],
+            'fields': [],
+            'methods': [],
+            'annotations': [],
+            'source': 'bytecode'
+        }
+        
+        try:
+            # Create a class pool and read the class
+            cp = javassist.ClassPool()
+            # Add the current directory to the class path
+            cp.appendSystemPath()
+            
+            # Create a temporary class loader
+            loader = javassist.Loader(cp)
+            
+            # Read the class from bytecode
+            ct_class = cp.make_class(javassist.bytecode.ConstPool(bytearray(class_data)))
+            
+            # Extract class name (without package)
+            simple_name = class_name.split('.')[-1]
+            class_info['simple_name'] = simple_name
+            
+            # Get superclass
+            if ct_class.getSuperclass():
+                class_info['superclass'] = ct_class.getSuperclass().getName()
+            
+            # Get interfaces
+            for interface in ct_class.getInterfaces():
+                class_info['interfaces'].append(interface.getName())
+            
+            # Get fields
+            for field in ct_class.getFields():
+                field_info = {
+                    'name': field.getName(),
+                    'type': field.getType().getName() if field.getType() else 'unknown'
+                }
+                class_info['fields'].append(field_info)
+            
+            # Get methods
+            for method in ct_class.getMethods():
+                method_info = {
+                    'name': method.getName(),
+                    'signature': method.getSignature()
+                }
+                class_info['methods'].append(method_info)
+            
+            # Get annotations (if available)
+            try:
+                RuntimeVisibleAnnotations = ct_class.getAnnotation('Ljava/lang/Deprecated;')
+                if RuntimeVisibleAnnotations:
+                    class_info['annotations'] = [str(a) for a in RuntimeVisibleAnnotations]
+            except:
+                pass  # Annotations may not be present
+            
+            logger.debug(f"Bytecode analysis of {class_name}: found {len(class_info['methods'])} methods, {len(class_info['fields'])} fields")
+            
+            return class_info
+            
+        except Exception as e:
+            logger.warning(f"Failed to analyze bytecode for {class_name}: {e}")
+            return {'error': str(e), 'name': class_name}
+    
+    def _extract_features_from_bytecode(self, class_info: Dict) -> Dict:
+        """
+        Extract mod features from bytecode-analyzed class information.
+        
+        Args:
+            class_info: Dictionary from _analyze_bytecode_class
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'type': 'unknown',
+            'name': class_info.get('simple_name', class_info.get('name', 'Unknown')),
+            'registry_name': self._class_name_to_registry_name(class_info.get('simple_name', class_info.get('name', 'Unknown'))),
+            'methods': [],
+            'properties': {}
+        }
+        
+        try:
+            name = class_info.get('simple_name', class_info.get('name', ''))
+            superclass = class_info.get('superclass', '')
+            interfaces = class_info.get('interfaces', [])
+            
+            # Determine type based on class name and superclass
+            if 'Block' in name or 'Block' in superclass:
+                features['type'] = 'block'
+                features['properties'] = self._extract_block_properties_from_bytecode(class_info)
+            elif 'Item' in name or 'Item' in superclass:
+                features['type'] = 'item'
+            elif 'Entity' in name or 'Entity' in superclass or 'Entity' in interfaces:
+                features['type'] = 'entity'
+            elif 'TileEntity' in name or 'BlockEntity' in superclass:
+                features['type'] = 'tile_entity'
+            
+            # Extract method names
+            methods = class_info.get('methods', [])
+            features['methods'] = [m.get('name', '') for m in methods]
+            
+            return features
+            
+        except Exception as e:
+            logger.warning(f"Error extracting features from bytecode: {e}")
+            return features
+    
+    def _extract_block_properties_from_bytecode(self, class_info: Dict) -> Dict:
+        """
+        Extract block properties from bytecode-analyzed class.
+        
+        Args:
+            class_info: Dictionary from _analyze_bytecode_class
+            
+        Returns:
+            Dictionary with extracted block properties
+        """
+        properties = {
+            'material': 'stone',
+            'hardness': 1.0,
+            'explosion_resistance': 0.0,
+            'sound_type': 'stone',
+            'light_level': 0,
+            'requires_tool': False,
+            'source': 'bytecode_estimate'
+        }
+        
+        try:
+            name = class_info.get('simple_name', '').lower()
+            methods = class_info.get('methods', [])
+            fields = class_info.get('fields', [])
+            
+            # Estimate properties based on naming conventions
+            if 'wood' in name or 'plank' in name:
+                properties['material'] = 'wood'
+                properties['sound_type'] = 'wood'
+                properties['hardness'] = 2.0
+            elif 'stone' in name or 'cobbl' in name:
+                properties['material'] = 'stone'
+                properties['sound_type'] = 'stone'
+                properties['hardness'] = 1.5
+            elif 'metal' in name or 'iron' in name or 'gold' in name or 'copper' in name:
+                properties['material'] = 'metal'
+                properties['sound_type'] = 'metal'
+                properties['hardness'] = 5.0
+                properties['explosion_resistance'] = 6.0
+            elif 'glass' in name:
+                properties['material'] = 'glass'
+                properties['sound_type'] = 'glass'
+                properties['hardness'] = 0.3
+            elif 'dirt' in name or 'grass' in name or 'sand' in name:
+                properties['material'] = 'dirt'
+                properties['sound_type'] = 'gravel'
+                properties['hardness'] = 0.5
+            
+            # Check methods for property hints
+            method_names = ' '.join([m.get('name', '').lower() for m in methods])
+            
+            if 'requiresCorrectTool' in method_names or 'requires_tool' in method_names:
+                properties['requires_tool'] = True
+            
+            if 'emitsLight' in method_names or 'luminance' in method_names:
+                properties['light_level'] = 0  # Would need deeper analysis for actual value
+            
+            # Check field values (constant hardness/resistance values)
+            for field in fields:
+                field_name = field.get('name', '').lower()
+                if 'hardness' in field_name:
+                    properties['hardness'] = 1.0  # Estimate, actual would require const pool analysis
+                if 'resistance' in field_name:
+                    properties['explosion_resistance'] = 3.0  # Estimate
+            
+            return properties
+            
+        except Exception as e:
+            logger.warning(f"Error extracting block properties from bytecode: {e}")
+            return properties
+    
+    def _analyze_classes_with_bytecode(self, jar, file_list: List[str]) -> Dict:
+        """
+        Analyze .class files in a JAR using bytecode analysis.
+        
+        Args:
+            jar: zipfile.ZipFile object
+            file_list: List of file paths in the JAR
+            
+        Returns:
+            Dictionary with extracted features from all analyzed classes
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'tile_entities': [],
+            'other': []
+        }
+        
+        # Filter to only .class files
+        class_files = [f for f in file_list if f.endswith('.class')]
+        
+        if not class_files:
+            logger.info("No .class files found for bytecode analysis")
+            return features
+        
+        logger.info(f"Starting bytecode analysis of {len(class_files)} class files")
+        
+        # Limit to prevent excessive processing time
+        max_classes = 50
+        analyzed_count = 0
+        
+        for class_file in class_files[:max_classes]:
+            try:
+                # Read class bytecode
+                class_data = jar.read(class_file)
+                
+                # Convert file path to class name
+                # com/example/mymod/TestBlock.class -> com.example.mymod.TestBlock
+                class_name = class_file.replace('/', '.').replace('.class', '')
+                
+                # Analyze bytecode
+                class_info = self._analyze_bytecode_class(class_data, class_name)
+                
+                if 'error' not in class_info:
+                    # Extract features from the analyzed class
+                    class_features = self._extract_features_from_bytecode(class_info)
+                    
+                    # Categorize by type
+                    if class_features['type'] == 'block':
+                        features['blocks'].append(class_features)
+                    elif class_features['type'] == 'item':
+                        features['items'].append(class_features)
+                    elif class_features['type'] == 'entity':
+                        features['entities'].append(class_features)
+                    elif class_features['type'] == 'tile_entity':
+                        features['tile_entities'].append(class_features)
+                    else:
+                        features['other'].append(class_features)
+                    
+                    analyzed_count += 1
+                    
+            except Exception as e:
+                logger.debug(f"Could not analyze class {class_file}: {e}")
+                continue
+        
+        logger.info(f"Bytecode analysis complete: analyzed {analyzed_count} classes, found {len(features['blocks'])} blocks, {len(features['items'])} items")
+        
+        return features
     
     def _extract_features_from_ast(self, tree: javalang.ast.Node) -> Dict:
         """
@@ -913,15 +1207,66 @@ class JavaAnalyzerAgent:
                     result["features"] = batch_results['features']
                     result["dependencies"] = batch_results['dependencies']
                 else:
-                    logger.info("No Java source files found in JAR, using class-based analysis")
-                    # Extract features from class names (existing approach)
-                    result["features"] = self._extract_features_from_classes(file_list)
+                    logger.info("No Java source files found in JAR, attempting bytecode analysis")
+                    
+                    # First try bytecode analysis if javassist is available
+                    if JAVASSIST_AVAILABLE:
+                        bytecode_features = self._analyze_classes_with_bytecode(jar, file_list)
+                        if bytecode_features and (bytecode_features.get('blocks') or bytecode_features.get('items') or bytecode_features.get('entities')):
+                            logger.info(f"Bytecode analysis found {len(bytecode_features['blocks'])} blocks, {len(bytecode_features['items'])} items")
+                            result["features"] = bytecode_features
+                        else:
+                            logger.info("Bytecode analysis yielded no results, falling back to class name analysis")
+                            result["features"] = self._extract_features_from_classes(file_list)
+                    else:
+                        logger.info("Javassist not available, using class name-based analysis")
+                        # Extract features from class names (existing approach)
+                        result["features"] = self._extract_features_from_classes(file_list)
                 
         except Exception as e:
             result["errors"].append(f"Error analyzing JAR file: {str(e)}")
         
         return result
     
+    
+    def _extract_features_from_class_name(self, class_name: str) -> Dict:
+        """
+        Extract features from a single class name (fallback for parse failures).
+        
+        Args:
+            class_name: Name of the Java class (without .java extension)
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'dimensions': [],
+            'gui': [],
+            'machinery': [],
+            'commands': [],
+            'events': []
+        }
+        
+        try:
+            # Use existing pattern matching for feature detection
+            for feature_type, patterns in self.feature_patterns.items():
+                for pattern in patterns:
+                    if pattern.lower() in class_name.lower():
+                        feature_entry = {
+                            'name': class_name,
+                            'registry_name': self._class_name_to_registry_name(class_name)
+                        }
+                        features[feature_type].append(feature_entry)
+                        break  # Only add to first matching category
+            
+            return features
+        except Exception as e:
+            logger.warning(f"Error extracting features from class name {class_name}: {e}")
+            return features
     
     def _extract_features_from_classes(self, file_list: List[str]) -> Dict:
         """
