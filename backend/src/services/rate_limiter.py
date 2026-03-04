@@ -22,6 +22,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, JSONResponse
 
 from config import settings
+from services.metrics import (
+    record_rate_limit_hit,
+    record_rate_limit_request,
+    update_rate_limit_usage,
+    update_active_rate_limit_clients
+)
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +293,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/redoc",
             "/openapi.json",
-            "/api/v1/metrics"
+            "/api/v1/metrics",
+            "/api/v1/rate-limit/dashboard",
+            "/api/v1/rate-limit/summary",
+            "/api/v1/rate-limit/endpoints",
+            "/api/v1/rate-limit/clients",
+            "/api/v1/rate-limit/config",
+            "/api/v1/rate-limit/metrics/prometheus"
         }
         
         # Endpoints with different limits
@@ -309,6 +321,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 limiter_config = config
                 break
         
+        # Determine client type for metrics
+        client_type = "user" if hasattr(request.state, 'user_id') and request.state.user_id else "ip"
+        
         # Apply custom config if set (passed as override_config)
         
         is_allowed, metadata = await self.rate_limiter.check_rate_limit(
@@ -317,6 +332,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         if not is_allowed:
+            # Record rate limit hit for metrics
+            endpoint = request.url.path
+            record_rate_limit_hit(endpoint, client_type)
+            record_rate_limit_request(endpoint, client_type, False)
+            
             logger.warning(
                 f"Rate limit exceeded for {self.rate_limiter._get_client_key(request)} "
                 f"on {request.url.path}"
@@ -343,6 +363,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             )
             return response
 
+        # Record allowed request
+        record_rate_limit_request(request.url.path, client_type, True)
+        
+        # Update usage metrics
+        client_key = self.rate_limiter._get_client_key(request)
+        update_rate_limit_usage(client_key, "minute", metadata.get("used_minute", 0))
+        
+        # Update active clients count
+        active_count = len(self.rate_limiter._local_state)
+        update_active_rate_limit_clients(active_count)
+        
         # Add rate limit headers to successful responses
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(metadata["limit_minute"])
