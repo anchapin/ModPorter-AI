@@ -22,7 +22,7 @@ import {
   InsertDriveFile,
   Add,
   Delete,
-  Copy,
+  ContentCopy,
   Folder as FolderIcon,
   Download
 } from '@mui/icons-material';
@@ -516,7 +516,7 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
               navigator.clipboard.writeText(contextMenu.node.path);
               handleCloseContextMenu();
             }}>
-              <ListItemIcon><Copy fontSize="small" /></ListItemIcon>
+              <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
               <ListItemText>Copy Path</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleDelete(contextMenu.node)} disabled={readOnly}>
