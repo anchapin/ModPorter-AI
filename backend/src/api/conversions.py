@@ -12,9 +12,11 @@ This module provides REST endpoints for managing conversion jobs:
 
 import logging
 import os
+import re
 import shutil
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, List
 from uuid import UUID
 
@@ -40,6 +42,15 @@ from websocket.manager import manager
 from websocket.progress_handler import ProgressHandler, AgentStatus
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
+from security.file_security import (
+    FileSecurityScanner,
+    SecurityConfig,
+    SecurityScanResult,
+    ZipBombDetectedError,
+    PathTraversalDetectedError,
+    SecurityThreatType,
+)
+from security.resource_limits import get_resource_limiter, ResourceLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +65,17 @@ ALLOWED_EXTENSIONS = {".jar", ".zip"}
 
 # Cache service
 cache = CacheService()
+
+# Security scanner instance
+_security_scanner: Optional[FileSecurityScanner] = None
+
+
+def get_security_scanner() -> FileSecurityScanner:
+    """Get or create the global security scanner instance."""
+    global _security_scanner
+    if _security_scanner is None:
+        _security_scanner = FileSecurityScanner()
+    return _security_scanner
 
 
 # Pydantic Models
@@ -160,17 +182,58 @@ def sanitize_filename(filename: str) -> str:
     Returns:
         Sanitized filename with only safe characters
     """
-    # Remove directory paths
+    # Remove directory paths (handles both / and \)
     filename = os.path.basename(filename)
-
-    # Remove dangerous characters
+    
+    # Remove any path components that might have slipped through
+    # This handles any attempts to use .. or absolute paths
+    filename = filename.replace("..", "")
+    filename = filename.replace("\\", "")
+    
+    # Also check for URL-encoded path traversal
+    filename = filename.replace("%2e%2e", "")
+    filename = filename.replace("%2E%2E", "")
+    
+    # Remove dangerous characters - only allow safe characters
+    # This is a whitelist approach: alphanumeric, underscore, hyphen, and period
     filename = "".join(c for c in filename if c.isalnum() or c in "._-")
-
+    
     # Ensure filename is not empty
     if not filename:
         filename = "uploaded_file"
-
+    
+    # Additional check: verify the filename doesn't start with a period
+    # (hidden files on Unix systems)
+    if filename.startswith("."):
+        filename = "file" + filename
+    
     return filename
+
+
+def validate_path_safe(path: str, base_dir: Path) -> bool:
+    """
+    Validate that a path doesn't escape the base directory.
+    
+    This is a defense-in-depth check for path traversal.
+    
+    Args:
+        path: The path to validate
+        base_dir: The base directory that should contain the path
+        
+    Returns:
+        True if the path is safe (within base_dir), False otherwise
+    """
+    try:
+        # Resolve the full path
+        full_path = (base_dir / path).resolve()
+        
+        # Check if the resolved path is within the base directory
+        full_path.relative_to(base_dir.resolve())
+        return True
+    except (ValueError, OSError):
+        # ValueError: path escapes base_dir
+        # OSError: invalid path components
+        return False
 
 
 def validate_file_type(filename: str) -> tuple[bool, str]:
@@ -210,6 +273,84 @@ async def validate_file_size(file: UploadFile) -> tuple[bool, str]:
         return False, f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
 
     return True, ""
+
+
+async def scan_uploaded_file(file_path: Path) -> SecurityScanResult:
+    """
+    Perform security scan on an uploaded file.
+    
+    This function:
+    - Scans for ZIP bombs and compression bombs
+    - Detects path traversal attempts
+    - Checks for nested archives
+    - Validates file count limits
+    - Checks for suspicious content
+    
+    Args:
+        file_path: Path to the uploaded file
+        
+    Returns:
+        SecurityScanResult with scan findings
+        
+    Raises:
+        HTTPException: If critical security threats are found
+    """
+    scanner = get_security_scanner()
+    result = scanner.scan_file(file_path)
+    
+    if result.has_critical_threats:
+        logger.warning(f"Critical security threat detected in {file_path}: {result.threats}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File rejected due to security threat: {result.threats[0].message}"
+        )
+    
+    if result.has_high_threats:
+        logger.warning(f"High severity security threat detected in {file_path}: {result.threats}")
+        # Log but don't reject for high severity - could be false positives
+    
+    return result
+
+
+async def validate_and_scan_file(file: UploadFile, file_path: Path) -> SecurityScanResult:
+    """
+    Validate and scan an uploaded file.
+    
+    Performs both basic validation (size, type) and security scanning.
+    
+    Args:
+        file: The uploaded file
+        file_path: Path where the file will be saved
+        
+    Returns:
+        SecurityScanResult with scan findings
+        
+    Raises:
+        HTTPException: If validation or scanning fails
+    """
+    # Step 1: Validate file size
+    is_valid_size, size_error = await validate_file_size(file)
+    if not is_valid_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=size_error
+        )
+    
+    # Step 2: Validate file type
+    is_valid_type, type_error = validate_file_type(file.filename or "unknown")
+    if not is_valid_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=type_error
+        )
+    
+    # Step 3: Sanitize filename to prevent path traversal
+    safe_filename = sanitize_filename(file.filename or "uploaded_file")
+    
+    # Step 4: Perform security scan
+    result = await scan_uploaded_file(file_path)
+    
+    return result
 
 
 # WebSocket Endpoint
@@ -376,6 +517,22 @@ async def create_conversion(
             for chunk in file.file:
                 buffer.write(chunk)
         logger.info(f"File saved: {file_path}")
+        
+        # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
+        try:
+            security_result = await scan_uploaded_file(Path(file_path))
+            logger.info(
+                f"Security scan completed for {file_path}: "
+                f"safe={security_result.is_safe}, threats={len(security_result.threats)}"
+            )
+        except HTTPException:
+            # Re-raise HTTP exceptions from security scan (file rejected)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise
+        except Exception as e:
+            # Log but don't fail on security scan errors
+            logger.error(f"Security scan error (continuing): {e}")
     except Exception as e:
         logger.error(f"Failed to save file: {e}")
         raise HTTPException(
@@ -851,9 +1008,30 @@ async def upload_chunk(
             detail=f"Chunk size exceeds maximum of {CHUNK_SIZE} bytes"
         )
     
-    # Save chunk to disk
+    # SECURITY: Validate chunk_number is within reasonable bounds
+    if chunk_number < 1 or chunk_number > 10000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid chunk number"
+        )
+    
+    # Save chunk to disk - use safe path construction to prevent path traversal
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
-    chunk_path = os.path.join(chunks_dir, f"chunk_{chunk_number:04d}")
+    
+    # SECURITY: Validate the chunks_dir is within allowed directory
+    base_dir = Path(TEMP_UPLOADS_DIR).resolve()
+    if not validate_path_safe(os.path.join("chunks", upload_id_str), base_dir):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid upload session"
+        )
+    
+    # Ensure chunks directory exists
+    os.makedirs(chunks_dir, exist_ok=True)
+    
+    # SECURITY: Construct chunk filename safely - only allow numeric extension
+    safe_chunk_name = f"chunk_{chunk_number:04d}"
+    chunk_path = os.path.join(chunks_dir, safe_chunk_name)
     
     with open(chunk_path, "wb") as f:
         f.write(chunk_data)
@@ -985,6 +1163,22 @@ async def complete_chunked_upload(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"File size mismatch. Expected {total_size}, got {actual_size}"
             )
+        
+        # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
+        try:
+            security_result = await scan_uploaded_file(Path(file_path))
+            logger.info(
+                f"Security scan completed for {file_path}: "
+                f"safe={security_result.is_safe}, threats={len(security_result.threats)}"
+            )
+        except HTTPException:
+            # Re-raise HTTP exceptions from security scan (file rejected)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise
+        except Exception as e:
+            # Log but don't fail on security scan errors
+            logger.error(f"Security scan error (continuing): {e}")
         
         # Update upload status
         upload_metadata["status"] = "completed"
