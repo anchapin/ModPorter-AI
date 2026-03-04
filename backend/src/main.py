@@ -28,6 +28,7 @@ from services.report_models import InteractiveReport, FullConversionReport # For
 from services.report_generator import ConversionReportGenerator
 from services.error_handlers import register_exception_handlers
 from services.rate_limiter import RateLimitMiddleware, get_rate_limiter, init_rate_limiter, close_rate_limiter, create_global_limiter
+from services.security_headers import SecurityHeadersMiddleware
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions, mod_imports
@@ -124,6 +125,9 @@ app.add_middleware(
 # Initialization (Redis connection) happens in startup
 rate_limiter = create_global_limiter()
 app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+
+# Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 @app.on_event("startup")
 async def startup_event():
