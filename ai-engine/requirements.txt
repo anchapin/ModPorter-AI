@@ -23,6 +23,7 @@ python-dotenv
 
 # Java analysis
 javalang>=0.13.0
+javassist>=3.30.0
 
 # File processing
 Pillow

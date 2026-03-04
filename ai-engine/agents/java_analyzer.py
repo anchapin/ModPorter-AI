@@ -16,6 +16,12 @@ import zipfile
 from pathlib import Path
 import time
 import javalang
+try:
+    import javassist
+    JAVASSIST_AVAILABLE = True
+except ImportError:
+    JAVASSIST_AVAILABLE = False
+    logger.warning("javassist not available, bytecode analysis disabled")
 
 # Make javassist optional - will be used for bytecode analysis if available
 try:
@@ -671,56 +677,6 @@ class JavaAnalyzerAgent:
             return self._parse_java_source_fallback(source_code)
         except Exception as e:
             logger.warning(f"Failed to parse Java source: {e}")
-            return None
-    
-    def _parse_java_source_fallback(self, source_code: str) -> Optional[javalang.ast.Node]:
-        """
-        Fallback parsing that tries to handle partial/incomplete Java source code.
-        
-        Attempts to extract useful information even from code that fails full parsing.
-        
-        Args:
-            source_code: Java source code as string
-            
-        Returns:
-            Partial AST or None if parsing fails completely
-        """
-        try:
-            # Try to extract imports using regex as fallback
-            import re
-            import_statements = re.findall(r'^import\s+([^;]+);', source_code, re.MULTILINE)
-            
-            # Try to extract class declarations using regex
-            class_pattern = r'(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:abstract\s+)?class\s+(\w+)'
-            class_matches = re.findall(class_pattern, source_code)
-            
-            # Create a minimal AST-like structure
-            class FakeAST:
-                def __init__(self):
-                    self.imports = []
-                    for imp in import_statements:
-                        class FakeImport:
-                            def __init__(self, path):
-                                self.path = path
-                        self.imports.append(FakeImport(imp))
-                    self.classes = class_matches
-                    
-                def __iter__(self):
-                    """Support tree walking"""
-                    # Yield fake class declarations for compatibility
-                    for class_name in self.classes:
-                        class FakeClassNode:
-                            def __init__(self, name):
-                                self.name = name
-                                self.methods = []
-                                self.qualifier = ''
-                                self.annotations = []
-                        yield [], FakeClassNode(class_name)
-            
-            logger.debug(f"Fallback parsing extracted {len(import_statements)} imports and {len(class_matches)} classes")
-            return FakeAST()
-        except Exception as e:
-            logger.warning(f"Fallback parsing also failed: {e}")
             return None
     
     def _analyze_bytecode_class(self, class_data: bytes, class_name: str) -> Dict:
