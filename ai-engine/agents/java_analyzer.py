@@ -4,7 +4,7 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 
 import json
 import re
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Any
 from crewai.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine,
@@ -650,6 +650,8 @@ class JavaAnalyzerAgent:
         """
         Parse Java source code into an AST using javalang.
         
+        Improved to handle more Java syntax with better error handling.
+        
         Args:
             source_code: Java source code as string
             
@@ -659,8 +661,66 @@ class JavaAnalyzerAgent:
         try:
             tree = javalang.parse.parse(source_code)
             return tree
+        except javalang.parser.ParserError as e:
+            # Handle specific parser errors with more context
+            logger.warning(f"Parser error while parsing Java source: {e}")
+            # Try to extract partial information even from malformed code
+            return self._parse_java_source_fallback(source_code)
+        except javalang.parser.JavaSyntaxError as e:
+            logger.warning(f"Java syntax error: {e}")
+            return self._parse_java_source_fallback(source_code)
         except Exception as e:
             logger.warning(f"Failed to parse Java source: {e}")
+            return None
+    
+    def _parse_java_source_fallback(self, source_code: str) -> Optional[javalang.ast.Node]:
+        """
+        Fallback parsing that tries to handle partial/incomplete Java source code.
+        
+        Attempts to extract useful information even from code that fails full parsing.
+        
+        Args:
+            source_code: Java source code as string
+            
+        Returns:
+            Partial AST or None if parsing fails completely
+        """
+        try:
+            # Try to extract imports using regex as fallback
+            import re
+            import_statements = re.findall(r'^import\s+([^;]+);', source_code, re.MULTILINE)
+            
+            # Try to extract class declarations using regex
+            class_pattern = r'(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:abstract\s+)?class\s+(\w+)'
+            class_matches = re.findall(class_pattern, source_code)
+            
+            # Create a minimal AST-like structure
+            class FakeAST:
+                def __init__(self):
+                    self.imports = []
+                    for imp in import_statements:
+                        class FakeImport:
+                            def __init__(self, path):
+                                self.path = path
+                        self.imports.append(FakeImport(imp))
+                    self.classes = class_matches
+                    
+                def __iter__(self):
+                    """Support tree walking"""
+                    # Yield fake class declarations for compatibility
+                    for class_name in self.classes:
+                        class FakeClassNode:
+                            def __init__(self, name):
+                                self.name = name
+                                self.methods = []
+                                self.qualifier = ''
+                                self.annotations = []
+                        yield [], FakeClassNode(class_name)
+            
+            logger.debug(f"Fallback parsing extracted {len(import_statements)} imports and {len(class_matches)} classes")
+            return FakeAST()
+        except Exception as e:
+            logger.warning(f"Fallback parsing also failed: {e}")
             return None
     
     def _analyze_bytecode_class(self, class_data: bytes, class_name: str) -> Dict:
@@ -1107,6 +1167,8 @@ class JavaAnalyzerAgent:
         """
         Extract mod metadata from parsed Java AST.
         
+        Improved to handle more annotation types and complex annotation structures.
+        
         Args:
             tree: Parsed Java AST
             
@@ -1114,13 +1176,17 @@ class JavaAnalyzerAgent:
             Dictionary with extracted metadata
         """
         metadata = {}
+        annotations_found = []
         
         try:
             # Look for annotations that might indicate mod information
             for path, node in tree:
                 if isinstance(node, javalang.tree.Annotation):
+                    annotation_data = self._extract_annotation_data(node)
+                    annotations_found.append(annotation_data)
+                    
                     # Check for common mod annotations
-                    if node.name in ['Mod', 'ModInstance', 'Instance']:
+                    if node.name in ['Mod', 'ModInstance', 'Instance', 'ModEventBusSubscriber']:
                         # Extract the annotation element
                         if hasattr(node, 'element') and node.element is not None:
                             element = node.element
@@ -1132,16 +1198,140 @@ class JavaAnalyzerAgent:
                                 else:
                                     metadata['value'] = element.value
                             else:
+                                # Handle complex annotation elements (key-value pairs)
                                 metadata['value'] = str(element)
+                    
+                    # Handle other common Minecraft/Forge annotations
+                    elif node.name in ['SubscribeEvent', 'Mod.EventBusSubscriber']:
+                        metadata['event_subscriber'] = True
+                    
+                    elif node.name == 'ObjectHolder':
+                        # Extract ObjectHolder annotation for registry entries
+                        if hasattr(node, 'element') and node.element:
+                            obj_holder = self._extract_annotation_element(node.element)
+                            if obj_holder:
+                                metadata['object_holder'] = obj_holder
             
+            # Store all annotations found for comprehensive analysis
+            if annotations_found:
+                metadata['all_annotations'] = annotations_found
+                
             return metadata
         except Exception as e:
             logger.warning(f"Error extracting metadata from AST: {e}")
             return metadata
     
+    def _extract_annotation_data(self, node: javalang.tree.Annotation) -> Dict:
+        """
+        Extract comprehensive data from an annotation node.
+        
+        Args:
+            node: Annotation AST node
+            
+        Returns:
+            Dictionary with annotation data
+        """
+        annotation_info = {
+            'name': node.name if hasattr(node, 'name') else 'unknown',
+            'type': 'unknown'
+        }
+        
+        try:
+            # Determine annotation type
+            if node.name:
+                name_lower = node.name.lower()
+                if name_lower in ['mod', 'modinstance', 'modid']:
+                    annotation_info['type'] = 'mod_id'
+                elif 'eventbus' in name_lower or 'subscribe' in name_lower:
+                    annotation_info['type'] = 'event_subscriber'
+                elif 'objectholder' in name_lower:
+                    annotation_info['type'] = 'object_holder'
+                elif name_lower.startswith('inject') or name_lower.startswith('redirect'):
+                    annotation_info['type'] = 'mixin'
+            
+            # Extract annotation element value(s)
+            if hasattr(node, 'element') and node.element:
+                element_value = self._extract_annotation_element(node.element)
+                if element_value:
+                    annotation_info['value'] = element_value
+                    
+            return annotation_info
+            
+        except Exception as e:
+            logger.debug(f"Error extracting annotation data: {e}")
+            return annotation_info
+    
+    def _extract_annotation_element(self, element) -> Optional[Any]:
+        """
+        Extract value from an annotation element, handling various formats.
+        
+        Handles:
+        - Simple literal values
+        - Key-value pairs (element-value pairs)
+        - Nested annotations
+        - Arrays
+        
+        Args:
+            element: Annotation element node
+            
+        Returns:
+            Extracted value or None
+        """
+        if element is None:
+            return None
+            
+        try:
+            # Direct value attribute
+            if hasattr(element, 'value'):
+                value = element.value
+                if isinstance(value, str):
+                    return value.strip('"')
+                return value
+            
+            # Element value pair (for key="value" annotations)
+            if hasattr(element, 'element') and hasattr(element, 'value'):
+                # This is an ElementValuePair
+                key = element.element if hasattr(element, 'element') else 'unknown'
+                val = element.value
+                
+                if isinstance(val, str):
+                    return {key: val.strip('"')}
+                elif hasattr(val, 'value'):
+                    val_str = val.value
+                    if isinstance(val_str, str):
+                        return {key: val_str.strip('"')}
+                    return {key: val_str}
+                return {key: str(val)}
+            
+            # Literal node
+            if hasattr(element, 'literal'):
+                return str(element.literal).strip('"')
+            
+            # For arrays, collect all values
+            if hasattr(element, 'values'):
+                values = []
+                for val in element.values:
+                    if hasattr(val, 'value'):
+                        val_str = val.value
+                        if isinstance(val_str, str):
+                            values.append(val_str.strip('"'))
+                        else:
+                            values.append(val_str)
+                    elif hasattr(val, 'literal'):
+                        values.append(str(val.literal).strip('"'))
+                return values if values else None
+            
+            return str(element)
+            
+        except Exception as e:
+            logger.debug(f"Error extracting annotation element: {e}")
+            return None
+    
     def _analyze_dependencies_from_ast(self, tree: javalang.ast.Node) -> List[Dict]:
         """
         Analyze dependencies from parsed Java AST.
+        
+        Improved to also detect reflection usage and API patterns.
         
         Args:
             tree: Parsed Java AST
@@ -1150,6 +1340,7 @@ class JavaAnalyzerAgent:
             List of dependency information
         """
         dependencies = []
+        reflection_uses = []
         
         try:
             # Extract import statements
@@ -1173,11 +1364,141 @@ class JavaAnalyzerAgent:
                                 'type': 'implicit',
                                 'method': node.member
                             })
+                    
+                    # Detect reflection usage patterns
+                    method_name = node.member.lower() if hasattr(node, 'member') else ''
+                    if method_name in ['class_forname', 'class', 'getmethod', 'getfield', 
+                                       'getdeclaredmethod', 'getdeclaredfield', 'newinstance',
+                                       'invoke', 'setaccessible', 'getclass']:
+                        reflection_uses.append({
+                            'type': 'reflection',
+                            'method': method_name,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None,
+                            'static_analysis': 'Note: Reflection usage detected. Static analysis has limited visibility into dynamically accessed members.'
+                        })
             
+            # Detect reflection patterns in string literals (Class.forName("..."))
+            if hasattr(tree, 'children'):
+                for child in tree.children:
+                    if isinstance(child, str):
+                        # Check for class name patterns in string literals
+                        if 'net.' in child or 'com.' in child or 'org.' in child:
+                            reflection_uses.append({
+                                'type': 'string_reflection',
+                                'pattern': 'Potential class name in string',
+                                'static_analysis': 'Dynamic class loading detected in string. Full analysis requires runtime information.'
+                            })
+            
+            # Combine dependencies with reflection analysis
+            if reflection_uses:
+                dependencies.extend(reflection_uses)
+                
             return dependencies
         except Exception as e:
             logger.warning(f"Error analyzing dependencies from AST: {e}")
             return dependencies
+    
+    def _detect_reflection_in_mods(self, tree: javalang.ast.Node) -> Dict:
+        """
+        Detect reflection usage in mods through static analysis.
+        
+        This helps identify dynamically accessed classes and methods that
+        cannot be fully analyzed statically.
+        
+        Args:
+            tree: Parsed Java AST
+            
+        Returns:
+            Dictionary with reflection detection results
+        """
+        reflection_info = {
+            'detected': False,
+            'class_forname': [],
+            'method_reflection': [],
+            'field_reflection': [],
+            'warnings': []
+        }
+        
+        try:
+            for path, node in tree:
+                # Check for Class.forName calls
+                if isinstance(node, javalang.tree.MethodInvocation):
+                    member = node.member.lower() if hasattr(node, 'member') else ''
+                    
+                    if member == 'class_forname':
+                        reflection_info['detected'] = True
+                        # Try to extract the class name argument
+                        if node.arguments and len(node.arguments) > 0:
+                            arg = node.arguments[0]
+                            class_name = self._extract_string_value(arg)
+                            if class_name:
+                                reflection_info['class_forname'].append(class_name)
+                    
+                    # Check for getMethod, getDeclaredMethod
+                    elif member in ['getmethod', 'getdeclaredmethod']:
+                        reflection_info['detected'] = True
+                        reflection_info['method_reflection'].append({
+                            'method': member,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None
+                        })
+                    
+                    # Check for getField, getDeclaredField
+                    elif member in ['getfield', 'getdeclaredfield']:
+                        reflection_info['detected'] = True
+                        reflection_info['field_reflection'].append({
+                            'method': member,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None
+                        })
+                    
+                    # Check for setAccessible
+                    elif member == 'setaccessible':
+                        reflection_info['detected'] = True
+                
+                # Check for .class literal (ClassName.class)
+                elif isinstance(node, javalang.tree.ClassReference):
+                    # This is normal usage, not reflection
+                    pass
+                    
+                # Check for type cast to Class<?>
+                elif isinstance(node, javalang.tree.TypeCast):
+                    if hasattr(node, 'type') and hasattr(node.type, 'name'):
+                        if node.type.name == 'Class':
+                            reflection_info['warnings'].append(
+                                'Type cast to Class detected - may indicate reflection usage'
+                            )
+            
+            if reflection_info['detected']:
+                logger.debug(f"Reflection detected in mod: {len(reflection_info['class_forname'])} Class.forName, "
+                           f"{len(reflection_info['method_reflection'])} method reflections")
+                
+            return reflection_info
+            
+        except Exception as e:
+            logger.warning(f"Error detecting reflection: {e}")
+            return reflection_info
+    
+    def _extract_string_value(self, node) -> Optional[str]:
+        """
+        Extract string value from an AST node.
+        
+        Args:
+            node: AST node that may contain a string literal
+            
+        Returns:
+            String value or None
+        """
+        if node is None:
+            return None
+            
+        # Direct string value
+        if hasattr(node, 'value') and isinstance(node.value, str):
+            return node.value.strip('"\'')
+        
+        # Literal node
+        if hasattr(node, 'literal'):
+            return str(node.literal).strip('"\'')
+        
+        return None
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
