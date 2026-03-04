@@ -83,16 +83,25 @@ describe('ConversionHistory', () => {
     expect(screen.getByText(/Delete Selected/i)).toBeInTheDocument();
   });
 
-  it('deletes an item', async () => {
+  it('deletes an item after confirmation', async () => {
     render(<ConversionHistory />);
 
     await waitFor(() => {
       expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
     });
 
+    // 1. Click delete button (trash icon)
     const deleteButtons = screen.getAllByTitle('Remove from history');
     fireEvent.click(deleteButtons[0]);
 
+    // 2. Expect confirmation buttons to appear
+    const confirmButton = await screen.findByTitle('Confirm deletion');
+    expect(confirmButton).toBeInTheDocument();
+
+    // 3. Click confirm
+    fireEvent.click(confirmButton);
+
+    // 4. Verify item is removed
     await waitFor(() => {
       expect(screen.queryByText('test-mod.jar')).not.toBeInTheDocument();
     });

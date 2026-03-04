@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { ConversionHistoryItem as IConversionHistoryItem } from './types';
 import { formatDate, formatFileSize, getStatusColor, getStatusIcon } from './utils';
 import './ConversionHistory.css';
@@ -18,6 +18,8 @@ export const ConversionHistoryItem = memo(({
   onDelete,
   onDownload
 }: ConversionHistoryItemProps) => {
+  const [showConfirm, setShowConfirm] = useState(false);
+
   return (
     <div
       className={`history-item ${isSelected ? 'selected' : ''}`}
@@ -77,7 +79,7 @@ export const ConversionHistoryItem = memo(({
       </div>
 
       <div className="item-actions">
-        {item.status === 'completed' && (
+        {item.status === 'completed' && !showConfirm && (
           <button
             className="download-btn"
             onClick={() => onDownload(item.job_id, item.original_filename)}
@@ -88,14 +90,36 @@ export const ConversionHistoryItem = memo(({
           </button>
         )}
 
-        <button
-          className="delete-btn"
-          onClick={() => onDelete(item.job_id)}
-          title="Remove from history"
-          aria-label={`Remove ${item.original_filename} from history`}
-        >
-          🗑️
-        </button>
+        {showConfirm ? (
+           <div className="confirm-delete-group" role="group" aria-label="Confirm deletion">
+             <button
+                className="confirm-yes-btn"
+                onClick={() => onDelete(item.job_id)}
+                aria-label="Confirm deletion"
+                title="Confirm deletion"
+             >
+               ✓
+             </button>
+             <button
+                className="confirm-no-btn"
+                onClick={() => setShowConfirm(false)}
+                aria-label="Cancel deletion"
+                title="Cancel deletion"
+                autoFocus
+             >
+               ✕
+             </button>
+           </div>
+        ) : (
+            <button
+              className="delete-btn"
+              onClick={() => setShowConfirm(true)}
+              title="Remove from history"
+              aria-label={`Remove ${item.original_filename} from history`}
+            >
+              🗑️
+            </button>
+        )}
       </div>
     </div>
   );

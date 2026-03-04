@@ -3,12 +3,11 @@ import os
 import sys
 from pathlib import Path
 
-# Add ONLY the ai-engine directory to Python path
-# Do NOT add project root as it causes conflicts with the models package
-# (backend/src/models vs ai-engine/models)
+# Add the ai-engine and project root directories to Python path
 ai_engine_root = Path(__file__).parent
-if str(ai_engine_root) not in sys.path:
-    sys.path.insert(0, str(ai_engine_root))
+project_root = ai_engine_root.parent
+sys.path.insert(0, str(ai_engine_root))
+sys.path.insert(0, str(project_root))
 
 # Set testing environment
 os.environ["TESTING"] = "true"
