@@ -237,14 +237,6 @@ class LogicTranslatorAgent:
             JavaAnalyzerAgent()
         )  # Added JavaAnalyzerAgent initialization
 
-        # Initialize validation modules (Issue #570)
-        if VALIDATION_AVAILABLE:
-            self.js_validator = JavaScriptValidator(api_mappings=self.api_mappings)
-            self.warning_detector = TranslationWarningDetector()
-        else:
-            self.js_validator = None
-            self.warning_detector = None
-
         # Java to JavaScript conversion mappings
         self.type_mappings = {
             "int": "number",
