@@ -444,6 +444,17 @@ class LogicTranslatorAgent:
             "ItemUseOnEvent": "world.afterEvents.itemUseOn",
         }
 
+        # Initialize validation modules (Issue #570)
+        if VALIDATION_AVAILABLE:
+            self.js_validator = JavaScriptValidator(api_mappings=self.api_mappings)
+            self.warning_detector = TranslationWarningDetector()
+        else:
+            self.js_validator = None
+            self.warning_detector = None
+
+        # Tools initialization
+        self.tools = self.get_tools()
+
     def _get_javascript_type(self, java_type):
         """Convert Java type to JavaScript type"""
         if java_type is None:
