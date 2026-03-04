@@ -266,7 +266,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     }
   }, [currentConversionId, validateFile, resetConversionState]);
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open } = useDropzone({
     onDrop,
     accept: {
       'application/java-archive': ['.jar'],
@@ -417,6 +417,11 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         Upload your Java Edition modpack and we'll convert it to Bedrock Edition using smart assumptions.
       </p>
 
+      {/* Hidden live region for status updates */}
+      <div className="sr-only" role="status" aria-live="polite">
+        {getStatusMessage()}
+      </div>
+
       {error && (
         <div className="error-message" role="alert" aria-live="polite">
           <span className="error-icon" aria-hidden="true">⚠️</span>
@@ -428,7 +433,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         {/* File Upload Area */}
         <div
           {...getRootProps()}
-          className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
+          className={`dropzone ${isDragActive ? 'drag-active' : ''} ${isDragReject ? 'drag-reject' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
         >
           <input {...getInputProps()} aria-label="File upload" disabled={isProcessing || isCompleted} />
 
@@ -463,8 +468,8 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             </div>
           ) : (
             <div className="upload-prompt initial-prompt">
-              <div className="upload-icon-large">☁️</div>
-              <h3>Drag & drop your modpack here</h3>
+              <div className="upload-icon-large">{isDragReject ? '🚫' : '☁️'}</div>
+              <h3>{isDragReject ? 'Unsupported file type' : 'Drag & drop your modpack here'}</h3>
               <button
                 type="button"
                 className="browse-button"
