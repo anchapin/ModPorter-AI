@@ -94,6 +94,13 @@ describe('ConversionHistory', () => {
     fireEvent.click(deleteButtons[0]);
 
     await waitFor(() => {
+      expect(screen.getByText('Yes')).toBeInTheDocument();
+    });
+
+    const yesButton = screen.getByText('Yes');
+    fireEvent.click(yesButton);
+
+    await waitFor(() => {
       expect(screen.queryByText('test-mod.jar')).not.toBeInTheDocument();
     });
 
