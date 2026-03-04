@@ -6,6 +6,7 @@ on:
 
 jobs:
   build-and-push:
+    if: ${{ secrets.DOCKER_HUB_USERNAME != '' && secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
