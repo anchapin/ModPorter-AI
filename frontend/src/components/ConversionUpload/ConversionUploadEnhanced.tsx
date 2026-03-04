@@ -14,7 +14,7 @@ import {
   ConversionStatusEnum
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
-import { ConversionOptions } from './ConversionOptions';
+import ConversionOptions from './ConversionOptions';
 import './ConversionUpload.css';
 
 // Configuration constants

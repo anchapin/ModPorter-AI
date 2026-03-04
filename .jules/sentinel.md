@@ -23,3 +23,11 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
+
+## 2025-11-10 - Security Headers Middleware Pattern
+**Vulnerability:** Missing standard security headers leaving the application vulnerable to clickjacking and MIME sniffing.
+**Learning:** Frameworks often omit security headers by default. A dedicated middleware is the most robust way to enforce them globally without cluttering route handlers. `Content-Security-Policy` requires careful planning and should not be added hastily.
+**Prevention:**
+1. Use a dedicated `SecurityHeadersMiddleware`.
+2. Enforce `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
+3. Use `Referrer-Policy: strict-origin-when-cross-origin`.

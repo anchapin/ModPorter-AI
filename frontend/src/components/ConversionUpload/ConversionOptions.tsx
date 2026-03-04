@@ -1,24 +1,14 @@
-import React, { useState, memo } from 'react';
+import React, { memo, useState } from 'react';
 import './ConversionUpload.css';
 
 interface ConversionOptionsProps {
   smartAssumptions: boolean;
-  setSmartAssumptions: (value: boolean) => void;
+  setSmartAssumptions: (val: boolean) => void;
   includeDependencies: boolean;
-  setIncludeDependencies: (value: boolean) => void;
+  setIncludeDependencies: (val: boolean) => void;
   disabled: boolean;
 }
 
-/**
- * Renders the conversion configuration options (Smart Assumptions, Include Dependencies).
- *
- * Optimized with React.memo to prevent unnecessary re-renders when parent component
- * updates frequently (e.g., during file upload progress tracking).
- *
- * Expected Performance Impact:
- * - Prevents ~10 re-renders per second during the upload phase.
- * - Reduces main thread blocking during high-frequency state updates in parent.
- */
 export const ConversionOptions = memo(({
   smartAssumptions,
   setSmartAssumptions,
@@ -26,7 +16,6 @@ export const ConversionOptions = memo(({
   setIncludeDependencies,
   disabled
 }: ConversionOptionsProps) => {
-  // Local state for info panel visibility prevents parent re-renders when toggled
   const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
 
   return (
@@ -89,3 +78,5 @@ export const ConversionOptions = memo(({
 });
 
 ConversionOptions.displayName = 'ConversionOptions';
+
+export default ConversionOptions;
