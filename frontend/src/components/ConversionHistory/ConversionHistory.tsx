@@ -20,30 +20,14 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   maxItems = 50,
   onStartNewConversion
 }) => {
-  // Lazy initialization of history from localStorage
-  const [history, setHistory] = useState<ConversionHistoryItem[]>(() => {
-    try {
-      const storedHistory = localStorage.getItem('modporter_conversion_history');
-      if (!storedHistory) return [];
-      const parsedHistory: ConversionHistoryItem[] = JSON.parse(storedHistory);
-      // Sort by creation date (newest first) using string comparison for ISO dates
-      return parsedHistory.sort((a, b) =>
-        (b.created_at || '').localeCompare(a.created_at || '')
-      ).slice(0, maxItems);
-    } catch (err) {
-      console.error('Failed to load conversion history:', err);
-      return [];
-    }
-  });
-
-  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<ConversionHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Confirmation states
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const isMountedRef = React.useRef(false);
 
   // Reset confirmDelete when selection is cleared
   useEffect(() => {
@@ -53,7 +37,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   }, [selectedItems.size]);
 
   // Load conversion history from localStorage
-  const loadHistory = useCallback(() => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -62,9 +46,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       const parsedHistory: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
       
       // Sort by creation date (newest first)
-      // Optimization: String comparison for ISO dates
       const sortedHistory = parsedHistory.sort((a, b) => 
-        (b.created_at || '').localeCompare(a.created_at || '')
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       
       setHistory(sortedHistory.slice(0, maxItems));
@@ -78,13 +61,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }
   }, [maxItems]);
 
-  // Only load history on subsequent updates (e.g. maxItems change), skip initial mount
   useEffect(() => {
-    if (isMountedRef.current) {
-      loadHistory();
-    } else {
-      isMountedRef.current = true;
-    }
+    loadHistory();
   }, [loadHistory]);
 
   // Sync state to localStorage whenever history changes

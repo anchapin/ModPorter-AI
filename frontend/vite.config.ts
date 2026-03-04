@@ -36,12 +36,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: ['e2e/**/*', 'node_modules/**/*', 'dist/**/*'],
+    exclude: ['e2e/**/*'],
     pool: 'vmThreads',
     poolOptions: {
-      maxThreads: 2,
-      minThreads: 1,
-      isolate: false,
+      vmThreads: {
+        maxThreads: 2,
+        minThreads: 1,
+        isolate: false,
+      },
     },
     hookTimeout: 30000,
     testTimeout: 10000,

@@ -14,7 +14,6 @@ import {
   ConversionStatusEnum
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
-import ConversionOptions from './ConversionOptions';
 import './ConversionUpload.css';
 
 // Configuration constants
@@ -57,6 +56,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentConversionId, setCurrentConversionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
 
   // Progress tracking
   const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
@@ -266,7 +266,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     }
   }, [currentConversionId, validateFile, resetConversionState]);
 
-  const { getRootProps, getInputProps, isDragActive, isDragReject, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'application/java-archive': ['.jar'],
@@ -417,11 +417,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         Upload your Java Edition modpack and we'll convert it to Bedrock Edition using smart assumptions.
       </p>
 
-      {/* Hidden live region for status updates */}
-      <div className="sr-only" role="status" aria-live="polite">
-        {getStatusMessage()}
-      </div>
-
       {error && (
         <div className="error-message" role="alert" aria-live="polite">
           <span className="error-icon" aria-hidden="true">⚠️</span>
@@ -433,7 +428,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         {/* File Upload Area */}
         <div
           {...getRootProps()}
-          className={`dropzone ${isDragActive ? 'drag-active' : ''} ${isDragReject ? 'drag-reject' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
+          className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
         >
           <input {...getInputProps()} aria-label="File upload" disabled={isProcessing || isCompleted} />
 
@@ -468,8 +463,8 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             </div>
           ) : (
             <div className="upload-prompt initial-prompt">
-              <div className="upload-icon-large">{isDragReject ? '🚫' : '☁️'}</div>
-              <h3>{isDragReject ? 'Unsupported file type' : 'Drag & drop your modpack here'}</h3>
+              <div className="upload-icon-large">☁️</div>
+              <h3>Drag & drop your modpack here</h3>
               <button
                 type="button"
                 className="browse-button"
@@ -509,13 +504,61 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
 
         {/* Configuration Options */}
         {!isFinished && (
-          <ConversionOptions
-            smartAssumptions={smartAssumptions}
-            setSmartAssumptions={setSmartAssumptions}
-            includeDependencies={includeDependencies}
-            setIncludeDependencies={setIncludeDependencies}
-            disabled={isProcessing || isCompleted}
-          />
+          <div className={`conversion-options ${isProcessing || isCompleted ? 'disabled-options' : ''}`}>
+            <div className="option-group">
+              <div className="checkbox-with-info">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={smartAssumptions}
+                    onChange={(e) => setSmartAssumptions(e.target.checked)}
+                    disabled={isProcessing || isCompleted}
+                  />
+                  <span className="checkmark"></span>
+                  Enable Smart Assumptions
+                </label>
+                <button
+                  type="button"
+                  className="info-button"
+                  onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
+                  aria-label="Learn more about smart assumptions"
+                  aria-expanded={showSmartAssumptionsInfo}
+                  aria-controls="smart-assumptions-info"
+                  disabled={isProcessing || isCompleted}
+                >
+                  ?
+                </button>
+              </div>
+
+              {showSmartAssumptionsInfo && (
+                <div className="info-panel" id="smart-assumptions-info">
+                  <h4>Smart Assumptions</h4>
+                  <p>
+                    When enabled, our AI will make intelligent assumptions to convert incompatible features:
+                  </p>
+                  <ul>
+                    <li>Custom dimensions → Large structures in existing dimensions</li>
+                    <li>Complex machinery → Simplified blocks with similar functionality</li>
+                    <li>Custom GUIs → Book or sign-based interfaces</li>
+                  </ul>
+                  <p>This increases conversion success rate but may alter some mod features.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="option-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={includeDependencies}
+                  onChange={(e) => setIncludeDependencies(e.target.checked)}
+                  disabled={isProcessing || isCompleted}
+                />
+                <span className="checkmark"></span>
+                Include Dependencies
+              </label>
+            </div>
+          </div>
         )}
 
         {/* Progress Display */}

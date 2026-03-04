@@ -201,16 +201,15 @@ async def validate_file_size(file: UploadFile) -> tuple[bool, str]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    # Get file size using O(1) seek instead of O(N) iteration
-    # Seek to end of file to get size
-    file.file.seek(0, 2)  # SEEK_END
-    total_size = file.file.tell()
+    # Read file to check size
+    total_size = 0
+    for chunk in file.file:
+        total_size += len(chunk)
+        if total_size > MAX_UPLOAD_SIZE:
+            return False, f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
 
-    # Reset file pointer to beginning for subsequent reads
+    # Reset file pointer
     await file.seek(0)
-
-    if total_size > MAX_UPLOAD_SIZE:
-        return False, f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
 
     return True, ""
 
