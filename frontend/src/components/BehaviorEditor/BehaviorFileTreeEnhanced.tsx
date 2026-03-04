@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   IconButton,
   TextField,
@@ -23,7 +23,8 @@ import {
   Add,
   Delete,
   Copy,
-  Folder as FolderIcon
+  Folder as FolderIcon,
+  Download
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
 
