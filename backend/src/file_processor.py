@@ -86,19 +86,12 @@ class FileProcessor:
             return "default_sanitized_filename"
         return sanitized
 
-    async def _is_safe_url(self, url: str) -> bool:
+    async def _resolve_and_validate(self, hostname: str) -> Optional[str]:
         """
-        Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
+        Resolves hostname to IP and checks if it's a safe (public) IP.
+        Returns the first safe IP address found, or None if validation fails.
         """
         try:
-            parsed = urllib.parse.urlparse(url)
-            if parsed.scheme not in ('http', 'https'):
-                logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
-                return False
-            hostname = parsed.hostname
-            if not hostname:
-                return False
-
             # Run blocking DNS resolution in executor
             loop = asyncio.get_running_loop()
             # Use getaddrinfo to support both IPv4 and IPv6
@@ -106,8 +99,9 @@ class FileProcessor:
                 infos = await loop.run_in_executor(None, socket.getaddrinfo, hostname, None)
             except socket.gaierror:
                 logger.warning(f"Could not resolve hostname: {hostname}")
-                return False
+                return None
 
+            safe_ip = None
             for info in infos:
                 ip = info[4][0]
                 # Strip IPv6 scope ID if present (e.g. fe80::1%eth0 -> fe80::1)
@@ -118,15 +112,36 @@ class FileProcessor:
                     ip_obj = ipaddress.ip_address(ip)
                     if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
                         logger.warning(f"Blocked attempt to access private IP: {ip} for hostname: {hostname}")
-                        return False
+                        return None  # Fail immediately if ANY resolved IP is private
                 except ValueError:
                     # Fail securely if IP cannot be parsed
                     logger.warning(f"Could not parse IP address: {ip} for hostname: {hostname}")
-                    return False
-            return True
+                    return None
+
+                if safe_ip is None:
+                    safe_ip = ip
+
+            return safe_ip
         except Exception as e:
-            # Don't log full URL in exception either
-            logger.error(f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}")
+            logger.error(f"Error resolving/validating hostname {hostname}: {e}")
+            return None
+
+    async def _is_safe_url(self, url: str) -> bool:
+        """
+        Validates URL to prevent SSRF by resolving hostname and checking for private/loopback IPs.
+        Wrapper for backward compatibility.
+        """
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
+                return False
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+            return await self._resolve_and_validate(hostname) is not None
+        except Exception as e:
+            logger.error(f"Error validating URL: {e}")
             return False
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
@@ -615,15 +630,40 @@ class FileProcessor:
 
                 # Manual redirect handling with SSRF protection
                 for _ in range(5):  # Max 5 redirects
-                    if not await self._is_safe_url(current_url):
-                        # Sanitize URL for logging (strip query params/fragments)
-                        parsed_unsafe = urllib.parse.urlparse(current_url)
-                        sanitized_unsafe = f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
-                        msg = f"Unsafe URL detected: {sanitized_unsafe}"
+                    parsed_current = urllib.parse.urlparse(current_url)
+                    hostname = parsed_current.hostname
+
+                    if not hostname:
+                        return DownloadResult(success=False, message="Invalid URL: Missing hostname")
+
+                    # Resolve and validate IP to prevent SSRF
+                    safe_ip = await self._resolve_and_validate(hostname)
+                    if not safe_ip:
+                        sanitized_unsafe = f"{parsed_current.scheme}://{parsed_current.hostname}{parsed_current.path}"
+                        msg = f"Unsafe URL detected or resolution failed: {sanitized_unsafe}"
                         logger.warning(msg)
                         return DownloadResult(success=False, message="Unsafe URL detected")
 
-                    response = await client.get(current_url, follow_redirects=False, timeout=30.0)
+                    if parsed_current.scheme == "http":
+                        # TOCTOU Protection for HTTP: Use IP directly
+                        ip_netloc = f"[{safe_ip}]" if ":" in safe_ip else safe_ip
+                        if parsed_current.port:
+                            ip_netloc += f":{parsed_current.port}"
+
+                        # Preserve credentials if present
+                        final_netloc = ip_netloc
+                        if "@" in parsed_current.netloc:
+                            auth_part = parsed_current.netloc.rsplit("@", 1)[0]
+                            final_netloc = f"{auth_part}@{ip_netloc}"
+
+                        url_with_ip = parsed_current._replace(netloc=final_netloc).geturl()
+                        headers = {"Host": hostname}
+                        logger.info(f"Using DNS pinning for HTTP: {hostname} -> {safe_ip}")
+                        response = await client.get(url_with_ip, headers=headers, follow_redirects=False, timeout=30.0)
+                    else:
+                        # HTTPS: Cannot rewrite URL without breaking SSL verification (TOCTOU risk remains)
+                        logger.warning(f"HTTPS URL used: {hostname}. TOCTOU protection limited.")
+                        response = await client.get(current_url, follow_redirects=False, timeout=30.0)
 
                     if 300 <= response.status_code < 400:
                         location = response.headers.get("Location")

@@ -8,8 +8,12 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        service: [frontend, backend, ai-engine]
+        service:
+          - frontend
+          - backend
+          - ai-engine
         include:
           - service: frontend
             context: ./frontend

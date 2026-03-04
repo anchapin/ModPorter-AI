@@ -1,0 +1,203 @@
+/**
+ * Connection Status Indicator Styles
+ */
+
+.connection-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Size variants */
+.connection-status-indicator.size-small {
+  padding: 4px 8px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.connection-status-indicator.size-medium {
+  padding: 6px 12px;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.connection-status-indicator.size-large {
+  padding: 8px 16px;
+  font-size: 16px;
+  gap: 10px;
+}
+
+/* Clickable variant */
+.connection-status-indicator.clickable {
+  cursor: pointer;
+}
+
+.connection-status-indicator.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Indicator icon */
+.indicator-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.size-small .indicator-icon {
+  font-size: 14px;
+}
+
+.size-large .indicator-icon {
+  font-size: 18px;
+}
+
+/* Indicator content */
+.indicator-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.indicator-label {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.indicator-error {
+  font-size: 12px;
+  color: #c53030;
+  font-style: italic;
+}
+
+/* Status variants */
+.connection-status-indicator.connected {
+  background-color: #f0fff4;
+  border-color: #9ae6b4;
+}
+
+.connection-status-indicator.connected .indicator-icon {
+  color: #48bb78;
+}
+
+.connection-status-indicator.connected .indicator-label {
+  color: #22543d;
+}
+
+.connection-status-indicator.connecting {
+  background-color: #ebf8ff;
+  border-color: #90cdf4;
+}
+
+.connection-status-indicator.connecting .indicator-icon {
+  color: #4299e1;
+}
+
+.connection-status-indicator.connecting .indicator-label {
+  color: #2c5282;
+}
+
+.connection-status-indicator.disconnected-websocket {
+  background-color: #fffaf0;
+  border-color: #fbd38d;
+}
+
+.connection-status-indicator.disconnected-websocket .indicator-icon {
+  color: #ed8936;
+}
+
+.connection-status-indicator.disconnected-websocket .indicator-label {
+  color: #7b341e;
+}
+
+.connection-status-indicator.polling {
+  background-color: #fffaf0;
+  border-color: #fbd38d;
+}
+
+.connection-status-indicator.polling .indicator-icon {
+  color: #ed8936;
+}
+
+.connection-status-indicator.polling .indicator-label {
+  color: #7b341e;
+}
+
+.connection-status-indicator.error {
+  background-color: #fff5f5;
+  border-color: #fc8181;
+}
+
+.connection-status-indicator.error .indicator-icon {
+  color: #f56565;
+}
+
+.connection-status-indicator.error .indicator-label {
+  color: #742a2a;
+}
+
+/* Pulse animation for connecting state */
+.indicator-pulse {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4299e1;
+  opacity: 0.6;
+  animation: pulse 1.5s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .connection-status-indicator {
+    padding: 4px 8px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .connection-status-indicator.size-large {
+    padding: 6px 12px;
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .indicator-error {
+    display: none;
+  }
+}
+
+/* Accessibility */
+.connection-status-indicator:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .connection-status-indicator {
+    transition: none;
+  }
+
+  .indicator-pulse {
+    animation: none;
+  }
+}
