@@ -1648,8 +1648,7 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
     # ========== Issue #570: Enhanced Validation and Warning Tools ==========
 
     @tool
-    @staticmethod
-    def validate_javascript_comprehensive_tool(js_data: str) -> str:
+    def validate_javascript_comprehensive_tool(self, js_data: str) -> str:
         """
         Comprehensive JavaScript validation including syntax, semantics, API correctness,
         and Bedrock compatibility.
@@ -1662,9 +1661,9 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         Returns:
             JSON string with validation results
         """
-        agent = LogicTranslatorAgent.get_instance()
+        validator = getattr(self, "js_validator", None)
 
-        if not VALIDATION_AVAILABLE or agent.js_validator is None:
+        if not VALIDATION_AVAILABLE or validator is None:
             return json.dumps({
                 "success": False,
                 "error": "JavaScript validation module not available"
@@ -1676,7 +1675,7 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             context = data.get('context', {})
 
             # Perform comprehensive validation
-            result = agent.js_validator.validate(javascript_code, context)
+            result = validator.validate(javascript_code, context)
 
             return json.dumps({
                 "success": True,
@@ -1704,15 +1703,14 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
                 }
             })
         except Exception as e:
-            logger.error(f"Error validating JavaScript: {e}")
+            self.logger.error(f"Error in comprehensive validation: {e}")
             return json.dumps({
                 "success": False,
                 "error": str(e)
             })
 
     @tool
-    @staticmethod
-    def analyze_translation_warnings_tool(java_data: str) -> str:
+    def analyze_translation_warnings_tool(self, java_data: str) -> str:
         """
         Analyze Java code for potential translation warnings and functionality loss.
 
@@ -1725,9 +1723,9 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         Returns:
             JSON string with warning report
         """
-        agent = LogicTranslatorAgent.get_instance()
+        detector = getattr(self, "warning_detector", None)
 
-        if not VALIDATION_AVAILABLE or agent.warning_detector is None:
+        if not VALIDATION_AVAILABLE or detector is None:
             return json.dumps({
                 "success": False,
                 "error": "Warning detector module not available"
@@ -1786,8 +1784,7 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             })
 
     @tool
-    @staticmethod
-    def generate_user_facing_report_tool(report_data: str) -> str:
+    def generate_user_facing_report_tool(self, report_data: str) -> str:
         """
         Generate user-facing report from validation and warning results.
 
@@ -1800,9 +1797,9 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         Returns:
             JSON string with formatted user-facing report
         """
-        agent = LogicTranslatorAgent.get_instance()
+        detector = getattr(self, "warning_detector", None)
 
-        if not VALIDATION_AVAILABLE or agent.warning_detector is None:
+        if not VALIDATION_AVAILABLE or detector is None:
             return json.dumps({
                 "success": False,
                 "error": "Warning detector module not available"
@@ -1920,8 +1917,9 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         }
 
         # Perform JavaScript validation
-        if VALIDATION_AVAILABLE and self.js_validator:
-            validation = self.js_validator.validate(javascript_code, {
+        validator = getattr(self, "js_validator", None)
+        if VALIDATION_AVAILABLE and validator:
+            validation = validator.validate(javascript_code, {
                 'feature_type': feature_type
             })
             result["validation"] = {
@@ -1932,8 +1930,9 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             result["overall_score"] = validation.score
 
         # Analyze translation warnings
-        if VALIDATION_AVAILABLE and self.warning_detector:
-            warning_report = self.warning_detector.analyze_translated_javascript(
+        detector = getattr(self, "warning_detector", None)
+        if VALIDATION_AVAILABLE and detector:
+            warning_report = detector.analyze_translated_javascript(
                 javascript_code,
                 java_code
             )
