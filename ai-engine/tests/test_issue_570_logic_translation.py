@@ -558,16 +558,6 @@ world.afterEvents.blockPlace.subscribe((event) => {
         assert len(agent.api_mappings['player.getHealth()']) > 0
 
 
-
-    assert "Translation Limitations" in content
-
-    # Check comprehensive coverage
-    assert "player.getHealth()" in content
-    assert "world.getBlockAt" in content
-    assert "Custom Dimensions" in content
-    assert "Custom GUI" in content
-
-
 # ========== Performance and Benchmark Tests ==========
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
