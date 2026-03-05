@@ -9,7 +9,6 @@ import hashlib
 import json
 import logging
 import os
-import pickle
 import time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from functools import lru_cache, wraps
@@ -57,8 +56,8 @@ class ConversionCache:
         cache_path = self._get_cache_path(key)
         if cache_path.exists():
             try:
-                with open(cache_path, 'rb') as f:
-                    value = pickle.load(f)
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    value = json.load(f)
                 self._memory_cache[key] = value
                 self._stats['hits'] += 1
                 return value
@@ -73,8 +72,8 @@ class ConversionCache:
         self._memory_cache[key] = value
         cache_path = self._get_cache_path(key)
         try:
-            with open(cache_path, 'wb') as f:
-                pickle.dump(value, f)
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(value, f)
             self._stats['saves'] += 1
         except Exception as e:
             logger.warning(f"Failed to save cache: {e}")
