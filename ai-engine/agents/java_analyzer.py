@@ -764,9 +764,6 @@ class JavaAnalyzerAgent:
             # Add the current directory to the class path
             cp.appendSystemPath()
             
-            # Create a temporary class loader
-            loader = javassist.Loader(cp)
-            
             # Read the class from bytecode
             ct_class = cp.make_class(javassist.bytecode.ConstPool(bytearray(class_data)))
             
@@ -803,7 +800,7 @@ class JavaAnalyzerAgent:
                 RuntimeVisibleAnnotations = ct_class.getAnnotation('Ljava/lang/Deprecated;')
                 if RuntimeVisibleAnnotations:
                     class_info['annotations'] = [str(a) for a in RuntimeVisibleAnnotations]
-            except:
+            except Exception:
                 pass  # Annotations may not be present
             
             logger.debug(f"Bytecode analysis of {class_name}: found {len(class_info['methods'])} methods, {len(class_info['fields'])} fields")
