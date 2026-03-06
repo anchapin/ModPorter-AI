@@ -71,8 +71,52 @@ export class ConversionWebSocket {
 
       this.ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as ConversionStatus;
-          console.log('[WebSocket] Message received:', data);
+          const rawData = JSON.parse(event.data);
+          console.log('[WebSocket] Raw message received:', rawData);
+          
+          // Handle wrapped format from backend: { type: "agent_progress", data: {...} }
+          // or connection confirmation: { type: "connection_established", data: {...} }
+          let data;
+          if (rawData.type && rawData.data) {
+            // Extract relevant fields from the wrapped format
+            const progressData = rawData.data;
+            
+            // Map agent status to conversion status
+            const statusMap: Record<string, string> = {
+              'queued': 'queued',
+              'in_progress': 'preprocessing',
+              'completed': 'completed',
+              'failed': 'failed',
+              'skipped': 'cancelled',
+            };
+            const mappedStatus = statusMap[progressData.status] || progressData.status;
+            
+            data = {
+              job_id: progressData.conversion_id || this.jobId,
+              status: mappedStatus,
+              progress: progressData.progress || 0,
+              message: progressData.message || '',
+              stage: progressData.agent || null,
+              created_at: progressData.timestamp || new Date().toISOString(),
+              error: progressData.details?.error || null,
+            };
+            
+            // Handle terminal messages
+            if (rawData.type === 'conversion_complete') {
+              data.status = 'completed';
+              data.progress = 100;
+              data.message = progressData.message || 'Conversion completed successfully';
+            } else if (rawData.type === 'conversion_failed') {
+              data.status = 'failed';
+              data.message = progressData.message || 'Conversion failed';
+              data.error = progressData.details?.error || data.message;
+            }
+          } else {
+            // Direct format (legacy or direct ConversionStatus)
+            data = rawData as ConversionStatus;
+          }
+          
+          console.log('[WebSocket] Parsed message:', data);
           this.notifyMessageHandlers(data);
         } catch (error) {
           console.error('[WebSocket] Failed to parse message:', error);
