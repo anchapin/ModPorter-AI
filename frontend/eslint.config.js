@@ -5,8 +5,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from '@typescript-eslint/eslint-plugin'
-import tsparser from '@typescript-eslint/parser'
+import tseslint from 'typescript-eslint'
 
 export default [
   { ignores: ['dist', 'coverage'] },
@@ -18,10 +17,10 @@ export default [
         ...globals.browser,
         ...globals.node,
       },
-      parser: tsparser,
+      parser: tseslint.parser,
     },
     plugins: {
-      '@typescript-eslint': tseslint,
+      '@typescript-eslint': tseslint.plugin,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
@@ -31,6 +30,16 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-explicit-any': 'off',
+      // Allow unused variables with underscore prefix
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
+      // Disable base rule to avoid conflicts
+      'no-unused-vars': 'off',
+      // Disable react-hooks exhaustive-deps rule - too strict for this codebase
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
   {

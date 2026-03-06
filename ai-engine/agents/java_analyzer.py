@@ -4,7 +4,7 @@ Java Analyzer Agent for analyzing Java mod structure and extracting features
 
 import json
 import re
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Any
 from crewai.tools import tool
 from models.smart_assumptions import (
     SmartAssumptionEngine,
@@ -16,6 +16,23 @@ import zipfile
 from pathlib import Path
 import time
 import javalang
+
+# Make javassist optional - will be used for bytecode analysis if available
+try:
+    import javassist
+    JAVASSIST_AVAILABLE = True
+except ImportError:
+    javassist = None
+    JAVASSIST_AVAILABLE = False
+
+# Make javassist optional - will be used for bytecode analysis if available
+try:
+    import javassist
+    JAVASSIST_AVAILABLE = True
+except ImportError:
+    javassist = None
+    JAVASSIST_AVAILABLE = False
+
 
 # Constants for file analysis limits
 FEATURE_ANALYSIS_FILE_LIMIT = 10
@@ -283,6 +300,13 @@ class JavaAnalyzerAgent:
 
             except Exception as e:
                 logger.warning(f"Error analyzing source file {source_path}: {e}")
+                # Try to extract features from class names as fallback
+                if need_features:
+                    class_name = source_path.split('/')[-1].replace('.java', '')
+                    fallback_features = self._extract_features_from_class_name(class_name)
+                    for feature_type, feature_list in fallback_features.items():
+                        if feature_type in batch_result['features']:
+                            batch_result['features'][feature_type].extend(feature_list)
                 continue
 
         # Deduplicate features
@@ -370,9 +394,22 @@ class JavaAnalyzerAgent:
                     result['dependencies'] = batch_results['dependencies']
                     result['mod_info'].update(batch_results['metadata'])
                 else:
-                    logger.info("No Java source files found in JAR, using class-based analysis")
-                    # Extract features from class names (existing approach)
-                    result['features'] = self._extract_features_from_classes(file_list)
+                    logger.info("No Java source files found in JAR, attempting bytecode analysis")
+                    
+                    # First try bytecode analysis if javassist is available
+                    if JAVASSIST_AVAILABLE:
+                        bytecode_features = self._analyze_classes_with_bytecode(jar, file_list)
+                        if bytecode_features and (bytecode_features.get('blocks') or bytecode_features.get('items') or bytecode_features.get('entities')):
+                            logger.info(f"Bytecode analysis found {len(bytecode_features['blocks'])} blocks, {len(bytecode_features['items'])} items")
+                            result['features'] = bytecode_features
+                        else:
+                            logger.info("Bytecode analysis yielded no results, falling back to class name analysis")
+                            result['features'] = self._extract_features_from_classes(file_list)
+                    else:
+                        logger.info("Javassist not available, using class name-based analysis")
+                        # Extract features from class names (existing approach)
+                        result['features'] = self._extract_features_from_classes(file_list)
+                    
                     result['dependencies'] = []  # No dependency analysis without sources
                 
                 # Mark as successful
@@ -622,6 +659,8 @@ class JavaAnalyzerAgent:
         """
         Parse Java source code into an AST using javalang.
         
+        Improved to handle more Java syntax with better error handling.
+        
         Args:
             source_code: Java source code as string
             
@@ -631,9 +670,332 @@ class JavaAnalyzerAgent:
         try:
             tree = javalang.parse.parse(source_code)
             return tree
+        except javalang.parser.ParserError as e:
+            # Handle specific parser errors with more context
+            logger.warning(f"Parser error while parsing Java source: {e}")
+            # Try to extract partial information even from malformed code
+            return self._parse_java_source_fallback(source_code)
+        except javalang.parser.JavaSyntaxError as e:
+            logger.warning(f"Java syntax error: {e}")
+            return self._parse_java_source_fallback(source_code)
         except Exception as e:
             logger.warning(f"Failed to parse Java source: {e}")
             return None
+    
+    def _parse_java_source_fallback(self, source_code: str) -> Optional[javalang.ast.Node]:
+        """
+        Fallback parsing that tries to handle partial/incomplete Java source code.
+        
+        Attempts to extract useful information even from code that fails full parsing.
+        
+        Args:
+            source_code: Java source code as string
+            
+        Returns:
+            Partial AST or None if parsing fails completely
+        """
+        try:
+            # Try to extract imports using regex as fallback
+            import re
+            import_statements = re.findall(r'^import\s+([^;]+);', source_code, re.MULTILINE)
+            
+            # Try to extract class declarations using regex
+            class_pattern = r'(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:abstract\s+)?class\s+(\w+)'
+            class_matches = re.findall(class_pattern, source_code)
+            
+            # Create a minimal AST-like structure
+            class FakeAST:
+                def __init__(self):
+                    self.imports = []
+                    for imp in import_statements:
+                        class FakeImport:
+                            def __init__(self, path):
+                                self.path = path
+                        self.imports.append(FakeImport(imp))
+                    self.classes = class_matches
+                    
+                def __iter__(self):
+                    """Support tree walking"""
+                    # Yield fake class declarations for compatibility
+                    for class_name in self.classes:
+                        class FakeClassNode:
+                            def __init__(self, name):
+                                self.name = name
+                                self.methods = []
+                                self.qualifier = ''
+                                self.annotations = []
+                        yield [], FakeClassNode(class_name)
+            
+            logger.debug(f"Fallback parsing extracted {len(import_statements)} imports and {len(class_matches)} classes")
+            return FakeAST()
+        except Exception as e:
+            logger.warning(f"Fallback parsing also failed: {e}")
+            return None
+    
+    def _analyze_bytecode_class(self, class_data: bytes, class_name: str) -> Dict:
+        """
+        Analyze a Java class file using Javassist to extract class information.
+        
+        This provides fallback analysis when Java source files are not available.
+        
+        Args:
+            class_data: Raw bytecode data from .class file
+            class_name: Full class name (e.g., 'com/example/MyBlock')
+            
+        Returns:
+            Dictionary with extracted class information
+        """
+        if not JAVASSIST_AVAILABLE or javassist is None:
+            return {'error': 'javassist not available'}
+        
+        class_info = {
+            'name': class_name,
+            'superclass': None,
+            'interfaces': [],
+            'fields': [],
+            'methods': [],
+            'annotations': [],
+            'source': 'bytecode'
+        }
+        
+        try:
+            # Create a class pool and read the class
+            cp = javassist.ClassPool()
+            # Add the current directory to the class path
+            cp.appendSystemPath()
+            
+            # Read the class from bytecode
+            ct_class = cp.make_class(javassist.bytecode.ConstPool(bytearray(class_data)))
+            
+            # Extract class name (without package)
+            simple_name = class_name.split('.')[-1]
+            class_info['simple_name'] = simple_name
+            
+            # Get superclass
+            if ct_class.getSuperclass():
+                class_info['superclass'] = ct_class.getSuperclass().getName()
+            
+            # Get interfaces
+            for interface in ct_class.getInterfaces():
+                class_info['interfaces'].append(interface.getName())
+            
+            # Get fields
+            for field in ct_class.getFields():
+                field_info = {
+                    'name': field.getName(),
+                    'type': field.getType().getName() if field.getType() else 'unknown'
+                }
+                class_info['fields'].append(field_info)
+            
+            # Get methods
+            for method in ct_class.getMethods():
+                method_info = {
+                    'name': method.getName(),
+                    'signature': method.getSignature()
+                }
+                class_info['methods'].append(method_info)
+            
+            # Get annotations (if available)
+            try:
+                RuntimeVisibleAnnotations = ct_class.getAnnotation('Ljava/lang/Deprecated;')
+                if RuntimeVisibleAnnotations:
+                    class_info['annotations'] = [str(a) for a in RuntimeVisibleAnnotations]
+            except Exception:
+                pass  # Annotations may not be present
+            
+            logger.debug(f"Bytecode analysis of {class_name}: found {len(class_info['methods'])} methods, {len(class_info['fields'])} fields")
+            
+            return class_info
+            
+        except Exception as e:
+            logger.warning(f"Failed to analyze bytecode for {class_name}: {e}")
+            return {'error': str(e), 'name': class_name}
+    
+    def _extract_features_from_bytecode(self, class_info: Dict) -> Dict:
+        """
+        Extract mod features from bytecode-analyzed class information.
+        
+        Args:
+            class_info: Dictionary from _analyze_bytecode_class
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'type': 'unknown',
+            'name': class_info.get('simple_name', class_info.get('name', 'Unknown')),
+            'registry_name': self._class_name_to_registry_name(class_info.get('simple_name', class_info.get('name', 'Unknown'))),
+            'methods': [],
+            'properties': {}
+        }
+        
+        try:
+            name = class_info.get('simple_name', class_info.get('name', ''))
+            superclass = class_info.get('superclass', '')
+            interfaces = class_info.get('interfaces', [])
+            
+            # Determine type based on class name and superclass
+            if 'Block' in name or 'Block' in superclass:
+                features['type'] = 'block'
+                features['properties'] = self._extract_block_properties_from_bytecode(class_info)
+            elif 'Item' in name or 'Item' in superclass:
+                features['type'] = 'item'
+            elif 'Entity' in name or 'Entity' in superclass or 'Entity' in interfaces:
+                features['type'] = 'entity'
+            elif 'TileEntity' in name or 'BlockEntity' in superclass:
+                features['type'] = 'tile_entity'
+            
+            # Extract method names
+            methods = class_info.get('methods', [])
+            features['methods'] = [m.get('name', '') for m in methods]
+            
+            return features
+            
+        except Exception as e:
+            logger.warning(f"Error extracting features from bytecode: {e}")
+            return features
+    
+    def _extract_block_properties_from_bytecode(self, class_info: Dict) -> Dict:
+        """
+        Extract block properties from bytecode-analyzed class.
+        
+        Args:
+            class_info: Dictionary from _analyze_bytecode_class
+            
+        Returns:
+            Dictionary with extracted block properties
+        """
+        properties = {
+            'material': 'stone',
+            'hardness': 1.0,
+            'explosion_resistance': 0.0,
+            'sound_type': 'stone',
+            'light_level': 0,
+            'requires_tool': False,
+            'source': 'bytecode_estimate'
+        }
+        
+        try:
+            name = class_info.get('simple_name', '').lower()
+            methods = class_info.get('methods', [])
+            fields = class_info.get('fields', [])
+            
+            # Estimate properties based on naming conventions
+            if 'wood' in name or 'plank' in name:
+                properties['material'] = 'wood'
+                properties['sound_type'] = 'wood'
+                properties['hardness'] = 2.0
+            elif 'stone' in name or 'cobbl' in name:
+                properties['material'] = 'stone'
+                properties['sound_type'] = 'stone'
+                properties['hardness'] = 1.5
+            elif 'metal' in name or 'iron' in name or 'gold' in name or 'copper' in name:
+                properties['material'] = 'metal'
+                properties['sound_type'] = 'metal'
+                properties['hardness'] = 5.0
+                properties['explosion_resistance'] = 6.0
+            elif 'glass' in name:
+                properties['material'] = 'glass'
+                properties['sound_type'] = 'glass'
+                properties['hardness'] = 0.3
+            elif 'dirt' in name or 'grass' in name or 'sand' in name:
+                properties['material'] = 'dirt'
+                properties['sound_type'] = 'gravel'
+                properties['hardness'] = 0.5
+            
+            # Check methods for property hints
+            method_names = ' '.join([m.get('name', '').lower() for m in methods])
+            
+            if 'requiresCorrectTool' in method_names or 'requires_tool' in method_names:
+                properties['requires_tool'] = True
+            
+            if 'emitsLight' in method_names or 'luminance' in method_names:
+                properties['light_level'] = 0  # Would need deeper analysis for actual value
+            
+            # Check field values (constant hardness/resistance values)
+            for field in fields:
+                field_name = field.get('name', '').lower()
+                if 'hardness' in field_name:
+                    properties['hardness'] = 1.0  # Estimate, actual would require const pool analysis
+                if 'resistance' in field_name:
+                    properties['explosion_resistance'] = 3.0  # Estimate
+            
+            return properties
+            
+        except Exception as e:
+            logger.warning(f"Error extracting block properties from bytecode: {e}")
+            return properties
+    
+    def _analyze_classes_with_bytecode(self, jar, file_list: List[str]) -> Dict:
+        """
+        Analyze .class files in a JAR using bytecode analysis.
+        
+        Args:
+            jar: zipfile.ZipFile object
+            file_list: List of file paths in the JAR
+            
+        Returns:
+            Dictionary with extracted features from all analyzed classes
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'tile_entities': [],
+            'other': []
+        }
+        
+        # Filter to only .class files
+        class_files = [f for f in file_list if f.endswith('.class')]
+        
+        if not class_files:
+            logger.info("No .class files found for bytecode analysis")
+            return features
+        
+        logger.info(f"Starting bytecode analysis of {len(class_files)} class files")
+        
+        # Limit to prevent excessive processing time
+        max_classes = 50
+        analyzed_count = 0
+        
+        for class_file in class_files[:max_classes]:
+            try:
+                # Read class bytecode
+                class_data = jar.read(class_file)
+                
+                # Convert file path to class name
+                # com/example/mymod/TestBlock.class -> com.example.mymod.TestBlock
+                class_name = class_file.replace('/', '.').replace('.class', '')
+                
+                # Analyze bytecode
+                class_info = self._analyze_bytecode_class(class_data, class_name)
+                
+                if 'error' not in class_info:
+                    # Extract features from the analyzed class
+                    class_features = self._extract_features_from_bytecode(class_info)
+                    
+                    # Categorize by type
+                    if class_features['type'] == 'block':
+                        features['blocks'].append(class_features)
+                    elif class_features['type'] == 'item':
+                        features['items'].append(class_features)
+                    elif class_features['type'] == 'entity':
+                        features['entities'].append(class_features)
+                    elif class_features['type'] == 'tile_entity':
+                        features['tile_entities'].append(class_features)
+                    else:
+                        features['other'].append(class_features)
+                    
+                    analyzed_count += 1
+                    
+            except Exception as e:
+                logger.debug(f"Could not analyze class {class_file}: {e}")
+                continue
+        
+        logger.info(f"Bytecode analysis complete: analyzed {analyzed_count} classes, found {len(features['blocks'])} blocks, {len(features['items'])} items")
+        
+        return features
     
     def _extract_features_from_ast(self, tree: javalang.ast.Node) -> Dict:
         """
@@ -811,6 +1173,8 @@ class JavaAnalyzerAgent:
         """
         Extract mod metadata from parsed Java AST.
         
+        Improved to handle more annotation types and complex annotation structures.
+        
         Args:
             tree: Parsed Java AST
             
@@ -818,13 +1182,17 @@ class JavaAnalyzerAgent:
             Dictionary with extracted metadata
         """
         metadata = {}
+        annotations_found = []
         
         try:
             # Look for annotations that might indicate mod information
             for path, node in tree:
                 if isinstance(node, javalang.tree.Annotation):
+                    annotation_data = self._extract_annotation_data(node)
+                    annotations_found.append(annotation_data)
+                    
                     # Check for common mod annotations
-                    if node.name in ['Mod', 'ModInstance', 'Instance']:
+                    if node.name in ['Mod', 'ModInstance', 'Instance', 'ModEventBusSubscriber']:
                         # Extract the annotation element
                         if hasattr(node, 'element') and node.element is not None:
                             element = node.element
@@ -836,16 +1204,140 @@ class JavaAnalyzerAgent:
                                 else:
                                     metadata['value'] = element.value
                             else:
+                                # Handle complex annotation elements (key-value pairs)
                                 metadata['value'] = str(element)
+                    
+                    # Handle other common Minecraft/Forge annotations
+                    elif node.name in ['SubscribeEvent', 'Mod.EventBusSubscriber']:
+                        metadata['event_subscriber'] = True
+                    
+                    elif node.name == 'ObjectHolder':
+                        # Extract ObjectHolder annotation for registry entries
+                        if hasattr(node, 'element') and node.element:
+                            obj_holder = self._extract_annotation_element(node.element)
+                            if obj_holder:
+                                metadata['object_holder'] = obj_holder
             
+            # Store all annotations found for comprehensive analysis
+            if annotations_found:
+                metadata['all_annotations'] = annotations_found
+                
             return metadata
         except Exception as e:
             logger.warning(f"Error extracting metadata from AST: {e}")
             return metadata
     
+    def _extract_annotation_data(self, node: javalang.tree.Annotation) -> Dict:
+        """
+        Extract comprehensive data from an annotation node.
+        
+        Args:
+            node: Annotation AST node
+            
+        Returns:
+            Dictionary with annotation data
+        """
+        annotation_info = {
+            'name': node.name if hasattr(node, 'name') else 'unknown',
+            'type': 'unknown'
+        }
+        
+        try:
+            # Determine annotation type
+            if node.name:
+                name_lower = node.name.lower()
+                if name_lower in ['mod', 'modinstance', 'modid']:
+                    annotation_info['type'] = 'mod_id'
+                elif 'eventbus' in name_lower or 'subscribe' in name_lower:
+                    annotation_info['type'] = 'event_subscriber'
+                elif 'objectholder' in name_lower:
+                    annotation_info['type'] = 'object_holder'
+                elif name_lower.startswith('inject') or name_lower.startswith('redirect'):
+                    annotation_info['type'] = 'mixin'
+            
+            # Extract annotation element value(s)
+            if hasattr(node, 'element') and node.element:
+                element_value = self._extract_annotation_element(node.element)
+                if element_value:
+                    annotation_info['value'] = element_value
+                    
+            return annotation_info
+            
+        except Exception as e:
+            logger.debug(f"Error extracting annotation data: {e}")
+            return annotation_info
+    
+    def _extract_annotation_element(self, element) -> Optional[Any]:
+        """
+        Extract value from an annotation element, handling various formats.
+        
+        Handles:
+        - Simple literal values
+        - Key-value pairs (element-value pairs)
+        - Nested annotations
+        - Arrays
+        
+        Args:
+            element: Annotation element node
+            
+        Returns:
+            Extracted value or None
+        """
+        if element is None:
+            return None
+            
+        try:
+            # Direct value attribute
+            if hasattr(element, 'value'):
+                value = element.value
+                if isinstance(value, str):
+                    return value.strip('"')
+                return value
+            
+            # Element value pair (for key="value" annotations)
+            if hasattr(element, 'element') and hasattr(element, 'value'):
+                # This is an ElementValuePair
+                key = element.element if hasattr(element, 'element') else 'unknown'
+                val = element.value
+                
+                if isinstance(val, str):
+                    return {key: val.strip('"')}
+                elif hasattr(val, 'value'):
+                    val_str = val.value
+                    if isinstance(val_str, str):
+                        return {key: val_str.strip('"')}
+                    return {key: val_str}
+                return {key: str(val)}
+            
+            # Literal node
+            if hasattr(element, 'literal'):
+                return str(element.literal).strip('"')
+            
+            # For arrays, collect all values
+            if hasattr(element, 'values'):
+                values = []
+                for val in element.values:
+                    if hasattr(val, 'value'):
+                        val_str = val.value
+                        if isinstance(val_str, str):
+                            values.append(val_str.strip('"'))
+                        else:
+                            values.append(val_str)
+                    elif hasattr(val, 'literal'):
+                        values.append(str(val.literal).strip('"'))
+                return values if values else None
+            
+            return str(element)
+            
+        except Exception as e:
+            logger.debug(f"Error extracting annotation element: {e}")
+            return None
+    
     def _analyze_dependencies_from_ast(self, tree: javalang.ast.Node) -> List[Dict]:
         """
         Analyze dependencies from parsed Java AST.
+        
+        Improved to also detect reflection usage and API patterns.
         
         Args:
             tree: Parsed Java AST
@@ -854,6 +1346,7 @@ class JavaAnalyzerAgent:
             List of dependency information
         """
         dependencies = []
+        reflection_uses = []
         
         try:
             # Extract import statements
@@ -877,11 +1370,141 @@ class JavaAnalyzerAgent:
                                 'type': 'implicit',
                                 'method': node.member
                             })
+                    
+                    # Detect reflection usage patterns
+                    method_name = node.member.lower() if hasattr(node, 'member') else ''
+                    if method_name in ['class_forname', 'class', 'getmethod', 'getfield', 
+                                       'getdeclaredmethod', 'getdeclaredfield', 'newinstance',
+                                       'invoke', 'setaccessible', 'getclass']:
+                        reflection_uses.append({
+                            'type': 'reflection',
+                            'method': method_name,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None,
+                            'static_analysis': 'Note: Reflection usage detected. Static analysis has limited visibility into dynamically accessed members.'
+                        })
             
+            # Detect reflection patterns in string literals (Class.forName("..."))
+            if hasattr(tree, 'children'):
+                for child in tree.children:
+                    if isinstance(child, str):
+                        # Check for class name patterns in string literals
+                        if 'net.' in child or 'com.' in child or 'org.' in child:
+                            reflection_uses.append({
+                                'type': 'string_reflection',
+                                'pattern': 'Potential class name in string',
+                                'static_analysis': 'Dynamic class loading detected in string. Full analysis requires runtime information.'
+                            })
+            
+            # Combine dependencies with reflection analysis
+            if reflection_uses:
+                dependencies.extend(reflection_uses)
+                
             return dependencies
         except Exception as e:
             logger.warning(f"Error analyzing dependencies from AST: {e}")
             return dependencies
+    
+    def _detect_reflection_in_mods(self, tree: javalang.ast.Node) -> Dict:
+        """
+        Detect reflection usage in mods through static analysis.
+        
+        This helps identify dynamically accessed classes and methods that
+        cannot be fully analyzed statically.
+        
+        Args:
+            tree: Parsed Java AST
+            
+        Returns:
+            Dictionary with reflection detection results
+        """
+        reflection_info = {
+            'detected': False,
+            'class_forname': [],
+            'method_reflection': [],
+            'field_reflection': [],
+            'warnings': []
+        }
+        
+        try:
+            for path, node in tree:
+                # Check for Class.forName calls
+                if isinstance(node, javalang.tree.MethodInvocation):
+                    member = node.member.lower() if hasattr(node, 'member') else ''
+                    
+                    if member == 'class_forname':
+                        reflection_info['detected'] = True
+                        # Try to extract the class name argument
+                        if node.arguments and len(node.arguments) > 0:
+                            arg = node.arguments[0]
+                            class_name = self._extract_string_value(arg)
+                            if class_name:
+                                reflection_info['class_forname'].append(class_name)
+                    
+                    # Check for getMethod, getDeclaredMethod
+                    elif member in ['getmethod', 'getdeclaredmethod']:
+                        reflection_info['detected'] = True
+                        reflection_info['method_reflection'].append({
+                            'method': member,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None
+                        })
+                    
+                    # Check for getField, getDeclaredField
+                    elif member in ['getfield', 'getdeclaredfield']:
+                        reflection_info['detected'] = True
+                        reflection_info['field_reflection'].append({
+                            'method': member,
+                            'qualifier': node.qualifier if hasattr(node, 'qualifier') else None
+                        })
+                    
+                    # Check for setAccessible
+                    elif member == 'setaccessible':
+                        reflection_info['detected'] = True
+                
+                # Check for .class literal (ClassName.class)
+                elif isinstance(node, javalang.tree.ClassReference):
+                    # This is normal usage, not reflection
+                    pass
+                    
+                # Check for type cast to Class<?>
+                elif isinstance(node, javalang.tree.TypeCast):
+                    if hasattr(node, 'type') and hasattr(node.type, 'name'):
+                        if node.type.name == 'Class':
+                            reflection_info['warnings'].append(
+                                'Type cast to Class detected - may indicate reflection usage'
+                            )
+            
+            if reflection_info['detected']:
+                logger.debug(f"Reflection detected in mod: {len(reflection_info['class_forname'])} Class.forName, "
+                           f"{len(reflection_info['method_reflection'])} method reflections")
+                
+            return reflection_info
+            
+        except Exception as e:
+            logger.warning(f"Error detecting reflection: {e}")
+            return reflection_info
+    
+    def _extract_string_value(self, node) -> Optional[str]:
+        """
+        Extract string value from an AST node.
+        
+        Args:
+            node: AST node that may contain a string literal
+            
+        Returns:
+            String value or None
+        """
+        if node is None:
+            return None
+            
+        # Direct string value
+        if hasattr(node, 'value') and isinstance(node.value, str):
+            return node.value.strip('"\'')
+        
+        # Literal node
+        if hasattr(node, 'literal'):
+            return str(node.literal).strip('"\'')
+        
+        return None
     
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:
         """Analyze a JAR file for mod information"""
@@ -913,15 +1536,66 @@ class JavaAnalyzerAgent:
                     result["features"] = batch_results['features']
                     result["dependencies"] = batch_results['dependencies']
                 else:
-                    logger.info("No Java source files found in JAR, using class-based analysis")
-                    # Extract features from class names (existing approach)
-                    result["features"] = self._extract_features_from_classes(file_list)
+                    logger.info("No Java source files found in JAR, attempting bytecode analysis")
+                    
+                    # First try bytecode analysis if javassist is available
+                    if JAVASSIST_AVAILABLE:
+                        bytecode_features = self._analyze_classes_with_bytecode(jar, file_list)
+                        if bytecode_features and (bytecode_features.get('blocks') or bytecode_features.get('items') or bytecode_features.get('entities')):
+                            logger.info(f"Bytecode analysis found {len(bytecode_features['blocks'])} blocks, {len(bytecode_features['items'])} items")
+                            result["features"] = bytecode_features
+                        else:
+                            logger.info("Bytecode analysis yielded no results, falling back to class name analysis")
+                            result["features"] = self._extract_features_from_classes(file_list)
+                    else:
+                        logger.info("Javassist not available, using class name-based analysis")
+                        # Extract features from class names (existing approach)
+                        result["features"] = self._extract_features_from_classes(file_list)
                 
         except Exception as e:
             result["errors"].append(f"Error analyzing JAR file: {str(e)}")
         
         return result
     
+    
+    def _extract_features_from_class_name(self, class_name: str) -> Dict:
+        """
+        Extract features from a single class name (fallback for parse failures).
+        
+        Args:
+            class_name: Name of the Java class (without .java extension)
+            
+        Returns:
+            Dictionary with extracted features
+        """
+        features = {
+            'blocks': [],
+            'items': [],
+            'entities': [],
+            'recipes': [],
+            'dimensions': [],
+            'gui': [],
+            'machinery': [],
+            'commands': [],
+            'events': []
+        }
+        
+        try:
+            # Use existing pattern matching for feature detection
+            for feature_type, patterns in self.feature_patterns.items():
+                for pattern in patterns:
+                    if pattern.lower() in class_name.lower():
+                        feature_entry = {
+                            'name': class_name,
+                            'registry_name': self._class_name_to_registry_name(class_name)
+                        }
+                        features[feature_type].append(feature_entry)
+                        break  # Only add to first matching category
+            
+            return features
+        except Exception as e:
+            logger.warning(f"Error extracting features from class name {class_name}: {e}")
+            return features
     
     def _extract_features_from_classes(self, file_list: List[str]) -> Dict:
         """

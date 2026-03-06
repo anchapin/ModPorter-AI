@@ -66,10 +66,15 @@ def test_validation_categories():
     agent = QAValidatorAgent.get_instance()
     categories = agent.validation_categories
 
+    # Updated categories per Issue #652
     assert "structural" in categories
-    assert "manifest" in categories
-    assert "content" in categories
-    assert "bedrock_compatibility" in categories
+    assert "asset_validity" in categories
+    assert "semantic_accuracy" in categories
+    assert "best_practices" in categories
+
+    # Verify weights sum to 1.0
+    total_weight = sum(cat['weight'] for cat in categories.values())
+    assert total_weight == 1.0
 
     print("✓ Validation categories are properly defined")
 
@@ -134,12 +139,12 @@ def test_validate_mcaddon_basic():
         assert "recommendations" in result
         assert "stats" in result
 
-        # Check validations
+        # Check validations - Updated categories per Issue #652
         validations = result["validations"]
         assert "structural" in validations
-        assert "manifest" in validations
-        assert "content" in validations
-        assert "bedrock_compatibility" in validations
+        assert "asset_validity" in validations
+        assert "semantic_accuracy" in validations
+        assert "best_practices" in validations
 
         # Each validation should have checks, passed, status
         for category, validation in validations.items():
@@ -164,12 +169,13 @@ def test_validate_manifest():
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mcaddon_path)
 
-        manifest_validation = result["validations"]["manifest"]
-        assert manifest_validation["passed"] > 0
+        # Updated per Issue #652 - manifest is validated within structural category
+        structural_validation = result["validations"]["structural"]
+        assert structural_validation["passed"] > 0
         # Valid manifest should have minimal errors
-        assert len(manifest_validation.get("errors", [])) == 0
+        assert len(structural_validation.get("errors", [])) == 0
 
-        print(f"✓ Manifest validation passed ({manifest_validation['passed']}/{manifest_validation['checks']} checks)")
+        print(f"✓ Manifest validation passed ({structural_validation['passed']}/{structural_validation['checks']} checks)")
 
     finally:
         shutil.rmtree(temp_dir)

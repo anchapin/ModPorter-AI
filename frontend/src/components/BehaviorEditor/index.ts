@@ -1,6 +1,8 @@
 export { BehaviorEditor } from './BehaviorEditor';
 export { BehaviorFileTree } from './BehaviorFileTree';
+export { BehaviorFileTreeEnhanced } from './BehaviorFileTreeEnhanced';
 export { CodeEditor } from './CodeEditor';
+export { CodeEditorEnhanced } from './CodeEditorEnhanced';
 export { VisualEditor, FormBuilder, ValidationEngine } from './VisualEditor';
 export { BlockPropertyEditor, Preview3D } from './BlockEditor';
 export { RecipeBuilder, RecipeGrid, ItemLibrary, RecipeValidation } from './RecipeBuilder';

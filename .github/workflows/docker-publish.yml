@@ -74,6 +74,5 @@ jobs:
           cache-to: |
             type=gha,mode=max,scope=${{ matrix.service }}
             type=registry,ref=ghcr.io/${{ github.repository }}/modporter-ai-${{ matrix.service }}:cache,mode=max
-          build-args: |
-            NODE_ENV=production
+          build-args: NODE_ENV=production
             BUILDKIT_INLINE_CACHE=1
