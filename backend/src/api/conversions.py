@@ -12,7 +12,6 @@ This module provides REST endpoints for managing conversion jobs:
 
 import logging
 import os
-import re
 import shutil
 import uuid
 from datetime import datetime, timezone
@@ -39,18 +38,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db
 from db import crud
 from websocket.manager import manager
-from websocket.progress_handler import ProgressHandler, AgentStatus
+from websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
 from security.file_security import (
     FileSecurityScanner,
-    SecurityConfig,
     SecurityScanResult,
-    ZipBombDetectedError,
-    PathTraversalDetectedError,
-    SecurityThreatType,
 )
-from security.resource_limits import get_resource_limiter, ResourceLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +339,7 @@ async def validate_and_scan_file(file: UploadFile, file_path: Path) -> SecurityS
         )
     
     # Step 3: Sanitize filename to prevent path traversal
-    safe_filename = sanitize_filename(file.filename or "uploaded_file")
+    sanitize_filename(file.filename or "uploaded_file")
     
     # Step 4: Perform security scan
     result = await scan_uploaded_file(file_path)

@@ -8,12 +8,11 @@ to achieve <30s per conversion target.
 import hashlib
 import json
 import logging
-import os
 import time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
-from functools import lru_cache, wraps
+from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
