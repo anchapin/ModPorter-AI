@@ -926,66 +926,6 @@ class QAValidatorAgent:
 
         return {"checks": checks, "passed": passed, "errors": errors, "warnings": warnings}
 
-    def _validate_semantic_accuracy(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-        """Validate semantic accuracy: block definitions, item definitions, JSON structure."""
-        validation = result["validations"]["semantic_accuracy"]
-        namelist = zipf.namelist()
-
-        checks = 0
-        passed = 0
-
-        # Find and validate block definitions
-        block_files = [
-            name for name in namelist
-            if name.startswith('behavior_packs/') and name.endswith('/blocks/') and name.endswith('.json')
-        ]
-
-        for block_file in block_files:
-            try:
-                with zipf.open(block_file) as f:
-                    block_data = json.load(f)
-
-                block_validation = self._validate_block_definition(block_data, block_file)
-                checks += block_validation["checks"]
-                passed += block_validation["passed"]
-                validation["errors"].extend(block_validation["errors"])
-                validation["warnings"].extend(block_validation["warnings"])
-
-            except json.JSONDecodeError:
-                checks += 1
-                validation["errors"].append(f"Invalid JSON in block file: {block_file}")
-
-        # Find and validate item definitions
-        item_files = [
-            name for name in namelist
-            if name.startswith('behavior_packs/') and name.endswith('/items/') and name.endswith('.json')
-        ]
-
-        for item_file in item_files:
-            try:
-                with zipf.open(item_file) as f:
-                    item_data = json.load(f)
-
-                item_validation = self._validate_item_definition(item_data, item_file)
-                checks += item_validation["checks"]
-                passed += item_validation["passed"]
-                validation["errors"].extend(item_validation["errors"])
-                validation["warnings"].extend(item_validation["warnings"])
-
-            except json.JSONDecodeError:
-                checks += 1
-                validation["errors"].append(f"Invalid JSON in item file: {item_file}")
-
-        # If no content files found, that's OK (empty addon)
-        if checks == 0:
-            checks = 1
-            passed = 1
-            validation["warnings"].append("No content files found (blocks, items)")
-
-        validation["checks"] = checks
-        validation["passed"] = passed
-        validation["status"] = self._get_category_status(checks, passed)
-
     def _validate_block_definition(self, block: dict, path: str) -> Dict[str, Any]:
         """
         Validate block definition against Bedrock schema.
