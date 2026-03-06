@@ -302,10 +302,7 @@ class TestLogicTranslatorAgent:
         assert 'bedrock_recipe' in result_data
     
     # ========== Block Generation Tests (Issue #546) ==========
-    # NOTE: These tests require methods from PR #559 (feat(logic-translator): enhance block generation)
-    # They will be enabled after PR #559 is merged
 
-    @pytest.mark.skip(reason="Requires generate_bedrock_block_json method from PR #559")
     def test_generate_bedrock_block_json(self, agent):
         """Test Bedrock block JSON generation"""
         block_analysis = {
@@ -324,7 +321,6 @@ class TestLogicTranslatorAgent:
         assert result.get('block_json') is not None
         assert 'minecraft:block' in result['block_json']
     
-    @pytest.mark.skip(reason="Requires _validate_block_json method from PR #559")
     def test_validate_block_json(self, agent):
         """Test block JSON validation"""
         valid_block = {
@@ -347,7 +343,6 @@ class TestLogicTranslatorAgent:
         assert result.get('is_valid') == True
         assert len(result.get('errors', [])) == 0
     
-    @pytest.mark.skip(reason="Requires _validate_block_json method from PR #559")
     def test_validate_block_json_missing_fields(self, agent):
         """Test block JSON validation with missing fields"""
         invalid_block = {
@@ -361,7 +356,6 @@ class TestLogicTranslatorAgent:
         assert result.get('is_valid') == False
         assert len(result.get('errors', [])) > 0
     
-    @pytest.mark.skip(reason="Requires map_java_block_properties_to_bedrock method from PR #559")
     def test_map_java_block_properties_to_bedrock(self, agent):
         """Test Java to Bedrock property mapping"""
         java_props = {
@@ -377,7 +371,6 @@ class TestLogicTranslatorAgent:
         assert result['hardness'] == 5.0
         assert 'light_level' in result
     
-    @pytest.mark.skip(reason="Requires _determine_block_template method from PR #559")
     def test_determine_block_template(self, agent):
         """Test block template determination"""
         # Metal block
@@ -574,7 +567,6 @@ class TestAgentPerformance:
         assert elapsed_time < 5.0  # 5 seconds max
         assert isinstance(features, dict)
 
-    @pytest.mark.skip(reason="Requires generate_bedrock_block_json method from PR #559")
     def test_block_generation_performance(self):
         """Test block generation performance"""
         from agents.logic_translator import LogicTranslatorAgent
