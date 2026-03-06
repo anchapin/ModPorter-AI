@@ -5,6 +5,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { triggerDownload } from '../../services/api';
 import './ConversionUpload.css';
 
 interface ConversionUploadProps {
@@ -314,37 +315,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     if (!currentJobId) return;
     
     try {
-      const response = await apiFetch(`${API_BASE_URL}/convert/${currentJobId}/download`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Download failed' }));
-        throw new Error(errorData.detail || 'Download failed');
-      }
-
-      // Determine filename with priority: Content-Disposition > original filename > fallback
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename: string;
-
-      const dispositionMatch = contentDisposition?.match(/filename="([^"]+)"/);
-      if (dispositionMatch && dispositionMatch[1]) {
-        filename = dispositionMatch[1];
-      } else if (selectedFile?.name) {
-        const baseName = selectedFile.name.replace(/\.(jar|zip)$/i, '');
-        filename = `${baseName}-converted.mcaddon`;
-      } else {
-        filename = `converted-mod-${currentJobId}.mcaddon`; // fallback
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
+      await triggerDownload(currentJobId);
     } catch (err: any) {
+      // Note: triggerDownload doesn't throw on standard HTTP errors since it works via navigation,
+      // but we keep the catch block for network errors from the HEAD check
       setError(err.message || 'Failed to download conversion result');
     }
   };

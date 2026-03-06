@@ -8,7 +8,7 @@ import { useSuccessNotification, useErrorNotification } from '../NotificationSys
 import { 
   convertMod, 
   getConversionStatus, 
-  downloadResult 
+  triggerDownload
 } from '../../services/api';
 import './BatchConversionManager.css';
 
@@ -135,15 +135,8 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     
     for (const item of completed) {
       try {
-        const { blob, filename } = await downloadResult(item.jobId!);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
+        await triggerDownload(item.jobId!);
       } catch (error) {
         console.error(`Failed to download ${item.filename}:`, error);
       }
