@@ -2841,7 +2841,14 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         import copy
         recipe = copy.deepcopy(template)
         
-        recipe_key = f"minecraft:recipe_{recipe_type}" if recipe_type != 'smelting' else 'minecraft:recipe_furnace'
+        # Map recipe_type to correct Bedrock key suffix
+        type_to_key = {
+            'smelting': 'minecraft:recipe_furnace',
+            'blasting': 'minecraft:recipe_furnace_blast',
+            'smoking': 'minecraft:recipe_furnace_smoke',
+            'campfire': 'minecraft:recipe_campfire',
+        }
+        recipe_key = type_to_key.get(recipe_type, 'minecraft:recipe_furnace')
         recipe[recipe_key]['description']['identifier'] = f"{namespace}:{recipe_name}"
         
         # Convert input
@@ -3017,14 +3024,14 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
         
         # Extract event handlers
         event_patterns = [
-            (r'onBlockActivated|onRightClick|onItemUse', 'block_interact'),
-            (r'onBlockBroken|onPlayerBreakBlock', 'block_break'),
-            (r'onBlockPlaced|onBlockPlace', 'block_place'),
-            (r'onEntitySpawned|onMobSpawn', 'entity_spawn'),
-            (r'onEntityDeath|onMobDeath', 'entity_death'),
-            (r'onPlayerJoin|onPlayerLoggedIn', 'player_join'),
-            (r'onPlayerQuit|onPlayerLoggedOut', 'player_leave'),
-            (r'update|tick', 'tick'),
+            (r'onBlockActivated|onRightClick|onItemUse|onActivated', 'block_interact'),
+            (r'onBlockBroken|onBroken|onPlayerBreakBlock', 'block_break'),
+            (r'onBlockPlaced|onBlockPlace|onPlaced|onPlace', 'block_place'),
+            (r'onEntitySpawned|onMobSpawn|onSpawn', 'entity_spawn'),
+            (r'onEntityDeath|onMobDeath|onDeath', 'entity_death'),
+            (r'onPlayerJoin|onPlayerLoggedIn|onJoin', 'player_join'),
+            (r'onPlayerQuit|onPlayerLoggedOut|onQuit', 'player_leave'),
+            (r'\btick\b|\bupdate\b', 'tick'),
             (r'Interact', 'interact'),
         ]
         
@@ -3116,6 +3123,18 @@ world.afterEvents.blockPlace.subscribe((event) => {
     // Handle block placement
 });
 """)
+
+        if 'tick' in events:
+            js_lines.append("""
+// Tick handler - runs every game tick (~20 times per second)
+// Note: For block-specific tick, use component system or global tick with dimension check
+world.beforeEvents.tick.subscribe((event) => {
+    // Block tick logic here
+    // Use event.dimension.getBlock(pos) to check specific blocks
+    // Be careful - this runs for ALL blocks, check block typeId for your block
+});
+""")
+
         
         if not events:
             js_lines.append("// No specific event handlers detected")
