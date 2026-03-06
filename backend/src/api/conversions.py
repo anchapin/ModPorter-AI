@@ -21,6 +21,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -41,6 +42,7 @@ from websocket.manager import manager
 from websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
+from services.conversion_service import get_conversion_service
 from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
@@ -420,6 +422,7 @@ async def websocket_conversion_progress(websocket: WebSocket, conversion_id: str
 async def create_conversion(
     file: UploadFile = File(..., description="Mod file (.jar or .zip)"),
     options: str = Form(default="{}", description="JSON string of conversion options"),
+    background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -561,6 +564,7 @@ async def create_conversion(
 
     # Enqueue conversion task to async task queue for background processing
     # This enables concurrent conversions and better resource management
+    # Also start the conversion processing with AI Engine integration
     try:
         await enqueue_task(
             name="conversion",
@@ -575,6 +579,20 @@ async def create_conversion(
             priority=TaskPriority.NORMAL
         )
         logger.info(f"Conversion task enqueued for job: {conversion_id}")
+        
+        # Start AI Engine conversion in background task for real-time progress updates
+        if background_tasks:
+            conversion_service = get_conversion_service()
+            background_tasks.add_task(
+                conversion_service.process_conversion,
+                conversion_id=conversion_id,
+                file_path=file_path,
+                original_filename=safe_filename,
+                target_version=conversion_options.target_version,
+                options=conversion_options.dict(),
+            )
+            logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
+            
     except Exception as e:
         # Log but don't fail - conversion is still created, can be picked up by worker
         logger.warning(f"Failed to enqueue conversion task: {e}")
