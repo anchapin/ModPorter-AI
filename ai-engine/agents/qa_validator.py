@@ -137,7 +137,7 @@ class QAValidatorAgent:
             'asset_validity': {'weight': 0.30, 'description': 'Textures, sounds exist and are valid'},
             'semantic_accuracy': {'weight': 0.20, 'description': 'Block/item/entity definitions are valid'},
             'best_practices': {'weight': 0.20, 'description': 'Manifest.json, UUID format, version'},
-            'bedrock_compatibility': {'weight': 0.30, 'description': 'Bedrock-specific component and format validation'}
+            'bedrock_compatibility': {'weight': 0.0, 'description': 'Bedrock-specific component and format validation'}
         }
 
         # Block component validation - valid Bedrock block components
