@@ -53,6 +53,103 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
 };
 
 /**
+ * Upload file with progress tracking using XMLHttpRequest.
+ * This provides real-time progress updates for large files.
+ */
+export const uploadFileWithProgress = async (
+  file: File,
+  onProgress: (progress: number) => void
+): Promise<UploadResponse> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        onProgress(progress);
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response);
+        } catch {
+          reject(new ApiError('Invalid response from server', xhr.status));
+        }
+      } else {
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          reject(new ApiError(errorData.detail || 'File upload failed', xhr.status));
+        } catch {
+          reject(new ApiError('File upload failed', xhr.status));
+        }
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new ApiError('Network error during upload', xhr.status));
+    });
+
+    xhr.addEventListener('abort', () => {
+      reject(new ApiError('Upload was cancelled', xhr.status));
+    });
+
+    xhr.open('POST', `${API_BASE_URL}/upload`);
+    xhr.send(formData);
+  });
+};
+
+/**
+ * Get conversion history from the backend.
+ * Returns paginated list of conversions.
+ */
+export interface ConversionHistoryParams {
+  page?: number;
+  page_size?: number;
+  status?: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+}
+
+export interface ConversionHistoryItem {
+  conversion_id: string;
+  status: string;
+  progress: number;
+  message: string;
+  created_at: string;
+  updated_at?: string;
+  original_filename?: string;
+  error?: string;
+  result_url?: string;
+}
+
+export interface ConversionHistoryResponse {
+  conversions: ConversionHistoryItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export const listConversions = async (params: ConversionHistoryParams = {}): Promise<ConversionHistoryResponse> => {
+  const searchParams = new URLSearchParams();
+  
+  if (params.page !== undefined) searchParams.append('page', params.page.toString());
+  if (params.page_size !== undefined) searchParams.append('page_size', params.page_size.toString());
+  if (params.status) searchParams.append('status', params.status);
+
+  const response = await fetch(`${API_BASE_URL}/conversions?${searchParams}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch conversion history' }));
+    throw new ApiError(errorData.detail || 'Failed to fetch conversion history', response.status);
+  }
+
+  return response.json();
+};
+
+/**
  * Start a new mod conversion job.
  * 
  * Uses POST /api/v1/conversions with multipart form data (file + options).
