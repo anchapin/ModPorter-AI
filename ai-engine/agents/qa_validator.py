@@ -128,7 +128,7 @@ class QAValidatorAgent:
         self.pass_threshold = 0.70
 
         # Validation categories with weights (aligned with issue requirements)
-        # - structural_completeness (30%): ZIP structure, required folders
+        # - structural (30%): ZIP structure, required folders
         # - asset_validity (30%): Textures, sounds exist and are valid
         # - semantic_accuracy (20%): Block/item/entity definitions are valid
         # - best_practices (20%): manifest.json, UUIDs, versions
@@ -379,7 +379,7 @@ class QAValidatorAgent:
             # Open and validate the ZIP file
             with zipfile.ZipFile(path, 'r') as zipf:
                 # Run all validation categories based on new structure
-                self._validate_structural_completeness(zipf, validation_result)
+                self._validate_structural(zipf, validation_result)
                 self._validate_asset_validity(zipf, validation_result)
                 self._validate_semantic_accuracy(zipf, validation_result)
                 self._validate_best_practices(zipf, validation_result)
@@ -425,9 +425,9 @@ class QAValidatorAgent:
 
         return validation_result
 
-    def _validate_structural_completeness(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+    def _validate_structural(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
         """Validate ZIP structure completeness: required folders, no temp files, proper structure."""
-        validation = result["validations"]["structural_completeness"]
+        validation = result["validations"]["structural"]
         namelist = zipf.namelist()
 
         checks = 0
