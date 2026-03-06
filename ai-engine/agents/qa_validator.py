@@ -133,10 +133,11 @@ class QAValidatorAgent:
         # - semantic_accuracy (20%): Block/item/entity definitions are valid
         # - best_practices (20%): manifest.json, UUIDs, versions
         self.validation_categories = {
-            'structural_completeness': {'weight': 0.30, 'description': 'ZIP structure, required folders, no temp files'},
+            'structural': {'weight': 0.30, 'description': 'ZIP structure, required folders, no temp files'},
             'asset_validity': {'weight': 0.30, 'description': 'Textures, sounds exist and are valid'},
             'semantic_accuracy': {'weight': 0.20, 'description': 'Block/item/entity definitions are valid'},
-            'best_practices': {'weight': 0.20, 'description': 'Manifest.json, UUID format, version'}
+            'best_practices': {'weight': 0.20, 'description': 'Manifest.json, UUID format, version'},
+            'bedrock_compatibility': {'weight': 0.30, 'description': 'Bedrock-specific component and format validation'}
         }
 
         # Block component validation - valid Bedrock block components
