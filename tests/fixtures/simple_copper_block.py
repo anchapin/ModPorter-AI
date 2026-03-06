@@ -14,6 +14,8 @@ For Issue #174: Add sample .jar fixture for testing
 import zipfile
 import json
 from pathlib import Path
+from PIL import Image
+import os
 
 
 def create_simple_copper_block_jar():
@@ -35,7 +37,43 @@ def create_simple_copper_block_jar():
     
     jar_path = fixtures_dir / "simple_copper_block.jar"
     
-    with zipfile.ZipFile(jar_path, 'w') as zf:
+    # Create a temporary directory for building the JAR contents
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create META-INF first
+        meta_dir = os.path.join(tmpdir, "META-INF")
+        os.makedirs(meta_dir, exist_ok=True)
+        with open(os.path.join(meta_dir, "MANIFEST.MF"), 'w') as f:
+            f.write("""Manifest-Version: 1.0
+Created-By: ModPorter AI Test Suite
+Specification-Title: Simple Copper Block
+Specification-Version: 1.0.0
+Implementation-Title: simple_copper
+Implementation-Version: 1.0.0
+""")
+        
+        # Create a valid 16x16 PNG block texture (copper color)
+        textures_dir = os.path.join(tmpdir, "assets", "simple_copper", "textures", "block")
+        os.makedirs(textures_dir, exist_ok=True)
+        img = Image.new('RGBA', (16, 16), (184, 115, 67, 255))  # Copper color
+        img.save(os.path.join(textures_dir, "polished_copper.png"), "PNG")
+        
+        # Add animation mcmeta file for the block texture
+        mcmeta_path = os.path.join(textures_dir, "polished_copper.png.mcmeta")
+        with open(mcmeta_path, 'w') as f:
+            json.dump({
+                "animation": {
+                    "frametime": 2,
+                    "frames": [0, 1, 2]
+                }
+            }, f, indent=2)
+        
+        # Create item texture (copper ingot)
+        items_dir = os.path.join(tmpdir, "assets", "simple_copper", "textures", "item")
+        os.makedirs(items_dir, exist_ok=True)
+        img_item = Image.new('RGBA', (16, 16), (255, 165, 0, 255))  # Orange
+        img_item.save(os.path.join(items_dir, "copper_ingot.png"), "PNG")
+        
         # Add fabric.mod.json with complete metadata
         fabric_mod = {
             "schemaVersion": 1,
@@ -54,18 +92,8 @@ def create_simple_copper_block_jar():
                 "minecraft": "~1.19.2"
             }
         }
-        zf.writestr('fabric.mod.json', json.dumps(fabric_mod, indent=2))
-        
-        # Add block texture (16x16 PNG header for more realistic testing)
-        png_header = (
-            b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10'
-            b'\x08\x06\x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f'
-            b'\x0b\xfca\x05\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00 cHRM'
-            b'z%\x00\x00\x80\x83\x00\x00\xf9\x7f\x00\x00\x80\xe9\x00\x00u0\x00\x00'
-            b'\xea`\x00\x00:\x98\x00\x00\x17o\x92_\xc5F\x00\x00\x00\tpHYs\x00\x00\x0b'
-            b'\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00IEND\xaeB`\x82'
-        )
-        zf.writestr('assets/simple_copper/textures/block/polished_copper.png', png_header)
+        with open(os.path.join(tmpdir, "fabric.mod.json"), 'w') as f:
+            json.dump(fabric_mod, f, indent=2)
         
         # Add Java source file for more realistic testing
         java_source = '''package com.example.simple_copper;
@@ -89,7 +117,10 @@ public class PolishedCopperBlock extends Block {
     }
 }
 '''
-        zf.writestr('com/example/simple_copper/PolishedCopperBlock.java', java_source)
+        java_dir = os.path.join(tmpdir, "com", "example", "simple_copper")
+        os.makedirs(java_dir, exist_ok=True)
+        with open(os.path.join(java_dir, "PolishedCopperBlock.java"), 'w') as f:
+            f.write(java_source)
         
         # Add compiled class (minimal class file structure for testing)
         class_data = (
@@ -97,7 +128,8 @@ public class PolishedCopperBlock extends Block {
             b'\x12\x0a\x00\x13\x00\x14\x07\x00\x15\x07\x00\x16\x01\x00\x06<init>\x01'
             b'\x00\x03()V\x01\x00\x04Code'
         )
-        zf.writestr('com/example/simple_copper/PolishedCopperBlock.class', class_data)
+        with open(os.path.join(java_dir, "PolishedCopperBlock.class"), 'wb') as f:
+            f.write(class_data)
         
         # Add mod main class
         main_java = '''package com.example.simple_copper;
@@ -119,17 +151,8 @@ public class SimpleCopperMod implements ModInitializer {
     }
 }
 '''
-        zf.writestr('com/example/simple_copper/SimpleCopperMod.java', main_java)
-        
-        # Add manifest
-        manifest = '''Manifest-Version: 1.0
-Created-By: ModPorter AI Test Suite
-Specification-Title: Simple Copper Block
-Specification-Version: 1.0.0
-Implementation-Title: simple_copper
-Implementation-Version: 1.0.0
-'''
-        zf.writestr('META-INF/MANIFEST.MF', manifest)
+        with open(os.path.join(java_dir, "SimpleCopperMod.java"), 'w') as f:
+            f.write(main_java)
         
         # Add mixins.json for completeness
         mixins_config = {
@@ -142,7 +165,8 @@ Implementation-Version: 1.0.0
             "server": [],
             "minVersion": "0.8"
         }
-        zf.writestr('simple_copper.mixins.json', json.dumps(mixins_config, indent=2))
+        with open(os.path.join(tmpdir, "simple_copper.mixins.json"), 'w') as f:
+            json.dump(mixins_config, f, indent=2)
         
         # Add pack.mcmeta for additional metadata
         pack_mcmeta = {
@@ -151,7 +175,16 @@ Implementation-Version: 1.0.0
                 "description": "Simple Copper Block test fixture"
             }
         }
-        zf.writestr('pack.mcmeta', json.dumps(pack_mcmeta, indent=2))
+        with open(os.path.join(tmpdir, "pack.mcmeta"), 'w') as f:
+            json.dump(pack_mcmeta, f, indent=2)
+        
+        # Create the JAR file
+        with zipfile.ZipFile(jar_path, 'w') as zf:
+            for root, dirs, files in os.walk(tmpdir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, tmpdir)
+                    zf.write(file_path, arcname)
         
     print(f"Created comprehensive test JAR: {jar_path}")
     print(f"JAR size: {jar_path.stat().st_size} bytes")

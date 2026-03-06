@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { convertMod, getConversionStatus, cancelJob, downloadResult } from '../../services/api';
+import { convertMod, getConversionStatus, cancelJob, triggerDownload } from '../../services/api';
 import {
   InitiateConversionParams,
   ConversionResponse,
@@ -201,15 +201,8 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
     if (!currentConversionId) return;
     
     try {
-      const { blob, filename } = await downloadResult(currentConversionId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
+      await triggerDownload(currentConversionId);
     } catch (err: any) {
       setError(err.message || 'Failed to download conversion result');
     }
