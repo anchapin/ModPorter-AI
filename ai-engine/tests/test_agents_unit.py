@@ -302,7 +302,8 @@ class TestLogicTranslatorAgent:
         assert 'bedrock_recipe' in result_data
     
     # ========== Block Generation Tests (Issue #546) ==========
-
+    # Tests enabled after verifying methods exist in logic_translator.py
+    
     def test_generate_bedrock_block_json(self, agent):
         """Test Bedrock block JSON generation"""
         block_analysis = {
@@ -566,7 +567,7 @@ class TestAgentPerformance:
         # Should complete in reasonable time
         assert elapsed_time < 5.0  # 5 seconds max
         assert isinstance(features, dict)
-
+    
     def test_block_generation_performance(self):
         """Test block generation performance"""
         from agents.logic_translator import LogicTranslatorAgent
