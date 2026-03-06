@@ -65,6 +65,10 @@ class TestQAValidatorAgent:
         assert "semantic_accuracy" in agent.validation_categories
         assert "best_practices" in agent.validation_categories
 
+        # Verify weights sum to 1.0
+        total_weight = sum(cat['weight'] for cat in agent.validation_categories.values())
+        assert total_weight == 1.0
+
 
 class TestValidationWithMockAddon:
     """Test validation with a mock .mcaddon file."""
