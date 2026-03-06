@@ -38,6 +38,10 @@ class MockModule:
         return MockModule()
     def __call__(self, *args, **kwargs):
         return MockModule()
+    def __iter__(self):
+        return iter([])
+    def __getitem__(self, key):
+        return MockModule()
 
 sys.modules['pydub'] = MockModule()
 sys.modules['pydub.exceptions'] = MockModule()
@@ -64,7 +68,14 @@ sys.modules['crewai.tools'] = MockCrewAI.tools
 sys.modules['crewai.tools.BaseTool'] = MockCrewAI.tools.BaseTool
 
 # Mock local tools package to prevent import conflicts
-sys.modules['tools'] = MockModule()
+class MockToolsModule:
+    """Proper mock for tools module"""
+    def __getattr__(self, name):
+        return MockModule()
+    def __iter__(self):
+        return iter([])
+
+sys.modules['tools'] = MockToolsModule()
 
 os.environ['TESTING'] = 'true'
 
