@@ -492,6 +492,13 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.generate_bedrock_block_tool,
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool,
+            # Complex logic translation tools (Issue #654)
+            LogicTranslatorAgent.generate_bedrock_item_tool,
+            LogicTranslatorAgent.generate_bedrock_entity_tool,
+            LogicTranslatorAgent.generate_bedrock_recipe_tool,
+            LogicTranslatorAgent.generate_event_handler_tool,
+            LogicTranslatorAgent.convert_tick_handler_tool,
+            LogicTranslatorAgent.convert_nbt_tool,
         ]
     
     def translate_java_code(self, java_code: str, code_type: str) -> str:
@@ -1618,3 +1625,698 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool
         ]
+    
+    # ========== Item Conversion Methods (Issue #654) ==========
+    
+    def generate_bedrock_item_json(
+        self,
+        java_item_data: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate Bedrock item JSON from Java item analysis.
+        
+        Args:
+            java_item_data: Dictionary containing Java item properties
+            namespace: Namespace for the item
+            use_rag: Whether to use RAG for enhanced translation
+            
+        Returns:
+            Dictionary with generated Bedrock item JSON
+        """
+        try:
+            # Determine item type
+            item_type = java_item_data.get('item_type', 'tool')
+            
+            # Get template
+            template = BEDROCK_ITEM_TEMPLATES.get(item_type, BEDROCK_ITEM_TEMPLATES['tool'])
+            item_json = json.loads(json.dumps(template))  # Deep copy
+            
+            # Set identifier
+            item_name = java_item_data.get('name', 'unknown_item')
+            item_json['minecraft:item']['description']['identifier'] = f"{namespace}:{item_name}"
+            
+            # Set display name if provided
+            if 'display_name' in java_item_data:
+                if 'minecraft:item' not in item_json['minecraft:item'].get('components', {}):
+                    item_json['minecraft:item']['components'] = {}
+                item_json['minecraft:item']['components']['minecraft:display_name'] = {
+                    "value": java_item_data['display_name']
+                }
+            
+            # Set lore if provided
+            if 'lore' in java_item_data:
+                if 'minecraft:item' not in item_json['minecraft:item'].get('components', {}):
+                    item_json['minecraft:item']['components'] = {}
+                item_json['minecraft:item']['components']['minecraft:lore'] = {
+                    "value": java_item_data['lore']
+                }
+            
+            # Handle durability and repair
+            if 'durability' in java_item_data:
+                if 'components' not in item_json['minecraft:item']:
+                    item_json['minecraft:item']['components'] = {}
+                if 'minecraft:damageable' in item_json['minecraft:item']['components']:
+                    item_json['minecraft:item']['components']['minecraft:damageable']['max_durability'] = java_item_data['durability']
+            
+            # Map food values
+            if item_type == 'food' and 'food_values' in java_item_data:
+                if 'components' not in item_json['minecraft:item']:
+                    item_json['minecraft:item']['components'] = {}
+                if 'minecraft:food' in item_json['minecraft:item']['components']:
+                    food_vals = java_item_data['food_values']
+                    item_json['minecraft:item']['components']['minecraft:food']['nutrition'] = food_vals.get('nutrition', 4)
+                    item_json['minecraft:item']['components']['minecraft:food']['saturation'] = food_vals.get('saturation', 2.0)
+            
+            return {
+                "success": True,
+                "item_json": item_json,
+                "item_name": item_name,
+                "item_type": item_type
+            }
+        except Exception as e:
+            self.logger.error(f"Error generating Bedrock item JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "item_json": None
+            }
+    
+    def map_java_item_properties_to_bedrock(
+        self,
+        java_properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Map Java item properties to Bedrock equivalents.
+        
+        Args:
+            java_properties: Dictionary of Java item properties
+            
+        Returns:
+            Dictionary with Bedrock-compatible properties
+        """
+        bedrock_properties = {}
+        
+        # Map material type to durability
+        material = java_properties.get('material', 'wood')
+        if f"ToolMaterial.{material.upper()}" in JAVA_TO_BEDROCK_ITEM_PROPERTIES:
+            mapping = JAVA_TO_BEDROCK_ITEM_PROPERTIES[f"ToolMaterial.{material.upper()}"]
+            bedrock_properties.update(mapping)
+        
+        # Map armor material
+        if f"ArmorMaterial.{material.upper()}" in JAVA_TO_BEDROCK_ITEM_PROPERTIES:
+            mapping = JAVA_TO_BEDROCK_ITEM_PROPERTIES[f"ArmorMaterial.{material.upper()}"]
+            bedrock_properties.update(mapping)
+        
+        # Map food values
+        food_name = java_properties.get('food', '')
+        if f"Foods.{food_name.upper()}" in JAVA_TO_BEDROCK_ITEM_PROPERTIES:
+            mapping = JAVA_TO_BEDROCK_ITEM_PROPERTIES[f"Foods.{food_name.upper()}"]
+            bedrock_properties.update(mapping)
+        
+        # Copy other properties
+        if 'max_stack_size' in java_properties:
+            bedrock_properties['max_stack_size'] = java_properties['max_stack_size']
+        
+        if 'enchantable' in java_properties:
+            bedrock_properties['enchantable'] = java_properties['enchantable']
+        
+        return bedrock_properties
+    
+    # ========== Entity Conversion Methods (Issue #654) ==========
+    
+    def generate_bedrock_entity_json(
+        self,
+        java_entity_data: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate Bedrock entity JSON from Java entity analysis.
+        
+        Args:
+            java_entity_data: Dictionary containing Java entity properties
+            namespace: Namespace for the entity
+            use_rag: Whether to use RAG for enhanced translation
+            
+        Returns:
+            Dictionary with generated Bedrock entity JSON
+        """
+        try:
+            # Determine entity category (hostile, passive, ambient, water)
+            category = java_entity_data.get('category', 'passive')
+            
+            # Get template based on category
+            template_map = {
+                'hostile': 'hostile_mob',
+                'monster': 'hostile_mob',
+                'passive': 'passive_mob',
+                'creature': 'passive_mob',
+                'ambient': 'ambient_mob',
+                'water': 'water_mob',
+                'water_mob': 'water_mob'
+            }
+            template_name = template_map.get(category.lower(), 'passive_mob')
+            template = BEDROCK_ENTITY_TEMPLATES.get(template_name, BEDROCK_ENTITY_TEMPLATES['passive_mob'])
+            entity_json = json.loads(json.dumps(template))  # Deep copy
+            
+            # Set identifier
+            entity_name = java_entity_data.get('name', 'unknown_entity')
+            entity_json['minecraft:entity']['description']['identifier'] = f"{namespace}:{entity_name}"
+            
+            # Set spawnable/summonable flags
+            if 'spawnable' in java_entity_data:
+                entity_json['minecraft:entity']['description']['is_spawnable'] = java_entity_data['spawnable']
+            if 'summonable' in java_entity_data:
+                entity_json['minecraft:entity']['description']['is_summonable'] = java_entity_data['summonable']
+            
+            # Set spawn egg colors
+            if 'spawn_egg' in java_entity_data:
+                egg = java_entity_data['spawn_egg']
+                entity_json['minecraft:entity']['components']['minecraft:spawn_egg'] = {
+                    'base_color': egg.get('base_color', '#5A1D1D'),
+                    'overlay_color': egg.get('overlay_color', '#1D1D1D')
+                }
+            
+            # Set properties in component group
+            group_name = f"minecraft:{template_name}_group"
+            if group_name in entity_json['minecraft:entity'].get('component_groups', {}):
+                group = entity_json['minecraft:entity']['component_groups'][group_name]
+                
+                if 'health' in java_entity_data:
+                    if 'minecraft:health' in group:
+                        group['minecraft:health']['value'] = java_entity_data['health']
+                        group['minecraft:health']['max'] = java_entity_data.get('max_health', java_entity_data['health'])
+                
+                if 'movement_speed' in java_entity_data:
+                    if 'minecraft:movement' in group:
+                        group['minecraft:movement']['value'] = java_entity_data['movement_speed']
+                
+                if 'attack_damage' in java_entity_data:
+                    if 'minecraft:attack' in group:
+                        group['minecraft:attack']['damage'] = java_entity_data['attack_damage']
+                
+                if 'width' in java_entity_data and 'height' in java_entity_data:
+                    if 'minecraft:collision_box' in group:
+                        group['minecraft:collision_box']['width'] = java_entity_data['width']
+                        group['minecraft:collision_box']['height'] = java_entity_data['height']
+            
+            return {
+                "success": True,
+                "entity_json": entity_json,
+                "entity_name": entity_name,
+                "entity_category": template_name
+            }
+        except Exception as e:
+            self.logger.error(f"Error generating Bedrock entity JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "entity_json": None
+            }
+    
+    # ========== Recipe Conversion Methods (Issue #654) ==========
+    
+    def generate_bedrock_recipe_json(
+        self,
+        java_recipe_data: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate Bedrock recipe JSON from Java recipe analysis.
+        
+        Args:
+            java_recipe_data: Dictionary containing Java recipe properties
+            namespace: Namespace for the recipe
+            use_rag: Whether to use RAG for enhanced translation
+            
+        Returns:
+            Dictionary with generated Bedrock recipe JSON
+        """
+        try:
+            # Determine recipe type
+            recipe_type = java_recipe_data.get('type', 'shaped')
+            
+            # Get template
+            template_name = JAVA_TO_BEDROCK_RECIPE_TYPES.get(recipe_type, 'shaped')
+            template = BEDROCK_RECIPE_TEMPLATES.get(template_name, BEDROCK_RECIPE_TEMPLATES['shaped'])
+            recipe_json = json.loads(json.dumps(template))  # Deep copy
+            
+            # Set recipe name
+            recipe_name = java_recipe_data.get('name', 'unknown_recipe')
+            recipe_json_key = list(recipe_json.keys())[0]
+            recipe_json[recipe_json_key]['description']['identifier'] = f"{namespace}:{recipe_name}"
+            
+            # Handle different recipe types
+            if template_name == 'shaped':
+                self._convert_shaped_recipe(recipe_json, java_recipe_data)
+            elif template_name == 'shapeless':
+                self._convert_shapeless_recipe(recipe_json, java_recipe_data)
+            elif template_name in ['smelting', 'blasting', 'smoking', 'campfire']:
+                self._convert_smelting_recipe(recipe_json, java_recipe_data, template_name)
+            elif template_name == 'stonecutter':
+                self._convert_stonecutter_recipe(recipe_json, java_recipe_data)
+            elif template_name == 'smithing':
+                self._convert_smithing_recipe(recipe_json, java_recipe_data)
+            
+            return {
+                "success": True,
+                "recipe_json": recipe_json,
+                "recipe_name": recipe_name,
+                "recipe_type": template_name
+            }
+        except Exception as e:
+            self.logger.error(f"Error generating Bedrock recipe JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "recipe_json": None
+            }
+    
+    def _convert_shaped_recipe(self, recipe_json: Dict, java_recipe: Dict):
+        """Convert shaped recipe data to Bedrock format."""
+        recipe = recipe_json.get('minecraft:recipe_shaped', {})
+        
+        # Set pattern
+        pattern = java_recipe.get('pattern', ['abc', 'def', 'ghi'])
+        recipe['pattern'] = pattern
+        
+        # Set key definitions
+        key = java_recipe.get('key', {})
+        bedrock_key = {}
+        for k, v in key.items():
+            if isinstance(v, dict) and 'item' in v:
+                bedrock_key[k] = {"item": v['item']}
+            else:
+                bedrock_key[k] = {"item": str(v)}
+        recipe['key'] = bedrock_key
+        
+        # Set result
+        result = java_recipe.get('result', {})
+        if isinstance(result, dict):
+            recipe['result'] = {
+                "item": result.get('item', 'minecraft:air'),
+                "count": result.get('count', 1)
+            }
+        else:
+            recipe['result'] = {"item": str(result), "count": 1}
+        
+        recipe_json['minecraft:recipe_shaped'] = recipe
+    
+    def _convert_shapeless_recipe(self, recipe_json: Dict, java_recipe: Dict):
+        """Convert shapeless recipe data to Bedrock format."""
+        recipe = recipe_json.get('minecraft:recipe_shapeless', {})
+        
+        # Set ingredients
+        ingredients = java_recipe.get('ingredients', [])
+        bedrock_ingredients = []
+        for ing in ingredients:
+            if isinstance(ing, dict):
+                bedrock_ingredients.append({"item": ing.get('item', 'minecraft:air')})
+            else:
+                bedrock_ingredients.append({"item": str(ing)})
+        recipe['ingredients'] = bedrock_ingredients
+        
+        # Set result
+        result = java_recipe.get('result', {})
+        if isinstance(result, dict):
+            recipe['result'] = {
+                "item": result.get('item', 'minecraft:air'),
+                "count": result.get('count', 1)
+            }
+        else:
+            recipe['result'] = {"item": str(result), "count": 1}
+        
+        recipe_json['minecraft:recipe_shapeless'] = recipe
+    
+    def _convert_smelting_recipe(self, recipe_json: Dict, java_recipe: Dict, recipe_type: str):
+        """Convert smelting-type recipe data to Bedrock format."""
+        recipe_key = f'minecraft:recipe_{recipe_type}'
+        recipe = recipe_json.get(recipe_key, {})
+        
+        # Set input
+        ingredient = java_recipe.get('ingredient', {})
+        if isinstance(ingredient, dict):
+            recipe['input'] = {
+                "item": ingredient.get('item', 'minecraft:air'),
+                "data": ingredient.get('data', 0)
+            }
+        else:
+            recipe['input'] = {"item": str(ingredient), "data": 0}
+        
+        # Set output
+        recipe['output'] = java_recipe.get('output', 'minecraft:air')
+        
+        # Set cooking time and experience
+        recipe['cookingtime'] = java_recipe.get('cooking_time', 200)
+        recipe['experience'] = java_recipe.get('experience', 0.0)
+        
+        recipe_json[recipe_key] = recipe
+    
+    def _convert_stonecutter_recipe(self, recipe_json: Dict, java_recipe: Dict):
+        """Convert stonecutter recipe data to Bedrock format."""
+        recipe = recipe_json.get('minecraft:recipe_stonecutter', {})
+        
+        # Set input
+        recipe['input'] = java_recipe.get('input', 'minecraft:air')
+        
+        # Set output
+        recipe['output'] = java_recipe.get('output', 'minecraft:air')
+        recipe['count'] = java_recipe.get('count', 1)
+        
+        recipe_json['minecraft:recipe_stonecutter'] = recipe
+    
+    def _convert_smithing_recipe(self, recipe_json: Dict, java_recipe: Dict):
+        """Convert smithing recipe data to Bedrock format."""
+        recipe = recipe_json.get('minecraft:recipe_smithing_transform', {})
+        
+        # Set template
+        template = java_recipe.get('template', {})
+        if isinstance(template, dict):
+            recipe['template'] = {
+                "item": template.get('item', 'minecraft:air'),
+                "data": template.get('data', 0)
+            }
+        
+        # Set base
+        base = java_recipe.get('base', {})
+        if isinstance(base, dict):
+            recipe['base'] = {
+                "item": base.get('item', 'minecraft:air'),
+                "data": base.get('data', 0)
+            }
+        
+        # Set addition
+        addition = java_recipe.get('addition', {})
+        if isinstance(addition, dict):
+            recipe['addition'] = {
+                "item": addition.get('item', 'minecraft:air'),
+                "data": addition.get('data', 0)
+            }
+        
+        # Set result
+        recipe['result'] = {"item": java_recipe.get('result', 'minecraft:air')}
+        
+        recipe_json['minecraft:recipe_smithing_transform'] = recipe
+    
+    # ========== Event Handler Generation Methods (Issue #654) ==========
+    
+    def generate_javascript_event_handler(
+        self,
+        java_event: str,
+        custom_logic: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Generate JavaScript event handler from Java event handler.
+        
+        Args:
+            java_event: Java event class name
+            custom_logic: Optional custom logic to include
+            
+        Returns:
+            Dictionary with generated event handler code
+        """
+        # Get event mapping
+        event_mapping = JAVA_TO_BEDROCK_EVENT_MAPPINGS.get(java_event)
+        
+        if not event_mapping:
+            return {
+                "success": False,
+                "error": f"Unknown Java event: {java_event}",
+                "js_handler": None
+            }
+        
+        # Generate handler code
+        js_handler = event_mapping['js_handler']
+        
+        if custom_logic:
+            # Replace comment with actual logic
+            js_handler = js_handler.replace("// Handle", "// " + custom_logic)
+        
+        return {
+            "success": True,
+            "js_handler": js_handler,
+            "bedrock_event": event_mapping['bedrock_event'],
+            "handler_params": event_mapping['handler_params']
+        }
+    
+    def convert_tick_handler(
+        self,
+        java_tick_method: str,
+        tick_interval: int = 20
+    ) -> Dict[str, Any]:
+        """
+        Convert Java tick handler to Bedrock tick handler.
+        
+        Args:
+            java_tick_method: Java tick method name (onTick, serverTick, etc.)
+            tick_interval: Tick interval in ticks (20 ticks = 1 second)
+            
+        Returns:
+            Dictionary with converted tick handler code
+        """
+        mapping = JAVA_TICK_HANDLER_MAPPINGS.get(java_tick_method)
+        
+        if not mapping:
+            return {
+                "success": False,
+                "error": f"Unknown tick handler: {java_tick_method}",
+                "js_code": None
+            }
+        
+        return {
+            "success": True,
+            "js_code": mapping['js_template'],
+            "bedrock_handler": mapping['bedrock_handler'],
+            "description": mapping['description']
+        }
+    
+    def convert_nbt_operations(
+        self,
+        java_nbt_code: str
+    ) -> Dict[str, Any]:
+        """
+        Convert Java NBT operations to Bedrock format.
+        
+        Args:
+            java_nbt_code: Java NBT operation code
+            
+        Returns:
+            Dictionary with converted NBT code
+        """
+        converted_code = java_nbt_code
+        
+        # Apply NBT mappings
+        for java_op, bedrock_op in JAVA_NBT_TO_BEDROCK_MAPPINGS.items():
+            converted_code = converted_code.replace(java_op, bedrock_op)
+        
+        return {
+            "success": True,
+            "converted_code": converted_code,
+            "mappings_applied": list(JAVA_NBT_TO_BEDROCK_MAPPINGS.keys())
+        }
+    
+    # ========== Tools for new conversion features ==========
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_item_tool(item_data: str) -> str:
+        """
+        Generate Bedrock item JSON from Java item analysis.
+        
+        Args:
+            item_data: JSON string containing Java item analysis data
+            
+        Returns:
+            JSON string with generated Bedrock item JSON
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(item_data)
+            java_item_data = data.get('java_item_data', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.generate_bedrock_item_json(
+                java_item_data=java_item_data,
+                namespace=namespace
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "item_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_entity_tool(entity_data: str) -> str:
+        """
+        Generate Bedrock entity JSON from Java entity analysis.
+        
+        Args:
+            entity_data: JSON string containing Java entity analysis data
+            
+        Returns:
+            JSON string with generated Bedrock entity JSON
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(entity_data)
+            java_entity_data = data.get('java_entity_data', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.generate_bedrock_entity_json(
+                java_entity_data=java_entity_data,
+                namespace=namespace
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "entity_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_recipe_tool(recipe_data: str) -> str:
+        """
+        Generate Bedrock recipe JSON from Java recipe analysis.
+        
+        Args:
+            recipe_data: JSON string containing Java recipe data
+            
+        Returns:
+            JSON string with generated Bedrock recipe JSON
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(recipe_data)
+            java_recipe_data = data.get('java_recipe_data', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.generate_bedrock_recipe_json(
+                java_recipe_data=java_recipe_data,
+                namespace=namespace
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "recipe_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def generate_event_handler_tool(event_data: str) -> str:
+        """
+        Generate JavaScript event handler from Java event.
+        
+        Args:
+            event_data: JSON string containing Java event name
+            
+        Returns:
+            JSON string with generated JavaScript event handler
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(event_data)
+            java_event = data.get('java_event', '')
+            custom_logic = data.get('custom_logic', '')
+            
+            result = agent.generate_javascript_event_handler(
+                java_event=java_event,
+                custom_logic=custom_logic
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "js_handler": None
+            })
+    
+    @tool
+    @staticmethod
+    def convert_tick_handler_tool(tick_data: str) -> str:
+        """
+        Convert Java tick handler to Bedrock format.
+        
+        Args:
+            tick_data: JSON string containing Java tick method info
+            
+        Returns:
+            JSON string with converted tick handler
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(tick_data)
+            java_tick_method = data.get('java_tick_method', 'onTick')
+            tick_interval = data.get('tick_interval', 20)
+            
+            result = agent.convert_tick_handler(
+                java_tick_method=java_tick_method,
+                tick_interval=tick_interval
+            )
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "js_code": None
+            })
+    
+    @tool
+    @staticmethod
+    def convert_nbt_tool(nbt_data: str) -> str:
+        """
+        Convert Java NBT operations to Bedrock format.
+        
+        Args:
+            nbt_data: JSON string containing Java NBT code
+            
+        Returns:
+            JSON string with converted NBT code
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(nbt_data)
+            java_nbt_code = data.get('java_nbt_code', '')
+            
+            result = agent.convert_nbt_operations(java_nbt_code)
+            
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "converted_code": None
+            })
+    
+    def get_complex_logic_tools(self) -> List:
+        """Get complex logic translation tools available to this agent."""
+        return [
+            LogicTranslatorAgent.generate_bedrock_item_tool,
+            LogicTranslatorAgent.generate_bedrock_entity_tool,
+            LogicTranslatorAgent.generate_bedrock_recipe_tool,
+            LogicTranslatorAgent.generate_event_handler_tool,
+            LogicTranslatorAgent.convert_tick_handler_tool,
+            LogicTranslatorAgent.convert_nbt_tool,
+        ]
+    
+    def get_all_tools(self) -> List:
+        """Get all tools available to this agent."""
+        return (
+            self.get_tools() +
+            self.get_block_generation_tools() +
+            self.get_complex_logic_tools()
+        )
