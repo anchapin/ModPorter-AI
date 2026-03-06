@@ -50,6 +50,57 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
 };
 
 /**
+ * Upload a file with progress tracking.
+ * Uses XMLHttpRequest for progress events.
+ */
+export const uploadFileWithProgress = (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<UploadResponse> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable && onProgress) {
+        const progress = (event.loaded / event.total) * 100;
+        onProgress(progress);
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch {
+          reject(new ApiError('Invalid response from server', xhr.status));
+        }
+      } else {
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          reject(new ApiError(errorData.detail || 'Upload failed', xhr.status));
+        } catch {
+          reject(new ApiError('Upload failed with unknown error', xhr.status));
+        }
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new ApiError('Network error during upload', xhr.status));
+    });
+
+    xhr.addEventListener('abort', () => {
+      reject(new ApiError('Upload cancelled', xhr.status));
+    });
+
+    xhr.open('POST', `${API_BASE_URL}/upload`);
+    xhr.send(formData);
+  });
+};
+
+/**
  * Start a new mod conversion job.
  * 
  * Uses POST /api/v1/conversions with multipart form data (file + options).
@@ -68,7 +119,53 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   };
 
   // Try new unified endpoint first: POST /api/v1/conversions (multipart form)
+  // Use XHR for progress tracking
   try {
+    const progressCallback = params.onProgress;
+    
+    // If progress callback is provided, use XHR for progress tracking
+    if (progressCallback) {
+      const xhr = new XMLHttpRequest();
+      
+      await new Promise<void>((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', params.file!);
+        formData.append('options', JSON.stringify(options));
+
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            // Scale upload progress to 0-45% (first 45% is upload)
+            const uploadProgress = (event.loaded / event.total) * 45;
+            progressCallback(uploadProgress);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new ApiError('Conversion failed', xhr.status));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new ApiError('Network error during conversion', xhr.status));
+        });
+
+        xhr.open('POST', `${API_BASE_URL}/conversions`);
+        xhr.send(formData);
+      });
+
+      const data = JSON.parse(xhr.responseText);
+      return {
+        job_id: data.conversion_id,
+        status: data.status,
+        message: `Conversion started. Estimated time: ${Math.round(data.estimated_time_seconds / 60)} minutes`,
+        progress: 45,
+      } as ConversionResponse;
+    }
+
+    // Standard fetch without progress
     const formData = new FormData();
     formData.append('file', params.file);
     formData.append('options', JSON.stringify(options));
@@ -102,7 +199,13 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   }
 
   // Legacy fallback: upload file first, then start conversion
-  const uploadResponse = await uploadFile(params.file);
+  const uploadResponse = params.onProgress 
+    ? await uploadFileWithProgress(params.file, (progress) => params.onProgress!(progress * 0.45))
+    : await uploadFile(params.file);
+
+  if (params.onProgress) {
+    params.onProgress(45); // Upload complete, starting conversion
+  }
 
   const backendRequestPayload = {
     file_id: uploadResponse.file_id,
@@ -126,6 +229,10 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
     throw new ApiError(errorData.detail || 'Conversion failed', response.status);
+  }
+
+  if (params.onProgress) {
+    params.onProgress(50); // Conversion started
   }
 
   return response.json();

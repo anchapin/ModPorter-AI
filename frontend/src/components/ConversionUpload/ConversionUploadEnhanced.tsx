@@ -18,7 +18,6 @@ import './ConversionUpload.css';
 
 // Configuration constants
 const MAX_FILE_SIZE_MB = 500;
-const UPLOAD_PROGRESS_UPDATE_INTERVAL = 100;
 
 interface ConversionUploadProps {
   onConversionStart?: (jobId: string, filename: string) => void;
@@ -345,31 +344,21 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     setError(null);
 
     try {
-      // Simulate upload progress
-      let progress = 0;
-      const uploadInterval = setInterval(() => {
-        if (!isMountedRef.current) {
-          clearInterval(uploadInterval);
-          return;
-        }
-        progress += Math.random() * 15;
-        if (progress > 90) {
-          clearInterval(uploadInterval);
-          progress = 90;
-        }
-        setUploadProgress(progress);
-      }, UPLOAD_PROGRESS_UPDATE_INTERVAL);
-
+      // Use real progress callback from API
       const request: InitiateConversionParams = {
         file: selectedFile || undefined,
         modUrl: modUrl || undefined,
         smartAssumptions,
         includeDependencies,
+        onProgress: (progress) => {
+          if (isMountedRef.current) {
+            setUploadProgress(progress);
+          }
+        },
       };
 
       const response: ConversionResponse = await convertMod(request);
 
-      clearInterval(uploadInterval);
       setUploadProgress(100);
       setIsUploading(false);
 

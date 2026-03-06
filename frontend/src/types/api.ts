@@ -51,6 +51,7 @@ export interface InitiateConversionParams {
   smartAssumptions: boolean;
   includeDependencies: boolean;
   target_version?: string; // Added
+  onProgress?: (progress: number) => void; // Callback for upload progress
 }
 
 export interface FeedbackCreatePayload {
