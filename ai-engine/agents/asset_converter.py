@@ -2,9 +2,11 @@
 Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 import logging
 import json
+import zipfile
+import io
 from pathlib import Path
 from PIL import Image
 
@@ -90,7 +92,12 @@ class AssetConverterAgent:
             AssetConverterAgent.convert_textures_tool,
             AssetConverterAgent.convert_models_tool,
             AssetConverterAgent.convert_audio_tool,
-            AssetConverterAgent.validate_bedrock_assets_tool
+            AssetConverterAgent.validate_bedrock_assets_tool,
+            # New tools for Issue #650 - JAR Texture Extraction
+            AssetConverterAgent.extract_jar_textures_tool,
+            AssetConverterAgent.convert_java_texture_path_tool,
+            AssetConverterAgent.validate_texture_tool,
+            AssetConverterAgent.generate_fallback_texture_tool
         ]
     
     def _is_power_of_2(self, n: int) -> bool:
@@ -1950,6 +1957,115 @@ class AssetConverterAgent:
         except Exception as e:
             logger.error(f"Unhandled error in validate_bedrock_assets: {e}", exc_info=True)
             return json.dumps({"success": False, "error": f"Failed to validate assets: {str(e)}"}, indent=2)
+
+    # =========================================================================
+    # JAR Texture Tools (Issue #650)
+    # =========================================================================
+
+    @tool
+    @staticmethod
+    def extract_jar_textures_tool(jar_data: str) -> str:
+        """Extract texture files from a Java mod JAR file for Bedrock conversion."""
+        try:
+            data = json.loads(jar_data)
+            jar_path = data.get('jar_path', '')
+            output_dir = data.get('output_dir', '')
+            texture_types = data.get('texture_types', ['blocks', 'items', 'entity', 'mob'])
+
+            if not jar_path:
+                return json.dumps({'success': False, 'error': 'jar_path is required'}, indent=2)
+
+            if not output_dir:
+                return json.dumps({'success': False, 'error': 'output_dir is required'}, indent=2)
+
+            agent = AssetConverterAgent.get_instance()
+            result = agent.extract_textures_from_jar(jar_path, output_dir, texture_types)
+
+            return json.dumps(result, indent=2)
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in jar_data: {e}")
+            return json.dumps({'success': False, 'error': f'Invalid JSON: {str(e)}'}, indent=2)
+        except Exception as e:
+            logger.error(f"Error extracting JAR textures: {e}")
+            return json.dumps({'success': False, 'error': str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def convert_java_texture_path_tool(path_data: str) -> str:
+        """Convert Java texture path to Bedrock texture path format."""
+        try:
+            data = json.loads(path_data)
+            java_path = data.get('java_path', '')
+            bedrock_type = data.get('bedrock_type', 'blocks')
+
+            if not java_path:
+                return json.dumps({'success': False, 'error': 'java_path is required'}, indent=2)
+
+            agent = AssetConverterAgent.get_instance()
+            bedrock_path = agent.convert_java_texture_path(java_path, bedrock_type)
+
+            return json.dumps({
+                'success': True,
+                'java_path': java_path,
+                'bedrock_path': bedrock_path,
+                'bedrock_type': bedrock_type
+            }, indent=2)
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in path_data: {e}")
+            return json.dumps({'success': False, 'error': f'Invalid JSON: {str(e)}'}, indent=2)
+        except Exception as e:
+            logger.error(f"Error converting texture path: {e}")
+            return json.dumps({'success': False, 'error': str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def validate_texture_tool(texture_data: str) -> str:
+        """Validate texture for Bedrock compatibility (dimensions, format, power of 2)."""
+        try:
+            data = json.loads(texture_data)
+            texture_path = data.get('texture_path', '')
+
+            if not texture_path:
+                return json.dumps({'success': False, 'error': 'texture_path is required'}, indent=2)
+
+            agent = AssetConverterAgent.get_instance()
+            result = agent.validate_texture(texture_path)
+
+            return json.dumps(result, indent=2)
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in texture_data: {e}")
+            return json.dumps({'success': False, 'error': f'Invalid JSON: {str(e)}'}, indent=2)
+        except Exception as e:
+            logger.error(f"Error validating texture: {e}")
+            return json.dumps({'success': False, 'error': str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def generate_fallback_texture_tool(fallback_data: str) -> str:
+        """Generate fallback texture when JAR extraction fails."""
+        try:
+            data = json.loads(fallback_data)
+            output_path = data.get('output_path', '')
+            block_name = data.get('block_name', 'unknown')
+            texture_type = data.get('texture_type', 'blocks')
+
+            if not output_path:
+                return json.dumps({'success': False, 'error': 'output_path is required'}, indent=2)
+
+            agent = AssetConverterAgent.get_instance()
+            result = agent.generate_fallback_for_jar(output_path, block_name, texture_type)
+
+            return json.dumps(result, indent=2)
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in fallback_data: {e}")
+            return json.dumps({'success': False, 'error': f'Invalid JSON: {str(e)}'}, indent=2)
+        except Exception as e:
+            logger.error(f"Error generating fallback texture: {e}")
+            return json.dumps({'success': False, 'error': str(e)}, indent=2)
     
     # Helper methods
     
@@ -2720,6 +2836,326 @@ class AssetConverterAgent:
         """Clear the conversion cache"""
         self._conversion_cache.clear()
         logger.info("Cleared asset conversion cache")
+
+    # =========================================================================
+    # JAR Texture Extraction Methods (Issue #650)
+    # =========================================================================
+
+    def extract_textures_from_jar(self, jar_path: str, output_dir: str,
+                                   texture_types: Optional[List[str]] = None) -> Dict:
+        """
+        Extract texture files from a Java mod JAR file.
+
+        Args:
+            jar_path: Path to the Java JAR file
+            output_dir: Directory to save extracted textures
+            texture_types: Optional list of texture types to extract
+                          (e.g., ['blocks', 'items', 'entity', 'mob'])
+
+        Returns:
+            Dict with extraction results including success status, texture list, etc.
+        """
+        if texture_types is None:
+            texture_types = ['blocks', 'items', 'entity', 'mob', 'armor', 'particle']
+
+        try:
+            jar_path_obj = Path(jar_path)
+            if not jar_path_obj.exists():
+                logger.error(f"JAR file not found: {jar_path}")
+                return {'success': False, 'error': f'JAR file not found: {jar_path}'}
+
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+
+            extracted_textures = []
+            errors = []
+
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                # Find all texture files in assets/*/textures/...
+                texture_patterns = [f'assets/{mod_id}/textures/{ttype}/'
+                                   for mod_id in self._get_mod_ids_from_jar(jar)
+                                   for ttype in texture_types]
+
+                for file_info in jar.filelist:
+                    file_path = file_info.filename
+
+                    # Check if it's a texture file
+                    if not file_path.endswith(('.png', '.jpg', '.jpeg', '.tga')):
+                        continue
+
+                    # Check if it matches our texture patterns
+                    is_texture = any(file_path.startswith(pattern) for pattern in texture_patterns)
+
+                    if is_texture:
+                        try:
+                            # Read texture data
+                            texture_data = jar.read(file_path)
+
+                            # Determine output path based on relative location
+                            relative_path = file_path.split('textures/')[-1]
+                            mod_path_parts = file_path.split('/')
+                            if len(mod_path_parts) >= 2 and mod_path_parts[0] == 'assets':
+                                namespace = mod_path_parts[1]
+                            else:
+                                namespace = 'minecraft'
+
+                            # Save to output directory
+                            output_subdir = output_path / namespace / 'textures' / relative_path.rsplit('/', 1)[0]
+                            output_subdir.mkdir(parents=True, exist_ok=True)
+
+                            output_file = output_path / namespace / 'textures' / relative_path
+                            output_file.write_bytes(texture_data)
+
+                            extracted_textures.append({
+                                'original_path': file_path,
+                                'saved_path': str(output_file),
+                                'namespace': namespace,
+                                'relative_path': relative_path,
+                                'type': relative_path.rsplit('/', 1)[0] if '/' in relative_path else 'root',
+                                'filename': file_path.rsplit('/', 1)[-1]
+                            })
+
+                            logger.debug(f"Extracted texture: {file_path}")
+
+                        except Exception as e:
+                            error_msg = f"Failed to extract {file_path}: {str(e)}"
+                            logger.warning(error_msg)
+                            errors.append(error_msg)
+
+            if not extracted_textures:
+                # Try alternative texture locations
+                alt_textures = self._extract_textures_from_alt_locations(jar, output_path)
+                extracted_textures.extend(alt_textures)
+
+            return {
+                'success': len(extracted_textures) > 0,
+                'jar_path': jar_path,
+                'output_dir': str(output_path),
+                'extracted_count': len(extracted_textures),
+                'textures': extracted_textures,
+                'errors': errors
+            }
+
+        except Exception as e:
+            logger.error(f"Error extracting textures from JAR: {e}")
+            return {'success': False, 'error': str(e)}
+
+    def _get_mod_ids_from_jar(self, jar: zipfile.ZipFile) -> List[str]:
+        """Extract mod IDs/namespaces from JAR assets directory."""
+        mod_ids = set()
+        try:
+            for file_path in jar.namelist():
+                # Match assets/modid/...
+                parts = file_path.split('/')
+                if len(parts) >= 2 and parts[0] == 'assets':
+                    mod_ids.add(parts[1])
+        except Exception as e:
+            logger.warning(f"Error reading mod IDs from JAR: {e}")
+
+        # Always include 'minecraft' as fallback
+        return list(mod_ids) if mod_ids else ['minecraft']
+
+    def _extract_textures_from_alt_locations(self, jar: zipfile.ZipFile,
+                                             output_path: Path) -> List[Dict]:
+        """Extract textures from alternative locations in JAR."""
+        extracted = []
+        alt_patterns = ['textures/', 'assets/textures/', '/textures/']
+
+        try:
+            for file_info in jar.filelist:
+                file_path = file_info.filename
+
+                # Only process PNG files
+                if not file_path.endswith('.png'):
+                    continue
+
+                # Check for alternative patterns
+                is_alt_texture = any(file_path.startswith(pattern) for pattern in alt_patterns)
+
+                if is_alt_texture:
+                    try:
+                        texture_data = jar.read(file_path)
+
+                        # Determine namespace
+                        if 'assets/' in file_path:
+                            namespace = file_path.split('assets/')[-1].split('/')[0]
+                        else:
+                            namespace = 'minecraft'
+
+                        # Determine relative path
+                        if 'textures/' in file_path:
+                            relative_path = file_path.split('textures/')[-1]
+                        else:
+                            relative_path = file_path.lstrip('/')
+
+                        # Save
+                        output_subdir = output_path / namespace / 'textures' / relative_path.rsplit('/', 1)[0]
+                        output_subdir.mkdir(parents=True, exist_ok=True)
+                        output_file = output_path / namespace / 'textures' / relative_path
+
+                        output_file.write_bytes(texture_data)
+
+                        extracted.append({
+                            'original_path': file_path,
+                            'saved_path': str(output_file),
+                            'namespace': namespace,
+                            'relative_path': relative_path,
+                            'type': relative_path.rsplit('/', 1)[0] if '/' in relative_path else 'root',
+                            'filename': file_path.rsplit('/', 1)[-1]
+                        })
+
+                    except Exception as e:
+                        logger.warning(f"Failed to extract alternative texture {file_path}: {e}")
+
+        except Exception as e:
+            logger.warning(f"Error scanning alternative texture locations: {e}")
+
+        return extracted
+
+    def convert_java_texture_path(self, java_path: str, bedrock_type: str = 'blocks') -> str:
+        """
+        Convert Java texture path to Bedrock texture path.
+
+        Args:
+            java_path: Java texture path (e.g., 'assets/modid/textures/block/grass_block_side.png')
+            bedrock_type: Target Bedrock texture type ('blocks', 'items', 'entity')
+
+        Returns:
+            Bedrock texture path (e.g., 'textures/blocks/grass_block_side')
+        """
+        # Parse Java path
+        parts = java_path.replace('\\', '/').split('/')
+
+        # Find textures index
+        try:
+            textures_idx = parts.index('textures')
+        except ValueError:
+            # Try alternative structure
+            textures_idx = -1
+
+        if textures_idx >= 0:
+            # Extract relative path after textures/
+            relative_parts = parts[textures_idx + 1:]
+        else:
+            # Try to find the PNG file and use remaining parts
+            relative_parts = [p for p in parts if p.endswith('.png')]
+            if relative_parts:
+                # Use filename only
+                relative_parts = [relative_parts[0]]
+            else:
+                relative_parts = []
+
+        # Extract filename without extension
+        if relative_parts:
+            filename = relative_parts[-1]
+            if filename.endswith('.png'):
+                filename = filename[:-4]
+        else:
+            filename = 'unknown'
+
+        # Build Bedrock path
+        bedrock_path = f"textures/{bedrock_type}/{filename}"
+
+        logger.debug(f"Converted Java path '{java_path}' to Bedrock path '{bedrock_path}'")
+        return bedrock_path
+
+    def validate_texture(self, texture_path: str) -> Dict:
+        """
+        Validate texture for Bedrock compatibility.
+
+        Args:
+            texture_path: Path to texture file
+
+        Returns:
+            Dict with validation results including success, issues, and metadata
+        """
+        result = {
+            'success': False,
+            'valid': False,
+            'path': texture_path,
+            'issues': [],
+            'metadata': {}
+        }
+
+        try:
+            path_obj = Path(texture_path)
+
+            if not path_obj.exists():
+                result['issues'].append('Texture file does not exist')
+                return result
+
+            # Open and validate image
+            with Image.open(texture_path) as img:
+                width, height = img.size
+                result['metadata']['original_dimensions'] = (width, height)
+                result['metadata']['format'] = img.format
+                result['metadata']['mode'] = img.mode
+
+                # Check dimensions
+                if width == 0 or height == 0:
+                    result['issues'].append('Invalid image dimensions (zero)')
+                elif width > self.texture_constraints['max_resolution'] or height > self.texture_constraints['max_resolution']:
+                    result['issues'].append(f"Dimensions {width}x{height} exceed maximum {self.texture_constraints['max_resolution']}")
+
+                # Check power of 2
+                if self.texture_constraints.get('must_be_power_of_2', True):
+                    if not self._is_power_of_2(width):
+                        result['issues'].append(f"Width {width} is not a power of 2")
+                    if not self._is_power_of_2(height):
+                        result['issues'].append(f"Height {height} is not a power of 2")
+
+                # Check mode
+                if img.mode not in self.texture_constraints.get('supported_channels', ['RGB', 'RGBA']):
+                    result['issues'].append(f"Unsupported color mode: {img.mode} (expected RGB or RGBA)")
+
+                result['valid'] = len(result['issues']) == 0
+                result['success'] = True
+
+        except Exception as e:
+            result['issues'].append(f"Error validating texture: {str(e)}")
+
+        return result
+
+    def generate_fallback_for_jar(self, output_path: str,
+                                   block_name: str,
+                                   texture_type: str = 'blocks') -> Dict:
+        """
+        Generate fallback texture when JAR extraction fails.
+
+        Args:
+            output_path: Path to save the fallback texture
+            block_name: Name for the fallback texture
+            texture_type: Type of texture ('blocks', 'items', 'entity')
+
+        Returns:
+            Dict with generation result
+        """
+        try:
+            output_path_obj = Path(output_path)
+            output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+            # Generate fallback texture
+            img = self._generate_fallback_texture(texture_type)
+
+            # Resize to appropriate size (16x16 for blocks, 16x16 for items)
+            if texture_type == 'blocks':
+                img = img.resize((16, 16), Image.LANCZOS)
+            else:
+                img = img.resize((16, 16), Image.LANCZOS)
+
+            # Save
+            img.save(output_path, 'PNG', optimize=True)
+
+            return {
+                'success': True,
+                'output_path': output_path,
+                'dimensions': img.size,
+                'generated': True
+            }
+
+        except Exception as e:
+            logger.error(f"Error generating fallback texture: {e}")
+            return {'success': False, 'error': str(e)}
     
     def _is_power_of_2(self, n: int) -> bool:
         """Check if a number is a power of 2"""
