@@ -18,9 +18,12 @@ import {
 } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
-export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/v1' 
-  : 'http://localhost:8000/api/v1';
+// Supports VITE_API_BASE_URL and VITE_API_URL environment variables
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
+  ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
+  : (import.meta.env.VITE_API_URL 
+    ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
+    : '/api/v1');
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {

@@ -23,11 +23,28 @@ export class ConversionWebSocket {
 
   constructor(private jobId: string) {
     // Determine WebSocket URL based on environment
-    // Use VITE_API_BASE_URL if set, otherwise derive from API_BASE_URL or default
-    const apiBase = import.meta.env.VITE_API_BASE_URL 
-      || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') : null)
-      || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
-    this.url = apiBase.replace(/^http/, 'ws') + `/api/v1/conversions/${this.jobId}/ws`;
+    // Priority: VITE_API_BASE_URL > derived from VITE_API_URL > default
+    
+    // In development with Vite proxy:
+    // - Set VITE_API_BASE_URL to empty string (use proxy)
+    // - Set VITE_API_URL to include /api/v1 path
+    
+    let apiBase: string;
+    
+    if (import.meta.env.VITE_API_BASE_URL) {
+      // Explicit base URL provided (e.g., https://api.modporter.ai)
+      apiBase = import.meta.env.VITE_API_BASE_URL;
+    } else if (import.meta.env.VITE_API_URL) {
+      // Derive from full API URL (e.g., http://localhost:8000/api/v1 -> http://localhost:8000)
+      apiBase = import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '');
+    } else {
+      // Development with Vite proxy: use relative URL
+      // The proxy handles /api/* and /ws/* routes
+      apiBase = '';
+    }
+    
+    // Convert http/https to ws/wss for WebSocket
+    this.url = apiBase.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') + `/api/v1/conversions/${this.jobId}/ws`;
   }
 
   /**
