@@ -128,15 +128,17 @@ class QAValidatorAgent:
         self.pass_threshold = 0.70
 
         # Validation categories with weights as specified in issue #652:
-        # - Structural completeness (30%)
-        # - Asset validity (30%)
+        # - Structural completeness (25%)
+        # - Asset validity (25%)
         # - Semantic accuracy (20%)
-        # - Best practices compliance (20%)
+        # - Best practices compliance (15%)
+        # - Bedrock compatibility (15%)
         self.validation_categories = {
-            'structural': {'weight': 0.30, 'description': 'ZIP structure, required folders, manifest presence'},
-            'asset_validity': {'weight': 0.30, 'description': 'Texture validity, sound format, model integrity'},
+            'structural': {'weight': 0.25, 'description': 'ZIP structure, required folders, manifest presence'},
+            'asset_validity': {'weight': 0.25, 'description': 'Texture validity, sound format, model integrity'},
             'semantic_accuracy': {'weight': 0.20, 'description': 'Block/item component validity, entity definitions'},
-            'best_practices': {'weight': 0.20, 'description': 'API usage, file sizes, namespace compliance'}
+            'best_practices': {'weight': 0.15, 'description': 'API usage, file sizes, namespace compliance'},
+            'bedrock_compatibility': {'weight': 0.15, 'description': 'Bedrock version support, API compatibility, vanilla overrides'}
         }
 
         # Block component validation - valid Bedrock block components
@@ -356,7 +358,8 @@ class QAValidatorAgent:
                 "structural": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "asset_validity": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "semantic_accuracy": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "best_practices": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []}
+                "best_practices": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
+                "bedrock_compatibility": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []}
             },
             "issues": [],
             "recommendations": [],
@@ -381,6 +384,7 @@ class QAValidatorAgent:
                 self._validate_asset_validity(zipf, validation_result)
                 self._validate_semantic_accuracy(zipf, validation_result)
                 self._validate_best_practices(zipf, validation_result)
+                self._validate_bedrock_compatibility(zipf, validation_result)
 
                 # Collect statistics
                 validation_result["stats"] = self._collect_stats(zipf)
@@ -1641,24 +1645,20 @@ class QAValidatorAgent:
                     'recommendations': validation_result.get("recommendations", [])
                 }
             else:
-                # Return mock data if no file path provided (backward compatibility)
+                # Return informative response when no mcaddon_path provided
                 test_results = {
-                    'success': True,
-                    'tests_run': 10,
-                    'tests_passed': 8,
-                    'tests_failed': 2,
-                    'test_details': {
-                        'feature_behavior': {'passed': 3, 'failed': 1},
-                        'logic_correctness': {'passed': 3, 'failed': 0},
-                        'data_integrity': {'passed': 2, 'failed': 1}
-                    },
+                    'success': False,
+                    'tests_run': 0,
+                    'tests_passed': 0,
+                    'tests_failed': 0,
+                    'error': 'No mcaddon_path provided. Cannot run functional tests without a valid addon file.',
+                    'test_details': {},
                     'failure_details': [
-                        {'test': 'feature_behavior_test_1', 'error': 'No mcaddon path provided - using mock data'},
-                        {'test': 'data_integrity_test_1', 'error': 'No mcaddon path provided - using mock data'}
+                        {'test': 'input_validation', 'error': 'Missing required parameter: mcaddon_path'}
                     ],
                     'recommendations': [
-                        "Provide mcaddon_path for real validation",
-                        "Fix feature behavior issues"
+                        "Provide mcaddon_path parameter to run actual functional tests",
+                        "Example: run_functional_tests('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1722,26 +1722,18 @@ class QAValidatorAgent:
                     ]
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
                 compatibility_result = {
-                    'success': True,
-                    'compatibility_score': 0.95,
-                    'bedrock_version_support': {
-                        'min_version': '1.20.0',
-                        'max_version': '1.21.0',
-                        'recommended_version': '1.20.5'
-                    },
-                    'api_compatibility': {
-                        'supported_apis': ['Scripting API', 'GameTest API'],
-                        'unsupported_apis': ['Some deprecated APIs'],
-                        'compatibility_issues': []
-                    },
-                    'device_compatibility': {
-                        'platforms': ['Windows', 'Android', 'iOS'],
-                        'performance_notes': 'Optimized for mobile devices'
-                    },
+                    'success': False,
+                    'compatibility_score': None,
+                    'error': 'No mcaddon_path provided. Cannot analyze compatibility without a valid addon file.',
+                    'bedrock_version_support': None,
+                    'api_compatibility': None,
+                    'device_compatibility': None,
+                    'validation_checks': None,
                     'recommendations': [
-                        "Provide mcaddon_path for real compatibility analysis"
+                        "Provide mcaddon_path parameter to analyze actual Bedrock compatibility",
+                        "Example: analyze_bedrock_compatibility('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1803,32 +1795,16 @@ class QAValidatorAgent:
                     ]
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
                 performance_result = {
-                    'success': True,
-                    'performance_score': 0.75,
-                    'metrics': {
-                        'memory_usage': {
-                            'score': 0.8,
-                            'details': 'Memory usage within acceptable limits'
-                        },
-                        'cpu_performance': {
-                            'score': 0.7,
-                            'details': 'CPU usage could be optimized'
-                        },
-                        'network_efficiency': {
-                            'score': 0.75,
-                            'details': 'Network usage is reasonable'
-                        }
-                    },
-                    'bottlenecks': [
-                        'CPU intensive operations in main loop',
-                        'Memory allocation in asset loading'
-                    ],
+                    'success': False,
+                    'performance_score': None,
+                    'error': 'No mcaddon_path provided. Cannot assess performance without a valid addon file.',
+                    'metrics': None,
+                    'bottlenecks': [],
                     'recommendations': [
-                        "Provide mcaddon_path for real performance analysis",
-                        "Optimize CPU-intensive operations",
-                        "Implement memory pooling for assets"
+                        "Provide mcaddon_path parameter to assess actual performance metrics",
+                        "Example: assess_performance_metrics('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1878,50 +1854,28 @@ class QAValidatorAgent:
                     'recommendations': validation_result.get('recommendations', [])
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
+                # This is NOT mock data - it's a clear indication that real validation is needed
                 qa_report = {
-                    'success': True,
+                    'success': False,
                     'report_id': f"qa_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                     'timestamp': datetime.now().isoformat(),
-                    'overall_quality_score': 82,
-                    'status': 'partial',
-                    'conversion_summary': {
-                        'total_features': 25,
-                        'successfully_converted': 20,
-                        'partially_converted': 3,
-                        'failed_conversions': 2,
-                        'smart_assumptions_applied': 5
-                    },
-                    'quality_metrics': {
-                        'feature_conversion_rate': 0.80,
-                        'assumption_accuracy': 0.90,
-                        'bedrock_compatibility': 0.95,
-                        'performance_score': 0.75,
-                        'user_experience_score': 0.80
-                    },
-                    'test_results': {
-                        'functional_tests': {'passed': 8, 'failed': 2},
-                        'compatibility_tests': {'passed': 9, 'failed': 1},
-                        'performance_tests': {'passed': 7, 'failed': 3}
-                    },
+                    'overall_quality_score': None,
+                    'status': 'error',
+                    'error': 'No mcaddon_path provided. Please provide a valid path to a .mcaddon file for real validation.',
+                    'validations': {},
+                    'stats': {},
                     'issues': [
                         {
-                            'severity': 'minor',
-                            'category': 'performance',
-                            'description': 'CPU usage could be optimized',
-                            'recommendation': 'Optimize main loop operations'
-                        },
-                        {
-                            'severity': 'major',
-                            'category': 'functionality',
-                            'description': 'Some features partially converted',
-                            'recommendation': 'Review smart assumptions for better conversion'
+                            'severity': 'critical',
+                            'category': 'input',
+                            'description': 'Missing required parameter: mcaddon_path',
+                            'recommendation': 'Provide the path to a .mcaddon file to perform actual validation'
                         }
                     ],
                     'recommendations': [
-                        "Provide mcaddon_path for real validation",
-                        "Overall conversion quality is good",
-                        "Focus on performance optimization"
+                        'Provide mcaddon_path parameter to generate real validation report',
+                        'Example: generate_qa_report("{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}")'
                     ]
                 }
 
