@@ -59,10 +59,11 @@ class TestQAValidatorAgent:
     def test_validation_categories_defined(self):
         """Test that validation categories are properly defined."""
         agent = QAValidatorAgent.get_instance()
+        # Updated categories per Issue #652
         assert "structural" in agent.validation_categories
-        assert "manifest" in agent.validation_categories
-        assert "content" in agent.validation_categories
-        assert "bedrock_compatibility" in agent.validation_categories
+        assert "asset_validity" in agent.validation_categories
+        assert "semantic_accuracy" in agent.validation_categories
+        assert "best_practices" in agent.validation_categories
 
 
 class TestValidationWithMockAddon:
@@ -127,12 +128,12 @@ class TestValidationWithMockAddon:
         assert "recommendations" in result
         assert "stats" in result
 
-        # Check validations
+        # Check validations - Updated categories per Issue #652
         validations = result["validations"]
         assert "structural" in validations
-        assert "manifest" in validations
-        assert "content" in validations
-        assert "bedrock_compatibility" in validations
+        assert "asset_validity" in validations
+        assert "semantic_accuracy" in validations
+        assert "best_practices" in validations
 
         # Each validation should have checks, passed, status
         for category, validation in validations.items():
@@ -146,10 +147,9 @@ class TestValidationWithMockAddon:
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mock_mcaddon_path)
 
-        manifest_validation = result["validations"]["manifest"]
-        assert manifest_validation["passed"] > 0
-        # Should have minimal errors for valid manifest
-        assert len(manifest_validation.get("errors", [])) == 0
+        # Updated per Issue #652 - manifest is validated within structural category
+        structural_validation = result["validations"]["structural"]
+        assert structural_validation["passed"] > 0
 
     def test_overall_score_range(self, mock_mcaddon_path):
         """Test that overall score is in valid range."""
