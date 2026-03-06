@@ -45,7 +45,6 @@ from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
 )
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -1220,7 +1219,7 @@ async def complete_chunked_upload(
         shutil.rmtree(chunks_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to complete upload: {str(e)}"
+            detail="Failed to complete upload"
         )
 
 
