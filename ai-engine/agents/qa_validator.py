@@ -353,18 +353,11 @@ class QAValidatorAgent:
             "status": "unknown",
             "validation_time": None,
             "validations": {
-<<<<<<< HEAD
-                "structural_completeness": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "asset_validity": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "semantic_accuracy": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "best_practices": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []}
-=======
                 "structural": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "asset_validity": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "semantic_accuracy": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "best_practices": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "bedrock_compatibility": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []}
->>>>>>> origin/main
             },
             "issues": [],
             "recommendations": [],
@@ -384,24 +377,12 @@ class QAValidatorAgent:
 
             # Open and validate the ZIP file
             with zipfile.ZipFile(path, 'r') as zipf:
-<<<<<<< HEAD
-                # Run all validation categories (weighted by importance)
-                # structural_completeness (30%): ZIP structure, required folders
-                self._validate_structural_completeness(zipf, validation_result)
-                # asset_validity (30%): Textures, sounds exist and are valid
-                self._validate_asset_validity(zipf, validation_result)
-                # semantic_accuracy (20%): Block/item/entity definitions are valid
-                self._validate_semantic_accuracy(zipf, validation_result)
-                # best_practices (20%): manifest.json, UUIDs, versions
-                self._validate_best_practices(zipf, validation_result)
-=======
                 # Run all validation categories based on new structure
-                self._validate_structural(zipf, validation_result)
+                self._validate_structural_completeness(zipf, validation_result)
                 self._validate_asset_validity(zipf, validation_result)
                 self._validate_semantic_accuracy(zipf, validation_result)
                 self._validate_best_practices(zipf, validation_result)
                 self._validate_bedrock_compatibility(zipf, validation_result)
->>>>>>> origin/main
 
                 # Collect statistics
                 validation_result["stats"] = self._collect_stats(zipf)
@@ -525,140 +506,11 @@ class QAValidatorAgent:
         validation["status"] = self._get_category_status(checks, passed)
 
     def _validate_asset_validity(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-<<<<<<< HEAD
-        """Validate asset validity: textures exist and are valid, sounds exist, referenced files are present."""
-        validation = result["validations"]["asset_validity"]
-        namelist = zipf.namelist()
-
-        checks = 0
-        passed = 0
-
-        # Validate texture files in resource_packs
-        texture_files = [
-            name for name in namelist
-            if name.startswith('resource_packs/') and name.endswith('.png')
-        ]
-
-        # Check texture dimensions and format
-        valid_textures = 0
-        for texture_file in texture_files:
-            checks += 1
-            try:
-                with zipf.open(texture_file) as f:
-                    # Read PNG header to validate format and get dimensions
-                    header = f.read(24)
-                    if len(header) >= 24 and header[:8] == b'\x89PNG\r\n\x1a\n':
-                        # Extract width and height from PNG IHDR chunk
-                        width = struct.unpack('>I', header[16:20])[0]
-                        height = struct.unpack('>I', header[20:24])[0]
-
-                        # Check if dimensions are power of 2 (Bedrock requirement)
-                        if self._is_power_of_2(width) and self._is_power_of_2(height):
-                            valid_textures += 1
-                        else:
-                            validation["warnings"].append(
-                                f"{texture_file}: Dimensions {width}x{height} are not power of 2 (recommended for Bedrock)"
-                            )
-                    else:
-                        validation["errors"].append(f"{texture_file}: Invalid PNG format")
-            except Exception as e:
-                validation["warnings"].append(f"{texture_file}: Could not validate: {str(e)}")
-
-        if texture_files:
-            if valid_textures == len(texture_files):
-                passed += 1
-        else:
-            # No textures is OK
-            checks -= 1  # Don't count this as a check if there are no textures
-
-        # Check texture references match actual files
-        texture_refs = self._extract_texture_references(zipf)
-        if texture_refs:
-            checks += 1
-            missing_textures = [
-                ref for ref in texture_refs
-                if not any(ref.replace('textures/', '').replace('.png', '') in name for name in namelist)
-            ]
-            if not missing_textures:
-                passed += 1
-            else:
-                validation["errors"].append(
-                    f"Missing texture files referenced in definitions: {missing_textures[:5]}"
-                )
-
-        # Validate sound files (if present)
-        sound_files = [
-            name for name in namelist
-            if 'sounds/' in name and (name.endswith('.ogg') or name.endswith('.json'))
-        ]
-        if sound_files:
-            checks += 1
-            # Sound folders should have a sound.json
-            sound_dirs = set()
-            for sf in sound_files:
-                if '/sounds/' in sf:
-                    sound_dirs.add(sf.split('/sounds/')[0] + '/sounds/')
-
-            missing_sound_jsons = []
-            for sd in sound_dirs:
-                if not any(sd + 'sound.json' in name or sd.rstrip('/') + '/sound.json' in name for name in namelist):
-                    missing_sound_jsons.append(sd)
-
-            if not missing_sound_jsons:
-                passed += 1
-            else:
-                validation["warnings"].append(
-                    f"Sound directories missing sound.json: {missing_sound_jsons[:3]}"
-                )
-
-        # Check for animation controllers/textures referenced in BP
-        anim_controller_refs = []
-        for name in namelist:
-            if name.startswith('behavior_packs/') and name.endswith('.json'):
-                try:
-                    with zipf.open(name) as f:
-                        content = f.read().decode('utf-8', errors='ignore')
-                        # Look for texture references in BP files
-                        if 'textures/' in content:
-                            import re
-                            refs = re.findall(r'"textures/([^"]+)"', content)
-                            anim_controller_refs.extend([f"textures/{r}" for r in refs])
-                except Exception:
-                    continue
-
-        if anim_controller_refs:
-            checks += 1
-            missing_bp_textures = [
-                ref for ref in anim_controller_refs
-                if not any(ref in name for name in namelist)
-            ]
-            if not missing_bp_textures:
-                passed += 1
-            else:
-                validation["warnings"].append(
-                    f"Textures referenced in behavior pack but not found: {missing_bp_textures[:3]}"
-                )
-
-        # If no asset files found, that's OK
-        if checks == 0:
-            checks = 1
-            passed = 1
-            validation["warnings"].append("No asset files found (textures, sounds)")
-
-        validation["checks"] = checks
-        validation["passed"] = passed
-        validation["status"] = self._get_category_status(checks, passed)
-
-    def _validate_best_practices(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-        """Validate best practices: manifest.json, UUID format, version, naming conventions."""
-        validation = result["validations"]["best_practices"]
-=======
         """
         Validate asset validity (30% of quality score).
         Checks: Texture validity, sound format validation, model integrity.
         """
         validation = result["validations"]["asset_validity"]
->>>>>>> origin/main
         namelist = zipf.namelist()
 
         checks = 0
