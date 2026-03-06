@@ -162,6 +162,623 @@ BEDROCK_BLOCK_TEMPLATES = {
     }
 }
 
+# ========== Bedrock Item Templates (Issue #654) ==========
+# Templates for generating valid Bedrock item JSON files with full component support
+# Note: Templates are applied at runtime via _build_item_json method with properties
+
+BEDROCK_ITEM_TEMPLATES = {
+    "basic": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "items"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                }
+            }
+        }
+    },
+    "tool": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "tools"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 1,
+                "minecraft:durability": {
+                    "max_durability": 250
+                },
+                "minecraft:repairable": {
+                    "repair_items": [
+                        {
+                            "items": ["minecraft:iron_ingot"],
+                            "repair_amount": 50
+                        }
+                    ]
+                },
+                "minecraft:hand_equipped": True,
+                "minecraft:allow_off_hand": False,
+                "minecraft:mining_speed": 6.0,
+                "minecraft:damage": 2
+            }
+        }
+    },
+    "sword": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "combat"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 1,
+                "minecraft:durability": {
+                    "max_durability": 250
+                },
+                "minecraft:repairable": {
+                    "repair_items": [
+                        {
+                            "items": ["minecraft:iron_ingot"],
+                            "repair_amount": 50
+                        }
+                    ]
+                },
+                "minecraft:hand_equipped": True,
+                "minecraft:allow_off_hand": True,
+                "minecraft:damage": 7
+            }
+        }
+    },
+    "armor": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "armor"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 1,
+                "minecraft:durability": {
+                    "max_durability": 166
+                },
+                "minecraft:repairable": {
+                    "repair_items": [
+                        {
+                            "items": ["minecraft:iron_ingot"],
+                            "repair_amount": 33
+                        }
+                    ]
+                },
+                "minecraft:armor": {
+                    "protection": 2
+                },
+                "minecraft:equippable": {
+                    "slot": "torso"
+                }
+            }
+        }
+    },
+    "food": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "items"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 64,
+                "minecraft:food": {
+                    "nutrition": 4,
+                    "saturation": 2.0,
+                    "can_always_eat": False,
+                    "effects": []
+                },
+                "minecraft:use_duration": 32,
+                "minecraft:consumable": {
+                    "consume_seconds": 1.6,
+                    "sound": "game/eat/generic"
+                }
+            }
+        }
+    },
+    "ranged_weapon": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "combat"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 1,
+                "minecraft:durability": {
+                    "max_durability": 384
+                },
+                "minecraft:repairable": {
+                    "repair_items": [
+                        {
+                            "items": ["minecraft:iron_ingot"],
+                            "repair_amount": 50
+                        }
+                    ]
+                },
+                "minecraft:hand_equipped": True,
+                "minecraft:allow_off_hand": False,
+                "minecraft:ranged_weapon": {
+                    "charged_projectiles": [
+                        {
+                            "item": "minecraft:arrow",
+                            "pickup": "allowed"
+                        }
+                    ],
+                    "damage": 9.0,
+                    "speed": 15.0,
+                    "draw_back": {
+                        "start_charge_at": 0,
+                        "max_charge": 20
+                    }
+                }
+            }
+        }
+    },
+    "book": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "items"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 16,
+                "minecraft:book": {
+                    "author": "Unknown",
+                    "title": "item_name",
+                    "pages": []
+                },
+                "minecraft:writable_book": {
+                    "max_pages": 50
+                }
+            }
+        }
+    },
+    "music_disc": {
+        "format_version": "1.20.10",
+        "minecraft:item": {
+            "description": {
+                "identifier": "namespace:item_name",
+                "menu_category": {
+                    "category": "items"
+                }
+            },
+            "components": {
+                "minecraft:icon": {
+                    "texture": "item_name"
+                },
+                "minecraft:display_name": {
+                    "value": "item_name"
+                },
+                "minecraft:max_stack_size": 1,
+                "minecraft:record": {
+                    "sound_id": "music_disc.13",
+                    "duration": 180,
+                    "comparator_signal": 0
+                }
+            }
+        }
+    }
+}
+
+# Java to Bedrock item property mappings
+JAVA_TO_BEDROCK_ITEM_PROPERTIES = {
+    # Tool types mapping
+    "ToolType.PICKAXE": {"template": "tool", "mining_speed": 6.0, "damage": 2},
+    "ToolType.AXE": {"template": "tool", "mining_speed": 8.0, "damage": 5},
+    "ToolType.SHOVEL": {"template": "tool", "mining_speed": 6.0, "damage": 1.5},
+    "ToolType.HOE": {"template": "tool", "mining_speed": 2.0, "damage": 0},
+    "ToolType.SWORD": {"template": "sword", "damage": 7},
+    
+    # Armor types
+    "ArmorType.HELMET": {"template": "armor", "armor_slot": "head", "armor_protection": 2},
+    "ArmorType.CHESTPLATE": {"template": "armor", "armor_slot": "torso", "armor_protection": 6},
+    "ArmorType.LEGGINGS": {"template": "armor", "armor_slot": "legs", "armor_protection": 5},
+    "ArmorType.BOOTS": {"template": "armor", "armor_slot": "feet", "armor_protection": 2},
+    
+    # Material durability mapping
+    "Material.WOOD": {"max_durability": 60, "repair_item": "minecraft:planks"},
+    "Material.STONE": {"max_durability": 132, "repair_item": "minecraft:cobblestone"},
+    "Material.IRON": {"max_durability": 251, "repair_item": "minecraft:iron_ingot"},
+    "Material.GOLD": {"max_durability": 33, "repair_item": "minecraft:gold_ingot"},
+    "Material.DIAMOND": {"max_durability": 1562, "repair_item": "minecraft:diamond"},
+    "Material.NETHERITE": {"max_durability": 2032, "repair_item": "minecraft:netherite_ingot"},
+}
+
+# Java item methods to Bedrock components
+JAVA_ITEM_METHOD_MAPPINGS = {
+    "getMaxStackSize": "minecraft:max_stack_size",
+    "getDefaultStackSize": "minecraft:max_stack_size",
+    "getMaxDamage": "minecraft:durability",
+    "getDamage": "minecraft:damage",
+    "getMiningSpeed": "minecraft:mining_speed",
+    "isFireResistant": "minecraft:fire_resistant",
+    "getFoodHealing": "minecraft:food.nutrition",
+    "getSaturation": "minecraft:food.saturation",
+}
+
+# ========== Bedrock Entity Templates (Issue #654) ==========
+# Templates for generating valid Bedrock entity JSON files
+# Note: Templates are applied at runtime via _build_entity_json method with properties
+
+BEDROCK_ENTITY_TEMPLATES = {
+    "hostile_mob": {
+        "format_version": "1.20.10",
+        "minecraft:entity": {
+            "description": {
+                "identifier": "namespace:entity_name",
+                "is_spawnable": True,
+                "is_summonable": True,
+                "is_experimental": False
+            },
+            "component_groups": {},
+            "components": {
+                "minecraft:type_family": {
+                    "family": ["hostile", "monster", "mob"]
+                },
+                "minecraft:breathable": {
+                    "total_supply": 15,
+                    "suffocate_time": 0
+                },
+                "minecraft:collision_box": {
+                    "width": 0.8,
+                    "height": 1.8
+                },
+                "minecraft:health": {
+                    "value": 20,
+                    "max": 20
+                },
+                "minecraft:attack": {
+                    "damage": 3
+                },
+                "minecraft:movement": {
+                    "value": 0.23
+                },
+                "minecraft:navigation.walk": {
+                    "can_path_over_water": False,
+                    "avoid_water": False
+                },
+                "minecraft:movement.basic": {},
+                "minecraft:jump.static": {}
+            },
+            "events": {}
+        }
+    },
+    "passive_mob": {
+        "format_version": "1.20.10",
+        "minecraft:entity": {
+            "description": {
+                "identifier": "namespace:entity_name",
+                "is_spawnable": True,
+                "is_summonable": True,
+                "is_experimental": False
+            },
+            "component_groups": {},
+            "components": {
+                "minecraft:type_family": {
+                    "family": ["passive", "mob"]
+                },
+                "minecraft:breathable": {
+                    "total_supply": 15,
+                    "suffocate_time": 0
+                },
+                "minecraft:collision_box": {
+                    "width": 0.6,
+                    "height": 1.2
+                },
+                "minecraft:health": {
+                    "value": 10,
+                    "max": 10
+                },
+                "minecraft:movement": {
+                    "value": 0.25
+                },
+                "minecraft:navigation.walk": {
+                    "can_path_over_water": True,
+                    "avoid_water": False
+                },
+                "minecraft:movement.basic": {},
+                "minecraft:jump.static": {}
+            },
+            "events": {}
+        }
+    },
+    "ambient_mob": {
+        "format_version": "1.20.10",
+        "minecraft:entity": {
+            "description": {
+                "identifier": "namespace:entity_name",
+                "is_spawnable": True,
+                "is_summonable": True,
+                "is_experimental": False
+            },
+            "component_groups": {},
+            "components": {
+                "minecraft:type_family": {
+                    "family": ["ambient", "mob"]
+                },
+                "minecraft:breathable": {
+                    "total_supply": 15,
+                    "suffocate_time": 0
+                },
+                "minecraft:collision_box": {
+                    "width": 0.5,
+                    "height": 0.5
+                },
+                "minecraft:health": {
+                    "value": 1,
+                    "max": 1
+                },
+                "minecraft:movement": {
+                    "value": 0.15
+                },
+                "minecraft:navigation.walk": {
+                    "can_path_over_water": True,
+                    "avoid_water": False
+                },
+                "minecraft:movement.basic": {},
+                "minecraft:jump.static": {}
+            },
+            "events": {}
+        }
+    }
+}
+
+# Java to Bedrock entity property mappings
+JAVA_TO_BEDROCK_ENTITY_PROPERTIES = {
+    "EntityType.ZOMBIE": {"template": "hostile_mob", "health": 20, "attack": 3},
+    "EntityType.SKELETON": {"template": "hostile_mob", "health": 20, "attack": 4},
+    "EntityType.CREEPER": {"template": "hostile_mob", "health": 20, "attack": 5},
+    "EntityType.SPIDER": {"template": "hostile_mob", "health": 16, "attack": 2},
+    "EntityType.PIG_ZOMBIE": {"template": "hostile_mob", "health": 20, "attack": 5},
+    "EntityType.ENDERMAN": {"template": "hostile_mob", "health": 40, "attack": 7},
+    "EntityType.COW": {"template": "passive_mob", "health": 10},
+    "EntityType.PIG": {"template": "passive_mob", "health": 10},
+    "EntityType.CHICKEN": {"template": "passive_mob", "health": 4},
+    "EntityType.SHEEP": {"template": "passive_mob", "health": 8},
+    "EntityType.HORSE": {"template": "passive_mob", "health": 30},
+    "EntityType.BAT": {"template": "ambient_mob", "health": 6},
+}
+
+# ========== Recipe Templates (Issue #654) ==========
+# Templates for generating valid Bedrock recipe JSON files
+# Note: Templates are applied at runtime via convert_recipe method
+
+BEDROCK_RECIPE_TEMPLATES = {
+    "shaped": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_shaped": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["crafting_table"],
+            "pattern": ["   ", "   ", "   "],
+            "key": {},
+            "result": {
+                "item": "minecraft:air",
+                "count": 1
+            }
+        }
+    },
+    "shapeless": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_shapeless": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["crafting_table"],
+            "ingredients": [],
+            "result": {
+                "item": "minecraft:air",
+                "count": 1
+            }
+        }
+    },
+    "smelting": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_furnace": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["furnace", "blast_furnace"],
+            "input": "minecraft:air",
+            "output": "minecraft:air",
+            "experience": 0,
+            "cookingtime": 200
+        }
+    },
+    "blasting": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_furnace_blast": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["blast_furnace"],
+            "input": "minecraft:air",
+            "output": "minecraft:air",
+            "experience": 0,
+            "cookingtime": 100
+        }
+    },
+    "smoking": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_furnace_smoke": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["smoker"],
+            "input": "minecraft:air",
+            "output": "minecraft:air",
+            "experience": 0,
+            "cookingtime": 100
+        }
+    },
+    "campfire": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_campfire": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["campfire"],
+            "input": "minecraft:air",
+            "output": "minecraft:air",
+            "experience": 0,
+            "cookingtime": 600
+        }
+    },
+    "stonecutter": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_stonecutter": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["stonecutter"],
+            "input": "minecraft:air",
+            "result": "minecraft:air",
+            "count": 1
+        }
+    },
+    "smithing": {
+        "format_version": "1.20.10",
+        "minecraft:recipe_smithing_transform": {
+            "description": {
+                "identifier": "namespace:recipe_name"
+            },
+            "tags": ["smithing_table"],
+            "base": "minecraft:air",
+            "addition": "minecraft:air",
+            "result": "minecraft:air",
+            "template": "minecraft:air"
+        }
+    }
+}
+
+# ========== Smart Assumptions Documentation ==========
+# Documented assumptions for untranslatable features
+
+SMART_ASSUMPTIONS = {
+    "item_custom_model_data": {
+        "description": "Custom model data cannot be directly translated from Java",
+        "assumption": "Using default model rendering",
+        "fallback": "texture_name mapping",
+        "note": "Custom models require separate resource pack work"
+    },
+    "item_nbt_tags": {
+        "description": "NBT tags are handled differently in Bedrock",
+        "assumption": "Basic item properties only",
+        "fallback": "component-based properties",
+        "note": "Advanced NBT requires script-based handling"
+    },
+    "item_enchantments": {
+        "description": "Enchantments have different ID systems",
+        "assumption": "Standard Bedrock enchantments only",
+        "fallback": "Enchantability from repair material",
+        "note": "Custom enchantments need behavior pack"
+    },
+    "entity_custom_ai": {
+        "description": "Complex AI goals don't map 1:1 to Bedrock",
+        "assumption": "Using nearest target + melee attack behaviors",
+        "fallback": "Basic pathfinding + random stroll",
+        "note": "Advanced AI requires behavior pack scripts"
+    },
+    "entity_pathfinding": {
+        "description": "Java pathfindgoals differ from Bedrock navigation",
+        "assumption": "Using standard navigation components",
+        "fallback": "Basic walk/fly navigation",
+        "note": "Complex pathfinding needs custom navigation"
+    },
+    "recipe_conditions": {
+        "description": "Recipe conditions (player level, weather) not supported",
+        "assumption": "Basic recipe only",
+        "fallback": "Standard recipe tags",
+        "note": "Conditional recipes need custom crafting table"
+    },
+    "block_tile_entities": {
+        "description": "Tile entities (furnaces, hoppers) are complex",
+        "assumption": "Basic block only",
+        "fallback": "Container blocks available in vanilla",
+        "note": "Complex tile entities need custom implementation"
+    },
+    "block_entity_triggers": {
+        "description": "Block state change triggers differ",
+        "assumption": "Event-based interaction only",
+        "fallback": "onPlayerInteract + custom commands",
+        "note": "Complex triggers need behavior scripts"
+    }
+}
+
+
+def get_smart_assumptions() -> str:
+    """Get documented smart assumptions for untranslatable features."""
+    return json.dumps({
+        "success": True,
+        "assumptions": SMART_ASSUMPTIONS
+    }, indent=2)
+
 # Java to Bedrock block property mappings
 JAVA_TO_BEDROCK_BLOCK_PROPERTIES = {
     # Material types
@@ -1620,4 +2237,1073 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
             LogicTranslatorAgent.generate_bedrock_block_tool,
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool
+        ]
+
+    # ========== Item Generation Methods (Issue #654) ==========
+    
+    def generate_bedrock_item_json(
+        self,
+        java_item_analysis: Dict[str, Any],
+        namespace: str = "modporter"
+    ) -> Dict[str, Any]:
+        """
+        Generate valid Bedrock item JSON from Java item analysis.
+        
+        Args:
+            java_item_analysis: Analysis data from JavaAnalyzerAgent containing:
+                - name: Item class name
+                - registry_name: Item registry name
+                - properties: Item properties (material, max_stack_size, etc.)
+            namespace: Namespace for the item identifier
+            
+        Returns:
+            Dictionary with generated item JSON and metadata
+        """
+        try:
+            logger.info(f"Generating Bedrock item JSON for: {java_item_analysis.get('name', 'unknown')}")
+            
+            # Extract item information from analysis
+            item_name = java_item_analysis.get('registry_name', 'unknown_item')
+            if ':' in item_name:
+                namespace, item_name = item_name.split(':', 1)
+            
+            properties = java_item_analysis.get('properties', {})
+            
+            # Determine the best template based on item type
+            template_type = self._determine_item_template(properties)
+            template = BEDROCK_ITEM_TEMPLATES.get(template_type, BEDROCK_ITEM_TEMPLATES['basic'])
+            
+            # Build item JSON
+            item_json = self._build_item_json(
+                template=template,
+                namespace=namespace,
+                item_name=item_name,
+                properties=properties
+            )
+            
+            # Validate the generated JSON
+            validation_result = self._validate_item_json(item_json)
+            
+            # Log translation decisions
+            translation_log = {
+                "original_java_item": java_item_analysis.get('name', 'unknown'),
+                "template_used": template_type,
+                "properties_mapped": list(properties.keys()),
+                "validation_passed": validation_result['is_valid']
+            }
+            logger.info(f"Item generation complete: {translation_log}")
+            
+            return {
+                "success": True,
+                "item_json": item_json,
+                "item_name": f"{namespace}:{item_name}",
+                "validation": validation_result,
+                "translation_log": translation_log,
+                "warnings": validation_result.get('warnings', []),
+                "assumptions_applied": self._get_item_assumptions(properties)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating Bedrock item JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "item_json": None,
+                "warnings": [f"Item generation failed: {str(e)}"]
+            }
+    
+    def _determine_item_template(self, properties: Dict[str, Any]) -> str:
+        """Determine the best item template based on properties."""
+        item_type = properties.get('item_type', 'basic').lower()
+        
+        # Check for specific types
+        if item_type in ['sword', 'axe', 'pickaxe', 'shovel', 'hoe', 'tool']:
+            return 'tool'
+        elif item_type == 'armor':
+            return 'armor'
+        elif item_type in ['food', 'potion', 'consumable']:
+            return 'food'
+        elif item_type == 'ranged_weapon' or item_type == 'bow' or item_type == 'crossbow':
+            return 'ranged_weapon'
+        elif item_type == 'book' or item_type == 'written_book':
+            return 'book'
+        elif item_type == 'music_disc' or item_type == 'record':
+            return 'music_disc'
+        
+        # Check for material-based tool detection
+        if 'ToolType' in str(properties.get('material', '')):
+            return 'tool'
+        if 'ArmorType' in str(properties.get('material', '')):
+            return 'armor'
+        
+        return 'basic'
+    
+    def _build_item_json(
+        self,
+        template: Dict[str, Any],
+        namespace: str,
+        item_name: str,
+        properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build the final item JSON from template and properties."""
+        import copy
+        
+        # Deep copy the template to avoid mutations
+        item_json = copy.deepcopy(template)
+        
+        # Set identifier
+        item_json['minecraft:item']['description']['identifier'] = f"{namespace}:{item_name}"
+        
+        # Get components reference
+        if 'components' not in item_json['minecraft:item']:
+            item_json['minecraft:item']['components'] = {}
+        components = item_json['minecraft:item']['components']
+        
+        # Apply common properties
+        if 'max_stack_size' in properties:
+            components['minecraft:max_stack_size'] = properties['max_stack_size']
+        
+        if 'display_name' in properties:
+            components['minecraft:display_name'] = {"value": properties['display_name']}
+        
+        if 'lore' in properties:
+            components['minecraft:lodestone'] = {"value": properties['lore']}  # Using lore as tooltip
+        
+        if 'max_durability' in properties:
+            if 'minecraft:durability' not in components:
+                components['minecraft:durability'] = {}
+            components['minecraft:durability']['max_durability'] = properties['max_durability']
+        
+        if 'damage' in properties:
+            components['minecraft:damage'] = properties['damage']
+        
+        if 'mining_speed' in properties:
+            components['minecraft:mining_speed'] = properties['mining_speed']
+        
+        # Set texture name
+        texture_name = properties.get('texture_name', item_name)
+        if 'minecraft:icon' in components:
+            components['minecraft:icon']['texture'] = texture_name
+        
+        # Set menu category
+        if 'menu_category' in properties:
+            item_json['minecraft:item']['description']['menu_category'] = {
+                "category": properties['menu_category']
+            }
+        
+        return item_json
+    
+    def _validate_item_json(self, item_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate generated item JSON against Bedrock schema requirements."""
+        errors = []
+        warnings = []
+        
+        # Check required fields
+        if 'format_version' not in item_json:
+            errors.append("Missing 'format_version' field")
+        
+        if 'minecraft:item' not in item_json:
+            errors.append("Missing 'minecraft:item' field")
+        else:
+            mc_item = item_json['minecraft:item']
+            
+            # Check description
+            if 'description' not in mc_item:
+                errors.append("Missing 'description' in minecraft:item")
+            else:
+                desc = mc_item['description']
+                if 'identifier' not in desc:
+                    errors.append("Missing 'identifier' in description")
+                elif ':' not in desc['identifier']:
+                    warnings.append("Identifier should include namespace (e.g., 'namespace:item_name')")
+            
+            # Check components
+            if 'components' not in mc_item:
+                warnings.append("Missing 'components' in minecraft:item")
+            else:
+                components = mc_item['components']
+                
+                # Check for required components
+                if 'minecraft:icon' not in components:
+                    warnings.append("Missing 'minecraft:icon' - item may not render in inventory")
+                
+                if 'minecraft:display_name' not in components:
+                    warnings.append("Missing 'minecraft:display_name' - item will show raw ID")
+        
+        return {
+            "is_valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings
+        }
+    
+    def _get_item_assumptions(self, properties: Dict[str, Any]) -> List[str]:
+        """Get list of assumptions applied for item generation."""
+        assumptions = []
+        
+        if 'custom_model_data' in properties:
+            assumptions.append(SMART_ASSUMPTIONS['item_custom_model_data'])
+        
+        if 'nbt' in properties:
+            assumptions.append(SMART_ASSUMPTIONS['item_nbt_tags'])
+        
+        if 'enchantments' in properties:
+            assumptions.append(SMART_ASSUMPTIONS['item_enchantments'])
+        
+        return assumptions
+
+    # ========== Entity Generation Methods (Issue #654) ==========
+    
+    def generate_bedrock_entity_json(
+        self,
+        java_entity_analysis: Dict[str, Any],
+        namespace: str = "modporter"
+    ) -> Dict[str, Any]:
+        """
+        Generate valid Bedrock entity JSON from Java entity analysis.
+        
+        Args:
+            java_entity_analysis: Analysis data from JavaAnalyzerAgent containing:
+                - name: Entity class name
+                - registry_name: Entity registry name
+                - properties: Entity properties (health, ai_behaviors, etc.)
+            namespace: Namespace for the entity identifier
+            
+        Returns:
+            Dictionary with generated entity JSON and metadata
+        """
+        try:
+            logger.info(f"Generating Bedrock entity JSON for: {java_entity_analysis.get('name', 'unknown')}")
+            
+            # Extract entity information from analysis
+            entity_name = java_entity_analysis.get('registry_name', 'unknown_entity')
+            if ':' in entity_name:
+                namespace, entity_name = entity_name.split(':', 1)
+            
+            properties = java_entity_analysis.get('properties', {})
+            
+            # Determine the best template based on entity type
+            template_type = self._determine_entity_template(properties)
+            template = BEDROCK_ENTITY_TEMPLATES.get(template_type, BEDROCK_ENTITY_TEMPLATES['passive_mob'])
+            
+            # Build entity JSON
+            entity_json = self._build_entity_json(
+                template=template,
+                namespace=namespace,
+                entity_name=entity_name,
+                properties=properties
+            )
+            
+            # Validate the generated JSON
+            validation_result = self._validate_entity_json(entity_json)
+            
+            # Log translation decisions
+            translation_log = {
+                "original_java_entity": java_entity_analysis.get('name', 'unknown'),
+                "template_used": template_type,
+                "properties_mapped": list(properties.keys()),
+                "validation_passed": validation_result['is_valid']
+            }
+            logger.info(f"Entity generation complete: {translation_log}")
+            
+            return {
+                "success": True,
+                "entity_json": entity_json,
+                "entity_name": f"{namespace}:{entity_name}",
+                "validation": validation_result,
+                "translation_log": translation_log,
+                "warnings": validation_result.get('warnings', []),
+                "assumptions_applied": self._get_entity_assumptions(properties)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating Bedrock entity JSON: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "entity_json": None,
+                "warnings": [f"Entity generation failed: {str(e)}"]
+            }
+    
+    def _determine_entity_template(self, properties: Dict[str, Any]) -> str:
+        """Determine the best entity template based on properties."""
+        entity_type = properties.get('entity_type', 'passive').lower()
+        
+        if entity_type in ['hostile', 'monster', 'zombie', 'skeleton', 'creeper', 'spider']:
+            return 'hostile_mob'
+        elif entity_type in ['passive', 'cow', 'pig', 'chicken', 'sheep', 'horse']:
+            return 'passive_mob'
+        elif entity_type in ['ambient', 'bat']:
+            return 'ambient_mob'
+        
+        # Check Java EntityType
+        java_entity_type = str(properties.get('java_entity_type', ''))
+        if 'ZOMBIE' in java_entity_type or 'SKELETON' in java_entity_type:
+            return 'hostile_mob'
+        if 'COW' in java_entity_type or 'PIG' in java_entity_type:
+            return 'passive_mob'
+        
+        return 'passive_mob'
+    
+    def _build_entity_json(
+        self,
+        template: Dict[str, Any],
+        namespace: str,
+        entity_name: str,
+        properties: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build the final entity JSON from template and properties."""
+        import copy
+        
+        # Deep copy the template to avoid mutations
+        entity_json = copy.deepcopy(template)
+        
+        # Set identifier
+        entity_json['minecraft:entity']['description']['identifier'] = f"{namespace}:{entity_name}"
+        
+        # Get components reference
+        components = entity_json['minecraft:entity']['components']
+        
+        # Apply properties
+        if 'max_health' in properties:
+            if 'minecraft:health' not in components:
+                components['minecraft:health'] = {}
+            components['minecraft:health']['value'] = properties['max_health']
+            components['minecraft:health']['max'] = properties['max_health']
+        
+        if 'movement_speed' in properties:
+            if 'minecraft:movement' not in components:
+                components['minecraft:movement'] = {}
+            components['minecraft:movement']['value'] = properties['movement_speed']
+        
+        if 'attack_damage' in properties:
+            components['minecraft:attack'] = {"damage": properties['attack_damage']}
+        
+        if 'collision_width' in properties or 'collision_height' in properties:
+            components['minecraft:collision_box'] = {
+                "width": properties.get('collision_width', 0.6),
+                "height": properties.get('collision_height', 1.8)
+            }
+        
+        # Handle spawn rules
+        if 'is_spawnable' in properties:
+            entity_json['minecraft:entity']['description']['is_spawnable'] = str(properties['is_spawnable']).lower()
+        if 'is_summonable' in properties:
+            entity_json['minecraft:entity']['description']['is_summonable'] = str(properties['is_summonable']).lower()
+        if 'is_experimental' in properties:
+            entity_json['minecraft:entity']['description']['is_experimental'] = str(properties['is_experimental']).lower()
+        
+        # Add AI behaviors from Java entity
+        self._add_entity_ai_behaviors(components, properties)
+        
+        return entity_json
+    
+    def _add_entity_ai_behaviors(self, components: Dict[str, Any], properties: Dict[str, Any]):
+        """Add AI behavior components from Java entity properties."""
+        behaviors = properties.get('ai_behaviors', [])
+        
+        # Add default hostile behaviors if not specified
+        if not behaviors and properties.get('entity_type', '').lower() == 'hostile':
+            behaviors = ['attack_nearest', 'melee_attack', 'random_stroll']
+        
+        for behavior in behaviors:
+            if behavior == 'attack_nearest':
+                components['minecraft:behavior.nearest_attackable_target'] = {
+                    "priority": 2,
+                    "entity_types": [
+                        {
+                            "filters": {"test": "is_family", "subject": "other", "value": "player"},
+                            "max_dist": 16
+                        }
+                    ]
+                }
+            elif behavior == 'melee_attack':
+                components['minecraft:behavior.melee_attack'] = {
+                    "priority": 3,
+                    "speed_multiplier": 1.2,
+                    "track_target": True
+                }
+            elif behavior == 'random_stroll':
+                components['minecraft:behavior.random_stroll'] = {
+                    "priority": 8,
+                    "speed_multiplier": 1.0
+                }
+            elif behavior == 'look_at_player':
+                components['minecraft:behavior.look_at_player'] = {
+                    "priority": 9,
+                    "look_distance": 8.0,
+                    "probability": 0.02
+                }
+            elif behavior == 'float':
+                components['minecraft:behavior.float'] = {"priority": 0}
+    
+    def _validate_entity_json(self, entity_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate generated entity JSON against Bedrock schema requirements."""
+        errors = []
+        warnings = []
+        
+        # Check required fields
+        if 'format_version' not in entity_json:
+            errors.append("Missing 'format_version' field")
+        
+        if 'minecraft:entity' not in entity_json:
+            errors.append("Missing 'minecraft:entity' field")
+        else:
+            mc_entity = entity_json['minecraft:entity']
+            
+            # Check description
+            if 'description' not in mc_entity:
+                errors.append("Missing 'description' in minecraft:entity")
+            else:
+                desc = mc_entity['description']
+                if 'identifier' not in desc:
+                    errors.append("Missing 'identifier' in description")
+                elif ':' not in desc['identifier']:
+                    warnings.append("Identifier should include namespace (e.g., 'namespace:entity_name')")
+            
+            # Check components
+            if 'components' not in mc_entity:
+                warnings.append("Missing 'components' in minecraft:entity")
+            else:
+                components = mc_entity['components']
+                
+                # Check for required components
+                if 'minecraft:type_family' not in components:
+                    warnings.append("Missing 'minecraft:type_family' - entity may not function correctly")
+                
+                if 'minecraft:health' not in components:
+                    warnings.append("Missing 'minecraft:health' - entity will have default health")
+                
+                if 'minecraft:movement' not in components:
+                    warnings.append("Missing 'minecraft:movement' - entity may not move correctly")
+        
+        return {
+            "is_valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings
+        }
+    
+    def _get_entity_assumptions(self, properties: Dict[str, Any]) -> List[str]:
+        """Get list of assumptions applied for entity generation."""
+        assumptions = []
+        
+        if 'ai_behaviors' in properties:
+            assumptions.append(SMART_ASSUMPTIONS['entity_custom_ai'])
+        
+        if 'pathfinding' in properties:
+            assumptions.append(SMART_ASSUMPTIONS['entity_pathfinding'])
+        
+        return assumptions
+
+    # ========== Recipe Conversion Methods (Issue #654) ==========
+    
+    def convert_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str = "modporter"
+    ) -> Dict[str, Any]:
+        """
+        Convert Java recipe to Bedrock format.
+        
+        Args:
+            java_recipe: Recipe data from Java mod
+                - type: Recipe type (shaped, shapeless, smelting, etc.)
+                - result: Output item
+                - ingredients: Input items
+            namespace: Namespace for the recipe identifier
+            
+        Returns:
+            Dictionary with converted Bedrock recipe
+        """
+        try:
+            recipe_type = java_recipe.get('type', 'crafting_shaped')
+            recipe_name = java_recipe.get('name', f"{java_recipe.get('result', {}).get('item', 'recipe')}")
+            
+            if ':' in recipe_name:
+                namespace, recipe_name = recipe_name.split(':', 1)
+            
+            # Convert based on recipe type
+            if 'shaped' in recipe_type:
+                return self._convert_shaped_recipe(java_recipe, namespace, recipe_name)
+            elif 'shapeless' in recipe_type:
+                return self._convert_shapeless_recipe(java_recipe, namespace, recipe_name)
+            elif 'smelting' in recipe_type:
+                return self._convert_smelting_recipe(java_recipe, namespace, recipe_name, 'smelting')
+            elif 'blasting' in recipe_type:
+                return self._convert_smelting_recipe(java_recipe, namespace, recipe_name, 'blasting')
+            elif 'smoking' in recipe_type:
+                return self._convert_smelting_recipe(java_recipe, namespace, recipe_name, 'smoking')
+            elif 'campfire' in recipe_type:
+                return self._convert_smelting_recipe(java_recipe, namespace, recipe_name, 'campfire')
+            elif 'stonecutter' in recipe_type:
+                return self._convert_stonecutter_recipe(java_recipe, namespace, recipe_name)
+            elif 'smithing' in recipe_type:
+                return self._convert_smithing_recipe(java_recipe, namespace, recipe_name)
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unknown recipe type: {recipe_type}"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error converting recipe: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _convert_shaped_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str,
+        recipe_name: str
+    ) -> Dict[str, Any]:
+        """Convert a shaped crafting recipe."""
+        template = BEDROCK_RECIPE_TEMPLATES['shaped']
+        import copy
+        recipe = copy.deepcopy(template)
+        
+        recipe['minecraft:recipe_shaped']['description']['identifier'] = f"{namespace}:{recipe_name}"
+        
+        # Convert pattern
+        pattern = java_recipe.get('pattern', ['   ', '   ', '   '])
+        recipe['minecraft:recipe_shaped']['pattern'] = pattern
+        
+        # Convert key
+        key = java_recipe.get('key', {})
+        converted_key = {}
+        for k, v in key.items():
+            item = v.get('item', v) if isinstance(v, dict) else v
+            converted_key[k] = {
+                "item": self._convert_item_id(item)
+            }
+            if isinstance(v, dict) and 'count' in v:
+                converted_key[k]['count'] = v['count']
+        recipe['minecraft:recipe_shaped']['key'] = converted_key
+        
+        # Convert result
+        result = java_recipe.get('result', {})
+        recipe['minecraft:recipe_shaped']['result'] = {
+            "item": self._convert_item_id(result.get('item', 'minecraft:air')),
+            "count": result.get('count', 1)
+        }
+        
+        return {
+            "success": True,
+            "recipe": recipe,
+            "warnings": self._check_recipe_conditions(java_recipe)
+        }
+    
+    def _convert_shapeless_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str,
+        recipe_name: str
+    ) -> Dict[str, Any]:
+        """Convert a shapeless crafting recipe."""
+        template = BEDROCK_RECIPE_TEMPLATES['shapeless']
+        import copy
+        recipe = copy.deepcopy(template)
+        
+        recipe['minecraft:recipe_shapeless']['description']['identifier'] = f"{namespace}:{recipe_name}"
+        
+        # Convert ingredients
+        ingredients = java_recipe.get('ingredients', [])
+        converted_ingredients = []
+        for ing in ingredients:
+            item = ing.get('item', ing) if isinstance(ing, dict) else ing
+            converted_ingredients.append({
+                "item": self._convert_item_id(item)
+            })
+        recipe['minecraft:recipe_shapeless']['ingredients'] = converted_ingredients
+        
+        # Convert result
+        result = java_recipe.get('result', {})
+        recipe['minecraft:recipe_shapeless']['result'] = {
+            "item": self._convert_item_id(result.get('item', 'minecraft:air')),
+            "count": result.get('count', 1)
+        }
+        
+        return {
+            "success": True,
+            "recipe": recipe,
+            "warnings": self._check_recipe_conditions(java_recipe)
+        }
+    
+    def _convert_smelting_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str,
+        recipe_name: str,
+        recipe_type: str
+    ) -> Dict[str, Any]:
+        """Convert a smelting/furnace recipe."""
+        template = BEDROCK_RECIPE_TEMPLATES.get(recipe_type, BEDROCK_RECIPE_TEMPLATES['smelting'])
+        import copy
+        recipe = copy.deepcopy(template)
+        
+        recipe_key = f"minecraft:recipe_{recipe_type}" if recipe_type != 'smelting' else 'minecraft:recipe_furnace'
+        recipe[recipe_key]['description']['identifier'] = f"{namespace}:{recipe_name}"
+        
+        # Convert input
+        input_item = java_recipe.get('ingredient', java_recipe.get('input', {}))
+        input_item = input_item.get('item', input_item) if isinstance(input_item, dict) else input_item
+        recipe[recipe_key]['input'] = self._convert_item_id(input_item)
+        
+        # Convert output
+        output_item = java_recipe.get('result', java_recipe.get('output', {}))
+        output_item = output_item.get('item', output_item) if isinstance(output_item, dict) else output_item
+        recipe[recipe_key]['output'] = self._convert_item_id(output_item)
+        
+        # Set cooking time and experience
+        if 'cookingtime' in java_recipe:
+            recipe[recipe_key]['cookingtime'] = java_recipe['cookingtime']
+        if 'experience' in java_recipe:
+            recipe[recipe_key]['experience'] = java_recipe['experience']
+        
+        return {
+            "success": True,
+            "recipe": recipe,
+            "warnings": self._check_recipe_conditions(java_recipe)
+        }
+    
+    def _convert_stonecutter_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str,
+        recipe_name: str
+    ) -> Dict[str, Any]:
+        """Convert a stonecutter recipe."""
+        template = BEDROCK_RECIPE_TEMPLATES['stonecutter']
+        import copy
+        recipe = copy.deepcopy(template)
+        
+        recipe['minecraft:recipe_stonecutter']['description']['identifier'] = f"{namespace}:{recipe_name}"
+        
+        # Convert input
+        input_item = java_recipe.get('ingredient', java_recipe.get('input', {}))
+        input_item = input_item.get('item', input_item) if isinstance(input_item, dict) else input_item
+        recipe['minecraft:recipe_stonecutter']['input'] = self._convert_item_id(input_item)
+        
+        # Convert result
+        result = java_recipe.get('result', {})
+        recipe['minecraft:recipe_stonecutter']['result'] = self._convert_item_id(result.get('item', 'minecraft:air'))
+        recipe['minecraft:recipe_stonecutter']['count'] = result.get('count', 1)
+        
+        return {
+            "success": True,
+            "recipe": recipe,
+            "warnings": self._check_recipe_conditions(java_recipe)
+        }
+    
+    def _convert_smithing_recipe(
+        self,
+        java_recipe: Dict[str, Any],
+        namespace: str,
+        recipe_name: str
+    ) -> Dict[str, Any]:
+        """Convert a smithing recipe."""
+        template = BEDROCK_RECIPE_TEMPLATES['smithing']
+        import copy
+        recipe = copy.deepcopy(template)
+        
+        recipe['minecraft:recipe_smithing_transform']['description']['identifier'] = f"{namespace}:{recipe_name}"
+        
+        # Convert items
+        base = java_recipe.get('base', {})
+        addition = java_recipe.get('addition', {})
+        result = java_recipe.get('result', {})
+        
+        recipe['minecraft:recipe_smithing_transform']['base'] = self._convert_item_id(
+            base.get('item', base) if isinstance(base, dict) else base
+        )
+        recipe['minecraft:recipe_smithing_transform']['addition'] = self._convert_item_id(
+            addition.get('item', addition) if isinstance(addition, dict) else addition
+        )
+        recipe['minecraft:recipe_smithing_transform']['result'] = self._convert_item_id(
+            result.get('item', result) if isinstance(result, dict) else result
+        )
+        
+        # Template item if present
+        template_item = java_recipe.get('template')
+        if template_item:
+            recipe['minecraft:recipe_smithing_transform']['template'] = self._convert_item_id(
+                template_item.get('item', template_item) if isinstance(template_item, dict) else template_item
+            )
+        
+        return {
+            "success": True,
+            "recipe": recipe,
+            "warnings": self._check_recipe_conditions(java_recipe)
+        }
+    
+    def _convert_item_id(self, item_id: str) -> str:
+        """Convert a Java item ID to Bedrock format."""
+        # Remove 'minecraft:' prefix for Bedrock
+        if item_id.startswith('minecraft:'):
+            return item_id
+        if ':' in item_id:
+            return item_id  # Keep custom namespaces
+        return f"minecraft:{item_id}"
+    
+    def _check_recipe_conditions(self, java_recipe: Dict[str, Any]) -> List[str]:
+        """Check for recipe features that require smart assumptions."""
+        warnings = []
+        
+        # Check for conditions that can't be translated
+        if 'conditions' in java_recipe or 'predicate' in java_recipe:
+            warnings.append(SMART_ASSUMPTIONS['recipe_conditions'])
+        
+        return warnings
+
+    # ========== Enhanced JavaScript Translation (Issue #654) ==========
+    
+    def translate_java_code_to_javascript(
+        self,
+        java_code: str,
+        code_type: str = "generic"
+    ) -> Dict[str, Any]:
+        """
+        Translate Java code to Bedrock-compatible JavaScript.
+        
+        Args:
+            java_code: Java source code to translate
+            code_type: Type of code (block, item, entity, recipe)
+            
+        Returns:
+            Dictionary with translated code and metadata
+        """
+        try:
+            logger.info(f"Translating Java code to JavaScript (type: {code_type})")
+            
+            # Parse Java code to extract key methods/events
+            analysis = self._analyze_java_logic(java_code, code_type)
+            
+            # Generate JavaScript based on code type
+            if code_type == 'item':
+                js_code = self._generate_item_js(analysis)
+            elif code_type == 'block':
+                js_code = self._generate_block_js(analysis)
+            elif code_type == 'entity':
+                js_code = self._generate_entity_js(analysis)
+            else:
+                js_code = self._generate_generic_js(analysis)
+            
+            return {
+                "success": True,
+                "javascript_code": js_code,
+                "translated_events": analysis.get('events', []),
+                "assumptions_applied": self._get_code_assumptions(analysis),
+                "warnings": []
+            }
+            
+        except Exception as e:
+            logger.error(f"Error translating Java code: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "javascript_code": None
+            }
+    
+    def _analyze_java_logic(self, java_code: str, code_type: str) -> Dict[str, Any]:
+        """Analyze Java code to extract events and methods."""
+        analysis = {
+            "events": [],
+            "methods": [],
+            "imports": []
+        }
+        
+        # Simple regex-based extraction (in production, use proper AST)
+        import re
+        
+        # Extract event handlers
+        event_patterns = [
+            (r'onBlockActivated|onRightClick|onItemUse', 'block_interact'),
+            (r'onBlockBroken|onPlayerBreakBlock', 'block_break'),
+            (r'onBlockPlaced|onBlockPlace', 'block_place'),
+            (r'onEntitySpawned|onMobSpawn', 'entity_spawn'),
+            (r'onEntityDeath|onMobDeath', 'entity_death'),
+            (r'onPlayerJoin|onPlayerLoggedIn', 'player_join'),
+            (r'onPlayerQuit|onPlayerLoggedOut', 'player_leave'),
+            (r'update|tick', 'tick'),
+            (r'Interact', 'interact'),
+        ]
+        
+        for pattern, event_type in event_patterns:
+            if re.search(pattern, java_code, re.IGNORECASE):
+                analysis['events'].append(event_type)
+        
+        # Extract method names
+        method_pattern = r'(?:public|private|protected)\s+(?:static\s+)?(\w+)\s+(\w+)\s*\('
+        for match in re.finditer(method_pattern, java_code):
+            analysis['methods'].append({
+                "return_type": match.group(1),
+                "name": match.group(2)
+            })
+        
+        return analysis
+    
+    def _generate_item_js(self, analysis: Dict[str, Any]) -> str:
+        """Generate JavaScript code for items."""
+        js_lines = [
+            "// Item behavior script generated from Java",
+            "// Item Type: Custom Item",
+            "",
+            "// Event subscriptions",
+        ]
+        
+        events = analysis.get('events', [])
+        
+        if 'block_interact' in events:
+            js_lines.append("""
+world.afterEvents.itemUse.subscribe((event) => {
+    const { itemStack, source } = event;
+    // Handle item use on block
+    // event.block - The target block
+    // event.player - The player using the item
+});
+""")
+        
+        if 'tick' in events:
+            js_lines.append("""
+world.beforeEvents.tick.subscribe((event) => {
+    // Handle tick/update logic
+    // Runs every game tick (~20 times per second)
+    // Use sparingly for performance
+});
+""")
+        
+        if not events:
+            js_lines.append("// No specific event handlers detected")
+        
+        return '\n'.join(js_lines)
+    
+    def _generate_block_js(self, analysis: Dict[str, Any]) -> str:
+        """Generate JavaScript code for blocks."""
+        js_lines = [
+            "// Block behavior script generated from Java",
+            "// Block Type: Custom Block",
+            "",
+            "// Event subscriptions",
+        ]
+        
+        events = analysis.get('events', [])
+        
+        if 'block_interact' in events:
+            js_lines.append("""
+world.afterEvents.playerInteractWithBlock.subscribe((event) => {
+    const { block, player, face } = event;
+    // Handle block interaction
+    // event.block - The interacted block
+    // event.player - The player who interacted
+    // event.face - The face interacted with
+});
+""")
+        
+        if 'block_break' in events:
+            js_lines.append("""
+world.afterEvents.playerBreakBlock.subscribe((event) => {
+    const { brokenBlockPermutation, player } = event;
+    // Handle block break
+    // event.brokenBlockPermutation - The block that was broken
+    // event.player - The player who broke it
+});
+""")
+        
+        if 'block_place' in events:
+            js_lines.append("""
+world.afterEvents.blockPlace.subscribe((event) => {
+    const { block, player } = event;
+    // Handle block placement
+});
+""")
+        
+        if not events:
+            js_lines.append("// No specific event handlers detected")
+        
+        return '\n'.join(js_lines)
+    
+    def _generate_entity_js(self, analysis: Dict[str, Any]) -> str:
+        """Generate JavaScript code for entities."""
+        js_lines = [
+            "// Entity behavior script generated from Java",
+            "// Entity Type: Custom Entity",
+            "",
+            "// Event subscriptions",
+        ]
+        
+        events = analysis.get('events', [])
+        
+        if 'entity_spawn' in events:
+            js_lines.append("""
+world.afterEvents.entitySpawn.subscribe((event) => {
+    const { entity } = event;
+    // Handle entity spawn
+});
+""")
+        
+        if 'entity_death' in events:
+            js_lines.append("""
+world.afterEvents.entityDie.subscribe((event) => {
+    const { entity, damageSource } = event;
+    // Handle entity death
+});
+""")
+        
+        if 'tick' in events:
+            js_lines.append("""
+world.beforeEvents.tick.subscribe((event) => {
+    // Entity tick logic
+    // Note: Per-entity tick requires entity component system
+});
+""")
+        
+        if not events:
+            js_lines.append("// No specific event handlers detected")
+        
+        return '\n'.join(js_lines)
+    
+    def _generate_generic_js(self, analysis: Dict[str, Any]) -> str:
+        """Generate generic JavaScript code."""
+        js_lines = [
+            "// Behavior script generated from Java",
+            "",
+            "// Detected events: " + ", ".join(analysis.get('events', ['none'])),
+            "",
+            "// Methods found:",
+        ]
+        
+        for method in analysis.get('methods', []):
+            js_lines.append(f"// - {method['return_type']} {method['name']}()")
+        
+        js_lines.append("")
+        js_lines.append("// Add event handlers as needed based on detected code patterns")
+        
+        return '\n'.join(js_lines)
+    
+    def _get_code_assumptions(self, analysis: Dict[str, Any]) -> List[str]:
+        """Get list of assumptions applied for code translation."""
+        assumptions = []
+        
+        # Complex AI translation
+        if 'ai' in str(analysis.get('methods', [])).lower():
+            assumptions.append(SMART_ASSUMPTIONS['entity_custom_ai'])
+        
+        # Complex block logic
+        if 'tileentity' in str(analysis.get('methods', [])).lower():
+            assumptions.append(SMART_ASSUMPTIONS['block_tile_entities'])
+        
+        return assumptions
+
+    # ========== Tool Methods for Issue #654 ==========
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_item_tool(item_data: str) -> str:
+        """Generate Bedrock item JSON from Java item analysis."""
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(item_data)
+            java_analysis = data.get('java_item_analysis', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.generate_bedrock_item_json(
+                java_item_analysis=java_analysis,
+                namespace=namespace
+            )
+            
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "item_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def generate_bedrock_entity_tool(entity_data: str) -> str:
+        """Generate Bedrock entity JSON from Java entity analysis."""
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(entity_data)
+            java_analysis = data.get('java_entity_analysis', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.generate_bedrock_entity_json(
+                java_entity_analysis=java_analysis,
+                namespace=namespace
+            )
+            
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "entity_json": None
+            })
+    
+    @tool
+    @staticmethod
+    def convert_recipe_tool(recipe_data: str) -> str:
+        """Convert a Java recipe to Bedrock format."""
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(recipe_data)
+            java_recipe = data.get('java_recipe', data)
+            namespace = data.get('namespace', 'modporter')
+            
+            result = agent.convert_recipe(
+                java_recipe=java_recipe,
+                namespace=namespace
+            )
+            
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    @tool
+    @staticmethod
+    def translate_code_to_js_tool(java_code_data: str) -> str:
+        """Translate Java code to Bedrock JavaScript."""
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(java_code_data)
+            java_code = data.get('java_code', '')
+            code_type = data.get('code_type', 'generic')
+            
+            result = agent.translate_java_code_to_javascript(
+                java_code=java_code,
+                code_type=code_type
+            )
+            
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+    
+    @tool
+    @staticmethod
+    def get_smart_assumptions_tool() -> str:
+        """Get documented smart assumptions for untranslatable features."""
+        return json.dumps({
+            "success": True,
+            "assumptions": SMART_ASSUMPTIONS
+        }, indent=2)
+    
+    def get_extended_tools(self) -> List:
+        """Get extended tools available to this agent."""
+        return [
+            LogicTranslatorAgent.generate_bedrock_block_tool,
+            LogicTranslatorAgent.validate_block_json_tool,
+            LogicTranslatorAgent.map_block_properties_tool,
+            LogicTranslatorAgent.generate_bedrock_item_tool,
+            LogicTranslatorAgent.generate_bedrock_entity_tool,
+            LogicTranslatorAgent.convert_recipe_tool,
+            LogicTranslatorAgent.translate_code_to_js_tool,
+            LogicTranslatorAgent.get_smart_assumptions_tool,
         ]
