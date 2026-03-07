@@ -204,8 +204,8 @@ jobs:
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-dirs: '.github,.worktrees,docs,tests,scripts,node_modules,.venv'
-        skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**'
+        skip-dirs: '.github,docs,tests,scripts,node_modules,.venv'
+        skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v4
