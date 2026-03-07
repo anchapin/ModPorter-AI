@@ -64,6 +64,7 @@ def get_install_requires():
         # Monitoring
         "prometheus-client",
         "psutil",
+        "structlog>=24.0.0",
     ]
 
 
