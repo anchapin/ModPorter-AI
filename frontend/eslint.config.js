@@ -46,11 +46,71 @@ export default [
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
       'react-hooks/exhaustive-deps': 'off',
-      // Naming conventions - DISABLED due to incompatibility with existing codebase
-      // The codebase uses PascalCase (React components), snake_case (API responses),
-      // kebab-case (HTTP headers), and other patterns that don't fit strict rules
-      // Re-enable with 'error' level once codebase is migrated to consistent naming
-      '@typescript-eslint/naming-convention': 'off',
+      // Naming conventions - enforce with practical exceptions
+      '@typescript-eslint/naming-convention': [
+        'error',
+        // Variables, functions should use camelCase (default for JS/TS)
+        // Allow PascalCase for React components
+        {
+          selector: 'variable',
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'function',
+          format: ['camelCase', 'PascalCase'],
+        },
+        // Classes, interfaces, types, enums, and React components should use PascalCase
+        {
+          selector: 'class',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'typeAlias',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'enum',
+          format: ['PascalCase'],
+        },
+        // Properties - allow camelCase, UPPER_CASE, snake_case, and special patterns
+        {
+          selector: 'property',
+          format: ['camelCase', 'UPPER_CASE', 'snake_case'],
+          leadingUnderscore: 'allow',
+        },
+        // Allow properties with special characters (HTTP headers, MIME types, paths, namespaces, CSS selectors, numeric keys)
+        {
+          selector: 'property',
+          format: null,
+          // Match properties with: hyphens, slashes, colons, ampersands, numeric keys, spaces, or title-case words
+          filter: {
+            regex: '[-/:&\\s]|^\\d+$|.+:.+$|^[A-Z][a-z]+',
+            match: true,
+          },
+        },
+        // Type parameters should use PascalCase
+        {
+          selector: 'typeParameter',
+          format: ['PascalCase'],
+        },
+        // Ignore destructured variables that might have specific names
+        {
+          selector: 'variable',
+          modifiers: ['destructured'],
+          format: null,
+        },
+        // Allow default exports to have any name (React components)
+        {
+          selector: 'variable',
+          modifiers: ['exported'],
+          format: null,
+        },
+      ],
       camelcase: 'off',
     },
   },
