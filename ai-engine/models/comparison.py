@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
 import uuid
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
 
 @dataclass
 class FeatureMapping:

@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
 import hashlib
-from typing import Dict, Optional, Any
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
+
 
 @dataclass
 class Document:
