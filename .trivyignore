@@ -4,9 +4,8 @@
 # Exclude .github directory - contains CI/CD workflows and actions, not production code
 .github/
 
-# Exclude .worktrees directory - contains historical branches for reference
-# These are not part of the main codebase and are just for historical reference
-.worktrees/
+# Note: .worktrees directory is excluded via skip-files in deploy.yml
+# Keeping this comment for documentation purposes
 
 # Exclude documentation and other non-production directories
 # These don't contain deployed code

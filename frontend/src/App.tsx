@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
+import { usePageViewTracking } from './hooks/useAnalytics';
 import './App.css';
 
 // Lazy load heavy components
@@ -33,6 +34,9 @@ const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
   console.log('App component is rendering...');
+
+  // Track page views automatically
+  usePageViewTracking(true);
 
   return (
     <ErrorBoundary>

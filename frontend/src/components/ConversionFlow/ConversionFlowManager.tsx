@@ -9,6 +9,7 @@ import { ConversionUploadEnhanced } from '../ConversionUpload/ConversionUploadEn
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
 import { triggerDownload } from '../../services/api';
+import { useConversionTracking } from '../../hooks/useAnalytics';
 import './ConversionFlowManager.css';
 
 export interface ConversionFlowState {
@@ -53,6 +54,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   const [currentStatus, setCurrentStatus] = useState<any>(null);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Analytics tracking
+  const { trackStart, trackComplete, trackFail, trackDownload } = useConversionTracking();
+
   // Clear any pending reset timeout
   useEffect(() => {
     return () => {
@@ -85,6 +89,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     (jobId: string, filename: string) => {
       console.log('[ConversionFlow] Started:', jobId, filename);
 
+      // Track conversion start
+      trackStart(jobId, { filename });
+
       setFlowState({
         jobId,
         filename,
@@ -94,13 +101,16 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         resultUrl: null,
       });
     },
-    []
+    [trackStart]
   );
 
   // Handle conversion complete
   const handleConversionComplete = useCallback(
     (jobId: string) => {
       console.log('[ConversionFlow] Completed:', jobId);
+
+      // Track conversion complete
+      trackComplete(jobId, { filename: flowState.filename });
 
       setFlowState((prev) => ({
         ...prev,
@@ -120,13 +130,16 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         }, resetDelay);
       }
     },
-    [flowState.filename, onComplete, autoReset, resetDelay, resetFlow]
+    [flowState.filename, onComplete, autoReset, resetDelay, resetFlow, trackComplete]
   );
 
   // Handle conversion failed
   const handleConversionFailed = useCallback(
     (jobId: string, error: string) => {
       console.error('[ConversionFlow] Failed:', jobId, error);
+
+      // Track conversion fail
+      trackFail(jobId, { error: error.substring(0, 200) });
 
       setFlowState((prev) => ({
         ...prev,
@@ -138,7 +151,7 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         onError(error);
       }
     },
-    [onError]
+    [onError, trackFail]
   );
 
   // Handle manual download
@@ -148,6 +161,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     try {
       // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
       await triggerDownload(flowState.jobId);
+      
+      // Track download
+      trackDownload(flowState.jobId, { filename: flowState.filename });
     } catch (error: any) {
       console.error('[ConversionFlow] Download failed:', error);
       setFlowState((prev) => ({
@@ -155,7 +171,7 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         error: `Download failed: ${error.message || 'Unknown error'}`,
       }));
     }
-  }, [flowState.jobId]);
+  }, [flowState.jobId, flowState.filename, trackDownload]);
 
   // Render upload component when idle
   if (flowState.status === 'idle') {
