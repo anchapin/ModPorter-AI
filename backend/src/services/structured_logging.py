@@ -1,19 +1,22 @@
 """
 Structured Logging Service for ModPorter AI
-Provides correlation IDs, structured JSON logs, and log aggregation support.
+Provides structured JSON logs using structlog with correlation IDs and log aggregation support.
 
-Issue: #383 - Structured logging (Phase 3)
+Issue: #695 - Add structured logging
 """
 
 import logging
-import json
+import structlog
 import uuid
 import sys
+import os
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, Optional
 from logging.handlers import RotatingFileHandler
-import os
+from structlog.processors import JSONRenderer, TimeStamper, add_log_level
+from structlog.stdlib import LoggerFactory
+from structlog.stdlib import ProcessorFormatter
 
 # Context variable to store correlation ID across async operations
 correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
@@ -24,10 +27,107 @@ request_metadata_var: ContextVar[Optional[Dict[str, Any]]] = ContextVar(
 )
 
 
-class StructuredFormatter(logging.Formatter):
+def configure_structlog(
+    log_level: str = None,
+    log_file: Optional[str] = None,
+    json_format: bool = None,
+    debug_mode: bool = False,
+):
     """
-    JSON formatter for structured logging with correlation IDs.
+    Configure structlog for the application.
+
+    Args:
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
+        log_file: Path to log file (optional)
+        json_format: Use JSON format (auto-detected from environment if None)
+        debug_mode: Enable debug mode for verbose output
     """
+    if log_level is None:
+        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+    # Auto-detect JSON format in production
+    if json_format is None:
+        json_format = os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
+        # Also enable JSON if running in production environment
+        if os.getenv("ENVIRONMENT", "development") == "production":
+            json_format = True
+
+    # Get log directory
+    log_dir = os.getenv("LOG_DIR", "/var/log/modporter")
+
+    # Configure processors based on format
+    processors = [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        TimeStamper(fmt="iso"),
+    ]
+
+    if debug_mode:
+        processors.append(structlog.dev.ConsoleRenderer())
+    elif json_format:
+        processors.append(JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer(colors=False))
+
+    # Add exception info processor
+    processors.append(structlog.processors.StackInfoRenderer())
+    processors.append(structlog.processors.format_exc_info)
+
+    # Configure structlog
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.stdlib.BoundLogger,
+        context_class=dict,
+        logger_factory=LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+    # Also configure standard library logging
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, log_level, logging.INFO))
+
+    # Clear existing handlers
+    root_logger.handlers.clear()
+
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    if json_format:
+        # Use structlog for JSON output
+        console_handler.setFormatter(LoggingFormatter(debug_mode=debug_mode))
+    else:
+        console_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            )
+        )
+    root_logger.addHandler(console_handler)
+
+    # File handler for production
+    if log_file is None:
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "modporter.log")
+
+    file_handler = RotatingFileHandler(
+        log_file,
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(LoggingFormatter(json_format=True))
+    root_logger.addHandler(file_handler)
+
+    return structlog.get_logger()
+
+
+class LoggingFormatter(logging.Formatter):
+    """Formatter that integrates structlog with standard logging"""
+
+    def __init__(self, json_format: bool = False, debug_mode: bool = False):
+        super().__init__()
+        self.json_format = json_format
+        self.debug_mode = debug_mode
 
     def format(self, record: logging.LogRecord) -> str:
         # Build structured log data
@@ -63,29 +163,38 @@ class StructuredFormatter(logging.Formatter):
         if hasattr(record, "duration_ms"):
             log_data["duration_ms"] = record.duration_ms
 
-        return json.dumps(log_data)
+        if self.json_format:
+            import json
+
+            return json.dumps(log_data)
+        else:
+            # Plain text format
+            corr_str = f"[{correlation_id[:8]}...] " if correlation_id else ""
+            return f"{log_data['timestamp']} {record.levelname} {corr_str}{record.getMessage()}"
 
 
-class PlainFormatter(logging.Formatter):
+def get_logger(name: str) -> structlog.BoundLogger:
     """
-    Human-readable formatter for development.
-    """
-
-    def format(self, record: logging.LogRecord) -> str:
-        correlation_id = correlation_id_var.get()
-        corr_str = f"[{correlation_id[:8]}...] " if correlation_id else ""
-        return f"{self.formatTime(record)} {record.levelname} {corr_str}{record.getMessage()}"
-
-
-def get_logger(name: str) -> logging.Logger:
-    """
-    Get a configured logger instance.
+    Get a configured structlog logger instance.
 
     Args:
         name: The name for the logger (typically __name__)
 
     Returns:
-        Configured logger instance
+        Configured structlog logger instance
+    """
+    return structlog.get_logger(name)
+
+
+def get_standard_logger(name: str) -> logging.Logger:
+    """
+    Get a standard library logger configured to work with structlog.
+
+    Args:
+        name: The name for the logger (typically __name__)
+
+    Returns:
+        Configured standard logger instance
     """
     logger = logging.getLogger(name)
 
@@ -97,8 +206,7 @@ def get_logger(name: str) -> logging.Logger:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
 
-        # Use plain formatter for console in development
-        console_formatter = PlainFormatter(
+        console_formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         console_handler.setFormatter(console_formatter)
@@ -114,7 +222,7 @@ def get_logger(name: str) -> logging.Logger:
             backupCount=5,
         )
         file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(StructuredFormatter())
+        file_handler.setFormatter(LoggingFormatter(json_format=True))
         logger.addHandler(file_handler)
 
     return logger
@@ -135,6 +243,8 @@ def set_correlation_id(correlation_id: Optional[str] = None) -> str:
         correlation_id = str(uuid.uuid4())
 
     correlation_id_var.set(correlation_id)
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
     return correlation_id
 
 
@@ -163,6 +273,7 @@ def set_request_metadata(metadata: Dict[str, Any]) -> None:
         metadata: Dictionary of metadata to store
     """
     request_metadata_var.set(metadata)
+    structlog.contextvars.bind_contextvars(**metadata)
 
 
 def clear_request_metadata() -> None:
@@ -194,6 +305,10 @@ class LogContext:
         correlation_id_var.set(self.correlation_id)
         request_metadata_var.set(self.metadata)
 
+        # Bind to structlog context
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(correlation_id=self.correlation_id, **self.metadata)
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -202,7 +317,7 @@ class LogContext:
 
 
 def log_api_request(
-    logger: logging.Logger,
+    logger: structlog.BoundLogger,
     method: str,
     path: str,
     status_code: Optional[int] = None,
@@ -234,13 +349,15 @@ def log_api_request(
 
     log_data.update(extra_fields)
 
-    # Create a custom log record with extra data
-    extra = {"extra_data": log_data}
-    logger.info(f"{method} {path}", extra=extra)
+    logger.info(f"{method} {path}", **log_data)
 
 
 def log_conversion_event(
-    logger: logging.Logger, job_id: str, event: str, progress: Optional[int] = None, **extra_fields
+    logger: structlog.BoundLogger,
+    job_id: str,
+    event: str,
+    progress: Optional[int] = None,
+    **extra_fields,
 ) -> None:
     """
     Log a conversion event with structured data.
@@ -263,12 +380,11 @@ def log_conversion_event(
 
     log_data.update(extra_fields)
 
-    extra = {"extra_data": log_data}
-    logger.info(f"Conversion {job_id}: {event}", extra=extra)
+    logger.info(f"Conversion {job_id}: {event}", **log_data)
 
 
 def log_error_with_context(
-    logger: logging.Logger,
+    logger: structlog.BoundLogger,
     error: Exception,
     context: Optional[Dict[str, Any]] = None,
     **extra_fields,
@@ -293,24 +409,29 @@ def log_error_with_context(
 
     log_data.update(extra_fields)
 
-    extra = {"extra_data": log_data}
-    logger.error(str(error), exc_info=True, extra=extra)
+    logger.error(str(error), exc_info=error, **log_data)
 
 
-# Module-level logger with lazy initialization to avoid import errors in test environments
-class _LazyLogger:
+# Module-level logger with lazy initialization
+def _get_module_logger() -> structlog.BoundLogger:
+    """Get the module-level structlog logger."""
+    return structlog.get_logger(__name__)
+
+
+# Lazy logger proxy
+class _LazyStructlogLogger:
     """Lazy proxy for the default logger that defers initialization until first access."""
 
     _instance = None
 
     def __getattr__(self, name):
         if self._instance is None:
-            self._instance = get_logger(__name__)
+            self._instance = _get_module_logger()
         return getattr(self._instance, name)
 
     def __call__(self, *args, **kwargs):
         if self._instance is None:
-            self._instance = get_logger(__name__)
+            self._instance = _get_module_logger()
         return self._instance(*args, **kwargs)
 
     def __repr__(self):
@@ -324,4 +445,4 @@ class _LazyLogger:
         return str(self._instance)
 
 
-logger = _LazyLogger()
+logger = _LazyStructlogLogger()

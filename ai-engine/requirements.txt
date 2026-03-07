@@ -49,3 +49,4 @@ pydantic-settings
 # Monitoring
 prometheus-client
 psutil
+structlog>=24.0.0

@@ -1,22 +1,23 @@
 """
 Centralized logging configuration for ModPorter AI Engine
-Provides structured logging for all agents and crew operations
+Provides structured logging using structlog for all agents and crew operations
 
-Issue #549: Enhanced with comprehensive agent logging capabilities
-- Structured logging for all agents
-- Agent decisions and reasoning logging
-- Tool usage and results logging
-- Debug mode for verbose output
-- Log analysis tools
+Issue #695: Add structured logging
+- Uses structlog for structured JSON logging
+- Supports both console and JSON formats
+- Auto-detects production mode for JSON output
+- Correlation ID support for request tracing
 """
 
 import logging
 import logging.handlers
+import structlog
 import os
 import sys
 import time
 import threading
 import traceback
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -24,6 +25,101 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field, asdict
 from collections import defaultdict
 import json
+
+# Context variable for correlation ID
+correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
+
+
+def configure_structlog(
+    log_level: str = None,
+    log_file: Optional[str] = None,
+    json_format: bool = None,
+    debug_mode: bool = False,
+):
+    """
+    Configure structlog for the AI engine.
+    
+    Args:
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
+        log_file: Path to log file (optional)
+        json_format: Use JSON format (auto-detected from environment if None)
+        debug_mode: Enable debug mode for verbose output
+    """
+    if log_level is None:
+        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    
+    # Auto-detect JSON format in production
+    if json_format is None:
+        json_format = os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
+        if os.getenv("ENVIRONMENT", "development") == "production":
+            json_format = True
+    
+    # Get log directory
+    log_dir = os.getenv("LOG_DIR", "/tmp/modporter-ai/logs")
+    
+    # Configure processors based on format
+    processors = [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+    ]
+    
+    if debug_mode:
+        processors.append(structlog.dev.ConsoleRenderer())
+    elif json_format:
+        processors.append(structlog.processors.JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer(colors=False))
+    
+    # Add exception info processor
+    processors.append(structlog.processors.StackInfoRenderer())
+    processors.append(structlog.processors.format_exc_info)
+    
+    # Configure structlog
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.stdlib.BoundLogger,
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+    
+    # Also configure standard library logging
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, log_level, logging.INFO))
+    
+    # Clear existing handlers
+    root_logger.handlers.clear()
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(getattr(logging, log_level, logging.INFO))
+    console_handler.setFormatter(logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    ))
+    root_logger.addHandler(console_handler)
+    
+    # File handler for production
+    if log_file is None:
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "ai-engine.log")
+    
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(
+        "%(message)s"
+    ))
+    root_logger.addHandler(file_handler)
+    
+    return structlog.get_logger()
 
 
 class AgentLogFormatter(logging.Formatter):
@@ -232,6 +328,58 @@ def get_agent_logger(agent_name: str) -> AgentLogger:
     """
     logger_name = f"agents.{agent_name}"
     return AgentLogger(logger_name)
+
+
+def get_structlog_logger(name: str = None) -> structlog.BoundLogger:
+    """
+    Get a structlog logger instance.
+    
+    Args:
+        name: Logger name (optional)
+    
+    Returns:
+        Configured structlog logger
+    """
+    if name:
+        return structlog.get_logger(name)
+    return structlog.get_logger()
+
+
+def set_correlation_id(correlation_id: Optional[str] = None) -> str:
+    """
+    Set the correlation ID for the current context.
+    
+    Args:
+        correlation_id: Optional correlation ID to use
+    
+    Returns:
+        The correlation ID (either provided or generated)
+    """
+    if correlation_id is None:
+        correlation_id = str(uuid.uuid4())
+    
+    correlation_id_var.set(correlation_id)
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
+    return correlation_id
+
+
+def get_correlation_id() -> Optional[str]:
+    """
+    Get the current correlation ID from the context.
+    
+    Returns:
+        Current correlation ID or None
+    """
+    return correlation_id_var.get()
+
+
+def clear_correlation_id() -> None:
+    """
+    Clear the correlation ID from the current context.
+    """
+    correlation_id_var.set(None)
+    structlog.contextvars.clear_contextvars()
 
 
 def get_crew_logger() -> AgentLogger:

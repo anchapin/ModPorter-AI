@@ -21,14 +21,19 @@ if (sentryDsn) {
       }),
     ],
     // Performance monitoring
-    tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+    tracesSampleRate: parseFloat(
+      import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '0.1'
+    ),
     // Session replay
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
     // Filter events
     beforeSend(event) {
       // Don't send events in development unless explicitly enabled
-      if (import.meta.env.MODE === 'development' && !import.meta.env.VITE_SENTRY_ENABLE_DEV) {
+      if (
+        import.meta.env.MODE === 'development' &&
+        !import.meta.env.VITE_SENTRY_ENABLE_DEV
+      ) {
         return null;
       }
       return event;

@@ -47,6 +47,7 @@ from services.rate_limiter import (
     create_global_limiter,
 )
 from services.security_headers import SecurityHeadersMiddleware
+from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
 
 # Import API routers
 from api import (
@@ -64,6 +65,7 @@ from api import (
     conversions,
     mod_imports,
     analytics,
+    health,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -73,6 +75,7 @@ from services.report_generator import (
     MOCK_CONVERSION_RESULT_FAILURE,
 )
 from services.metrics import get_metrics
+from services.structured_logging import configure_structlog
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -168,10 +171,19 @@ app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Request/Response Logging Middleware
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(RequestContextMiddleware)
+
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize rate limiter on startup"""
+    """Initialize rate limiter and structured logging on startup"""
+    # Configure structured logging
+    debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+    configure_structlog(debug_mode=debug_mode)
+    logger.info("Structured logging configured")
+
     await init_rate_limiter()
     logger.info("Rate limiting middleware initialized")
 
@@ -199,6 +211,9 @@ app.include_router(conversions.router)  # Conversions API + WebSocket
 app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
+
+# Health check endpoints (no prefix - used for Kubernetes probes)
+app.include_router(health.router)
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
