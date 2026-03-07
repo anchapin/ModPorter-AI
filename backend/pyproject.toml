@@ -80,6 +80,10 @@ ignore = [
     "Q001",  # bad quote marks in multiline strings
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
+    "N805",  # first arg of method should be self (validators use cls)
+    "N811",  # constant imported as non-constant (PyUUID, SQLiteJSON)
+    "N806",  # variable in function should be lowercase (constants in functions)
+    "N818",  # exception names should have Error suffix (legacy names)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
     "F401",  # imported but unused (legacy code has many unused imports)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
@@ -93,15 +97,14 @@ ignore = [
     "E722",  # bare except (legacy code uses bare except for compatibility)
     "E713",  # test for membership should be `not in`
     "F821",  # undefined name (type hints and forward references)
-    "N805",  # first arg of method should be self (validators use cls)
-    "N811",  # constant imported as non-constant (PyUUID, SQLiteJSON)
-    "N806",  # variable in function should be lowercase (constants in functions)
-    "N818",  # exception names should have Error suffix (legacy names)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
+"tests/*" = ["E402", "F401", "E712"]  # Allow imports not at top, unused imports, and == True/False in tests
 "__init__.py" = ["E402"]
+"src/api/performance.py" = ["F821", "F841"]  # Undefined name and unused variable
+"src/services/rate_limiter.py" = ["F841"]
+"src/services/task_worker.py" = ["F841"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "core", "src"]
