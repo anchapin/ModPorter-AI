@@ -815,7 +815,7 @@ jobs:
         printf '[mutmut]\nruns = 2\nspawn_strategy = 2\nno_progress = 1\ndisable_git_diff = 1\n' > .mutmut.toml
 
         # Run mutation tests
-        mutmut run --no-sidebar
+        mutmut run
         
         # Show results
         mutmut results
@@ -1023,7 +1023,9 @@ jobs:
         pip install ruff
 
     - name: Check backend format
-      run: pnpm format:check:backend
+      run: |
+        cd backend
+        ruff format --check src/ tests/
 
   # Performance tracking and optimization monitoring
   performance-monitoring:
