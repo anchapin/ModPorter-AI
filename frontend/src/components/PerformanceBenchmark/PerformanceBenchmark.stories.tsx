@@ -27,26 +27,28 @@ export const WithScenarios: Story = {
             {
               scenario_id: 'baseline_idle_001',
               scenario_name: 'Idle Performance',
-              description: 'Measure performance impact when add-on is loaded but not actively used.',
+              description:
+                'Measure performance impact when add-on is loaded but not actively used.',
               type: 'baseline',
               duration_seconds: 300,
               parameters: { load_level: 'none' },
-              thresholds: { cpu: 5, memory: 50, fps: 30 }
+              thresholds: { cpu: 5, memory: 50, fps: 30 },
             },
             {
               scenario_id: 'stress_entity_001',
               scenario_name: 'High Entity Count Stress Test',
-              description: 'Test performance with a high number of custom entities.',
+              description:
+                'Test performance with a high number of custom entities.',
               type: 'stress_test',
               duration_seconds: 600,
               parameters: { entity_count: 1000, load_level: 'high' },
-              thresholds: { cpu: 80, memory: 500, fps: 30 }
-            }
-          ]
-        }
-      }
-    ]
-  }
+              thresholds: { cpu: 80, memory: 500, fps: 30 },
+            },
+          ],
+        },
+      },
+    ],
+  },
 };
 
 export const RunningBenchmark: Story = {
@@ -61,14 +63,15 @@ export const RunningBenchmark: Story = {
             {
               scenario_id: 'baseline_idle_001',
               scenario_name: 'Idle Performance',
-              description: 'Measure performance impact when add-on is loaded but not actively used.',
+              description:
+                'Measure performance impact when add-on is loaded but not actively used.',
               type: 'baseline',
               duration_seconds: 300,
               parameters: { load_level: 'none' },
-              thresholds: { cpu: 5, memory: 50, fps: 30 }
-            }
-          ]
-        }
+              thresholds: { cpu: 5, memory: 50, fps: 30 },
+            },
+          ],
+        },
       },
       {
         url: '/api/v1/performance/run',
@@ -78,9 +81,9 @@ export const RunningBenchmark: Story = {
           data: {
             run_id: 'test-run-123',
             status: 'accepted',
-            message: 'Benchmark run accepted'
-          }
-        }
+            message: 'Benchmark run accepted',
+          },
+        },
       },
       {
         url: '/api/v1/performance/status/test-run-123',
@@ -91,12 +94,12 @@ export const RunningBenchmark: Story = {
             run_id: 'test-run-123',
             status: 'running',
             progress: 45,
-            current_stage: 'running_load_tests'
-          }
-        }
-      }
-    ]
-  }
+            current_stage: 'running_load_tests',
+          },
+        },
+      },
+    ],
+  },
 };
 
 export const CompletedBenchmark: Story = {
@@ -111,14 +114,15 @@ export const CompletedBenchmark: Story = {
             {
               scenario_id: 'baseline_idle_001',
               scenario_name: 'Idle Performance',
-              description: 'Measure performance impact when add-on is loaded but not actively used.',
+              description:
+                'Measure performance impact when add-on is loaded but not actively used.',
               type: 'baseline',
               duration_seconds: 300,
               parameters: { load_level: 'none' },
-              thresholds: { cpu: 5, memory: 50, fps: 30 }
-            }
-          ]
-        }
+              thresholds: { cpu: 5, memory: 50, fps: 30 },
+            },
+          ],
+        },
       },
       {
         url: '/api/v1/performance/run',
@@ -128,9 +132,9 @@ export const CompletedBenchmark: Story = {
           data: {
             run_id: 'test-run-123',
             status: 'accepted',
-            message: 'Benchmark run accepted'
-          }
-        }
+            message: 'Benchmark run accepted',
+          },
+        },
       },
       {
         url: '/api/v1/performance/status/test-run-123',
@@ -141,9 +145,9 @@ export const CompletedBenchmark: Story = {
             run_id: 'test-run-123',
             status: 'completed',
             progress: 100,
-            current_stage: 'completed'
-          }
-        }
+            current_stage: 'completed',
+          },
+        },
       },
       {
         url: '/api/v1/performance/report/test-run-123',
@@ -158,7 +162,7 @@ export const CompletedBenchmark: Story = {
               memory_score: 90.0,
               network_score: 88.0,
               scenario_name: 'Idle Performance',
-              device_type: 'desktop'
+              device_type: 'desktop',
             },
             metrics: [
               {
@@ -167,7 +171,7 @@ export const CompletedBenchmark: Story = {
                 java_value: 60.0,
                 bedrock_value: 50.0,
                 unit: 'percent',
-                improvement_percentage: -16.67
+                improvement_percentage: -16.67,
               },
               {
                 metric_name: 'memory_usage_mb',
@@ -175,20 +179,25 @@ export const CompletedBenchmark: Story = {
                 java_value: 200.0,
                 bedrock_value: 180.0,
                 unit: 'MB',
-                improvement_percentage: -10.0
-              }
+                improvement_percentage: -10.0,
+              },
             ],
             analysis: {
               identified_issues: ['No major performance issues detected'],
-              optimization_suggestions: ['Performance appears within acceptable limits']
+              optimization_suggestions: [
+                'Performance appears within acceptable limits',
+              ],
             },
-            report_text: 'Performance Benchmark Report for Idle Performance\n================================================================\n\nScenario: baseline_idle_001\nDevice Type: desktop\nDuration: 300 seconds\n\nOverall Performance Score: 85.5/100\n- CPU Score: 80.0/100\n- Memory Score: 90.0/100\n- Network Score: 88.0/100\n\nKey Improvements:\n- CPU usage improved by 16.67% (Java: 60% → Bedrock: 50%)\n- Memory usage improved by 10.0% (Java: 200MB → Bedrock: 180MB)\n\nAnalysis: No major performance issues detected\nRecommendations: Performance appears within acceptable limits',
-            optimization_suggestions: ['Performance appears within acceptable limits']
-          }
-        }
-      }
-    ]
-  }
+            report_text:
+              'Performance Benchmark Report for Idle Performance\n================================================================\n\nScenario: baseline_idle_001\nDevice Type: desktop\nDuration: 300 seconds\n\nOverall Performance Score: 85.5/100\n- CPU Score: 80.0/100\n- Memory Score: 90.0/100\n- Network Score: 88.0/100\n\nKey Improvements:\n- CPU usage improved by 16.67% (Java: 60% → Bedrock: 50%)\n- Memory usage improved by 10.0% (Java: 200MB → Bedrock: 180MB)\n\nAnalysis: No major performance issues detected\nRecommendations: Performance appears within acceptable limits',
+            optimization_suggestions: [
+              'Performance appears within acceptable limits',
+            ],
+          },
+        },
+      },
+    ],
+  },
 };
 
 export const ErrorState: Story = {
@@ -199,9 +208,9 @@ export const ErrorState: Story = {
         method: 'GET',
         status: 500,
         response: {
-          detail: 'Failed to load scenarios'
-        }
-      }
-    ]
-  }
+          detail: 'Failed to load scenarios',
+        },
+      },
+    ],
+  },
 };

@@ -7,7 +7,7 @@ describe('API Service - Feedback', () => {
   beforeEach(() => {
     // Reset MSW handlers
     server.resetHandlers();
-    
+
     // Mock fetch since MSW is disabled
     global.fetch = vi.fn();
   });
@@ -67,34 +67,40 @@ describe('API Service - Feedback', () => {
     });
 
     test('should throw ApiError with default message if detail is missing on API error', async () => {
-        const mockFetch = vi.mocked(global.fetch);
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          json: async () => ({}),
-        } as Response);
+      const mockFetch = vi.mocked(global.fetch);
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      } as Response);
 
-        await expect(submitFeedback(mockPayload)).rejects.toThrow('Failed to submit feedback');
-      });
+      await expect(submitFeedback(mockPayload)).rejects.toThrow(
+        'Failed to submit feedback'
+      );
+    });
 
     test('should throw an error on network failure', async () => {
       const mockFetch = vi.mocked(global.fetch);
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(submitFeedback(mockPayload)).rejects.toThrow('Network error');
+      await expect(submitFeedback(mockPayload)).rejects.toThrow(
+        'Network error'
+      );
     });
 
     test('should handle non-JSON error responses from API', async () => {
-        const mockFetch = vi.mocked(global.fetch);
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          json: async () => {
-            throw new Error('Invalid JSON');
-          },
-        } as Response);
+      const mockFetch = vi.mocked(global.fetch);
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('Invalid JSON');
+        },
+      } as Response);
 
-        await expect(submitFeedback(mockPayload)).rejects.toThrow('Unknown error submitting feedback');
-      });
+      await expect(submitFeedback(mockPayload)).rejects.toThrow(
+        'Unknown error submitting feedback'
+      );
+    });
   });
 });

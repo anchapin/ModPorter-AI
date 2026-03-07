@@ -44,7 +44,9 @@ describe('FeatureMapper', () => {
     render(<FeatureMapper features={[]} />);
 
     expect(screen.getByText('Feature Mappings (0)')).toBeInTheDocument();
-    expect(screen.getByText('No feature mappings available.')).toBeInTheDocument();
+    expect(
+      screen.getByText('No feature mappings available.')
+    ).toBeInTheDocument();
   });
 
   test('renders all feature mapping cards', () => {
@@ -93,21 +95,25 @@ describe('FeatureMapper', () => {
     render(<FeatureMapper features={mockFeatures} />);
 
     const filterSelect = screen.getByLabelText('Filter by type:');
-    
+
     // Filter by direct_mapping
     fireEvent.change(filterSelect, { target: { value: 'direct_mapping' } });
 
     expect(screen.getByText('CustomBlock.onRightClick()')).toBeInTheDocument();
-    expect(screen.queryByText('ItemStack.getItemMeta()')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('ItemStack.getItemMeta()')
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('EntityDamageEvent')).not.toBeInTheDocument();
   });
 
   test('displays appropriate message when no features match filter', () => {
     // Test case: when there are features but none match the current filter
-    // Since we can't easily set the select to a non-existent value, 
+    // Since we can't easily set the select to a non-existent value,
     // let's just test the empty features case which is the main use case
     render(<FeatureMapper features={[]} />);
-    expect(screen.getByText('No feature mappings available.')).toBeInTheDocument();
+    expect(
+      screen.getByText('No feature mappings available.')
+    ).toBeInTheDocument();
   });
 
   test('expands mapping details on click', async () => {
@@ -121,7 +127,7 @@ describe('FeatureMapper', () => {
 
     // Use test ID to find the specific card
     const firstMappingCard = screen.getByTestId('feature-card-mapping-1');
-    
+
     // Initially, details should not be visible
     expect(screen.queryByTestId('details-mapping-1')).not.toBeInTheDocument();
 
@@ -132,7 +138,7 @@ describe('FeatureMapper', () => {
     await waitFor(() => {
       expect(screen.getByTestId('details-mapping-1')).toBeInTheDocument();
     });
-    
+
     expect(screen.getByText('Mapping Details')).toBeInTheDocument();
     expect(screen.getByText('mapping-1')).toBeInTheDocument(); // Simplified text search
     expect(screen.getByText('95.0%')).toBeInTheDocument(); // Simplified text search
@@ -143,7 +149,7 @@ describe('FeatureMapper', () => {
     render(<FeatureMapper features={mockFeatures} />);
 
     const firstMappingCard = screen.getByTestId('feature-card-mapping-1');
-    
+
     // Click to expand
     fireEvent.click(firstMappingCard);
     expect(screen.getByText('Mapping Details')).toBeInTheDocument();
@@ -186,7 +192,9 @@ describe('FeatureMapper', () => {
   test('confidence score displays "Not specified" when null', () => {
     render(<FeatureMapper features={mockFeatures} />);
 
-    const manualImplementationCard = screen.getByTestId('feature-card-mapping-4');
+    const manualImplementationCard = screen.getByTestId(
+      'feature-card-mapping-4'
+    );
     fireEvent.click(manualImplementationCard);
 
     expect(screen.getByText('Not specified')).toBeInTheDocument();
@@ -236,14 +244,16 @@ describe('FeatureMapper', () => {
     render(<FeatureMapper features={mockFeatures} />);
 
     const filterSelect = screen.getByLabelText('Filter by type:');
-    
+
     // Filter by exact match (since the component filters by exact type)
     fireEvent.change(filterSelect, { target: { value: 'direct_mapping' } });
 
     // Should show only direct_mapping features
     expect(screen.getByText('CustomBlock.onRightClick()')).toBeInTheDocument(); // direct_mapping
     expect(screen.queryByText('EntityDamageEvent')).not.toBeInTheDocument(); // event_mapping
-    expect(screen.queryByText('ItemStack.getItemMeta()')).not.toBeInTheDocument(); // api_adaptation
+    expect(
+      screen.queryByText('ItemStack.getItemMeta()')
+    ).not.toBeInTheDocument(); // api_adaptation
   });
 
   test('displays arrow between Java and Bedrock features', () => {

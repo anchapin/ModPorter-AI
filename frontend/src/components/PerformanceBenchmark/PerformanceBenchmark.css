@@ -366,20 +366,20 @@
   .performance-benchmark {
     padding: 10px;
   }
-  
+
   .button-group {
     flex-direction: column;
   }
-  
+
   .score-summary {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-content {
     width: 95%;
     padding: 20px;
   }
-  
+
   .metrics-table {
     overflow-x: auto;
   }

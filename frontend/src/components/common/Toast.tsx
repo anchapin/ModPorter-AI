@@ -56,25 +56,35 @@ const Toast: React.FC<ToastProps> = ({
 
   const getSeverity = (type: ToastType): AlertProps['severity'] => {
     switch (type) {
-      case 'success': return 'success';
-      case 'error': return 'error';
-      case 'warning': return 'warning';
-      case 'info': return 'info';
-      default: return 'info';
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'info':
+        return 'info';
+      default:
+        return 'info';
     }
   };
 
   const getIcon = (type: ToastType) => {
     switch (type) {
-      case 'success': return <CheckCircle />;
-      case 'error': return <ErrorIcon />;
-      case 'warning': return <Warning />;
-      case 'info': return <Info />;
-      default: return <Info />;
+      case 'success':
+        return <CheckCircle />;
+      case 'error':
+        return <ErrorIcon />;
+      case 'warning':
+        return <Warning />;
+      case 'info':
+        return <Info />;
+      default:
+        return <Info />;
     }
   };
 
-  const autoHideDuration = toast.persistent ? null : (toast.duration || 5000);
+  const autoHideDuration = toast.persistent ? null : toast.duration || 5000;
 
   return (
     <Snackbar
@@ -83,10 +93,12 @@ const Toast: React.FC<ToastProps> = ({
       onClose={handleClose}
       anchorOrigin={position}
       TransitionComponent={Slide}
-      TransitionProps={{
-        direction: 'left',
-        appear: false,
-      } as SlideProps}
+      TransitionProps={
+        {
+          direction: 'left',
+          appear: false,
+        } as SlideProps
+      }
     >
       <Alert
         severity={getSeverity(toast.type)}
@@ -207,50 +219,64 @@ export interface UseToastReturn {
 const useToastHook = (): UseToastReturn => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const addToast = useCallback((
-    type: ToastType,
-    message: string,
-    options: Partial<ToastMessage> = {}
-  ) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newToast: ToastMessage = {
-      id,
-      type,
-      message,
-      duration: 5000,
-      ...options,
-    };
-    
-    setToasts(prev => [...prev, newToast]);
-  }, []);
+  const addToast = useCallback(
+    (type: ToastType, message: string, options: Partial<ToastMessage> = {}) => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newToast: ToastMessage = {
+        id,
+        type,
+        message,
+        duration: 5000,
+        ...options,
+      };
+
+      setToasts((prev) => [...prev, newToast]);
+    },
+    []
+  );
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const success = useCallback((message: string, options: Partial<ToastMessage> = {}) => {
-    addToast('success', message, options);
-  }, [addToast]);
+  const success = useCallback(
+    (message: string, options: Partial<ToastMessage> = {}) => {
+      addToast('success', message, options);
+    },
+    [addToast]
+  );
 
-  const error = useCallback((message: string, options: Partial<ToastMessage> = {}) => {
-    addToast('error', message, { persistent: true, ...options });
-  }, [addToast]);
+  const error = useCallback(
+    (message: string, options: Partial<ToastMessage> = {}) => {
+      addToast('error', message, { persistent: true, ...options });
+    },
+    [addToast]
+  );
 
-  const warning = useCallback((message: string, options: Partial<ToastMessage> = {}) => {
-    addToast('warning', message, { duration: 7000, ...options });
-  }, [addToast]);
+  const warning = useCallback(
+    (message: string, options: Partial<ToastMessage> = {}) => {
+      addToast('warning', message, { duration: 7000, ...options });
+    },
+    [addToast]
+  );
 
-  const info = useCallback((message: string, options: Partial<ToastMessage> = {}) => {
-    addToast('info', message, options);
-  }, [addToast]);
+  const info = useCallback(
+    (message: string, options: Partial<ToastMessage> = {}) => {
+      addToast('info', message, options);
+    },
+    [addToast]
+  );
 
-  const clear = useCallback((id?: string) => {
-    if (id) {
-      removeToast(id);
-    } else {
-      setToasts([]);
-    }
-  }, [removeToast]);
+  const clear = useCallback(
+    (id?: string) => {
+      if (id) {
+        removeToast(id);
+      } else {
+        setToasts([]);
+      }
+    },
+    [removeToast]
+  );
 
   const clearAll = useCallback(() => {
     setToasts([]);

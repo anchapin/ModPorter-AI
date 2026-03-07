@@ -78,16 +78,16 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-  
+
   .top-navigation__logo {
     font-size: 1.25rem;
   }
-  
+
   .top-navigation__links {
     gap: 0.25rem;
     flex-wrap: wrap;
   }
-  
+
   .top-navigation__link {
     padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
@@ -100,11 +100,11 @@
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .top-navigation__logo {
     text-align: center;
   }
-  
+
   .top-navigation__links {
     justify-content: center;
     flex-wrap: wrap;

@@ -112,31 +112,31 @@
   .block-3d {
     height: 150px;
   }
-  
+
   .preview-block {
     width: 60px;
     height: 60px;
   }
-  
+
   .block-face {
     width: 60px;
     height: 60px;
   }
-  
+
   .block-face.front,
   .block-face.back {
     transform: translateZ(30px);
   }
-  
+
   .block-face.left,
   .block-face.right {
     transform: rotateY(-90deg) translateZ(30px);
   }
-  
+
   .block-face.top {
     transform: rotateX(90deg) translateZ(30px);
   }
-  
+
   .block-face.bottom {
     transform: rotateX(-90deg) translateZ(30px);
   }

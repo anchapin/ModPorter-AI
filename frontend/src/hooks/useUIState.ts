@@ -30,18 +30,18 @@ export const useUIState = (): UseUIStateReturn => {
   const toast = useToast();
 
   const setLoading = useCallback((key: string, value: boolean) => {
-    setLoadingState(prev => ({ ...prev, [key]: value }));
+    setLoadingState((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const setIsLoading = setLoading; // Alias for consistency
 
   const setError = useCallback((key: string, message: string | null) => {
-    setErrorState(prev => ({ ...prev, [key]: message }));
+    setErrorState((prev) => ({ ...prev, [key]: message }));
   }, []);
 
   const clearError = useCallback((key?: string) => {
     if (key) {
-      setErrorState(prev => ({ ...prev, [key]: null }));
+      setErrorState((prev) => ({ ...prev, [key]: null }));
     } else {
       setErrorState({});
     }
@@ -51,13 +51,19 @@ export const useUIState = (): UseUIStateReturn => {
     setErrorState({});
   }, []);
 
-  const isLoading = useCallback((key: string) => {
-    return loading[key] || false;
-  }, [loading]);
+  const isLoading = useCallback(
+    (key: string) => {
+      return loading[key] || false;
+    },
+    [loading]
+  );
 
-  const hasError = useCallback((key: string) => {
-    return !!error[key];
-  }, [error]);
+  const hasError = useCallback(
+    (key: string) => {
+      return !!error[key];
+    },
+    [error]
+  );
 
   return {
     loading,
@@ -100,16 +106,16 @@ export const useFormState = <T extends Record<string, any>>(
   const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
 
   const setFieldValue = useCallback((field: keyof T, value: T[keyof T]) => {
-    setValues(prev => ({ ...prev, [field]: value }));
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setValues((prev) => ({ ...prev, [field]: value }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
   }, []);
 
   const setFieldError = useCallback((field: keyof T, error: string) => {
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: error }));
   }, []);
 
   const clearFieldError = useCallback((field: keyof T) => {
-    setErrors(prev => {
+    setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[field];
       return newErrors;
@@ -121,7 +127,7 @@ export const useFormState = <T extends Record<string, any>>(
   }, []);
 
   const setFieldTouched = useCallback((field: keyof T, touched: boolean) => {
-    setTouched(prev => ({ ...prev, [field]: touched }));
+    setTouched((prev) => ({ ...prev, [field]: touched }));
   }, []);
 
   const validateForm = useCallback(() => {
@@ -136,12 +142,15 @@ export const useFormState = <T extends Record<string, any>>(
   const isValid = Object.keys(errors).length === 0;
   const isDirty = JSON.stringify(values) !== JSON.stringify(initialValues);
 
-  const resetForm = useCallback((newInitialValues?: T) => {
-    const resetValues = newInitialValues || initialValues;
-    setValues(resetValues);
-    setErrors({});
-    setTouched({});
-  }, [initialValues]);
+  const resetForm = useCallback(
+    (newInitialValues?: T) => {
+      const resetValues = newInitialValues || initialValues;
+      setValues(resetValues);
+      setErrors({});
+      setTouched({});
+    },
+    [initialValues]
+  );
 
   return {
     values,
@@ -186,30 +195,31 @@ export const useAsyncOperation = (
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await operation();
-      
+
       if (options.onSuccess) {
         options.onSuccess(result);
       }
-      
+
       if (options.showToast && options.successMessage) {
         toast.success(options.successMessage);
       }
-      
+
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);
-      
+
       if (options.onError) {
         options.onError(err instanceof Error ? err : new Error(errorMessage));
       }
-      
+
       if (options.showToast) {
         toast.error(errorMessage);
       }
-      
+
       throw err;
     } finally {
       setLoading(false);
@@ -239,10 +249,7 @@ export interface UseDebounceReturn {
   flush: () => void;
 }
 
-export const useDebounce = (
-  value: any,
-  delay: number
-): UseDebounceReturn => {
+export const useDebounce = (value: any, delay: number): UseDebounceReturn => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   const cancel = useCallback(() => {

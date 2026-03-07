@@ -117,28 +117,45 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
 
   const getFormatIcon = (format: string) => {
     switch (format) {
-      case 'mcaddon': return <CloudDownload />;
-      case 'zip': return <Archive />;
-      case 'json': return <Code />;
-      default: return <Download />;
+      case 'mcaddon':
+        return <CloudDownload />;
+      case 'zip':
+        return <Archive />;
+      case 'json':
+        return <Code />;
+      default:
+        return <Download />;
     }
   };
 
   const getFormatDescription = (format: string) => {
     switch (format) {
-      case 'mcaddon': return 'Minecraft add-on package (.mcaddon)';
-      case 'zip': return 'Standard ZIP archive (.zip)';
-      case 'json': return 'Raw JSON data (.json)';
-      default: return 'Unknown format';
+      case 'mcaddon':
+        return 'Minecraft add-on package (.mcaddon)';
+      case 'zip':
+        return 'Standard ZIP archive (.zip)';
+      case 'json':
+        return 'Raw JSON data (.json)';
+      default:
+        return 'Unknown format';
     }
   };
 
-  const isLoading = exportPreviewQuery.isFetching || exportPackMutation.isPending || downloadPackMutation.isPending;
+  const isLoading =
+    exportPreviewQuery.isFetching ||
+    exportPackMutation.isPending ||
+    downloadPackMutation.isPending;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Typography variant="h6">Export Behavior Pack</Typography>
           <Button onClick={onClose} size="small">
             <Close />
@@ -163,10 +180,13 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                           File Statistics
                         </Typography>
                         <Typography variant="body2" display="block">
-                          Total Files: {exportPreviewQuery.data.analysis?.total_files || 0}
+                          Total Files:{' '}
+                          {exportPreviewQuery.data.analysis?.total_files || 0}
                         </Typography>
                         <Typography variant="body2" display="block">
-                          Total Size: {exportPreviewQuery.data.analysis?.total_size_mb || 0} MB
+                          Total Size:{' '}
+                          {exportPreviewQuery.data.analysis?.total_size_mb || 0}{' '}
+                          MB
                         </Typography>
                         <Typography variant="body2" display="block">
                           Status: {exportPreviewQuery.data.conversion_status}
@@ -181,8 +201,12 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                         <Typography variant="h6" gutterBottom>
                           File Types
                         </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {Object.entries(exportPreviewQuery.data.analysis?.file_types || {}).map(([type, count]) => (
+                        <Box
+                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        >
+                          {Object.entries(
+                            exportPreviewQuery.data.analysis?.file_types || {}
+                          ).map(([type, count]) => (
                             <Chip
                               key={type}
                               label={`${type}: ${count}`}
@@ -212,20 +236,27 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                   <InputLabel>Export Format</InputLabel>
                   <Select
                     value={exportOptions.format}
-                    onChange={(e) => setExportOptions(prev => ({
-                      ...prev,
-                      format: e.target.value as ExportOptions['format']
-                    }))}
+                    onChange={(e) =>
+                      setExportOptions((prev) => ({
+                        ...prev,
+                        format: e.target.value as ExportOptions['format'],
+                      }))
+                    }
                   >
                     {exportFormatsQuery.data?.map((format) => (
                       <MenuItem key={format.format} value={format.format}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           {getFormatIcon(format.format)}
                           <Box>
                             <Typography variant="body1">
                               {format.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {format.description}
                             </Typography>
                           </Box>
@@ -234,7 +265,7 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                     ))}
                   </Select>
                 </FormControl>
-                </Box>
+              </Box>
 
               {/* Format Info */}
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -254,10 +285,12 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                   control={
                     <Switch
                       checked={exportOptions.includeTemplates}
-                      onChange={(e) => setExportOptions(prev => ({
-                        ...prev,
-                        includeTemplates: e.target.checked
-                      }))}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          includeTemplates: e.target.checked,
+                        }))
+                      }
                     />
                   }
                   label="Include behavior templates"
@@ -266,10 +299,12 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                   control={
                     <Switch
                       checked={exportOptions.includeMetadata}
-                      onChange={(e) => setExportOptions(prev => ({
-                        ...prev,
-                        includeMetadata: e.target.checked
-                      }))}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          includeMetadata: e.target.checked,
+                        }))
+                      }
                     />
                   }
                   label="Include metadata and comments"
@@ -277,23 +312,33 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
               </Box>
 
               {/* Advanced Options */}
-              <Accordion expanded={showAdvanced} onChange={() => setShowAdvanced(!showAdvanced)}>
+              <Accordion
+                expanded={showAdvanced}
+                onChange={() => setShowAdvanced(!showAdvanced)}
+              >
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography variant="body2">Advanced Options</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
                     <FormControl fullWidth>
                       <InputLabel>Compression</InputLabel>
                       <Select
                         value={exportOptions.compression}
-                        onChange={(e) => setExportOptions(prev => ({
-                          ...prev,
-                          compression: e.target.value as ExportOptions['compression']
-                        }))}
+                        onChange={(e) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            compression: e.target
+                              .value as ExportOptions['compression'],
+                          }))
+                        }
                       >
                         <MenuItem value="none">No compression</MenuItem>
-                        <MenuItem value="standard">Standard compression</MenuItem>
+                        <MenuItem value="standard">
+                          Standard compression
+                        </MenuItem>
                         <MenuItem value="maximum">Maximum compression</MenuItem>
                       </Select>
                     </FormControl>
@@ -302,10 +347,12 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                       fullWidth
                       label="Custom filename (optional)"
                       value={exportOptions.customFileName || ''}
-                      onChange={(e) => setExportOptions(prev => ({
-                        ...prev,
-                        customFileName: e.target.value
-                      }))}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          customFileName: e.target.value,
+                        }))
+                      }
                       helperText="Without extension. If not provided, default naming will be used."
                     />
                   </Box>
@@ -321,17 +368,19 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                 </Typography>
                 <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
                   <List dense>
-                    {exportPreviewQuery.data.files.map((file: any, index: number) => (
-                      <ListItem key={index}>
-                        <ListItemIcon>
-                          {file.type === 'directory' ? '📁' : '📄'}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={`${file.type} • ${file.size || 'Unknown size'}`}
-                        />
-                      </ListItem>
-                    ))}
+                    {exportPreviewQuery.data.files.map(
+                      (file: any, index: number) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            {file.type === 'directory' ? '📁' : '📄'}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={file.name}
+                            secondary={`${file.type} • ${file.size || 'Unknown size'}`}
+                          />
+                        </ListItem>
+                      )
+                    )}
                   </List>
                 </Box>
               </Box>
@@ -356,9 +405,16 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
           onClick={handleExport}
           variant="contained"
           disabled={isLoading}
-          startIcon={exportPackMutation.isPending || downloadPackMutation.isPending ? undefined : <CloudDownload />}
+          startIcon={
+            exportPackMutation.isPending ||
+            downloadPackMutation.isPending ? undefined : (
+              <CloudDownload />
+            )
+          }
         >
-          {exportPackMutation.isPending || downloadPackMutation.isPending ? 'Exporting...' : 'Export'}
+          {exportPackMutation.isPending || downloadPackMutation.isPending
+            ? 'Exporting...'
+            : 'Export'}
         </Button>
       </DialogActions>
 
@@ -380,7 +436,8 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircle />
             <Typography variant="body2">
-              Export completed successfully! Your behavior pack has been prepared.
+              Export completed successfully! Your behavior pack has been
+              prepared.
             </Typography>
           </Box>
         </Alert>

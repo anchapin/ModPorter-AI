@@ -6,17 +6,16 @@ import {
   Tooltip,
   Grid,
   Chip,
-  Divider
+  Divider,
 } from '@mui/material';
 import {
   Refresh,
   Lightbulb,
   Opacity,
   FitnessCenter,
-  LocalFireDepartment
+  LocalFireDepartment,
 } from '@mui/icons-material';
 import { BlockProperties } from './BlockPropertyEditor';
-
 
 export interface Preview3DProps {
   properties: BlockProperties;
@@ -26,7 +25,7 @@ export interface Preview3DProps {
 
 export const Preview3D: React.FC<Preview3DProps> = ({
   properties,
-  readOnly = false
+  readOnly = false,
 }) => {
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
@@ -40,14 +39,19 @@ export const Preview3D: React.FC<Preview3DProps> = ({
     return {
       backgroundColor: properties.mapColor,
       opacity: properties.transparent ? 0.7 : 1,
-      boxShadow: properties.lightEmission > 0 
-        ? `0 0 ${properties.lightEmission * 2}px ${properties.mapColor}` 
-        : 'none',
+      boxShadow:
+        properties.lightEmission > 0
+          ? `0 0 ${properties.lightEmission * 2}px ${properties.mapColor}`
+          : 'none',
       border: properties.solid ? '2px solid #333' : '1px dashed #666',
-      borderRadius: properties.material === 'stone' ? '4px' : 
-                   properties.material === 'wood' ? '8px' : '0px',
+      borderRadius:
+        properties.material === 'stone'
+          ? '4px'
+          : properties.material === 'wood'
+            ? '8px'
+            : '0px',
       transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
-      transition: 'all 0.3s ease'
+      transition: 'all 0.3s ease',
     };
   };
 
@@ -69,11 +73,21 @@ export const Preview3D: React.FC<Preview3DProps> = ({
   // Calculate preview statistics
   const getStats = () => {
     return {
-      breakTime: properties.hardness > 0 ? `${properties.hardness.toFixed(1)}s` : 'Instant',
+      breakTime:
+        properties.hardness > 0
+          ? `${properties.hardness.toFixed(1)}s`
+          : 'Instant',
       lightLevel: `${properties.lightEmission}/15`,
-      blastResistance: properties.resistance >= 1000 ? 'Immune' : `${properties.resistance.toFixed(1)}`,
-      slipperiness: properties.friction < 0.6 ? 'Low' : 
-                   properties.friction > 0.8 ? 'High' : 'Normal'
+      blastResistance:
+        properties.resistance >= 1000
+          ? 'Immune'
+          : `${properties.resistance.toFixed(1)}`,
+      slipperiness:
+        properties.friction < 0.6
+          ? 'Low'
+          : properties.friction > 0.8
+            ? 'High'
+            : 'Normal',
     };
   };
 
@@ -85,8 +99,8 @@ export const Preview3D: React.FC<Preview3DProps> = ({
       <Box className="preview-container" sx={{ mb: 3 }}>
         <Box className="preview-controls">
           <Tooltip title="Reset View">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={() => setRotation({ x: 0, y: 0 })}
               disabled={readOnly}
             >
@@ -94,7 +108,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             </IconButton>
           </Tooltip>
         </Box>
-        
+
         <Box className="block-3d" sx={{ p: 3 }}>
           <Box className="preview-block" sx={getBlockStyle()}>
             <Box className="block-face front" />
@@ -105,7 +119,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             <Box className="block-face bottom" />
           </Box>
         </Box>
-        
+
         {/* Rotation Controls */}
         <Box className="rotation-controls" sx={{ mt: 2 }}>
           <Typography variant="caption" display="block" gutterBottom>
@@ -124,36 +138,32 @@ export const Preview3D: React.FC<Preview3DProps> = ({
 
       {/* Properties Summary */}
       <Divider sx={{ my: 2 }} />
-      
+
       <Typography variant="subtitle2" gutterBottom>
         Properties Summary
       </Typography>
-      
+
       <Grid container spacing={1} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12 }}>
           <Box className="property-group">
             <Typography variant="caption" color="text.secondary">
               Material:
             </Typography>
-            <Chip 
-              size="small" 
+            <Chip
+              size="small"
               label={properties.material}
               icon={getMaterialIcon()}
               variant="outlined"
             />
           </Box>
         </Grid>
-        
+
         <Grid size={{ xs: 12 }}>
           <Box className="property-group">
             <Typography variant="caption" color="text.secondary">
               Category:
             </Typography>
-            <Chip 
-              size="small" 
-              label={properties.category}
-              variant="outlined"
-            />
+            <Chip size="small" label={properties.category} variant="outlined" />
           </Box>
         </Grid>
       </Grid>
@@ -162,7 +172,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
       <Typography variant="subtitle2" gutterBottom>
         Statistics
       </Typography>
-      
+
       <Grid container spacing={1}>
         <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
@@ -174,7 +184,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             </Typography>
           </Box>
         </Grid>
-        
+
         <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
@@ -185,7 +195,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             </Typography>
           </Box>
         </Grid>
-        
+
         <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
@@ -196,7 +206,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             </Typography>
           </Box>
         </Grid>
-        
+
         <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
@@ -211,43 +221,69 @@ export const Preview3D: React.FC<Preview3DProps> = ({
 
       {/* Behavior Indicators */}
       <Divider sx={{ my: 2 }} />
-      
+
       <Typography variant="subtitle2" gutterBottom>
         Behavior Traits
       </Typography>
-      
+
       <Box className="behavior-traits">
         {properties.solid && (
           <Chip size="small" label="Solid" color="primary" variant="outlined" />
         )}
         {properties.transparent && (
-          <Chip size="small" label="Transparent" color="info" variant="outlined" />
+          <Chip
+            size="small"
+            label="Transparent"
+            color="info"
+            variant="outlined"
+          />
         )}
         {properties.liquid && (
           <Chip size="small" label="Liquid" color="info" variant="outlined" />
         )}
         {properties.walkable && (
-          <Chip size="small" label="Walkable" color="success" variant="outlined" />
+          <Chip
+            size="small"
+            label="Walkable"
+            color="success"
+            variant="outlined"
+          />
         )}
         {properties.climbable && (
-          <Chip size="small" label="Climbable" color="warning" variant="outlined" />
+          <Chip
+            size="small"
+            label="Climbable"
+            color="warning"
+            variant="outlined"
+          />
         )}
         {properties.flammable && (
-          <Chip size="small" label="Flammable" color="error" variant="outlined" />
+          <Chip
+            size="small"
+            label="Flammable"
+            color="error"
+            variant="outlined"
+          />
         )}
       </Box>
 
       {/* Warnings and Info */}
       {properties.hardness === 0 && (
-        <Box className="warning-box" sx={{ mt: 2, p: 1, bgcolor: 'warning.light', borderRadius: 1 }}>
+        <Box
+          className="warning-box"
+          sx={{ mt: 2, p: 1, bgcolor: 'warning.light', borderRadius: 1 }}
+        >
           <Typography variant="caption">
             ⚠️ Block has zero hardness - will break instantly
           </Typography>
         </Box>
       )}
-      
+
       {properties.lightEmission > 10 && (
-        <Box className="info-box" sx={{ mt: 2, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
+        <Box
+          className="info-box"
+          sx={{ mt: 2, p: 1, bgcolor: 'info.light', borderRadius: 1 }}
+        >
           <Typography variant="caption">
             💡 High light emission level
           </Typography>

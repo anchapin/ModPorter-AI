@@ -12,14 +12,9 @@ import {
   TextField,
   Alert,
   Tooltip,
-  IconButton
+  IconButton,
 } from '@mui/material';
-import {
-  Save,
-  Undo,
-  Redo,
-  History
-} from '@mui/icons-material';
+import { Save, Undo, Redo, History } from '@mui/icons-material';
 import { useUndoRedo } from '../../../hooks/useUndoRedo';
 import { RecipeGrid } from './RecipeGrid';
 import { ItemLibrary } from './ItemLibrary';
@@ -28,7 +23,11 @@ import './RecipeBuilder.css';
 
 export interface RecipeItem {
   id: string;
-  type: 'minecraft:item' | 'minecraft:item_tag' | 'minecraft:block' | 'minecraft:block_tag';
+  type:
+    | 'minecraft:item'
+    | 'minecraft:item_tag'
+    | 'minecraft:block'
+    | 'minecraft:block_tag';
   name: string;
   count?: number;
   data?: number;
@@ -44,7 +43,15 @@ export interface RecipeSlot {
 export interface Recipe {
   id: string;
   identifier: string;
-  type: 'shaped' | 'shapeless' | 'furnace' | 'blast_furnace' | 'campfire' | 'smoker' | 'brewing' | 'stonecutter';
+  type:
+    | 'shaped'
+    | 'shapeless'
+    | 'furnace'
+    | 'blast_furnace'
+    | 'campfire'
+    | 'smoker'
+    | 'brewing'
+    | 'stonecutter';
   name: string;
   description?: string;
   pattern?: RecipeSlot[][];
@@ -70,7 +77,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   onRecipeChange,
   onRecipeSave,
   availableItems = [],
-  readOnly = false
+  readOnly = false,
 }) => {
   const initialRecipeState: Recipe = {
     id: '',
@@ -86,7 +93,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     priority: 0,
     group: '',
     tags: [],
-    ...initialRecipe
+    ...initialRecipe,
   };
 
   const {
@@ -95,10 +102,10 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
   } = useUndoRedo<Recipe>(initialRecipeState, {
     maxHistory: 50,
-    enableDebounce: false
+    enableDebounce: false,
   });
 
   const [selectedItem, setSelectedItem] = useState<RecipeItem | null>(null);
@@ -136,42 +143,57 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
         }
         emptyPattern.push(row);
       }
-      setCurrentRecipe(prev => ({ ...prev, pattern: emptyPattern }));
+      setCurrentRecipe((prev) => ({ ...prev, pattern: emptyPattern }));
     }
   }, [currentRecipe.type, currentRecipe.pattern, getGridSize]);
 
   // Handle recipe field changes
-  const handleFieldChange = useCallback((field: keyof Recipe, value: any) => {
-    const updatedRecipe = { ...currentRecipe, [field]: value };
-    setCurrentRecipe(updatedRecipe, `Update ${field}`);
-    onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
+  const handleFieldChange = useCallback(
+    (field: keyof Recipe, value: any) => {
+      const updatedRecipe = { ...currentRecipe, [field]: value };
+      setCurrentRecipe(updatedRecipe, `Update ${field}`);
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
 
   // Handle item placement in grid
-  const handleItemPlace = useCallback((slot: RecipeSlot, item: RecipeItem) => {
-    const newPattern = [...currentRecipe.pattern!];
-    const slotRow = newPattern[slot.y];
-    const updatedSlot = { ...slot, item };
-    newPattern[slot.y] = [...slotRow.slice(0, slot.x), updatedSlot, ...slotRow.slice(slot.x + 1)];
+  const handleItemPlace = useCallback(
+    (slot: RecipeSlot, item: RecipeItem) => {
+      const newPattern = [...currentRecipe.pattern!];
+      const slotRow = newPattern[slot.y];
+      const updatedSlot = { ...slot, item };
+      newPattern[slot.y] = [
+        ...slotRow.slice(0, slot.x),
+        updatedSlot,
+        ...slotRow.slice(slot.x + 1),
+      ];
 
-    const updatedRecipe = { ...currentRecipe, pattern: newPattern };
-    setCurrentRecipe(updatedRecipe, 'Place item in grid');
-    onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
+      const updatedRecipe = { ...currentRecipe, pattern: newPattern };
+      setCurrentRecipe(updatedRecipe, 'Place item in grid');
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
 
   // Handle item removal from grid
-  const handleItemRemove = useCallback((slot: RecipeSlot) => {
-    const newPattern = [...currentRecipe.pattern!];
-    const slotRow = newPattern[slot.y];
-    const updatedSlot = { ...slot, item: null };
-    newPattern[slot.y] = [...slotRow.slice(0, slot.x), updatedSlot, ...slotRow.slice(slot.x + 1)];
+  const handleItemRemove = useCallback(
+    (slot: RecipeSlot) => {
+      const newPattern = [...currentRecipe.pattern!];
+      const slotRow = newPattern[slot.y];
+      const updatedSlot = { ...slot, item: null };
+      newPattern[slot.y] = [
+        ...slotRow.slice(0, slot.x),
+        updatedSlot,
+        ...slotRow.slice(slot.x + 1),
+      ];
 
-    const updatedRecipe = { ...currentRecipe, pattern: newPattern };
-    setCurrentRecipe(updatedRecipe, 'Remove item from grid');
-    onRecipeChange(updatedRecipe);
-  }, [currentRecipe, onRecipeChange, setCurrentRecipe]);
-
-
+      const updatedRecipe = { ...currentRecipe, pattern: newPattern };
+      setCurrentRecipe(updatedRecipe, 'Remove item from grid');
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
 
   // History functionality is disabled - undo/redo functions removed
 
@@ -183,15 +205,14 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
   }, [currentRecipe, availableItems, getGridSize]);
 
   const gridSize = getGridSize();
-  const hasUnsavedChanges = JSON.stringify(currentRecipe) !== JSON.stringify(initialRecipe);
+  const hasUnsavedChanges =
+    JSON.stringify(currentRecipe) !== JSON.stringify(initialRecipe);
 
   return (
     <Box className="recipe-builder">
       <Paper className="recipe-builder-header" sx={{ p: 2, mb: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">
-            Recipe Builder
-          </Typography>
+          <Typography variant="h6">Recipe Builder</Typography>
           <Box display="flex" gap={1} alignItems="center">
             <Tooltip title="Undo (Ctrl+Z)">
               <IconButton
@@ -237,7 +258,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Recipe Properties
             </Typography>
-            
+
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Recipe Type</InputLabel>
               <Select
@@ -299,9 +320,9 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
               />
             )}
 
-            {(currentRecipe.type === 'furnace' || 
-              currentRecipe.type === 'blast_furnace' || 
-              currentRecipe.type === 'campfire' || 
+            {(currentRecipe.type === 'furnace' ||
+              currentRecipe.type === 'blast_furnace' ||
+              currentRecipe.type === 'campfire' ||
               currentRecipe.type === 'smoker') && (
               <>
                 <TextField
@@ -309,7 +330,12 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
                   label="Experience"
                   type="number"
                   value={currentRecipe.experience || 0}
-                  onChange={(e) => handleFieldChange('experience', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      'experience',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
                   disabled={readOnly}
                   sx={{ mb: 2 }}
                   inputProps={{ min: 0, max: 1, step: 0.1 }}
@@ -319,7 +345,12 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
                   label="Cooking Time (ticks)"
                   type="number"
                   value={currentRecipe.cookingTime || 200}
-                  onChange={(e) => handleFieldChange('cookingTime', parseInt(e.target.value) || 200)}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      'cookingTime',
+                      parseInt(e.target.value) || 200
+                    )
+                  }
                   disabled={readOnly}
                   sx={{ mb: 2 }}
                   inputProps={{ min: 1, max: 32767 }}
@@ -332,7 +363,9 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
               label="Priority"
               type="number"
               value={currentRecipe.priority || 0}
-              onChange={(e) => handleFieldChange('priority', parseInt(e.target.value) || 0)}
+              onChange={(e) =>
+                handleFieldChange('priority', parseInt(e.target.value) || 0)
+              }
               disabled={readOnly}
               sx={{ mb: 2 }}
               helperText="Higher priority recipes are checked first"
@@ -346,7 +379,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Recipe Grid
             </Typography>
-            
+
             <RecipeGrid
               pattern={currentRecipe.pattern || []}
               width={gridSize.width}
@@ -359,15 +392,19 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
             />
 
             {/* Result Section */}
-            <Box mt={2} p={2} sx={{ border: '1px dashed #ccc', borderRadius: 1 }}>
+            <Box
+              mt={2}
+              p={2}
+              sx={{ border: '1px dashed #ccc', borderRadius: 1 }}
+            >
               <Typography variant="subtitle2" gutterBottom>
                 Result:
               </Typography>
               <Box display="flex" alignItems="center" gap={2}>
                 <Box className="result-item">
                   {currentRecipe.result.texture && (
-                    <img 
-                      src={currentRecipe.result.texture} 
+                    <img
+                      src={currentRecipe.result.texture}
                       alt={currentRecipe.result.name}
                       className="item-icon"
                     />
@@ -380,10 +417,12 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
                   label="Count"
                   type="number"
                   value={currentRecipe.result.count || 1}
-                  onChange={(e) => handleFieldChange('result', {
-                    ...currentRecipe.result,
-                    count: parseInt(e.target.value) || 1
-                  })}
+                  onChange={(e) =>
+                    handleFieldChange('result', {
+                      ...currentRecipe.result,
+                      count: parseInt(e.target.value) || 1,
+                    })
+                  }
                   disabled={readOnly}
                   size="small"
                   inputProps={{ min: 1, max: 64 }}
@@ -399,12 +438,14 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
             <Typography variant="subtitle1" gutterBottom>
               Item Library
             </Typography>
-            
+
             <ItemLibrary
               items={availableItems}
               selectedItem={selectedItem}
               onItemSelect={setSelectedItem}
-              onResultSelect={(item) => handleFieldChange('result', { ...item, count: 1 })}
+              onResultSelect={(item) =>
+                handleFieldChange('result', { ...item, count: 1 })
+              }
               readOnly={readOnly}
             />
           </Paper>

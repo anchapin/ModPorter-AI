@@ -86,7 +86,7 @@
   color: var(--text-secondary);
 }
 
-.option-group input[type="number"],
+.option-group input[type='number'],
 .option-group select {
   padding: 0.5rem;
   border: 1px solid var(--border-color);
@@ -95,7 +95,7 @@
   font-size: 0.9rem;
 }
 
-.option-group input[type="number"]:focus,
+.option-group input[type='number']:focus,
 .option-group select:focus {
   outline: none;
   border-color: var(--primary-color);
@@ -123,7 +123,7 @@
   width: 100%;
 }
 
-.toggle-label input[type="checkbox"] {
+.toggle-label input[type='checkbox'] {
   display: none;
 }
 
@@ -149,11 +149,11 @@
   transition: transform 0.2s ease;
 }
 
-.toggle-label input[type="checkbox"]:checked + .toggle-switch {
+.toggle-label input[type='checkbox']:checked + .toggle-switch {
   background: var(--primary-color);
 }
 
-.toggle-label input[type="checkbox"]:checked + .toggle-switch::after {
+.toggle-label input[type='checkbox']:checked + .toggle-switch::after {
   transform: translateX(18px);
 }
 

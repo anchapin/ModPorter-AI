@@ -3,7 +3,13 @@
  * Toast notifications for user feedback and error handling
  */
 
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from 'react';
 import './NotificationSystem.css';
 
 interface Notification {
@@ -31,7 +37,9 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error(
+      'useNotifications must be used within a NotificationProvider'
+    );
   }
   return context;
 };
@@ -45,47 +53,54 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
   maxNotifications = 5,
-  defaultDuration = 5000
+  defaultDuration = 5000,
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id)
+    );
   }, []);
 
-  const addNotification = useCallback((notification: Omit<Notification, 'id'>): string => {
-    const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const newNotification: Notification = {
-      ...notification,
-      id,
-      duration: notification.duration ?? defaultDuration
-    };
+  const addNotification = useCallback(
+    (notification: Omit<Notification, 'id'>): string => {
+      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    setNotifications(prev => {
-      const updated = [newNotification, ...prev];
-      // Keep only the latest notifications within the limit
-      return updated.slice(0, maxNotifications);
-    });
+      const newNotification: Notification = {
+        ...notification,
+        id,
+        duration: notification.duration ?? defaultDuration,
+      };
 
-    // Auto-remove if not persistent
-    if (!notification.persistent && newNotification.duration! > 0) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, newNotification.duration);
-    }
+      setNotifications((prev) => {
+        const updated = [newNotification, ...prev];
+        // Keep only the latest notifications within the limit
+        return updated.slice(0, maxNotifications);
+      });
 
-    return id;
-  }, [defaultDuration, maxNotifications, removeNotification]);
+      // Auto-remove if not persistent
+      if (!notification.persistent && newNotification.duration! > 0) {
+        setTimeout(() => {
+          removeNotification(id);
+        }, newNotification.duration);
+      }
+
+      return id;
+    },
+    [defaultDuration, maxNotifications, removeNotification]
+  );
 
   const clearAll = useCallback(() => {
     setNotifications([]);
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ addNotification, removeNotification, clearAll }}>
+    <NotificationContext.Provider
+      value={{ addNotification, removeNotification, clearAll }}
+    >
       {children}
-      <NotificationContainer 
+      <NotificationContainer
         notifications={notifications}
         onRemove={removeNotification}
       />
@@ -100,13 +115,13 @@ interface NotificationContainerProps {
 
 const NotificationContainer: React.FC<NotificationContainerProps> = ({
   notifications,
-  onRemove
+  onRemove,
 }) => {
   if (notifications.length === 0) return null;
 
   return (
     <div className="notification-container">
-      {notifications.map(notification => (
+      {notifications.map((notification) => (
         <NotificationItem
           key={notification.id}
           notification={notification}
@@ -124,7 +139,7 @@ interface NotificationItemProps {
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
-  onRemove
+  onRemove,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -144,33 +159,32 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const getIcon = () => {
     switch (notification.type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '📢';
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '📢';
     }
   };
 
   return (
-    <div 
+    <div
       className={`notification notification-${notification.type} ${isVisible ? 'visible' : ''} ${isRemoving ? 'removing' : ''}`}
       role="alert"
       aria-live="polite"
     >
       <div className="notification-content">
-        <div className="notification-icon">
-          {getIcon()}
-        </div>
-        
+        <div className="notification-icon">{getIcon()}</div>
+
         <div className="notification-text">
-          <div className="notification-title">
-            {notification.title}
-          </div>
+          <div className="notification-title">{notification.title}</div>
           {notification.message && (
-            <div className="notification-message">
-              {notification.message}
-            </div>
+            <div className="notification-message">{notification.message}</div>
           )}
         </div>
 
@@ -183,7 +197,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
               {notification.action.label}
             </button>
           )}
-          
+
           <button
             className="notification-close-btn"
             onClick={handleRemove}
@@ -196,11 +210,11 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
       {/* Progress bar for timed notifications */}
       {!notification.persistent && notification.duration! > 0 && (
-        <div 
+        <div
           className="notification-progress"
-          style={{ 
+          style={{
             animationDuration: `${notification.duration}ms`,
-            animationPlayState: isRemoving ? 'paused' : 'running'
+            animationPlayState: isRemoving ? 'paused' : 'running',
           }}
         />
       )}
@@ -212,59 +226,71 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 // eslint-disable-next-line react-refresh/only-export-components
 export const useSuccessNotification = () => {
   const { addNotification } = useNotifications();
-  
-  return useCallback((title: string, message?: string, options?: Partial<Notification>) => {
-    return addNotification({
-      type: 'success',
-      title,
-      message,
-      ...options
-    });
-  }, [addNotification]);
+
+  return useCallback(
+    (title: string, message?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: 'success',
+        title,
+        message,
+        ...options,
+      });
+    },
+    [addNotification]
+  );
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useErrorNotification = () => {
   const { addNotification } = useNotifications();
-  
-  return useCallback((title: string, message?: string, options?: Partial<Notification>) => {
-    return addNotification({
-      type: 'error',
-      title,
-      message,
-      persistent: true, // Errors should be persistent by default
-      ...options
-    });
-  }, [addNotification]);
+
+  return useCallback(
+    (title: string, message?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: 'error',
+        title,
+        message,
+        persistent: true, // Errors should be persistent by default
+        ...options,
+      });
+    },
+    [addNotification]
+  );
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useWarningNotification = () => {
   const { addNotification } = useNotifications();
-  
-  return useCallback((title: string, message?: string, options?: Partial<Notification>) => {
-    return addNotification({
-      type: 'warning',
-      title,
-      message,
-      duration: 8000, // Warnings stay longer
-      ...options
-    });
-  }, [addNotification]);
+
+  return useCallback(
+    (title: string, message?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: 'warning',
+        title,
+        message,
+        duration: 8000, // Warnings stay longer
+        ...options,
+      });
+    },
+    [addNotification]
+  );
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useInfoNotification = () => {
   const { addNotification } = useNotifications();
-  
-  return useCallback((title: string, message?: string, options?: Partial<Notification>) => {
-    return addNotification({
-      type: 'info',
-      title,
-      message,
-      ...options
-    });
-  }, [addNotification]);
+
+  return useCallback(
+    (title: string, message?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: 'info',
+        title,
+        message,
+        ...options,
+      });
+    },
+    [addNotification]
+  );
 };
 
 // HOC for automatic error handling
@@ -277,29 +303,21 @@ export const withNotificationErrorHandling = <P extends object>(
 
     useEffect(() => {
       const handleError = (event: ErrorEvent) => {
-        addErrorNotification(
-          'Unexpected Error',
-          event.message,
-          {
-            action: {
-              label: 'Reload',
-              onClick: () => window.location.reload()
-            }
-          }
-        );
+        addErrorNotification('Unexpected Error', event.message, {
+          action: {
+            label: 'Reload',
+            onClick: () => window.location.reload(),
+          },
+        });
       };
 
       const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-        addErrorNotification(
-          'Promise Rejection',
-          String(event.reason),
-          {
-            action: {
-              label: 'Dismiss',
-              onClick: () => {}
-            }
-          }
-        );
+        addErrorNotification('Promise Rejection', String(event.reason), {
+          action: {
+            label: 'Dismiss',
+            onClick: () => {},
+          },
+        });
       };
 
       window.addEventListener('error', handleError);
@@ -307,7 +325,10 @@ export const withNotificationErrorHandling = <P extends object>(
 
       return () => {
         window.removeEventListener('error', handleError);
-        window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        window.removeEventListener(
+          'unhandledrejection',
+          handleUnhandledRejection
+        );
       };
     }, [addErrorNotification]);
 

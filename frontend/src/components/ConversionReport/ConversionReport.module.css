@@ -5,7 +5,8 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
   color: #333;
 }
@@ -100,13 +101,13 @@
   padding: 1.5rem;
   text-align: center;
   border: 1px solid #e9ecef;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
 }
 
 .statCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .statIcon {
@@ -237,7 +238,7 @@
 }
 
 .featureCard:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .featureHeader {
@@ -553,7 +554,7 @@
 }
 
 .assumptionCard:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .assumptionHeader {
@@ -1217,7 +1218,7 @@
   border: 1px solid #e9ecef;
   margin-bottom: 2rem;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .sectionHeader {
@@ -1272,31 +1273,31 @@
   .container {
     padding: 1rem;
   }
-  
+
   .summaryHeader {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
-  
+
   .comparisonContainer,
   .exampleContainer {
     grid-template-columns: 1fr;
   }
-  
+
   .featureControls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .filterControls {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .distributionItem {
     grid-template-columns: 1fr;
     gap: 0.5rem;
@@ -1305,8 +1306,14 @@
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .featureCard,
@@ -1369,7 +1376,7 @@
   padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1px solid #e9ecef;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .metadataGrid {
@@ -1405,7 +1412,7 @@
   padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1px solid #e9ecef;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .quickNavigation h4 {
@@ -1489,7 +1496,7 @@
   padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1px solid #e9ecef;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .globalSearchInput {
@@ -1524,7 +1531,7 @@
   padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1px solid #e9ecef;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .exportControls h4 {
@@ -1605,18 +1612,18 @@
   .headerActions {
     display: none;
   }
-  
+
   .container {
     padding: 0;
     max-width: none;
   }
-  
+
   .section {
     page-break-inside: avoid;
     margin-bottom: 1rem;
     box-shadow: none;
   }
-  
+
   .sectionContent {
     padding: 1rem;
   }
@@ -1629,26 +1636,26 @@
     text-align: center;
     gap: 1rem;
   }
-  
+
   .headerActions {
     width: 100%;
     justify-content: center;
   }
-  
+
   .navItems {
     justify-content: center;
   }
-  
+
   .navItem {
     flex: 1;
     min-width: 120px;
     justify-content: center;
   }
-  
+
   .metadataGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .exportButtons {
     justify-content: center;
   }
@@ -1679,8 +1686,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .retryButton {

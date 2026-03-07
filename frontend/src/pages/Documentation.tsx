@@ -112,86 +112,126 @@ export const Documentation: React.FC = () => {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>
-          ModPorter AI - Technical Documentation
-        </h1>
+        <h1 className={styles.title}>ModPorter AI - Technical Documentation</h1>
         <p className={styles.subtitle}>
-          Interactive visual documentation of the ModPorter AI system architecture, 
-          conversion process flow, and technical implementation details.
+          Interactive visual documentation of the ModPorter AI system
+          architecture, conversion process flow, and technical implementation
+          details.
         </p>
       </header>
 
       <nav className={styles.navigation}>
-        <a href="#architecture" className={styles.navLink}>System Architecture</a>
-        <a href="#process" className={styles.navLink}>Conversion Process</a>
-        <a href="#assumptions" className={styles.navLink}>Smart Assumptions</a>
+        <a href="#architecture" className={styles.navLink}>
+          System Architecture
+        </a>
+        <a href="#process" className={styles.navLink}>
+          Conversion Process
+        </a>
+        <a href="#assumptions" className={styles.navLink}>
+          Smart Assumptions
+        </a>
       </nav>
 
       <section id="architecture" className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          System Architecture Overview
-        </h2>
+        <h2 className={styles.sectionTitle}>System Architecture Overview</h2>
         <p className={styles.sectionDescription}>
-          The ModPorter AI system follows a modern microservices architecture with a React frontend, 
-          FastAPI backend, and a multi-agent AI engine powered by CrewAI and LangChain.
+          The ModPorter AI system follows a modern microservices architecture
+          with a React frontend, FastAPI backend, and a multi-agent AI engine
+          powered by CrewAI and LangChain.
         </p>
         <MermaidDiagram chart={systemArchitecture} />
-        
+
         <div className={`${styles.infoPanel} ${styles.infoPanelArchitecture}`}>
           <h3 className={styles.infoPanelTitle}>Key Components:</h3>
           <ul className={styles.list}>
-            <li><strong>React Frontend:</strong> Modern TypeScript-based UI with Vite build system</li>
-            <li><strong>FastAPI Backend:</strong> High-performance Python API with async support</li>
-            <li><strong>AI Engine:</strong> Multi-agent system with specialized conversion agents</li>
-            <li><strong>Database Layer:</strong> PostgreSQL for persistence, Redis for caching</li>
-            <li><strong>File Storage:</strong> Managed storage for conversion assets and outputs</li>
+            <li>
+              <strong>React Frontend:</strong> Modern TypeScript-based UI with
+              Vite build system
+            </li>
+            <li>
+              <strong>FastAPI Backend:</strong> High-performance Python API with
+              async support
+            </li>
+            <li>
+              <strong>AI Engine:</strong> Multi-agent system with specialized
+              conversion agents
+            </li>
+            <li>
+              <strong>Database Layer:</strong> PostgreSQL for persistence, Redis
+              for caching
+            </li>
+            <li>
+              <strong>File Storage:</strong> Managed storage for conversion
+              assets and outputs
+            </li>
           </ul>
         </div>
       </section>
 
       <section id="process" className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          Conversion Process Flow
-        </h2>
+        <h2 className={styles.sectionTitle}>Conversion Process Flow</h2>
         <p className={styles.sectionDescription}>
-          The conversion process implements all four PRD features through a sophisticated 
-          multi-agent workflow that analyzes Java mods and intelligently converts them to Bedrock add-ons.
+          The conversion process implements all four PRD features through a
+          sophisticated multi-agent workflow that analyzes Java mods and
+          intelligently converts them to Bedrock add-ons.
         </p>
         <MermaidDiagram chart={conversionFlow} />
-        
+
         <div className={`${styles.infoPanel} ${styles.infoPanelProcess}`}>
           <h3 className={styles.infoPanelTitle}>Process Stages:</h3>
           <ol className={styles.orderedList}>
-            <li><strong>Input Validation:</strong> Verify file types and repository URLs</li>
-            <li><strong>Java Analysis:</strong> Parse mod structure and identify features</li>
-            <li><strong>Conversion Planning:</strong> Map features and apply smart assumptions</li>
-            <li><strong>Asset & Logic Translation:</strong> Convert code and assets to Bedrock format</li>
-            <li><strong>Package Generation:</strong> Create valid .mcaddon files</li>
-            <li><strong>Quality Validation:</strong> Verify output and generate reports</li>
+            <li>
+              <strong>Input Validation:</strong> Verify file types and
+              repository URLs
+            </li>
+            <li>
+              <strong>Java Analysis:</strong> Parse mod structure and identify
+              features
+            </li>
+            <li>
+              <strong>Conversion Planning:</strong> Map features and apply smart
+              assumptions
+            </li>
+            <li>
+              <strong>Asset & Logic Translation:</strong> Convert code and
+              assets to Bedrock format
+            </li>
+            <li>
+              <strong>Package Generation:</strong> Create valid .mcaddon files
+            </li>
+            <li>
+              <strong>Quality Validation:</strong> Verify output and generate
+              reports
+            </li>
           </ol>
         </div>
       </section>
 
       <section id="assumptions" className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          Smart Assumptions Decision Tree
-        </h2>
+        <h2 className={styles.sectionTitle}>Smart Assumptions Decision Tree</h2>
         <p className={styles.sectionDescription}>
-          When Java features have no direct Bedrock equivalent, the AI engine applies intelligent 
-          assumptions to preserve as much functionality as possible while maintaining compatibility.
+          When Java features have no direct Bedrock equivalent, the AI engine
+          applies intelligent assumptions to preserve as much functionality as
+          possible while maintaining compatibility.
         </p>
         <MermaidDiagram chart={smartAssumptions} />
-        
+
         <div className={`${styles.infoPanel} ${styles.infoPanelAssumptions}`}>
-          <h3 className={styles.infoPanelTitle}>Smart Assumption Categories:</h3>
+          <h3 className={styles.infoPanelTitle}>
+            Smart Assumption Categories:
+          </h3>
           <div className={styles.assumptionsGrid}>
             <div className={styles.assumptionItem}>
               <h4>🌍 Custom Dimensions</h4>
-              <p>Converted to large explorable structures in existing dimensions</p>
+              <p>
+                Converted to large explorable structures in existing dimensions
+              </p>
             </div>
             <div className={styles.assumptionItem}>
               <h4>⚙️ Complex Machinery</h4>
-              <p>Simplified to decorative blocks while preserving visual design</p>
+              <p>
+                Simplified to decorative blocks while preserving visual design
+              </p>
             </div>
             <div className={styles.assumptionItem}>
               <h4>📱 Custom GUIs</h4>
@@ -206,10 +246,19 @@ export const Documentation: React.FC = () => {
       </section>
 
       <footer className={styles.footer}>
-        <p>Documentation generated with Mermaid.js - Interactive diagrams for ModPorter AI</p>
+        <p>
+          Documentation generated with Mermaid.js - Interactive diagrams for
+          ModPorter AI
+        </p>
         <p className={styles.footerSubtext}>
-          For technical details, see the <a href="/docs/API.md" className={styles.footerLink}>API Documentation</a> 
-          and <a href="/docs/ARCHITECTURE.md" className={styles.footerLink}>Architecture Guide</a>
+          For technical details, see the{' '}
+          <a href="/docs/API.md" className={styles.footerLink}>
+            API Documentation
+          </a>
+          and{' '}
+          <a href="/docs/ARCHITECTURE.md" className={styles.footerLink}>
+            Architecture Guide
+          </a>
         </p>
       </footer>
     </div>

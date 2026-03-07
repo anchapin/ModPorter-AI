@@ -4,7 +4,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import type { DeveloperLog as DeveloperLogType, LogEntry } from '../../types/api';
+import type {
+  DeveloperLog as DeveloperLogType,
+  LogEntry,
+} from '../../types/api';
 import styles from './ConversionReport.module.css';
 
 interface DeveloperLogProps {
@@ -43,12 +46,12 @@ const LogLevelBadge: React.FC<{ level: string }> = ({ level }) => {
   const levelInfo = getLevelInfo(level);
 
   return (
-    <span 
+    <span
       className={styles.logLevelBadge}
-      style={{ 
+      style={{
         backgroundColor: levelInfo.bg,
         color: levelInfo.color,
-        border: `1px solid ${levelInfo.color}40`
+        border: `1px solid ${levelInfo.color}40`,
       }}
     >
       {levelInfo.icon} {level.toUpperCase()}
@@ -67,7 +70,7 @@ const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
         </span>
         <LogLevelBadge level={entry.level} />
         {entry.details && (
-          <button 
+          <button
             className={styles.logExpandButton}
             onClick={() => setIsExpanded(!isExpanded)}
             aria-label={isExpanded ? 'Hide details' : 'Show details'}
@@ -76,9 +79,7 @@ const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
           </button>
         )}
       </div>
-      <div className={styles.logMessage}>
-        {entry.message}
-      </div>
+      <div className={styles.logMessage}>{entry.message}</div>
       {isExpanded && entry.details && (
         <div className={styles.logDetails}>
           <pre className={styles.logDetailsContent}>
@@ -90,18 +91,24 @@ const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
   );
 };
 
-const LogSection: React.FC<LogSectionProps> = ({ title, logs, icon = '📋' }) => {
+const LogSection: React.FC<LogSectionProps> = ({
+  title,
+  logs,
+  icon = '📋',
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [levelFilter, setLevelFilter] = useState('all');
 
   const filteredLogs = useMemo(() => {
     if (levelFilter === 'all') return logs;
-    return logs.filter(log => log.level.toLowerCase() === levelFilter.toLowerCase());
+    return logs.filter(
+      (log) => log.level.toLowerCase() === levelFilter.toLowerCase()
+    );
   }, [logs, levelFilter]);
 
   const logCounts = useMemo(() => {
     const counts = { error: 0, warning: 0, info: 0, debug: 0 };
-    logs.forEach(log => {
+    logs.forEach((log) => {
       const level = log.level.toLowerCase();
       if (level === 'error') counts.error++;
       else if (level === 'warning' || level === 'warn') counts.warning++;
@@ -115,7 +122,10 @@ const LogSection: React.FC<LogSectionProps> = ({ title, logs, icon = '📋' }) =
 
   return (
     <div className={styles.logSection}>
-      <div className={styles.logSectionHeader} onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className={styles.logSectionHeader}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <h4 className={styles.logSectionTitle}>
           {icon} {title} ({logs.length})
         </h4>
@@ -136,7 +146,7 @@ const LogSection: React.FC<LogSectionProps> = ({ title, logs, icon = '📋' }) =
             </span>
           )}
         </div>
-        <button 
+        <button
           className={styles.toggleButton}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
@@ -147,8 +157,8 @@ const LogSection: React.FC<LogSectionProps> = ({ title, logs, icon = '📋' }) =
       {isExpanded && (
         <div className={styles.logSectionContent}>
           <div className={styles.logControls}>
-            <select 
-              value={levelFilter} 
+            <select
+              value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
               className={styles.logLevelFilter}
             >
@@ -199,13 +209,13 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ metrics }) => {
 
   const getMetricColor = (key: string, value: any): string => {
     if (typeof value !== 'number') return '#6c757d';
-    
+
     if (key.includes('error') && value > 0) return '#dc3545';
     if (key.includes('warning') && value > 0) return '#ffc107';
     if (key.includes('success') || key.includes('completed')) return '#28a745';
     if (key.includes('time') && value > 300) return '#ffc107'; // > 5 minutes
     if (key.includes('memory') && value > 512) return '#ffc107'; // > 512 MB
-    
+
     return '#17a2b8';
   };
 
@@ -216,9 +226,9 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ metrics }) => {
         {Object.entries(metrics).map(([key, value]) => (
           <div key={key} className={styles.metricCard}>
             <div className={styles.metricLabel}>
-              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
             </div>
-            <div 
+            <div
               className={styles.metricValue}
               style={{ color: getMetricColor(key, value) }}
             >
@@ -231,7 +241,7 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ metrics }) => {
   );
 };
 
-const OptimizationSuggestions: React.FC<{ 
+const OptimizationSuggestions: React.FC<{
   opportunities: string[];
   technicalDebt: string[];
 }> = ({ opportunities, technicalDebt }) => {
@@ -241,7 +251,9 @@ const OptimizationSuggestions: React.FC<{
     <div className={styles.optimizationSection}>
       {opportunities.length > 0 && (
         <div className={styles.optimizationGroup}>
-          <h4 className={styles.optimizationTitle}>🚀 Optimization Opportunities</h4>
+          <h4 className={styles.optimizationTitle}>
+            🚀 Optimization Opportunities
+          </h4>
           <ul className={styles.optimizationList}>
             {opportunities.map((opportunity, index) => (
               <li key={index} className={styles.optimizationItem}>
@@ -270,7 +282,9 @@ const OptimizationSuggestions: React.FC<{
   );
 };
 
-const BenchmarkComparisons: React.FC<{ comparisons: Record<string, number> }> = ({ comparisons }) => {
+const BenchmarkComparisons: React.FC<{
+  comparisons: Record<string, number>;
+}> = ({ comparisons }) => {
   if (!comparisons || Object.keys(comparisons).length === 0) return null;
 
   return (
@@ -282,17 +296,18 @@ const BenchmarkComparisons: React.FC<{ comparisons: Record<string, number> }> = 
           return (
             <div key={benchmark} className={styles.benchmarkCard}>
               <div className={styles.benchmarkLabel}>
-                {benchmark.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {benchmark
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, (l) => l.toUpperCase())}
               </div>
-              <div 
+              <div
                 className={styles.benchmarkValue}
                 style={{ color: isGood ? '#28a745' : '#dc3545' }}
               >
-                {isGood ? '+' : ''}{value.toFixed(1)}%
+                {isGood ? '+' : ''}
+                {value.toFixed(1)}%
               </div>
-              <div className={styles.benchmarkDescription}>
-                vs. baseline
-              </div>
+              <div className={styles.benchmarkDescription}>vs. baseline</div>
             </div>
           );
         })}
@@ -301,7 +316,10 @@ const BenchmarkComparisons: React.FC<{ comparisons: Record<string, number> }> = 
   );
 };
 
-const ExportButton: React.FC<{ data: any; filename: string }> = ({ data, filename }) => {
+const ExportButton: React.FC<{ data: any; filename: string }> = ({
+  data,
+  filename,
+}) => {
   const handleExport = () => {
     const jsonData = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonData], { type: 'application/json' });
@@ -316,7 +334,7 @@ const ExportButton: React.FC<{ data: any; filename: string }> = ({ data, filenam
   };
 
   return (
-    <button 
+    <button
       onClick={handleExport}
       className={styles.exportButton}
       title={`Export ${filename}`}
@@ -326,10 +344,10 @@ const ExportButton: React.FC<{ data: any; filename: string }> = ({ data, filenam
   );
 };
 
-export const DeveloperLog: React.FC<DeveloperLogProps> = ({ 
-  log, 
-  isExpanded, 
-  onToggle 
+export const DeveloperLog: React.FC<DeveloperLogProps> = ({
+  log,
+  isExpanded,
+  onToggle,
 }) => {
   const totalLogEntries = useMemo(() => {
     return (
@@ -341,23 +359,29 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
   }, [log]);
 
   const hasErrors = useMemo(() => {
-    return log.error_details?.length > 0 || 
-           log.code_translation_details?.some(entry => entry.level.toLowerCase() === 'error') ||
-           log.api_mapping_issues?.some(entry => entry.level.toLowerCase() === 'error') ||
-           log.file_processing_log?.some(entry => entry.level.toLowerCase() === 'error');
+    return (
+      log.error_details?.length > 0 ||
+      log.code_translation_details?.some(
+        (entry) => entry.level.toLowerCase() === 'error'
+      ) ||
+      log.api_mapping_issues?.some(
+        (entry) => entry.level.toLowerCase() === 'error'
+      ) ||
+      log.file_processing_log?.some(
+        (entry) => entry.level.toLowerCase() === 'error'
+      )
+    );
   }, [log]);
 
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={onToggle}>
         <h3 className={styles.sectionTitle}>
-          🛠️ Developer Technical Log 
+          🛠️ Developer Technical Log
           {hasErrors && <span className={styles.errorIndicator}>⚠️</span>}
         </h3>
-        <div className={styles.logSummary}>
-          {totalLogEntries} entries
-        </div>
-        <button 
+        <div className={styles.logSummary}>{totalLogEntries} entries</div>
+        <button
           className={styles.toggleButton}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
@@ -368,12 +392,13 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
       {isExpanded && (
         <div className={styles.sectionContent}>
           {/* Performance Metrics */}
-          {log.performance_metrics && Object.keys(log.performance_metrics).length > 0 && (
-            <PerformanceMetrics metrics={log.performance_metrics} />
-          )}
+          {log.performance_metrics &&
+            Object.keys(log.performance_metrics).length > 0 && (
+              <PerformanceMetrics metrics={log.performance_metrics} />
+            )}
 
           {/* Optimization Suggestions */}
-          <OptimizationSuggestions 
+          <OptimizationSuggestions
             opportunities={log.optimization_opportunities || []}
             technicalDebt={log.technical_debt_notes || []}
           />
@@ -385,19 +410,19 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
 
           {/* Log Sections */}
           <div className={styles.logSections}>
-            <LogSection 
+            <LogSection
               title="Code Translation Details"
               logs={log.code_translation_details || []}
               icon="🔄"
             />
-            
-            <LogSection 
+
+            <LogSection
               title="API Mapping Issues"
               logs={log.api_mapping_issues || []}
               icon="🔗"
             />
-            
-            <LogSection 
+
+            <LogSection
               title="File Processing Log"
               logs={log.file_processing_log || []}
               icon="📁"
@@ -411,7 +436,10 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
                   {log.error_details.map((error, index) => (
                     <div key={index} className={styles.errorItem}>
                       <div className={styles.errorMessage}>
-                        <strong>Error:</strong> {error.error_message || error.message || 'Unknown error'}
+                        <strong>Error:</strong>{' '}
+                        {error.error_message ||
+                          error.message ||
+                          'Unknown error'}
                       </div>
                       {error.module && (
                         <div className={styles.errorModule}>

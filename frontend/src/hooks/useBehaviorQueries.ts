@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryOptions,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import {
   behaviorTemplatesAPI,
   behaviorExportAPI,
@@ -15,15 +21,19 @@ import {
 export const BEHAVIOR_TEMPLATES_QUERY_KEYS = {
   all: ['behavior-templates'] as const,
   categories: ['behavior-templates', 'categories'] as const,
-  templates: (filters: any) => ['behavior-templates', 'templates', filters] as const,
+  templates: (filters: any) =>
+    ['behavior-templates', 'templates', filters] as const,
   template: (id: string) => ['behavior-templates', 'template', id] as const,
   predefined: ['behavior-templates', 'predefined'] as const,
-  exportPreview: (conversionId: string) => ['behavior-export', 'preview', conversionId] as const,
+  exportPreview: (conversionId: string) =>
+    ['behavior-export', 'preview', conversionId] as const,
   exportFormats: ['behavior-export', 'formats'] as const,
 } as const;
 
 // Hook for getting template categories
-export const useBehaviorTemplateCategories = (options?: UseQueryOptions<BehaviorTemplateCategory[]>) => {
+export const useBehaviorTemplateCategories = (
+  options?: UseQueryOptions<BehaviorTemplateCategory[]>
+) => {
   return useQuery({
     queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.categories,
     queryFn: () => behaviorTemplatesAPI.getCategories(),
@@ -52,7 +62,9 @@ export const useBehaviorTemplates = (
 };
 
 // Hook for getting predefined templates
-export const usePredefinedBehaviorTemplates = (options?: UseQueryOptions<BehaviorTemplate[]>) => {
+export const usePredefinedBehaviorTemplates = (
+  options?: UseQueryOptions<BehaviorTemplate[]>
+) => {
   return useQuery({
     queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.predefined,
     queryFn: () => behaviorTemplatesAPI.getPredefinedTemplates(),
@@ -78,20 +90,22 @@ export const useCreateBehaviorTemplate = (
   options?: UseMutationOptions<BehaviorTemplate, Error, BehaviorTemplateCreate>
 ) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (template: BehaviorTemplateCreate) => 
+    mutationFn: (template: BehaviorTemplateCreate) =>
       behaviorTemplatesAPI.createTemplate(template),
     onSuccess: (newTemplate) => {
       // Invalidate templates list
-      queryClient.invalidateQueries({ queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}) });
-      
+      queryClient.invalidateQueries({
+        queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}),
+      });
+
       // Add to specific queries if they exist
       queryClient.setQueriesData(
-        { 
-          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}) 
+        {
+          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}),
         },
-        (old: BehaviorTemplate[] | undefined) => 
+        (old: BehaviorTemplate[] | undefined) =>
           old ? [newTemplate, ...old] : [newTemplate]
       );
     },
@@ -101,12 +115,16 @@ export const useCreateBehaviorTemplate = (
 
 // Hook for updating template
 export const useUpdateBehaviorTemplate = (
-  options?: UseMutationOptions<BehaviorTemplate, Error, { templateId: string; updates: BehaviorTemplateUpdate }>
+  options?: UseMutationOptions<
+    BehaviorTemplate,
+    Error,
+    { templateId: string; updates: BehaviorTemplateUpdate }
+  >
 ) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ templateId, updates }) => 
+    mutationFn: ({ templateId, updates }) =>
       behaviorTemplatesAPI.updateTemplate(templateId, updates),
     onSuccess: (updatedTemplate) => {
       // Update cache for the specific template
@@ -114,14 +132,18 @@ export const useUpdateBehaviorTemplate = (
         BEHAVIOR_TEMPLATES_QUERY_KEYS.template(updatedTemplate.id),
         updatedTemplate
       );
-      
+
       // Update in all template lists
       queryClient.setQueriesData(
-        { 
-          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}) 
+        {
+          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}),
         },
-        (old: BehaviorTemplate[] | undefined) => 
-          old ? old.map(t => t.id === updatedTemplate.id ? updatedTemplate : t) : [updatedTemplate]
+        (old: BehaviorTemplate[] | undefined) =>
+          old
+            ? old.map((t) =>
+                t.id === updatedTemplate.id ? updatedTemplate : t
+              )
+            : [updatedTemplate]
       );
     },
     ...options,
@@ -133,23 +155,23 @@ export const useDeleteBehaviorTemplate = (
   options?: UseMutationOptions<void, Error, string>
 ) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (templateId: string) => 
+    mutationFn: (templateId: string) =>
       behaviorTemplatesAPI.deleteTemplate(templateId),
     onSuccess: (_, templateId) => {
       // Remove from cache
-      queryClient.removeQueries({ 
-        queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.template(templateId) 
+      queryClient.removeQueries({
+        queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.template(templateId),
       });
-      
+
       // Update all template lists
       queryClient.setQueriesData(
-        { 
-          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}) 
+        {
+          queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates({}),
         },
-        (old: BehaviorTemplate[] | undefined) => 
-          old ? old.filter(t => t.id !== templateId) : []
+        (old: BehaviorTemplate[] | undefined) =>
+          old ? old.filter((t) => t.id !== templateId) : []
       );
     },
     ...options,
@@ -161,7 +183,7 @@ export const useApplyBehaviorTemplate = (
   options?: UseMutationOptions<any, Error, TemplateApplyRequest>
 ) => {
   return useMutation({
-    mutationFn: (request: TemplateApplyRequest) => 
+    mutationFn: (request: TemplateApplyRequest) =>
       behaviorTemplatesAPI.applyTemplate(request),
     ...options,
   });
@@ -181,7 +203,16 @@ export const useBehaviorExportPreview = (
 };
 
 // Hook for export formats
-export const useBehaviorExportFormats = (options?: UseQueryOptions<Array<{ format: string; name: string; description: string; extension: string }>>) => {
+export const useBehaviorExportFormats = (
+  options?: UseQueryOptions<
+    Array<{
+      format: string;
+      name: string;
+      description: string;
+      extension: string;
+    }>
+  >
+) => {
   return useQuery({
     queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.exportFormats,
     queryFn: () => behaviorExportAPI.getExportFormats(),
@@ -191,10 +222,14 @@ export const useBehaviorExportFormats = (options?: UseQueryOptions<Array<{ forma
 
 // Hook for exporting behavior pack
 export const useExportBehaviorPack = (
-  options?: UseMutationOptions<BehaviorPackExportResponse, Error, BehaviorPackExportRequest>
+  options?: UseMutationOptions<
+    BehaviorPackExportResponse,
+    Error,
+    BehaviorPackExportRequest
+  >
 ) => {
   return useMutation({
-    mutationFn: (request: BehaviorPackExportRequest) => 
+    mutationFn: (request: BehaviorPackExportRequest) =>
       behaviorExportAPI.exportBehaviorPack(request),
     ...options,
   });
@@ -202,10 +237,14 @@ export const useExportBehaviorPack = (
 
 // Hook for downloading exported pack
 export const useDownloadBehaviorPack = (
-  options?: UseMutationOptions<{ blob: Blob; filename: string }, Error, { conversionId: string; format?: string }>
+  options?: UseMutationOptions<
+    { blob: Blob; filename: string },
+    Error,
+    { conversionId: string; format?: string }
+  >
 ) => {
   return useMutation({
-    mutationFn: ({ conversionId, format }) => 
+    mutationFn: ({ conversionId, format }) =>
       behaviorExportAPI.downloadPack(conversionId, format),
     onSuccess: ({ blob, filename }) => {
       // Create download link
@@ -225,16 +264,18 @@ export const useDownloadBehaviorPack = (
 // Utility hook for invalidating all template-related queries
 export const useInvalidateBehaviorTemplates = () => {
   const queryClient = useQueryClient();
-  
+
   return () => {
-    queryClient.invalidateQueries({ queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.all });
+    queryClient.invalidateQueries({
+      queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.all,
+    });
   };
 };
 
 // Utility hook for prefetching templates
 export const usePrefetchBehaviorTemplates = () => {
   const queryClient = useQueryClient();
-  
+
   return (filters?: any) => {
     queryClient.prefetchQuery({
       queryKey: BEHAVIOR_TEMPLATES_QUERY_KEYS.templates(filters || {}),
@@ -244,19 +285,14 @@ export const usePrefetchBehaviorTemplates = () => {
 };
 
 // Utility hook for getting combined templates (predefined + custom)
-export const useCombinedBehaviorTemplates = (
-  filters?: any
-) => {
+export const useCombinedBehaviorTemplates = (filters?: any) => {
   const predefined = usePredefinedBehaviorTemplates();
   const custom = useBehaviorTemplates(filters);
-  
+
   return {
     ...predefined,
     ...custom,
-    data: [
-      ...(predefined.data || []),
-      ...(custom.data || [])
-    ],
+    data: [...(predefined.data || []), ...(custom.data || [])],
     isLoading: predefined.isLoading || custom.isLoading,
     isError: predefined.isError || custom.isError,
     error: predefined.error || custom.error,

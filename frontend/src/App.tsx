@@ -7,20 +7,28 @@ import './App.css';
 
 // Lazy load heavy components
 // Using type assertion to handle named exports
-const DocumentationSimple = lazy(() => 
-  import('./pages/DocumentationSimple').then((m) => ({ default: m.DocumentationSimple as React.ComponentType<any> }))
+const DocumentationSimple = lazy(() =>
+  import('./pages/DocumentationSimple').then((m) => ({
+    default: m.DocumentationSimple as React.ComponentType<any>,
+  }))
 );
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ConvertPage = lazy(() => import('./pages/ConvertPage'));
-const ComparisonView = lazy(() => 
-  import('./components/ComparisonView').then((m) => ({ default: m.ComparisonView as React.ComponentType<any> }))
+const ComparisonView = lazy(() =>
+  import('./components/ComparisonView').then((m) => ({
+    default: m.ComparisonView as React.ComponentType<any>,
+  }))
 );
-const BehavioralTestWrapper = lazy(() => 
-  import('./components/BehavioralTest/BehavioralTestWrapper').then((m) => ({ default: m.BehavioralTestWrapper as React.ComponentType<any> }))
+const BehavioralTestWrapper = lazy(() =>
+  import('./components/BehavioralTest/BehavioralTestWrapper').then((m) => ({
+    default: m.BehavioralTestWrapper as React.ComponentType<any>,
+  }))
 );
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ExperimentsPage = lazy(() => import('./pages/ExperimentsPage'));
-const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage'));
+const ExperimentResultsPage = lazy(
+  () => import('./pages/ExperimentResultsPage')
+);
 const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
@@ -43,56 +51,94 @@ function App() {
                     </Suspense>
                   }
                 />
-                <Route path="/dashboard" element={
-                  <Suspense fallback={<div>Loading Dashboard...</div>}>
-                    <Dashboard />
-                  </Suspense>
-                } />
-                <Route path="/experiments" element={
-                  <Suspense fallback={<div>Loading Experiments...</div>}>
-                    <ExperimentsPage />
-                  </Suspense>
-                } />
-                <Route path="/experiment-results" element={
-                  <Suspense fallback={<div>Loading Results...</div>}>
-                    <ExperimentResultsPage />
-                  </Suspense>
-                } />
-                <Route path="/comparison" element={
-                  <Suspense fallback={<div>Loading Comparison...</div>}>
-                    <div className="page-wrapper"><ComparisonView /></div>
-                  </Suspense>
-                } />
-                <Route path="/comparison/:comparisonId" element={
-                  <Suspense fallback={<div>Loading Comparison...</div>}>
-                    <div className="page-wrapper"><ComparisonView /></div>
-                  </Suspense>
-                } />
-                <Route path="/behavioral-test/:conversionId" element={
-                  <Suspense fallback={<div>Loading Behavioral Test...</div>}>
-                    <div className="page-wrapper"><BehavioralTestWrapper /></div>
-                  </Suspense>
-                } />
-                <Route path="/docs" element={
-                  <Suspense fallback={<div>Loading Documentation...</div>}>
-                    <DocumentationSimple />
-                  </Suspense>
-                } />
-                <Route path="/editor/:addonId" element={
-                  <Suspense fallback={<div>Loading Editor...</div>}>
-                    <EditorPage />
-                  </Suspense>
-                } /> {/* Added Editor Route */}
-                <Route path="/behavior-editor/:conversionId" element={
-                  <Suspense fallback={<div>Loading Behavior Editor...</div>}>
-                    <EditorPage />
-                  </Suspense>
-                } /> {/* Added Behavior Editor Route */}
-                <Route path="/settings" element={
-                  <Suspense fallback={<div>Loading Settings...</div>}>
-                    <Settings />
-                  </Suspense>
-                } />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <Suspense fallback={<div>Loading Dashboard...</div>}>
+                      <Dashboard />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/experiments"
+                  element={
+                    <Suspense fallback={<div>Loading Experiments...</div>}>
+                      <ExperimentsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/experiment-results"
+                  element={
+                    <Suspense fallback={<div>Loading Results...</div>}>
+                      <ExperimentResultsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/comparison"
+                  element={
+                    <Suspense fallback={<div>Loading Comparison...</div>}>
+                      <div className="page-wrapper">
+                        <ComparisonView />
+                      </div>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/comparison/:comparisonId"
+                  element={
+                    <Suspense fallback={<div>Loading Comparison...</div>}>
+                      <div className="page-wrapper">
+                        <ComparisonView />
+                      </div>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/behavioral-test/:conversionId"
+                  element={
+                    <Suspense fallback={<div>Loading Behavioral Test...</div>}>
+                      <div className="page-wrapper">
+                        <BehavioralTestWrapper />
+                      </div>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/docs"
+                  element={
+                    <Suspense fallback={<div>Loading Documentation...</div>}>
+                      <DocumentationSimple />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/editor/:addonId"
+                  element={
+                    <Suspense fallback={<div>Loading Editor...</div>}>
+                      <EditorPage />
+                    </Suspense>
+                  }
+                />{' '}
+                {/* Added Editor Route */}
+                <Route
+                  path="/behavior-editor/:conversionId"
+                  element={
+                    <Suspense fallback={<div>Loading Behavior Editor...</div>}>
+                      <EditorPage />
+                    </Suspense>
+                  }
+                />{' '}
+                {/* Added Behavior Editor Route */}
+                <Route
+                  path="/settings"
+                  element={
+                    <Suspense fallback={<div>Loading Settings...</div>}>
+                      <Settings />
+                    </Suspense>
+                  }
+                />
               </Routes>
             </main>
           </div>

@@ -6,7 +6,9 @@
 import { ConversionStatus } from '../types/api';
 
 export type WebSocketMessageHandler = (data: ConversionStatus) => void;
-export type WebSocketStatusHandler = (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
+export type WebSocketStatusHandler = (
+  status: 'connecting' | 'connected' | 'disconnected' | 'error'
+) => void;
 
 export class ConversionWebSocket {
   private ws: WebSocket | null = null;
@@ -24,13 +26,13 @@ export class ConversionWebSocket {
   constructor(private jobId: string) {
     // Determine WebSocket URL based on environment
     // Priority: VITE_API_BASE_URL > derived from VITE_API_URL > default
-    
+
     // In development with Vite proxy:
     // - Set VITE_API_BASE_URL to empty string (use proxy)
     // - Set VITE_API_URL to include /api/v1 path
-    
+
     let apiBase: string;
-    
+
     if (import.meta.env.VITE_API_BASE_URL) {
       // Explicit base URL provided (e.g., https://api.modporter.ai)
       apiBase = import.meta.env.VITE_API_BASE_URL;
@@ -42,9 +44,11 @@ export class ConversionWebSocket {
       // The proxy handles /api/* and /ws/* routes
       apiBase = '';
     }
-    
+
     // Convert http/https to ws/wss for WebSocket
-    this.url = apiBase.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') + `/api/v1/conversions/${this.jobId}/ws`;
+    this.url =
+      apiBase.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') +
+      `/api/v1/conversions/${this.jobId}/ws`;
   }
 
   /**
@@ -73,24 +77,25 @@ export class ConversionWebSocket {
         try {
           const rawData = JSON.parse(event.data);
           console.log('[WebSocket] Raw message received:', rawData);
-          
+
           // Handle wrapped format from backend: { type: "agent_progress", data: {...} }
           // or connection confirmation: { type: "connection_established", data: {...} }
           let data;
           if (rawData.type && rawData.data) {
             // Extract relevant fields from the wrapped format
             const progressData = rawData.data;
-            
+
             // Map agent status to conversion status
             const statusMap: Record<string, string> = {
-              'queued': 'queued',
-              'in_progress': 'preprocessing',
-              'completed': 'completed',
-              'failed': 'failed',
-              'skipped': 'cancelled',
+              queued: 'queued',
+              in_progress: 'preprocessing',
+              completed: 'completed',
+              failed: 'failed',
+              skipped: 'cancelled',
             };
-            const mappedStatus = statusMap[progressData.status] || progressData.status;
-            
+            const mappedStatus =
+              statusMap[progressData.status] || progressData.status;
+
             data = {
               job_id: progressData.conversion_id || this.jobId,
               status: mappedStatus,
@@ -100,12 +105,13 @@ export class ConversionWebSocket {
               created_at: progressData.timestamp || new Date().toISOString(),
               error: progressData.details?.error || null,
             };
-            
+
             // Handle terminal messages
             if (rawData.type === 'conversion_complete') {
               data.status = 'completed';
               data.progress = 100;
-              data.message = progressData.message || 'Conversion completed successfully';
+              data.message =
+                progressData.message || 'Conversion completed successfully';
             } else if (rawData.type === 'conversion_failed') {
               data.status = 'failed';
               data.message = progressData.message || 'Conversion failed';
@@ -115,7 +121,7 @@ export class ConversionWebSocket {
             // Direct format (legacy or direct ConversionStatus)
             data = rawData as ConversionStatus;
           }
-          
+
           console.log('[WebSocket] Parsed message:', data);
           this.notifyMessageHandlers(data);
         } catch (error) {
@@ -124,7 +130,9 @@ export class ConversionWebSocket {
       };
 
       this.ws.onclose = (event) => {
-        console.log(`[WebSocket] Connection closed: ${event.code} - ${event.reason}`);
+        console.log(
+          `[WebSocket] Connection closed: ${event.code} - ${event.reason}`
+        );
 
         if (!this.intentionalClose) {
           this.notifyStatusHandlers('disconnected');
@@ -137,7 +145,10 @@ export class ConversionWebSocket {
         this.notifyStatusHandlers('error');
       };
     } catch (error) {
-      console.error('[WebSocket] Failed to create WebSocket connection:', error);
+      console.error(
+        '[WebSocket] Failed to create WebSocket connection:',
+        error
+      );
       this.notifyStatusHandlers('error');
     }
   }
@@ -169,9 +180,14 @@ export class ConversionWebSocket {
     }
 
     this.reconnectAttempts++;
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectDelay);
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+      this.maxReconnectDelay
+    );
 
-    console.log(`[WebSocket] Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+    console.log(
+      `[WebSocket] Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`
+    );
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
@@ -198,7 +214,7 @@ export class ConversionWebSocket {
    * Notify all message handlers
    */
   private notifyMessageHandlers(data: ConversionStatus): void {
-    this.messageHandlers.forEach(handler => {
+    this.messageHandlers.forEach((handler) => {
       try {
         handler(data);
       } catch (error) {
@@ -210,8 +226,10 @@ export class ConversionWebSocket {
   /**
    * Notify all status handlers
    */
-  private notifyStatusHandlers(status: 'connecting' | 'connected' | 'disconnected' | 'error'): void {
-    this.statusHandlers.forEach(handler => {
+  private notifyStatusHandlers(
+    status: 'connecting' | 'connected' | 'disconnected' | 'error'
+  ): void {
+    this.statusHandlers.forEach((handler) => {
       try {
         handler(status);
       } catch (error) {
@@ -240,6 +258,8 @@ export class ConversionWebSocket {
 /**
  * Factory function to create a WebSocket connection
  */
-export const createConversionWebSocket = (jobId: string): ConversionWebSocket => {
+export const createConversionWebSocket = (
+  jobId: string
+): ConversionWebSocket => {
   return new ConversionWebSocket(jobId);
 };

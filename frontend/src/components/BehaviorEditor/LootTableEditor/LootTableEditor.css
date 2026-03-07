@@ -169,21 +169,21 @@
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .loot-table-editor .entry-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .loot-table-editor .entry-actions {
     align-self: flex-end;
   }
-  
+
   .loot-table-editor .action-bar {
     flex-direction: column;
   }
-  
+
   .loot-table-editor .action-bar button {
     width: 100%;
   }
