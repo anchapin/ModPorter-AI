@@ -88,8 +88,9 @@ class SecurityScanResult:
                 threat_type=threat_type, severity=severity, message=message, details=details or {}
             )
         )
-        # Any threat makes the file unsafe
-        self.is_safe = False
+        # Only HIGH or CRITICAL severity threats make the file unsafe
+        if severity in (SecuritySeverity.HIGH, SecuritySeverity.CRITICAL):
+            self.is_safe = False
 
 
 class SecurityError(Exception):
@@ -298,7 +299,7 @@ class FileSecurityScanner:
         if ext and ext not in self.config.allowed_extensions:
             result.add_threat(
                 SecurityThreatType.SUSPICIOUS_CONTENT,
-                SecuritySeverity.MEDIUM,
+                SecuritySeverity.HIGH,
                 f"File extension '{ext}' is not in allowed list",
             )
             return False
