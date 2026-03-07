@@ -199,6 +199,9 @@ ignore_missing_imports = true
 module = "sentence_transformers.*"
 ignore_missing_imports = true
 
+[tool.mutmut]
+paths_to_mutate = ["."]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
