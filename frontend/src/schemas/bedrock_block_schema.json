@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Minecraft Bedrock Block Definition",
+  "description": "Schema for Bedrock Edition block entity definitions in blocks/ folder",
+  "type": "object",
+  "required": ["format_version", "minecraft:block"],
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$",
+      "description": "Block format version (e.g., '1.20.0')"
+    },
+    "minecraft:block": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "object",
+          "required": ["identifier"],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+:[a-z0-9_]+$",
+              "description": "Block identifier (namespace:name)"
+            },
+            "register_to_creative_menu": {
+              "type": "boolean",
+              "description": "Whether to show in creative menu"
+            },
+            "is_experimental": {
+              "type": "boolean",
+              "description": "Whether this is an experimental feature"
+            },
+            "category": {
+              "type": "string",
+              "enum": [
+                "construction",
+                "nature",
+                "equipment",
+                "items",
+                "commands",
+                "redstone"
+              ],
+              "description": "Creative menu category"
+            }
+          }
+        },
+        "components": {
+          "type": "object",
+          "description": "Block components defining behavior",
+          "properties": {
+            "minecraft:display_name": {
+              "type": "object",
+              "properties": {
+                "value": {"type": "string"}
+              }
+            },
+            "minecraft:destroy_time": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Block hardness in seconds"
+            },
+            "minecraft:explosion_resistance": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Explosion resistance"
+            },
+            "minecraft:friction": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Slipperiness (0-1)"
+            },
+            "minecraft:flammable": {
+              "type": "object",
+              "properties": {
+                "flame_odds": {"type": "number", "minimum": 0, "maximum": 1},
+                "burn_odds": {"type": "number", "minimum": 0, "maximum": 1}
+              }
+            },
+            "minecraft:light_emission": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 15,
+              "description": "Light level emitted (0-15)"
+            },
+            "minecraft:light_dampening": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 15,
+              "description": "Light block level (0-15)"
+            },
+            "minecraft:geometry": {
+              "type": "string",
+              "description": "Geometry identifier"
+            },
+            "minecraft:material": {
+              "type": "string",
+              "description": "Material type"
+            },
+            "minecraft:creative_category": {
+              "type": "object",
+              "properties": {
+                "category": {"type": "string"},
+                "group": {"type": "string"}
+              }
+            }
+          }
+        },
+        "permutations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition": {"type": "string"},
+              "components": {"type": "object"}
+            }
+          },
+          "description": "Block state permutations"
+        }
+      }
+    }
+  }
+}

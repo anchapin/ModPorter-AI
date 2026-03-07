@@ -234,6 +234,41 @@ successful_retries_total = Counter(
     registry=registry
 )
 
+# ============================================
+# Rate Limiting Metrics (Issue #643)
+# ============================================
+
+# Rate limit hits counter - incremented when requests are blocked due to rate limiting
+rate_limit_hits_total = Counter(
+    'modporter_rate_limit_hits_total',
+    'Total number of requests blocked by rate limiting',
+    ['endpoint', 'client_type'],
+    registry=registry
+)
+
+# Rate limit requests counter - total requests processed by rate limiter
+rate_limit_requests_total = Counter(
+    'modporter_rate_limit_requests_total',
+    'Total requests processed by rate limiter',
+    ['endpoint', 'client_type', 'status'],
+    registry=registry
+)
+
+# Current rate limit usage gauge - shows current usage per client
+rate_limit_current_usage = Gauge(
+    'modporter_rate_limit_current_usage',
+    'Current rate limit usage per client',
+    ['client_key', 'window'],
+    registry=registry
+)
+
+# Active rate limited clients gauge
+rate_limit_active_clients = Gauge(
+    'modporter_rate_limit_active_clients',
+    'Number of unique clients currently tracked',
+    registry=registry
+)
+
 
 # ============================================
 # Internal Tracking (thread-safe)
@@ -450,6 +485,56 @@ def record_successful_retry(
         error_category=error_category,
         function_name=function_name
     ).inc()
+
+
+def record_rate_limit_hit(endpoint: str, client_type: str = "ip"):
+    """
+    Record a rate limit hit (request blocked).
+    
+    Args:
+        endpoint: The API endpoint where rate limit was hit
+        client_type: Type of client (ip, user, etc.)
+    """
+    rate_limit_hits_total.labels(endpoint=endpoint, client_type=client_type).inc()
+
+
+def record_rate_limit_request(endpoint: str, client_type: str, allowed: bool):
+    """
+    Record a request processed by rate limiter.
+    
+    Args:
+        endpoint: The API endpoint
+        client_type: Type of client (ip, user, etc.)
+        allowed: Whether the request was allowed
+    """
+    status = "allowed" if allowed else "blocked"
+    rate_limit_requests_total.labels(
+        endpoint=endpoint,
+        client_type=client_type,
+        status=status
+    ).inc()
+
+
+def update_rate_limit_usage(client_key: str, window: str, usage: int):
+    """
+    Update current rate limit usage for a client.
+    
+    Args:
+        client_key: Unique client identifier
+        window: Time window (minute, hour)
+        usage: Current usage count
+    """
+    rate_limit_current_usage.labels(client_key=client_key, window=window).set(usage)
+
+
+def update_active_rate_limit_clients(count: int):
+    """
+    Update the number of active rate limited clients.
+    
+    Args:
+        count: Number of unique clients currently tracked
+    """
+    rate_limit_active_clients.set(count)
 
 
 def get_metrics() -> bytes:

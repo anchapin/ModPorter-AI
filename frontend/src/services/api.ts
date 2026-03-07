@@ -18,9 +18,12 @@ import {
 } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
-export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/v1' 
-  : 'http://localhost:8000/api/v1';
+// Supports VITE_API_BASE_URL and VITE_API_URL environment variables
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
+  ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
+  : (import.meta.env.VITE_API_URL 
+    ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
+    : '/api/v1');
 
 class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -50,12 +53,12 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
 };
 
 /**
- * Upload a file with progress tracking.
- * Uses XMLHttpRequest for progress events.
+ * Upload file with progress tracking using XMLHttpRequest.
+ * This provides real-time progress updates for large files.
  */
-export const uploadFileWithProgress = (
+export const uploadFileWithProgress = async (
   file: File,
-  onProgress?: (progress: number) => void
+  onProgress: (progress: number) => void
 ): Promise<UploadResponse> => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -63,8 +66,8 @@ export const uploadFileWithProgress = (
     formData.append('file', file);
 
     xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable && onProgress) {
-        const progress = (event.loaded / event.total) * 100;
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
         onProgress(progress);
       }
     });
@@ -72,17 +75,17 @@ export const uploadFileWithProgress = (
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
-          const data = JSON.parse(xhr.responseText);
-          resolve(data);
+          const response = JSON.parse(xhr.responseText);
+          resolve(response);
         } catch {
           reject(new ApiError('Invalid response from server', xhr.status));
         }
       } else {
         try {
           const errorData = JSON.parse(xhr.responseText);
-          reject(new ApiError(errorData.detail || 'Upload failed', xhr.status));
+          reject(new ApiError(errorData.detail || 'File upload failed', xhr.status));
         } catch {
-          reject(new ApiError('Upload failed with unknown error', xhr.status));
+          reject(new ApiError('File upload failed', xhr.status));
         }
       }
     });
@@ -92,12 +95,58 @@ export const uploadFileWithProgress = (
     });
 
     xhr.addEventListener('abort', () => {
-      reject(new ApiError('Upload cancelled', xhr.status));
+      reject(new ApiError('Upload was cancelled', xhr.status));
     });
 
     xhr.open('POST', `${API_BASE_URL}/upload`);
     xhr.send(formData);
   });
+};
+
+/**
+ * Get conversion history from the backend.
+ * Returns paginated list of conversions.
+ */
+export interface ConversionHistoryParams {
+  page?: number;
+  page_size?: number;
+  status?: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+}
+
+export interface ConversionHistoryItem {
+  conversion_id: string;
+  status: string;
+  progress: number;
+  message: string;
+  created_at: string;
+  updated_at?: string;
+  original_filename?: string;
+  error?: string;
+  result_url?: string;
+}
+
+export interface ConversionHistoryResponse {
+  conversions: ConversionHistoryItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export const listConversions = async (params: ConversionHistoryParams = {}): Promise<ConversionHistoryResponse> => {
+  const searchParams = new URLSearchParams();
+  
+  if (params.page !== undefined) searchParams.append('page', params.page.toString());
+  if (params.page_size !== undefined) searchParams.append('page_size', params.page_size.toString());
+  if (params.status) searchParams.append('status', params.status);
+
+  const response = await fetch(`${API_BASE_URL}/conversions?${searchParams}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch conversion history' }));
+    throw new ApiError(errorData.detail || 'Failed to fetch conversion history', response.status);
+  }
+
+  return response.json();
 };
 
 /**
@@ -119,53 +168,7 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   };
 
   // Try new unified endpoint first: POST /api/v1/conversions (multipart form)
-  // Use XHR for progress tracking
   try {
-    const progressCallback = params.onProgress;
-    
-    // If progress callback is provided, use XHR for progress tracking
-    if (progressCallback) {
-      const xhr = new XMLHttpRequest();
-      
-      await new Promise<void>((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', params.file!);
-        formData.append('options', JSON.stringify(options));
-
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            // Scale upload progress to 0-45% (first 45% is upload)
-            const uploadProgress = (event.loaded / event.total) * 45;
-            progressCallback(uploadProgress);
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new ApiError('Conversion failed', xhr.status));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new ApiError('Network error during conversion', xhr.status));
-        });
-
-        xhr.open('POST', `${API_BASE_URL}/conversions`);
-        xhr.send(formData);
-      });
-
-      const data = JSON.parse(xhr.responseText);
-      return {
-        job_id: data.conversion_id,
-        status: data.status,
-        message: `Conversion started. Estimated time: ${Math.round(data.estimated_time_seconds / 60)} minutes`,
-        progress: 45,
-      } as ConversionResponse;
-    }
-
-    // Standard fetch without progress
     const formData = new FormData();
     formData.append('file', params.file);
     formData.append('options', JSON.stringify(options));
@@ -199,13 +202,7 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   }
 
   // Legacy fallback: upload file first, then start conversion
-  const uploadResponse = params.onProgress 
-    ? await uploadFileWithProgress(params.file, (progress) => params.onProgress!(progress * 0.45))
-    : await uploadFile(params.file);
-
-  if (params.onProgress) {
-    params.onProgress(45); // Upload complete, starting conversion
-  }
+  const uploadResponse = await uploadFile(params.file);
 
   const backendRequestPayload = {
     file_id: uploadResponse.file_id,
@@ -229,10 +226,6 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
     throw new ApiError(errorData.detail || 'Conversion failed', response.status);
-  }
-
-  if (params.onProgress) {
-    params.onProgress(50); // Conversion started
   }
 
   return response.json();

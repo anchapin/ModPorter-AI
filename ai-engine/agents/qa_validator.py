@@ -124,13 +124,41 @@ class QAValidatorAgent:
             'user_experience_score': 0.8     # 80% UX threshold
         }
 
-        # Validation categories with weights
+        # Configurable pass/fail threshold (default 70%)
+        self.pass_threshold = 0.70
+
+        # Validation categories with weights (aligned with issue requirements)
+        # - structural (30%): ZIP structure, required folders
+        # - asset_validity (30%): Textures, sounds exist and are valid
+        # - semantic_accuracy (20%): Block/item/entity definitions are valid
+        # - best_practices (20%): manifest.json, UUIDs, versions
         self.validation_categories = {
-            'structural': {'weight': 0.25, 'description': 'ZIP structure, required folders'},
-            'manifest': {'weight': 0.30, 'description': 'Manifest validation'},
-            'content': {'weight': 0.30, 'description': 'Block definitions, texture existence'},
-            'bedrock_compatibility': {'weight': 0.15, 'description': 'API usage, file sizes, no vanilla overrides'}
+            'structural': {'weight': 0.30, 'description': 'ZIP structure, required folders, no temp files'},
+            'asset_validity': {'weight': 0.30, 'description': 'Textures, sounds exist and are valid'},
+            'semantic_accuracy': {'weight': 0.20, 'description': 'Block/item/entity definitions are valid'},
+            'best_practices': {'weight': 0.20, 'description': 'Manifest.json, UUID format, version'},
+            'bedrock_compatibility': {'weight': 0.0, 'description': 'Bedrock-specific component and format validation'}
         }
+
+        # Block component validation - valid Bedrock block components
+        self.valid_block_components = {
+            'minecraft:block', 'minecraft:collision_box', 'minecraft:selection_box',
+            'minecraft:material_instances', 'minecraft:unit_cube', 'minecraft:pick_collision',
+            'minecraft:break_time', 'minecraft:destroy_time', 'minecraft:explode',
+            'minecraft:friction', 'minecraft:light_emission', 'minecraft:light_absorption',
+            'minecraft:loot', 'minecraft:map_color', 'minecraft:block_material',
+            'minecraft:block_entity_data', 'minecraft:queued_ticking', 'minecraft:random_ticking',
+            'minecraft:rotation', 'minecraft:scale', 'minecraft:breathability', 'minecraft:creative_category',
+            'minecraft:entity_collision', 'minecraft:geometry', 'minecraft:handle_secondary_anim_state',
+            'minecraft:material', 'minecraft:pick_block', 'minecraft:placement_filter', 'minecraft:preferred_path',
+            'minecraft:push_through', 'minecraft:random_display_offset', 'minecraft:render_offsets', 'minecraft:rumble',
+            'minecraft:spawn_entity', 'minecraft:step_on', 'minecraft:ticking', 'minecraft:use_modifier',
+            'minecraft:wall_collision'
+        }
+
+        # Valid sound file formats for Bedrock
+        self.valid_sound_formats = {'.ogg', '.wav', '.mp3', '.fsb'}
+        self.max_sound_file_size = 10 * 1024 * 1024  # 10MB
 
         # Issue severity levels
         self.issue_severity = {
@@ -327,8 +355,9 @@ class QAValidatorAgent:
             "validation_time": None,
             "validations": {
                 "structural": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "manifest": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
-                "content": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
+                "asset_validity": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
+                "semantic_accuracy": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
+                "best_practices": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []},
                 "bedrock_compatibility": {"status": "unknown", "checks": 0, "passed": 0, "errors": [], "warnings": []}
             },
             "issues": [],
@@ -349,10 +378,11 @@ class QAValidatorAgent:
 
             # Open and validate the ZIP file
             with zipfile.ZipFile(path, 'r') as zipf:
-                # Run all validation categories
+                # Run all validation categories based on new structure
                 self._validate_structural(zipf, validation_result)
-                self._validate_manifests(zipf, validation_result)
-                self._validate_content(zipf, validation_result)
+                self._validate_asset_validity(zipf, validation_result)
+                self._validate_semantic_accuracy(zipf, validation_result)
+                self._validate_best_practices(zipf, validation_result)
                 self._validate_bedrock_compatibility(zipf, validation_result)
 
                 # Collect statistics
@@ -396,7 +426,7 @@ class QAValidatorAgent:
         return validation_result
 
     def _validate_structural(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-        """Validate ZIP structure, required folders, no temp files."""
+        """Validate ZIP structure completeness: required folders, no temp files, proper structure."""
         validation = result["validations"]["structural"]
         namelist = zipf.namelist()
 
@@ -476,41 +506,358 @@ class QAValidatorAgent:
         validation["passed"] = passed
         validation["status"] = self._get_category_status(checks, passed)
 
-    def _validate_manifests(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-        """Validate manifest.json files (required fields, UUID format, version string)."""
-        validation = result["validations"]["manifest"]
+    def _validate_asset_validity(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+        """
+        Validate asset validity (30% of quality score).
+        Checks: Texture validity, sound format validation, model integrity.
+        """
+        validation = result["validations"]["asset_validity"]
         namelist = zipf.namelist()
 
+        checks = 0
+        passed = 0
+
+        # === Texture Validation ===
+        texture_files = [
+            name for name in namelist
+            if name.startswith('resource_packs/') and name.lower().endswith('.png')
+        ]
+
+        # Check texture dimensions and format
+        valid_pngs = 0
+        for texture_file in texture_files:
+            checks += 1
+            try:
+                with zipf.open(texture_file) as f:
+                    header = f.read(24)
+                    if len(header) >= 24 and header[:8] == b'\x89PNG\r\n\x1a\n':
+                        width = struct.unpack('>I', header[16:20])[0]
+                        height = struct.unpack('>I', header[20:24])[0]
+
+                        # Check if dimensions are power of 2 or standard sizes
+                        valid_dims = (self._is_power_of_2(width) and self._is_power_of_2(height)) or \
+                                    (width <= 512 and height <= 512)
+                        if valid_dims:
+                            valid_pngs += 1
+                            passed += 1
+                        else:
+                            validation["warnings"].append(
+                                f"{texture_file}: Non-standard dimensions {width}x{height}"
+                            )
+                    else:
+                        validation["errors"].append(f"{texture_file}: Invalid PNG format")
+            except Exception as e:
+                validation["warnings"].append(f"{texture_file}: Could not validate: {str(e)}")
+
+        # === Sound File Validation ===
+        sound_files = [
+            name for name in namelist
+            if any(name.lower().endswith(ext) for ext in self.valid_sound_formats)
+        ]
+
+        for sound_file in sound_files:
+            checks += 1
+            try:
+                info = zipf.getinfo(sound_file)
+                # Check file size
+                if info.file_size > self.max_sound_file_size:
+                    validation["warnings"].append(
+                        f"{sound_file}: Sound file exceeds {self.max_sound_file_size // (1024*1024)}MB limit"
+                    )
+                else:
+                    passed += 1
+
+                # Validate format based on extension
+                ext = Path(sound_file).suffix.lower()
+                if ext == '.ogg':
+                    # Basic OGG validation - check for OGGS header
+                    with zipf.open(sound_file) as f:
+                        header = f.read(4)
+                        if header == b'OggS':
+                            pass  # Valid OGG
+                        else:
+                            validation["warnings"].append(f"{sound_file}: Possible invalid OGG file")
+                elif ext == '.wav':
+                    # Basic WAV validation - check for RIFF header
+                    with zipf.open(sound_file) as f:
+                        header = f.read(4)
+                        if header == b'RIFF':
+                            pass  # Valid WAV
+                        else:
+                            validation["warnings"].append(f"{sound_file}: Possible invalid WAV file")
+            except Exception as e:
+                validation["warnings"].append(f"{sound_file}: Could not validate: {str(e)}")
+
+        # === Model File Validation ===
+        model_files = [
+            name for name in namelist
+            if name.endswith('.geo.json') or (name.endswith('.json') and '/models/' in name)
+        ]
+
+        for model_file in model_files:
+            checks += 1
+            try:
+                with zipf.open(model_file) as f:
+                    model_data = json.load(f)
+
+                # Check for required geometry structure
+                if 'minecraft:geometry' in model_data or 'format_version' in model_data:
+                    passed += 1
+
+                    # Check vertex count if available
+                    if 'minecraft:geometry' in model_data:
+                        geometry = model_data['minecraft:geometry']
+                        if isinstance(geometry, list) and len(geometry) > 0:
+                            geo_data = geometry[0] if isinstance(geometry[0], dict) else {}
+                            if 'bones' in geo_data:
+                                # Rough estimate - count vertices in bones
+                                vertex_count = sum(
+                                    len(b.get('cubes', [])) * 8
+                                    for b in geo_data['bones']
+                                    if isinstance(b, dict)
+                                )
+                                if vertex_count > 3000:
+                                    validation["warnings"].append(
+                                        f"{model_file}: High vertex count ({vertex_count}) may impact performance"
+                                    )
+                else:
+                    validation["warnings"].append(f"{model_file}: Missing expected geometry structure")
+            except json.JSONDecodeError:
+                validation["errors"].append(f"{model_file}: Invalid JSON format")
+            except Exception as e:
+                validation["warnings"].append(f"{model_file}: Could not validate: {str(e)}")
+
+        # === Texture Path Correctness ===
+        # Check if texture references in JSON match actual files
+        texture_refs = self._extract_texture_references(zipf)
+        if texture_refs:
+            checks += 1
+            missing_textures = []
+            for ref in texture_refs:
+                # Handle both direct paths and texture path variations
+                ref_variations = [ref, f"textures/{ref}", f"textures/{ref}.png", ref.replace('\\', '/')]
+                if not any(any(var in name for name in namelist) for var in ref_variations):
+                    missing_textures.append(ref)
+
+            if not missing_textures:
+                passed += 1
+            else:
+                validation["errors"].append(
+                    f"Missing texture files: {missing_textures[:5]}"
+                )
+
+        # If no content files found, that's OK (empty addon)
+        if checks == 0:
+            checks = 1
+            passed = 1
+            validation["warnings"].append("No content files found (textures, sounds, models)")
+
+        validation["checks"] = checks
+        validation["passed"] = passed
+        validation["status"] = self._get_category_status(checks, passed)
+
+    def _validate_semantic_accuracy(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+        """
+        Validate semantic accuracy (20% of quality score).
+        Checks: Block component validity, item definitions, entity definitions.
+        """
+        validation = result["validations"]["semantic_accuracy"]
+        namelist = zipf.namelist()
+
+        checks = 0
+        passed = 0
+
+        # === Manifest Validation (part of semantic accuracy) ===
         manifest_files = [
             name for name in namelist if name.endswith('manifest.json')
         ]
 
-        if not manifest_files:
-            validation["errors"].append("No manifest.json files found")
-            validation["status"] = "fail"
-            return
+        if manifest_files:
+            for manifest_path in manifest_files:
+                try:
+                    with zipf.open(manifest_path) as f:
+                        manifest = json.load(f)
+
+                    schema_checks = self._validate_manifest_schema(manifest, manifest_path)
+                    checks += schema_checks["checks"]
+                    passed += schema_checks["passed"]
+                    validation["errors"].extend(schema_checks["errors"])
+                    validation["warnings"].extend(schema_checks["warnings"])
+
+                except json.JSONDecodeError as e:
+                    checks += 1
+                    validation["errors"].append(f"Invalid JSON in {manifest_path}: {str(e)}")
+                except Exception as e:
+                    checks += 1
+                    validation["errors"].append(f"Error reading {manifest_path}: {str(e)}")
+
+        # === Block Definition Validation ===
+        block_files = [
+            name for name in namelist
+            if name.startswith('behavior_packs/') and '/blocks/' in name and name.endswith('.json')
+        ]
+
+        for block_file in block_files:
+            try:
+                with zipf.open(block_file) as f:
+                    block_data = json.load(f)
+
+                block_validation = self._validate_block_definition(block_data, block_file)
+                checks += block_validation["checks"]
+                passed += block_validation["passed"]
+                validation["errors"].extend(block_validation["errors"])
+                validation["warnings"].extend(block_validation["warnings"])
+
+            except json.JSONDecodeError:
+                checks += 1
+                validation["errors"].append(f"Invalid JSON in block file: {block_file}")
+
+        # === Item Definition Validation ===
+        item_files = [
+            name for name in namelist
+            if name.startswith('behavior_packs/') and '/items/' in name and name.endswith('.json')
+        ]
+
+        for item_file in item_files:
+            try:
+                with zipf.open(item_file) as f:
+                    item_data = json.load(f)
+
+                item_validation = self._validate_item_definition(item_data, item_file)
+                checks += item_validation["checks"]
+                passed += item_validation["passed"]
+                validation["errors"].extend(item_validation["errors"])
+                validation["warnings"].extend(item_validation["warnings"])
+
+            except json.JSONDecodeError:
+                checks += 1
+                validation["errors"].append(f"Invalid JSON in item file: {item_file}")
+
+        # === Entity Definition Validation ===
+        entity_files = [
+            name for name in namelist
+            if name.startswith('behavior_packs/') and '/entities/' in name and name.endswith('.json')
+        ]
+
+        for entity_file in entity_files:
+            try:
+                with zipf.open(entity_file) as f:
+                    entity_data = json.load(f)
+
+                entity_validation = self._validate_entity_definition(entity_data, entity_file)
+                checks += entity_validation["checks"]
+                passed += entity_validation["passed"]
+                validation["errors"].extend(entity_validation["errors"])
+                validation["warnings"].extend(entity_validation["warnings"])
+
+            except json.JSONDecodeError:
+                checks += 1
+                validation["errors"].append(f"Invalid JSON in entity file: {entity_file}")
+
+        # If no content files found
+        if checks == 0:
+            checks = 1
+            passed = 1
+            validation["warnings"].append("No content files found (blocks, items, entities)")
+
+        validation["checks"] = checks
+        validation["passed"] = passed
+        validation["status"] = self._get_category_status(checks, passed)
+
+    def _validate_best_practices(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
+        """
+        Validate best practices compliance (20% of quality score).
+        Checks: API usage, file sizes, namespace compliance, no vanilla overrides.
+        """
+        validation = result["validations"]["best_practices"]
+        namelist = zipf.namelist()
 
         checks = 0
         passed = 0
+
+        # === File Size Check ===
+        total_size = sum(info.file_size for info in zipf.infolist())
+        checks += 1
+        if total_size < 500 * 1024 * 1024:  # 500MB
+            passed += 1
+        else:
+            validation["warnings"].append(
+                f"Large addon size: {total_size / 1024 / 1024:.1f}MB"
+            )
+
+        # === Namespace Compliance ===
+        json_files = [name for name in namelist if name.endswith('.json')]
+        vanilla_refs = []
+        for name in json_files[:20]:
+            try:
+                with zipf.open(name) as f:
+                    content = f.read().decode('utf-8', errors='ignore')
+                    if '"minecraft:' in content:
+                        import re
+                        identifiers = re.findall(r'"identifier"\s*:\s*"minecraft:([^"]+)"', content)
+                        vanilla_refs.extend([f"{name}:{id}" for id in identifiers])
+            except Exception:
+                continue
+
+        checks += 1
+        if len(vanilla_refs) == 0:
+            passed += 1
+        else:
+            validation["warnings"].append(
+                f"Found {len(vanilla_refs)} vanilla namespace references (may override vanilla content)"
+            )
+
+        # === Engine Version Check ===
+        manifest_files = [name for name in namelist if name.endswith('manifest.json')]
 
         for manifest_path in manifest_files:
             try:
                 with zipf.open(manifest_path) as f:
                     manifest = json.load(f)
+                min_engine = manifest.get("header", {}).get("min_engine_version", [])
+                if min_engine and isinstance(min_engine, list) and len(min_engine) == 3:
+                    if min_engine > [1, 20, 0]:
+                        validation["warnings"].append(
+                            f"{manifest_path}: Requires engine version {min_engine}, may limit compatibility"
+                        )
+            except Exception:
+                continue
 
-                # Validate against schema
-                schema_checks = self._validate_manifest_schema(manifest, manifest_path)
-                checks += schema_checks["checks"]
-                passed += schema_checks["passed"]
-                validation["errors"].extend(schema_checks["errors"])
-                validation["warnings"].extend(schema_checks["warnings"])
+        checks += 1
+        passed += 1  # Engine version check passed (we just warn)
 
-            except json.JSONDecodeError as e:
-                checks += 1
-                validation["errors"].append(f"Invalid JSON in {manifest_path}: {str(e)}")
-            except Exception as e:
-                checks += 1
-                validation["errors"].append(f"Error reading {manifest_path}: {str(e)}")
+        # === JavaScript File Check ===
+        checks += 1
+        js_files = [name for name in namelist if name.endswith('.js')]
+        if not js_files:
+            passed += 1
+        else:
+            validation["warnings"].append(
+                f"Found {len(js_files)} JavaScript files - may not work on all platforms"
+            )
+
+        # === Proper Directory Structure ===
+        checks += 1
+        has_behavior_packs = any(name.startswith('behavior_packs/') for name in namelist)
+        has_resource_packs = any(name.startswith('resource_packs/') for name in namelist)
+        if has_behavior_packs or has_resource_packs:
+            passed += 1
+        else:
+            validation["errors"].append("Add-on must contain behavior_packs/ or resource_packs/")
+
+        # === No Temporary Files ===
+        checks += 1
+        temp_patterns = ['.DS_Store', '__MACOSX', '.git', '.svn', 'Thumbs.db', '.tmp']
+        found_temp = [
+            name for name in namelist
+            if any(pattern in name for pattern in temp_patterns)
+        ]
+        if not found_temp:
+            passed += 1
+        else:
+            validation["warnings"].append(
+                f"Found temporary files that should be removed: {found_temp[:3]}"
+            )
 
         validation["checks"] = checks
         validation["passed"] = passed
@@ -579,113 +926,11 @@ class QAValidatorAgent:
 
         return {"checks": checks, "passed": passed, "errors": errors, "warnings": warnings}
 
-    def _validate_content(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
-        """Validate content (block definitions, texture existence, JSON structure)."""
-        validation = result["validations"]["content"]
-        namelist = zipf.namelist()
-
-        checks = 0
-        passed = 0
-
-        # Find and validate block definitions
-        block_files = [
-            name for name in namelist
-            if name.startswith('behavior_packs/') and name.endswith('/blocks/') and name.endswith('.json')
-        ]
-
-        for block_file in block_files:
-            try:
-                with zipf.open(block_file) as f:
-                    block_data = json.load(f)
-
-                block_validation = self._validate_block_definition(block_data, block_file)
-                checks += block_validation["checks"]
-                passed += block_validation["passed"]
-                validation["errors"].extend(block_validation["errors"])
-                validation["warnings"].extend(block_validation["warnings"])
-
-            except json.JSONDecodeError:
-                checks += 1
-                validation["errors"].append(f"Invalid JSON in block file: {block_file}")
-
-        # Find and validate item definitions
-        item_files = [
-            name for name in namelist
-            if name.startswith('behavior_packs/') and name.endswith('/items/') and name.endswith('.json')
-        ]
-
-        for item_file in item_files:
-            try:
-                with zipf.open(item_file) as f:
-                    item_data = json.load(f)
-
-                item_validation = self._validate_item_definition(item_data, item_file)
-                checks += item_validation["checks"]
-                passed += item_validation["passed"]
-                validation["errors"].extend(item_validation["errors"])
-                validation["warnings"].extend(item_validation["warnings"])
-
-            except json.JSONDecodeError:
-                checks += 1
-                validation["errors"].append(f"Invalid JSON in item file: {item_file}")
-
-        # Validate texture files
-        texture_files = [
-            name for name in namelist
-            if name.startswith('resource_packs/') and name.endswith('.png')
-        ]
-
-        # Check texture dimensions and format
-        for texture_file in texture_files[:10]:  # Sample first 10 to save time
-            checks += 1
-            try:
-                with zipf.open(texture_file) as f:
-                    # Read PNG header to validate format and get dimensions
-                    header = f.read(24)
-                    if len(header) >= 24 and header[:8] == b'\x89PNG\r\n\x1a\n':
-                        # Extract width and height from PNG IHDR chunk
-                        width = struct.unpack('>I', header[16:20])[0]
-                        height = struct.unpack('>I', header[20:24])[0]
-
-                        # Check if dimensions are power of 2
-                        if self._is_power_of_2(width) and self._is_power_of_2(height):
-                            passed += 1
-                        else:
-                            validation["warnings"].append(
-                                f"{texture_file}: Dimensions {width}x{height} are not power of 2"
-                            )
-                    else:
-                        validation["errors"].append(f"{texture_file}: Invalid PNG format")
-            except Exception as e:
-                validation["warnings"].append(f"{texture_file}: Could not validate: {str(e)}")
-
-        # Check texture references match actual files
-        texture_refs = self._extract_texture_references(zipf)
-        if texture_refs:
-            checks += 1
-            missing_textures = [
-                ref for ref in texture_refs
-                if not any(ref in name for name in namelist)
-            ]
-            if not missing_textures:
-                passed += 1
-            else:
-                validation["errors"].append(
-                    f"Missing texture files: {missing_textures[:5]}"
-                )
-
-        # If no content files found, that's OK (empty addon)
-        if checks == 0:
-            checks = 1
-            passed = 1
-            validation["warnings"].append("No content files found (blocks, items, textures)")
-
-        validation["checks"] = checks
-        validation["passed"] = passed
-        validation["status"] = self._get_category_status(checks, passed)
-
     def _validate_block_definition(self, block: dict, path: str) -> Dict[str, Any]:
-        """Validate block definition against Bedrock schema."""
+        """
+        Validate block definition against Bedrock schema.
+        Validates components, identifier format, and properties.
+        """
         checks = 0
         passed = 0
         errors = []
@@ -731,6 +976,52 @@ class QAValidatorAgent:
             else:
                 errors.append(f"{path}: Missing description.identifier")
 
+            # Validate components if present
+            if "components" in block_data:
+                components = block_data["components"]
+                checks += 1
+
+                if isinstance(components, dict):
+                    passed += 1
+
+                    # Check for valid block components
+                    invalid_comps = [c for c in components.keys() if c not in self.valid_block_components]
+                    if invalid_comps:
+                        warnings.append(
+                            f"{path}: Unknown component(s): {invalid_comps[:3]} - may not work in Bedrock"
+                        )
+
+                    # Validate common component values
+                    for comp_name, comp_value in components.items():
+                        # Check material_instances
+                        if comp_name == 'minecraft:material_instances':
+                            checks += 1
+                            if isinstance(comp_value, dict):
+                                passed += 1
+                            else:
+                                warnings.append(f"{path}: {comp_name} should be an object")
+
+                        # Check loot table reference
+                        elif comp_name == 'minecraft:loot':
+                            checks += 1
+                            if isinstance(comp_value, str):
+                                passed += 1
+                            else:
+                                warnings.append(f"{path}: {comp_name} should be a string (loot table path)")
+
+            # Validate permutations if present
+            if "permutations" in block_data:
+                checks += 1
+                if isinstance(block_data["permutations"], list):
+                    passed += 1
+
+                    # Validate each permutation
+                    for i, perm in enumerate(block_data["permutations"]):
+                        if not isinstance(perm, dict):
+                            warnings.append(f"{path}: Permutation {i} should be an object")
+                        elif "condition" not in perm:
+                            warnings.append(f"{path}: Permutation {i} missing 'condition' field")
+
         return {"checks": checks, "passed": passed, "errors": errors, "warnings": warnings}
 
     def _validate_item_definition(self, item: dict, path: str) -> Dict[str, Any]:
@@ -770,6 +1061,156 @@ class QAValidatorAgent:
                     warnings.append(f"{path}: Unusual identifier format: {identifier}")
             else:
                 errors.append(f"{path}: Missing description.identifier")
+
+        return {"checks": checks, "passed": passed, "errors": errors, "warnings": warnings}
+    def _validate_entity_definition(self, entity: dict, path: str) -> Dict[str, Any]:
+        """
+        Validate entity definition against Bedrock schema.
+        Validates components, identifier format, and event structure.
+        """
+        checks = 0
+        passed = 0
+        errors = []
+        warnings = []
+
+        # Valid Bedrock entity components
+        valid_entity_components = {
+            'minecraft:entity', 'minecraft:identity', 'minecraft:damage_sensor',
+            'minecraft:equipment', 'minecraft:equippable', 'minecraft:variant',
+            'minecraft:rideable', 'minecraft:physics', 'minecraft:nameable',
+            'minecraft:health', 'minecraft:movement', 'minecraft:movement.basic',
+            'minecraft:movement.hover', 'minecraft:movement.fly', 'minecraft:movement.glide',
+            'minecraft:movement.jump', 'minecraft:movement.swim', 'minecraft:movement.walk',
+            'minecraft:navigation.climb', 'minecraft:navigation.float', 'minecraft:navigation.fly',
+            'minecraft:navigation.swim', 'minecraft:navigation.walk', 'minecraft:behavior.attack',
+            'minecraft:behavior.breed', 'minecraft:behavior.come_to_stone', 'minecraft:behavior.drink_milk',
+            'minecraft:behavior.eat_block', 'minecraft:behavior.flee_sun', 'minecraft:behavior.follow_entity',
+            'minecraft:behavior.follow_owner', 'minecraft:behavior.hurt_by_target', 'minecraft:behavior.look_at_player',
+            'minecraft:behavior.melee_attack', 'minecraft:behavior.move_to_block', 'minecraft:behavior.move_to_entity',
+            'minecraft:behavior.nearest_attackable_target', 'minecraft:behavior.panic', 'minecraft:behavior.random_stroll',
+            'minecraft:behavior.sleep', 'minecraft:behavior.stay_while_sitting', 'minecraft:behavior.swim',
+            'minecraft:behavior.take_flower', 'minecraft:behavior.tempt', 'minecraft:behavior.trade_interest',
+            'minecraft:behavior.trade_machine', 'minecraft:breedable', 'minecraft:color',
+            'minecraft:desired_stack_size', 'minecraft:economy_trade_table', 'minecraft:family',
+            'minecraft:fire_immune', 'minecraft:floats_in_liquid', 'minecraft:follow_range',
+            'minecraft:friction_modifier', 'minecraft:genetics', 'minecraft:healable', 'minecraft:height_range',
+            'minecraft:home', 'minecraft:horse.jump_strength', 'minecraft:input_container', 'minecraft:interact',
+            'minecraft:is_baby', 'minecraft:is_charged', 'minecraft:is_illager_captain', 'minecraft:is_saddled',
+            'minecraft:is_shaking', 'minecraft:is_sheared', 'minecraft:is_stunned', 'minecraft:is_tamed',
+            'minecraft:item_controllable', 'minecraft:leashable', 'minecraft:loot', 'minecraft:mark_variant',
+            'minecraft:pushable', 'minecraft:rail_movement', 'minecraft:rail_activator', 'minecraft:raven',
+            'minecraft:scale_by_age', 'minecraft:silk_touch', 'minecraft:skin_id', 'minecraft:spawn_entity',
+            'minecraft:spawn_reinforcements', 'minecraft:tamable', 'minecraft:teleport', 'minecraft:tick_world',
+            'minecraft:trade_resupply', 'minecraft:type_family', 'minecraft:walk_animation_speed'
+        }
+
+        # Check required fields
+        checks += 1
+        has_format = "format_version" in entity
+        has_entity = "minecraft:entity" in entity
+        if has_format and has_entity:
+            passed += 1
+        else:
+            missing = []
+            if not has_format:
+                missing.append("format_version")
+            if not has_entity:
+                missing.append("minecraft:entity")
+            errors.append(f"{path}: Missing required fields: {missing}")
+
+        # Validate format_version
+        if has_format:
+            checks += 1
+            if isinstance(entity["format_version"], str):
+                passed += 1
+            else:
+                warnings.append(f"{path}: format_version should be string")
+
+        # Validate entity structure
+        if has_entity:
+            entity_data = entity["minecraft:entity"]
+
+            # Check description
+            checks += 1
+            if "description" in entity_data:
+                desc = entity_data["description"]
+                if "identifier" in desc:
+                    identifier = desc["identifier"]
+                    # Check namespace:name format
+                    if ':' in identifier and identifier.count(':') == 1:
+                        passed += 1
+                    else:
+                        errors.append(f"{path}: Invalid identifier format: {identifier}")
+
+                    # Check for is_spawnable and is_experimental if present
+                    if "is_spawnable" in desc:
+                        checks += 1
+                        if isinstance(desc["is_spawnable"], bool):
+                            passed += 1
+                    if "is_experimental" in desc:
+                        checks += 1
+                        if isinstance(desc["is_experimental"], bool):
+                            passed += 1
+                else:
+                    errors.append(f"{path}: Missing description.identifier")
+            else:
+                errors.append(f"{path}: Missing description")
+
+            # Validate components
+            if "components" in entity_data:
+                components = entity_data["components"]
+                checks += 1
+
+                if isinstance(components, dict):
+                    # Check for valid components
+                    valid_comps = [c for c in components.keys() if c in valid_entity_components]
+                    invalid_comps = [c for c in components.keys() if c not in valid_entity_components]
+
+                    if invalid_comps:
+                        warnings.append(
+                            f"{path}: Unknown component(s): {invalid_comps[:3]} - may not work correctly"
+                        )
+                    passed += 1
+
+                    # Validate component values
+                    for comp_name, comp_value in components.items():
+                        if comp_name == 'minecraft:health':
+                            checks += 1
+                            if isinstance(comp_value, dict) and 'value' in comp_value:
+                                if isinstance(comp_value['value'], (int, float)) and comp_value['value'] > 0:
+                                    passed += 1
+                                else:
+                                    errors.append(f"{path}: {comp_name} has invalid value")
+                            else:
+                                warnings.append(f"{path}: {comp_name} has unusual structure")
+
+                        elif comp_name == 'minecraft:movement':
+                            checks += 1
+                            if isinstance(comp_value, dict):
+                                passed += 1  # Basic structure check
+                            else:
+                                warnings.append(f"{path}: {comp_name} should be an object")
+
+            # Validate component groups (dynamic components)
+            if "component_groups" in entity_data:
+                checks += 1
+                if isinstance(entity_data["component_groups"], dict):
+                    passed += 1
+                else:
+                    warnings.append(f"{path}: component_groups should be an object")
+
+            # Validate events
+            if "events" in entity_data:
+                checks += 1
+                if isinstance(entity_data["events"], dict):
+                    passed += 1
+
+                    # Check for common event errors
+                    for event_name, event_data in entity_data["events"].items():
+                        if not isinstance(event_data, dict):
+                            warnings.append(f"{path}: Event '{event_name}' should be an object")
+                else:
+                    warnings.append(f"{path}: events should be an object")
 
         return {"checks": checks, "passed": passed, "errors": errors, "warnings": warnings}
 
@@ -934,8 +1375,9 @@ class QAValidatorAgent:
         return max(0, min(100, overall))
 
     def _determine_status(self, result: Dict[str, Any]) -> str:
-        """Determine overall validation status."""
-        score = result["overall_score"]
+        """Determine overall validation status using configurable threshold."""
+        score = result["overall_score"] / 100.0  # Convert to percentage
+        threshold = self.pass_threshold
 
         # Check for critical errors
         critical_errors = sum(
@@ -946,12 +1388,20 @@ class QAValidatorAgent:
         if critical_errors > 0:
             return "fail"
 
-        if score >= 90:
+        if score >= threshold:
             return "pass"
-        elif score >= 70:
+        elif score >= threshold - 0.1:
             return "partial"
         else:
             return "fail"
+
+    def set_pass_threshold(self, threshold: float):
+        """Set the pass/fail threshold (0.0 to 1.0)."""
+        self.pass_threshold = max(0.0, min(1.0, threshold))
+
+    def get_pass_threshold(self) -> float:
+        """Get the current pass/fail threshold."""
+        return self.pass_threshold
 
     def _get_category_status(self, checks: int, passed: int) -> str:
         """Get status for a validation category."""
@@ -1089,24 +1539,20 @@ class QAValidatorAgent:
                     'recommendations': validation_result.get("recommendations", [])
                 }
             else:
-                # Return mock data if no file path provided (backward compatibility)
+                # Return informative response when no mcaddon_path provided
                 test_results = {
-                    'success': True,
-                    'tests_run': 10,
-                    'tests_passed': 8,
-                    'tests_failed': 2,
-                    'test_details': {
-                        'feature_behavior': {'passed': 3, 'failed': 1},
-                        'logic_correctness': {'passed': 3, 'failed': 0},
-                        'data_integrity': {'passed': 2, 'failed': 1}
-                    },
+                    'success': False,
+                    'tests_run': 0,
+                    'tests_passed': 0,
+                    'tests_failed': 0,
+                    'error': 'No mcaddon_path provided. Cannot run functional tests without a valid addon file.',
+                    'test_details': {},
                     'failure_details': [
-                        {'test': 'feature_behavior_test_1', 'error': 'No mcaddon path provided - using mock data'},
-                        {'test': 'data_integrity_test_1', 'error': 'No mcaddon path provided - using mock data'}
+                        {'test': 'input_validation', 'error': 'Missing required parameter: mcaddon_path'}
                     ],
                     'recommendations': [
-                        "Provide mcaddon_path for real validation",
-                        "Fix feature behavior issues"
+                        "Provide mcaddon_path parameter to run actual functional tests",
+                        "Example: run_functional_tests('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1170,26 +1616,18 @@ class QAValidatorAgent:
                     ]
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
                 compatibility_result = {
-                    'success': True,
-                    'compatibility_score': 0.95,
-                    'bedrock_version_support': {
-                        'min_version': '1.20.0',
-                        'max_version': '1.21.0',
-                        'recommended_version': '1.20.5'
-                    },
-                    'api_compatibility': {
-                        'supported_apis': ['Scripting API', 'GameTest API'],
-                        'unsupported_apis': ['Some deprecated APIs'],
-                        'compatibility_issues': []
-                    },
-                    'device_compatibility': {
-                        'platforms': ['Windows', 'Android', 'iOS'],
-                        'performance_notes': 'Optimized for mobile devices'
-                    },
+                    'success': False,
+                    'compatibility_score': None,
+                    'error': 'No mcaddon_path provided. Cannot analyze compatibility without a valid addon file.',
+                    'bedrock_version_support': None,
+                    'api_compatibility': None,
+                    'device_compatibility': None,
+                    'validation_checks': None,
                     'recommendations': [
-                        "Provide mcaddon_path for real compatibility analysis"
+                        "Provide mcaddon_path parameter to analyze actual Bedrock compatibility",
+                        "Example: analyze_bedrock_compatibility('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1251,32 +1689,16 @@ class QAValidatorAgent:
                     ]
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
                 performance_result = {
-                    'success': True,
-                    'performance_score': 0.75,
-                    'metrics': {
-                        'memory_usage': {
-                            'score': 0.8,
-                            'details': 'Memory usage within acceptable limits'
-                        },
-                        'cpu_performance': {
-                            'score': 0.7,
-                            'details': 'CPU usage could be optimized'
-                        },
-                        'network_efficiency': {
-                            'score': 0.75,
-                            'details': 'Network usage is reasonable'
-                        }
-                    },
-                    'bottlenecks': [
-                        'CPU intensive operations in main loop',
-                        'Memory allocation in asset loading'
-                    ],
+                    'success': False,
+                    'performance_score': None,
+                    'error': 'No mcaddon_path provided. Cannot assess performance without a valid addon file.',
+                    'metrics': None,
+                    'bottlenecks': [],
                     'recommendations': [
-                        "Provide mcaddon_path for real performance analysis",
-                        "Optimize CPU-intensive operations",
-                        "Implement memory pooling for assets"
+                        "Provide mcaddon_path parameter to assess actual performance metrics",
+                        "Example: assess_performance_metrics('{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}')"
                     ]
                 }
 
@@ -1326,50 +1748,28 @@ class QAValidatorAgent:
                     'recommendations': validation_result.get('recommendations', [])
                 }
             else:
-                # Mock data for backward compatibility
+                # Return informative response when no mcaddon_path provided
+                # This is NOT mock data - it's a clear indication that real validation is needed
                 qa_report = {
-                    'success': True,
+                    'success': False,
                     'report_id': f"qa_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                     'timestamp': datetime.now().isoformat(),
-                    'overall_quality_score': 82,
-                    'status': 'partial',
-                    'conversion_summary': {
-                        'total_features': 25,
-                        'successfully_converted': 20,
-                        'partially_converted': 3,
-                        'failed_conversions': 2,
-                        'smart_assumptions_applied': 5
-                    },
-                    'quality_metrics': {
-                        'feature_conversion_rate': 0.80,
-                        'assumption_accuracy': 0.90,
-                        'bedrock_compatibility': 0.95,
-                        'performance_score': 0.75,
-                        'user_experience_score': 0.80
-                    },
-                    'test_results': {
-                        'functional_tests': {'passed': 8, 'failed': 2},
-                        'compatibility_tests': {'passed': 9, 'failed': 1},
-                        'performance_tests': {'passed': 7, 'failed': 3}
-                    },
+                    'overall_quality_score': None,
+                    'status': 'error',
+                    'error': 'No mcaddon_path provided. Please provide a valid path to a .mcaddon file for real validation.',
+                    'validations': {},
+                    'stats': {},
                     'issues': [
                         {
-                            'severity': 'minor',
-                            'category': 'performance',
-                            'description': 'CPU usage could be optimized',
-                            'recommendation': 'Optimize main loop operations'
-                        },
-                        {
-                            'severity': 'major',
-                            'category': 'functionality',
-                            'description': 'Some features partially converted',
-                            'recommendation': 'Review smart assumptions for better conversion'
+                            'severity': 'critical',
+                            'category': 'input',
+                            'description': 'Missing required parameter: mcaddon_path',
+                            'recommendation': 'Provide the path to a .mcaddon file to perform actual validation'
                         }
                     ],
                     'recommendations': [
-                        "Provide mcaddon_path for real validation",
-                        "Overall conversion quality is good",
-                        "Focus on performance optimization"
+                        'Provide mcaddon_path parameter to generate real validation report',
+                        'Example: generate_qa_report("{\"mcaddon_path\": \"/path/to/addon.mcaddon\"}")'
                     ]
                 }
 
