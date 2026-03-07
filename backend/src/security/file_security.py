@@ -669,9 +669,7 @@ class FileSecurityScanner:
 
 
 # Convenience function for quick security checks
-def scan_archive(
-    file_path: Path, config: Optional[SecurityConfig] = None
-) -> SecurityScanResult:
+def scan_archive(file_path: Path, config: Optional[SecurityConfig] = None) -> SecurityScanResult:
     """
     Perform a quick security scan on an archive file.
 
