@@ -16,8 +16,15 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+        ...globals.es2021,
+        React: 'readonly',
       },
       parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
@@ -156,4 +163,10 @@ export default [
     },
   },
   ...storybook.configs['flat/recommended'],
+  {
+    files: ['src/services/analytics.ts'],
+    rules: {
+      'no-redeclare': 'off',
+    },
+  },
 ];
