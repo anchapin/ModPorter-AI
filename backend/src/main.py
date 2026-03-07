@@ -47,6 +47,7 @@ from services.rate_limiter import (
     create_global_limiter,
 )
 from services.security_headers import SecurityHeadersMiddleware
+from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
 
 # Import API routers
 from api import (
@@ -74,6 +75,7 @@ from services.report_generator import (
     MOCK_CONVERSION_RESULT_FAILURE,
 )
 from services.metrics import get_metrics
+from services.structured_logging import configure_structlog
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -169,10 +171,19 @@ app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Request/Response Logging Middleware
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(RequestContextMiddleware)
+
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize rate limiter on startup"""
+    """Initialize rate limiter and structured logging on startup"""
+    # Configure structured logging
+    debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+    configure_structlog(debug_mode=debug_mode)
+    logger.info("Structured logging configured")
+    
     await init_rate_limiter()
     logger.info("Rate limiting middleware initialized")
 
