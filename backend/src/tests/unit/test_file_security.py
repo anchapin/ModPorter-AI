@@ -363,6 +363,12 @@ class TestSecurityScanResult:
 class TestConvenienceFunctions:
     """Tests for convenience functions."""
     
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+    
     def test_scan_archive_function(self, temp_dir):
         """Test the scan_archive convenience function."""
         zip_path = temp_dir / "test.zip"
