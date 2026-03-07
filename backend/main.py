@@ -19,6 +19,31 @@ from dotenv import load_dotenv
 from db.init_db import init_db
 from api.feedback import router as feedback_router
 
+# Sentry error tracking initialization
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for tracing
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        # Include environment and release info
+        environment=os.getenv("ENVIRONMENT", "development"),
+        release=os.getenv("VERSION", "1.0.0"),
+        # Attach serverless context
+        send_default_pii=False,
+        # Filter out common non-critical events
+        before_send=lambda event, hint: None if 'ignore' in hint else event,
+    )
+    print(f"Sentry error tracking initialized for environment: {os.getenv('ENVIRONMENT', 'development')}")
+
 
 # AI Engine settings
 
