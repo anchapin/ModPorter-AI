@@ -730,6 +730,8 @@ jobs:
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
+            # Clear node_modules/.cache to fix zod-validation-error export issue
+            rm -rf frontend/node_modules/.cache
             # Run linting
             npm run lint
             ;;
