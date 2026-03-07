@@ -83,7 +83,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY_BASE = 1000; // 1 second base delay
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
   const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
   const stopPolling = () => {
