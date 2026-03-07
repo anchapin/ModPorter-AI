@@ -1,4 +1,12 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Path, Depends
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    UploadFile,
+    File,
+    BackgroundTasks,
+    Path,
+    Depends,
+)
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db, AsyncSessionLocal
@@ -40,9 +48,11 @@ if SENTRY_DSN:
         # Attach serverless context
         send_default_pii=False,
         # Filter out common non-critical events
-        before_send=lambda event, hint: None if 'ignore' in hint else event,
+        before_send=lambda event, hint: None if "ignore" in hint else event,
     )
-    print(f"Sentry error tracking initialized for environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(
+        f"Sentry error tracking initialized for environment: {os.getenv('ENVIRONMENT', 'development')}"
+    )
 
 
 # AI Engine settings
@@ -58,10 +68,11 @@ CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
-conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
+conversion_jobs_db: Dict[str, "ConversionJob"] = {}
 
 # Cache service instance
 cache = CacheService()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,6 +81,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
     # Shutdown (cleanup if needed)
+
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
@@ -99,7 +111,7 @@ app = FastAPI(
             "description": "Health check endpoints",
         },
     ],
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -122,13 +134,18 @@ register_exception_handlers(app)
 
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
+
     # Legacy
     file_name: Optional[str] = None
     # New
     file_id: Optional[str] = None
     original_filename: Optional[str] = None
-    target_version: str = Field(default="1.20.0", description="Target Minecraft version for the conversion.")
-    options: Optional[dict] = Field(default=None, description="Optional conversion settings.")
+    target_version: str = Field(
+        default="1.20.0", description="Target Minecraft version for the conversion."
+    )
+    options: Optional[dict] = Field(
+        default=None, description="Optional conversion settings."
+    )
 
     @property
     def resolved_file_id(self) -> str:
@@ -139,28 +156,42 @@ class ConversionRequest(BaseModel):
     def resolved_original_name(self) -> str:
         return self.original_filename or self.file_name or ""
 
+
 class UploadResponse(BaseModel):
     """Response model for file upload"""
-    file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
-    original_filename: str = Field(..., description="The original name of the uploaded file.")
+
+    file_id: str = Field(
+        ..., description="Unique identifier assigned to the uploaded file."
+    )
+    original_filename: str = Field(
+        ..., description="The original name of the uploaded file."
+    )
     saved_filename: str = Field(
-        ..., 
-        description="The name under which the file is saved on the server (job_id + extension)."
+        ...,
+        description="The name under which the file is saved on the server (job_id + extension).",
     )
     size: int = Field(..., description="Size of the uploaded file in bytes.")
-    content_type: Optional[str] = Field(default=None, description="Detected content type of the uploaded file.")
+    content_type: Optional[str] = Field(
+        default=None, description="Detected content type of the uploaded file."
+    )
     message: str = Field(..., description="Status message confirming the upload.")
-    filename: str = Field(..., description="The uploaded filename (matches original_filename)")
+    filename: str = Field(
+        ..., description="The uploaded filename (matches original_filename)"
+    )
+
 
 class ConversionResponse(BaseModel):
     """Response model for mod conversion"""
+
     job_id: str
     status: str
     message: str
     estimated_time: Optional[int] = None
 
+
 class ConversionStatus(BaseModel):
     """Status model for conversion job"""
+
     job_id: str
     status: str
     progress: int
@@ -169,8 +200,10 @@ class ConversionStatus(BaseModel):
     error: Optional[str] = None
     created_at: datetime
 
+
 class ConversionJob(BaseModel):
     """Detailed model for a conversion job"""
+
     job_id: str
     file_id: str
     original_filename: str
@@ -183,11 +216,14 @@ class ConversionJob(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class HealthResponse(BaseModel):
     """Health check response model"""
+
     status: str
     version: str
     timestamp: str
+
 
 # Health check endpoint
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
@@ -196,8 +232,9 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.now(timezone.utc).isoformat()
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
+
 
 # File upload endpoint
 @app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
@@ -219,7 +256,7 @@ async def upload_file(file: UploadFile = File(...)):
     # We'll validate size during the actual file reading process
 
     # Validate file type
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
+    allowed_extensions = [".jar", ".zip", ".mcaddon"]
     original_filename = file.filename
     file_ext = os.path.splitext(original_filename)[1].lower()
     if file_ext not in allowed_extensions:
@@ -228,7 +265,7 @@ async def upload_file(file: UploadFile = File(...)):
             detail=(
                 f"File type {file_ext} not supported. "
                 f"Allowed: {', '.join(allowed_extensions)}"
-            )
+            ),
         )
 
     # Generate unique file identifier
@@ -245,7 +282,7 @@ async def upload_file(file: UploadFile = File(...)):
                 if real_file_size > MAX_UPLOAD_SIZE:
                     raise HTTPException(
                         status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
                     )
                 buffer.write(chunk)
     except Exception as e:
@@ -255,7 +292,6 @@ async def upload_file(file: UploadFile = File(...)):
     finally:
         file.file.close()
 
-
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
@@ -263,8 +299,9 @@ async def upload_file(file: UploadFile = File(...)):
         size=real_file_size,  # Use the actual size we read
         content_type=file.content_type,
         message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
-        filename=original_filename
+        filename=original_filename,
     )
+
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def call_ai_engine_conversion(job_id: str):
@@ -276,20 +313,26 @@ async def call_ai_engine_conversion(job_id: str):
             print(f"Error: Job {job_id} not found for AI Engine conversion.")
             return
 
-        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
+        def mirror_dict_from_job(
+            job, progress_val=None, result_url=None, error_message=None
+        ):
             # Compose dict for legacy mirror
             return ConversionJob(
                 job_id=str(job.id),
                 file_id=job.input_data.get("file_id"),
                 original_filename=job.input_data.get("original_filename"),
                 status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
+                progress=(
+                    progress_val
+                    if progress_val is not None
+                    else (job.progress.progress if job.progress else 0)
+                ),
                 target_version=job.input_data.get("target_version"),
                 options=job.input_data.get("options"),
                 result_url=result_url if result_url is not None else None,
                 error_message=error_message,
                 created_at=job.created_at,
-                updated_at=job.updated_at
+                updated_at=job.updated_at,
             )
 
         try:
@@ -299,7 +342,9 @@ async def call_ai_engine_conversion(job_id: str):
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
 
             # Get the input file path
-            input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
+            input_file_path = os.path.join(
+                TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar"
+            )
 
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
@@ -308,17 +353,23 @@ async def call_ai_engine_conversion(job_id: str):
             ai_request = {
                 "job_id": job_id,
                 "mod_file_path": input_file_path,
-                "conversion_options": conversion_options
+                "conversion_options": conversion_options,
             }
 
-            print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
+            print(
+                f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}"
+            )
 
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
-                response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
+                response = await client.post(
+                    f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request
+                )
 
                 if response.status_code != 200:
-                    raise Exception(f"AI Engine failed to start conversion: {response.status_code} - {response.text}")
+                    raise Exception(
+                        f"AI Engine failed to start conversion: {response.status_code} - {response.text}"
+                    )
 
                 print(f"AI Engine conversion started for job {job_id}")
 
@@ -329,14 +380,20 @@ async def call_ai_engine_conversion(job_id: str):
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
-                        print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
+                        print(
+                            f"Job {job_id} was cancelled. Stopping AI Engine polling."
+                        )
                         return
 
                     # Get status from AI Engine
-                    status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
+                    status_response = await client.get(
+                        f"{AI_ENGINE_URL}/api/v1/status/{job_id}"
+                    )
 
                     if status_response.status_code != 200:
-                        print(f"Failed to get AI Engine status: {status_response.status_code}")
+                        print(
+                            f"Failed to get AI Engine status: {status_response.status_code}"
+                        )
                         continue
 
                     ai_status = status_response.json()
@@ -371,10 +428,14 @@ async def call_ai_engine_conversion(job_id: str):
                         break
 
                 if backend_status == "completed":
-                    print(f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}")
+                    print(
+                        f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}"
+                    )
                     # Verify the file exists
                     if not os.path.exists(output_path):
-                        print(f"Warning: Expected output file not found at {output_path}")
+                        print(
+                            f"Warning: Expected output file not found at {output_path}"
+                        )
                 else:
                     print(f"Job {job_id}: AI Engine conversion FAILED")
 
@@ -387,6 +448,7 @@ async def call_ai_engine_conversion(job_id: str):
             await cache.set_progress(job_id, 0)
             print(f"Job {job_id}: Status updated to FAILED due to error.")
 
+
 # Keep the simulation for fallback if AI Engine is not available
 async def simulate_ai_conversion(job_id: str):
     """Fallback simulation if AI Engine is not available"""
@@ -397,19 +459,25 @@ async def simulate_ai_conversion(job_id: str):
             print(f"Error: Job {job_id} not found for AI simulation.")
             return
 
-        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
+        def mirror_dict_from_job(
+            job, progress_val=None, result_url=None, error_message=None
+        ):
             return ConversionJob(
                 job_id=str(job.id),
                 file_id=job.input_data.get("file_id"),
                 original_filename=job.input_data.get("original_filename"),
                 status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
+                progress=(
+                    progress_val
+                    if progress_val is not None
+                    else (job.progress.progress if job.progress else 0)
+                ),
                 target_version=job.input_data.get("target_version"),
                 options=job.input_data.get("options"),
                 result_url=result_url if result_url is not None else None,
                 error_message=error_message,
                 created_at=job.created_at,
-                updated_at=job.updated_at
+                updated_at=job.updated_at,
             )
 
         try:
@@ -429,7 +497,9 @@ async def simulate_ai_conversion(job_id: str):
             # Create simple mock file
             os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
             mock_output_filename_internal = f"{job.id}_converted.mcaddon"
-            mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
+            mock_output_filepath = os.path.join(
+                CONVERSION_OUTPUTS_DIR, mock_output_filename_internal
+            )
             result_url = f"/api/v1/convert/{job.id}/download"
 
             with open(mock_output_filepath, "w") as f:
@@ -453,7 +523,11 @@ async def simulate_ai_conversion(job_id: str):
 
 # Conversion endpoints
 @app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def start_conversion(
+    request: ConversionRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Start a new mod conversion job.
     Handles both legacy (file_name) and new (file_id+original_filename) fields.
@@ -475,7 +549,10 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
             if not original_filename:
                 original_filename = request.file_name
         else:
-            raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
+            raise HTTPException(
+                status_code=422,
+                detail="Must provide either (file_id and original_filename) or legacy file_name.",
+            )
 
     # Persist job to DB (status 'queued', progress 0)
     job = await crud.create_job(
@@ -483,7 +560,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         file_id=file_id,
         original_filename=original_filename,
         target_version=request.target_version,
-        options=request.options
+        options=request.options,
     )
     # Immediately update job status to 'queued' after creation
     job = await crud.update_job_status(db, job.id, "queued")
@@ -518,11 +595,23 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         job_id=str(job.id),
         status="preprocessing",
         message="Conversion job started and is now preprocessing.",
-        estimated_time=35
+        estimated_time=35,
     )
 
-@app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+
+@app.get(
+    "/api/v1/convert/{job_id}/status",
+    response_model=ConversionStatus,
+    tags=["conversion"],
+)
+async def get_conversion_status(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job (standard UUID format).",
+    ),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Get the current status of a specific conversion job.
     """
@@ -546,7 +635,11 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
         elif status == "completed":
             descriptive_message = "Conversion completed successfully."
         elif status == "failed":
-            descriptive_message = f"Conversion failed: {error_message}" if error_message else "Conversion failed."
+            descriptive_message = (
+                f"Conversion failed: {error_message}"
+                if error_message
+                else "Conversion failed."
+            )
         elif status == "cancelled":
             descriptive_message = "Job was cancelled by the user."
         else:
@@ -558,12 +651,18 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=cached.get("created_at", datetime.now(timezone.utc)) if cached else datetime.now(timezone.utc)
+            created_at=(
+                cached.get("created_at", datetime.now(timezone.utc))
+                if cached
+                else datetime.now(timezone.utc)
+            ),
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
+        )
     progress = job.progress.progress if job.progress else 0
     error_message = None
     result_url = None
@@ -611,10 +710,13 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
         message=descriptive_message,
         result_url=result_url,
         error=error_message,
-        created_at=job.created_at
+        created_at=job.created_at,
     )
 
-@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
+
+@app.get(
+    "/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"]
+)
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -647,25 +749,37 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             updated_at=job.updated_at,
         )
         conversion_jobs_db[str(job.id)] = mirror
-        statuses.append(ConversionStatus(
-            job_id=str(job.id),
-            status=status,
-            progress=progress,
-            message=message,
-            result_url=result_url,
-            error=error_message,
-            created_at=job.created_at
-        ))
+        statuses.append(
+            ConversionStatus(
+                job_id=str(job.id),
+                status=status,
+                progress=progress,
+                message=message,
+                result_url=result_url,
+                error=error_message,
+                created_at=job.created_at,
+            )
+        )
     return statuses
 
+
 @app.delete("/api/v1/convert/{job_id}", tags=["conversion"])
-async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+async def cancel_conversion(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job to be cancelled (standard UUID format).",
+    ),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Cancel an ongoing conversion job.
     """
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
+        )
     if job.status == "cancelled":
         return {"message": f"Conversion job {job_id} is already cancelled."}
     job = await crud.update_job_status(db, job_id, "cancelled")
@@ -688,9 +802,16 @@ async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-
     await cache.set_progress(job_id, 0)
     return {"message": f"Conversion job {job_id} has been cancelled."}
 
+
 # Download endpoint
 @app.get("/api/v1/convert/{job_id}/download", tags=["files"])
-async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
+async def download_converted_mod(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).",
+    )
+):
     """
     Download the converted mod file.
 
@@ -700,15 +821,25 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
     job = conversion_jobs_db.get(job_id)
 
     if not job:
-        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
+        )
 
     if job.status != "completed":
-        raise HTTPException(status_code=400, detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.",
+        )
 
     if not job.result_url:  # Should be set if status is completed and file was made
-        print(f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed.")
+        print(
+            f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed."
+        )
         # This indicates an internal inconsistency if the job is 'completed'.
-        raise HTTPException(status_code=404, detail=f"Result for job '{job_id}' not available or URL is missing.")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Result for job '{job_id}' not available or URL is missing.",
+        )
 
     # Construct the path to the mock output file
     # The actual filename stored on server uses job_id for uniqueness
@@ -718,7 +849,9 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
     if not os.path.exists(file_path):
         print(f"Error: Converted file not found at path: {file_path} for job {job_id}")
         # This case might indicate an issue post-completion or if the file was manually removed.
-        raise HTTPException(status_code=404, detail="Converted file not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Converted file not found on server."
+        )
 
     # Determine a user-friendly download filename
     original_filename_base = os.path.splitext(job.original_filename)[0]
@@ -726,9 +859,10 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
 
     return FileResponse(
         path=file_path,
-        media_type='application/zip',  # Still ZIP format internally
-        filename=download_filename
+        media_type="application/zip",  # Still ZIP format internally
+        filename=download_filename,
     )
+
 
 # Database initialization is now handled by lifespan
 
@@ -737,8 +871,9 @@ if __name__ == "__main__":
         "main:app",
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", 8000)),
-        reload=os.getenv("RELOAD", "true").lower() == "true"
+        reload=os.getenv("RELOAD", "true").lower() == "true",
     )
+
 
 async def try_ai_engine_or_fallback(job_id: str):
     """Try AI Engine first, fallback to simulation if it fails"""
@@ -751,7 +886,9 @@ async def try_ai_engine_or_fallback(job_id: str):
                 await call_ai_engine_conversion(job_id)
                 return
     except Exception as e:
-        print(f"AI Engine not available ({e}), falling back to simulation for job {job_id}")
+        print(
+            f"AI Engine not available ({e}), falling back to simulation for job {job_id}"
+        )
 
     # Fallback to simulation
     await simulate_ai_conversion(job_id)
