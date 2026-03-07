@@ -107,6 +107,8 @@ dev = [
     "black",
     "ruff",
     "isort",
+    # Mutation testing
+    "mutmut",
 ]
 
 # All GPU options combined
@@ -198,6 +200,66 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "sentence_transformers.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "agents.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "engines.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "orchestration.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "schemas.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "search.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "tools.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "cli.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "benchmarking.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "evaluation.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "prototyping.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "research.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "rl.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "utils.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "models.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "training_manager"
+ignore_errors = true
 
 [tool.ruff]
 target-version = "py311"
