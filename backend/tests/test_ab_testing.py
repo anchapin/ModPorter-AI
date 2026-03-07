@@ -16,7 +16,7 @@ async def test_experiment_lifecycle(db_session):
         name="Test Experiment",
         description="A test experiment for A/B testing",
         status="active",
-        traffic_allocation=50
+        traffic_allocation=50,
     )
 
     assert experiment.id is not None
@@ -30,11 +30,7 @@ async def test_experiment_lifecycle(db_session):
     assert retrieved_experiment.name == "Test Experiment"
 
     # Update experiment
-    updated_experiment = await crud.update_experiment(
-        db_session,
-        experiment.id,
-        status="paused"
-    )
+    updated_experiment = await crud.update_experiment(db_session, experiment.id, status="paused")
 
     assert updated_experiment.status == "paused"
 
@@ -60,7 +56,7 @@ async def test_experiment_variant_lifecycle(db_session):
         db_session,
         name="Variant Test Experiment",
         description="Experiment for testing variants",
-        status="active"
+        status="active",
     )
 
     # Create variant
@@ -70,7 +66,7 @@ async def test_experiment_variant_lifecycle(db_session):
         name="Test Variant",
         description="A test variant",
         is_control=True,
-        strategy_config={"test": "config"}
+        strategy_config={"test": "config"},
     )
 
     assert variant.id is not None
@@ -90,10 +86,7 @@ async def test_experiment_variant_lifecycle(db_session):
 
     # Update variant
     updated_variant = await crud.update_experiment_variant(
-        db_session,
-        variant.id,
-        name="Updated Variant",
-        is_control=False
+        db_session, variant.id, name="Updated Variant", is_control=False
     )
 
     assert updated_variant.name == "Updated Variant"
@@ -119,14 +112,11 @@ async def test_experiment_results(db_session):
         db_session,
         name="Results Test Experiment",
         description="Experiment for testing results",
-        status="active"
+        status="active",
     )
 
     variant = await crud.create_experiment_variant(
-        db_session,
-        experiment_id=experiment.id,
-        name="Results Test Variant",
-        is_control=True
+        db_session, experiment_id=experiment.id, name="Results Test Variant", is_control=True
     )
 
     # Create result
@@ -140,7 +130,7 @@ async def test_experiment_results(db_session):
         kpi_cost=0.5,
         user_feedback_score=4.5,
         user_feedback_text="Great conversion!",
-        result_metadata={"test": "data"}
+        result_metadata={"test": "data"},
     )
 
     assert result.id is not None
@@ -180,23 +170,17 @@ async def test_control_variant_uniqueness(db_session):
         db_session,
         name="Control Test Experiment",
         description="Experiment for testing control variant uniqueness",
-        status="active"
+        status="active",
     )
 
     # Create first control variant
     control_variant1 = await crud.create_experiment_variant(
-        db_session,
-        experiment_id=experiment.id,
-        name="Control Variant 1",
-        is_control=True
+        db_session, experiment_id=experiment.id, name="Control Variant 1", is_control=True
     )
 
     # Create second control variant - this should make the first one not control
     control_variant2 = await crud.create_experiment_variant(
-        db_session,
-        experiment_id=experiment.id,
-        name="Control Variant 2",
-        is_control=True
+        db_session, experiment_id=experiment.id, name="Control Variant 2", is_control=True
     )
 
     # Verify first variant is no longer control
@@ -211,9 +195,7 @@ async def test_control_variant_uniqueness(db_session):
 
     # Update first variant to be control - this should make the second one not control
     updated_variant1 = await crud.update_experiment_variant(
-        db_session,
-        control_variant1.id,
-        is_control=True
+        db_session, control_variant1.id, is_control=True
     )
 
     assert updated_variant1.is_control is True

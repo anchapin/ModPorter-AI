@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class FailureSeverity(Enum):
     """Severity level of the failure"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -30,6 +31,7 @@ class FailureSeverity(Enum):
 
 class FailureSource(Enum):
     """Source of the failure"""
+
     FILE_UPLOAD = "file_upload"
     FILE_PARSING = "file_parsing"
     MOD_ANALYSIS = "mod_analysis"
@@ -43,6 +45,7 @@ class FailureSource(Enum):
 @dataclass
 class FailureDetail:
     """Detailed information about a failure"""
+
     error_type: str
     error_message: str
     error_category: str  # parse_error, asset_error, logic_error, etc.
@@ -55,6 +58,7 @@ class FailureDetail:
 @dataclass
 class ConversionFailure:
     """Complete failure analysis for a conversion job"""
+
     job_id: str
     correlation_id: str
     timestamp: str
@@ -156,18 +160,18 @@ def determine_failure_severity(error_category: str, retry_count: int) -> Failure
     """Determine the severity of the failure"""
     if retry_count >= 3:
         return FailureSeverity.CRITICAL
-    
+
     critical_categories = {"logic_error", "package_error"}
     high_categories = {"parse_error", "asset_error"}
     medium_categories = {"validation_error", "network_error"}
-    
+
     if error_category in critical_categories:
         return FailureSeverity.CRITICAL if retry_count > 0 else FailureSeverity.HIGH
     elif error_category in high_categories:
         return FailureSeverity.HIGH if retry_count > 0 else FailureSeverity.MEDIUM
     elif error_category in medium_categories:
         return FailureSeverity.MEDIUM
-    
+
     return FailureSeverity.LOW
 
 
@@ -175,9 +179,9 @@ def determine_failure_source(conversion_stage: Optional[str]) -> FailureSource:
     """Determine the source of the failure based on conversion stage"""
     if not conversion_stage:
         return FailureSource.UNKNOWN
-    
+
     stage_lower = conversion_stage.lower()
-    
+
     if "upload" in stage_lower:
         return FailureSource.FILE_UPLOAD
     elif "parse" in stage_lower:
@@ -192,7 +196,7 @@ def determine_failure_source(conversion_stage: Optional[str]) -> FailureSource:
         return FailureSource.PACKAGING
     elif "valid" in stage_lower:
         return FailureSource.VALIDATION
-    
+
     return FailureSource.UNKNOWN
 
 
@@ -208,7 +212,7 @@ def log_conversion_failure(
 ) -> ConversionFailure:
     """
     Log a conversion failure with detailed analysis.
-    
+
     Args:
         job_id: The conversion job ID
         error: The exception that occurred
@@ -218,17 +222,17 @@ def log_conversion_failure(
         target_version: Target Minecraft version
         retry_count: Number of times this conversion was retried
         additional_context: Any additional context to log
-    
+
     Returns:
         ConversionFailure object with detailed failure information
     """
     # Get or create correlation ID
     correlation_id = get_correlation_id() or set_correlation_id()
-    
+
     # Determine failure details
     severity = determine_failure_severity(error_category, retry_count)
     source = determine_failure_source(conversion_stage)
-    
+
     # Create failure detail
     failure_detail = FailureDetail(
         error_type=type(error).__name__,
@@ -237,16 +241,13 @@ def log_conversion_failure(
         stack_trace=traceback.format_exc(),
         context=additional_context or {},
     )
-    
+
     # Get recovery suggestions
-    suggestions = RECOVERY_SUGGESTIONS.get(
-        error_category, 
-        RECOVERY_SUGGESTIONS["unknown_error"]
-    )
-    
+    suggestions = RECOVERY_SUGGESTIONS.get(error_category, RECOVERY_SUGGESTIONS["unknown_error"])
+
     # Create user-friendly message
     user_message = _get_user_message(error_category)
-    
+
     # Create failure object
     failure = ConversionFailure(
         job_id=job_id,
@@ -264,10 +265,10 @@ def log_conversion_failure(
         target_version=target_version,
         additional_context=additional_context or {},
     )
-    
+
     # Log the failure
     _log_failure(failure)
-    
+
     return failure
 
 
@@ -289,7 +290,7 @@ def _get_user_message(error_category: str) -> str:
 def _log_failure(failure: ConversionFailure):
     """Log the failure with appropriate level based on severity"""
     log_data = failure.to_dict()
-    
+
     # Determine log level based on severity
     if failure.failure_severity == FailureSeverity.CRITICAL.value:
         logger.error(

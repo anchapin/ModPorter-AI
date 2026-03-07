@@ -92,7 +92,7 @@ class FileProcessor:
         """
         try:
             parsed = urllib.parse.urlparse(url)
-            if parsed.scheme not in ('http', 'https'):
+            if parsed.scheme not in ("http", "https"):
                 logger.warning(f"Unsafe scheme in URL for hostname: {parsed.hostname}")
                 return False
             hostname = parsed.hostname
@@ -117,7 +117,9 @@ class FileProcessor:
                 try:
                     ip_obj = ipaddress.ip_address(ip)
                     if ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
-                        logger.warning(f"Blocked attempt to access private IP: {ip} for hostname: {hostname}")
+                        logger.warning(
+                            f"Blocked attempt to access private IP: {ip} for hostname: {hostname}"
+                        )
                         return False
                 except ValueError:
                     # Fail securely if IP cannot be parsed
@@ -126,7 +128,9 @@ class FileProcessor:
             return True
         except Exception as e:
             # Don't log full URL in exception either
-            logger.error(f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}")
+            logger.error(
+                f"Error validating URL for hostname {parsed.hostname if 'parsed' in locals() else 'unknown'}: {e}"
+            )
             return False
 
     def validate_upload(self, file: UploadFile) -> ValidationResult:
@@ -141,7 +145,9 @@ class FileProcessor:
 
         # 2. Check file size
         if file.size > self.MAX_FILE_SIZE:
-            msg = f"File size {file.size} exceeds maximum allowed size of {self.MAX_FILE_SIZE} bytes."
+            msg = (
+                f"File size {file.size} exceeds maximum allowed size of {self.MAX_FILE_SIZE} bytes."
+            )
             logger.warning(msg)
             return ValidationResult(
                 is_valid=False, message=msg, sanitized_filename=sanitized_filename
@@ -224,9 +230,7 @@ class FileProcessor:
                 return ValidationResult(
                     is_valid=False, message=msg, sanitized_filename=sanitized_filename
                 )
-            logger.info(
-                f"Downloaded file {sanitized_filename} size {file_size} is within limits."
-            )
+            logger.info(f"Downloaded file {sanitized_filename} size {file_size} is within limits.")
         except FileNotFoundError:
             msg = f"Downloaded file {sanitized_filename} not found at path {file_path} for validation."
             logger.error(msg)
@@ -291,7 +295,9 @@ class FileProcessor:
                 validated_file_type=determined_file_type,
             )
         except Exception as e:
-            msg = f"An error occurred during downloaded file validation for {sanitized_filename}: {e}"
+            msg = (
+                f"An error occurred during downloaded file validation for {sanitized_filename}: {e}"
+            )
             logger.error(msg, exc_info=True)
             return ValidationResult(
                 is_valid=False, message=msg, sanitized_filename=sanitized_filename
@@ -335,9 +341,7 @@ class FileProcessor:
                         # This is a conceptual check; actual extraction needs careful handling.
                         abs_member_path = Path(
                             os.path.abspath(
-                                os.path.join(
-                                    HYPOTHETICAL_TARGET_EXTRACTION_DIR, member.filename
-                                )
+                                os.path.join(HYPOTHETICAL_TARGET_EXTRACTION_DIR, member.filename)
                             )
                         )
                         if not str(abs_member_path).startswith(
@@ -412,9 +416,7 @@ class FileProcessor:
         logger.info(
             f"File {file_path} passed all implemented security checks (basic archive checks; no external scan performed)."
         )
-        return ScanResult(
-            is_safe=True, message="File passed implemented security checks."
-        )
+        return ScanResult(is_safe=True, message="File passed implemented security checks.")
 
     async def extract_mod_files(
         self, archive_path: Path, job_id: str, file_type: str
@@ -517,9 +519,7 @@ class FileProcessor:
         for manifest_name in manifest_files_priority:
             potential_manifest_path = extraction_dir / manifest_name
             if potential_manifest_path.is_file():
-                logger.info(
-                    f"Found potential manifest file: {manifest_name} for job_id: {job_id}"
-                )
+                logger.info(f"Found potential manifest file: {manifest_name} for job_id: {job_id}")
                 try:
                     if manifest_name.endswith(".json"):
                         with open(potential_manifest_path, "rb") as f:
@@ -534,9 +534,7 @@ class FileProcessor:
                                 found_manifest_type = "toml"
                         elif toml_lib:
                             with open(potential_manifest_path, "r") as f:
-                                manifest_data = toml_lib.load(
-                                    f
-                                )  # toml.load takes a text file
+                                manifest_data = toml_lib.load(f)  # toml.load takes a text file
                                 found_manifest_type = "toml"
                         else:
                             logger.warning(
@@ -556,9 +554,7 @@ class FileProcessor:
                                 )
                                 # Add custom parsing for .info if needed, or treat as plain text
                                 manifest_data = {
-                                    "raw_content": open(
-                                        potential_manifest_path, "r"
-                                    ).read()
+                                    "raw_content": open(potential_manifest_path, "r").read()
                                 }
                                 found_manifest_type = "mcmod.info (raw)"
 
@@ -572,9 +568,7 @@ class FileProcessor:
                         f"Error parsing manifest file {manifest_name} for job_id {job_id}: {e}",
                         exc_info=True,
                     )
-                    manifest_data = {
-                        "parsing_error": str(e)
-                    }  # Store error in manifest_data
+                    manifest_data = {"parsing_error": str(e)}  # Store error in manifest_data
                     found_manifest_type = manifest_name + " (parse_error)"
                     # Don't break, allow trying other manifest files if this one failed to parse
             else:
@@ -583,9 +577,7 @@ class FileProcessor:
                 )
 
         if not manifest_data:
-            logger.info(
-                f"No standard manifest file found or parsed for job_id: {job_id}"
-            )
+            logger.info(f"No standard manifest file found or parsed for job_id: {job_id}")
             message = "Extraction completed, but no standard manifest file (fabric.mod.json, mods.toml, mcmod.info) found or parsed."
         else:
             message = f"Extraction completed. Found and parsed {found_manifest_type}."
@@ -618,7 +610,9 @@ class FileProcessor:
                     if not await self._is_safe_url(current_url):
                         # Sanitize URL for logging (strip query params/fragments)
                         parsed_unsafe = urllib.parse.urlparse(current_url)
-                        sanitized_unsafe = f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
+                        sanitized_unsafe = (
+                            f"{parsed_unsafe.scheme}://{parsed_unsafe.hostname}{parsed_unsafe.path}"
+                        )
                         msg = f"Unsafe URL detected: {sanitized_unsafe}"
                         logger.warning(msg)
                         return DownloadResult(success=False, message="Unsafe URL detected")
@@ -633,7 +627,9 @@ class FileProcessor:
                         current_url = urllib.parse.urljoin(current_url, location)
                         parsed_redirect = urllib.parse.urlparse(current_url)
                         # Sanitize redirect URL for logging
-                        logger.info(f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}")
+                        logger.info(
+                            f"Following redirect to: {parsed_redirect.scheme}://{parsed_redirect.hostname}{parsed_redirect.path}"
+                        )
                         continue
                     else:
                         break
@@ -655,9 +651,7 @@ class FileProcessor:
                     # Parse Content-Disposition header using email.message
                     msg = EmailMessage()
                     msg["Content-Disposition"] = content_disposition
-                    filename_from_header = msg.get_param(
-                        "filename", header="Content-Disposition"
-                    )
+                    filename_from_header = msg.get_param("filename", header="Content-Disposition")
 
                 if filename_from_header:
                     raw_filename = filename_from_header
@@ -674,9 +668,7 @@ class FileProcessor:
                 # This is a simplification; proper type detection is harder.
                 if not Path(sanitized_filename).suffix:
                     # Try to guess from content-type if possible, otherwise default
-                    content_type = response.headers.get("Content-Type", "").split("/")[
-                        0
-                    ]
+                    content_type = response.headers.get("Content-Type", "").split("/")[0]
                     if "zip" in content_type:
                         sanitized_filename += ".zip"
                     elif (
@@ -731,7 +723,9 @@ class FileProcessor:
             logger.error(msg, exc_info=True)
             return DownloadResult(success=False, message=msg)
         except Exception as e:
-            msg = f"An unexpected error occurred during download from {url} for job_id {job_id}: {e}"
+            msg = (
+                f"An unexpected error occurred during download from {url} for job_id {job_id}: {e}"
+            )
             logger.error(msg, exc_info=True)
             return DownloadResult(success=False, message=msg)
 

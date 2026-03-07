@@ -76,9 +76,7 @@ class DeveloperLog(TypedDict):
     performance_metrics: Dict[
         str, Any
     ]  # e.g., { "total_time_seconds": 60.5, "memory_peak_mb": 256 }
-    error_summary: List[
-        Dict[str, Any]
-    ]  # { "error_message": "...", "stack_trace": "..." }
+    error_summary: List[Dict[str, Any]]  # { "error_message": "...", "stack_trace": "..." }
 
 
 class InteractiveReport(TypedDict):
@@ -88,9 +86,7 @@ class InteractiveReport(TypedDict):
     converted_mods: List[ModConversionStatus]
     failed_mods: List[ModConversionStatus]
     feature_analysis: Optional[FeatureAnalysis]
-    smart_assumptions_report: Optional[
-        AssumptionsReport
-    ]  # This uses AssumptionDetail now
+    smart_assumptions_report: Optional[AssumptionsReport]  # This uses AssumptionDetail now
     developer_log: Optional[DeveloperLog]
 
 
@@ -99,9 +95,7 @@ class FullConversionReport(TypedDict):
     summary: SummaryReport
     converted_mods: List[ModConversionStatus]  # Simplified for now
     failed_mods: List[ModConversionStatus]  # Simplified for now
-    smart_assumptions: List[
-        SmartAssumption
-    ]  # From PRD, maps to SmartAssumptionsReport content
+    smart_assumptions: List[SmartAssumption]  # From PRD, maps to SmartAssumptionsReport content
     developer_log: DeveloperLog  # From PRD
     # Detailed feature analysis will be part of a sub-section or fetched on demand
     # For now, focusing on the PRD's top-level structure
