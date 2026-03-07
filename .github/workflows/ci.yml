@@ -39,6 +39,7 @@ jobs:
       ai-engine: ${{ steps.changes.outputs.ai-engine }}
       docker: ${{ steps.changes.outputs.docker }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
+      ruff: ${{ steps.changes.outputs.ruff }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -62,6 +63,11 @@ jobs:
               - '**/requirements*.txt'
               - '**/package.json'
               - 'frontend/pnpm-lock.yaml'
+            ruff:
+              - '**/*.py'
+              - '**/pyproject.toml'
+              - 'backend/pyproject.toml'
+              - 'ai-engine/pyproject.toml'
 
   # Pre-build base images if dependencies changed
   prepare-base-images:
@@ -537,6 +543,26 @@ jobs:
         echo "❌ Integration tests failed for ${{ matrix.test-suite }}!"
         echo "Check the test results artifact for detailed information."
         exit 1
+
+  # Ruff linter for Python
+  ruff-lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: ${{ needs.changes.outputs.ruff == 'true' }}
+    timeout-minutes: 10
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Install Ruff
+      run: pip install ruff
+
+    - name: Run Ruff on backend
+      run: ruff check backend/
+
+    - name: Run Ruff on ai-engine
+      run: ruff check ai-engine/
 
   # Prepare Node.js base image for frontend
   prepare-node-base:
