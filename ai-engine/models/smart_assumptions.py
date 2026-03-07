@@ -106,10 +106,188 @@ class AssumptionReport:
 class SmartAssumptionEngine:
     """
     Implements PRD Section 1.0.2: Smart Assumptions for bridging Java/Bedrock gaps
+
+    Enhanced with validation, comprehensive logging, and easier assumption management.
     """
-    
+
     def __init__(self):
         self.assumption_table = self._build_prd_assumption_table()
+        # Validate assumptions on initialization
+        self._validate_assumption_table()
+        logger.info(f"SmartAssumptionEngine initialized with {len(self.assumption_table)} assumptions")
+
+    def _validate_assumption_table(self) -> None:
+        """
+        Validate all assumptions in the table to ensure they meet requirements.
+
+        Raises:
+            ValueError: If any assumption is invalid
+        """
+        for i, assumption in enumerate(self.assumption_table):
+            try:
+                self._validate_single_assumption(assumption)
+            except ValueError as e:
+                logger.error(f"Invalid assumption at index {i} ({assumption.java_feature}): {e}")
+                raise ValueError(f"Assumption validation failed for '{assumption.java_feature}': {e}")
+        logger.info("All assumptions validated successfully")
+
+    def _validate_single_assumption(self, assumption: SmartAssumption) -> None:
+        """
+        Validate a single SmartAssumption object.
+
+        Args:
+            assumption: The assumption to validate
+
+        Raises:
+            ValueError: If the assumption is invalid
+        """
+        # Check required fields
+        if not assumption.java_feature or not assumption.java_feature.strip():
+            raise ValueError("java_feature is required and cannot be empty")
+
+        if not assumption.inconvertible_aspect or not assumption.inconvertible_aspect.strip():
+            raise ValueError("inconvertible_aspect is required and cannot be empty")
+
+        if not assumption.bedrock_workaround or not assumption.bedrock_workaround.strip():
+            raise ValueError("bedrock_workaround is required and cannot be empty")
+
+        if not assumption.description or not assumption.description.strip():
+            raise ValueError("description is required and cannot be empty")
+
+        if not assumption.implementation_notes or not assumption.implementation_notes.strip():
+            raise ValueError("implementation_notes is required and cannot be empty")
+
+        # Check impact is valid
+        valid_impacts = {AssumptionImpact.LOW, AssumptionImpact.MEDIUM, AssumptionImpact.HIGH}
+        if assumption.impact not in valid_impacts:
+            raise ValueError(f"impact must be one of {valid_impacts}, got {assumption.impact}")
+
+        # Check match_patterns is a list
+        if not isinstance(assumption.match_patterns, list):
+            raise ValueError("match_patterns must be a list")
+
+        if not assumption.match_patterns:
+            raise ValueError("match_patterns cannot be empty")
+
+        # Validate user-facing explanation
+        if not assumption.explanation or not assumption.explanation.strip():
+            raise ValueError("explanation is required and cannot be empty")
+
+    def add_assumption(self, assumption: SmartAssumption) -> None:
+        """
+        Add a new assumption to the table with validation.
+
+        This method provides an easy way to extend the assumption table without
+        modifying the core _build_prd_assumption_table method.
+
+        Args:
+            assumption: The SmartAssumption to add
+
+        Raises:
+            ValueError: If the assumption is invalid
+        """
+        # Validate the assumption before adding
+        self._validate_single_assumption(assumption)
+
+        # Check for duplicates
+        for existing in self.assumption_table:
+            if existing.java_feature.lower() == assumption.java_feature.lower():
+                logger.warning(f"Duplicate assumption detected: {assumption.java_feature}. Overwriting existing.")
+                self.assumption_table.remove(existing)
+                break
+
+        # Add the assumption
+        self.assumption_table.append(assumption)
+        logger.info(f"Added new assumption: {assumption.java_feature} (Impact: {assumption.impact.value})")
+
+    def add_assumptions_batch(self, assumptions: List[SmartAssumption]) -> None:
+        """
+        Add multiple assumptions to the table with validation.
+
+        Args:
+            assumptions: List of SmartAssumption objects to add
+
+        Raises:
+            ValueError: If any assumption is invalid
+        """
+        logger.info(f"Adding batch of {len(assumptions)} assumptions")
+
+        # Validate all first (fail fast)
+        for assumption in assumptions:
+            self._validate_single_assumption(assumption)
+
+        # Add all validated assumptions
+        for assumption in assumptions:
+            self.add_assumption(assumption)
+
+    def remove_assumption(self, java_feature: str) -> bool:
+        """
+        Remove an assumption from the table by java_feature name.
+
+        Args:
+            java_feature: The name of the Java feature to remove
+
+        Returns:
+            True if an assumption was removed, False otherwise
+        """
+        original_count = len(self.assumption_table)
+        self.assumption_table = [
+            a for a in self.assumption_table
+            if a.java_feature.lower() != java_feature.lower()
+        ]
+        removed = len(self.assumption_table) < original_count
+
+        if removed:
+            logger.info(f"Removed assumption: {java_feature}")
+        else:
+            logger.warning(f"Attempted to remove non-existent assumption: {java_feature}")
+
+        return removed
+
+    def get_assumption_by_java_feature(self, java_feature: str) -> Optional[SmartAssumption]:
+        """
+        Get an assumption by exact Java feature name match.
+
+        Args:
+            java_feature: The exact Java feature name
+
+        Returns:
+            The matching SmartAssumption or None if not found
+        """
+        for assumption in self.assumption_table:
+            if assumption.java_feature.lower() == java_feature.lower():
+                return assumption
+        return None
+
+    def get_assumptions_by_impact(self, impact: AssumptionImpact) -> List[SmartAssumption]:
+        """
+        Get all assumptions with a specific impact level.
+
+        Args:
+            impact: The impact level to filter by
+
+        Returns:
+            List of assumptions with the specified impact
+        """
+        return [a for a in self.assumption_table if a.impact == impact]
+
+    def get_impact_summary(self) -> Dict[str, int]:
+        """
+        Get a summary of assumptions by impact level.
+
+        Returns:
+            Dictionary with impact levels as keys and counts as values
+        """
+        summary = {
+            AssumptionImpact.LOW.value: 0,
+            AssumptionImpact.MEDIUM.value: 0,
+            AssumptionImpact.HIGH.value: 0
+        }
+
+        for assumption in self.assumption_table:
+            summary[assumption.impact.value] += 1
+
+        return summary
     
     def _build_prd_assumption_table(self) -> List[SmartAssumption]:
         """Build the assumption table from PRD specifications"""
@@ -239,17 +417,36 @@ class SmartAssumptionEngine:
         return self.assumption_table
     
     def find_assumption(self, feature_type: str) -> Optional[SmartAssumption]:
-        """Find appropriate assumption for a given feature type with conflict detection"""
+        """
+        Find appropriate assumption for a given feature type with conflict detection.
+
+        Args:
+            feature_type: The type of feature to find an assumption for
+
+        Returns:
+            The best matching SmartAssumption or None if no match found
+        """
+        logger.debug(f"Finding assumption for feature type: {feature_type}")
+
         matching_assumptions = self.find_all_matching_assumptions(feature_type)
-        
+
         if not matching_assumptions:
+            logger.debug(f"No matching assumptions found for feature type: {feature_type}")
             return None
         elif len(matching_assumptions) == 1:
+            logger.debug(f"Found single matching assumption: {matching_assumptions[0].java_feature}")
             return matching_assumptions[0]
         else:
             # Handle conflicts by selecting highest priority assumption
-            logger.warning(f"Multiple assumptions match feature type '{feature_type}': {[a.java_feature for a in matching_assumptions]}")
-            return self._resolve_assumption_conflict(matching_assumptions, feature_type)
+            logger.warning(
+                f"Multiple assumptions match feature type '{feature_type}': "
+                f"{[a.java_feature for a in matching_assumptions]}"
+            )
+            selected = self._resolve_assumption_conflict(matching_assumptions, feature_type)
+            logger.info(
+                f"Conflict resolved: Selected '{selected.java_feature}' for feature type '{feature_type}'"
+            )
+            return selected
     
     def find_all_matching_assumptions(self, feature_type: str) -> List[SmartAssumption]:
         """Find all assumptions that could apply to a given feature type"""
@@ -313,15 +510,36 @@ class SmartAssumptionEngine:
         return matching_assumptions
     
     def _resolve_assumption_conflict(self, conflicting_assumptions: List[SmartAssumption], feature_type: str) -> SmartAssumption:
-        """Resolve conflicts between multiple matching assumptions using priority rules"""
+        """
+        Resolve conflicts between multiple matching assumptions using priority rules.
+
+        Priority Rules (in order):
+        1. Exact feature type match
+        2. Keyword relevance score (specific keyword matches)
+        3. Impact level (HIGH > MEDIUM > LOW)
+        4. Specificity (more keywords = more specific)
+
+        Args:
+            conflicting_assumptions: List of assumptions that match the feature
+            feature_type: The feature type being analyzed
+
+        Returns:
+            The selected SmartAssumption based on priority rules
+
+        Raises:
+            ValueError: If conflicting_assumptions is empty
+        """
         logger.info(f"Resolving assumption conflict for feature type '{feature_type}' with {len(conflicting_assumptions)} candidates")
-        
+        logger.debug(f"Conflicting assumptions: {[a.java_feature for a in conflicting_assumptions]}")
+
         # Handle edge case of empty list
         if not conflicting_assumptions:
+            logger.error("Cannot resolve conflict with empty assumption list")
             raise ValueError("Cannot resolve conflict with empty assumption list")
-            
+
         # Handle edge case of single assumption
         if len(conflicting_assumptions) == 1:
+            logger.debug(f"Only one matching assumption: {conflicting_assumptions[0].java_feature}")
             return conflicting_assumptions[0]
         
         # Priority rule 1: Exact feature type match takes precedence
@@ -469,33 +687,57 @@ class SmartAssumptionEngine:
             is not handled by a specific conversion method.
         """
         if not analysis_result.applied_assumption:
-            logger.warning(f"apply_assumption called for feature '{analysis_result.feature_context.feature_id}' but no assumption was found in analysis_result.")
+            logger.warning(
+                f"apply_assumption called for feature '{analysis_result.feature_context.feature_id}' "
+                f"but no assumption was found in analysis_result."
+            )
             return None
 
         feature_context = analysis_result.feature_context
         assumption = analysis_result.applied_assumption
         feature_type_lower = feature_context.feature_type.lower() # Use feature_type from context
 
-        logger.info(f"Applying smart assumption for feature type '{feature_context.feature_type}' (ID: {feature_context.feature_id}): {assumption.description}")
+        logger.info(
+            f"Applying smart assumption for feature type '{feature_context.feature_type}' "
+            f"(ID: {feature_context.feature_id}, Impact: {assumption.impact.value}): "
+            f"{assumption.java_feature} -> {assumption.bedrock_workaround}"
+        )
+
+        # Log conflict information if applicable
+        if analysis_result.had_conflict:
+            logger.info(
+                f"Feature had {len(analysis_result.conflicting_assumptions)} conflicting assumptions: "
+                f"{[a.java_feature for a in analysis_result.conflicting_assumptions]}"
+            )
+            logger.info(f"Conflict resolution reason: {analysis_result.conflict_resolution_reason}")
 
         conversion_details_dict: Optional[Dict[str, Any]] = None
 
         # PRD Phase 1: Three core assumptions
         if "dimension" in feature_type_lower and "custom dimensions" in assumption.java_feature.lower():
+            logger.debug(f"Applying dimension conversion logic")
             conversion_details_dict = self._convert_custom_dimension(feature_context, assumption, analysis_result)
         elif "machinery" in feature_type_lower and "complex machinery" in assumption.java_feature.lower():
+            logger.debug(f"Applying machinery simplification logic")
             conversion_details_dict = self._convert_complex_machinery(feature_context, assumption, analysis_result)
         elif ("gui" in feature_type_lower or "hud" in feature_type_lower) and "custom gui/hud" in assumption.java_feature.lower():
+            logger.debug(f"Applying GUI to book conversion logic")
             conversion_details_dict = self._convert_custom_gui(feature_context, assumption, analysis_result)
 
         # Placeholder for other assumptions from the PRD table (not part of Phase 1 implementation focus)
         elif "rendering" in feature_type_lower and "client-side rendering" in assumption.java_feature.lower():
             # conversion_details_dict = self._exclude_client_rendering(feature_context, assumption) # Assuming it returns a dict
-            logger.warning(f"Smart assumption for '{feature_context.feature_type}' (Client-Side Rendering) is defined but not fully implemented in Phase 1.")
+            logger.warning(
+                f"Smart assumption for '{feature_context.feature_type}' (Client-Side Rendering) "
+                f"is defined but not fully implemented in Phase 1."
+            )
             # Fallback to generic or skip
         elif "dependency" in feature_type_lower and "mod dependencies" in assumption.java_feature.lower():
             # conversion_details_dict = self._handle_mod_dependency(feature_context, assumption) # Assuming it returns a dict
-            logger.warning(f"Smart assumption for '{feature_context.feature_type}' (Mod Dependencies) is defined but not fully implemented in Phase 1.")
+            logger.warning(
+                f"Smart assumption for '{feature_context.feature_type}' (Mod Dependencies) "
+                f"is defined but not fully implemented in Phase 1."
+            )
             # Fallback to generic or skip
 
         # Add other conditions for assumptions like "Advanced Redstone Logic", "Custom Entity AI" if they were to be handled
@@ -503,6 +745,9 @@ class SmartAssumptionEngine:
 
         if conversion_details_dict:
             # Construct the ConversionPlanComponent object from the dictionary
+            logger.debug(
+                f"Generated conversion plan component: {conversion_details_dict.get('assumption_type', 'unknown')}"
+            )
             return ConversionPlanComponent(
                 original_feature_id=conversion_details_dict['original_feature_id'],
                 original_feature_type=conversion_details_dict['original_feature_type'],
@@ -517,7 +762,11 @@ class SmartAssumptionEngine:
             # or if the logic is somehow bypassed.
             # We could create a generic ConversionPlanComponent here based on the assumption's direct fields
             # if that's desired, or return None. For Phase 1, focusing on the main three.
-            logger.warning(f"No specific conversion logic implemented in apply_assumption for feature type '{feature_context.feature_type}' with assumption '{assumption.java_feature}'.")
+            logger.warning(
+                f"No specific conversion logic implemented in apply_assumption for feature type "
+                f"'{feature_context.feature_type}' with assumption '{assumption.java_feature}'. "
+                f"Using generic fallback."
+            )
             # Fallback to a generic component based on the assumption itself.
             return ConversionPlanComponent(
                 original_feature_id=feature_context.feature_id,

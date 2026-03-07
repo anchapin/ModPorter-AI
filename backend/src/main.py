@@ -28,9 +28,11 @@ from services.report_models import InteractiveReport, FullConversionReport # For
 from services.report_generator import ConversionReportGenerator
 from services.error_handlers import register_exception_handlers
 from services.rate_limiter import RateLimitMiddleware, get_rate_limiter, init_rate_limiter, close_rate_limiter, create_global_limiter
+from services.security_headers import SecurityHeadersMiddleware
 
 # Import API routers
 from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions, mod_imports
+from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
 # Import mock data from report_generator
 from services.report_generator import MOCK_CONVERSION_RESULT_SUCCESS, MOCK_CONVERSION_RESULT_FAILURE
@@ -125,6 +127,9 @@ app.add_middleware(
 rate_limiter = create_global_limiter()
 app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 
+# Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize rate limiter on startup"""
@@ -151,6 +156,7 @@ app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-exp
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
 app.include_router(conversions.router)  # Conversions API + WebSocket
 app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
+app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
