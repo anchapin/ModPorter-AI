@@ -184,13 +184,17 @@ export const trackButtonClick = (
   page: string,
   options: Omit<AnalyticsOptions, 'properties'> = {}
 ): void => {
-  trackEvent(AnalyticsEventType.BUTTON_CLICK, AnalyticsEventCategory.USER_ACTION, {
-    ...options,
-    properties: {
-      button_id: buttonId,
-      page,
-    },
-  });
+  trackEvent(
+    AnalyticsEventType.BUTTON_CLICK,
+    AnalyticsEventCategory.USER_ACTION,
+    {
+      ...options,
+      properties: {
+        button_id: buttonId,
+        page,
+      },
+    }
+  );
 };
 
 /**

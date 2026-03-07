@@ -6,6 +6,8 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
+import reactCompiler from 'eslint-plugin-react-compiler';
 
 export default [
   { ignores: ['dist', 'coverage'] },
@@ -30,6 +32,13 @@ export default [
       '@typescript-eslint': tseslint.plugin,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      react,
+      'react-compiler': reactCompiler,
+    },
+    settings: {
+      react: {
+        version: '19.2',
+      },
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -119,6 +128,12 @@ export default [
         },
       ],
       camelcase: 'off',
+      // React 19 strict rules
+      // React Compiler (formerly React Forget) rules
+      'react-compiler/react-compiler': 'warn',
+      // Warn about deprecated React APIs
+      'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
+      // New React 19 rules would go here when eslint-plugin-react releases them
     },
   },
   {
