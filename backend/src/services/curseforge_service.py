@@ -21,15 +21,19 @@ CURSEFORGE_API_KEY = os.getenv("CURSEFORGE_API_KEY", "")
 
 class CurseForgeService:
     """Service for interacting with CurseForge API"""
-    
+
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or CURSEFORGE_API_KEY
         self.base_url = CURSEFORGE_API_BASE_URL
-        self.headers = {
-            "Accept": "application/json",
-            "x-api-key": self.api_key,
-        } if self.api_key else {"Accept": "application/json"}
-    
+        self.headers = (
+            {
+                "Accept": "application/json",
+                "x-api-key": self.api_key,
+            }
+            if self.api_key
+            else {"Accept": "application/json"}
+        )
+
     async def search_mods(
         self,
         query: str,
@@ -41,7 +45,7 @@ class CurseForgeService:
     ) -> Dict[str, Any]:
         """
         Search for mods on CurseForge
-        
+
         Args:
             query: Search query string
             game_version: Filter by Minecraft version (e.g., "1.20.1")
@@ -49,24 +53,24 @@ class CurseForgeService:
             sort_order: Sort order - "popularity", "lastUpdated", "name", "totalDownloads"
             page_index: Page number for pagination
             page_size: Number of results per page
-            
+
         Returns:
             Dictionary with search results and metadata
         """
         endpoint = f"{self.base_url}/mods/search"
-        
+
         params = {
             "searchFilter": query,
             "pageIndex": page_index,
             "pageSize": page_size,
             "sortOrder": sort_order,
         }
-        
+
         if game_version:
             params["gameVersion"] = game_version
         if category_id:
             params["categoryId"] = category_id
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -80,19 +84,19 @@ class CurseForgeService:
             except httpx.HTTPError as e:
                 logger.error(f"CurseForge API error: {e}")
                 raise
-    
+
     async def get_mod_info(self, mod_id: int) -> Dict[str, Any]:
         """
         Get detailed information about a specific mod
-        
+
         Args:
             mod_id: The CurseForge mod ID
-            
+
         Returns:
             Dictionary with mod details
         """
         endpoint = f"{self.base_url}/mods/{mod_id}"
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -105,7 +109,7 @@ class CurseForgeService:
             except httpx.HTTPError as e:
                 logger.error(f"CurseForge API error: {e}")
                 raise
-    
+
     async def get_mod_files(
         self,
         mod_id: int,
@@ -114,23 +118,23 @@ class CurseForgeService:
     ) -> Dict[str, Any]:
         """
         Get files/versions for a specific mod
-        
+
         Args:
             mod_id: The CurseForge mod ID
             game_version: Filter by game version
             page_index: Page number for pagination
-            
+
         Returns:
             Dictionary with file list
         """
         endpoint = f"{self.base_url}/mods/{mod_id}/files"
-        
+
         params = {
             "pageIndex": page_index,
         }
         if game_version:
             params["gameVersion"] = game_version
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -144,7 +148,7 @@ class CurseForgeService:
             except httpx.HTTPError as e:
                 logger.error(f"CurseForge API error: {e}")
                 raise
-    
+
     async def get_file_download_url(
         self,
         mod_id: int,
@@ -152,16 +156,16 @@ class CurseForgeService:
     ) -> str:
         """
         Get download URL for a specific mod file
-        
+
         Args:
             mod_id: The CurseForge mod ID
             file_id: The file ID to download
-            
+
         Returns:
             Download URL string
         """
         endpoint = f"{self.base_url}/mods/{mod_id}/files/{file_id}/download-url"
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -175,20 +179,20 @@ class CurseForgeService:
             except httpx.HTTPError as e:
                 logger.error(f"CurseForge API error: {e}")
                 raise
-    
+
     async def get_categories(self, game_id: int = 432) -> Dict[str, Any]:
         """
         Get available categories for a game
-        
+
         Args:
             game_id: Game ID (432 = Minecraft)
-            
+
         Returns:
             Dictionary with categories
         """
         endpoint = f"{self.base_url}/categories"
         params = {"gameId": game_id}
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -202,31 +206,31 @@ class CurseForgeService:
             except httpx.HTTPError as e:
                 logger.error(f"CurseForge API error: {e}")
                 raise
-    
+
     def parse_curseforge_url(self, url: str) -> Optional[Dict[str, Any]]:
         """
         Parse a CurseForge URL to extract mod information
-        
+
         Supports URLs like:
         - https://www.curseforge.com/minecraft/mods/mod-name
         - https://curseforge.com/minecraft/mods/mod-name
-        
+
         Args:
             url: The CurseForge URL to parse
-            
+
         Returns:
             Dictionary with parsed information or None if invalid
         """
         import re
-        
+
         # Handle None or empty input
         if not url:
             return None
-        
+
         # Pattern for CurseForge mod URLs
-        pattern = r'(?:https?://)?(?:www\.)?curseforge\.com/minecraft/mods/([^/?]+)'
+        pattern = r"(?:https?://)?(?:www\.)?curseforge\.com/minecraft/mods/([^/?]+)"
         match = re.search(pattern, url, re.IGNORECASE)
-        
+
         if match:
             slug = match.group(1)
             return {
@@ -234,7 +238,7 @@ class CurseForgeService:
                 "slug": slug,
                 "url": f"https://www.curseforge.com/minecraft/mods/{slug}",
             }
-        
+
         return None
 
 

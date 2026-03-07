@@ -1,5 +1,5 @@
 from typing import Optional, List
-from uuid import UUID as PyUUID # For type hinting UUID objects
+from uuid import UUID as PyUUID  # For type hinting UUID objects
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
@@ -108,9 +108,7 @@ async def update_job_progress(
     return prog
 
 
-async def get_job_progress(
-    session: AsyncSession, job_id: str
-) -> Optional[models.JobProgress]:
+async def get_job_progress(session: AsyncSession, job_id: str) -> Optional[models.JobProgress]:
     try:
         job_uuid = uuid.UUID(job_id)
     except ValueError:
@@ -148,6 +146,7 @@ async def create_result(
 
 # Feedback CRUD operations (enhanced for RL training)
 
+
 async def create_enhanced_feedback(
     session: AsyncSession,
     *,
@@ -180,12 +179,17 @@ async def create_enhanced_feedback(
     return feedback
 
 
-async def get_feedback(session: AsyncSession, feedback_id: PyUUID) -> Optional[models.ConversionFeedback]:
+async def get_feedback(
+    session: AsyncSession, feedback_id: PyUUID
+) -> Optional[models.ConversionFeedback]:
     stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.id == feedback_id)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
-async def get_feedback_by_job_id(session: AsyncSession, job_id: PyUUID) -> List[models.ConversionFeedback]:
+
+async def get_feedback_by_job_id(
+    session: AsyncSession, job_id: PyUUID
+) -> List[models.ConversionFeedback]:
     stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.job_id == job_id)
     result = await session.execute(stmt)
     return result.scalars().all()
@@ -200,6 +204,7 @@ async def list_all_feedback(
 
 
 # Document Embedding CRUD operations
+
 
 async def create_document_embedding(
     db: AsyncSession,
@@ -256,13 +261,11 @@ async def update_document_embedding(
     if document_source is not None:
         update_data["document_source"] = document_source
 
-    if not update_data: # Nothing to update
+    if not update_data:  # Nothing to update
         return db_embedding
 
     stmt = (
-        update(DocumentEmbedding)
-        .where(DocumentEmbedding.id == embedding_id)
-        .values(**update_data)
+        update(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id).values(**update_data)
     )
     await db.execute(stmt)
     await db.commit()
@@ -301,6 +304,7 @@ async def find_similar_embeddings(
 
 
 # A/B Testing CRUD operations
+
 
 async def create_experiment(
     session: AsyncSession,
@@ -387,9 +391,7 @@ async def update_experiment(
         return experiment
 
     stmt = (
-        update(models.Experiment)
-        .where(models.Experiment.id == experiment_id)
-        .values(**update_data)
+        update(models.Experiment).where(models.Experiment.id == experiment_id).values(**update_data)
     )
     await session.execute(stmt)
     if commit:
@@ -425,10 +427,14 @@ async def create_experiment_variant(
     # If this is a control variant, make sure no other control variant exists for this experiment
     if is_control:
         # Use SELECT ... FOR UPDATE to prevent race conditions
-        stmt = select(models.ExperimentVariant).where(
-            models.ExperimentVariant.experiment_id == experiment_id,
-            models.ExperimentVariant.is_control,
-        ).with_for_update()
+        stmt = (
+            select(models.ExperimentVariant)
+            .where(
+                models.ExperimentVariant.experiment_id == experiment_id,
+                models.ExperimentVariant.is_control,
+            )
+            .with_for_update()
+        )
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
         if existing_control:
@@ -493,11 +499,15 @@ async def update_experiment_variant(
     # If this is being set as a control variant, make sure no other control variant exists for this experiment
     if is_control and is_control != variant.is_control:
         # Use SELECT ... FOR UPDATE to prevent race conditions
-        stmt = select(models.ExperimentVariant).where(
-            models.ExperimentVariant.experiment_id == variant.experiment_id,
-            models.ExperimentVariant.is_control,
-            models.ExperimentVariant.id != variant_id,
-        ).with_for_update()
+        stmt = (
+            select(models.ExperimentVariant)
+            .where(
+                models.ExperimentVariant.experiment_id == variant.experiment_id,
+                models.ExperimentVariant.is_control,
+                models.ExperimentVariant.id != variant_id,
+            )
+            .with_for_update()
+        )
         result = await session.execute(stmt)
         existing_control = result.scalar_one_or_none()
         if existing_control:
@@ -605,7 +615,9 @@ async def list_experiment_results(
     result = await session.execute(stmt)
     return result.scalars().all()
 
+
 # Behavior File CRUD operations for post-conversion editor
+
 
 async def create_behavior_file(
     session: AsyncSession,
@@ -641,9 +653,7 @@ async def create_behavior_file(
     return behavior_file
 
 
-async def get_behavior_file(
-    session: AsyncSession, file_id: str
-) -> Optional[models.BehaviorFile]:
+async def get_behavior_file(session: AsyncSession, file_id: str) -> Optional[models.BehaviorFile]:
     """Get a specific behavior file by ID."""
     try:
         file_uuid = uuid.UUID(file_id)

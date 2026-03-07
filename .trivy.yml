@@ -1,0 +1,30 @@
+# Trivy Configuration
+# Ignore vulnerabilities below MEDIUM severity and allow acknowledged vulnerabilities
+
+format: table
+severity:
+  - UNKNOWN
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+
+# Ignore unfixed vulnerabilities (common for dependencies)
+ignore-unfixed: true
+
+# Vulnerability scanning settings
+vulnerability:
+  # Ignore vulnerabilities in these package types
+  type:
+    - os
+    - library
+
+# Security checks to run
+security:
+  checks:
+    - vuln
+
+# Database settings  
+db:
+  # Use GitHub Advisory Database
+  use-legacy: false

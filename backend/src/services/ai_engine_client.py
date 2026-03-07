@@ -25,7 +25,7 @@ DEFAULT_POLL_INTERVAL = 2.0  # seconds
 
 class AIEngineError(Exception):
     """Base exception for AI Engine errors."""
-    
+
     def __init__(self, message: str, status_code: Optional[int] = None):
         super().__init__(message)
         self.status_code = status_code
@@ -34,14 +34,14 @@ class AIEngineError(Exception):
 class AIEngineClient:
     """
     HTTP client for AI Engine communication.
-    
+
     Provides methods for:
     - Starting conversions
     - Checking conversion status
     - Downloading converted files
     - Polling for progress updates
     """
-    
+
     def __init__(
         self,
         base_url: str = AI_ENGINE_URL,
@@ -52,7 +52,7 @@ class AIEngineClient:
         self.timeout = timeout
         self.poll_interval = poll_interval
         self._client: Optional[httpx.AsyncClient] = None
-    
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
         if self._client is None or self._client.is_closed:
@@ -62,17 +62,17 @@ class AIEngineClient:
                 follow_redirects=True,
             )
         return self._client
-    
+
     async def close(self):
         """Close the HTTP client."""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
-    
+
     async def health_check(self) -> bool:
         """
         Check if the AI Engine is healthy.
-        
+
         Returns:
             True if AI Engine is healthy, False otherwise
         """
@@ -83,7 +83,7 @@ class AIEngineClient:
         except Exception as e:
             logger.warning(f"AI Engine health check failed: {e}")
             return False
-    
+
     async def start_conversion(
         self,
         job_id: str,
@@ -93,36 +93,36 @@ class AIEngineClient:
     ) -> Dict[str, Any]:
         """
         Start a conversion job on the AI Engine.
-        
+
         Args:
             job_id: Unique job identifier
             mod_file_path: Path to the mod file
             conversion_options: Optional conversion settings
             experiment_variant: Optional experiment variant for A/B testing
-            
+
         Returns:
             Conversion response with job details
-            
+
         Raises:
             AIEngineError: If the conversion fails to start
         """
         try:
             client = await self._get_client()
-            
+
             request_data = {
                 "job_id": job_id,
                 "mod_file_path": mod_file_path,
                 "conversion_options": conversion_options or {},
             }
-            
+
             if experiment_variant:
                 request_data["experiment_variant"] = experiment_variant
-            
+
             response = await client.post(
                 "/api/v1/convert",
                 json=request_data,
             )
-            
+
             if response.status_code != 200:
                 error_msg = f"AI Engine returned status {response.status_code}"
                 try:
@@ -131,9 +131,9 @@ class AIEngineClient:
                 except Exception:
                     pass
                 raise AIEngineError(error_msg, status_code=response.status_code)
-            
+
             return response.json()
-            
+
         except httpx.TimeoutException as e:
             logger.error(f"Timeout starting conversion: {e}")
             raise AIEngineError("Conversion request timed out")
@@ -145,35 +145,35 @@ class AIEngineClient:
         except Exception as e:
             logger.error(f"Unexpected error starting conversion: {e}")
             raise AIEngineError(f"Failed to start conversion: {str(e)}")
-    
+
     async def get_conversion_status(self, job_id: str) -> Dict[str, Any]:
         """
         Get the status of a conversion job.
-        
+
         Args:
             job_id: The job identifier
-            
+
         Returns:
             Conversion status from AI Engine
-            
+
         Raises:
             AIEngineError: If the job is not found or request fails
         """
         try:
             client = await self._get_client()
             response = await client.get(f"/api/v1/status/{job_id}")
-            
+
             if response.status_code == 404:
                 raise AIEngineError("Job not found", status_code=404)
-            
+
             if response.status_code != 200:
                 raise AIEngineError(
                     f"Failed to get status: {response.status_code}",
-                    status_code=response.status_code
+                    status_code=response.status_code,
                 )
-            
+
             return response.json()
-            
+
         except AIEngineError:
             raise
         except httpx.TimeoutException:
@@ -181,7 +181,7 @@ class AIEngineClient:
         except Exception as e:
             logger.error(f"Error getting conversion status: {e}")
             raise AIEngineError(f"Failed to get conversion status: {str(e)}")
-    
+
     async def download_converted_file(
         self,
         output_path: str,
@@ -191,29 +191,29 @@ class AIEngineClient:
     ) -> str:
         """
         Download a converted file from the AI Engine.
-        
+
         Args:
             output_path: Local path to save the converted file
             job_id: The job identifier
             mod_file_path: Path to the original mod file
             conversion_options: Optional conversion settings
-            
+
         Returns:
             Path to the downloaded file
-            
+
         Raises:
             AIEngineError: If the download fails
         """
         try:
             client = await self._get_client()
-            
+
             # For file download, we need to start conversion and then poll for completion
             await self.start_conversion(
                 job_id=job_id,
                 mod_file_path=mod_file_path,
                 conversion_options=conversion_options,
             )
-            
+
             # Poll until conversion completes
             async for status in self.poll_conversion_status(job_id):
                 if status.get("status") == "completed":
@@ -222,34 +222,34 @@ class AIEngineClient:
                     raise AIEngineError(
                         f"Conversion failed: {status.get('message', 'Unknown error')}"
                     )
-            
+
             # Download the converted file
             response = await client.get(
                 "/api/v1/download",
                 params={"job_id": job_id},
                 timeout=httpx.Timeout(300.0),  # 5 min timeout for download
             )
-            
+
             if response.status_code != 200:
                 raise AIEngineError(
                     f"Download failed with status {response.status_code}",
-                    status_code=response.status_code
+                    status_code=response.status_code,
                 )
-            
+
             # Save the file
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, "wb") as f:
                 async for chunk in response.aiter_bytes(chunk_size=8192):
                     f.write(chunk)
-            
+
             return output_path
-            
+
         except AIEngineError:
             raise
         except Exception as e:
             logger.error(f"Error downloading converted file: {e}")
             raise AIEngineError(f"Failed to download converted file: {str(e)}")
-    
+
     async def poll_conversion_status(
         self,
         job_id: str,
@@ -257,32 +257,32 @@ class AIEngineClient:
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Poll for conversion status updates.
-        
+
         Args:
             job_id: The job identifier
             poll_interval: Optional poll interval (uses default if not specified)
-            
+
         Yields:
             Conversion status dict on each poll
         """
         interval = poll_interval or self.poll_interval
-        
+
         while True:
             try:
                 status = await self.get_conversion_status(job_id)
                 yield status
-                
+
                 # Stop polling if terminal state
                 if status.get("status") in ("completed", "failed", "cancelled"):
                     break
-                    
+
             except AIEngineError as e:
                 if e.status_code == 404:
                     # Job not found - treat as terminal
                     yield {"status": "failed", "message": "Job not found", "progress": 0}
                     break
                 raise
-            
+
             await asyncio.sleep(interval)
 
 

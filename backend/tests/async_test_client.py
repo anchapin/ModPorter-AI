@@ -4,6 +4,7 @@ Async test client for FastAPI applications with async database support.
 This solves the common issue where FastAPI's TestClient runs synchronously
 but async database operations need an async context.
 """
+
 import logging
 from typing import Optional
 import httpx
@@ -36,6 +37,7 @@ class AsyncTestClient:
         """Async context manager entry."""
         # Use transport parameter instead of app parameter for newer httpx versions
         from httpx import ASGITransport
+
         transport = ASGITransport(app=self.app)
         self._client = httpx.AsyncClient(transport=transport, base_url=self.base_url)
         return self
@@ -91,15 +93,16 @@ async def async_test_db():
     # Create a simple test table instead of importing complex models
     # This avoids PostgreSQL-specific types like JSONB that don't work with SQLite
     from sqlalchemy import MetaData, Table, Column, Integer, String, Text
+
     metadata = MetaData()
 
     # Create a simple test table for testing
     Table(
-        'test_items',
+        "test_items",
         metadata,
-        Column('id', Integer, primary_key=True),
-        Column('name', String(100)),
-        Column('data', Text)  # Use Text instead of JSONB for SQLite compatibility
+        Column("id", Integer, primary_key=True),
+        Column("name", String(100)),
+        Column("data", Text),  # Use Text instead of JSONB for SQLite compatibility
     )
 
     try:
@@ -112,6 +115,7 @@ async def async_test_db():
 
     # Create and return session directly
     from sqlalchemy.ext.asyncio import async_sessionmaker
+
     async_session = async_sessionmaker(engine, expire_on_commit=False)
 
     session: AsyncSession = async_session()
@@ -140,7 +144,8 @@ async def async_client():
                 # Try relative import from backend directory
                 import sys
                 import os
-                backend_path = os.path.join(os.path.dirname(__file__), '..')
+
+                backend_path = os.path.join(os.path.dirname(__file__), "..")
                 if backend_path not in sys.path:
                     sys.path.insert(0, backend_path)
                 from main import app
@@ -170,7 +175,8 @@ async def httpx_client():
                 # Try relative import from backend directory
                 import sys
                 import os
-                backend_path = os.path.join(os.path.dirname(__file__), '..')
+
+                backend_path = os.path.join(os.path.dirname(__file__), "..")
                 if backend_path not in sys.path:
                     sys.path.insert(0, backend_path)
                 from main import app

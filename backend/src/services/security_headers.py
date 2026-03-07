@@ -1,10 +1,12 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     Middleware to add security headers to all responses.
     """
+
     def __init__(self, app: ASGIApp):
         super().__init__(app)
 

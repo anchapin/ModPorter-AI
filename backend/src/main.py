@@ -7,31 +7,54 @@ from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, Response
 from pydantic import BaseModel, Field
-from services import addon_exporter # For .mcaddon export
-from services import conversion_parser # For parsing converted pack output
+from services import addon_exporter  # For .mcaddon export
+from services import conversion_parser  # For parsing converted pack output
 from services.asset_conversion_service import asset_conversion_service
-import shutil # For directory operations
+import shutil  # For directory operations
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
 import uvicorn
 import os
 import uuid
-import asyncio # Added for simulated AI conversion
+import asyncio  # Added for simulated AI conversion
 import httpx  # Add for AI Engine communication
 import json  # For JSON operations
 from dotenv import load_dotenv
 import logging
 from db.init_db import init_db
-from uuid import UUID as PyUUID # For addon_id path parameter
-from models import addon_models as pydantic_addon_models # For addon Pydantic models
-from services.report_models import InteractiveReport, FullConversionReport # For conversion report model
+from uuid import UUID as PyUUID  # For addon_id path parameter
+from models import addon_models as pydantic_addon_models  # For addon Pydantic models
+from services.report_models import (
+    InteractiveReport,
+    FullConversionReport,
+)  # For conversion report model
 from services.report_generator import ConversionReportGenerator
 from services.error_handlers import register_exception_handlers
-from services.rate_limiter import RateLimitMiddleware, get_rate_limiter, init_rate_limiter, close_rate_limiter, create_global_limiter
+from services.rate_limiter import (
+    RateLimitMiddleware,
+    get_rate_limiter,
+    init_rate_limiter,
+    close_rate_limiter,
+    create_global_limiter,
+)
 from services.security_headers import SecurityHeadersMiddleware
 
 # Import API routers
-from api import performance, behavioral_testing, validation, comparison, embeddings, feedback, experiments, behavior_files, behavior_templates, behavior_export, advanced_events, conversions, mod_imports
+from api import (
+    performance,
+    behavioral_testing,
+    validation,
+    comparison,
+    embeddings,
+    feedback,
+    experiments,
+    behavior_files,
+    behavior_templates,
+    behavior_export,
+    advanced_events,
+    conversions,
+    mod_imports,
+)
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
 # Import mock data from report_generator
@@ -48,11 +71,12 @@ load_dotenv()
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://localhost:8001")
 
 TEMP_UPLOADS_DIR = "temp_uploads"
-CONVERSION_OUTPUTS_DIR = "conversion_outputs" # Added
+CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # In-memory database for conversion jobs (legacy mirror for test compatibility)
-conversion_jobs_db: Dict[str, 'ConversionJob'] = {}
+conversion_jobs_db: Dict[str, "ConversionJob"] = {}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -64,6 +88,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     logger.info("Application shutdown")
+
 
 # Cache service instance
 cache = CacheService()
@@ -106,7 +131,7 @@ app = FastAPI(
         {
             "name": "behavior-files",
             "description": "Post-conversion behavior file editing",
-        }
+        },
     ],
     docs_url="/docs",
     redoc_url="/redoc",
@@ -130,17 +155,20 @@ app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize rate limiter on startup"""
     await init_rate_limiter()
     logger.info("Rate limiting middleware initialized")
 
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close rate limiter on shutdown"""
     await close_rate_limiter()
     logger.info("Rate limiter closed")
+
 
 # Include API routers
 app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
@@ -161,15 +189,19 @@ app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tag
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
 
+
 # Pydantic models for API documentation
 class ConversionRequest(BaseModel):
     """Request model for mod conversion"""
+
     # Legacy
     file_name: Optional[str] = None
     # New
     file_id: Optional[str] = None
     original_filename: Optional[str] = None
-    target_version: str = Field(default="1.20.0", description="Target Minecraft version for the conversion.")
+    target_version: str = Field(
+        default="1.20.0", description="Target Minecraft version for the conversion."
+    )
     options: Optional[dict] = Field(default=None, description="Optional conversion settings.")
 
     @property
@@ -181,25 +213,36 @@ class ConversionRequest(BaseModel):
     def resolved_original_name(self) -> str:
         return self.original_filename or self.file_name or ""
 
+
 class UploadResponse(BaseModel):
     """Response model for file upload"""
+
     file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
     original_filename: str = Field(..., description="The original name of the uploaded file.")
-    saved_filename: str = Field(..., description="The name under which the file is saved on the server (job_id + extension).")
+    saved_filename: str = Field(
+        ...,
+        description="The name under which the file is saved on the server (job_id + extension).",
+    )
     size: int = Field(..., description="Size of the uploaded file in bytes.")
-    content_type: Optional[str] = Field(default=None, description="Detected content type of the uploaded file.")
+    content_type: Optional[str] = Field(
+        default=None, description="Detected content type of the uploaded file."
+    )
     message: str = Field(..., description="Status message confirming the upload.")
     filename: str = Field(..., description="The uploaded filename (matches original_filename)")
 
+
 class ConversionResponse(BaseModel):
     """Response model for mod conversion"""
+
     job_id: str
     status: str
     message: str
     estimated_time: Optional[int] = None
 
+
 class ConversionStatus(BaseModel):
     """Status model for conversion job"""
+
     job_id: str
     status: str
     progress: int
@@ -208,8 +251,10 @@ class ConversionStatus(BaseModel):
     error: Optional[str] = None
     created_at: datetime
 
+
 class ConversionJob(BaseModel):
     """Detailed model for a conversion job"""
+
     job_id: str
     file_id: str
     original_filename: str
@@ -222,21 +267,23 @@ class ConversionJob(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class HealthResponse(BaseModel):
     """Health check response model"""
+
     status: str
     version: str
     timestamp: str
+
 
 # Health check endpoint
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the API"""
     return HealthResponse(
-        status="healthy",
-        version="1.0.0",
-        timestamp=datetime.now(timezone.utc).isoformat()
+        status="healthy", version="1.0.0", timestamp=datetime.now(timezone.utc).isoformat()
     )
+
 
 # File upload endpoint
 @app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
@@ -258,13 +305,13 @@ async def upload_file(file: UploadFile = File(...)):
     # We'll validate size during the actual file reading process
 
     # Validate file type
-    allowed_extensions = ['.jar', '.zip', '.mcaddon']
+    allowed_extensions = [".jar", ".zip", ".mcaddon"]
     original_filename = file.filename
     file_ext = os.path.splitext(original_filename)[1].lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=400,
-            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
+            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}",
         )
 
     # Generate unique file identifier
@@ -281,7 +328,7 @@ async def upload_file(file: UploadFile = File(...)):
                 if real_file_size > MAX_UPLOAD_SIZE:
                     raise HTTPException(
                         status_code=413,
-                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+                        detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
                     )
                 buffer.write(chunk)
     except Exception as e:
@@ -294,12 +341,13 @@ async def upload_file(file: UploadFile = File(...)):
     return UploadResponse(
         file_id=file_id,
         original_filename=original_filename,
-        saved_filename=saved_filename, # The name with job_id and extension
+        saved_filename=saved_filename,  # The name with job_id and extension
         size=real_file_size,  # Use the actual size we read
         content_type=file.content_type,
         message=f"File '{original_filename}' saved successfully as '{saved_filename}'",
-        filename=original_filename
+        filename=original_filename,
     )
+
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
@@ -313,7 +361,7 @@ async def simulate_ai_conversion(job_id: str):
         agent="ConversionWorkflow",
         status="queued",
         progress=0,
-        message="Job queued, waiting to start"
+        message="Job queued, waiting to start",
     )
 
     # Temporary directory for simulated pack output
@@ -322,61 +370,83 @@ async def simulate_ai_conversion(job_id: str):
     os.makedirs(base_simulated_pack_dir, exist_ok=True)
     # Specific pack dir for this job_id
     simulated_pack_output_path = os.path.join(base_simulated_pack_dir, job_id)
-    if os.path.exists(simulated_pack_output_path): # Clean up from previous run if any
+    if os.path.exists(simulated_pack_output_path):  # Clean up from previous run if any
         shutil.rmtree(simulated_pack_output_path)
     os.makedirs(simulated_pack_output_path)
 
     try:
         async with AsyncSessionLocal() as session:
-            job = await crud.get_job(session, PyUUID(job_id)) # Ensure job_id is UUID
+            job = await crud.get_job(session, PyUUID(job_id))  # Ensure job_id is UUID
             if not job:
                 logger.error(f"Error: Job {job_id} not found for AI simulation.")
                 return
 
-            original_mod_name = job.input_data.get("original_filename", "ConvertedAddon").split('.')[0]
+            original_mod_name = job.input_data.get("original_filename", "ConvertedAddon").split(
+                "."
+            )[0]
             # Attempt to get user_id from job input_data, fall back to a default if not found
             # This field might not exist in older job records.
             user_id_for_addon = job.input_data.get("user_id", conversion_parser.DEFAULT_USER_ID)
 
-
-            def mirror_dict_from_job(current_job, progress_val=None, result_url=None, error_message=None):
+            def mirror_dict_from_job(
+                current_job, progress_val=None, result_url=None, error_message=None
+            ):
                 return ConversionJob(
                     job_id=str(current_job.id),
                     file_id=current_job.input_data.get("file_id"),
                     original_filename=current_job.input_data.get("original_filename"),
                     status=current_job.status,
-                    progress=(progress_val if progress_val is not None else (current_job.progress.progress if current_job.progress else 0)),
+                    progress=(
+                        progress_val
+                        if progress_val is not None
+                        else (current_job.progress.progress if current_job.progress else 0)
+                    ),
                     target_version=current_job.input_data.get("target_version"),
                     options=current_job.input_data.get("options"),
                     result_url=result_url,
                     error_message=error_message,
                     created_at=current_job.created_at,
-                    updated_at=current_job.updated_at
+                    updated_at=current_job.updated_at,
                 )
 
             try:
                 # Stage 1: JavaAnalyzerAgent (0-25%)
-                await ProgressHandler.broadcast_agent_start(job_id, "JavaAnalyzerAgent", "Analyzing Java mod structure and dependencies")
+                await ProgressHandler.broadcast_agent_start(
+                    job_id, "JavaAnalyzerAgent", "Analyzing Java mod structure and dependencies"
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_update(job_id, "JavaAnalyzerAgent", 10, "Parsing Java AST...")
+                await ProgressHandler.broadcast_agent_update(
+                    job_id, "JavaAnalyzerAgent", 10, "Parsing Java AST..."
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_complete(job_id, "JavaAnalyzerAgent", "Java analysis complete")
+                await ProgressHandler.broadcast_agent_complete(
+                    job_id, "JavaAnalyzerAgent", "Java analysis complete"
+                )
 
                 # Stage 2: Preprocessing -> Processing
                 job = await crud.update_job_status(session, PyUUID(job_id), "processing")
                 await crud.upsert_progress(session, PyUUID(job_id), 25)
                 mirror = mirror_dict_from_job(job, 25)
-                conversion_jobs_db[job_id] = mirror # Keep legacy mirror for now
+                conversion_jobs_db[job_id] = mirror  # Keep legacy mirror for now
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 25)
                 logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
                 # Stage 3: BedrockArchitectAgent (25-50%)
-                await ProgressHandler.broadcast_agent_start(job_id, "BedrockArchitectAgent", "Designing Bedrock conversion architecture")
+                await ProgressHandler.broadcast_agent_start(
+                    job_id, "BedrockArchitectAgent", "Designing Bedrock conversion architecture"
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_update(job_id, "BedrockArchitectAgent", 35, "Mapping Java components to Bedrock equivalents...")
+                await ProgressHandler.broadcast_agent_update(
+                    job_id,
+                    "BedrockArchitectAgent",
+                    35,
+                    "Mapping Java components to Bedrock equivalents...",
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_complete(job_id, "BedrockArchitectAgent", "Architecture design complete")
+                await ProgressHandler.broadcast_agent_complete(
+                    job_id, "BedrockArchitectAgent", "Architecture design complete"
+                )
 
                 # Stage 4: Processing -> Postprocessing
                 await asyncio.sleep(1)
@@ -393,18 +463,30 @@ async def simulate_ai_conversion(job_id: str):
                 logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 50%")
 
                 # Stage 5: LogicTranslatorAgent (50-75%)
-                await ProgressHandler.broadcast_agent_start(job_id, "LogicTranslatorAgent", "Translating Java logic to JavaScript")
+                await ProgressHandler.broadcast_agent_start(
+                    job_id, "LogicTranslatorAgent", "Translating Java logic to JavaScript"
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_update(job_id, "LogicTranslatorAgent", 60, "Converting game logic and behaviors...")
+                await ProgressHandler.broadcast_agent_update(
+                    job_id, "LogicTranslatorAgent", 60, "Converting game logic and behaviors..."
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_complete(job_id, "LogicTranslatorAgent", "Logic translation complete")
+                await ProgressHandler.broadcast_agent_complete(
+                    job_id, "LogicTranslatorAgent", "Logic translation complete"
+                )
 
                 # Stage 6: AssetConverterAgent (75-90%)
-                await ProgressHandler.broadcast_agent_start(job_id, "AssetConverterAgent", "Converting assets (textures, models, sounds)")
+                await ProgressHandler.broadcast_agent_start(
+                    job_id, "AssetConverterAgent", "Converting assets (textures, models, sounds)"
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_update(job_id, "AssetConverterAgent", 80, "Processing texture files...")
+                await ProgressHandler.broadcast_agent_update(
+                    job_id, "AssetConverterAgent", 80, "Processing texture files..."
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_complete(job_id, "AssetConverterAgent", "Asset conversion complete")
+                await ProgressHandler.broadcast_agent_complete(
+                    job_id, "AssetConverterAgent", "Asset conversion complete"
+                )
 
                 # Update to 75% progress
                 await crud.upsert_progress(session, PyUUID(job_id), 75)
@@ -422,11 +504,17 @@ async def simulate_ai_conversion(job_id: str):
                     return
 
                 # Stage 8: PackagingAgent (90-100%)
-                await ProgressHandler.broadcast_agent_start(job_id, "PackagingAgent", "Packaging add-on into .mcaddon file")
+                await ProgressHandler.broadcast_agent_start(
+                    job_id, "PackagingAgent", "Packaging add-on into .mcaddon file"
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_update(job_id, "PackagingAgent", 95, "Creating manifest and packaging files...")
+                await ProgressHandler.broadcast_agent_update(
+                    job_id, "PackagingAgent", 95, "Creating manifest and packaging files..."
+                )
                 await asyncio.sleep(1)
-                await ProgressHandler.broadcast_agent_complete(job_id, "PackagingAgent", "Packaging complete")
+                await ProgressHandler.broadcast_agent_complete(
+                    job_id, "PackagingAgent", "Packaging complete"
+                )
 
                 # --- Simulate creating pack structure ---
                 bp_name = f"{original_mod_name} BP"
@@ -440,32 +528,91 @@ async def simulate_ai_conversion(job_id: str):
 
                 # BP Manifest
                 with open(os.path.join(bp_dir, "manifest.json"), "w") as f:
-                    json.dump({"format_version": 2, "header": {"name": bp_name, "description": "Simulated BP", "uuid": str(uuid.uuid4()), "version": [1,0,0]}, "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1,0,0]}]}, f)
+                    json.dump(
+                        {
+                            "format_version": 2,
+                            "header": {
+                                "name": bp_name,
+                                "description": "Simulated BP",
+                                "uuid": str(uuid.uuid4()),
+                                "version": [1, 0, 0],
+                            },
+                            "modules": [
+                                {"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}
+                            ],
+                        },
+                        f,
+                    )
                 # RP Manifest
                 with open(os.path.join(rp_dir, "manifest.json"), "w") as f:
-                    json.dump({"format_version": 2, "header": {"name": rp_name, "description": "Simulated RP", "uuid": str(uuid.uuid4()), "version": [1,0,0]}, "modules": [{"type": "resources", "uuid": str(uuid.uuid4()), "version": [1,0,0]}]}, f)
+                    json.dump(
+                        {
+                            "format_version": 2,
+                            "header": {
+                                "name": rp_name,
+                                "description": "Simulated RP",
+                                "uuid": str(uuid.uuid4()),
+                                "version": [1, 0, 0],
+                            },
+                            "modules": [
+                                {
+                                    "type": "resources",
+                                    "uuid": str(uuid.uuid4()),
+                                    "version": [1, 0, 0],
+                                }
+                            ],
+                        },
+                        f,
+                    )
                 # Dummy block behavior
                 with open(os.path.join(bp_dir, "blocks", "simulated_block.json"), "w") as f:
-                    json.dump({"minecraft:block": {"description": {"identifier": "sim:simulated_block"}, "components": {"minecraft:loot": "loot_tables/blocks/simulated_block.json"}}}, f)
+                    json.dump(
+                        {
+                            "minecraft:block": {
+                                "description": {"identifier": "sim:simulated_block"},
+                                "components": {
+                                    "minecraft:loot": "loot_tables/blocks/simulated_block.json"
+                                },
+                            }
+                        },
+                        f,
+                    )
                 # Dummy recipe
                 with open(os.path.join(bp_dir, "recipes", "simulated_recipe.json"), "w") as f:
-                    json.dump({"minecraft:recipe_shaped": {"description": {"identifier": "sim:simulated_recipe"}, "tags": ["crafting_table"], "pattern": ["#"], "key": {"#": {"item": "minecraft:stick"}}, "result": {"item": "sim:simulated_block"}}}, f)
+                    json.dump(
+                        {
+                            "minecraft:recipe_shaped": {
+                                "description": {"identifier": "sim:simulated_recipe"},
+                                "tags": ["crafting_table"],
+                                "pattern": ["#"],
+                                "key": {"#": {"item": "minecraft:stick"}},
+                                "result": {"item": "sim:simulated_block"},
+                            }
+                        },
+                        f,
+                    )
                 # Dummy texture
-                dummy_texture_path = os.path.join(rp_dir, "textures", "blocks", "simulated_block_tex.png")
+                dummy_texture_path = os.path.join(
+                    rp_dir, "textures", "blocks", "simulated_block_tex.png"
+                )
                 with open(dummy_texture_path, "w") as f:
                     f.write("dummy png content")
                 # --- End of pack simulation ---
 
-                addon_data_upload, identified_assets_info = conversion_parser.transform_pack_to_addon_data(
-                    pack_root_path=simulated_pack_output_path,
-                    addon_name_fallback=original_mod_name,
-                    addon_id_override=PyUUID(job_id), # Use job_id as addon_id
-                    user_id=user_id_for_addon
+                addon_data_upload, identified_assets_info = (
+                    conversion_parser.transform_pack_to_addon_data(
+                        pack_root_path=simulated_pack_output_path,
+                        addon_name_fallback=original_mod_name,
+                        addon_id_override=PyUUID(job_id),  # Use job_id as addon_id
+                        user_id=user_id_for_addon,
+                    )
                 )
 
                 # Save Addon, Blocks, Recipes (assets list in addon_data_upload is empty)
                 await crud.update_addon_details(session, PyUUID(job_id), addon_data_upload)
-                logger.info(f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB.")
+                logger.info(
+                    f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB."
+                )
 
                 # Save Assets
                 for asset_info in identified_assets_info:
@@ -474,19 +621,25 @@ async def simulate_ai_conversion(job_id: str):
                         addon_id=PyUUID(job_id),
                         source_file_path=asset_info["source_tmp_path"],
                         asset_type=asset_info["type"],
-                        original_filename=asset_info["original_filename"]
+                        original_filename=asset_info["original_filename"],
                     )
-                logger.info(f"Job {job_id}: {len(identified_assets_info)} assets processed and saved.")
+                logger.info(
+                    f"Job {job_id}: {len(identified_assets_info)} assets processed and saved."
+                )
 
                 # Asset conversion integration - convert uploaded assets using AI engine
                 try:
                     logger.info(f"Job {job_id}: Starting asset conversion for conversion job")
-                    asset_conversion_result = await asset_conversion_service.convert_assets_for_conversion(job_id)
+                    asset_conversion_result = (
+                        await asset_conversion_service.convert_assets_for_conversion(job_id)
+                    )
 
                     if asset_conversion_result.get("success"):
                         converted_count = asset_conversion_result.get("converted_count", 0)
                         failed_count = asset_conversion_result.get("failed_count", 0)
-                        logger.info(f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed")
+                        logger.info(
+                            f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed"
+                        )
                     else:
                         logger.warning(f"Job {job_id}: Asset conversion batch had issues")
 
@@ -496,14 +649,17 @@ async def simulate_ai_conversion(job_id: str):
 
                 # Original ZIP creation (can be retained or removed)
                 os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
-                mock_output_filename_internal = f"{job.id}_converted.zip" # Original ZIP name
-                mock_output_filepath = os.path.join(CONVERSION_OUTPUTS_DIR, mock_output_filename_internal)
+                mock_output_filename_internal = f"{job.id}_converted.zip"  # Original ZIP name
+                mock_output_filepath = os.path.join(
+                    CONVERSION_OUTPUTS_DIR, mock_output_filename_internal
+                )
                 result_url = f"/api/v1/convert/{job.id}/download"
 
                 # Create a simple zip for download endpoint if needed, or remove if export is primary
-                shutil.make_archive(os.path.splitext(mock_output_filepath)[0], 'zip', simulated_pack_output_path)
+                shutil.make_archive(
+                    os.path.splitext(mock_output_filepath)[0], "zip", simulated_pack_output_path
+                )
                 logger.info(f"Job {job_id}: Original ZIP archive created at {mock_output_filepath}")
-
 
                 job = await crud.update_job_status(session, PyUUID(job_id), "completed")
                 await crud.upsert_progress(session, PyUUID(job_id), 100)
@@ -512,13 +668,18 @@ async def simulate_ai_conversion(job_id: str):
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 100)
-                logger.info(f"Job {job_id}: AI Conversion COMPLETED. Output processed into addon DB. Original ZIP at: {mock_output_filepath}")
+                logger.info(
+                    f"Job {job_id}: AI Conversion COMPLETED. Output processed into addon DB. Original ZIP at: {mock_output_filepath}"
+                )
 
                 # Broadcast completion to WebSocket clients
                 await ProgressHandler.broadcast_conversion_complete(job_id, result_url)
 
             except Exception as e_inner:
-                logger.error(f"Error during AI simulation processing for job {job_id}: {e_inner}", exc_info=True)
+                logger.error(
+                    f"Error during AI simulation processing for job {job_id}: {e_inner}",
+                    exc_info=True,
+                )
                 job = await crud.update_job_status(session, PyUUID(job_id), "failed")
                 mirror = mirror_dict_from_job(job, 0, None, str(e_inner))
                 conversion_jobs_db[job_id] = mirror
@@ -532,19 +693,26 @@ async def simulate_ai_conversion(job_id: str):
                 # Clean up the temporary simulated pack directory
                 if os.path.exists(simulated_pack_output_path):
                     shutil.rmtree(simulated_pack_output_path)
-                    logger.info(f"Cleaned up simulated pack directory: {simulated_pack_output_path}")
+                    logger.info(
+                        f"Cleaned up simulated pack directory: {simulated_pack_output_path}"
+                    )
 
     except Exception as e_outer:
-        logger.error(f"Critical database or setup failure during AI simulation for job {job_id}: {e_outer}", exc_info=True)
+        logger.error(
+            f"Critical database or setup failure during AI simulation for job {job_id}: {e_outer}",
+            exc_info=True,
+        )
         try:
             # Attempt to update in-memory and cache status to failed if possible
-            if job_id in conversion_jobs_db: # Check if job_id is string key
+            if job_id in conversion_jobs_db:  # Check if job_id is string key
                 job_data = conversion_jobs_db[job_id]
                 job_data.status = "failed"
                 job_data.progress = 0
                 job_data.error_message = "Critical simulation error: " + str(e_outer)
                 await cache.set_job_status(job_id, job_data.model_dump())
-            elif PyUUID(job_id) in conversion_jobs_db: # Check if job_id is UUID key (less likely for this dict)
+            elif (
+                PyUUID(job_id) in conversion_jobs_db
+            ):  # Check if job_id is UUID key (less likely for this dict)
                 # This path might be less common depending on how conversion_jobs_db is keyed
                 job_data_uuid_key = conversion_jobs_db[PyUUID(job_id)]
                 job_data_uuid_key.status = "failed"
@@ -552,7 +720,10 @@ async def simulate_ai_conversion(job_id: str):
                 await cache.set_job_status(str(PyUUID(job_id)), job_data_uuid_key.model_dump())
 
         except Exception as cache_error:
-            logger.error(f"Failed to update cache after critical simulation error for job {job_id}: {cache_error}", exc_info=True)
+            logger.error(
+                f"Failed to update cache after critical simulation error for job {job_id}: {cache_error}",
+                exc_info=True,
+            )
         return
 
 
@@ -572,13 +743,17 @@ async def call_ai_engine_conversion(job_id: str):
                 file_id=job.input_data.get("file_id"),
                 original_filename=job.input_data.get("original_filename"),
                 status=job.status,
-                progress=(progress_val if progress_val is not None else (job.progress.progress if job.progress else 0)),
+                progress=(
+                    progress_val
+                    if progress_val is not None
+                    else (job.progress.progress if job.progress else 0)
+                ),
                 target_version=job.input_data.get("target_version"),
                 options=job.input_data.get("options"),
                 result_url=result_url if result_url is not None else None,
                 error_message=error_message,
                 created_at=job.created_at,
-                updated_at=job.updated_at
+                updated_at=job.updated_at,
             )
 
         try:
@@ -597,7 +772,7 @@ async def call_ai_engine_conversion(job_id: str):
             ai_request = {
                 "job_id": job_id,
                 "mod_file_path": input_file_path,
-                "conversion_options": conversion_options
+                "conversion_options": conversion_options,
             }
 
             print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
@@ -607,7 +782,9 @@ async def call_ai_engine_conversion(job_id: str):
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
 
                 if response.status_code != 200:
-                    raise Exception(f"AI Engine failed to start conversion: {response.status_code} - {response.text}")
+                    raise Exception(
+                        f"AI Engine failed to start conversion: {response.status_code} - {response.text}"
+                    )
 
                 print(f"AI Engine conversion started for job {job_id}")
 
@@ -660,7 +837,9 @@ async def call_ai_engine_conversion(job_id: str):
                         break
 
                 if backend_status == "completed":
-                    print(f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}")
+                    print(
+                        f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}"
+                    )
                     # Verify the file exists
                     if not os.path.exists(output_path):
                         print(f"Warning: Expected output file not found at {output_path}")
@@ -679,7 +858,11 @@ async def call_ai_engine_conversion(job_id: str):
 
 # Conversion endpoints
 @app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def start_conversion(
+    request: ConversionRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Start a new mod conversion job.
     Handles both legacy (file_name) and new (file_id+original_filename) fields.
@@ -701,7 +884,10 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
             if not original_filename:
                 original_filename = request.file_name
         else:
-            raise HTTPException(status_code=422, detail="Must provide either (file_id and original_filename) or legacy file_name.")
+            raise HTTPException(
+                status_code=422,
+                detail="Must provide either (file_id and original_filename) or legacy file_name.",
+            )
 
     # Persist job to DB (status 'queued', progress 0) in a single transaction
     job = await crud.create_job(
@@ -710,7 +896,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         original_filename=original_filename,
         target_version=request.target_version,
         options=request.options,
-        commit=False
+        commit=False,
     )
     # Update job status to 'queued' in the same transaction
     job = await crud.update_job_status(db, str(job.id), "queued", commit=False)
@@ -748,11 +934,19 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         job_id=str(job.id),
         status="preprocessing",
         message="Conversion job started and is now preprocessing.",
-        estimated_time=35
+        estimated_time=35,
     )
 
+
 @app.get("/api/v1/convert/{job_id}/status", response_model=ConversionStatus, tags=["conversion"])
-async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+async def get_conversion_status(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job (standard UUID format).",
+    ),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Get the current status of a specific conversion job.
     """
@@ -776,7 +970,9 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
         elif status == "completed":
             descriptive_message = "Conversion completed successfully."
         elif status == "failed":
-            descriptive_message = f"Conversion failed: {error_message}" if error_message else "Conversion failed."
+            descriptive_message = (
+                f"Conversion failed: {error_message}" if error_message else "Conversion failed."
+            )
         elif status == "cancelled":
             descriptive_message = "Job was cancelled by the user."
         else:
@@ -788,7 +984,9 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
             message=descriptive_message,
             result_url=result_url,
             error=error_message,
-            created_at=cached.get("created_at", datetime.now(timezone.utc)) if cached else datetime.now(timezone.utc)
+            created_at=cached.get("created_at", datetime.now(timezone.utc))
+            if cached
+            else datetime.now(timezone.utc),
         )
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
@@ -810,7 +1008,7 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
     elif status == "completed":
         descriptive_message = "Conversion completed successfully."
         # Only set result_url if job is completed
-        result_url = f"/api/v1/convert/{job_id}/download" # Updated result_url
+        result_url = f"/api/v1/convert/{job_id}/download"  # Updated result_url
     elif status == "failed":
         error_message = "Conversion failed."
         descriptive_message = error_message
@@ -841,8 +1039,9 @@ async def get_conversion_status(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0
         message=descriptive_message,
         result_url=result_url,
         error=error_message,
-        created_at=job.created_at
+        created_at=job.created_at,
     )
+
 
 @app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
@@ -877,19 +1076,29 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             updated_at=job.updated_at,
         )
         conversion_jobs_db[str(job.id)] = mirror
-        statuses.append(ConversionStatus(
-            job_id=str(job.id),
-            status=status,
-            progress=progress,
-            message=message,
-            result_url=result_url,
-            error=error_message,
-            created_at=job.created_at
-        ))
+        statuses.append(
+            ConversionStatus(
+                job_id=str(job.id),
+                status=status,
+                progress=progress,
+                message=message,
+                result_url=result_url,
+                error=error_message,
+                created_at=job.created_at,
+            )
+        )
     return statuses
 
+
 @app.delete("/api/v1/convert/{job_id}", tags=["conversion"])
-async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job to be cancelled (standard UUID format)."), db: AsyncSession = Depends(get_db)):
+async def cancel_conversion(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job to be cancelled (standard UUID format).",
+    ),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Cancel an ongoing conversion job.
     """
@@ -918,9 +1127,16 @@ async def cancel_conversion(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-
     await cache.set_progress(job_id, 0)
     return {"message": f"Conversion job {job_id} has been cancelled."}
 
+
 # Download endpoint
 @app.get("/api/v1/convert/{job_id}/download", tags=["files"])
-async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).")):
+async def download_converted_mod(
+    job_id: str = Path(
+        ...,
+        pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).",
+    ),
+):
     """
     Download the converted mod file.
 
@@ -933,12 +1149,19 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
 
     if job.status != "completed":
-        raise HTTPException(status_code=400, detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job '{job_id}' is not yet completed. Current status: {job.status}.",
+        )
 
-    if not job.result_url: # Should be set if status is completed and file was made
-        print(f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed.")
+    if not job.result_url:  # Should be set if status is completed and file was made
+        print(
+            f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed."
+        )
         # This indicates an internal inconsistency if the job is 'completed'.
-        raise HTTPException(status_code=404, detail=f"Result for job '{job_id}' not available or URL is missing.")
+        raise HTTPException(
+            status_code=404, detail=f"Result for job '{job_id}' not available or URL is missing."
+        )
 
     # Construct the path to the mock output file
     # The actual filename stored on server uses job_id for uniqueness
@@ -956,11 +1179,9 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
 
     return FileResponse(
         path=file_path,
-        media_type='application/zip',  # Still ZIP format internally
-        filename=download_filename
+        media_type="application/zip",  # Still ZIP format internally
+        filename=download_filename,
     )
-
-
 
     try:
         await init_db()
@@ -968,13 +1189,15 @@ async def download_converted_mod(job_id: str = Path(..., pattern="^[0-9a-f]{8}-[
         logger.warning(f"Database initialization failed during startup: {e}")
         logger.info("Application will continue without database initialization")
 
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", 8000)),
-        reload=os.getenv("RELOAD", "true").lower() == "true"
+        reload=os.getenv("RELOAD", "true").lower() == "true",
     )
+
 
 async def try_ai_engine_or_fallback(job_id: str):
     """Try AI Engine first, fallback to simulation if it fails"""
@@ -999,40 +1222,46 @@ async def get_conversion_report(job_id: str):
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
     elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
         mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
-    elif "success" in job_id: # Generic fallback for testing
+    elif "success" in job_id:  # Generic fallback for testing
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
-    elif "failure" in job_id: # Generic fallback for testing
+    elif "failure" in job_id:  # Generic fallback for testing
         mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
     else:
-        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+        raise HTTPException(
+            status_code=404, detail=f"Job ID {job_id} not found or no mock data available."
+        )
 
     report = report_generator.create_interactive_report(mock_data_source, job_id)
     return report
 
-@app.get("/api/v1/jobs/{job_id}/report/prd", response_model=FullConversionReport, tags=["conversion"])
+
+@app.get(
+    "/api/v1/jobs/{job_id}/report/prd", response_model=FullConversionReport, tags=["conversion"]
+)
 async def get_conversion_report_prd(job_id: str):
     mock_data_source = None
     if job_id == MOCK_CONVERSION_RESULT_SUCCESS["job_id"]:
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
     elif job_id == MOCK_CONVERSION_RESULT_FAILURE["job_id"]:
         mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
-    elif "success" in job_id: # Generic fallback
+    elif "success" in job_id:  # Generic fallback
         mock_data_source = MOCK_CONVERSION_RESULT_SUCCESS
-    elif "failure" in job_id: # Generic fallback
+    elif "failure" in job_id:  # Generic fallback
         mock_data_source = MOCK_CONVERSION_RESULT_FAILURE
     else:
-        raise HTTPException(status_code=404, detail=f"Job ID {job_id} not found or no mock data available.")
+        raise HTTPException(
+            status_code=404, detail=f"Job ID {job_id} not found or no mock data available."
+        )
 
     report = report_generator.create_full_conversion_report_prd_style(mock_data_source)
     return report
 
 
 # Addon Data Management Endpoints
-@app.get("/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"])
-async def read_addon_details(
-    addon_id: PyUUID,
-    db: AsyncSession = Depends(get_db)
-):
+@app.get(
+    "/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"]
+)
+async def read_addon_details(addon_id: PyUUID, db: AsyncSession = Depends(get_db)):
     """
     Retrieve an addon and its associated blocks, assets, behaviors, and recipes.
     """
@@ -1041,11 +1270,14 @@ async def read_addon_details(
         raise HTTPException(status_code=404, detail="Addon not found")
     return db_addon
 
-@app.put("/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"])
+
+@app.put(
+    "/api/v1/addons/{addon_id}", response_model=pydantic_addon_models.AddonDetails, tags=["addons"]
+)
 async def upsert_addon_details(
     addon_id: PyUUID,
     addon_data: pydantic_addon_models.AddonDataUpload,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Create or update an addon with its full details.
@@ -1053,29 +1285,33 @@ async def upsert_addon_details(
     and will create the addon if it doesn't exist, or update it if it does.
     For child collections (blocks, assets, recipes), this performs a full replacement.
     """
-    db_addon = await crud.update_addon_details(
-        session=db,
-        addon_id=addon_id,
-        addon_data=addon_data
-    )
-    if db_addon is None: # Should not happen if crud.update_addon_details works as expected
+    db_addon = await crud.update_addon_details(session=db, addon_id=addon_id, addon_data=addon_data)
+    if db_addon is None:  # Should not happen if crud.update_addon_details works as expected
         raise HTTPException(status_code=500, detail="Error processing addon data")
     return db_addon
 
+
 # Addon Asset Endpoints
 
-@app.post("/api/v1/addons/{addon_id}/assets", response_model=pydantic_addon_models.AddonAsset, tags=["addons"])
+
+@app.post(
+    "/api/v1/addons/{addon_id}/assets",
+    response_model=pydantic_addon_models.AddonAsset,
+    tags=["addons"],
+)
 async def create_addon_asset_endpoint(
     addon_id: PyUUID,
     asset_type: str = Form(...),
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Upload a new asset for a given addon.
     """
     # First, verify the addon exists to avoid orphaned assets or errors
-    addon = await crud.get_addon_details(session=db, addon_id=addon_id) # Using get_addon_details to ensure addon exists
+    addon = await crud.get_addon_details(
+        session=db, addon_id=addon_id
+    )  # Using get_addon_details to ensure addon exists
     if not addon:
         raise HTTPException(status_code=404, detail=f"Addon with id {addon_id} not found.")
 
@@ -1083,25 +1319,30 @@ async def create_addon_asset_endpoint(
         db_asset = await crud.create_addon_asset(
             session=db, addon_id=addon_id, file=file, asset_type=asset_type
         )
-    except ValueError as e: # Catch errors like Addon not found from CRUD (though checked above)
+    except ValueError as e:  # Catch errors like Addon not found from CRUD (though checked above)
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to create addon asset: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create addon asset: {str(e)}")
     return db_asset
 
-@app.get("/api/v1/addons/{addon_id}/assets/{asset_id}", response_class=FileResponse, tags=["addons"])
+
+@app.get(
+    "/api/v1/addons/{addon_id}/assets/{asset_id}", response_class=FileResponse, tags=["addons"]
+)
 async def get_addon_asset_file(
-    addon_id: PyUUID, # Included for path consistency and ownership check
+    addon_id: PyUUID,  # Included for path consistency and ownership check
     asset_id: PyUUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Download/serve an addon asset file.
     """
     db_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
-    if not db_asset or db_asset.addon_id != addon_id: # Check ownership
-        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+    if not db_asset or db_asset.addon_id != addon_id:  # Check ownership
+        raise HTTPException(
+            status_code=404, detail="Asset not found or does not belong to this addon."
+        )
 
     file_full_path = os.path.join(crud.BASE_ASSET_PATH, db_asset.path)
 
@@ -1112,63 +1353,69 @@ async def get_addon_asset_file(
     return FileResponse(
         path=file_full_path,
         filename=db_asset.original_filename or os.path.basename(db_asset.path),
-        media_type='application/octet-stream' # Generic, can be improved with mimetypes library
+        media_type="application/octet-stream",  # Generic, can be improved with mimetypes library
     )
 
-@app.put("/api/v1/addons/{addon_id}/assets/{asset_id}", response_model=pydantic_addon_models.AddonAsset, tags=["addons"])
+
+@app.put(
+    "/api/v1/addons/{addon_id}/assets/{asset_id}",
+    response_model=pydantic_addon_models.AddonAsset,
+    tags=["addons"],
+)
 async def update_addon_asset_endpoint(
-    addon_id: PyUUID, # Validate addon ownership of asset
+    addon_id: PyUUID,  # Validate addon ownership of asset
     asset_id: PyUUID,
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Replace an existing asset file and its metadata.
     """
     # Verify asset exists and belongs to the addon
     existing_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
-    if not existing_asset or existing_asset.addon_id != addon_id: # Check ownership
-        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+    if not existing_asset or existing_asset.addon_id != addon_id:  # Check ownership
+        raise HTTPException(
+            status_code=404, detail="Asset not found or does not belong to this addon."
+        )
 
     try:
-        updated_asset = await crud.update_addon_asset(
-            session=db, asset_id=asset_id, file=file
-        )
+        updated_asset = await crud.update_addon_asset(session=db, asset_id=asset_id, file=file)
     except Exception as e:
         logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update addon asset: {str(e)}")
 
-    if not updated_asset: # Should be caught by prior check or raise exception in CRUD
+    if not updated_asset:  # Should be caught by prior check or raise exception in CRUD
         raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
     return updated_asset
 
+
 @app.delete("/api/v1/addons/{addon_id}/assets/{asset_id}", status_code=204, tags=["addons"])
 async def delete_addon_asset_endpoint(
-    addon_id: PyUUID, # Validate addon ownership of asset
+    addon_id: PyUUID,  # Validate addon ownership of asset
     asset_id: PyUUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete an addon asset (file and database record).
     """
     # Verify asset exists and belongs to the addon
     existing_asset = await crud.get_addon_asset(session=db, asset_id=asset_id)
-    if not existing_asset or existing_asset.addon_id != addon_id: # Check ownership
-        raise HTTPException(status_code=404, detail="Asset not found or does not belong to this addon.")
+    if not existing_asset or existing_asset.addon_id != addon_id:  # Check ownership
+        raise HTTPException(
+            status_code=404, detail="Asset not found or does not belong to this addon."
+        )
 
     deleted_asset_info = await crud.delete_addon_asset(session=db, asset_id=asset_id)
-    if not deleted_asset_info: # Should be caught by prior check
+    if not deleted_asset_info:  # Should be caught by prior check
         raise HTTPException(status_code=404, detail="Asset not found during delete operation.")
 
     # Return 204 No Content by default for DELETE operations
     # FastAPI will automatically handle returning no body if status_code is 204
     return
 
+
 @app.get("/api/v1/addons/{addon_id}/export", response_class=StreamingResponse, tags=["addons"])
-async def export_addon_mcaddon(
-    addon_id: PyUUID,
-    db: AsyncSession = Depends(get_db)
-):
+async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_db)):
     """
     Exports the addon as a .mcaddon file.
     """
@@ -1180,8 +1427,7 @@ async def export_addon_mcaddon(
         # asset_base_path is where actual asset files are stored
         # This path is defined in crud.py as crud.BASE_ASSET_PATH
         zip_bytes_io = addon_exporter.create_mcaddon_zip(
-            addon_pydantic=addon_details,
-            asset_base_path=crud.BASE_ASSET_PATH
+            addon_pydantic=addon_details, asset_base_path=crud.BASE_ASSET_PATH
         )
     except Exception as e:
         logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
@@ -1195,8 +1441,8 @@ async def export_addon_mcaddon(
 
     return StreamingResponse(
         content=zip_bytes_io,
-        media_type="application/zip", # Standard for .mcaddon which is a zip file
-        headers={"Content-Disposition": f"attachment; filename=\"{download_filename}\""}
+        media_type="application/zip",  # Standard for .mcaddon which is a zip file
+        headers={"Content-Disposition": f'attachment; filename="{download_filename}"'},
     )
 
 
@@ -1207,4 +1453,3 @@ async def metrics():
     Prometheus metrics endpoint.
     """
     return Response(content=get_metrics(), media_type="text/plain")
-
