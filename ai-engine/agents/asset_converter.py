@@ -2,12 +2,12 @@
 Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
-from typing import Dict, List, Optional
-import logging
 import json
+import logging
 import zipfile
-import io
 from pathlib import Path
+from typing import Dict, List, Optional
+
 from PIL import Image
 
 # Optional audio import (removed in Python 3.14)
@@ -21,9 +21,8 @@ except ImportError:
     CouldntDecodeError = Exception
 
 from crewai.tools import tool
-from models.smart_assumptions import (
-    SmartAssumptionEngine
-)
+
+from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -1977,7 +1976,6 @@ class AssetConverterAgent:
             "namespace": "mod_namespace"  // optional
         }
         """
-        import tempfile
         
         try:
             # Parse input
@@ -3603,13 +3601,13 @@ class AssetConverterAgent:
                     result['warnings'].append(f"Width {width} is not a power of 2")
                     if self.texture_constraints.get('must_be_power_of_2', True):
                         result['valid'] = False
-                        result['errors'].append(f"Width must be power of 2 for Bedrock")
+                        result['errors'].append("Width must be power of 2 for Bedrock")
 
                 if not self._is_power_of_2(height):
                     result['warnings'].append(f"Height {height} is not a power of 2")
                     if self.texture_constraints.get('must_be_power_of_2', True):
                         result['valid'] = False
-                        result['errors'].append(f"Height must be power of 2 for Bedrock")
+                        result['errors'].append("Height must be power of 2 for Bedrock")
 
                 # Check max resolution
                 max_res = self.texture_constraints.get('max_resolution', 1024)
