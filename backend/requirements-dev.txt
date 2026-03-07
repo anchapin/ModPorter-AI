@@ -10,3 +10,6 @@ mutmut>=2.4.0
 
 # Development Tools
 pre-commit>=3.0.0
+
+# Logging
+structlog

@@ -290,6 +290,7 @@ dev = [
     "black",
     "ruff",
     "isort",
+    "structlog",
 ]
 
 # All GPU options combined
