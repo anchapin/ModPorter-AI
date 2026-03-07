@@ -1,0 +1,29 @@
+# Trivy Ignore Configuration
+# Exclude directories that contain old/unrelated code that should not be scanned
+
+# Exclude .worktrees directory - contains historical branches for reference
+# These are not part of the main codebase and are just for historical reference
+.worktrees/
+
+# Exclude documentation and other non-production directories
+# These don't contain deployed code
+docs/
+tests/
+scripts/
+
+# Exclude build outputs and generated files
+**/dist/
+**/build/
+**/.venv/
+**/node_modules/
+**/__pycache__/
+
+# Known vulnerabilities that are not applicable or are false positives
+# These will be reviewed periodically
+
+# CVE-2026-0540: dompurify XSS vulnerability
+# This is a transitive dependency pulled in by monaco-editor@0.55.1 which bundles an older version
+# monaco-editor has not yet released a fix for this
+# Vulnerability is in a dev-only dependency (monaco-editor used for code editing UI)
+# The actual application code uses dompurify@3.3.2 which is not vulnerable
+CVE-2026-0540
