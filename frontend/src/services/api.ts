@@ -434,11 +434,9 @@ export const getAddonDetails = async (
   const response = await fetch(`${API_BASE_URL}/addons/${addonId}`);
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({
-        detail: `Failed to fetch addon details for ${addonId}`,
-      }));
+    const errorData = await response.json().catch(() => ({
+      detail: `Failed to fetch addon details for ${addonId}`,
+    }));
     throw new ApiError(
       errorData.detail ||
         `Failed to get addon details (status: ${response.status})`,
