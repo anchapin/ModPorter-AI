@@ -829,13 +829,7 @@ jobs:
         cd ${{ matrix.project }}
         
         # Configure mutmut for the project
-        cat > .mutmut.toml << 'EOF'
-[mutmut]
-runs = 2
-spawn_strategy = 2
-no_progress = 1
-disable_git_diff = 1
-EOF
+        printf '[mutmut]\nruns = 2\nspawn_strategy = 2\nno_progress = 1\ndisable_git_diff = 1\n' > .mutmut.toml
 
         # Run mutation tests
         mutmut run --no-sidebar
