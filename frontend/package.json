@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -19,7 +21,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "storybook:test": "test-storybook",
-    "storybook:build": "storybook build --output-dir dist-storybook"
+    "storybook:build": "storybook build --output-dir dist-storybook",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -71,6 +74,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "7.3.1",
     "vitest": "^4.0.7",
-    "web-streams-polyfill": "^4.2.0"
+    "web-streams-polyfill": "^4.2.0",
+    "@stryker-mutator/core": "^8.5.0",
+    "@stryker-mutator/vitest-runner": "^8.5.0"
   }
 }
