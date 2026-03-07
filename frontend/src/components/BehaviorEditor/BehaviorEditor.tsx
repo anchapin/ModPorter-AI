@@ -27,7 +27,7 @@ import {
 import { BehaviorFileTree } from './BehaviorFileTree';
 import { CodeEditor } from './CodeEditor';
 import { BlockPropertyEditor } from './BlockEditor';
-import { RecipeBuilder } from './RecipeBuilder';
+import { RecipeBuilder, RecipeItem } from './RecipeBuilder';
 import { LootTableEditor } from './LootTableEditor';
 import { LogicBuilder } from './LogicBuilder';
 import { TemplateSelector } from './TemplateSelector/TemplateSelector';
@@ -87,6 +87,11 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   
   // Enhanced UI state hooks
   const { error: uiError, setError: setUIError, toast } = useUIState();
+  
+  // Wrapper for setting UI errors with a default key
+  const setUIErrorMessage = useCallback((message: string | null) => {
+    setUIError('behaviorEditor', message);
+  }, [setUIError]);
   
   // React Query hooks
   const applyTemplateMutation = useApplyBehaviorTemplate();
@@ -181,7 +186,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
 
   const handleTemplateApply = useCallback((template: BehaviorTemplate) => {
     if (!selectedFile) {
-      setUIError('Please select a file before applying a template');
+      setUIErrorMessage('Please select a file before applying a template');
       return;
     }
 
@@ -216,7 +221,7 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
   };
 
   // Mock data for recipe builder (in real app, this would come from API)
-  const mockAvailableItems = [
+  const mockAvailableItems: RecipeItem[] = [
     { id: 'minecraft:oak_planks', type: 'minecraft:item', name: 'Oak Planks', count: 1 },
     { id: 'minecraft:stick', type: 'minecraft:item', name: 'Stick', count: 1 },
     { id: 'minecraft:iron_ingot', type: 'minecraft:item', name: 'Iron Ingot', count: 1 },
@@ -241,14 +246,14 @@ export const BehaviorEditor: React.FC<BehaviorEditorProps> = ({
         <Alert 
           severity="error" 
           sx={{ mb: 2 }} 
-          onClose={() => setUIError(null)}
+          onClose={() => setUIErrorMessage(null)}
           action={
-            <IconButton size="small" onClick={() => setUIError(null)}>
+            <IconButton size="small" onClick={() => setUIErrorMessage(null)}>
               <ErrorIcon />
             </IconButton>
           }
         >
-          {localError || uiError}
+          {localError || (Object.keys(uiError).length > 0 ? Object.values(uiError)[0] : null)}
         </Alert>
       )}
 

@@ -122,7 +122,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Search and Filters */}
       <Box sx={{ mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               placeholder="Search templates..."
@@ -134,7 +134,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               disabled={disabled}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <IconButton
                 onClick={() => setShowFilters(!showFilters)}
@@ -152,7 +152,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <Collapse in={showFilters}>
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -171,7 +171,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Template Type</InputLabel>
                   <Select
@@ -210,7 +210,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Template Grid */}
       <Grid container spacing={2}>
         {filteredTemplates.map((template) => (
-          <Grid item xs={12} sm={6} lg={4} key={template.id}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={template.id}>
             <Card
               sx={{
                 height: '100%',

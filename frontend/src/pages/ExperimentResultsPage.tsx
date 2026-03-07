@@ -157,7 +157,7 @@ const ExperimentResultsPage: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* Experiment Selector */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <FormControl fullWidth>
@@ -184,7 +184,7 @@ const ExperimentResultsPage: React.FC = () => {
         {/* Statistics */}
         {stats && (
           <>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Total Conversions" />
                 <CardContent>
@@ -195,7 +195,7 @@ const ExperimentResultsPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg Quality Score" />
                 <CardContent>
@@ -206,7 +206,7 @@ const ExperimentResultsPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg Speed (ms)" />
                 <CardContent>
@@ -217,7 +217,7 @@ const ExperimentResultsPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg User Feedback" />
                 <CardContent>
@@ -231,7 +231,7 @@ const ExperimentResultsPage: React.FC = () => {
         )}
 
         {/* Results Table */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardHeader title="Conversion Results" />
             <CardContent>

@@ -354,7 +354,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     <Box className="block-property-editor">
       <Grid container spacing={3}>
         {/* Main Editor */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
               <VisualEditor
@@ -373,7 +373,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </Grid>
 
         {/* Preview Panel */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
