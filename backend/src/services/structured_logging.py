@@ -35,7 +35,7 @@ def configure_structlog(
 ):
     """
     Configure structlog for the application.
-    
+
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
         log_file: Path to log file (optional)
@@ -44,17 +44,17 @@ def configure_structlog(
     """
     if log_level is None:
         log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
+
     # Auto-detect JSON format in production
     if json_format is None:
         json_format = os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
         # Also enable JSON if running in production environment
         if os.getenv("ENVIRONMENT", "development") == "production":
             json_format = True
-    
+
     # Get log directory
     log_dir = os.getenv("LOG_DIR", "/var/log/modporter")
-    
+
     # Configure processors based on format
     processors = [
         structlog.contextvars.merge_contextvars,
@@ -63,18 +63,18 @@ def configure_structlog(
         structlog.stdlib.PositionalArgumentsFormatter(),
         TimeStamper(fmt="iso"),
     ]
-    
+
     if debug_mode:
         processors.append(structlog.dev.ConsoleRenderer())
     elif json_format:
         processors.append(JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer(colors=False))
-    
+
     # Add exception info processor
     processors.append(structlog.processors.StackInfoRenderer())
     processors.append(structlog.processors.format_exc_info)
-    
+
     # Configure structlog
     structlog.configure(
         processors=processors,
@@ -83,14 +83,14 @@ def configure_structlog(
         logger_factory=LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Also configure standard library logging
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level, logging.INFO))
-    
+
     # Clear existing handlers
     root_logger.handlers.clear()
-    
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     if json_format:
@@ -99,17 +99,16 @@ def configure_structlog(
     else:
         console_handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
             )
         )
     root_logger.addHandler(console_handler)
-    
+
     # File handler for production
     if log_file is None:
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, "modporter.log")
-    
+
     file_handler = RotatingFileHandler(
         log_file,
         maxBytes=10 * 1024 * 1024,  # 10MB
@@ -118,18 +117,18 @@ def configure_structlog(
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(LoggingFormatter(json_format=True))
     root_logger.addHandler(file_handler)
-    
+
     return structlog.get_logger()
 
 
 class LoggingFormatter(logging.Formatter):
     """Formatter that integrates structlog with standard logging"""
-    
+
     def __init__(self, json_format: bool = False, debug_mode: bool = False):
         super().__init__()
         self.json_format = json_format
         self.debug_mode = debug_mode
-    
+
     def format(self, record: logging.LogRecord) -> str:
         # Build structured log data
         log_data = {
@@ -141,31 +140,32 @@ class LoggingFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
-        
+
         # Add correlation ID if available
         correlation_id = correlation_id_var.get()
         if correlation_id:
             log_data["correlation_id"] = correlation_id
-        
+
         # Add request metadata if available
         metadata = request_metadata_var.get()
         if metadata:
             log_data["request"] = metadata
-        
+
         # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
-        
+
         # Add extra fields from the record
         if hasattr(record, "extra_data"):
             log_data.update(record.extra_data)
-        
+
         # Add performance metrics if available
         if hasattr(record, "duration_ms"):
             log_data["duration_ms"] = record.duration_ms
-        
+
         if self.json_format:
             import json
+
             return json.dumps(log_data)
         else:
             # Plain text format
@@ -207,8 +207,7 @@ def get_standard_logger(name: str) -> logging.Logger:
         console_handler.setLevel(logging.INFO)
 
         console_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", 
-            datefmt="%Y-%m-%d %H:%M:%S"
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
@@ -305,13 +304,10 @@ class LogContext:
 
         correlation_id_var.set(self.correlation_id)
         request_metadata_var.set(self.metadata)
-        
+
         # Bind to structlog context
         structlog.contextvars.clear_contextvars()
-        structlog.contextvars.bind_contextvars(
-            correlation_id=self.correlation_id,
-            **self.metadata
-        )
+        structlog.contextvars.bind_contextvars(correlation_id=self.correlation_id, **self.metadata)
 
         return self
 
@@ -357,11 +353,11 @@ def log_api_request(
 
 
 def log_conversion_event(
-    logger: structlog.BoundLogger, 
-    job_id: str, 
-    event: str, 
-    progress: Optional[int] = None, 
-    **extra_fields
+    logger: structlog.BoundLogger,
+    job_id: str,
+    event: str,
+    progress: Optional[int] = None,
+    **extra_fields,
 ) -> None:
     """
     Log a conversion event with structured data.

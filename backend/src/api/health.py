@@ -50,31 +50,31 @@ async def check_database_health() -> DependencyHealth:
     Check database connectivity and return health status.
     """
     start_time = time.time()
-    
+
     try:
         from sqlalchemy import text
-        
+
         async with async_engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             result.fetchone()
-        
+
         latency_ms = (time.time() - start_time) * 1000
-        
+
         return DependencyHealth(
             name="database",
             status="healthy",
             latency_ms=latency_ms,
-            message="Database connection successful"
+            message="Database connection successful",
         )
     except Exception as e:
         latency_ms = (time.time() - start_time) * 1000
         logger.error(f"Database health check failed: {e}")
-        
+
         return DependencyHealth(
             name="database",
             status="unhealthy",
             latency_ms=latency_ms,
-            message=f"Database connection failed: {str(e)}"
+            message=f"Database connection failed: {str(e)}",
         )
 
 
@@ -83,7 +83,7 @@ async def check_redis_health() -> DependencyHealth:
     Check Redis connectivity and return health status.
     """
     start_time = time.time()
-    
+
     try:
         # Check if Redis is available through cache service
         if not cache._redis_available or cache._redis_disabled:
@@ -91,29 +91,29 @@ async def check_redis_health() -> DependencyHealth:
                 name="redis",
                 status="unhealthy",
                 latency_ms=0.0,
-                message="Redis is not available or disabled"
+                message="Redis is not available or disabled",
             )
-        
+
         # Try a simple Redis operation
         await cache._client.ping()
-        
+
         latency_ms = (time.time() - start_time) * 1000
-        
+
         return DependencyHealth(
             name="redis",
             status="healthy",
             latency_ms=latency_ms,
-            message="Redis connection successful"
+            message="Redis connection successful",
         )
     except Exception as e:
         latency_ms = (time.time() - start_time) * 1000
         logger.error(f"Redis health check failed: {e}")
-        
+
         return DependencyHealth(
             name="redis",
             status="unhealthy",
             latency_ms=latency_ms,
-            message=f"Redis connection failed: {str(e)}"
+            message=f"Redis connection failed: {str(e)}",
         )
 
 
@@ -121,27 +121,27 @@ async def check_redis_health() -> DependencyHealth:
 async def readiness_check():
     """
     Readiness probe - checks if the application can serve traffic.
-    
+
     This endpoint verifies that all required dependencies (database, Redis)
     are available. The application should only receive traffic when this
     endpoint returns healthy.
-    
+
     Returns:
         HealthStatus with detailed dependency information
     """
     checks: List[DependencyHealth] = []
-    
+
     # Check database
     db_health = await check_database_health()
     checks.append(db_health)
-    
+
     # Check Redis (optional dependency - can be degraded)
     redis_health = await check_redis_health()
     checks.append(redis_health)
-    
+
     # Determine overall status
     unhealthy_checks = [c for c in checks if c.status == "unhealthy"]
-    
+
     if unhealthy_checks:
         # If database is unhealthy, the app cannot serve traffic
         if any(c.name == "database" and c.status == "unhealthy" for c in checks):
@@ -151,20 +151,16 @@ async def readiness_check():
             status = "degraded"
     else:
         status = "healthy"
-    
+
     return HealthStatus(
         status=status,
         timestamp=datetime.utcnow().isoformat(),
         checks={
             "dependencies": {
-                c.name: {
-                    "status": c.status,
-                    "latency_ms": c.latency_ms,
-                    "message": c.message
-                }
+                c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
                 for c in checks
             }
-        }
+        },
     )
 
 
@@ -172,11 +168,11 @@ async def readiness_check():
 async def liveness_check():
     """
     Liveness probe - checks if the application is running and doesn't need restart.
-    
+
     This endpoint verifies that the application process is running and can
     handle requests. A failing liveness probe indicates the container should
     be restarted.
-    
+
     Returns:
         HealthStatus indicating the application is running
     """
@@ -185,12 +181,7 @@ async def liveness_check():
     return HealthStatus(
         status="healthy",
         timestamp=datetime.utcnow().isoformat(),
-        checks={
-            "application": {
-                "status": "running",
-                "message": "Application process is running"
-            }
-        }
+        checks={"application": {"status": "running", "message": "Application process is running"}},
     )
 
 
@@ -198,7 +189,7 @@ async def liveness_check():
 async def basic_health_check():
     """
     Basic health check endpoint (alias for liveness).
-    
+
     Returns:
         HealthStatus with basic health information
     """

@@ -183,7 +183,7 @@ async def startup_event():
     debug_mode = os.getenv("DEBUG", "false").lower() == "true"
     configure_structlog(debug_mode=debug_mode)
     logger.info("Structured logging configured")
-    
+
     await init_rate_limiter()
     logger.info("Rate limiting middleware initialized")
 
