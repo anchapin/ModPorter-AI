@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
@@ -42,13 +42,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     exclude: ['e2e/**/*', 'node_modules/**/*', 'dist/**/*'],
-    poolOptions: {
-      vmThreads: {
-        maxThreads: 2,
-        minThreads: 1,
-        isolate: false,
-      },
-    },
     hookTimeout: 30000,
     testTimeout: 10000,
   },

@@ -156,7 +156,7 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                   Export Preview
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
@@ -175,7 +175,7 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
                     </Card>
                   </Grid>
 
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>

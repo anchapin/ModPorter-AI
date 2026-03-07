@@ -112,10 +112,10 @@ export const Preview3D: React.FC<Preview3DProps> = ({
             Rotation:
           </Typography>
           <Grid container spacing={1}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Typography variant="caption">X: {rotation.x}°</Typography>
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <Typography variant="caption">Y: {rotation.y}°</Typography>
             </Grid>
           </Grid>
@@ -130,7 +130,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
       </Typography>
       
       <Grid container spacing={1} sx={{ mb: 2 }}>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box className="property-group">
             <Typography variant="caption" color="text.secondary">
               Material:
@@ -144,7 +144,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
           </Box>
         </Grid>
         
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box className="property-group">
             <Typography variant="caption" color="text.secondary">
               Category:
@@ -164,7 +164,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
       </Typography>
       
       <Grid container spacing={1}>
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
               Break Time:
@@ -175,7 +175,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
           </Box>
         </Grid>
         
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
               Light Level:
@@ -186,7 +186,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
           </Box>
         </Grid>
         
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
               Blast Resistance:
@@ -197,7 +197,7 @@ export const Preview3D: React.FC<Preview3DProps> = ({
           </Box>
         </Grid>
         
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box className="stat-item">
             <Typography variant="caption" color="text.secondary">
               Slipperiness:
