@@ -11,19 +11,19 @@ export const test = base.extend<{
   page: async ({ page }, use) => {
     // Set up common page configurations
     await page.setViewportSize({ width: 1280, height: 720 });
-    
+
     // Add common error handling
     page.on('pageerror', (error) => {
       console.error('Page error:', error);
     });
-    
+
     page.on('requestfailed', (request) => {
       console.error('Request failed:', request.url(), request.failure());
     });
-    
+
     await use(page);
   },
-  
+
   // Authenticated page fixture (if needed)
   authenticatedPage: async ({ page }, use) => {
     // Implement authentication logic here
@@ -32,10 +32,10 @@ export const test = base.extend<{
     // await page.fill('[data-testid="password"]', 'testpass');
     // await page.click('[data-testid="login-button"]');
     // await page.waitForURL('/');
-    
+
     await use(page);
   },
-  
+
   // Test data fixtures
   testJarFile: async (_params, use) => {
     // Create or load a test JAR file for conversion testing

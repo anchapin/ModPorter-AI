@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
@@ -9,19 +9,24 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          ui: [
+            '@mui/material',
+            '@mui/icons-material',
+            '@emotion/react',
+            '@emotion/styled',
+          ],
           editor: ['@monaco-editor/react', 'monaco-editor'],
           utils: ['axios', 'date-fns'],
-          diagrams: ['mermaid']
-        }
+          diagrams: ['mermaid'],
+        },
       },
       onwarn(warning, warn) {
         // Suppress specific TypeScript import warnings
         if (warning.code === 'UNRESOLVED_IMPORT') return;
         warn(warning);
-      }
+      },
     },
-    chunkSizeWarningLimit: 1000 // Increase limit to reduce warnings while still optimizing
+    chunkSizeWarningLimit: 1000, // Increase limit to reduce warnings while still optimizing
   },
   server: {
     host: '0.0.0.0',
@@ -45,4 +50,4 @@ export default defineConfig({
     hookTimeout: 30000,
     testTimeout: 10000,
   },
-})
+});

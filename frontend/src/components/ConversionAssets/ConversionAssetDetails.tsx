@@ -12,7 +12,7 @@ interface ConversionAssetDetailsProps {
 export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
   asset,
   onAssetUpdated,
-  onClose
+  onClose,
 }) => {
   const [editingMetadata, setEditingMetadata] = useState(false);
   const [metadataJson, setMetadataJson] = useState(
@@ -30,7 +30,8 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
         onAssetUpdated(updatedAsset);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to convert asset';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to convert asset';
       setError(errorMessage);
     } finally {
       setIsUpdating(false);
@@ -41,16 +42,20 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
     try {
       setIsUpdating(true);
       setError(null);
-      
+
       const newMetadata = JSON.parse(metadataJson);
-      const updatedAsset = await api.updateConversionAssetMetadata(asset.id, newMetadata);
-      
+      const updatedAsset = await api.updateConversionAssetMetadata(
+        asset.id,
+        newMetadata
+      );
+
       if (onAssetUpdated) {
         onAssetUpdated(updatedAsset);
       }
       setEditingMetadata(false);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update metadata';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update metadata';
       setError(errorMessage);
     } finally {
       setIsUpdating(false);
@@ -59,21 +64,31 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return '#f59e0b';
-      case 'processing': return '#3b82f6';
-      case 'converted': return '#10b981';
-      case 'failed': return '#ef4444';
-      default: return '#6b7280';
+      case 'pending':
+        return '#f59e0b';
+      case 'processing':
+        return '#3b82f6';
+      case 'converted':
+        return '#10b981';
+      case 'failed':
+        return '#ef4444';
+      default:
+        return '#6b7280';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'processing': return '🔄';
-      case 'converted': return '✅';
-      case 'failed': return '❌';
-      default: return '❓';
+      case 'pending':
+        return '⏳';
+      case 'processing':
+        return '🔄';
+      case 'converted':
+        return '✅';
+      case 'failed':
+        return '❌';
+      default:
+        return '❓';
     }
   };
 
@@ -101,7 +116,10 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
 
         <div className="asset-details-content">
           <div className="asset-info-section">
-            <div className="asset-status-badge" style={{ backgroundColor: getStatusColor(asset.status) }}>
+            <div
+              className="asset-status-badge"
+              style={{ backgroundColor: getStatusColor(asset.status) }}
+            >
               {getStatusIcon(asset.status)} {asset.status.toUpperCase()}
             </div>
 
@@ -124,7 +142,9 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
 
             <div className="property-row">
               <span className="property-label">MIME Type:</span>
-              <span className="property-value">{asset.mime_type || 'Unknown'}</span>
+              <span className="property-value">
+                {asset.mime_type || 'Unknown'}
+              </span>
             </div>
 
             <div className="property-row">
@@ -145,21 +165,23 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
 
             <div className="property-row">
               <span className="property-label">Created:</span>
-              <span className="property-value">{formatDate(asset.created_at)}</span>
+              <span className="property-value">
+                {formatDate(asset.created_at)}
+              </span>
             </div>
 
             <div className="property-row">
               <span className="property-label">Updated:</span>
-              <span className="property-value">{formatDate(asset.updated_at)}</span>
+              <span className="property-value">
+                {formatDate(asset.updated_at)}
+              </span>
             </div>
           </div>
 
           {asset.error_message && (
             <div className="error-section">
               <h4>Error Message</h4>
-              <div className="error-message">
-                {asset.error_message}
-              </div>
+              <div className="error-message">{asset.error_message}</div>
             </div>
           )}
 
@@ -219,11 +241,8 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
               {isUpdating ? 'Converting...' : 'Convert Asset'}
             </button>
           )}
-          
-          <button
-            onClick={onClose}
-            className="close-details-button"
-          >
+
+          <button onClick={onClose} className="close-details-button">
             Close
           </button>
         </div>

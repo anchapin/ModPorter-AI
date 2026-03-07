@@ -14,21 +14,31 @@ export const formatDate = (dateString: string): string => {
 // Get status icon
 export const getStatusIcon = (status: string): string => {
   switch (status) {
-    case 'completed': return '✅';
-    case 'failed': return '❌';
-    case 'processing': return '⏳';
-    case 'queued': return '⏸️';
-    default: return '❓';
+    case 'completed':
+      return '✅';
+    case 'failed':
+      return '❌';
+    case 'processing':
+      return '⏳';
+    case 'queued':
+      return '⏸️';
+    default:
+      return '❓';
   }
 };
 
 // Get status color
 export const getStatusColor = (status: string): string => {
   switch (status) {
-    case 'completed': return '#4caf50';
-    case 'failed': return '#f44336';
-    case 'processing': return '#ff9800';
-    case 'queued': return '#2196f3';
-    default: return '#9e9e9e';
+    case 'completed':
+      return '#4caf50';
+    case 'failed':
+      return '#f44336';
+    case 'processing':
+      return '#ff9800';
+    case 'queued':
+      return '#2196f3';
+    default:
+      return '#9e9e9e';
   }
 };

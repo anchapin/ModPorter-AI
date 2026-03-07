@@ -16,7 +16,7 @@
 .logic-builder .canvas {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -29,7 +29,9 @@
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-width: 180px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   cursor: grab;
   user-select: none;
 }
@@ -97,7 +99,9 @@
   border-radius: 50%;
   border: 2px solid white;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   position: relative;
 }
 
@@ -119,7 +123,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
   }
@@ -134,7 +139,9 @@
   stroke-width: 2;
   fill: none;
   pointer-events: stroke;
-  transition: stroke 0.2s, stroke-width 0.2s;
+  transition:
+    stroke 0.2s,
+    stroke-width 0.2s;
 }
 
 .logic-builder .connection:hover {
@@ -288,19 +295,19 @@
   .logic-builder .node {
     min-width: 150px;
   }
-  
+
   .logic-builder .node-header {
     padding: 8px;
   }
-  
+
   .logic-builder .node-content {
     padding: 8px;
   }
-  
+
   .logic-builder .node-title {
     font-size: 12px;
   }
-  
+
   .logic-builder .node-content {
     font-size: 11px;
   }

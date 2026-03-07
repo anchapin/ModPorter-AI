@@ -8,12 +8,7 @@ import {
   Backdrop,
   Paper,
 } from '@mui/material';
-import {
-  Refresh,
-  Save,
-  Download,
-  CloudUpload,
-} from '@mui/icons-material';
+import { Refresh, Save, Download, CloudUpload } from '@mui/icons-material';
 
 interface LoadingWrapperProps {
   loading: boolean;
@@ -40,13 +35,14 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
 }) => {
   const getSizeValue = (size: string) => {
     switch (size) {
-      case 'small': return 24;
-      case 'large': return 48;
-      default: return 36;
+      case 'small':
+        return 24;
+      case 'large':
+        return 48;
+      default:
+        return 36;
     }
   };
-
-
 
   const renderCustomIcon = () => {
     if (React.isValidElement(icon)) {
@@ -57,7 +53,7 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
 
   const renderMessage = () => {
     if (!message) return null;
-    
+
     return (
       <Typography
         variant="body2"
@@ -84,7 +80,9 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  bgcolor: backdrop ? 'rgba(255, 255, 255, 0.8)' : 'transparent',
+                  bgcolor: backdrop
+                    ? 'rgba(255, 255, 255, 0.8)'
+                    : 'transparent',
                   zIndex: 1000,
                   display: 'flex',
                   flexDirection: 'column',
@@ -93,7 +91,13 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
                   opacity,
                 }}
               >
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
                   {renderCustomIcon()}
                   {renderMessage()}
                 </Box>
@@ -120,7 +124,13 @@ export const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
     case 'spinner':
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
             {loading ? renderCustomIcon() : children}
             {loading && renderMessage()}
           </Box>
@@ -153,9 +163,14 @@ export const LoadingSkeleton: React.FC = () => {
           <Skeleton variant="text" width="40%" height={16} />
         </Box>
       </Box>
-      
-      <Skeleton variant="rectangular" width="100%" height={200} sx={{ mb: 2 }} />
-      
+
+      <Skeleton
+        variant="rectangular"
+        width="100%"
+        height={200}
+        sx={{ mb: 2 }}
+      />
+
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Skeleton variant="rectangular" width={80} height={32} />
         <Skeleton variant="rectangular" width={80} height={32} />
@@ -173,7 +188,12 @@ export const CardSkeleton: React.FC<{ count?: number }> = ({ count = 1 }) => {
         <Box key={index} sx={{ mb: 2 }}>
           <Paper sx={{ p: 2 }}>
             <Skeleton variant="text" width="70%" height={24} sx={{ mb: 2 }} />
-            <Skeleton variant="rectangular" width="100%" height={120} sx={{ mb: 2 }} />
+            <Skeleton
+              variant="rectangular"
+              width="100%"
+              height={120}
+              sx={{ mb: 2 }}
+            />
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Skeleton variant="rectangular" width={60} height={24} />
               <Skeleton variant="rectangular" width={60} height={24} />
@@ -186,15 +206,27 @@ export const CardSkeleton: React.FC<{ count?: number }> = ({ count = 1 }) => {
 };
 
 // Skeleton for list items
-export const ListItemSkeleton: React.FC<{ count?: number }> = ({ count = 5 }) => {
+export const ListItemSkeleton: React.FC<{ count?: number }> = ({
+  count = 5,
+}) => {
   return (
     <>
       {Array.from({ length: count }).map((_, index) => (
         <Box key={index} sx={{ py: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Skeleton variant="circular" width={32} height={32} sx={{ mr: 2 }} />
+            <Skeleton
+              variant="circular"
+              width={32}
+              height={32}
+              sx={{ mr: 2 }}
+            />
             <Box sx={{ flex: 1 }}>
-              <Skeleton variant="text" width="80%" height={20} sx={{ mb: 0.5 }} />
+              <Skeleton
+                variant="text"
+                width="80%"
+                height={20}
+                sx={{ mb: 0.5 }}
+              />
               <Skeleton variant="text" width="60%" height={16} />
             </Box>
           </Box>
@@ -212,17 +244,17 @@ export const FormSkeleton: React.FC = () => {
         <Skeleton variant="text" width="30%" height={20} sx={{ mb: 1 }} />
         <Skeleton variant="rectangular" width="100%" height={40} />
       </Box>
-      
+
       <Box sx={{ mb: 3 }}>
         <Skeleton variant="text" width="40%" height={20} sx={{ mb: 1 }} />
         <Skeleton variant="rectangular" width="100%" height={40} />
       </Box>
-      
+
       <Box sx={{ mb: 3 }}>
         <Skeleton variant="text" width="25%" height={20} sx={{ mb: 1 }} />
         <Skeleton variant="rectangular" width="100%" height={120} />
       </Box>
-      
+
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Skeleton variant="rectangular" width={80} height={36} />
         <Skeleton variant="rectangular" width={100} height={36} />
@@ -232,7 +264,10 @@ export const FormSkeleton: React.FC = () => {
 };
 
 // Specialized loading indicators
-export const SaveLoading: React.FC<{ loading: boolean; children: ReactNode }> = ({ loading, children }) => (
+export const SaveLoading: React.FC<{
+  loading: boolean;
+  children: ReactNode;
+}> = ({ loading, children }) => (
   <LoadingWrapper
     loading={loading}
     variant="inline"
@@ -244,7 +279,10 @@ export const SaveLoading: React.FC<{ loading: boolean; children: ReactNode }> = 
   </LoadingWrapper>
 );
 
-export const DownloadLoading: React.FC<{ loading: boolean; children: ReactNode }> = ({ loading, children }) => (
+export const DownloadLoading: React.FC<{
+  loading: boolean;
+  children: ReactNode;
+}> = ({ loading, children }) => (
   <LoadingWrapper
     loading={loading}
     variant="inline"
@@ -256,7 +294,10 @@ export const DownloadLoading: React.FC<{ loading: boolean; children: ReactNode }
   </LoadingWrapper>
 );
 
-export const UploadLoading: React.FC<{ loading: boolean; children: ReactNode }> = ({ loading, children }) => (
+export const UploadLoading: React.FC<{
+  loading: boolean;
+  children: ReactNode;
+}> = ({ loading, children }) => (
   <LoadingWrapper
     loading={loading}
     variant="inline"
@@ -268,7 +309,10 @@ export const UploadLoading: React.FC<{ loading: boolean; children: ReactNode }> 
   </LoadingWrapper>
 );
 
-export const RefreshLoading: React.FC<{ loading: boolean; children: ReactNode }> = ({ loading, children }) => (
+export const RefreshLoading: React.FC<{
+  loading: boolean;
+  children: ReactNode;
+}> = ({ loading, children }) => (
   <LoadingWrapper
     loading={loading}
     variant="inline"

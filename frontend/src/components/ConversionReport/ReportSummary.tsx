@@ -11,11 +11,14 @@ interface ReportSummaryProps {
   summary: SummaryReport;
 }
 
-const CircularProgress: React.FC<{ value: number; size?: number }> = ({ value, size = 120 }) => {
+const CircularProgress: React.FC<{ value: number; size?: number }> = ({
+  value,
+  size = 120,
+}) => {
   const circumference = 2 * Math.PI * 45;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (value / 100) * circumference;
-  
+
   const getColor = (value: number) => {
     if (value >= 80) return '#28a745';
     if (value >= 60) return '#ffc107';
@@ -23,7 +26,10 @@ const CircularProgress: React.FC<{ value: number; size?: number }> = ({ value, s
   };
 
   return (
-    <div className={styles.circularProgress} style={{ width: size, height: size }}>
+    <div
+      className={styles.circularProgress}
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} viewBox="0 0 100 100">
         <circle
           cx="50"
@@ -62,12 +68,12 @@ const CircularProgress: React.FC<{ value: number; size?: number }> = ({ value, s
   );
 };
 
-const StatCard: React.FC<{ title: string; value: string | number; icon?: string; color?: string }> = ({ 
-  title, 
-  value, 
-  icon = '',
-  color = '#007bff'
-}) => (
+const StatCard: React.FC<{
+  title: string;
+  value: string | number;
+  icon?: string;
+  color?: string;
+}> = ({ title, value, icon = '', color = '#007bff' }) => (
   <div className={styles.statCard}>
     <div className={styles.statIcon} style={{ color }}>
       {icon}
@@ -76,9 +82,7 @@ const StatCard: React.FC<{ title: string; value: string | number; icon?: string;
       <div className={styles.statValue} style={{ color }}>
         {value}
       </div>
-      <div className={styles.statTitle}>
-        {title}
-      </div>
+      <div className={styles.statTitle}>{title}</div>
     </div>
   </div>
 );
@@ -112,15 +116,18 @@ const QualityIndicator: React.FC<{ score: number }> = ({ score }) => {
   return (
     <div className={styles.qualityIndicator}>
       <div className={styles.qualityBar}>
-        <div 
+        <div
           className={styles.qualityFill}
-          style={{ 
+          style={{
             width: `${score}%`,
-            backgroundColor: getQualityColor(score)
+            backgroundColor: getQualityColor(score),
           }}
         />
       </div>
-      <div className={styles.qualityLabel} style={{ color: getQualityColor(score) }}>
+      <div
+        className={styles.qualityLabel}
+        style={{ color: getQualityColor(score) }}
+      >
         {getQualityLabel(score)} ({score.toFixed(1)})
       </div>
     </div>
@@ -157,7 +164,7 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
     total_files_processed,
     output_size_mb,
     conversion_quality_score,
-    recommended_actions
+    recommended_actions,
   } = summary;
 
   return (
@@ -169,14 +176,17 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
           <div className={styles.successRateInfo}>
             <h3>Overall Success Rate</h3>
             <p className={styles.successRateDescription}>
-              {overall_success_rate >= 90 ? 'Excellent conversion results!' :
-               overall_success_rate >= 70 ? 'Good conversion with minor issues' :
-               overall_success_rate >= 50 ? 'Moderate success, review needed' :
-               'Conversion needs attention'}
+              {overall_success_rate >= 90
+                ? 'Excellent conversion results!'
+                : overall_success_rate >= 70
+                  ? 'Good conversion with minor issues'
+                  : overall_success_rate >= 50
+                    ? 'Moderate success, review needed'
+                    : 'Conversion needs attention'}
             </p>
           </div>
         </div>
-        
+
         {/* Quality Score */}
         <div className={styles.qualitySection}>
           <h4>Conversion Quality</h4>
@@ -186,39 +196,39 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
 
       {/* Statistics Grid */}
       <div className={styles.statsGrid}>
-        <StatCard 
-          title="Total Features" 
-          value={total_features} 
+        <StatCard
+          title="Total Features"
+          value={total_features}
           icon="🎯"
           color="#007bff"
         />
-        <StatCard 
-          title="Converted" 
-          value={converted_features} 
+        <StatCard
+          title="Converted"
+          value={converted_features}
           icon="✅"
           color="#28a745"
         />
-        <StatCard 
-          title="Partial" 
-          value={partially_converted_features} 
+        <StatCard
+          title="Partial"
+          value={partially_converted_features}
           icon="⚠️"
           color="#ffc107"
         />
-        <StatCard 
-          title="Failed" 
-          value={failed_features} 
+        <StatCard
+          title="Failed"
+          value={failed_features}
           icon="❌"
           color="#dc3545"
         />
-        <StatCard 
-          title="Assumptions" 
-          value={assumptions_applied_count} 
+        <StatCard
+          title="Assumptions"
+          value={assumptions_applied_count}
           icon="🧠"
           color="#6f42c1"
         />
-        <StatCard 
-          title="Processing Time" 
-          value={`${processing_time_seconds.toFixed(1)}s`} 
+        <StatCard
+          title="Processing Time"
+          value={`${processing_time_seconds.toFixed(1)}s`}
           icon="⏱️"
           color="#17a2b8"
         />
@@ -232,13 +242,17 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
             {total_files_processed > 0 && (
               <div className={styles.metric}>
                 <span className={styles.metricLabel}>Files Processed:</span>
-                <span className={styles.metricValue}>{total_files_processed}</span>
+                <span className={styles.metricValue}>
+                  {total_files_processed}
+                </span>
               </div>
             )}
             {output_size_mb > 0 && (
               <div className={styles.metric}>
                 <span className={styles.metricLabel}>Output Size:</span>
-                <span className={styles.metricValue}>{output_size_mb.toFixed(1)} MB</span>
+                <span className={styles.metricValue}>
+                  {output_size_mb.toFixed(1)} MB
+                </span>
               </div>
             )}
           </div>

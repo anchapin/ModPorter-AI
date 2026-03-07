@@ -19,32 +19,40 @@ interface BehaviorFileTreeProps {
 export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
   conversionId,
   onFileSelect,
-  selectedFileId
+  selectedFileId,
 }) => {
   const [treeData, setTreeData] = useState<BehaviorFileTreeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     const fetchFileTree = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        const response = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+        const response = await fetch(
+          `/api/v1/conversions/${conversionId}/behaviors`
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data: BehaviorFileTreeNode[] = await response.json();
         setTreeData(data);
-        
+
         // Auto-expand root level directories
-        const rootDirs = data.filter(node => node.type === 'directory').map(node => node.path);
+        const rootDirs = data
+          .filter((node) => node.type === 'directory')
+          .map((node) => node.path);
         setExpandedFolders(new Set(rootDirs));
       } catch (err) {
         console.error('Error fetching behavior file tree:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load file tree');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load file tree'
+        );
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +73,10 @@ export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
     setExpandedFolders(newExpanded);
   };
 
-  const renderTreeNode = (node: BehaviorFileTreeNode, level: number = 0): React.ReactNode => {
+  const renderTreeNode = (
+    node: BehaviorFileTreeNode,
+    level: number = 0
+  ): React.ReactNode => {
     const isExpanded = expandedFolders.has(node.path);
     const isSelected = node.id === selectedFileId;
     const indentStyle = { paddingLeft: `${level * 20 + 8}px` };
@@ -85,7 +96,7 @@ export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
           </div>
           {isExpanded && (
             <div className="tree-children">
-              {node.children.map(child => renderTreeNode(child, level + 1))}
+              {node.children.map((child) => renderTreeNode(child, level + 1))}
             </div>
           )}
         </div>
@@ -152,7 +163,10 @@ export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
         </div>
         <div className="tree-empty">
           <p>No behavior files found for this conversion.</p>
-          <p>Files will appear here after the conversion generates editable behaviors.</p>
+          <p>
+            Files will appear here after the conversion generates editable
+            behaviors.
+          </p>
         </div>
       </div>
     );
@@ -165,7 +179,7 @@ export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
         <span className="file-count">{treeData.length} items</span>
       </div>
       <div className="tree-content">
-        {treeData.map(node => renderTreeNode(node))}
+        {treeData.map((node) => renderTreeNode(node))}
       </div>
     </div>
   );

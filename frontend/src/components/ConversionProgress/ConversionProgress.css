@@ -6,7 +6,8 @@
   border: 1px solid #e5e7eb;
   padding: 24px;
   margin: 20px 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -118,7 +119,8 @@
 
 /* Pulse animation for current step */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   50% {
@@ -151,13 +153,22 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
   animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Status message styling */
@@ -201,8 +212,13 @@
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Error message styling */
@@ -257,26 +273,26 @@
     padding: 16px;
     margin: 16px 0;
   }
-  
+
   .conversion-progress-container h4 {
     font-size: 16px;
   }
-  
+
   .step-name {
     font-size: 14px;
   }
-  
+
   .step-icon {
     width: 20px;
     height: 20px;
     margin-right: 12px;
   }
-  
+
   .step-icon svg {
     width: 12px;
     height: 12px;
   }
-  
+
   .conversion-steps-list::before {
     left: 10px;
   }
@@ -456,7 +472,7 @@
   .spinner-icon {
     animation: none;
   }
-  
+
   .step-icon,
   .step-name,
   .download-button,

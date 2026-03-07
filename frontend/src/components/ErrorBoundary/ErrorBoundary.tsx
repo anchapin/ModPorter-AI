@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -32,17 +32,17 @@ export class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // You can also log the error to an error reporting service
     console.error('Error caught by boundary:', error, errorInfo);
-    
+
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // Log to backend error service in production
@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack,
       url: window.location.href,
       userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Example API call to error logging service
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(errorData),
-    }).catch(err => {
+    }).catch((err) => {
       console.error('Failed to log error to service:', err);
     });
   };
@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
   };
 
@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Safely extract error message, handling cases where error.message might be an object
     const getErrorMessage = (error: Error | null): string => {
       if (!error) return 'Unknown error occurred';
-      
+
       const message = error.message;
       // Handle case where message is an object (causes "Cannot convert object to primitive value")
       if (typeof message === 'object' && message !== null) {
@@ -104,12 +104,14 @@ export class ErrorBoundary extends Component<Props, State> {
     };
 
     const errorMessage = getErrorMessage(this.state.error);
-    const errorStack = this.state.error?.stack ? 
-      (typeof this.state.error.stack === 'object' ? JSON.stringify(this.state.error.stack) : this.state.error.stack) 
+    const errorStack = this.state.error?.stack
+      ? typeof this.state.error.stack === 'object'
+        ? JSON.stringify(this.state.error.stack)
+        : this.state.error.stack
       : 'No stack trace available';
-    
+
     const errorDetails = `Error: ${errorMessage}\nStack: ${errorStack}`;
-    
+
     const githubUrl = `https://github.com/anchapin/ModPorter-AI/issues/new?title=Frontend Error&body=${encodeURIComponent(errorDetails)}`;
     window.open(githubUrl, '_blank');
   };
@@ -127,25 +129,23 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="error-icon">💥</div>
             <h1 className="error-title">Oops! Something went wrong</h1>
             <p className="error-description">
-              We encountered an unexpected error. Don't worry, your data is safe.
+              We encountered an unexpected error. Don't worry, your data is
+              safe.
             </p>
-            
+
             <div className="error-actions">
-              <button 
-                className="error-btn primary"
-                onClick={this.handleRetry}
-              >
+              <button className="error-btn primary" onClick={this.handleRetry}>
                 🔄 Try Again
               </button>
-              
-              <button 
+
+              <button
                 className="error-btn secondary"
                 onClick={this.handleReload}
               >
                 🔃 Reload Page
               </button>
-              
-              <button 
+
+              <button
                 className="error-btn outline"
                 onClick={this.handleReportIssue}
               >
@@ -159,15 +159,27 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary>🔍 Error Details (Development)</summary>
                 <div className="error-stack">
                   <h4>Error Message:</h4>
-                  <pre>{typeof this.state.error.message === 'object' ? JSON.stringify(this.state.error.message) : String(this.state.error.message)}</pre>
-                  
+                  <pre>
+                    {typeof this.state.error.message === 'object'
+                      ? JSON.stringify(this.state.error.message)
+                      : String(this.state.error.message)}
+                  </pre>
+
                   <h4>Stack Trace:</h4>
-                  <pre>{typeof this.state.error.stack === 'object' ? JSON.stringify(this.state.error.stack) : String(this.state.error.stack)}</pre>
-                  
+                  <pre>
+                    {typeof this.state.error.stack === 'object'
+                      ? JSON.stringify(this.state.error.stack)
+                      : String(this.state.error.stack)}
+                  </pre>
+
                   {this.state.errorInfo && (
                     <>
                       <h4>Component Stack:</h4>
-                      <pre>{typeof this.state.errorInfo.componentStack === 'object' ? JSON.stringify(this.state.errorInfo.componentStack) : String(this.state.errorInfo.componentStack)}</pre>
+                      <pre>
+                        {typeof this.state.errorInfo.componentStack === 'object'
+                          ? JSON.stringify(this.state.errorInfo.componentStack)
+                          : String(this.state.errorInfo.componentStack)}
+                      </pre>
                     </>
                   )}
                 </div>

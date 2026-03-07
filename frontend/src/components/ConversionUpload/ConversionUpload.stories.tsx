@@ -52,7 +52,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default state of the conversion upload component with all features visible.',
+        story:
+          'Default state of the conversion upload component with all features visible.',
       },
     },
   },

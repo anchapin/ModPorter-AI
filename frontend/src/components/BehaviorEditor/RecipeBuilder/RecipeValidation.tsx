@@ -53,7 +53,11 @@ export class RecipeValidation {
     return /^[a-z0-9_]+:[a-z0-9_\-/]+$/.test(identifier);
   }
 
-  private validateShapedRecipe(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
+  private validateShapedRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
     if (!recipe.pattern || recipe.pattern.length === 0) {
       errors.push('Shaped recipe requires a pattern');
       return;
@@ -76,7 +80,9 @@ export class RecipeValidation {
 
           // Validate item exists
           if (!this.itemExists(slot.item, availableItems)) {
-            errors.push(`Item "${slot.item.name}" in slot (${x},${y}) is not available`);
+            errors.push(
+              `Item "${slot.item.name}" in slot (${x},${y}) is not available`
+            );
           }
         }
       }
@@ -87,7 +93,9 @@ export class RecipeValidation {
           emptyRowStart = y;
         }
       } else if (hasEmptyRow) {
-        errors.push(`Empty rows must be at the end (found empty row at ${emptyRowStart} with items below)`);
+        errors.push(
+          `Empty rows must be at the end (found empty row at ${emptyRowStart} with items below)`
+        );
       }
     }
 
@@ -107,7 +115,11 @@ export class RecipeValidation {
     }
   }
 
-  private validateShapelessRecipe(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
+  private validateShapelessRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
     if (!recipe.pattern || recipe.pattern.length === 0) {
       errors.push('Shapeless recipe requires ingredients');
       return;
@@ -137,8 +149,17 @@ export class RecipeValidation {
     }
   }
 
-  private validateSmeltingRecipe(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
-    if (!recipe.pattern || recipe.pattern.length === 0 || !recipe.pattern[0] || recipe.pattern[0].length === 0) {
+  private validateSmeltingRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
+    if (
+      !recipe.pattern ||
+      recipe.pattern.length === 0 ||
+      !recipe.pattern[0] ||
+      recipe.pattern[0].length === 0
+    ) {
       errors.push('Smelting recipe requires an input item');
       return;
     }
@@ -175,7 +196,11 @@ export class RecipeValidation {
     }
   }
 
-  private validateBrewingRecipe(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
+  private validateBrewingRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
     if (!recipe.pattern || recipe.pattern.length < 3) {
       errors.push('Brewing recipe requires a 3x3 pattern');
       return;
@@ -190,9 +215,11 @@ export class RecipeValidation {
       return;
     }
 
-    const hasBottle = bottomSlots.some(slot => slot.item);
+    const hasBottle = bottomSlots.some((slot) => slot.item);
     if (!hasBottle) {
-      errors.push('Brewing recipe requires at least one bottle in the bottom slots');
+      errors.push(
+        'Brewing recipe requires at least one bottle in the bottom slots'
+      );
       return;
     }
 
@@ -204,13 +231,24 @@ export class RecipeValidation {
     // Validate bottles
     bottomSlots.forEach((slot, index) => {
       if (slot.item && !this.itemExists(slot.item, availableItems)) {
-        errors.push(`Bottom slot ${index + 1} item "${slot.item.name}" is not available`);
+        errors.push(
+          `Bottom slot ${index + 1} item "${slot.item.name}" is not available`
+        );
       }
     });
   }
 
-  private validateStonecutterRecipe(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
-    if (!recipe.pattern || recipe.pattern.length === 0 || !recipe.pattern[0] || recipe.pattern[0].length === 0) {
+  private validateStonecutterRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
+    if (
+      !recipe.pattern ||
+      recipe.pattern.length === 0 ||
+      !recipe.pattern[0] ||
+      recipe.pattern[0].length === 0
+    ) {
       errors.push('Stonecutter recipe requires an input item');
       return;
     }
@@ -227,7 +265,11 @@ export class RecipeValidation {
     }
   }
 
-  private validateResult(recipe: Recipe, availableItems: RecipeItem[], errors: string[]): void {
+  private validateResult(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
     if (!recipe.result) {
       errors.push('Recipe result is required');
       return;
@@ -251,7 +293,9 @@ export class RecipeValidation {
     // Check if result item is valid (optional, as some recipes create new items)
     if (recipe.result.id && !this.itemExists(recipe.result, availableItems)) {
       // This is just a warning, not an error
-      console.warn(`Result item "${recipe.result.name}" is not in available items list`);
+      console.warn(
+        `Result item "${recipe.result.name}" is not in available items list`
+      );
     }
 
     // Validate priority
@@ -263,9 +307,9 @@ export class RecipeValidation {
   }
 
   private itemExists(item: RecipeItem, availableItems: RecipeItem[]): boolean {
-    return availableItems.some(availableItem => 
-      availableItem.id === item.id || 
-      availableItem.name === item.name
+    return availableItems.some(
+      (availableItem) =>
+        availableItem.id === item.id || availableItem.name === item.name
     );
   }
 
@@ -276,8 +320,9 @@ export class RecipeValidation {
     result: string;
     complexity: 'simple' | 'medium' | 'complex';
   } {
-    const ingredientCount = recipe.pattern?.flat().filter(slot => slot.item).length || 0;
-    
+    const ingredientCount =
+      recipe.pattern?.flat().filter((slot) => slot.item).length || 0;
+
     let complexity: 'simple' | 'medium' | 'complex' = 'simple';
     if (ingredientCount > 3) {
       complexity = 'complex';
@@ -286,10 +331,12 @@ export class RecipeValidation {
     }
 
     return {
-      type: recipe.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      type: recipe.type
+        .replace('_', ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase()),
       ingredients: ingredientCount,
       result: recipe.result?.name || 'Unknown',
-      complexity
+      complexity,
     };
   }
 
@@ -302,7 +349,9 @@ export class RecipeValidation {
 
       // Check for same identifier
       if (existing.identifier === recipe.identifier) {
-        conflicts.push(`Recipe with identifier "${recipe.identifier}" already exists`);
+        conflicts.push(
+          `Recipe with identifier "${recipe.identifier}" already exists`
+        );
       }
 
       // Check for identical ingredients and result (same recipe)
@@ -311,9 +360,11 @@ export class RecipeValidation {
       }
 
       // Check for conflicts in priority
-      if (existing.priority === recipe.priority && 
-          this.hasSameIngredients(recipe, existing) &&
-          existing.result.id === recipe.result.id) {
+      if (
+        existing.priority === recipe.priority &&
+        this.hasSameIngredients(recipe, existing) &&
+        existing.result.id === recipe.result.id
+      ) {
         conflicts.push(`Recipe priority conflict with: ${existing.name}`);
       }
     }
@@ -325,15 +376,35 @@ export class RecipeValidation {
     if (recipe1.type !== recipe2.type) return false;
     if (recipe1.result.id !== recipe2.result.id) return false;
 
-    const ingredients1 = recipe1.pattern?.flat().filter(slot => slot.item).map(slot => slot.item?.id).sort() || [];
-    const ingredients2 = recipe2.pattern?.flat().filter(slot => slot.item).map(slot => slot.item?.id).sort() || [];
+    const ingredients1 =
+      recipe1.pattern
+        ?.flat()
+        .filter((slot) => slot.item)
+        .map((slot) => slot.item?.id)
+        .sort() || [];
+    const ingredients2 =
+      recipe2.pattern
+        ?.flat()
+        .filter((slot) => slot.item)
+        .map((slot) => slot.item?.id)
+        .sort() || [];
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }
 
   private hasSameIngredients(recipe1: Recipe, recipe2: Recipe): boolean {
-    const ingredients1 = recipe1.pattern?.flat().filter(slot => slot.item).map(slot => slot.item?.id).sort() || [];
-    const ingredients2 = recipe2.pattern?.flat().filter(slot => slot.item).map(slot => slot.item?.id).sort() || [];
+    const ingredients1 =
+      recipe1.pattern
+        ?.flat()
+        .filter((slot) => slot.item)
+        .map((slot) => slot.item?.id)
+        .sort() || [];
+    const ingredients2 =
+      recipe2.pattern
+        ?.flat()
+        .filter((slot) => slot.item)
+        .map((slot) => slot.item?.id)
+        .sort() || [];
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }

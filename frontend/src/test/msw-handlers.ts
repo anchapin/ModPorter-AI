@@ -53,9 +53,16 @@ export const handlers = [
     }
 
     // Validate file type
-    const allowedTypes = ['application/java-archive', 'application/zip', 'application/x-mcaddon'];
+    const allowedTypes = [
+      'application/java-archive',
+      'application/zip',
+      'application/x-mcaddon',
+    ];
     if (!allowedTypes.includes(file.type)) {
-      return HttpResponse.json({ detail: 'Invalid file type' }, { status: 400 });
+      return HttpResponse.json(
+        { detail: 'Invalid file type' },
+        { status: 400 }
+      );
     }
 
     const fileId = `mock-file-${Date.now()}`;
@@ -74,10 +81,18 @@ export const handlers = [
   // Handles a POST /api/v1/convert request
   http.post(`${API_BASE_URL}/convert`, async ({ request }) => {
     resetConversionState(); // Reset state for new conversion
-    const body = await request.json() as { file_id: string; original_filename: string; target_version?: string; options?: any };
-    
+    const body = (await request.json()) as {
+      file_id: string;
+      original_filename: string;
+      target_version?: string;
+      options?: any;
+    };
+
     if (!body.file_id || !body.original_filename) {
-      return HttpResponse.json({ detail: 'file_id and original_filename are required' }, { status: 422 });
+      return HttpResponse.json(
+        { detail: 'file_id and original_filename are required' },
+        { status: 422 }
+      );
     }
 
     conversionState.conversionId = `mock-${Date.now()}`;
@@ -94,7 +109,12 @@ export const handlers = [
       convertedMods: [],
       failedMods: [],
       smartAssumptionsApplied: [],
-      detailedReport: { stage: 'Pending', progress: 0, logs: [], technicalDetails: {} },
+      detailedReport: {
+        stage: 'Pending',
+        progress: 0,
+        logs: [],
+        technicalDetails: {},
+      },
     });
   }),
 
@@ -102,7 +122,10 @@ export const handlers = [
   http.get(`${API_BASE_URL}/convert/:id/status`, ({ params }) => {
     const { id } = params;
     if (id !== conversionState.conversionId) {
-      return HttpResponse.json({ detail: 'Conversion not found' }, { status: 404 });
+      return HttpResponse.json(
+        { detail: 'Conversion not found' },
+        { status: 404 }
+      );
     }
 
     // Simulate progress
@@ -128,33 +151,59 @@ export const handlers = [
       stage: conversionState.status,
       created_at: new Date().toISOString(),
       // Other fields can be added as needed for COMPLETED state
-      overallSuccessRate: conversionState.status === ConversionStatusEnum.COMPLETED ? 100 : 0,
-      convertedMods: conversionState.status === ConversionStatusEnum.COMPLETED ? [{ name: 'Test Mod', version: '1.0', status: 'success', features: [], warnings: [] }] : [],
+      overallSuccessRate:
+        conversionState.status === ConversionStatusEnum.COMPLETED ? 100 : 0,
+      convertedMods:
+        conversionState.status === ConversionStatusEnum.COMPLETED
+          ? [
+              {
+                name: 'Test Mod',
+                version: '1.0',
+                status: 'success',
+                features: [],
+                warnings: [],
+              },
+            ]
+          : [],
       failedMods: [],
       smartAssumptionsApplied: [],
       error: conversionState.error,
-      detailedReport: { stage: conversionState.status, progress: conversionState.progress, logs: [], technicalDetails: {} },
+      detailedReport: {
+        stage: conversionState.status,
+        progress: conversionState.progress,
+        logs: [],
+        technicalDetails: {},
+      },
     });
   }),
 
   // Handles a GET /api/v1/convert/:id/download request
   http.get(`${API_BASE_URL}/convert/:id/download`, ({ params }) => {
     const { id } = params;
-    if (id !== conversionState.conversionId || conversionState.status !== ConversionStatusEnum.COMPLETED) {
-      return HttpResponse.json({ detail: 'File not ready or not found' }, { status: 404 });
+    if (
+      id !== conversionState.conversionId ||
+      conversionState.status !== ConversionStatusEnum.COMPLETED
+    ) {
+      return HttpResponse.json(
+        { detail: 'File not ready or not found' },
+        { status: 404 }
+      );
     }
-    
+
     // Generate user-friendly filename from original filename
     const originalFilename = conversionState.originalFilename || 'unknown';
-    const originalFilenameBase = originalFilename.split('.').slice(0, -1).join('.') || 'converted-mod';
+    const originalFilenameBase =
+      originalFilename.split('.').slice(0, -1).join('.') || 'converted-mod';
     const downloadFilename = `${originalFilenameBase}_converted.mcaddon`;
-    
-    const blob = new Blob(['mock file content'], { type: 'application/octet-stream' });
+
+    const blob = new Blob(['mock file content'], {
+      type: 'application/octet-stream',
+    });
     return new HttpResponse(blob, {
-        headers: {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${downloadFilename}"`,
-        }
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${downloadFilename}"`,
+      },
     });
   }),
 
@@ -162,7 +211,10 @@ export const handlers = [
   http.delete(`${API_BASE_URL}/convert/:id`, ({ params }) => {
     const { id } = params;
     if (id !== conversionState.conversionId) {
-      return HttpResponse.json({ detail: 'Conversion not found' }, { status: 404 });
+      return HttpResponse.json(
+        { detail: 'Conversion not found' },
+        { status: 404 }
+      );
     }
     conversionState.status = ConversionStatusEnum.CANCELLED;
     conversionState.progress = 0; // Or whatever progress it was at
@@ -173,50 +225,68 @@ export const handlers = [
   http.post(`${API_BASE_URL}/feedback`, async ({ request }) => {
     const body = await request.json();
     if (!body.feedback_type) {
-      return HttpResponse.json({ detail: 'Feedback type is required' }, { status: 400 });
+      return HttpResponse.json(
+        { detail: 'Feedback type is required' },
+        { status: 400 }
+      );
     }
-    return HttpResponse.json({ message: 'Feedback submitted successfully' }, { status: 200 });
+    return HttpResponse.json(
+      { message: 'Feedback submitted successfully' },
+      { status: 200 }
+    );
   }),
 
   // WebSocket handlers for conversion progress
-  ws.link('ws://localhost:8080/ws/v1/convert/:jobId/progress', async ({ data, clientId }) => {
-    const jobId = data.url.match(/\/ws\/v1\/convert\/(.+?)\/progress/)?.[1];
-    if (!jobId) return;
-    
-    // Simulate progress updates
-    const sendData = () => {
-      const currentProgress = conversionState.progress + 10;
-      if (currentProgress <= 100) {
-        conversionState.progress = currentProgress;
-        conversionState.status = currentProgress >= 100 ? ConversionStatusEnum.COMPLETED : ConversionStatusEnum.RUNNING;
-        
-        globalServer.send(clientId, {
-          type: 'progress_update',
-          data: {
-            job_id: jobId,
-            status: conversionState.status,
-            progress: conversionState.progress,
-            message: conversionState.status === ConversionStatusEnum.COMPLETED ? 'Conversion completed!' : 'Processing...',
-            stage: conversionState.status === ConversionStatusEnum.COMPLETED ? 'Completed' : 'Processing',
-          },
-        });
-        
-        if (conversionState.status === ConversionStatusEnum.COMPLETED) {
-          setTimeout(() => globalServer.close(clientId), 100);
-          return;
-        }
-      }
-    };
+  ws.link(
+    'ws://localhost:8080/ws/v1/convert/:jobId/progress',
+    async ({ data, clientId }) => {
+      const jobId = data.url.match(/\/ws\/v1\/convert\/(.+?)\/progress/)?.[1];
+      if (!jobId) return;
 
-    // Send initial progress
-    sendData();
-    
-    // Continue sending progress updates
-    const interval = setInterval(sendData, 1000);
-    
-    // Store interval for cleanup
-    (conversionState as any).interval = interval;
-  }),
+      // Simulate progress updates
+      const sendData = () => {
+        const currentProgress = conversionState.progress + 10;
+        if (currentProgress <= 100) {
+          conversionState.progress = currentProgress;
+          conversionState.status =
+            currentProgress >= 100
+              ? ConversionStatusEnum.COMPLETED
+              : ConversionStatusEnum.RUNNING;
+
+          globalServer.send(clientId, {
+            type: 'progress_update',
+            data: {
+              job_id: jobId,
+              status: conversionState.status,
+              progress: conversionState.progress,
+              message:
+                conversionState.status === ConversionStatusEnum.COMPLETED
+                  ? 'Conversion completed!'
+                  : 'Processing...',
+              stage:
+                conversionState.status === ConversionStatusEnum.COMPLETED
+                  ? 'Completed'
+                  : 'Processing',
+            },
+          });
+
+          if (conversionState.status === ConversionStatusEnum.COMPLETED) {
+            setTimeout(() => globalServer.close(clientId), 100);
+            return;
+          }
+        }
+      };
+
+      // Send initial progress
+      sendData();
+
+      // Continue sending progress updates
+      const interval = setInterval(sendData, 1000);
+
+      // Store interval for cleanup
+      (conversionState as any).interval = interval;
+    }
+  ),
 ];
 
 // Store server reference globally for WebSocket handlers

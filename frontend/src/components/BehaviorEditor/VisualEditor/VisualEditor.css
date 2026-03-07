@@ -12,7 +12,7 @@
   padding: 16px;
   background-color: #fff;
   border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .editor-content {
@@ -61,15 +61,15 @@
   .visual-editor {
     padding: 8px;
   }
-  
+
   .editor-header {
     padding: 12px;
   }
-  
+
   .editor-content {
     padding: 12px;
   }
-  
+
   .form-builder {
     max-width: 100%;
   }

@@ -9,24 +9,27 @@ import {
   UploadResponse,
   InitiateConversionParams,
   AddonDetails, // Added for Addon Editor
-  AddonAsset,    // Added for Asset Management
+  AddonAsset, // Added for Asset Management
   AddonDataUpload, // Added for saving addon details
   FeedbackCreatePayload, // Added
   FeedbackResponse, // Added
   ConversionAsset, // Added for Conversion Asset Management
-  ConversionAssetBatchResult // Added for Conversion Asset Management
+  ConversionAssetBatchResult, // Added for Conversion Asset Management
 } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 // Supports VITE_API_BASE_URL and VITE_API_URL environment variables
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
   ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
-  : (import.meta.env.VITE_API_URL 
+  : import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
-    : '/api/v1');
+    : '/api/v1';
 
 class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -45,8 +48,13 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Upload failed with unknown error' }));
-    throw new ApiError(errorData.detail || 'File upload failed', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Upload failed with unknown error' }));
+    throw new ApiError(
+      errorData.detail || 'File upload failed',
+      response.status
+    );
   }
 
   return response.json();
@@ -83,7 +91,9 @@ export const uploadFileWithProgress = async (
       } else {
         try {
           const errorData = JSON.parse(xhr.responseText);
-          reject(new ApiError(errorData.detail || 'File upload failed', xhr.status));
+          reject(
+            new ApiError(errorData.detail || 'File upload failed', xhr.status)
+          );
         } catch {
           reject(new ApiError('File upload failed', xhr.status));
         }
@@ -132,18 +142,27 @@ export interface ConversionHistoryResponse {
   page_size: number;
 }
 
-export const listConversions = async (params: ConversionHistoryParams = {}): Promise<ConversionHistoryResponse> => {
+export const listConversions = async (
+  params: ConversionHistoryParams = {}
+): Promise<ConversionHistoryResponse> => {
   const searchParams = new URLSearchParams();
-  
-  if (params.page !== undefined) searchParams.append('page', params.page.toString());
-  if (params.page_size !== undefined) searchParams.append('page_size', params.page_size.toString());
+
+  if (params.page !== undefined)
+    searchParams.append('page', params.page.toString());
+  if (params.page_size !== undefined)
+    searchParams.append('page_size', params.page_size.toString());
   if (params.status) searchParams.append('status', params.status);
 
   const response = await fetch(`${API_BASE_URL}/conversions?${searchParams}`);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch conversion history' }));
-    throw new ApiError(errorData.detail || 'Failed to fetch conversion history', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to fetch conversion history' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to fetch conversion history',
+      response.status
+    );
   }
 
   return response.json();
@@ -151,14 +170,16 @@ export const listConversions = async (params: ConversionHistoryParams = {}): Pro
 
 /**
  * Start a new mod conversion job.
- * 
+ *
  * Uses POST /api/v1/conversions with multipart form data (file + options).
  * This is the new unified endpoint that handles upload + conversion in one step.
  * Falls back to legacy /upload + /convert flow if the new endpoint is unavailable.
  */
-export const convertMod = async (params: InitiateConversionParams): Promise<ConversionResponse> => {
+export const convertMod = async (
+  params: InitiateConversionParams
+): Promise<ConversionResponse> => {
   if (!params.file) {
-    throw new Error("File is required for conversion.");
+    throw new Error('File is required for conversion.');
   }
 
   // Build conversion options
@@ -191,14 +212,21 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
 
     // If 404, the new endpoint doesn't exist yet — fall through to legacy
     if (response.status !== 404) {
-      const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
-      throw new ApiError(errorData.detail || 'Conversion failed', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Conversion failed' }));
+      throw new ApiError(
+        errorData.detail || 'Conversion failed',
+        response.status
+      );
     }
   } catch (err) {
     // If it's an ApiError (non-404), rethrow
     if (err instanceof ApiError) throw err;
     // Otherwise fall through to legacy endpoint
-    console.warn('[API] New /conversions endpoint unavailable, falling back to legacy flow');
+    console.warn(
+      '[API] New /conversions endpoint unavailable, falling back to legacy flow'
+    );
   }
 
   // Legacy fallback: upload file first, then start conversion
@@ -224,8 +252,13 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new ApiError(errorData.detail || 'Conversion failed', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(
+      errorData.detail || 'Conversion failed',
+      response.status
+    );
   }
 
   return response.json();
@@ -233,15 +266,17 @@ export const convertMod = async (params: InitiateConversionParams): Promise<Conv
 
 /**
  * Get the status of a conversion job.
- * 
+ *
  * Tries GET /api/v1/conversions/{id} first (new endpoint),
  * falls back to GET /api/v1/convert/{id}/status (legacy).
  */
-export const getConversionStatus = async (jobId: string): Promise<ConversionStatus> => {
+export const getConversionStatus = async (
+  jobId: string
+): Promise<ConversionStatus> => {
   // Try new endpoint first
   try {
     const response = await fetch(`${API_BASE_URL}/conversions/${jobId}`);
-    
+
     if (response.ok) {
       const data = await response.json();
       // Map new API response to ConversionStatus format
@@ -257,8 +292,13 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
     }
 
     if (response.status !== 404) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to get status', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get status',
+        response.status
+      );
     }
   } catch (err) {
     if (err instanceof ApiError) throw err;
@@ -266,10 +306,15 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
 
   // Legacy fallback
   const response = await fetch(`${API_BASE_URL}/convert/${jobId}/status`);
-  
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new ApiError(errorData.detail || 'Failed to get status', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get status',
+      response.status
+    );
   }
 
   return response.json();
@@ -277,16 +322,18 @@ export const getConversionStatus = async (jobId: string): Promise<ConversionStat
 
 /**
  * Download the converted .mcaddon file.
- * 
+ *
  * Tries GET /api/v1/conversions/{id}/download first (new endpoint),
  * falls back to GET /api/v1/convert/{id}/download (legacy).
  *
  * @deprecated Use triggerDownload() instead to avoid loading large files into memory.
  */
-export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filename: string }> => {
+export const downloadResult = async (
+  jobId: string
+): Promise<{ blob: Blob; filename: string }> => {
   // Try new endpoint first, fall back to legacy
   let response = await fetch(`${API_BASE_URL}/conversions/${jobId}/download`);
-  
+
   if (response.status === 404) {
     // Fallback to legacy endpoint
     response = await fetch(`${API_BASE_URL}/convert/${jobId}/download`);
@@ -297,9 +344,11 @@ export const downloadResult = async (jobId: string): Promise<{ blob: Blob; filen
   }
 
   // Extract filename from Content-Disposition header
-  const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+  const contentDisposition =
+    response.headers.get('Content-Disposition') ||
+    response.headers.get('content-disposition');
   let filename = `converted-mod-${jobId}.mcaddon`;
-  
+
   if (contentDisposition) {
     const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
     if (fileNameMatch) {
@@ -348,7 +397,7 @@ export const triggerDownload = async (jobId: string): Promise<void> => {
 
 /**
  * Cancel a conversion job.
- * 
+ *
  * Tries DELETE /api/v1/conversions/{id} first (new endpoint),
  * falls back to DELETE /api/v1/convert/{id} (legacy).
  */
@@ -366,25 +415,43 @@ export const cancelJob = async (jobId: string): Promise<void> => {
   }
 
   if (!response.ok && response.status !== 204) {
-    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new ApiError(errorData.detail || 'Failed to cancel job', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Unknown error' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to cancel job',
+      response.status
+    );
   }
 };
 
 // --- Addon Editor API Functions ---
 
-export const getAddonDetails = async (addonId: string): Promise<AddonDetails> => {
+export const getAddonDetails = async (
+  addonId: string
+): Promise<AddonDetails> => {
   console.log(`API: Fetching details for addonId: ${addonId}`);
   const response = await fetch(`${API_BASE_URL}/addons/${addonId}`);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: `Failed to fetch addon details for ${addonId}` }));
-    throw new ApiError(errorData.detail || `Failed to get addon details (status: ${response.status})`, response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({
+        detail: `Failed to fetch addon details for ${addonId}`,
+      }));
+    throw new ApiError(
+      errorData.detail ||
+        `Failed to get addon details (status: ${response.status})`,
+      response.status
+    );
   }
   return response.json();
 };
 
-export const saveAddonDetails = async (addonId: string, data: AddonDataUpload): Promise<AddonDetails> => {
+export const saveAddonDetails = async (
+  addonId: string,
+  data: AddonDataUpload
+): Promise<AddonDetails> => {
   console.log(`API: Saving details for addonId: ${addonId}`, data);
   const response = await fetch(`${API_BASE_URL}/addons/${addonId}`, {
     method: 'PUT',
@@ -395,14 +462,26 @@ export const saveAddonDetails = async (addonId: string, data: AddonDataUpload): 
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: `Failed to save addon details for ${addonId}` }));
-    throw new ApiError(errorData.detail || `Failed to save addon details (status: ${response.status})`, response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: `Failed to save addon details for ${addonId}` }));
+    throw new ApiError(
+      errorData.detail ||
+        `Failed to save addon details (status: ${response.status})`,
+      response.status
+    );
   }
   return response.json(); // Backend returns the full updated AddonDetails
 };
 
-export const uploadAddonAsset = async (addonId: string, file: File, assetType: string): Promise<AddonAsset> => {
-  console.log(`API: Uploading asset for addonId: ${addonId}, file: ${file.name}, type: ${assetType}`);
+export const uploadAddonAsset = async (
+  addonId: string,
+  file: File,
+  assetType: string
+): Promise<AddonAsset> => {
+  console.log(
+    `API: Uploading asset for addonId: ${addonId}, file: ${file.name}, type: ${assetType}`
+  );
   const formData = new FormData();
   formData.append('file', file);
   formData.append('asset_type', assetType); // Backend expects asset_type as form data
@@ -415,33 +494,59 @@ export const uploadAddonAsset = async (addonId: string, file: File, assetType: s
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Failed to upload asset' }));
-    throw new ApiError(errorData.detail || `Asset upload failed (status: ${response.status})`, response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to upload asset' }));
+    throw new ApiError(
+      errorData.detail || `Asset upload failed (status: ${response.status})`,
+      response.status
+    );
   }
   return response.json();
 };
 
-export const replaceAddonAsset = async (addonId: string, assetId: string, file: File): Promise<AddonAsset> => {
+export const replaceAddonAsset = async (
+  addonId: string,
+  assetId: string,
+  file: File
+): Promise<AddonAsset> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/addons/${addonId}/assets/${assetId}`, {
-    method: 'PUT',
-    body: formData,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/addons/${addonId}/assets/${assetId}`,
+    {
+      method: 'PUT',
+      body: formData,
+    }
+  );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Failed to replace asset' }));
-    throw new ApiError(errorData.detail || `Asset replacement failed (status: ${response.status})`, response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to replace asset' }));
+    throw new ApiError(
+      errorData.detail ||
+        `Asset replacement failed (status: ${response.status})`,
+      response.status
+    );
   }
   return response.json();
 };
 
-export const deleteAddonAssetAPI = async (addonId: string, assetId: string): Promise<void> => {
-  console.log(`API: Deleting asset for addonId: ${addonId}, assetId: ${assetId}`);
-  const response = await fetch(`${API_BASE_URL}/addons/${addonId}/assets/${assetId}`, {
-    method: 'DELETE',
-  });
+export const deleteAddonAssetAPI = async (
+  addonId: string,
+  assetId: string
+): Promise<void> => {
+  console.log(
+    `API: Deleting asset for addonId: ${addonId}, assetId: ${assetId}`
+  );
+  const response = await fetch(
+    `${API_BASE_URL}/addons/${addonId}/assets/${assetId}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
   if (!response.ok) {
     // For 204 No Content, response.json() will fail if called.
@@ -452,8 +557,13 @@ export const deleteAddonAssetAPI = async (addonId: string, assetId: string): Pro
       // If backend returns 204, response.ok would be true.
       return;
     }
-    const errorData = await response.json().catch(() => ({ detail: 'Failed to delete asset' }));
-    throw new ApiError(errorData.detail || `Asset deletion failed (status: ${response.status})`, response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to delete asset' }));
+    throw new ApiError(
+      errorData.detail || `Asset deletion failed (status: ${response.status})`,
+      response.status
+    );
   }
   // If response.ok is true, and it's a DELETE, it's typically 204 No Content or 200 OK with a body.
   // If 204, no body to parse. If 200, there might be.
@@ -465,12 +575,17 @@ export const performanceBenchmarkAPI = {
   // Get all available scenarios
   getScenarios: async () => {
     const response = await fetch(`${API_BASE_URL}/performance/scenarios`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to fetch scenarios', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to fetch scenarios',
+        response.status
+      );
     }
-    
+
     return { data: await response.json() };
   },
 
@@ -493,8 +608,13 @@ export const performanceBenchmarkAPI = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to start benchmark', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to start benchmark',
+        response.status
+      );
     }
 
     return { data: await response.json() };
@@ -503,24 +623,34 @@ export const performanceBenchmarkAPI = {
   // Get benchmark status
   getBenchmarkStatus: async (runId: string) => {
     const response = await fetch(`${API_BASE_URL}/performance/status/${runId}`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to get benchmark status', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get benchmark status',
+        response.status
+      );
     }
-    
+
     return { data: await response.json() };
   },
 
   // Get benchmark report
   getBenchmarkReport: async (runId: string) => {
     const response = await fetch(`${API_BASE_URL}/performance/report/${runId}`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to get benchmark report', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get benchmark report',
+        response.status
+      );
     }
-    
+
     return { data: await response.json() };
   },
 
@@ -549,8 +679,13 @@ export const performanceBenchmarkAPI = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to create custom scenario', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to create custom scenario',
+        response.status
+      );
     }
 
     return { data: await response.json() };
@@ -558,18 +693,27 @@ export const performanceBenchmarkAPI = {
 
   // Get benchmark history
   getBenchmarkHistory: async (limit: number = 50, offset: number = 0) => {
-    const response = await fetch(`${API_BASE_URL}/performance/history?limit=${limit}&offset=${offset}`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/performance/history?limit=${limit}&offset=${offset}`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new ApiError(errorData.detail || 'Failed to get benchmark history', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Unknown error' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get benchmark history',
+        response.status
+      );
     }
-    
+
     return { data: await response.json() };
   },
 };
 
-export const submitFeedback = async (payload: FeedbackCreatePayload): Promise<FeedbackResponse> => {
+export const submitFeedback = async (
+  payload: FeedbackCreatePayload
+): Promise<FeedbackResponse> => {
   const response = await fetch(`${API_BASE_URL}/feedback`, {
     method: 'POST',
     headers: {
@@ -579,8 +723,13 @@ export const submitFeedback = async (payload: FeedbackCreatePayload): Promise<Fe
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Unknown error submitting feedback' }));
-    throw new ApiError(errorData.detail || 'Failed to submit feedback', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Unknown error submitting feedback' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to submit feedback',
+      response.status
+    );
   }
 
   return response.json();
@@ -599,7 +748,7 @@ export const listConversionAssets = async (
     skip: skip.toString(),
     limit: limit.toString(),
   });
-  
+
   if (assetType) params.append('asset_type', assetType);
   if (status) params.append('status', status);
 
@@ -608,8 +757,13 @@ export const listConversionAssets = async (
   );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Failed to list assets' }));
-    throw new ApiError(errorData.detail || 'Failed to list conversion assets', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to list assets' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to list conversion assets',
+      response.status
+    );
   }
 
   return response.json();
@@ -624,25 +778,40 @@ export const uploadConversionAsset = async (
   formData.append('file', file);
   formData.append('asset_type', assetType);
 
-  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}/assets`, {
-    method: 'POST',
-    body: formData,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/conversions/${conversionId}/assets`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
-    throw new ApiError(errorData.detail || 'Failed to upload asset', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Upload failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to upload asset',
+      response.status
+    );
   }
 
   return response.json();
 };
 
-export const getConversionAsset = async (assetId: string): Promise<ConversionAsset> => {
+export const getConversionAsset = async (
+  assetId: string
+): Promise<ConversionAsset> => {
   const response = await fetch(`${API_BASE_URL}/assets/${assetId}`);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Asset not found' }));
-    throw new ApiError(errorData.detail || 'Failed to get asset', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Asset not found' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get asset',
+      response.status
+    );
   }
 
   return response.json();
@@ -667,8 +836,13 @@ export const updateConversionAssetStatus = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Update failed' }));
-    throw new ApiError(errorData.detail || 'Failed to update asset status', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Update failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to update asset status',
+      response.status
+    );
   }
 
   return response.json();
@@ -687,47 +861,76 @@ export const updateConversionAssetMetadata = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Update failed' }));
-    throw new ApiError(errorData.detail || 'Failed to update asset metadata', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Update failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to update asset metadata',
+      response.status
+    );
   }
 
   return response.json();
 };
 
-export const deleteConversionAsset = async (assetId: string): Promise<{ message: string }> => {
+export const deleteConversionAsset = async (
+  assetId: string
+): Promise<{ message: string }> => {
   const response = await fetch(`${API_BASE_URL}/assets/${assetId}`, {
     method: 'DELETE',
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Delete failed' }));
-    throw new ApiError(errorData.detail || 'Failed to delete asset', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Delete failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to delete asset',
+      response.status
+    );
   }
 
   return response.json();
 };
 
-export const convertConversionAsset = async (assetId: string): Promise<ConversionAsset> => {
+export const convertConversionAsset = async (
+  assetId: string
+): Promise<ConversionAsset> => {
   const response = await fetch(`${API_BASE_URL}/assets/${assetId}/convert`, {
     method: 'POST',
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
-    throw new ApiError(errorData.detail || 'Failed to convert asset', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Conversion failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to convert asset',
+      response.status
+    );
   }
 
   return response.json();
 };
 
-export const convertAllConversionAssets = async (conversionId: string): Promise<ConversionAssetBatchResult> => {
-  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}/assets/convert-all`, {
-    method: 'POST',
-  });
+export const convertAllConversionAssets = async (
+  conversionId: string
+): Promise<ConversionAssetBatchResult> => {
+  const response = await fetch(
+    `${API_BASE_URL}/conversions/${conversionId}/assets/convert-all`,
+    {
+      method: 'POST',
+    }
+  );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Batch conversion failed' }));
-    throw new ApiError(errorData.detail || 'Failed to convert assets', response.status);
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Batch conversion failed' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to convert assets',
+      response.status
+    );
   }
 
   return response.json();
@@ -813,13 +1016,20 @@ export interface BehaviorPackExportResponse {
 export const behaviorTemplatesAPI = {
   // Get template categories
   getCategories: async (): Promise<BehaviorTemplateCategory[]> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/templates/categories`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/categories`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch categories' }));
-      throw new ApiError(errorData.detail || 'Failed to get template categories', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to fetch categories' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get template categories',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
@@ -834,41 +1044,60 @@ export const behaviorTemplatesAPI = {
     limit?: number;
   }): Promise<BehaviorTemplate[]> => {
     const searchParams = new URLSearchParams();
-    
+
     if (params?.category) searchParams.append('category', params.category);
-    if (params?.template_type) searchParams.append('template_type', params.template_type);
-    if (params?.tags?.length) searchParams.append('tags', params.tags.join(','));
+    if (params?.template_type)
+      searchParams.append('template_type', params.template_type);
+    if (params?.tags?.length)
+      searchParams.append('tags', params.tags.join(','));
     if (params?.search) searchParams.append('search', params.search);
-    if (params?.is_public !== undefined) searchParams.append('is_public', params.is_public.toString());
-    if (params?.skip !== undefined) searchParams.append('skip', params.skip.toString());
-    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    if (params?.is_public !== undefined)
+      searchParams.append('is_public', params.is_public.toString());
+    if (params?.skip !== undefined)
+      searchParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined)
+      searchParams.append('limit', params.limit.toString());
 
     const response = await fetch(
       `${API_BASE_URL}/behavior/templates?${searchParams.toString()}`
     );
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch templates' }));
-      throw new ApiError(errorData.detail || 'Failed to get templates', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to fetch templates' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get templates',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Get specific template
   getTemplate: async (templateId: string): Promise<BehaviorTemplate> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/${templateId}`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Template not found' }));
-      throw new ApiError(errorData.detail || 'Failed to get template', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Template not found' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get template',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Create template
-  createTemplate: async (template: BehaviorTemplateCreate): Promise<BehaviorTemplate> => {
+  createTemplate: async (
+    template: BehaviorTemplateCreate
+  ): Promise<BehaviorTemplate> => {
     const response = await fetch(`${API_BASE_URL}/behavior/templates`, {
       method: 'POST',
       headers: {
@@ -876,50 +1105,77 @@ export const behaviorTemplatesAPI = {
       },
       body: JSON.stringify(template),
     });
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to create template' }));
-      throw new ApiError(errorData.detail || 'Failed to create template', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to create template' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to create template',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Update template
-  updateTemplate: async (templateId: string, updates: BehaviorTemplateUpdate): Promise<BehaviorTemplate> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-    
+  updateTemplate: async (
+    templateId: string,
+    updates: BehaviorTemplateUpdate
+  ): Promise<BehaviorTemplate> => {
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/${templateId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      }
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to update template' }));
-      throw new ApiError(errorData.detail || 'Failed to update template', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to update template' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to update template',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Delete template
   deleteTemplate: async (templateId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/templates/${templateId}`, {
-      method: 'DELETE',
-    });
-    
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/${templateId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to delete template' }));
-      throw new ApiError(errorData.detail || 'Failed to delete template', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to delete template' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to delete template',
+        response.status
+      );
     }
   },
 
   // Apply template to conversion
-  applyTemplate: async (request: TemplateApplyRequest): Promise<TemplateApplyResult> => {
+  applyTemplate: async (
+    request: TemplateApplyRequest
+  ): Promise<TemplateApplyResult> => {
     const searchParams = new URLSearchParams();
     if (request.file_path) searchParams.append('file_path', request.file_path);
-    if (request.conversion_id) searchParams.append('conversion_id', request.conversion_id);
+    if (request.conversion_id)
+      searchParams.append('conversion_id', request.conversion_id);
 
     const response = await fetch(
       `${API_BASE_URL}/behavior/templates/${request.template_id}/apply?${searchParams.toString()}`,
@@ -927,24 +1183,36 @@ export const behaviorTemplatesAPI = {
         method: 'GET',
       }
     );
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to apply template' }));
-      throw new ApiError(errorData.detail || 'Failed to apply template', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to apply template' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to apply template',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Get predefined templates
   getPredefinedTemplates: async (): Promise<BehaviorTemplate[]> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/templates/predefined`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/templates/predefined`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch predefined templates' }));
-      throw new ApiError(errorData.detail || 'Failed to get predefined templates', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to fetch predefined templates' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get predefined templates',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 };
@@ -953,35 +1221,52 @@ export const behaviorTemplatesAPI = {
 
 export const behaviorExportAPI = {
   // Export behavior pack
-  exportBehaviorPack: async (request: BehaviorPackExportRequest): Promise<BehaviorPackExportResponse> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/export/behavior-pack`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-    
+  exportBehaviorPack: async (
+    request: BehaviorPackExportRequest
+  ): Promise<BehaviorPackExportResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/export/behavior-pack`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to export behavior pack' }));
-      throw new ApiError(errorData.detail || 'Failed to export behavior pack', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to export behavior pack' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to export behavior pack',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Download exported pack
-  downloadPack: async (conversionId: string, format: string = 'mcaddon'): Promise<{ blob: Blob; filename: string }> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/export/behavior-pack/${conversionId}/download?format=${format}`);
-    
+  downloadPack: async (
+    conversionId: string,
+    format: string = 'mcaddon'
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/export/behavior-pack/${conversionId}/download?format=${format}`
+    );
+
     if (!response.ok) {
       throw new ApiError('Download failed', response.status);
     }
 
     // Extract filename from Content-Disposition header
-    const contentDisposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+    const contentDisposition =
+      response.headers.get('Content-Disposition') ||
+      response.headers.get('content-disposition');
     let filename = `behavior_pack_${conversionId}.${format}`;
-    
+
     if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
       if (fileNameMatch) {
@@ -994,26 +1279,45 @@ export const behaviorExportAPI = {
   },
 
   // Get export formats
-  getExportFormats: async (): Promise<Array<{ format: string; name: string; description: string; extension: string }>> => {
+  getExportFormats: async (): Promise<
+    Array<{
+      format: string;
+      name: string;
+      description: string;
+      extension: string;
+    }>
+  > => {
     const response = await fetch(`${API_BASE_URL}/behavior/export/formats`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch export formats' }));
-      throw new ApiError(errorData.detail || 'Failed to get export formats', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to fetch export formats' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get export formats',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Preview export
   previewExport: async (conversionId: string): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/behavior/export/preview/${conversionId}`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/behavior/export/preview/${conversionId}`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to preview export' }));
-      throw new ApiError(errorData.detail || 'Failed to preview export', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to preview export' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to preview export',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 };
@@ -1071,13 +1375,20 @@ export interface ImportResponse {
 export const modImportsAPI = {
   // Parse a CurseForge or Modrinth URL
   parseURL: async (url: string): Promise<URLParseResult> => {
-    const response = await fetch(`${API_BASE_URL}/mods/parse-url?${new URLSearchParams({ url })}`);
-    
+    const response = await fetch(
+      `${API_BASE_URL}/mods/parse-url?${new URLSearchParams({ url })}`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to parse URL' }));
-      throw new ApiError(errorData.detail || 'Failed to parse URL', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to parse URL' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to parse URL',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
@@ -1095,32 +1406,50 @@ export const modImportsAPI = {
       query: params.query,
       platform: params.platform,
     });
-    
-    if (params.game_version) searchParams.append('game_version', params.game_version);
+
+    if (params.game_version)
+      searchParams.append('game_version', params.game_version);
     if (params.loader) searchParams.append('loader', params.loader);
     if (params.sort_order) searchParams.append('sort_order', params.sort_order);
-    if (params.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    if (params.page !== undefined)
+      searchParams.append('page', params.page.toString());
+    if (params.limit !== undefined)
+      searchParams.append('limit', params.limit.toString());
 
     const response = await fetch(`${API_BASE_URL}/mods/search?${searchParams}`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to search mods' }));
-      throw new ApiError(errorData.detail || 'Failed to search mods', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to search mods' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to search mods',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Get mod info
-  getModInfo: async (platform: 'curseforge' | 'modrinth', modId: string): Promise<ModInfo> => {
-    const response = await fetch(`${API_BASE_URL}/mods/${platform}/mod/${modId}`);
-    
+  getModInfo: async (
+    platform: 'curseforge' | 'modrinth',
+    modId: string
+  ): Promise<ModInfo> => {
+    const response = await fetch(
+      `${API_BASE_URL}/mods/${platform}/mod/${modId}`
+    );
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to get mod info' }));
-      throw new ApiError(errorData.detail || 'Failed to get mod info', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to get mod info' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get mod info',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
@@ -1136,12 +1465,17 @@ export const modImportsAPI = {
     const response = await fetch(
       `${API_BASE_URL}/mods/${platform}/mod/${modId}/files?${searchParams}`
     );
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to get mod files' }));
-      throw new ApiError(errorData.detail || 'Failed to get mod files', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to get mod files' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get mod files',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
@@ -1154,36 +1488,53 @@ export const modImportsAPI = {
       },
       body: JSON.stringify(request),
     });
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to import mod' }));
-      throw new ApiError(errorData.detail || 'Failed to import mod', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to import mod' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to import mod',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Get categories for a platform
-  getCategories: async (platform: 'curseforge' | 'modrinth'): Promise<any[]> => {
+  getCategories: async (
+    platform: 'curseforge' | 'modrinth'
+  ): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}/mods/categories/${platform}`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to get categories' }));
-      throw new ApiError(errorData.detail || 'Failed to get categories', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to get categories' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get categories',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 
   // Get Modrinth loaders
   getLoaders: async (): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}/mods/loaders`);
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to get loaders' }));
-      throw new ApiError(errorData.detail || 'Failed to get loaders', response.status);
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Failed to get loaders' }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get loaders',
+        response.status
+      );
     }
-    
+
     return response.json();
   },
 };
