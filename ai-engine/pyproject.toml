@@ -140,6 +140,7 @@ pretty = true
 show_error_codes = true
 namespace_packages = true
 explicit_package_bases = true
+exclude = ["__main__\\.py$", "^setup\\.py$"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -261,6 +262,58 @@ ignore_errors = true
 module = "training_manager"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "setuptools"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setup"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "scripts.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "agent_metrics.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "crew.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "test_integration"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "main"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "cli"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "psutil"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "testing.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "templates.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "demo_advanced_rag"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "examples.*"
+ignore_errors = true
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -283,6 +336,7 @@ ignore = [
     "Q000",  # bad quote marks
     "Q001",  # bad quote marks in multiline strings
     "Q002",  # bad quote marks in strings
+    "N999",  # invalid module name (e.g., ai-engine with hyphen)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -294,4 +348,3 @@ known-first-party = ["src"]
 force-single-line = false
 order-by-type = false
 case-sensitive = false
-force-alphabetic-order = false

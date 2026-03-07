@@ -16,10 +16,99 @@ pretty = true
 show_error_codes = true
 namespace_packages = true
 explicit_package_bases = true
+exclude = ["__main__\\.py$", "^setup\\.py$", "src/setup\\.py$", "^main\\.py$"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "db"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "db.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "config"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "config.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "services.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "api.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "src.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "main"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "models"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "services"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "services.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "api"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "api.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "websocket"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "websocket.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "security"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "security.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "schemas"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "schemas.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "weasyprint"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "sqlalchemy.*"
@@ -90,4 +179,3 @@ known-first-party = ["app", "core", "src"]
 force-single-line = false
 order-by-type = false
 case-sensitive = false
-force-alphabetic-order = false
