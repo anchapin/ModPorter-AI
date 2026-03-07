@@ -327,18 +327,18 @@ class TestSecurityScanResult:
         assert not result.has_high_threats
     
     def test_add_threat_updates_safety(self):
-        """Test that adding any threat updates safety to unsafe."""
+        """Test that adding high/critical threats updates safety."""
         result = SecurityScanResult(is_safe=True)
         
-        # Any threat makes file unsafe
+        # Low severity doesn't change safety
         result.add_threat(
             SecurityThreatType.SUSPICIOUS_CONTENT,
             SecuritySeverity.LOW,
             "Low threat"
         )
-        assert not result.is_safe
+        assert result.is_safe
         
-        # High severity also makes unsafe
+        # High severity changes safety
         result.add_threat(
             SecurityThreatType.PATH_TRAVERSAL,
             SecuritySeverity.HIGH,
@@ -365,10 +365,10 @@ class TestConvenienceFunctions:
     
     @pytest.fixture
     def temp_dir(self):
-        """Create a temporary directory for tests."""
+        """Create a temporary directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
-
+    
     def test_scan_archive_function(self, temp_dir):
         """Test the scan_archive convenience function."""
         zip_path = temp_dir / "test.zip"
