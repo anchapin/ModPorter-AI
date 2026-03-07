@@ -85,11 +85,15 @@ class SecurityScanResult:
         """Add a threat to the result."""
         self.threats.append(
             SecurityThreat(
-                threat_type=threat_type, severity=severity, message=message, details=details or {}
+                threat_type=threat_type,
+                severity=severity,
+                message=message,
+                details=details or {},
             )
         )
-        # Any threat makes the file unsafe
-        self.is_safe = False
+        # Only HIGH or CRITICAL severity threats make the file unsafe
+        if severity in (SecuritySeverity.HIGH, SecuritySeverity.CRITICAL):
+            self.is_safe = False
 
 
 class SecurityError(Exception):
@@ -298,7 +302,7 @@ class FileSecurityScanner:
         if ext and ext not in self.config.allowed_extensions:
             result.add_threat(
                 SecurityThreatType.SUSPICIOUS_CONTENT,
-                SecuritySeverity.MEDIUM,
+                SecuritySeverity.HIGH,
                 f"File extension '{ext}' is not in allowed list",
             )
             return False
@@ -331,7 +335,11 @@ class FileSecurityScanner:
             return None
 
     def _scan_zip_archive(
-        self, file_path: Path, result: SecurityScanResult, scan_content: bool, current_depth: int
+        self,
+        file_path: Path,
+        result: SecurityScanResult,
+        scan_content: bool,
+        current_depth: int,
     ) -> SecurityScanResult:
         """
         Scan a ZIP/JAR archive for security threats.
@@ -354,7 +362,10 @@ class FileSecurityScanner:
                         SecurityThreatType.EXCESSIVE_FILES,
                         SecuritySeverity.HIGH,
                         f"Archive contains too many files: {total_files} > {self.config.max_files_per_archive}",
-                        {"file_count": total_files, "limit": self.config.max_files_per_archive},
+                        {
+                            "file_count": total_files,
+                            "limit": self.config.max_files_per_archive,
+                        },
                     )
                     return result
 
@@ -483,7 +494,11 @@ class FileSecurityScanner:
         return result
 
     def _scan_tar_archive(
-        self, file_path: Path, result: SecurityScanResult, scan_content: bool, current_depth: int
+        self,
+        file_path: Path,
+        result: SecurityScanResult,
+        scan_content: bool,
+        current_depth: int,
     ) -> SecurityScanResult:
         """Scan a TAR archive for security threats."""
         try:
@@ -551,12 +566,24 @@ class FileSecurityScanner:
 
     def _is_nested_archive(self, filename: str) -> bool:
         """Check if a file is a nested archive."""
-        nested_extensions = {".zip", ".jar", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar"}
+        nested_extensions = {
+            ".zip",
+            ".jar",
+            ".tar",
+            ".gz",
+            ".bz2",
+            ".xz",
+            ".7z",
+            ".rar",
+        }
         ext = Path(filename).suffix.lower()
         return ext in nested_extensions
 
     def _scan_member_content(
-        self, archive: zipfile.ZipFile, member: zipfile.ZipInfo, result: SecurityScanResult
+        self,
+        archive: zipfile.ZipFile,
+        member: zipfile.ZipInfo,
+        result: SecurityScanResult,
     ) -> None:
         """Scan the content of an archive member for suspicious patterns."""
         try:
@@ -642,7 +669,9 @@ class FileSecurityScanner:
 
 
 # Convenience function for quick security checks
-def scan_archive(file_path: Path, config: Optional[SecurityConfig] = None) -> SecurityScanResult:
+def scan_archive(
+    file_path: Path, config: Optional[SecurityConfig] = None
+) -> SecurityScanResult:
     """
     Perform a quick security scan on an archive file.
 
