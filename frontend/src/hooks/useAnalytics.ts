@@ -18,11 +18,7 @@ import {
   getUserIdValue,
 } from '../services/analytics';
 
-export type {
-  AnalyticsEventType,
-  AnalyticsEventCategory,
-  AnalyticsOptions,
-};
+export type { AnalyticsEventType, AnalyticsEventCategory, AnalyticsOptions };
 
 export {
   trackEvent,

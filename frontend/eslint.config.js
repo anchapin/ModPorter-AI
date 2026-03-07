@@ -128,6 +128,9 @@ export default [
         },
       ],
       camelcase: 'off',
+      // Disable no-redeclare - conflict between const and type with same name is intentional
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'off',
       // React 19 strict rules
       // React Compiler (formerly React Forget) rules
       'react-compiler/react-compiler': 'warn',

@@ -72,8 +72,10 @@ const getUserId = (): string | undefined => {
   return userId;
 };
 
-export type AnalyticsEventType = (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
-export type AnalyticsEventCategory = (typeof AnalyticsEventCategory)[keyof typeof AnalyticsEventCategory];
+export type AnalyticsEventType =
+  (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
+export type AnalyticsEventCategory =
+  (typeof AnalyticsEventCategory)[keyof typeof AnalyticsEventCategory];
 
 export interface AnalyticsEvent {
   event_type: AnalyticsEventType;
