@@ -1,4 +1,7 @@
 [mutmut]
+# Test command to run (required for mutation testing)
+test_command = python -m pytest
+
 # Number of times to run each mutation
 runs = 2
 
