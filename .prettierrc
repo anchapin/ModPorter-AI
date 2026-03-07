@@ -18,7 +18,6 @@
     {
       "files": "*.py",
       "options": {
-        "parser": "python",
         "tabWidth": 4
       }
     }
