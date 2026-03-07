@@ -6,6 +6,22 @@ labels: question
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical (System down, data loss)
+- [ ] P2 - High (Major functionality broken)
+- [ ] P3 - Medium (Minor functionality affected)
+- [ ] P4 - Low (Cosmetic or minor issue)
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] CLI
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
+
 **Question**
 What do you want to ask or discuss?
 
