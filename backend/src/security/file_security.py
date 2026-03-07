@@ -58,7 +58,7 @@ class SecurityThreat:
 class SecurityScanResult:
     """Result of a security scan."""
 
-    is_safe: bool
+    is_safe: bool = True
     threats: List[SecurityThreat] = field(default_factory=list)
     scanned_at: datetime = field(default_factory=datetime.utcnow)
     file_path: Optional[Path] = None
@@ -88,8 +88,8 @@ class SecurityScanResult:
                 threat_type=threat_type, severity=severity, message=message, details=details or {}
             )
         )
-        if severity in (SecuritySeverity.HIGH, SecuritySeverity.CRITICAL):
-            self.is_safe = False
+        # Any threat makes the file unsafe
+        self.is_safe = False
 
 
 class SecurityError(Exception):
@@ -229,6 +229,10 @@ class FileSecurityScanner:
             self._scan_zip_archive(file_path, result, scan_content, max_depth)
         elif file_type == "tar_gz":
             self._scan_tar_archive(file_path, result, scan_content, max_depth)
+        elif file_path.suffix.lower() in (".zip", ".jar", ".tar", ".tar.gz", ".tgz"):
+            # Has archive extension but couldn't detect type - try as ZIP anyway
+            # This handles corrupted/invalid archives that will fail during scan
+            self._scan_zip_archive(file_path, result, scan_content, max_depth)
         else:
             # Unknown file type - add warning but don't fail
             result.add_threat(
@@ -308,7 +312,14 @@ class FileSecurityScanner:
 
             if magic.startswith(self.ZIP_MAGIC):
                 ext = file_path.suffix.lower()
-                return "jar" if ext == ".jar" else "zip"
+                # Try to open to verify it's a valid archive
+                try:
+                    with zipfile.ZipFile(file_path, "r") as zf:
+                        zf.testzip()  # This validates the ZIP
+                    return "jar" if ext == ".jar" else "zip"
+                except (zipfile.BadZipFile, Exception):
+                    # Invalid ZIP - return None so it gets handled as invalid
+                    return None
             elif magic.startswith(self.TAR_GZ_MAGIC):
                 return "tar_gz"
             elif magic.startswith(self.TAR_BZ2_MAGIC):
@@ -413,6 +424,16 @@ class FileSecurityScanner:
                                 {
                                     "depth": current_depth,
                                     "max_depth": self.config.max_nested_archive_depth,
+                                },
+                            )
+                        else:
+                            # Warn about nested archive but allow scanning
+                            result.add_threat(
+                                SecurityThreatType.NESTED_ARCHIVE,
+                                SecuritySeverity.LOW,
+                                f"Nested archive detected: {member.filename}",
+                                {
+                                    "depth": current_depth,
                                 },
                             )
 

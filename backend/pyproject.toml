@@ -18,9 +18,9 @@ namespace_packages = true
 explicit_package_bases = true
 exclude = ["tests/", "scripts/", ".venv/", "docs/", "examples/", "__pycache__/", "__main__.py"]
 
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
+[tool.mutmut]
+paths_to_mutate = ["src"]
+
 
 [[tool.mypy.overrides]]
 module = "sqlalchemy.*"
