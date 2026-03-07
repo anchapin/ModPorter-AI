@@ -6,6 +6,21 @@ labels: enhancement
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical: Must have for project success
+- [ ] P2 - High: Important feature
+- [ ] P3 - Medium: Nice to have
+- [ ] P4 - Low: Future consideration
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 

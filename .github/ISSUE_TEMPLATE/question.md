@@ -6,6 +6,21 @@ labels: question
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical: Urgent question blocking progress
+- [ ] P2 - High: Important question
+- [ ] P3 - Medium: General question
+- [ ] P4 - Low: Curiosity
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
+
 **Question**
 What do you want to ask or discuss?
 

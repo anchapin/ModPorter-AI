@@ -6,6 +6,21 @@ labels: documentation
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical: Documentation missing for critical feature
+- [ ] P2 - High: Major documentation issue
+- [ ] P3 - Medium: Minor documentation issue
+- [ ] P4 - Low: Cosmetic or low priority
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
+
 **Type of documentation issue**
 - [ ] Typo or grammatical error
 - [ ] Missing information

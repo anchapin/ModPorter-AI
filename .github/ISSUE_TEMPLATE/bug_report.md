@@ -6,6 +6,21 @@ labels: bug
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical: System completely broken, data loss
+- [ ] P2 - High: Major functionality broken
+- [ ] P3 - Medium: Minor functionality affected
+- [ ] P4 - Low: Minor issue, cosmetic
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
