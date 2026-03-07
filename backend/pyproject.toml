@@ -2,6 +2,61 @@
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
+[tool.mypy]
+python_version = "3.10"
+strict = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+pretty = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "asyncpg.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "fastapi.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "uvicorn.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "httpx.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "redis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "psycopg2.*"
+ignore_missing_imports = true
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -16,8 +71,8 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), isort (I), flake8-quotes (Q)
-select = ["E", "F", "I", "Q"]
+# Enable pycodestyle (E), Pyflakes (F), isort (I), flake8-quotes (Q), and naming rules (N)
+select = ["E", "F", "I", "Q", "N"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
@@ -57,3 +112,7 @@ exclude = ["setup.py", "scripts/", ".venv/", "tests/", "src/db/"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
+ignore_missing_imports = true
