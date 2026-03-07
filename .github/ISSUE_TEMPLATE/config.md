@@ -6,6 +6,12 @@ labels: configuration
 assignees: ''
 ---
 
+**Priority**
+- [ ] P1 - Critical: System cannot start or deploy
+- [ ] P2 - High: Major configuration issue
+- [ ] P3 - Medium: Minor configuration issue
+- [ ] P4 - Low: Cosmetic or improvement
+
 **Type of configuration issue**
 - [ ] Environment variable
 - [ ] Docker configuration
