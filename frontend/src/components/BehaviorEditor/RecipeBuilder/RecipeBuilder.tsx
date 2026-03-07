@@ -232,7 +232,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
 
       <Grid container spacing={2}>
         {/* Recipe Properties */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="subtitle1" gutterBottom>
               Recipe Properties
@@ -341,7 +341,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
         </Grid>
 
         {/* Recipe Grid */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="subtitle1" gutterBottom>
               Recipe Grid
@@ -394,7 +394,7 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({
         </Grid>
 
         {/* Item Library */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="subtitle1" gutterBottom>
               Item Library

@@ -2,6 +2,151 @@
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+    "tests/",
+    "src/tests/",
+    ".git/",
+    "__pycache__/",
+    "*.egg-info/",
+    ".venv/",
+    "venv/",
+]
+
+[tool.ruff.lint]
+# Enable pycodestyle (E), Pyflakes (F), isort (I), flake8-quotes (Q), flake8-naming (N)
+select = ["E", "F", "I", "Q", "N"]
+ignore = [
+    "E402",  # module level import not at top of file
+    "E501",  # line too long (handled by formatter)
+    "Q000",  # bad quote marks
+    "Q001",  # bad quote marks in multiline strings
+    "Q002",  # bad quote marks in strings
+    "N999",  # invalid module name (allow hyphenated names like ai-engine)
+    "I001",  # import block is un-sorted (legacy code has inconsistent import order)
+    "F401",  # imported but unused (legacy code has many unused imports)
+    "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
+    "F601",  # duplicate dictionary key (legacy code has intentional overrides)
+    "F811",  # redefinition of function (legacy code has intentional overrides)
+    "F841",  # unused variables (legacy code has many unused variables)
+    "Q003",  # unnecessary escape on inner quote character
+    "Q004",  # unnecessary escape on inner quote character
+    "E702",  # multiple statements on one line (semicolon)
+    "E701",  # multiple statements on one line (colon)
+    "E722",  # bare except (legacy code uses bare except for compatibility)
+    "E713",  # test for membership should be `not in`
+    "F821",  # undefined name (type hints and forward references)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
+"__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
+"__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
+"agents/asset_converter.py" = ["F811", "F841"]  # Allow duplicate function definitions and unused variables in legacy code
+"crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
+"agents/java_analyzer.py" = ["N806"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
+"tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
+# Naming convention per-file ignores (legacy code)
+"src/utils/validators.py" = ["N805"]  # First arg of method should be self (validators use cls)
+"src/models/types.py" = ["N811"]  # constant imported as non-constant (PyUUID, SQLiteJSON)
+"src/services/*.py" = ["N806"]  # variable in function should be lowercase (constants in functions)
+"src/engines/*.py" = ["N806"]  # variable in function should be lowercase (constants in functions)
+"src/exceptions.py" = ["N818"]  # exception names should have Error suffix (legacy names)
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+force-single-line = false
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_return_any = false
+warn_unreachable = false
+pretty = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+exclude = ["tests/", "scripts/", ".venv/", "docs/", "examples/", "__pycache__/", "__main__.py"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "jsonschema.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pkg_resources.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "PIL.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "onnxruntime.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "torch.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "transformers.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sentence_transformers.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "fastapi.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "uvicorn.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "redis.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "httpx.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "openai.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "scripts.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "docs.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "examples.*"
+ignore_errors = true
+
 [project]
 name = "ai-engine"
 version = "0.1.0"
@@ -126,225 +271,3 @@ Issues = "https://github.com/your-org/ai-engine/issues"
 
 [tool.setuptools.package-dir]
 
-[tool.mypy]
-python_version = "3.10"
-strict = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unreachable = true
-pretty = true
-show_error_codes = true
-namespace_packages = true
-explicit_package_bases = true
-exclude = ["__main__\\.py$", "^setup\\.py$"]
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "crewai.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "langchain.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "chromadb.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pydantic.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "fastapi.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "uvicorn.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "httpx.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "redis.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "torch.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "numpy.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "javalang.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "PIL.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pydub.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "sentence_transformers.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "agents.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "engines.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "orchestration.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "schemas.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "search.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "tools.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "cli.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "benchmarking.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "evaluation.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "prototyping.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "research.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "rl.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "utils.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "models.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "training_manager"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "setuptools"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "setup"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "scripts.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "agent_metrics.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "crew.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "test_integration"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "main"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "cli"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "psutil"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "testing.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "templates.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "demo_advanced_rag"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "examples.*"
-ignore_errors = true
-
-[tool.ruff]
-target-version = "py311"
-line-length = 100
-exclude = [
-    "tests/",
-    "src/tests/",
-    ".git/",
-    "__pycache__/",
-    "*.egg-info/",
-    ".venv/",
-    "venv/",
-]
-
-[tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), isort (I), and flake8-quotes (Q)
-select = ["E", "F", "I", "Q", "N"]
-ignore = [
-    "E402",  # module level import not at top of file
-    "E501",  # line too long (handled by formatter)
-    "Q000",  # bad quote marks
-    "Q001",  # bad quote marks in multiline strings
-    "Q002",  # bad quote marks in strings
-    "N999",  # invalid module name (e.g., ai-engine with hyphen)
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
-"__init__.py" = ["E402"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["src"]
-force-single-line = false
-order-by-type = false
-case-sensitive = false

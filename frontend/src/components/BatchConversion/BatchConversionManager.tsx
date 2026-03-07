@@ -89,7 +89,11 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           try {
             // Inline conversion logic to avoid dependency issue
             setItems(prev => prev.map(x => x.id === item.id ? { ...x, status: 'converting' as const, progress: 20 } : x));
-            const conversionResponse = await convertMod({ file: item.file });
+            const conversionResponse = await convertMod({ 
+              file: item.file,
+              smartAssumptions: true,
+              includeDependencies: false
+            });
             const jobId = conversionResponse.job_id;
             setItems(prev => prev.map(x => x.id === item.id ? { ...x, jobId, progress: 40 } : x));
             

@@ -6,11 +6,18 @@ import { TopNavigation } from './components/TopNavigation';
 import './App.css';
 
 // Lazy load heavy components
-const DocumentationSimple = lazy(() => import('./pages/DocumentationSimple'));
+// Using type assertion to handle named exports
+const DocumentationSimple = lazy(() => 
+  import('./pages/DocumentationSimple').then((m) => ({ default: m.DocumentationSimple as React.ComponentType<any> }))
+);
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ConvertPage = lazy(() => import('./pages/ConvertPage'));
-const ComparisonView = lazy(() => import('./components/ComparisonView'));
-const BehavioralTestWrapper = lazy(() => import('./components/BehavioralTest/BehavioralTestWrapper'));
+const ComparisonView = lazy(() => 
+  import('./components/ComparisonView').then((m) => ({ default: m.ComparisonView as React.ComponentType<any> }))
+);
+const BehavioralTestWrapper = lazy(() => 
+  import('./components/BehavioralTest/BehavioralTestWrapper').then((m) => ({ default: m.BehavioralTestWrapper as React.ComponentType<any> }))
+);
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const ExperimentsPage = lazy(() => import('./pages/ExperimentsPage'));
 const ExperimentResultsPage = lazy(() => import('./pages/ExperimentResultsPage'));

@@ -22,7 +22,7 @@ export class ValidationEngine {
       // Apply custom validation rules
       const customRules = this.rules[field.name] || [];
       customRules.forEach(rule => {
-        if (this.shouldApplyRule(rule, value, data)) {
+        if (this.shouldApplyRule(rule, value)) {
           errors.push(rule);
         }
       });

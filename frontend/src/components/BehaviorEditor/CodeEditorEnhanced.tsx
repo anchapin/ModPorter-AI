@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Editor } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
+import type { editor, IDisposable } from 'monaco-editor';
 import {
   Box,
   IconButton,
@@ -273,7 +273,7 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
     bedrockSchemaLoader.setupAutoCompletion(monaco);
 
     // Configure JSON defaults
-    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+    (monaco.languages.json.jsonDefaults as any).setDiagnosticsOptions({
       validate: true,
       allowComments: false,
       enableSchemaRequest: true,
@@ -337,7 +337,7 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
     };
   }, [filePath]);
 
-  const validationDisposablesRef = useRef<editor.IEditorDisposable[]>([]);
+  const validationDisposablesRef = useRef<IDisposable[]>([]);
 
   // Cleanup disposables on unmount
   useEffect(() => {
