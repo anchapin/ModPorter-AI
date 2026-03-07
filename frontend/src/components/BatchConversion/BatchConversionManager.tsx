@@ -4,11 +4,14 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { useSuccessNotification, useErrorNotification } from '../NotificationSystem';
-import { 
-  convertMod, 
-  getConversionStatus, 
-  triggerDownload
+import {
+  useSuccessNotification,
+  useErrorNotification,
+} from '../NotificationSystem';
+import {
+  convertMod,
+  getConversionStatus,
+  triggerDownload,
 } from '../../services/api';
 import './BatchConversionManager.css';
 
@@ -28,7 +31,7 @@ interface BatchConversionManagerProps {
 }
 
 export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
-  onComplete
+  onComplete,
 }) => {
   const [items, setItems] = useState<BatchConversionItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
@@ -37,32 +40,35 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
   const errorNotification = useErrorNotification();
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files) return;
+  const handleFileSelect = useCallback(
+    (files: FileList | null) => {
+      if (!files) return;
 
-    const newItems: BatchConversionItem[] = Array.from(files)
-      .filter(file => {
-        const ext = file.name.toLowerCase().split('.').pop();
-        return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
-      })
-      .map(file => ({
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        filename: file.name,
-        file,
-        status: 'pending' as const,
-        progress: 0
-      }));
+      const newItems: BatchConversionItem[] = Array.from(files)
+        .filter((file) => {
+          const ext = file.name.toLowerCase().split('.').pop();
+          return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
+        })
+        .map((file) => ({
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          filename: file.name,
+          file,
+          status: 'pending' as const,
+          progress: 0,
+        }));
 
-    setItems(prev => [...prev, ...newItems]);
-    
-    if (newItems.length > 0) {
-      successNotification(`Added ${newItems.length} file(s) to batch`);
-    }
-  }, [successNotification]);
+      setItems((prev) => [...prev, ...newItems]);
+
+      if (newItems.length > 0) {
+        successNotification(`Added ${newItems.length} file(s) to batch`);
+      }
+    },
+    [successNotification]
+  );
 
   // Remove item from batch
   const removeItem = useCallback((id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   // Clear all items
@@ -73,7 +79,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
 
   // Start batch conversion
   const startBatchConversion = useCallback(async () => {
-    const pendingItems = items.filter(i => i.status === 'pending');
+    const pendingItems = items.filter((i) => i.status === 'pending');
     if (pendingItems.length === 0) return;
 
     setIsConverting(true);
@@ -83,30 +89,60 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     // Process in batches
     for (let i = 0; i < pendingItems.length; i += maxConcurrent) {
       const batch = pendingItems.slice(i, i + maxConcurrent);
-      
+
       await Promise.all(
         batch.map(async (item) => {
           try {
             // Inline conversion logic to avoid dependency issue
-            setItems(prev => prev.map(x => x.id === item.id ? { ...x, status: 'converting' as const, progress: 20 } : x));
-            const conversionResponse = await convertMod({ 
+            setItems((prev) =>
+              prev.map((x) =>
+                x.id === item.id
+                  ? { ...x, status: 'converting' as const, progress: 20 }
+                  : x
+              )
+            );
+            const conversionResponse = await convertMod({
               file: item.file,
               smartAssumptions: true,
-              includeDependencies: false
+              includeDependencies: false,
             });
             const jobId = conversionResponse.job_id;
-            setItems(prev => prev.map(x => x.id === item.id ? { ...x, jobId, progress: 40 } : x));
-            
+            setItems((prev) =>
+              prev.map((x) =>
+                x.id === item.id ? { ...x, jobId, progress: 40 } : x
+              )
+            );
+
             // Poll for completion
             let completed = false;
             let attempts = 0;
             while (!completed && attempts < 300) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
               const status = await getConversionStatus(jobId);
-              setItems(prev => prev.map(x => x.id === item.id ? { ...x, progress: 40 + Math.floor((status.progress / 100) * 50) } : x));
+              setItems((prev) =>
+                prev.map((x) =>
+                  x.id === item.id
+                    ? {
+                        ...x,
+                        progress: 40 + Math.floor((status.progress / 100) * 50),
+                      }
+                    : x
+                )
+              );
               if (status.status === 'completed') {
                 completed = true;
-                setItems(prev => prev.map(x => x.id === item.id ? { ...x, status: 'completed' as const, progress: 100, resultUrl: `/api/v1/conversions/${jobId}/download` } : x));
+                setItems((prev) =>
+                  prev.map((x) =>
+                    x.id === item.id
+                      ? {
+                          ...x,
+                          status: 'completed' as const,
+                          progress: 100,
+                          resultUrl: `/api/v1/conversions/${jobId}/download`,
+                        }
+                      : x
+                  )
+                );
               } else if (status.status === 'failed') {
                 throw new Error(status.error || 'Conversion failed');
               }
@@ -122,21 +158,29 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     }
 
     setIsConverting(false);
-    
+
     if (completedJobIds.length > 0) {
-      successNotification(`Batch conversion completed: ${completedJobIds.length} succeeded`);
+      successNotification(
+        `Batch conversion completed: ${completedJobIds.length} succeeded`
+      );
       onComplete?.(completedJobIds);
     }
-    
+
     if (failedIds.length > 0) {
       errorNotification(`Batch conversion failed: ${failedIds.length} failed`);
     }
-  }, [items, maxConcurrent, successNotification, errorNotification, onComplete]);
+  }, [
+    items,
+    maxConcurrent,
+    successNotification,
+    errorNotification,
+    onComplete,
+  ]);
 
   // Download all completed conversions as ZIP
   const downloadAll = useCallback(async () => {
-    const completed = items.filter(i => i.status === 'completed' && i.jobId);
-    
+    const completed = items.filter((i) => i.status === 'completed' && i.jobId);
+
     for (const item of completed) {
       try {
         // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
@@ -147,9 +191,9 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     }
   }, [items]);
 
-  const pendingCount = items.filter(i => i.status === 'pending').length;
-  const completedCount = items.filter(i => i.status === 'completed').length;
-  const failedCount = items.filter(i => i.status === 'failed').length;
+  const pendingCount = items.filter((i) => i.status === 'pending').length;
+  const completedCount = items.filter((i) => i.status === 'completed').length;
+  const failedCount = items.filter((i) => i.status === 'failed').length;
 
   return (
     <div className="batch-conversion-manager">
@@ -190,7 +234,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           </div>
 
           <div className="file-items">
-            {items.map(item => (
+            {items.map((item) => (
               <div key={item.id} className={`file-item ${item.status}`}>
                 <div className="file-icon">
                   {item.status === 'pending' && '📄'}
@@ -203,8 +247,8 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                   <span className="filename">{item.filename}</span>
                   {item.status === 'converting' && (
                     <div className="progress-bar">
-                      <div 
-                        className="progress-fill" 
+                      <div
+                        className="progress-fill"
                         style={{ width: `${item.progress}%` }}
                       />
                     </div>
@@ -214,7 +258,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                   )}
                 </div>
                 {item.status === 'pending' && !isConverting && (
-                  <button 
+                  <button
                     className="remove-button"
                     onClick={() => removeItem(item.id)}
                   >
@@ -230,7 +274,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
             <div className="concurrency-control">
               <label>
                 Max concurrent conversions:
-                <select 
+                <select
                   value={maxConcurrent}
                   onChange={(e) => setMaxConcurrent(Number(e.target.value))}
                   disabled={isConverting}
@@ -245,14 +289,14 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
 
             <div className="action-buttons">
               {pendingCount > 0 && !isConverting && (
-                <button 
+                <button
                   className="start-button primary"
                   onClick={startBatchConversion}
                 >
                   Start Batch ({pendingCount})
                 </button>
               )}
-              
+
               {isConverting && (
                 <button className="processing-button" disabled>
                   Processing...
@@ -260,7 +304,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
               )}
 
               {completedCount > 0 && !isConverting && (
-                <button 
+                <button
                   className="download-button secondary"
                   onClick={downloadAll}
                 >

@@ -8,7 +8,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
 } from '@mui/material';
 import {
   Undo,
@@ -17,7 +17,7 @@ import {
   MoreVert,
   FileCopy,
   FileDownload,
-  FileUpload
+  FileUpload,
 } from '@mui/icons-material';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { bedrockSchemaLoader } from '../../services/BedrockSchemaLoader';
@@ -48,7 +48,7 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
   fileType,
   onContentChange,
   onSave,
-  readOnly = false
+  readOnly = false,
 }) => {
   // Use undo/redo hook
   const {
@@ -59,10 +59,10 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
     canUndo,
     canRedo,
     clearHistory,
-    cleanup
+    cleanup,
   } = useUndoRedo<string>('', {
     maxHistory: 100,
-    enableDebounce: false // Let Monaco handle its own history
+    enableDebounce: false, // Let Monaco handle its own history
   });
 
   const [originalContent, setOriginalContent] = useState<string>('');
@@ -72,7 +72,9 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
-  const [validationErrors, setValidationErrors] = useState<editor.IMarkerData[]>([]);
+  const [validationErrors, setValidationErrors] = useState<
+    editor.IMarkerData[]
+  >([]);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -90,7 +92,11 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
     if (extension === 'ts') return 'typescript';
     if (extension === 'mcfunction') return 'plaintext';
 
-    if (['entity_behavior', 'block_behavior', 'recipe', 'loot_table'].includes(fileType)) {
+    if (
+      ['entity_behavior', 'block_behavior', 'recipe', 'loot_table'].includes(
+        fileType
+      )
+    ) {
       return 'json';
     }
     if (fileType === 'script') {
@@ -138,12 +144,15 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
   }, [fileId, setEditorContent, clearHistory]);
 
   // Handle content changes
-  const handleContentChange = useCallback((value: string | undefined) => {
-    const newContent = value || '';
-    setEditorContent(newContent, 'Content change');
-    setSaveError(null);
-    onContentChange?.(newContent);
-  }, [setEditorContent, onContentChange]);
+  const handleContentChange = useCallback(
+    (value: string | undefined) => {
+      const newContent = value || '';
+      setEditorContent(newContent, 'Content change');
+      setSaveError(null);
+      onContentChange?.(newContent);
+    },
+    [setEditorContent, onContentChange]
+  );
 
   // Save file content
   const handleSave = useCallback(async () => {
@@ -239,14 +248,20 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
         handleSave();
       }
       // Ctrl+Z / Cmd+Z: Undo
-      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === 'z' &&
+        !event.shiftKey
+      ) {
         event.preventDefault();
         handleUndo();
       }
       // Ctrl+Y / Cmd+Y / Ctrl+Shift+Z: Redo
       if (
         ((event.ctrlKey || event.metaKey) && event.key === 'y') ||
-        ((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey)
+        ((event.ctrlKey || event.metaKey) &&
+          event.key === 'z' &&
+          event.shiftKey)
       ) {
         event.preventDefault();
         handleRedo();
@@ -266,83 +281,95 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
   }, [handleSave, handleUndo, handleRedo, handleCopy]);
 
   // Configure Monaco editor
-  const handleEditorWillMount = useCallback((monaco: typeof import('monaco-editor')) => {
-    monacoRef.current = monaco;
+  const handleEditorWillMount = useCallback(
+    (monaco: typeof import('monaco-editor')) => {
+      monacoRef.current = monaco;
 
-    // Setup Bedrock schema loader
-    bedrockSchemaLoader.setupAutoCompletion(monaco);
+      // Setup Bedrock schema loader
+      bedrockSchemaLoader.setupAutoCompletion(monaco);
 
-    // Configure JSON defaults
-    (monaco.languages.json.jsonDefaults as any).setDiagnosticsOptions({
-      validate: true,
-      allowComments: false,
-      enableSchemaRequest: true,
-      format: true,
-      trailingCommas: 'error'
-    });
-  }, []);
-
-  const handleEditorDidMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
-    editorRef.current = editor;
-
-    // Configure editor options
-    editor.updateOptions({
-      minimap: { enabled: true },
-      lineNumbers: 'on',
-      renderWhitespace: 'selection',
-      wordWrap: 'on',
-      automaticLayout: true,
-      scrollBeyondLastLine: false,
-      fontSize: 14,
-      fontFamily: '"Fira Code", "JetBrains Mono", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-      tabSize: 2,
-      insertSpaces: true,
-      formatOnPaste: true,
-      formatOnType: true,
-      autoIndent: 'full',
-      suggestOnTriggerCharacters: true,
-      quickSuggestions: true,
-      parameterHints: { enabled: true },
-      folding: true,
-      bracketPairColorization: { enabled: true }
-    });
-
-    // Track cursor position
-    const cursorListener = editor.onDidChangeCursorPosition((e) => {
-      setCursorPosition({
-        line: e.position.lineNumber,
-        column: e.position.column
+      // Configure JSON defaults
+      (monaco.languages.json.jsonDefaults as any).setDiagnosticsOptions({
+        validate: true,
+        allowComments: false,
+        enableSchemaRequest: true,
+        format: true,
+        trailingCommas: 'error',
       });
-    });
+    },
+    []
+  );
 
-    // JSON validation for Bedrock files
-    const jsonExtension = filePath.split('.').pop()?.toLowerCase();
-    if (jsonExtension === 'json') {
-      const disposable = editor.onDidChangeModelContent(() => {
-        // Use Monaco's JSON language features for validation
-        const model = editor.getModel();
-        if (model) {
-          const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-          const jsonMarkers = markers.filter(m => m.source === 'json');
-          setValidationErrors(jsonMarkers);
-        }
+  const handleEditorDidMount = useCallback(
+    (
+      editor: editor.IStandaloneCodeEditor,
+      monaco: typeof import('monaco-editor')
+    ) => {
+      editorRef.current = editor;
+
+      // Configure editor options
+      editor.updateOptions({
+        minimap: { enabled: true },
+        lineNumbers: 'on',
+        renderWhitespace: 'selection',
+        wordWrap: 'on',
+        automaticLayout: true,
+        scrollBeyondLastLine: false,
+        fontSize: 14,
+        fontFamily:
+          '"Fira Code", "JetBrains Mono", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+        tabSize: 2,
+        insertSpaces: true,
+        formatOnPaste: true,
+        formatOnType: true,
+        autoIndent: 'full',
+        suggestOnTriggerCharacters: true,
+        quickSuggestions: true,
+        parameterHints: { enabled: true },
+        folding: true,
+        bracketPairColorization: { enabled: true },
       });
 
-      validationDisposablesRef.current.push(disposable);
-    }
+      // Track cursor position
+      const cursorListener = editor.onDidChangeCursorPosition((e) => {
+        setCursorPosition({
+          line: e.position.lineNumber,
+          column: e.position.column,
+        });
+      });
 
-    // Cleanup on unmount
-    return () => {
-      cursorListener.dispose();
-    };
-  }, [filePath]);
+      // JSON validation for Bedrock files
+      const jsonExtension = filePath.split('.').pop()?.toLowerCase();
+      if (jsonExtension === 'json') {
+        const disposable = editor.onDidChangeModelContent(() => {
+          // Use Monaco's JSON language features for validation
+          const model = editor.getModel();
+          if (model) {
+            const markers = monaco.editor.getModelMarkers({
+              resource: model.uri,
+            });
+            const jsonMarkers = markers.filter((m) => m.source === 'json');
+            setValidationErrors(jsonMarkers);
+          }
+        });
+
+        validationDisposablesRef.current.push(disposable);
+      }
+
+      // Cleanup on unmount
+      return () => {
+        cursorListener.dispose();
+      };
+    },
+    [filePath]
+  );
 
   const validationDisposablesRef = useRef<IDisposable[]>([]);
 
   // Cleanup disposables on unmount
   useEffect(() => {
     return () => {
-      validationDisposablesRef.current.forEach(disposable => {
+      validationDisposablesRef.current.forEach((disposable) => {
         disposable.dispose();
       });
       cleanup();
@@ -362,7 +389,10 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
           <div className="empty-content">
             <span className="empty-icon">📝</span>
             <h3>Select a file to start editing</h3>
-            <p>Choose a behavior file from the tree on the left to view and edit its content.</p>
+            <p>
+              Choose a behavior file from the tree on the left to view and edit
+              its content.
+            </p>
           </div>
         </div>
       </div>
@@ -384,7 +414,9 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {validationErrors.length > 0 && (
               <Tooltip title={`${validationErrors.length} validation error(s)`}>
-                <span className="validation-error-count">{validationErrors.length}</span>
+                <span className="validation-error-count">
+                  {validationErrors.length}
+                </span>
               </Tooltip>
             )}
 
@@ -462,9 +494,7 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
             <span className="error-icon">❌</span>
             <h3>Failed to load file</h3>
             <p>{error}</p>
-            <button onClick={() => window.location.reload()}>
-              Retry
-            </button>
+            <button onClick={() => window.location.reload()}>Retry</button>
           </div>
         ) : (
           <Editor
@@ -494,27 +524,60 @@ export const CodeEditorEnhanced: React.FC<CodeEditorEnhancedProps> = ({
         open={Boolean(menuAnchor)}
         onClose={() => setMenuAnchor(null)}
       >
-        <MenuItem onClick={() => { handleCopy(); setMenuAnchor(null); }} disabled={readOnly}>
-          <ListItemIcon><FileCopy fontSize="small" /></ListItemIcon>
+        <MenuItem
+          onClick={() => {
+            handleCopy();
+            setMenuAnchor(null);
+          }}
+          disabled={readOnly}
+        >
+          <ListItemIcon>
+            <FileCopy fontSize="small" />
+          </ListItemIcon>
           <ListItemText>Copy All</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { handleDownload(); setMenuAnchor(null); }}>
-          <ListItemIcon><FileDownload fontSize="small" /></ListItemIcon>
+        <MenuItem
+          onClick={() => {
+            handleDownload();
+            setMenuAnchor(null);
+          }}
+        >
+          <ListItemIcon>
+            <FileDownload fontSize="small" />
+          </ListItemIcon>
           <ListItemText>Download</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { handleUpload(); setMenuAnchor(null); }} disabled={readOnly}>
-          <ListItemIcon><FileUpload fontSize="small" /></ListItemIcon>
+        <MenuItem
+          onClick={() => {
+            handleUpload();
+            setMenuAnchor(null);
+          }}
+          disabled={readOnly}
+        >
+          <ListItemIcon>
+            <FileUpload fontSize="small" />
+          </ListItemIcon>
           <ListItemText>Upload File</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { handleSave(); setMenuAnchor(null); }} disabled={!hasUnsavedChanges || readOnly}>
-          <ListItemIcon><Save fontSize="small" /></ListItemIcon>
+        <MenuItem
+          onClick={() => {
+            handleSave();
+            setMenuAnchor(null);
+          }}
+          disabled={!hasUnsavedChanges || readOnly}
+        >
+          <ListItemIcon>
+            <Save fontSize="small" />
+          </ListItemIcon>
           <ListItemText>Save</ListItemText>
         </MenuItem>
       </Menu>
 
       {/* Status Bar */}
       <div className="editor-status-bar">
-        <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+        <span>
+          Ln {cursorPosition.line}, Col {cursorPosition.column}
+        </span>
         <span>{content.length} characters</span>
       </div>
 

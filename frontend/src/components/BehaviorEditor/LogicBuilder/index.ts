@@ -5,5 +5,5 @@ export type {
   NodePort,
   NodeConnection,
   NodeConfig,
-  LogicVariable
+  LogicVariable,
 } from './LogicBuilder';

@@ -10,7 +10,7 @@ interface ConversionAssetsUploadProps {
 
 export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
   conversionId,
-  onAssetUploaded
+  onAssetUploaded,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [assetType, setAssetType] = useState<string>('texture');
@@ -26,9 +26,9 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   }, []);
@@ -46,7 +46,7 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
 
   const handleUpload = async () => {
     if (!selectedFiles || selectedFiles.length === 0) {
-      setUploadError("Please select at least one file to upload.");
+      setUploadError('Please select at least one file to upload.');
       return;
     }
 
@@ -55,13 +55,17 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
 
     try {
       const uploadedAssets: ConversionAsset[] = [];
-      
+
       // Upload files one by one
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const uploadedAsset = await api.uploadConversionAsset(conversionId, file, assetType);
+        const uploadedAsset = await api.uploadConversionAsset(
+          conversionId,
+          file,
+          assetType
+        );
         uploadedAssets.push(uploadedAsset);
-        
+
         if (onAssetUploaded) {
           onAssetUploaded(uploadedAsset);
         }
@@ -69,14 +73,16 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
 
       // Clear form after successful upload
       setSelectedFiles(null);
-      const fileInput = document.getElementById('conversion-asset-file-input') as HTMLInputElement;
+      const fileInput = document.getElementById(
+        'conversion-asset-file-input'
+      ) as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
       console.log(`Successfully uploaded ${uploadedAssets.length} assets`);
-
     } catch (error) {
-      console.error("Error uploading assets:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error uploading assets:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setUploadError(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
@@ -142,7 +148,10 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
             <div className="drop-zone-icon">📁</div>
             <p className="drop-zone-text">
               Drag and drop files here, or{' '}
-              <label htmlFor="conversion-asset-file-input" className="file-input-label">
+              <label
+                htmlFor="conversion-asset-file-input"
+                className="file-input-label"
+              >
                 browse files
               </label>
             </p>
@@ -190,7 +199,9 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
         <div className="upload-actions">
           <button
             onClick={handleUpload}
-            disabled={!selectedFiles || selectedFiles.length === 0 || isUploading}
+            disabled={
+              !selectedFiles || selectedFiles.length === 0 || isUploading
+            }
             className="upload-button"
           >
             {isUploading ? (

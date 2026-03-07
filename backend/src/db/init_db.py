@@ -7,6 +7,7 @@ from sqlalchemy.exc import ProgrammingError, OperationalError
 
 logger = logging.getLogger(__name__)
 
+
 async def init_db() -> None:
     """Initialize database with retry logic for extensions and tables."""
 
@@ -18,8 +19,8 @@ async def init_db() -> None:
             async with async_engine.begin() as conn:
                 # First, ensure required extensions are installed
                 logger.info("Creating database extensions...")
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
 
                 # Now create all tables
                 logger.info("Creating database tables...")
@@ -37,9 +38,7 @@ async def init_db() -> None:
                 await asyncio.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
-                logger.error(
-                    f"Database initialization failed after {max_retries} attempts: {e}"
-                )
+                logger.error(f"Database initialization failed after {max_retries} attempts: {e}")
                 raise
         except Exception as e:
             logger.error(f"Unexpected error during database initialization: {e}")

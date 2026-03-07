@@ -18,10 +18,7 @@ os.environ["TEST_DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 # Set up async engine for tests
 test_engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_pre_ping=True,
-    pool_recycle=3600
+    settings.database_url, echo=False, pool_pre_ping=True, pool_recycle=3600
 )
 
 TestAsyncSessionLocal = async_sessionmaker(
@@ -30,6 +27,7 @@ TestAsyncSessionLocal = async_sessionmaker(
 
 # Global flag to track database initialization
 _db_initialized = False
+
 
 def pytest_sessionstart(session):
     """Initialize database once at the start of the test session."""
@@ -43,10 +41,12 @@ def pytest_sessionstart(session):
 
             async def init_test_db():
                 from db.declarative_base import Base
+
                 # from db import models  # Import all models to ensure they're registered
                 # # Import the models.py file directly to ensure all models are registered
                 # import db.models
                 from sqlalchemy import text
+
                 print(f"Database URL: {test_engine.url}")
                 print("Available models:")
                 for table_name in Base.metadata.tables.keys():
@@ -62,14 +62,16 @@ def pytest_sessionstart(session):
                         print("Tables created successfully")
 
                         # Verify tables were created
-                        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+                        result = await conn.execute(
+                            text("SELECT name FROM sqlite_master WHERE type='table'")
+                        )
                         tables = [row[0] for row in result.fetchall()]
                         print(f"Created tables: {tables}")
                     else:
                         print("Using PostgreSQL - creating extensions")
                         # PostgreSQL specific extensions
-                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                         await conn.run_sync(Base.metadata.create_all)
                         print("Extensions and tables created successfully")
 
@@ -85,18 +87,21 @@ def pytest_sessionstart(session):
         except Exception as e:
             print(f"⚠️ Warning: Database initialization failed: {e}")
             import traceback
+
             traceback.print_exc()
             _db_initialized = False
+
 
 @pytest.fixture
 def project_root():
     """Get the project root directory for accessing test fixtures."""
     # Navigate from backend/src/tests/conftest.py to project root
     current_dir = Path(__file__).parent  # tests/
-    src_dir = current_dir.parent         # src/
-    backend_dir = src_dir.parent         # backend/
-    project_root = backend_dir.parent    # project root
+    src_dir = current_dir.parent  # src/
+    backend_dir = src_dir.parent  # backend/
+    project_root = backend_dir.parent  # project root
     return project_root
+
 
 @pytest.fixture(scope="function")
 async def db_session():
@@ -105,6 +110,7 @@ async def db_session():
     # from db import models
     # Ensure tables are created
     from db.declarative_base import Base
+
     async with test_engine.begin() as conn:
         # Check if we're using SQLite
         if "sqlite" in str(test_engine.url).lower():
@@ -113,8 +119,9 @@ async def db_session():
         else:
             # PostgreSQL specific extensions
             from sqlalchemy import text
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+
+            await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+            await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
             await conn.run_sync(Base.metadata.create_all)
 
     async with test_engine.begin() as connection:
@@ -123,6 +130,7 @@ async def db_session():
             yield session
         finally:
             await session.close()
+
 
 @pytest.fixture
 def client():
@@ -136,9 +144,7 @@ def client():
 
     # Override the database dependency to use our test engine
     test_session_maker = async_sessionmaker(
-        bind=test_engine,
-        expire_on_commit=False,
-        class_=AsyncSession
+        bind=test_engine, expire_on_commit=False, class_=AsyncSession
     )
 
     def override_get_db():
@@ -160,8 +166,9 @@ def client():
                 await conn.run_sync(Base.metadata.create_all)
             else:
                 from sqlalchemy import text
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                 await conn.run_sync(Base.metadata.create_all)
 
     # Run table creation synchronously
@@ -182,6 +189,7 @@ def client():
     # Clean up
     app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="function")
 async def async_client():
     """Create an async test client for the FastAPI app."""
@@ -198,16 +206,21 @@ async def async_client():
                 await conn.run_sync(Base.metadata.create_all)
             else:
                 from sqlalchemy import text
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                 await conn.run_sync(Base.metadata.create_all)
 
     await ensure_tables()
 
     # Create AsyncClient using the newer API
     import httpx
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as test_client:
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as test_client:
         yield test_client
+
 
 @pytest.fixture(scope="function")
 async def async_test_db():

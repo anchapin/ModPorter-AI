@@ -1,9 +1,9 @@
-export { 
-  NotificationProvider, 
+export {
+  NotificationProvider,
   useNotifications,
   useSuccessNotification,
   useErrorNotification,
   useWarningNotification,
   useInfoNotification,
-  withNotificationErrorHandling
+  withNotificationErrorHandling,
 } from './NotificationSystem';

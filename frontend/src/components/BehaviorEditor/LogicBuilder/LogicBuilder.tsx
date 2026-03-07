@@ -11,7 +11,7 @@ import {
   CardContent,
   ListItemIcon,
   ListItemText,
-  Divider
+  Divider,
 } from '@mui/material';
 import {
   Add,
@@ -22,7 +22,7 @@ import {
   DataObject,
   Settings,
   Functions,
-  Hub
+  Hub,
 } from '@mui/icons-material';
 
 // Node and connection interfaces
@@ -84,77 +84,77 @@ export interface LogicVariable {
 // Node templates
 const nodeTemplates: Record<string, NodeConfig> = {
   // Triggers
-  'on_block_break': {
+  on_block_break: {
     description: 'Triggered when a block is broken',
     icon: <AccountTree />,
-    color: '#4CAF50'
+    color: '#4CAF50',
   },
-  'on_entity_spawn': {
+  on_entity_spawn: {
     description: 'Triggered when an entity spawns',
     icon: <AccountTree />,
-    color: '#4CAF50'
+    color: '#4CAF50',
   },
-  'on_player_interact': {
+  on_player_interact: {
     description: 'Triggered when a player interacts',
     icon: <AccountTree />,
-    color: '#4CAF50'
+    color: '#4CAF50',
   },
-  
+
   // Conditions
-  'if_condition': {
+  if_condition: {
     description: 'Conditional logic branch',
     icon: <CompareArrows />,
-    color: '#2196F3'
+    color: '#2196F3',
   },
-  'check_block_type': {
+  check_block_type: {
     description: 'Check if block matches type',
     icon: <DataObject />,
-    color: '#2196F3'
+    color: '#2196F3',
   },
-  'check_entity_type': {
+  check_entity_type: {
     description: 'Check if entity matches type',
     icon: <DataObject />,
-    color: '#2196F3'
+    color: '#2196F3',
   },
-  
+
   // Actions
-  'set_block': {
+  set_block: {
     description: 'Set a block at position',
     icon: <Settings />,
-    color: '#FF9800'
+    color: '#FF9800',
   },
-  'spawn_entity': {
+  spawn_entity: {
     description: 'Spawn an entity',
     icon: <Settings />,
-    color: '#FF9800'
+    color: '#FF9800',
   },
-  'give_item': {
+  give_item: {
     description: 'Give item to player',
     icon: <Settings />,
-    color: '#FF9800'
+    color: '#FF9800',
   },
-  'play_sound': {
+  play_sound: {
     description: 'Play a sound',
     icon: <Settings />,
-    color: '#FF9800'
+    color: '#FF9800',
   },
-  
+
   // Functions
-  'math_operation': {
+  math_operation: {
     description: 'Perform mathematical operation',
     icon: <Functions />,
-    color: '#9C27B0'
+    color: '#9C27B0',
   },
-  'string_operation': {
+  string_operation: {
     description: 'Perform string operation',
     icon: <Functions />,
-    color: '#9C27B0'
+    color: '#9C27B0',
   },
-  'get_world_time': {
+  get_world_time: {
     description: 'Get current world time',
     icon: <Functions />,
-    color: '#9C27B0'
-  }
+    color: '#9C27B0',
+  },
 };
 
 interface LogicBuilderProps {
@@ -170,94 +170,129 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
   onFlowChange,
   onSave,
   onTest,
-  readOnly = false
+  readOnly = false,
 }) => {
   // Generate unique ID using counter instead of Date.now() for purity
   const idCounter = useRef(0);
-  const generateId = useCallback((prefix: string) => `${prefix}_${++idCounter.current}`, []);
-  
-  const [flow, setFlow] = useState<LogicFlow>(() => 
-    initialFlow || {
-      id: `flow_${Date.now()}`,
-      name: 'New Logic Flow',
-      description: '',
-      nodes: [],
-      connections: [],
-      variables: [],
-      triggers: []
-    }
+  const generateId = useCallback(
+    (prefix: string) => `${prefix}_${++idCounter.current}`,
+    []
+  );
+
+  const [flow, setFlow] = useState<LogicFlow>(
+    () =>
+      initialFlow || {
+        id: `flow_${Date.now()}`,
+        name: 'New Logic Flow',
+        description: '',
+        nodes: [],
+        connections: [],
+        variables: [],
+        triggers: [],
+      }
   );
   const [selectedNode, setSelectedNode] = useState<LogicNode | null>(null);
-  const [nodeMenuAnchor, setNodeMenuAnchor] = useState<null | HTMLElement>(null);
-  const [connecting, setConnecting] = useState<{ nodeId: string; portId: string; type: 'source' | 'target' } | null>(null);
-  
+  const [nodeMenuAnchor, setNodeMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
+  const [connecting, setConnecting] = useState<{
+    nodeId: string;
+    portId: string;
+    type: 'source' | 'target';
+  } | null>(null);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Update flow and notify parent
-  const updateFlow = useCallback((newFlow: LogicFlow) => {
-    setFlow(newFlow);
-    onFlowChange?.(newFlow);
-  }, [onFlowChange]);
+  const updateFlow = useCallback(
+    (newFlow: LogicFlow) => {
+      setFlow(newFlow);
+      onFlowChange?.(newFlow);
+    },
+    [onFlowChange]
+  );
 
   // Add new node
-  const addNode = useCallback((templateKey: string, position: { x: number; y: number }) => {
-    const template = nodeTemplates[templateKey];
-    const newNode: LogicNode = {
-      id: generateId('node'),
-      type: templateKey.includes('on_') ? 'trigger' : 
-            templateKey.includes('if_') || templateKey.includes('check_') ? 'condition' : 
-            templateKey.includes('math_') || templateKey.includes('string_') || templateKey.includes('get_') ? 'function' : 'action',
-      name: templateKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      category: templateKey.split('_')[0],
-      position,
-      inputs: templateKey.includes('on_') ? [] : [{ id: 'input_1', name: 'input', type: 'flow' }],
-      outputs: [{ id: 'output_1', name: 'output', type: 'flow' }],
-      parameters: template.template || {},
-      config: template
-    };
+  const addNode = useCallback(
+    (templateKey: string, position: { x: number; y: number }) => {
+      const template = nodeTemplates[templateKey];
+      const newNode: LogicNode = {
+        id: generateId('node'),
+        type: templateKey.includes('on_')
+          ? 'trigger'
+          : templateKey.includes('if_') || templateKey.includes('check_')
+            ? 'condition'
+            : templateKey.includes('math_') ||
+                templateKey.includes('string_') ||
+                templateKey.includes('get_')
+              ? 'function'
+              : 'action',
+        name: templateKey
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
+        category: templateKey.split('_')[0],
+        position,
+        inputs: templateKey.includes('on_')
+          ? []
+          : [{ id: 'input_1', name: 'input', type: 'flow' }],
+        outputs: [{ id: 'output_1', name: 'output', type: 'flow' }],
+        parameters: template.template || {},
+        config: template,
+      };
 
-    const updatedFlow = {
-      ...flow,
-      nodes: [...flow.nodes, newNode]
-    };
+      const updatedFlow = {
+        ...flow,
+        nodes: [...flow.nodes, newNode],
+      };
 
-    // Add to triggers if it's a trigger node
-    if (newNode.type === 'trigger') {
-      updatedFlow.triggers.push(newNode.id);
-    }
+      // Add to triggers if it's a trigger node
+      if (newNode.type === 'trigger') {
+        updatedFlow.triggers.push(newNode.id);
+      }
 
-    updateFlow(updatedFlow);
-    setNodeMenuAnchor(null);
-  }, [flow, updateFlow, generateId]);
-
-
+      updateFlow(updatedFlow);
+      setNodeMenuAnchor(null);
+    },
+    [flow, updateFlow, generateId]
+  );
 
   // Update node
-  const updateNode = useCallback((nodeId: string, updates: Partial<LogicNode>) => {
-    updateFlow({
-      ...flow,
-      nodes: flow.nodes.map(n => n.id === nodeId ? { ...n, ...updates } : n)
-    });
-  }, [flow, updateFlow]);
+  const updateNode = useCallback(
+    (nodeId: string, updates: Partial<LogicNode>) => {
+      updateFlow({
+        ...flow,
+        nodes: flow.nodes.map((n) =>
+          n.id === nodeId ? { ...n, ...updates } : n
+        ),
+      });
+    },
+    [flow, updateFlow]
+  );
 
   // Add connection
-  const addConnection = useCallback((sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string) => {
-    const newConnection: NodeConnection = {
-      id: generateId('conn'),
-      sourceNodeId,
-      sourcePortId,
-      targetNodeId,
-      targetPortId
-    };
-    updateFlow({
-      ...flow,
-      connections: [...flow.connections, newConnection]
-    });
-  }, [flow, updateFlow, generateId]);
-
-
+  const addConnection = useCallback(
+    (
+      sourceNodeId: string,
+      sourcePortId: string,
+      targetNodeId: string,
+      targetPortId: string
+    ) => {
+      const newConnection: NodeConnection = {
+        id: generateId('conn'),
+        sourceNodeId,
+        sourcePortId,
+        targetNodeId,
+        targetPortId,
+      };
+      updateFlow({
+        ...flow,
+        connections: [...flow.connections, newConnection],
+      });
+    },
+    [flow, updateFlow, generateId]
+  );
 
   // Handle canvas mouse events for dragging
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
@@ -266,58 +301,74 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
     }
   }, []);
 
-  const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
-    e.stopPropagation();
-    const node = flow.nodes.find(n => n.id === nodeId);
-    if (!node) return;
+  const handleNodeMouseDown = useCallback(
+    (e: React.MouseEvent, nodeId: string) => {
+      e.stopPropagation();
+      const node = flow.nodes.find((n) => n.id === nodeId);
+      if (!node) return;
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    setDraggingNode(nodeId);
-    setDragOffset({
-      x: e.clientX - rect.left - node.position.x,
-      y: e.clientY - rect.top - node.position.y
-    });
-    setSelectedNode(node);
-  }, [flow.nodes]);
+      setDraggingNode(nodeId);
+      setDragOffset({
+        x: e.clientX - rect.left - node.position.x,
+        y: e.clientY - rect.top - node.position.y,
+      });
+      setSelectedNode(node);
+    },
+    [flow.nodes]
+  );
 
-  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!draggingNode || !canvasRef.current) return;
+  const handleCanvasMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!draggingNode || !canvasRef.current) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const newPosition = {
-      x: e.clientX - rect.left - dragOffset.x,
-      y: e.clientY - rect.top - dragOffset.y
-    };
+      const rect = canvasRef.current.getBoundingClientRect();
+      const newPosition = {
+        x: e.clientX - rect.left - dragOffset.x,
+        y: e.clientY - rect.top - dragOffset.y,
+      };
 
-    updateNode(draggingNode, { position: newPosition });
-  }, [draggingNode, dragOffset, updateNode]);
+      updateNode(draggingNode, { position: newPosition });
+    },
+    [draggingNode, dragOffset, updateNode]
+  );
 
   const handleCanvasMouseUp = useCallback(() => {
     setDraggingNode(null);
   }, []);
 
   // Handle port connections
-  const handlePortClick = useCallback((nodeId: string, portId: string, type: 'input' | 'output') => {
-    if (!connecting) {
-      // Start connection
-      setConnecting({ nodeId, portId, type: type === 'output' ? 'source' : 'target' });
-    } else {
-      // Complete connection
-      if (connecting.type === 'source' && type === 'input') {
-        addConnection(connecting.nodeId, connecting.portId, nodeId, portId);
-      } else if (connecting.type === 'target' && type === 'output') {
-        addConnection(nodeId, portId, connecting.nodeId, connecting.portId);
+  const handlePortClick = useCallback(
+    (nodeId: string, portId: string, type: 'input' | 'output') => {
+      if (!connecting) {
+        // Start connection
+        setConnecting({
+          nodeId,
+          portId,
+          type: type === 'output' ? 'source' : 'target',
+        });
+      } else {
+        // Complete connection
+        if (connecting.type === 'source' && type === 'input') {
+          addConnection(connecting.nodeId, connecting.portId, nodeId, portId);
+        } else if (connecting.type === 'target' && type === 'output') {
+          addConnection(nodeId, portId, connecting.nodeId, connecting.portId);
+        }
+        setConnecting(null);
       }
-      setConnecting(null);
-    }
-  }, [connecting, addConnection]);
+    },
+    [connecting, addConnection]
+  );
 
   // Get node templates grouped by category
   const getNodeTemplatesByCategory = useCallback(() => {
-    const categories: Record<string, Array<{ key: string; config: NodeConfig }>> = {};
-    
+    const categories: Record<
+      string,
+      Array<{ key: string; config: NodeConfig }>
+    > = {};
+
     Object.entries(nodeTemplates).forEach(([key, config]) => {
       const category = key.split('_')[0];
       if (!categories[category]) {
@@ -335,8 +386,16 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Paper sx={{ p: 2, mb: 2, zIndex: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Logic Builder - Visual Programming</Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Typography variant="h6">
+            Logic Builder - Visual Programming
+          </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
@@ -359,12 +418,20 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
 
       {/* Info Alert */}
       <Alert severity="info" sx={{ mb: 2 }}>
-        This is a placeholder implementation for the Logic Builder. Full functionality including:
-        visual node connections, parameter editing, and flow execution will be implemented in the next phase.
+        This is a placeholder implementation for the Logic Builder. Full
+        functionality including: visual node connections, parameter editing, and
+        flow execution will be implemented in the next phase.
       </Alert>
 
       {/* Canvas */}
-      <Paper sx={{ flex: 1, position: 'relative', overflow: 'hidden', bgcolor: '#f5f5f5' }}>
+      <Paper
+        sx={{
+          flex: 1,
+          position: 'relative',
+          overflow: 'hidden',
+          bgcolor: '#f5f5f5',
+        }}
+      >
         <Box
           ref={canvasRef}
           sx={{ width: '100%', height: '100%', position: 'relative' }}
@@ -374,13 +441,16 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
           onMouseLeave={handleCanvasMouseUp}
         >
           {/* Grid background */}
-          <Box sx={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, #ddd 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            opacity: 0.5
-          }} />
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage:
+                'radial-gradient(circle, #ddd 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              opacity: 0.5,
+            }}
+          />
 
           {/* Add Node Button */}
           <Button
@@ -394,7 +464,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
           </Button>
 
           {/* Nodes */}
-          {flow.nodes.map(node => (
+          {flow.nodes.map((node) => (
             <Card
               key={node.id}
               sx={{
@@ -403,18 +473,26 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                 top: node.position.y,
                 width: 180,
                 cursor: draggingNode === node.id ? 'grabbing' : 'grab',
-                border: selectedNode?.id === node.id ? '2px solid #1976d2' : '1px solid #ddd',
-                bgcolor: node.config?.color ? `${node.config.color}20` : 'white',
+                border:
+                  selectedNode?.id === node.id
+                    ? '2px solid #1976d2'
+                    : '1px solid #ddd',
+                bgcolor: node.config?.color
+                  ? `${node.config.color}20`
+                  : 'white',
                 '&:hover': {
-                  boxShadow: 3
-                }
+                  boxShadow: 3,
+                },
               }}
               onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
             >
               <CardContent sx={{ p: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   {node.config?.icon}
-                  <Typography variant="subtitle2" sx={{ ml: 1, fontSize: '0.75rem' }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ ml: 1, fontSize: '0.75rem' }}
+                  >
                     {node.name}
                   </Typography>
                 </Box>
@@ -422,12 +500,18 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                   {node.config?.description}
                 </Typography>
               </CardContent>
-              
+
               {/* Input/Output Ports */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 0.5 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  p: 0.5,
+                }}
+              >
                 {/* Input Ports */}
                 <Box>
-                  {node.inputs.map(port => (
+                  {node.inputs.map((port) => (
                     <Box
                       key={port.id}
                       sx={{
@@ -437,7 +521,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                         bgcolor: port.type === 'flow' ? '#4CAF50' : '#2196F3',
                         border: '2px solid white',
                         cursor: 'pointer',
-                        mb: 0.5
+                        mb: 0.5,
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -446,10 +530,10 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                     />
                   ))}
                 </Box>
-                
+
                 {/* Output Ports */}
                 <Box>
-                  {node.outputs.map(port => (
+                  {node.outputs.map((port) => (
                     <Box
                       key={port.id}
                       sx={{
@@ -459,7 +543,7 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                         bgcolor: port.type === 'flow' ? '#4CAF50' : '#2196F3',
                         border: '2px solid white',
                         cursor: 'pointer',
-                        mb: 0.5
+                        mb: 0.5,
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -473,9 +557,13 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
           ))}
 
           {/* Connections (placeholder - would need SVG implementation) */}
-          {flow.connections.map(connection => {
-            const sourceNode = flow.nodes.find(n => n.id === connection.sourceNodeId);
-            const targetNode = flow.nodes.find(n => n.id === connection.targetNodeId);
+          {flow.connections.map((connection) => {
+            const sourceNode = flow.nodes.find(
+              (n) => n.id === connection.sourceNodeId
+            );
+            const targetNode = flow.nodes.find(
+              (n) => n.id === connection.targetNodeId
+            );
             if (!sourceNode || !targetNode) return null;
 
             return (
@@ -483,12 +571,22 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                 key={connection.id}
                 sx={{
                   position: 'absolute',
-                  left: Math.min(sourceNode.position.x + 180, targetNode.position.x),
-                  top: Math.min(sourceNode.position.y + 30, targetNode.position.y + 30),
-                  width: Math.abs(targetNode.position.x - sourceNode.position.x - 180),
-                  height: Math.abs(targetNode.position.y - sourceNode.position.y),
+                  left: Math.min(
+                    sourceNode.position.x + 180,
+                    targetNode.position.x
+                  ),
+                  top: Math.min(
+                    sourceNode.position.y + 30,
+                    targetNode.position.y + 30
+                  ),
+                  width: Math.abs(
+                    targetNode.position.x - sourceNode.position.x - 180
+                  ),
+                  height: Math.abs(
+                    targetNode.position.y - sourceNode.position.y
+                  ),
                   borderBottom: '2px solid #666',
-                  zIndex: -1
+                  zIndex: -1,
                 }}
               />
             );
@@ -505,7 +603,10 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
       >
         {Object.entries(nodeCategories).map(([category, templates]) => (
           <Box key={category}>
-            <Typography variant="subtitle2" sx={{ px: 2, py: 1, textTransform: 'capitalize' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ px: 2, py: 1, textTransform: 'capitalize' }}
+            >
               {category}
             </Typography>
             {templates.map(({ key, config }) => (
@@ -514,8 +615,10 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
                 onClick={() => addNode(key, { x: 100, y: 100 })}
               >
                 <ListItemIcon>{config.icon}</ListItemIcon>
-                <ListItemText 
-                  primary={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <ListItemText
+                  primary={key
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
                   secondary={config.description}
                   secondaryTypographyProps={{ variant: 'caption' }}
                 />
@@ -528,15 +631,17 @@ export const LogicBuilder: React.FC<LogicBuilderProps> = ({
 
       {/* Empty State */}
       {flow.nodes.length === 0 && (
-        <Box sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          pointerEvents: 'none'
-        }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            pointerEvents: 'none',
+          }}
+        >
           <Hub sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No Logic Nodes

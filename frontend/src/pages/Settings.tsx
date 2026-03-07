@@ -20,9 +20,9 @@ export const Settings: React.FC = () => {
     defaultTargetVersion: '1.20.0',
     autoDeleteAfterDays: 30,
     enableNotifications: true,
-    maxConcurrentConversions: 3
+    maxConcurrentConversions: 3,
   });
-  
+
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -32,8 +32,11 @@ export const Settings: React.FC = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleChange = (key: keyof SettingsState, value: string | number | boolean) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const handleChange = (
+    key: keyof SettingsState,
+    value: string | number | boolean
+  ) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -55,15 +58,19 @@ export const Settings: React.FC = () => {
               onChange={(e) => handleChange('apiKey', e.target.value)}
               placeholder="Enter your API key"
             />
-            <span className="help-text">Required for AI-powered conversions</span>
+            <span className="help-text">
+              Required for AI-powered conversions
+            </span>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="targetVersion">Default Target Version</label>
             <select
               id="targetVersion"
               value={settings.defaultTargetVersion}
-              onChange={(e) => handleChange('defaultTargetVersion', e.target.value)}
+              onChange={(e) =>
+                handleChange('defaultTargetVersion', e.target.value)
+              }
             >
               <option value="1.20.0">1.20.0 (Wild Update)</option>
               <option value="1.19.0">1.19.0 (The Wild Update)</option>
@@ -83,20 +90,31 @@ export const Settings: React.FC = () => {
               min={1}
               max={10}
               value={settings.maxConcurrentConversions}
-              onChange={(e) => handleChange('maxConcurrentConversions', parseInt(e.target.value))}
+              onChange={(e) =>
+                handleChange(
+                  'maxConcurrentConversions',
+                  parseInt(e.target.value)
+                )
+              }
             />
-            <span className="help-text">Number of conversions to run in parallel (1-10)</span>
+            <span className="help-text">
+              Number of conversions to run in parallel (1-10)
+            </span>
           </div>
-          
+
           <div className="form-group">
-            <label htmlFor="autoDelete">Auto-delete old conversions after (days)</label>
+            <label htmlFor="autoDelete">
+              Auto-delete old conversions after (days)
+            </label>
             <input
               type="number"
               id="autoDelete"
               min={1}
               max={365}
               value={settings.autoDeleteAfterDays}
-              onChange={(e) => handleChange('autoDeleteAfterDays', parseInt(e.target.value))}
+              onChange={(e) =>
+                handleChange('autoDeleteAfterDays', parseInt(e.target.value))
+              }
             />
           </div>
         </div>
@@ -108,11 +126,15 @@ export const Settings: React.FC = () => {
               <input
                 type="checkbox"
                 checked={settings.enableNotifications}
-                onChange={(e) => handleChange('enableNotifications', e.target.checked)}
+                onChange={(e) =>
+                  handleChange('enableNotifications', e.target.checked)
+                }
               />
               Enable email notifications
             </label>
-            <span className="help-text">Get notified when conversions complete or fail</span>
+            <span className="help-text">
+              Get notified when conversions complete or fail
+            </span>
           </div>
         </div>
 

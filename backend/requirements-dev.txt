@@ -5,5 +5,8 @@
 # Additional testing tools (beyond what's in requirements.txt)
 pytest-mock>=3.11.0
 
+# Mutation testing
+mutmut>=2.4.0
+
 # Development Tools
 pre-commit>=3.0.0

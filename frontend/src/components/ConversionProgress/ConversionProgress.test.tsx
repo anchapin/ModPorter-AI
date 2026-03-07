@@ -85,7 +85,12 @@ describe('ConversionProgress', () => {
       convertedMods: [],
       failedMods: [],
       smartAssumptionsApplied: [],
-      detailedReport: { stage: 'Completed', progress: 100, logs: [], technicalDetails: {} },
+      detailedReport: {
+        stage: 'Completed',
+        progress: 100,
+        logs: [],
+        technicalDetails: {},
+      },
     });
 
     // Suppress console warnings during tests
@@ -107,10 +112,18 @@ describe('ConversionProgress', () => {
 
   test('renders initial progress information when jobId provided', () => {
     act(() => {
-      render(<ConversionProgress jobId="test-job-123" status="running" progress={25} />);
+      render(
+        <ConversionProgress
+          jobId="test-job-123"
+          status="running"
+          progress={25}
+        />
+      );
     });
 
-    expect(screen.getByText('Conversion Progress (ID: test-job-123)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Conversion Progress (ID: test-job-123)')
+    ).toBeInTheDocument();
     expect(screen.getByText('running')).toBeInTheDocument();
 
     // Progress percentage is now inside the progress bar
@@ -142,17 +155,14 @@ describe('ConversionProgress', () => {
     });
 
     expect(screen.getByText('failed')).toBeInTheDocument();
-    expect(screen.getByText('Conversion failed due to invalid file')).toBeInTheDocument();
+    expect(
+      screen.getByText('Conversion failed due to invalid file')
+    ).toBeInTheDocument();
   });
 
   test('formats time correctly for estimated time remaining', () => {
     act(() => {
-      render(
-        <ConversionProgress
-          jobId="test-job-123"
-          status="running"
-        />
-      );
+      render(<ConversionProgress jobId="test-job-123" status="running" />);
     });
 
     expect(screen.getByText('Estimated Time Remaining:')).toBeInTheDocument();
@@ -168,7 +178,7 @@ describe('ConversionProgress', () => {
     // In tests, WebSocket is mocked so it will typically show polling
     expect(
       screen.queryByText('Real-time updates active') ||
-      screen.queryByText('Using fallback polling')
+        screen.queryByText('Using fallback polling')
     ).toBeInTheDocument();
   });
 
@@ -218,7 +228,9 @@ describe('ConversionProgress', () => {
     });
 
     // Should render without crashing and show default values
-    expect(screen.getByText('Conversion Progress (ID: test-job-123)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Conversion Progress (ID: test-job-123)')
+    ).toBeInTheDocument();
     expect(screen.getByText('queued')).toBeInTheDocument(); // Default status
 
     // Default progress is now inside the progress bar
@@ -267,13 +279,16 @@ describe('ConversionProgress', () => {
   });
 
   test('handles very long job IDs', () => {
-    const longJobId = 'very-long-job-id-that-might-break-layout-' + 'x'.repeat(50);
+    const longJobId =
+      'very-long-job-id-that-might-break-layout-' + 'x'.repeat(50);
 
     act(() => {
       render(<ConversionProgress jobId={longJobId} />);
     });
 
-    expect(screen.getByText(`Conversion Progress (ID: ${longJobId})`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Conversion Progress (ID: ${longJobId})`)
+    ).toBeInTheDocument();
   });
 
   test('displays all required progress information sections', () => {
@@ -298,7 +313,9 @@ describe('ConversionProgress', () => {
 
   test('handles edge case progress values', async () => {
     // Test 0% progress
-    const { unmount: unmount1 } = render(<ConversionProgress jobId="test-job-123" progress={0} />);
+    const { unmount: unmount1 } = render(
+      <ConversionProgress jobId="test-job-123" progress={0} />
+    );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(100);
     });
@@ -311,7 +328,9 @@ describe('ConversionProgress', () => {
     unmount1();
 
     // Test 100% progress with new render
-    const { unmount: unmount2 } = render(<ConversionProgress jobId="test-job-456" progress={100} />);
+    const { unmount: unmount2 } = render(
+      <ConversionProgress jobId="test-job-456" progress={100} />
+    );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(100);
     });
@@ -330,6 +349,8 @@ describe('ConversionProgress', () => {
 
     // Verify WebSocket was instantiated (even though it's mocked)
     expect(MockWebSocket.instances).toHaveLength(1);
-    expect(MockWebSocket.instances[0].url).toBe('ws://localhost:8080/ws/v1/convert/test-job-123/progress');
+    expect(MockWebSocket.instances[0].url).toBe(
+      'ws://localhost:8080/ws/v1/convert/test-job-123/progress'
+    );
   });
 });

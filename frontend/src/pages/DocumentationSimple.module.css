@@ -205,41 +205,41 @@
   .container {
     padding: var(--spacing-md);
   }
-  
+
   .title {
     font-size: var(--font-size-3xl);
   }
-  
+
   .subtitle {
     font-size: var(--font-size-base);
   }
-  
+
   .sectionTitle {
     font-size: var(--font-size-2xl);
   }
-  
+
   .featuresGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .assumptionsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .navigation {
     padding: var(--spacing-sm);
   }
-  
+
   .navLink {
     display: block;
     margin: var(--spacing-sm) 0;
   }
-  
+
   .helpButtons {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .examplesButton,
   .supportButton {
     width: 100%;

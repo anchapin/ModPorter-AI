@@ -48,16 +48,10 @@ A reusable hook for undo/redo functionality with:
 - **History Inspection**: Access to full history state
 
 Usage:
+
 ```typescript
-const {
-  state,
-  updateState,
-  undo,
-  redo,
-  canUndo,
-  canRedo,
-  clearHistory
-} = useUndoRedo(initialState, { maxHistory: 50 });
+const { state, updateState, undo, redo, canUndo, canRedo, clearHistory } =
+  useUndoRedo(initialState, { maxHistory: 50 });
 ```
 
 ### 4. BedrockSchemaLoader (`BedrockSchemaLoader.ts`)

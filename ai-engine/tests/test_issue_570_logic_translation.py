@@ -147,7 +147,7 @@ world.afterEvents.blockPlace.subscribe((event) => {
 
         result = validator.validate(valid_js)
 
-        assert result.is_valid == True
+        assert result.is_valid
         assert result.score > 0.5
 
     def test_syntax_errors(self, validator):
@@ -160,7 +160,7 @@ world.afterEvents.blockPlace.subscribe((event) => {
 
         result = validator.validate(invalid_js)
 
-        assert result.is_valid == True  # Based on current js validator
+        assert result.is_valid  # Based on current js validator
         assert result.score < 0.8
         assert len(result.issues) > 0
         assert any('brace' in err.message.lower() for err in result.issues)
@@ -424,7 +424,7 @@ class TestLogicTranslationIntegration:
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success') == True
+        assert result.get('success')
         assert 'validation_result' in result
         assert 'issues' in result
         assert 'breakdown' in result
@@ -441,7 +441,7 @@ class TestLogicTranslationIntegration:
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success') == True
+        assert result.get('success')
         assert 'warning_report' in result
         assert 'warnings' in result['warning_report']
         assert 'overall_assessment' in result['warning_report']
@@ -480,7 +480,7 @@ class TestLogicTranslationIntegration:
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success') == True
+        assert result.get('success')
         assert 'user_report' in result
         assert 'sections' in result['user_report']
 
@@ -493,7 +493,7 @@ class TestLogicTranslationIntegration:
             feature_type="block"
         )
 
-        assert result.get('success') == True
+        assert result.get('success')
         assert 'validation' in result
         assert 'warnings' in result
         assert 'overall_score' in result
@@ -644,14 +644,14 @@ class TestEdgeCases:
         """Test validation of empty code"""
         result = validator.validate("")
 
-        assert result.is_valid == True  # Empty is valid
+        assert result.is_valid  # Empty is valid
         assert result.score == 1.0
 
     def test_whitespace_only_validation(self, validator):
         """Test validation of whitespace-only code"""
         result = validator.validate("   \n  \n  ")
 
-        assert result.is_valid == True
+        assert result.is_valid
         assert result.score == 1.0
 
     def test_comments_only_validation(self, validator):
@@ -664,7 +664,7 @@ class TestEdgeCases:
 
         result = validator.validate(code)
 
-        assert result.is_valid == True
+        assert result.is_valid
         assert result.score == 1.0
 
     def test_malformed_json_input(self, agent):
@@ -673,7 +673,7 @@ class TestEdgeCases:
 
         if hasattr(agent.validate_javascript_comprehensive_tool, 'func'):
             result = json.loads(agent.validate_javascript_comprehensive_tool.func(invalid_json))
-            assert result.get('success') == False
+            assert not result.get('success')
             assert 'error' in result
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
@@ -689,7 +689,7 @@ class TestEdgeCases:
         if hasattr(agent.validate_javascript_comprehensive_tool, 'func'):
             result = json.loads(agent.validate_javascript_comprehensive_tool.func(incomplete_data))
             # Should handle gracefully (empty code is valid)
-            assert result.get('success') == True
+            assert result.get('success')
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 

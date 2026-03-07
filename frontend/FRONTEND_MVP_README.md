@@ -87,18 +87,21 @@ The MVP provides a complete user flow from uploading a Java mod to downloading t
 ## Error Handling
 
 ### Upload Errors
+
 - File too large (>500MB)
 - Unsupported file type
 - Corrupted file
 - Network timeout
 
 ### Conversion Errors
+
 - Failed agent execution
 - Incompatible features
 - Missing dependencies
 - Server errors
 
 ### Recovery Options
+
 - Try Again button (preserves file)
 - Start New Conversion (reset)
 - View Partial Report (for failed conversions)
@@ -106,11 +109,13 @@ The MVP provides a complete user flow from uploading a Java mod to downloading t
 ## WebSocket Communication
 
 ### Connection URL
+
 ```
 ws://localhost:8080/api/v1/conversions/{jobId}/ws
 ```
 
 ### Message Format
+
 ```typescript
 {
   job_id: string;
@@ -126,7 +131,9 @@ ws://localhost:8080/api/v1/conversions/{jobId}/ws
 ```
 
 ### Fallback Polling
+
 If WebSocket fails to connect within 5 seconds, automatically switches to HTTP polling:
+
 - Endpoint: `GET /api/v1/conversions/{jobId}`
 - Interval: 3 seconds
 - Max retries: Unlimited (until terminal state)
@@ -134,20 +141,25 @@ If WebSocket fails to connect within 5 seconds, automatically switches to HTTP p
 ## State Management
 
 ### Local Component State
+
 Each component manages its own state using React hooks:
+
 - `useState` for local state
 - `useCallback` for event handlers
 - `useEffect` for side effects
 - `useRef` for WebSocket and timer references
 
 ### History Storage
+
 Conversion history stored in `localStorage`:
+
 - Key: `modporter_conversion_history`
 - Format: Array of conversion objects
 - Max items: 100
 - Persistence: Browser-local only
 
 ### State Transitions
+
 ```
 idle → uploading → converting → completed
                     ↓
@@ -159,11 +171,13 @@ idle → uploading → converting → completed
 ## Responsive Design
 
 ### Breakpoints
+
 - Mobile: < 768px
 - Tablet: 768px - 1024px
 - Desktop: > 1024px
 
 ### Mobile Optimizations
+
 - Single column layout
 - Full-width buttons
 - Stacked action items
@@ -173,17 +187,20 @@ idle → uploading → converting → completed
 ## Accessibility
 
 ### Keyboard Navigation
+
 - Tab order: Upload zone → Options → Buttons → Progress → Actions
 - Enter/Space to activate buttons
 - Escape to cancel modals
 
 ### Screen Reader Support
+
 - ARIA labels on inputs
 - Role attributes on interactive elements
 - Live regions for progress updates
 - Alt text for icons
 
 ### Color Contrast
+
 - All text meets WCAG AA standards (4.5:1)
 - Status colors: Green (success), Red (error), Blue (info)
 - Error messages have high contrast backgrounds
@@ -191,16 +208,19 @@ idle → uploading → converting → completed
 ## Performance Optimizations
 
 ### Code Splitting
+
 - Lazy loaded routes with React.lazy()
 - Suspense boundaries for loading states
 - Separate chunks for heavy components
 
 ### Asset Optimization
+
 - SVG icons (inline for immediate render)
 - CSS modules for scoped styles
 - Minimal external dependencies
 
 ### Network Optimization
+
 - WebSocket reduces polling overhead
 - Debounced URL input validation
 - Progress throttling (100ms intervals)
@@ -210,6 +230,7 @@ idle → uploading → converting → completed
 ### Required Backend Endpoints
 
 #### 1. Upload File
+
 ```
 POST /api/v1/upload
 Content-Type: multipart/form-data
@@ -225,6 +246,7 @@ Response:
 ```
 
 #### 2. Start Conversion
+
 ```
 POST /api/v1/convert
 Content-Type: application/json
@@ -250,6 +272,7 @@ Response:
 ```
 
 #### 3. Get Status (Polling)
+
 ```
 GET /api/v1/conversions/{jobId}
 
@@ -268,6 +291,7 @@ Response:
 ```
 
 #### 4. WebSocket Progress
+
 ```
 WS /api/v1/conversions/{jobId}/ws
 
@@ -276,6 +300,7 @@ Frequency: Real-time (on state change)
 ```
 
 #### 5. Download Result
+
 ```
 GET /api/v1/conversions/{jobId}/download
 
@@ -286,6 +311,7 @@ Headers:
 ```
 
 #### 6. Get Report
+
 ```
 GET /api/v1/jobs/{jobId}/report
 
@@ -305,6 +331,7 @@ Response:
 ## Testing
 
 ### Manual Testing Checklist
+
 - [ ] Upload .jar file via drag-drop
 - [ ] Upload .jar file via file picker
 - [ ] Paste CurseForge URL
@@ -326,6 +353,7 @@ Response:
 - [ ] Test with screen reader
 
 ### Automated Testing
+
 ```bash
 # Unit tests
 pnpm test
@@ -340,6 +368,7 @@ pnpm test:e2e
 ## Deployment
 
 ### Environment Variables
+
 ```bash
 # Required
 VITE_API_URL=http://localhost:8080/api/v1
@@ -352,6 +381,7 @@ VITE_MAX_FILE_SIZE_MB=500
 ```
 
 ### Build for Production
+
 ```bash
 cd frontend
 pnpm install
@@ -360,6 +390,7 @@ pnpm build
 ```
 
 ### Docker Deployment
+
 ```bash
 # Build image
 docker build -t modporter-frontend .
@@ -371,6 +402,7 @@ docker run -p 3000:80 modporter-frontend
 ## Future Enhancements
 
 ### Planned Features
+
 1. Batch conversion (multiple files)
 2. Conversion templates
 3. User accounts and cloud history
@@ -381,6 +413,7 @@ docker run -p 3000:80 modporter-frontend
 8. A/B testing UI
 
 ### Performance Improvements
+
 1. Service Worker for offline support
 2. IndexedDB for large file caching
 3. Web Workers for file validation
@@ -388,6 +421,7 @@ docker run -p 3000:80 modporter-frontend
 5. Image lazy loading in reports
 
 ### UX Improvements
+
 1. Onboarding tour
 2. Contextual help tooltips
 3. Keyboard shortcuts
@@ -400,21 +434,25 @@ docker run -p 3000:80 modporter-frontend
 ### Common Issues
 
 #### WebSocket Connection Fails
+
 - Symptom: Falls back to polling
 - Cause: Proxy/NAT not supporting WebSocket
 - Solution: Configure proxy to allow WebSocket upgrade
 
 #### File Upload Hangs
+
 - Symptom: Progress stuck at 0%
 - Cause: Backend timeout or CORS issue
 - Solution: Check nginx proxy timeout (recommend 30min)
 
 #### Download Returns 404
+
 - Symptom: Download button fails
 - Cause: File not generated or cleaned up
 - Solution: Check backend storage and cleanup policies
 
 #### Report Not Loading
+
 - Symptom: Loading spinner forever
 - Cause: Report generation failed
 - Solution: Check backend logs for report generation errors
@@ -422,6 +460,7 @@ docker run -p 3000:80 modporter-frontend
 ## Support
 
 For issues or questions:
+
 - GitHub Issues: https://github.com/your-org/modporter-ai/issues
 - Documentation: /docs
 - API Reference: /docs/api

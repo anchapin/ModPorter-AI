@@ -6,11 +6,10 @@ import {
   Grid,
   Paper,
   Chip,
-  Button
+  Button,
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
 import { RecipeItem } from './RecipeBuilder';
-
 
 export interface ItemLibraryProps {
   items: RecipeItem[];
@@ -25,14 +24,14 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
   selectedItem,
   onItemSelect,
   onResultSelect,
-  readOnly = false
+  readOnly = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Get unique categories from items
   const categories = useMemo(() => {
-    const cats = [...new Set(items.map(item => item.type))];
+    const cats = [...new Set(items.map((item) => item.type))];
     return ['all', ...cats];
   }, [items]);
 
@@ -42,26 +41,29 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.type === selectedCategory);
+      filtered = filtered.filter((item) => item.type === selectedCategory);
     }
 
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query) ||
-        (item.type && item.type.toLowerCase().includes(query))
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.id.toLowerCase().includes(query) ||
+          (item.type && item.type.toLowerCase().includes(query))
       );
     }
 
     // ⚡ Bolt optimization: Use standard comparison operators instead of slow localeCompare for ~20x faster sort.
-    return filtered.sort((a, b) => a.name > b.name ? 1 : a.name < b.name ? -1 : 0);
+    return filtered.sort((a, b) =>
+      a.name > b.name ? 1 : a.name < b.name ? -1 : 0
+    );
   }, [items, searchQuery, selectedCategory]);
 
   const handleItemClick = (item: RecipeItem) => {
     if (readOnly) return;
-    
+
     if (selectedItem?.id === item.id) {
       onItemSelect(null); // Deselect if already selected
     } else {
@@ -85,7 +87,7 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
       'minecraft:item': 'Item',
       'minecraft:item_tag': 'Item Tag',
       'minecraft:block': 'Block',
-      'minecraft:block_tag': 'Block Tag'
+      'minecraft:block_tag': 'Block Tag',
     };
     return labels[type] || type;
   };
@@ -95,7 +97,7 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
       'minecraft:item': 'primary',
       'minecraft:item_tag': 'secondary',
       'minecraft:block': 'success',
-      'minecraft:block_tag': 'warning'
+      'minecraft:block_tag': 'warning',
     };
     return colors[type] || 'default';
   };
@@ -115,13 +117,15 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
           }}
           sx={{ mb: 1 }}
         />
-        
+
         {/* Category Filter */}
         <Box className="category-filter">
-          {categories.map(category => (
+          {categories.map((category) => (
             <Chip
               key={category}
-              label={category === 'all' ? 'All Items' : getItemTypeLabel(category)}
+              label={
+                category === 'all' ? 'All Items' : getItemTypeLabel(category)
+              }
               onClick={() => setSelectedCategory(category)}
               color={selectedCategory === category ? 'primary' : 'default'}
               variant={selectedCategory === category ? 'filled' : 'outlined'}
@@ -133,14 +137,18 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
       </Box>
 
       {/* Item Count */}
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mb: 1, display: 'block' }}
+      >
         Showing {filteredItems.length} of {items.length} items
       </Typography>
 
       {/* Items Grid */}
       <Box className="items-grid" sx={{ maxHeight: 400, overflowY: 'auto' }}>
         <Grid container spacing={1}>
-          {filteredItems.map(item => (
+          {filteredItems.map((item) => (
             <Grid size={{ xs: 6, sm: 4, md: 3 }} key={item.id}>
               <Paper
                 className={`item-card ${selectedItem?.id === item.id ? 'selected' : ''}`}
@@ -150,13 +158,19 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
                 sx={{
                   p: 1,
                   cursor: readOnly ? 'default' : 'pointer',
-                  border: selectedItem?.id === item.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                  backgroundColor: selectedItem?.id === item.id ? '#e3f2fd' : '#fff',
-                  '&:hover': !readOnly ? {
-                    backgroundColor: '#f5f5f5',
-                    transform: 'translateY(-2px)',
-                    boxShadow: 2
-                  } : {}
+                  border:
+                    selectedItem?.id === item.id
+                      ? '2px solid #1976d2'
+                      : '1px solid #e0e0e0',
+                  backgroundColor:
+                    selectedItem?.id === item.id ? '#e3f2fd' : '#fff',
+                  '&:hover': !readOnly
+                    ? {
+                        backgroundColor: '#f5f5f5',
+                        transform: 'translateY(-2px)',
+                        boxShadow: 2,
+                      }
+                    : {},
                 }}
               >
                 <Box className="item-content" textAlign="center">
@@ -168,15 +182,15 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
                       draggable={false}
                     />
                   )}
-                  
+
                   <Typography variant="body2" noWrap title={item.name}>
                     {item.name}
                   </Typography>
-                  
+
                   <Typography variant="caption" color="text.secondary" noWrap>
                     {item.id.split(':').pop()}
                   </Typography>
-                  
+
                   <Box mt={0.5}>
                     <Chip
                       label={getItemTypeLabel(item.type)}
@@ -193,12 +207,12 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
                       size="small"
                       color="default"
                       variant="filled"
-                      sx={{ 
-                        fontSize: '0.6rem', 
+                      sx={{
+                        fontSize: '0.6rem',
                         height: 16,
                         position: 'absolute',
                         top: 4,
-                        right: 4
+                        right: 4,
                       }}
                     />
                   )}
@@ -206,7 +220,10 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
 
                 {/* Action Buttons */}
                 {onResultSelect && !readOnly && (
-                  <Box className="item-actions" sx={{ mt: 1, textAlign: 'center' }}>
+                  <Box
+                    className="item-actions"
+                    sx={{ mt: 1, textAlign: 'center' }}
+                  >
                     <Button
                       size="small"
                       variant="text"
@@ -237,9 +254,13 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
 
       {/* Instructions */}
       {!readOnly && (
-        <Box className="library-instructions" sx={{ mt: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+        <Box
+          className="library-instructions"
+          sx={{ mt: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+        >
           <Typography variant="caption" color="text.secondary">
-            Click to select item for placement • Drag items directly to recipe grid • Selected item: {selectedItem?.name || 'None'}
+            Click to select item for placement • Drag items directly to recipe
+            grid • Selected item: {selectedItem?.name || 'None'}
           </Typography>
         </Box>
       )}

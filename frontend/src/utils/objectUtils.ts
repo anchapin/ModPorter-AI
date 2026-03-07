@@ -31,7 +31,9 @@ export const setPropertyByPath = <T extends Record<string, any>>(
     } else {
       // If path tries to traverse a non-object/array, create objects along the path
       // Determine if next key is a number (for array) or string (for object)
-      const nextKeyIsNumber = currentIndex + 1 < keys.length && !isNaN(parseInt(keys[currentIndex + 1], 10));
+      const nextKeyIsNumber =
+        currentIndex + 1 < keys.length &&
+        !isNaN(parseInt(keys[currentIndex + 1], 10));
       newPart = nextKeyIsNumber ? [] : {};
     }
 
@@ -53,7 +55,11 @@ export const getPropertyByPath = (obj: any, path: string): any => {
   const keys = path.split('.');
   let current = obj;
   for (const key of keys) {
-    if (typeof current !== 'object' || current === null || !Object.prototype.hasOwnProperty.call(current, key)) {
+    if (
+      typeof current !== 'object' ||
+      current === null ||
+      !Object.prototype.hasOwnProperty.call(current, key)
+    ) {
       return undefined;
     }
     current = current[key];

@@ -24,7 +24,9 @@ class AssetConversionService:
     def __init__(self):
         self.ai_engine_url = AI_ENGINE_URL
 
-    async def convert_asset(self, asset_id: str, client: httpx.AsyncClient = None) -> Dict[str, Any]:
+    async def convert_asset(
+        self, asset_id: str, client: httpx.AsyncClient = None
+    ) -> Dict[str, Any]:
         """
         Convert a single asset using the AI Engine.
 
@@ -42,11 +44,7 @@ class AssetConversionService:
                 raise ValueError(f"Asset {asset_id} not found")
 
             # Update status to processing
-            await crud.update_asset_status(
-                session,
-                asset_id,
-                "processing"
-            )
+            await crud.update_asset_status(session, asset_id, "processing")
 
             try:
                 # Call AI Engine for asset conversion
@@ -55,17 +53,14 @@ class AssetConversionService:
                     asset_type=asset.asset_type,
                     input_path=asset.original_path,
                     original_filename=asset.original_filename,
-                    client=client
+                    client=client,
                 )
 
                 if conversion_result.get("success"):
                     # Update asset with converted path
                     converted_path = conversion_result.get("converted_path")
                     await crud.update_asset_status(
-                        session,
-                        asset_id,
-                        "converted",
-                        converted_path=converted_path
+                        session, asset_id, "converted", converted_path=converted_path
                     )
 
                     logger.info(f"Asset {asset_id} converted successfully")
@@ -73,41 +68,27 @@ class AssetConversionService:
                         "success": True,
                         "asset_id": asset_id,
                         "converted_path": converted_path,
-                        "message": "Asset converted successfully"
+                        "message": "Asset converted successfully",
                     }
                 else:
                     # Update asset with error
                     error_message = conversion_result.get("error", "Conversion failed")
                     await crud.update_asset_status(
-                        session,
-                        asset_id,
-                        "failed",
-                        error_message=error_message
+                        session, asset_id, "failed", error_message=error_message
                     )
 
                     logger.error(f"Asset {asset_id} conversion failed: {error_message}")
-                    return {
-                        "success": False,
-                        "asset_id": asset_id,
-                        "error": error_message
-                    }
+                    return {"success": False, "asset_id": asset_id, "error": error_message}
 
             except Exception as e:
                 # Update asset with error
                 error_message = f"Conversion error: {str(e)}"
                 await crud.update_asset_status(
-                    session,
-                    asset_id,
-                    "failed",
-                    error_message=error_message
+                    session, asset_id, "failed", error_message=error_message
                 )
 
                 logger.error(f"Asset {asset_id} conversion error: {e}")
-                return {
-                    "success": False,
-                    "asset_id": asset_id,
-                    "error": error_message
-                }
+                return {"success": False, "asset_id": asset_id, "error": error_message}
 
     async def convert_assets_for_conversion(self, conversion_id: str) -> Dict[str, Any]:
         """
@@ -124,7 +105,7 @@ class AssetConversionService:
             assets = await crud.list_assets_for_conversion(
                 session,
                 conversion_id,
-                status="pending"  # Only convert pending assets
+                status="pending",  # Only convert pending assets
             )
 
             if not assets:
@@ -133,7 +114,7 @@ class AssetConversionService:
                     "conversion_id": conversion_id,
                     "message": "No pending assets to convert",
                     "converted_count": 0,
-                    "failed_count": 0
+                    "failed_count": 0,
                 }
 
             results = []
@@ -144,6 +125,7 @@ class AssetConversionService:
             semaphore = asyncio.Semaphore(3)  # Limit to 3 concurrent conversions
 
             async with httpx.AsyncClient(timeout=120.0) as client:
+
                 async def convert_single_asset(asset):
                     async with semaphore:
                         result = await self.convert_asset(str(asset.id), client=client)
@@ -163,7 +145,9 @@ class AssetConversionService:
                 else:
                     failed_count += 1
 
-            logger.info(f"Conversion {conversion_id}: {converted_count} assets converted, {failed_count} failed")
+            logger.info(
+                f"Conversion {conversion_id}: {converted_count} assets converted, {failed_count} failed"
+            )
 
             return {
                 "success": True,
@@ -171,7 +155,7 @@ class AssetConversionService:
                 "total_assets": len(assets),
                 "converted_count": converted_count,
                 "failed_count": failed_count,
-                "results": [r for r in results if not isinstance(r, Exception)]
+                "results": [r for r in results if not isinstance(r, Exception)],
             }
 
     async def _call_ai_engine_convert_asset(
@@ -180,7 +164,7 @@ class AssetConversionService:
         asset_type: str,
         input_path: str,
         original_filename: str,
-        client: httpx.AsyncClient = None
+        client: httpx.AsyncClient = None,
     ) -> Dict[str, Any]:
         """
         Call the AI Engine to convert a specific asset.
@@ -207,14 +191,11 @@ class AssetConversionService:
                 "asset_type": asset_type,
                 "input_path": input_path,
                 "output_path": output_path,
-                "original_filename": original_filename
+                "original_filename": original_filename,
             }
 
             async def _do_request(c):
-                return await c.post(
-                    f"{self.ai_engine_url}/api/v1/convert/asset",
-                    json=request_data
-                )
+                return await c.post(f"{self.ai_engine_url}/api/v1/convert/asset", json=request_data)
 
             if client:
                 response = await _do_request(client)
@@ -227,7 +208,7 @@ class AssetConversionService:
                 return {
                     "success": True,
                     "converted_path": result.get("converted_path", output_path),
-                    "metadata": result.get("metadata", {})
+                    "metadata": result.get("metadata", {}),
                 }
             else:
                 error_msg = f"AI Engine returned {response.status_code}: {response.text}"
@@ -239,10 +220,7 @@ class AssetConversionService:
             return await self._fallback_conversion(asset_type, input_path, output_path)
 
     async def _fallback_conversion(
-        self,
-        asset_type: str,
-        input_path: str,
-        output_path: str
+        self, asset_type: str, input_path: str, output_path: str
     ) -> Dict[str, Any]:
         """
         Fallback conversion method when AI Engine is not available.
@@ -268,12 +246,11 @@ class AssetConversionService:
 
         except Exception as e:
             logger.error(f"Fallback conversion error: {e}")
-            return {
-                "success": False,
-                "error": f"Fallback conversion failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Fallback conversion failed: {str(e)}"}
 
-    async def _fallback_texture_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
+    async def _fallback_texture_conversion(
+        self, input_path: str, output_path: str
+    ) -> Dict[str, Any]:
         """Simple texture conversion fallback"""
         try:
             # For now, just copy PNG files or convert to PNG
@@ -281,26 +258,23 @@ class AssetConversionService:
             from PIL import Image
 
             # If already PNG, just copy
-            if input_path.lower().endswith('.png'):
+            if input_path.lower().endswith(".png"):
                 shutil.copy2(input_path, output_path)
             else:
                 # Convert to PNG
                 with Image.open(input_path) as img:
                     # Ensure output has .png extension
-                    if not output_path.lower().endswith('.png'):
-                        output_path = os.path.splitext(output_path)[0] + '.png'
-                    img.save(output_path, 'PNG')
+                    if not output_path.lower().endswith(".png"):
+                        output_path = os.path.splitext(output_path)[0] + ".png"
+                    img.save(output_path, "PNG")
 
             return {
                 "success": True,
                 "converted_path": output_path,
-                "metadata": {"conversion_type": "fallback_texture"}
+                "metadata": {"conversion_type": "fallback_texture"},
             }
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Texture conversion failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Texture conversion failed: {str(e)}"}
 
     async def _fallback_sound_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
         """Simple sound conversion fallback"""
@@ -313,13 +287,10 @@ class AssetConversionService:
             return {
                 "success": True,
                 "converted_path": output_path,
-                "metadata": {"conversion_type": "fallback_sound"}
+                "metadata": {"conversion_type": "fallback_sound"},
             }
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Sound conversion failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Sound conversion failed: {str(e)}"}
 
     async def _fallback_model_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
         """Simple model conversion fallback"""
@@ -332,13 +303,10 @@ class AssetConversionService:
             return {
                 "success": True,
                 "converted_path": output_path,
-                "metadata": {"conversion_type": "fallback_model"}
+                "metadata": {"conversion_type": "fallback_model"},
             }
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Model conversion failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Model conversion failed: {str(e)}"}
 
     async def _fallback_copy_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
         """Simple copy fallback for unknown asset types"""
@@ -350,13 +318,10 @@ class AssetConversionService:
             return {
                 "success": True,
                 "converted_path": output_path,
-                "metadata": {"conversion_type": "fallback_copy"}
+                "metadata": {"conversion_type": "fallback_copy"},
             }
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Copy conversion failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Copy conversion failed: {str(e)}"}
 
 
 # Global service instance

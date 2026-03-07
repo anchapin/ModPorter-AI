@@ -1,16 +1,7 @@
 import React, { useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  IconButton
-} from '@mui/material';
-import {
-  Delete,
-  Add
-} from '@mui/icons-material';
+import { Box, Paper, Typography, IconButton } from '@mui/material';
+import { Delete, Add } from '@mui/icons-material';
 import { RecipeSlot, RecipeItem } from './RecipeBuilder';
-
 
 export interface RecipeGridProps {
   pattern: RecipeSlot[][];
@@ -31,46 +22,58 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
   onItemRemove,
   selectedItem,
   readOnly = false,
-  recipeType
+  recipeType,
 }) => {
-  const handleSlotClick = useCallback((slot: RecipeSlot) => {
-    if (readOnly) return;
+  const handleSlotClick = useCallback(
+    (slot: RecipeSlot) => {
+      if (readOnly) return;
 
-    if (slot.item) {
-      // Remove item from slot
-      onItemRemove(slot);
-    } else if (selectedItem) {
-      // Place item in slot
-      onItemPlace(slot, selectedItem);
-    }
-  }, [selectedItem, onItemPlace, onItemRemove, readOnly]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (readOnly) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, [readOnly]);
-
-  const handleDrop = useCallback((e: React.DragEvent, slot: RecipeSlot) => {
-    if (readOnly) return;
-    e.preventDefault();
-    
-    const itemData = e.dataTransfer.getData('application/json');
-    if (itemData) {
-      try {
-        const item: RecipeItem = JSON.parse(itemData);
-        onItemPlace(slot, item);
-      } catch (error) {
-        console.error('Failed to parse dragged item data:', error);
+      if (slot.item) {
+        // Remove item from slot
+        onItemRemove(slot);
+      } else if (selectedItem) {
+        // Place item in slot
+        onItemPlace(slot, selectedItem);
       }
-    }
-  }, [onItemPlace, readOnly]);
+    },
+    [selectedItem, onItemPlace, onItemRemove, readOnly]
+  );
 
-  const handleDragStart = useCallback((e: React.DragEvent, item: RecipeItem) => {
-    if (readOnly) return;
-    e.dataTransfer.setData('application/json', JSON.stringify(item));
-    e.dataTransfer.effectAllowed = 'move';
-  }, [readOnly]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (readOnly) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    },
+    [readOnly]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, slot: RecipeSlot) => {
+      if (readOnly) return;
+      e.preventDefault();
+
+      const itemData = e.dataTransfer.getData('application/json');
+      if (itemData) {
+        try {
+          const item: RecipeItem = JSON.parse(itemData);
+          onItemPlace(slot, item);
+        } catch (error) {
+          console.error('Failed to parse dragged item data:', error);
+        }
+      }
+    },
+    [onItemPlace, readOnly]
+  );
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, item: RecipeItem) => {
+      if (readOnly) return;
+      e.dataTransfer.setData('application/json', JSON.stringify(item));
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    [readOnly]
+  );
 
   const getSlotStyle = (slot: RecipeSlot) => {
     const baseStyle = {
@@ -85,7 +88,7 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
       justifyContent: 'center',
       transition: 'all 0.2s ease',
       borderRadius: '4px',
-      margin: '2px'
+      margin: '2px',
     };
 
     if (!readOnly && selectedItem && !slot.item) {
@@ -102,8 +105,18 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
   };
 
   const renderSlot = (slot: RecipeSlot) => {
-    const isCraftingRecipe = ['shaped', 'shapeless', 'brewing', 'stonecutter'].includes(recipeType);
-    const isSmeltingRecipe = ['furnace', 'blast_furnace', 'campfire', 'smoker'].includes(recipeType);
+    const isCraftingRecipe = [
+      'shaped',
+      'shapeless',
+      'brewing',
+      'stonecutter',
+    ].includes(recipeType);
+    const isSmeltingRecipe = [
+      'furnace',
+      'blast_furnace',
+      'campfire',
+      'smoker',
+    ].includes(recipeType);
 
     return (
       <Box
@@ -175,7 +188,7 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
         {recipeType === 'brewing' && 'Brewing Ingredients'}
         {recipeType === 'stonecutter' && 'Stonecutting Input'}
       </Typography>
-      
+
       <Paper className="grid-container" sx={{ p: 2, minHeight: 200 }}>
         <Box
           className="grid"
@@ -184,12 +197,10 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
             gridTemplateColumns: `repeat(${width}, 1fr)`,
             gridTemplateRows: `repeat(${height}, 1fr)`,
             gap: '4px',
-            aspectRatio: width / height
+            aspectRatio: width / height,
           }}
         >
-          {pattern.map(row =>
-            row.map(slot => renderSlot(slot))
-          )}
+          {pattern.map((row) => row.map((slot) => renderSlot(slot)))}
         </Box>
       </Paper>
 
@@ -197,7 +208,8 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
       {!readOnly && (
         <Box className="grid-instructions" sx={{ mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            Click empty slots to place selected item • Click filled slots to remove • Drag items to reorder
+            Click empty slots to place selected item • Click filled slots to
+            remove • Drag items to reorder
           </Typography>
         </Box>
       )}

@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+pnpm-store/
+.pnpm/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Cache
+.cache/
+.vite/
+.rollup.cache/
+
+# Coverage
+coverage/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# Documentation
+*.md
+*.mdx
+CHANGELOG*
+
+# Data files
+*.db
+*.sqlite
+*.json (for data)

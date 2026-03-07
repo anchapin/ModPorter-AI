@@ -5,13 +5,18 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { convertMod, getConversionStatus, cancelJob, triggerDownload } from '../../services/api';
+import {
+  convertMod,
+  getConversionStatus,
+  cancelJob,
+  triggerDownload,
+} from '../../services/api';
 import { createConversionWebSocket } from '../../services/websocket';
 import {
   InitiateConversionParams,
   ConversionResponse,
   ConversionStatus,
-  ConversionStatusEnum
+  ConversionStatusEnum,
 } from '../../types/api';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import ConversionOptions from './ConversionOptions';
@@ -30,7 +35,7 @@ interface ConversionUploadProps {
 const SUPPORTED_FILE_TYPES = [
   'application/java-archive',
   'application/zip',
-  'application/x-zip-compressed'
+  'application/x-zip-compressed',
 ] as const;
 
 const SUPPORTED_EXTENSIONS = ['.jar', '.zip'] as const;
@@ -39,13 +44,13 @@ const SUPPORTED_DOMAINS = [
   'curseforge.com',
   'www.curseforge.com',
   'modrinth.com',
-  'www.modrinth.com'
+  'www.modrinth.com',
 ] as const;
 
 export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   onConversionStart,
   onConversionComplete,
-  onConversionFailed
+  onConversionFailed,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [modUrl, setModUrl] = useState('');
@@ -54,53 +59,80 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   const [isConverting, setIsConverting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentConversionId, setCurrentConversionId] = useState<string | null>(null);
+  const [currentConversionId, setCurrentConversionId] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Progress tracking
-  const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(
+    null
+  );
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'disconnected' | 'error'
+  >('disconnected');
 
   // WebSocket and polling refs
-  const wsRef = useRef<ReturnType<typeof createConversionWebSocket> | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef = useRef<ReturnType<typeof createConversionWebSocket> | null>(
+    null
+  );
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
   const isMountedRef = useRef(true);
 
   // File validation
-  const validateFile = useCallback((file: File): { isValid: boolean; error?: string } => {
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      return { isValid: false, error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` };
-    }
+  const validateFile = useCallback(
+    (file: File): { isValid: boolean; error?: string } => {
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        return {
+          isValid: false,
+          error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`,
+        };
+      }
 
-    const hasValidType = SUPPORTED_FILE_TYPES.some(type => type === file.type);
-    const hasValidExtension = SUPPORTED_EXTENSIONS.some(ext =>
-      file.name.toLowerCase().endsWith(ext)
-    );
+      const hasValidType = SUPPORTED_FILE_TYPES.some(
+        (type) => type === file.type
+      );
+      const hasValidExtension = SUPPORTED_EXTENSIONS.some((ext) =>
+        file.name.toLowerCase().endsWith(ext)
+      );
 
-    const isValid = hasValidType || hasValidExtension;
-    return {
-      isValid,
-      error: isValid ? undefined : 'Unsupported file type. Please upload .jar or .zip files only.'
-    };
-  }, []);
-
-  // URL validation
-  const validateUrl = useCallback((url: string): { isValid: boolean; error?: string } => {
-    if (!url.trim()) {
-      return { isValid: false, error: 'URL cannot be empty.' };
-    }
-
-    try {
-      const urlObj = new URL(url);
-      const isValid = SUPPORTED_DOMAINS.some(domain => urlObj.hostname === domain);
+      const isValid = hasValidType || hasValidExtension;
       return {
         isValid,
-        error: isValid ? undefined : 'Please enter a valid CurseForge or Modrinth URL.'
+        error: isValid
+          ? undefined
+          : 'Unsupported file type. Please upload .jar or .zip files only.',
       };
-    } catch {
-      return { isValid: false, error: 'Please enter a valid URL.' };
-    }
-  }, []);
+    },
+    []
+  );
+
+  // URL validation
+  const validateUrl = useCallback(
+    (url: string): { isValid: boolean; error?: string } => {
+      if (!url.trim()) {
+        return { isValid: false, error: 'URL cannot be empty.' };
+      }
+
+      try {
+        const urlObj = new URL(url);
+        const isValid = SUPPORTED_DOMAINS.some(
+          (domain) => urlObj.hostname === domain
+        );
+        return {
+          isValid,
+          error: isValid
+            ? undefined
+            : 'Please enter a valid CurseForge or Modrinth URL.',
+        };
+      } catch {
+        return { isValid: false, error: 'Please enter a valid URL.' };
+      }
+    },
+    []
+  );
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -142,159 +174,186 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
       [ConversionStatusEnum.PACKAGING]: 'Packaging add-on...',
       [ConversionStatusEnum.COMPLETED]: 'Conversion completed!',
       [ConversionStatusEnum.FAILED]: 'Conversion failed',
-      [ConversionStatusEnum.CANCELLED]: 'Conversion cancelled'
+      [ConversionStatusEnum.CANCELLED]: 'Conversion cancelled',
     };
 
-    return statusMessages[currentStatus.status] || currentStatus.message || 'Processing...';
+    return (
+      statusMessages[currentStatus.status] ||
+      currentStatus.message ||
+      'Processing...'
+    );
   }, [currentStatus, isUploading, uploadProgress]);
 
   // Start polling as fallback
-  const startPolling = useCallback((jobId: string) => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-    }
+  const startPolling = useCallback(
+    (jobId: string) => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
 
-    pollingIntervalRef.current = setInterval(async () => {
-      if (!isMountedRef.current) return;
+      pollingIntervalRef.current = setInterval(async () => {
+        if (!isMountedRef.current) return;
 
-      try {
-        const status = await getConversionStatus(jobId);
-        console.log('[Polling] Status update:', status);
-        setCurrentStatus(status);
+        try {
+          const status = await getConversionStatus(jobId);
+          console.log('[Polling] Status update:', status);
+          setCurrentStatus(status);
+
+          // Check for terminal states
+          if (status.status === ConversionStatusEnum.COMPLETED) {
+            cleanup();
+            setIsConverting(false);
+            if (onConversionComplete) {
+              onConversionComplete(jobId);
+            }
+          } else if (status.status === ConversionStatusEnum.FAILED) {
+            cleanup();
+            setIsConverting(false);
+            const errorMsg =
+              status.error || status.message || 'Conversion failed';
+            setError(errorMsg);
+            if (onConversionFailed) {
+              onConversionFailed(jobId, errorMsg);
+            }
+          } else if (status.status === ConversionStatusEnum.CANCELLED) {
+            cleanup();
+            setIsConverting(false);
+          }
+        } catch (error: any) {
+          console.error('[Polling] Error:', error);
+          if (!isMountedRef.current) return;
+          setError(error.message || 'Failed to check conversion status');
+        }
+      }, 3000);
+    },
+    [cleanup, onConversionComplete, onConversionFailed]
+  );
+
+  // Setup WebSocket or polling for progress tracking
+  const setupProgressTracking = useCallback(
+    (jobId: string) => {
+      // Try WebSocket first
+      const ws = createConversionWebSocket(jobId);
+
+      ws.onStatus((status) => {
+        if (!isMountedRef.current) return;
+        setConnectionStatus(status);
+      });
+
+      ws.onMessage((data) => {
+        if (!isMountedRef.current) return;
+        console.log('[WebSocket] Progress update:', data);
+        setCurrentStatus(data);
 
         // Check for terminal states
-        if (status.status === ConversionStatusEnum.COMPLETED) {
+        if (data.status === ConversionStatusEnum.COMPLETED) {
           cleanup();
           setIsConverting(false);
           if (onConversionComplete) {
             onConversionComplete(jobId);
           }
-        } else if (status.status === ConversionStatusEnum.FAILED) {
+        } else if (data.status === ConversionStatusEnum.FAILED) {
           cleanup();
           setIsConverting(false);
-          const errorMsg = status.error || status.message || 'Conversion failed';
+          const errorMsg = data.error || data.message || 'Conversion failed';
           setError(errorMsg);
           if (onConversionFailed) {
             onConversionFailed(jobId, errorMsg);
           }
-        } else if (status.status === ConversionStatusEnum.CANCELLED) {
+        } else if (data.status === ConversionStatusEnum.CANCELLED) {
           cleanup();
           setIsConverting(false);
         }
-      } catch (error: any) {
-        console.error('[Polling] Error:', error);
-        if (!isMountedRef.current) return;
-        setError(error.message || 'Failed to check conversion status');
-      }
-    }, 3000);
-  }, [cleanup, onConversionComplete, onConversionFailed]);
+      });
 
-  // Setup WebSocket or polling for progress tracking
-  const setupProgressTracking = useCallback((jobId: string) => {
-    // Try WebSocket first
-    const ws = createConversionWebSocket(jobId);
+      ws.connect();
+      wsRef.current = ws;
 
-    ws.onStatus((status) => {
-      if (!isMountedRef.current) return;
-      setConnectionStatus(status);
-    });
-
-    ws.onMessage((data) => {
-      if (!isMountedRef.current) return;
-      console.log('[WebSocket] Progress update:', data);
-      setCurrentStatus(data);
-
-      // Check for terminal states
-      if (data.status === ConversionStatusEnum.COMPLETED) {
-        cleanup();
-        setIsConverting(false);
-        if (onConversionComplete) {
-          onConversionComplete(jobId);
+      // Fallback polling after 5 seconds if WebSocket doesn't connect
+      const pollingFallbackTimeout = setTimeout(() => {
+        if (isMountedRef.current && connectionStatus !== 'connected') {
+          console.log(
+            '[Fallback] Starting polling due to WebSocket connection delay'
+          );
+          startPolling(jobId);
         }
-      } else if (data.status === ConversionStatusEnum.FAILED) {
-        cleanup();
-        setIsConverting(false);
-        const errorMsg = data.error || data.message || 'Conversion failed';
-        setError(errorMsg);
-        if (onConversionFailed) {
-          onConversionFailed(jobId, errorMsg);
-        }
-      } else if (data.status === ConversionStatusEnum.CANCELLED) {
-        cleanup();
-        setIsConverting(false);
-      }
-    });
+      }, 5000);
 
-    ws.connect();
-    wsRef.current = ws;
-
-    // Fallback polling after 5 seconds if WebSocket doesn't connect
-    const pollingFallbackTimeout = setTimeout(() => {
-      if (isMountedRef.current && connectionStatus !== 'connected') {
-        console.log('[Fallback] Starting polling due to WebSocket connection delay');
-            startPolling(jobId);
-      }
-    }, 5000);
-
-    // Store timeout reference for cleanup
-    return () => clearTimeout(pollingFallbackTimeout);
-  }, [connectionStatus, cleanup, onConversionComplete, onConversionFailed, startPolling]);
+      // Store timeout reference for cleanup
+      return () => clearTimeout(pollingFallbackTimeout);
+    },
+    [
+      connectionStatus,
+      cleanup,
+      onConversionComplete,
+      onConversionFailed,
+      startPolling,
+    ]
+  );
 
   // Handle file drop
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    if (rejectedFiles.length > 0) {
-      setError('Unsupported file type. Please upload .jar or .zip files only.');
-      return;
-    }
+  const onDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: any[]) => {
+      if (rejectedFiles.length > 0) {
+        setError(
+          'Unsupported file type. Please upload .jar or .zip files only.'
+        );
+        return;
+      }
 
-    const file = acceptedFiles[0];
-    if (!file) return;
+      const file = acceptedFiles[0];
+      if (!file) return;
 
-    const validation = validateFile(file);
-    if (!validation.isValid) {
-      setError(validation.error!);
-      return;
-    }
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        setError(validation.error!);
+        return;
+      }
 
-    setSelectedFile(file);
-    setModUrl('');
-    setError(null);
+      setSelectedFile(file);
+      setModUrl('');
+      setError(null);
 
-    if (currentConversionId) {
-      resetConversionState();
-    }
-  }, [currentConversionId, validateFile, resetConversionState]);
+      if (currentConversionId) {
+        resetConversionState();
+      }
+    },
+    [currentConversionId, validateFile, resetConversionState]
+  );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'application/java-archive': ['.jar'],
       'application/zip': ['.zip'],
-      'application/x-zip-compressed': ['.zip']
+      'application/x-zip-compressed': ['.zip'],
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
   });
 
   // Handle URL change
-  const handleUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setModUrl(url);
+  const handleUrlChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const url = e.target.value;
+      setModUrl(url);
 
-    if (url) {
-      setSelectedFile(null);
-      if (currentConversionId) {
-        resetConversionState();
+      if (url) {
+        setSelectedFile(null);
+        if (currentConversionId) {
+          resetConversionState();
+        }
       }
-    }
 
-    if (url) {
-      const validation = validateUrl(url);
-      setError(validation.isValid ? null : validation.error!);
-    } else {
-      setError(null);
-    }
-  }, [currentConversionId, validateUrl, resetConversionState]);
+      if (url) {
+        const validation = validateUrl(url);
+        setError(validation.isValid ? null : validation.error!);
+      } else {
+        setError(null);
+      }
+    },
+    [currentConversionId, validateUrl, resetConversionState]
+  );
 
   // Handle cancel
   const handleCancel = async () => {
@@ -303,7 +362,9 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     try {
       await cancelJob(currentConversionId);
       cleanup();
-      setCurrentStatus(prev => prev ? { ...prev, status: ConversionStatusEnum.CANCELLED } : null);
+      setCurrentStatus((prev) =>
+        prev ? { ...prev, status: ConversionStatusEnum.CANCELLED } : null
+      );
       setIsConverting(false);
       setIsUploading(false);
     } catch (err: any) {
@@ -368,11 +429,14 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
         status: ConversionStatusEnum.PENDING,
         progress: 0,
         message: response.message || 'Conversion started',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       });
 
       if (onConversionStart) {
-        onConversionStart(response.job_id, selectedFile?.name || modUrl || 'unknown');
+        onConversionStart(
+          response.job_id,
+          selectedFile?.name || modUrl || 'unknown'
+        );
       }
 
       // Setup progress tracking
@@ -380,7 +444,11 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     } catch (err: any) {
       setIsUploading(false);
       setIsConverting(false);
-      setError(err.message ? `Conversion request failed: ${err.message}. Please try again.` : 'Conversion request failed. Please check your connection and try again.');
+      setError(
+        err.message
+          ? `Conversion request failed: ${err.message}. Please try again.`
+          : 'Conversion request failed. Please check your connection and try again.'
+      );
     }
   };
 
@@ -403,12 +471,15 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     <div className="conversion-upload">
       <h2>Convert Your Modpack</h2>
       <p className="description">
-        Upload your Java Edition modpack and we'll convert it to Bedrock Edition using smart assumptions.
+        Upload your Java Edition modpack and we'll convert it to Bedrock Edition
+        using smart assumptions.
       </p>
 
       {error && (
         <div className="error-message" role="alert" aria-live="polite">
-          <span className="error-icon" aria-hidden="true">⚠️</span>
+          <span className="error-icon" aria-hidden="true">
+            ⚠️
+          </span>
           <span>{error}</span>
         </div>
       )}
@@ -419,13 +490,23 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
           {...getRootProps()}
           className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isProcessing || isCompleted ? 'disabled-dropzone' : ''}`}
         >
-          <input {...getInputProps()} aria-label="File upload" disabled={isProcessing || isCompleted} />
+          <input
+            {...getInputProps()}
+            aria-label="File upload"
+            disabled={isProcessing || isCompleted}
+          />
 
           {isFinished ? (
             <div className="upload-prompt">
-              <div className="upload-icon">{isCompleted ? '🎉' : isFailed ? '❌' : '⏹️'}</div>
+              <div className="upload-icon">
+                {isCompleted ? '🎉' : isFailed ? '❌' : '⏹️'}
+              </div>
               <h3>{getStatusMessage()}</h3>
-              <button type="button" className="browse-button" onClick={resetConversionState}>
+              <button
+                type="button"
+                className="browse-button"
+                onClick={resetConversionState}
+              >
                 Start New Conversion
               </button>
             </div>
@@ -434,7 +515,9 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               <div className="file-icon">📦</div>
               <div className="file-info">
                 <div className="file-name">{selectedFile.name}</div>
-                <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                <div className="file-size">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </div>
                 <div className="status">{getStatusMessage()}</div>
               </div>
               <button
@@ -447,7 +530,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 disabled={isProcessing || isCompleted}
                 aria-label={`Remove ${selectedFile.name}`}
               >
-              <span aria-hidden="true">✕</span>
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (
@@ -465,7 +548,9 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               >
                 Browse Files
               </button>
-              <p className="supporting-text">Supports .jar files and .zip modpack archives</p>
+              <p className="supporting-text">
+                Supports .jar files and .zip modpack archives
+              </p>
             </div>
           )}
         </div>
@@ -520,8 +605,10 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             <span>
               {connectionStatus === 'connected' && 'Real-time updates active'}
               {connectionStatus === 'connecting' && 'Connecting...'}
-              {connectionStatus === 'disconnected' && 'Connection lost - using polling'}
-              {connectionStatus === 'error' && 'Connection error - using polling'}
+              {connectionStatus === 'disconnected' &&
+                'Connection lost - using polling'}
+              {connectionStatus === 'error' &&
+                'Connection error - using polling'}
             </span>
           </div>
         )}
@@ -535,8 +622,17 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 className="convert-button"
                 disabled={isProcessing || (!selectedFile && !modUrl)}
               >
-                {isProcessing && <span className="conversion-spinner" aria-hidden="true"></span>}
-                {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : isProcessing ? 'Processing...' : 'Upload & Convert'}
+                {isProcessing && (
+                  <span
+                    className="conversion-spinner"
+                    aria-hidden="true"
+                  ></span>
+                )}
+                {isUploading
+                  ? `Uploading... ${Math.round(uploadProgress)}%`
+                  : isProcessing
+                    ? 'Processing...'
+                    : 'Upload & Convert'}
               </button>
 
               {isProcessing && (

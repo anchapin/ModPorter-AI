@@ -24,7 +24,9 @@ interface NavigationItem {
   hasErrors?: boolean;
 }
 
-const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({ reportData }) => {
+const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({
+  reportData,
+}) => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportJSON = () => {
@@ -52,17 +54,19 @@ const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({ reportDat
   const handleShareableLink = () => {
     const baseUrl = window.location.origin;
     const shareUrl = `${baseUrl}/reports/${reportData.metadata?.report_id || reportData.job_id}`;
-    
+
     if (navigator.share) {
-      navigator.share({
-        title: 'ModPorter AI Conversion Report',
-        text: 'Check out this conversion report from ModPorter AI',
-        url: shareUrl,
-      }).catch(() => {
-        // Fallback to copying to clipboard
-        navigator.clipboard.writeText(shareUrl);
-        alert('Share link copied to clipboard!');
-      });
+      navigator
+        .share({
+          title: 'ModPorter AI Conversion Report',
+          text: 'Check out this conversion report from ModPorter AI',
+          url: shareUrl,
+        })
+        .catch(() => {
+          // Fallback to copying to clipboard
+          navigator.clipboard.writeText(shareUrl);
+          alert('Share link copied to clipboard!');
+        });
     } else {
       navigator.clipboard.writeText(shareUrl);
       alert('Share link copied to clipboard!');
@@ -73,23 +77,17 @@ const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({ reportDat
     <div className={styles.exportControls}>
       <h4>Export & Share</h4>
       <div className={styles.exportButtons}>
-        <button 
-          onClick={handleExportJSON} 
+        <button
+          onClick={handleExportJSON}
           disabled={isExporting}
           className={styles.exportButton}
         >
           📥 Export JSON
         </button>
-        <button 
-          onClick={handlePrint}
-          className={styles.exportButton}
-        >
+        <button onClick={handlePrint} className={styles.exportButton}>
           🖨️ Print Report
         </button>
-        <button 
-          onClick={handleShareableLink}
-          className={styles.exportButton}
-        >
+        <button onClick={handleShareableLink} className={styles.exportButton}>
           🔗 Share Link
         </button>
       </div>
@@ -118,9 +116,7 @@ const QuickNavigation: React.FC<{
             {section.count !== undefined && (
               <span className={styles.navCount}>({section.count})</span>
             )}
-            {section.hasErrors && (
-              <span className={styles.navError}>⚠️</span>
-            )}
+            {section.hasErrors && <span className={styles.navError}>⚠️</span>}
           </button>
         ))}
       </div>
@@ -128,7 +124,9 @@ const QuickNavigation: React.FC<{
   );
 };
 
-const ReportMetadata: React.FC<{ reportData: InteractiveReport }> = ({ reportData }) => {
+const ReportMetadata: React.FC<{ reportData: InteractiveReport }> = ({
+  reportData,
+}) => {
   const metadata = reportData.metadata;
 
   return (
@@ -136,24 +134,29 @@ const ReportMetadata: React.FC<{ reportData: InteractiveReport }> = ({ reportDat
       <div className={styles.metadataGrid}>
         <div className={styles.metadataItem}>
           <span className={styles.metadataLabel}>Report ID:</span>
-          <span className={styles.metadataValue}>{metadata?.report_id || 'N/A'}</span>
+          <span className={styles.metadataValue}>
+            {metadata?.report_id || 'N/A'}
+          </span>
         </div>
         <div className={styles.metadataItem}>
           <span className={styles.metadataLabel}>Job ID:</span>
-          <span className={styles.metadataValue}>{metadata?.job_id || reportData.job_id}</span>
+          <span className={styles.metadataValue}>
+            {metadata?.job_id || reportData.job_id}
+          </span>
         </div>
         <div className={styles.metadataItem}>
           <span className={styles.metadataLabel}>Generated:</span>
           <span className={styles.metadataValue}>
-            {metadata?.generation_timestamp 
+            {metadata?.generation_timestamp
               ? new Date(metadata.generation_timestamp).toLocaleString()
-              : new Date().toLocaleString()
-            }
+              : new Date().toLocaleString()}
           </span>
         </div>
         <div className={styles.metadataItem}>
           <span className={styles.metadataLabel}>Version:</span>
-          <span className={styles.metadataValue}>{metadata?.version || '2.0.0'}</span>
+          <span className={styles.metadataValue}>
+            {metadata?.version || '2.0.0'}
+          </span>
         </div>
       </div>
     </div>
@@ -185,10 +188,9 @@ const GlobalSearch: React.FC<{
   );
 };
 
-export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> = ({
-  reportData,
-  jobStatus
-}) => {
+export const EnhancedConversionReport: React.FC<
+  EnhancedConversionReportProps
+> = ({ reportData, jobStatus }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['summary']) // Start with summary expanded
   );
@@ -198,7 +200,9 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
   const overallStatus = useMemo(() => {
     if (jobStatus) return jobStatus;
     if (!reportData.summary) return 'failed';
-    return reportData.summary.overall_success_rate > 10 ? 'completed' : 'failed';
+    return reportData.summary.overall_success_rate > 10
+      ? 'completed'
+      : 'failed';
   }, [jobStatus, reportData.summary]);
 
   // Create navigation items
@@ -208,7 +212,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
         id: 'summary',
         title: 'Summary',
         icon: '📊',
-      }
+      },
     ];
 
     if (reportData.feature_analysis?.features?.length > 0) {
@@ -216,7 +220,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
         id: 'features',
         title: 'Feature Analysis',
         icon: '🔧',
-        count: reportData.feature_analysis.features.length
+        count: reportData.feature_analysis.features.length,
       });
     }
 
@@ -225,7 +229,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
         id: 'assumptions',
         title: 'Smart Assumptions',
         icon: '🧠',
-        count: reportData.assumptions_report.assumptions.length
+        count: reportData.assumptions_report.assumptions.length,
       });
     }
 
@@ -235,7 +239,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
         id: 'developer',
         title: 'Technical Log',
         icon: '🛠️',
-        hasErrors
+        hasErrors,
       });
     }
 
@@ -244,7 +248,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
 
   // Toggle section expansion
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
@@ -258,8 +262,8 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
   // Handle section click from navigation
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);
-    setExpandedSections(prev => new Set([...prev, sectionId]));
-    
+    setExpandedSections((prev) => new Set([...prev, sectionId]));
+
     // Scroll to section
     const element = document.getElementById(`section-${sectionId}`);
     if (element) {
@@ -269,7 +273,7 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
 
   // Expand all sections
   const expandAll = () => {
-    setExpandedSections(new Set(navigationSections.map(s => s.id)));
+    setExpandedSections(new Set(navigationSections.map((s) => s.id)));
   };
 
   // Collapse all sections
@@ -281,7 +285,10 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
     return (
       <div className={styles.errorContainer}>
         <h2>Conversion Report Not Available</h2>
-        <p>There was an issue loading the conversion details. Please try again later.</p>
+        <p>
+          There was an issue loading the conversion details. Please try again
+          later.
+        </p>
       </div>
     );
   }
@@ -291,16 +298,20 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
       {/* Enhanced Header */}
       <div className={styles.enhancedHeader}>
         <div className={styles.headerContent}>
-          <h1 className={`${styles.title} ${styles[`title${overallStatus.charAt(0).toUpperCase() + overallStatus.slice(1)}`]}`}>
+          <h1
+            className={`${styles.title} ${styles[`title${overallStatus.charAt(0).toUpperCase() + overallStatus.slice(1)}`]}`}
+          >
             ModPorter AI Conversion Report
           </h1>
           <div className={styles.headerSubtitle}>
-            {overallStatus === 'completed' ? 'Conversion Completed Successfully' :
-             overallStatus === 'failed' ? 'Conversion Completed with Issues' :
-             'Conversion in Progress...'}
+            {overallStatus === 'completed'
+              ? 'Conversion Completed Successfully'
+              : overallStatus === 'failed'
+                ? 'Conversion Completed with Issues'
+                : 'Conversion in Progress...'}
           </div>
         </div>
-        
+
         <div className={styles.headerActions}>
           <button onClick={expandAll} className={styles.actionButton}>
             📖 Expand All
@@ -371,8 +382,13 @@ export const EnhancedConversionReport: React.FC<EnhancedConversionReportProps> =
       {/* Report Footer */}
       <div className={styles.reportFooter}>
         <p>
-          Report generated by ModPorter AI v{reportData.metadata?.version || '2.0.0'} | 
-          <a href="https://modporter.ai" target="_blank" rel="noopener noreferrer">
+          Report generated by ModPorter AI v
+          {reportData.metadata?.version || '2.0.0'} |
+          <a
+            href="https://modporter.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Learn more about ModPorter AI
           </a>
         </p>

@@ -5,21 +5,43 @@ import './ConversionProgress.css';
 
 // SVG icons as inline components for better compatibility
 const CheckmarkIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
-    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width="14px"
+    height="14px"
+  >
+    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
   </svg>
 );
 
 const PendingIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px">
-    <circle cx="12" cy="12" r="10"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width="14px"
+    height="14px"
+  >
+    <circle cx="12" cy="12" r="10" />
   </svg>
 );
 
 const SpinnerIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14px" height="14px" className="spinner-icon">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" opacity="0.3"/>
-    <path d="M12 2v4c3.31 0 6 2.69 6 6h4c0-5.52-4.48-10-10-10z"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width="14px"
+    height="14px"
+    className="spinner-icon"
+  >
+    <path
+      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+      opacity="0.3"
+    />
+    <path d="M12 2v4c3.31 0 6 2.69 6 6h4c0-5.52-4.48-10-10-10z" />
   </svg>
 );
 
@@ -46,16 +68,15 @@ export interface ConversionProgressProps {
   stage?: string | null;
 }
 
-
 const ConversionProgress: React.FC<ConversionProgressProps> = ({
   jobId,
   status,
   progress,
   message,
-  stage
+  stage,
 }) => {
   // Define the steps for the conversion process
-  const conversionSteps = ["Queued", "Processing", "Completed"];
+  const conversionSteps = ['Queued', 'Processing', 'Completed'];
 
   // Initialize all hooks first before any early returns
   const [progressData, setProgressData] = useState<ConversionStatus>({
@@ -83,7 +104,8 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY_BASE = 1000; // 1 second base delay
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
   const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
   const stopPolling = () => {
@@ -110,9 +132,18 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const updateProgressData = useCallback((newData: ConversionStatus) => {
     setProgressData(newData);
     currentStatusRef.current = newData.status;
-    if (newData.status === 'completed' || newData.status === 'failed' || newData.status === 'cancelled') {
-      console.log(`Conversion ended with status: ${newData.status}. Cleaning up connections.`);
-      if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
+    if (
+      newData.status === 'completed' ||
+      newData.status === 'failed' ||
+      newData.status === 'cancelled'
+    ) {
+      console.log(
+        `Conversion ended with status: ${newData.status}. Cleaning up connections.`
+      );
+      if (
+        webSocketRef.current &&
+        webSocketRef.current.readyState === WebSocket.OPEN
+      ) {
         webSocketRef.current.close(1000, `Conversion ${newData.status}`);
       }
       if (pollingIntervalRef.current) {
@@ -126,7 +157,9 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const startPolling = useCallback(() => {
     // Prevent multiple polling intervals
     stopPolling();
-    console.log(`WebSocket failed or not supported. Falling back to polling for ${jobId}.`);
+    console.log(
+      `WebSocket failed or not supported. Falling back to polling for ${jobId}.`
+    );
     setUsingWebSocket(false);
 
     pollingIntervalRef.current = window.setInterval(async () => {
@@ -155,9 +188,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         webSocketRef.current = null;
       }
       stopPolling();
-      setProgressData({ // Reset state
-        job_id: jobId, status: status || 'queued', progress: progress || 0, message: message || 'Initializing...',
-        stage: stage || 'Queued', estimated_time_remaining: null, result_url: null, error: null,
+      setProgressData({
+        // Reset state
+        job_id: jobId,
+        status: status || 'queued',
+        progress: progress || 0,
+        message: message || 'Initializing...',
+        stage: stage || 'Queued',
+        estimated_time_remaining: null,
+        result_url: null,
+        error: null,
         created_at: new Date().toISOString(),
       });
       setUsingWebSocket(false);
@@ -170,14 +210,20 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     const connectWebSocket = (attempt: number = 0) => {
       // Check if we've exceeded max reconnection attempts
       if (attempt >= MAX_RECONNECT_ATTEMPTS) {
-        console.log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Falling back to polling.`);
-        setConnectionError(`Unable to establish WebSocket connection after ${MAX_RECONNECT_ATTEMPTS} attempts. Using polling fallback.`);
+        console.log(
+          `Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Falling back to polling.`
+        );
+        setConnectionError(
+          `Unable to establish WebSocket connection after ${MAX_RECONNECT_ATTEMPTS} attempts. Using polling fallback.`
+        );
         startPolling();
         return;
       }
 
       const wsUrl = `${WS_BASE_URL}/ws/v1/convert/${jobId}/progress`;
-      console.log(`Attempting to connect WebSocket (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS}): ${wsUrl}`);
+      console.log(
+        `Attempting to connect WebSocket (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS}): ${wsUrl}`
+      );
       const ws = new WebSocket(wsUrl);
       webSocketRef.current = ws;
 
@@ -188,7 +234,9 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         stopPolling(); // Stop polling if WebSocket connects successfully
         clearReconnectTimeout();
         // Optionally, fetch initial status once via HTTP to ensure no missed updates
-        getConversionStatus(jobId).then(updateProgressData).catch(console.error);
+        getConversionStatus(jobId)
+          .then(updateProgressData)
+          .catch(console.error);
       };
 
       ws.onmessage = (event) => {
@@ -215,24 +263,36 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       };
 
       ws.onclose = (event) => {
-        console.log(`WebSocket closed for ${jobId}. Code: ${event.code}, Reason: ${event.reason}`);
+        console.log(
+          `WebSocket closed for ${jobId}. Code: ${event.code}, Reason: ${event.reason}`
+        );
         webSocketRef.current = null; // Clear the ref
 
         // Only attempt reconnection if the closure was unexpected and not a terminal state
-        if (currentStatusRef.current !== 'completed' && currentStatusRef.current !== 'failed' && currentStatusRef.current !== 'cancelled') {
+        if (
+          currentStatusRef.current !== 'completed' &&
+          currentStatusRef.current !== 'failed' &&
+          currentStatusRef.current !== 'cancelled'
+        ) {
           const nextAttempt = attempt + 1;
 
           if (nextAttempt < MAX_RECONNECT_ATTEMPTS) {
             const delay = getReconnectDelay(attempt);
-            console.log(`Scheduling WebSocket reconnection attempt ${nextAttempt + 1} in ${delay}ms`);
-            setConnectionError(`Connection lost. Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${nextAttempt + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+            console.log(
+              `Scheduling WebSocket reconnection attempt ${nextAttempt + 1} in ${delay}ms`
+            );
+            setConnectionError(
+              `Connection lost. Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${nextAttempt + 1}/${MAX_RECONNECT_ATTEMPTS})`
+            );
 
             reconnectTimeoutRef.current = window.setTimeout(() => {
               connectWebSocket(nextAttempt);
             }, delay);
           } else {
             // Fall back to polling after max attempts
-            setConnectionError('WebSocket connection failed. Using polling fallback.');
+            setConnectionError(
+              'WebSocket connection failed. Using polling fallback.'
+            );
             startPolling();
           }
         } else {
@@ -245,8 +305,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     connectWebSocket(0);
 
     return cleanup; // Return the cleanup function
-
-  }, [jobId, WS_BASE_URL, updateProgressData, startPolling, message, progress, stage, status]); // Re-run effect if dependencies change
+  }, [
+    jobId,
+    WS_BASE_URL,
+    updateProgressData,
+    startPolling,
+    message,
+    progress,
+    stage,
+    status,
+  ]); // Re-run effect if dependencies change
 
   if (!jobId) {
     return (
@@ -271,17 +339,21 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   } else if (usingWebSocket && progressData.message) {
     statusMessage = `Connected via WebSocket. ${progressData.message}`;
   } else if (usingWebSocket) {
-    statusMessage = "Connected via WebSocket. Processing..."
+    statusMessage = 'Connected via WebSocket. Processing...';
   }
-
 
   // Determine the current step index
   // This is a simplified mapping. A more robust solution might be needed.
-  let currentStepIndex = conversionSteps.indexOf(progressData.stage || "Queued");
+  let currentStepIndex = conversionSteps.indexOf(
+    progressData.stage || 'Queued'
+  );
   if (currentStepIndex === -1) {
     if (progressData.status === 'completed') {
-      currentStepIndex = conversionSteps.length -1;
-    } else if (progressData.status === 'failed' || progressData.status === 'cancelled') {
+      currentStepIndex = conversionSteps.length - 1;
+    } else if (
+      progressData.status === 'failed' ||
+      progressData.status === 'cancelled'
+    ) {
       // Handle error/cancelled state - perhaps show all steps as pending or a specific error step
       // For now, let's assume it stays at the last known stage or resets.
       // Or find the last non-completed step if stages are dynamic from backend.
@@ -295,9 +367,8 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   // If status is 'failed', we might want to show the step it failed on.
   // For this implementation, 'Completed' stage implies all steps are done.
   if (progressData.status === 'completed') {
-    currentStepIndex = conversionSteps.indexOf("Completed");
+    currentStepIndex = conversionSteps.indexOf('Completed');
   }
-
 
   return (
     <div className="conversion-progress-container">
@@ -305,8 +376,16 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
       {/* Connection Status Indicator */}
       <div className="connection-status">
-        <div className={`connection-indicator ${usingWebSocket ? '' : 'polling'}${connectionError ? ' error' : ''}`}></div>
-        <span>{usingWebSocket ? 'Real-time updates active' : connectionError ? 'Connection issues' : 'Using fallback polling'}</span>
+        <div
+          className={`connection-indicator ${usingWebSocket ? '' : 'polling'}${connectionError ? ' error' : ''}`}
+        ></div>
+        <span>
+          {usingWebSocket
+            ? 'Real-time updates active'
+            : connectionError
+              ? 'Connection issues'
+              : 'Using fallback polling'}
+        </span>
       </div>
 
       {/* Progress Steps */}
@@ -314,15 +393,21 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         {conversionSteps.map((step, index) => {
           // Determine step completion status
           let stepCompleted = index < currentStepIndex;
-          if (progressData.status === 'completed' && step === "Completed") {
+          if (progressData.status === 'completed' && step === 'Completed') {
             stepCompleted = true;
           }
 
           // Determine if this is the current/active step
-          const isCurrent = index === currentStepIndex && progressData.status !== 'completed' && progressData.status !== 'failed';
+          const isCurrent =
+            index === currentStepIndex &&
+            progressData.status !== 'completed' &&
+            progressData.status !== 'failed';
 
           return (
-            <li key={step} className={`conversion-step ${isCurrent ? 'current' : ''} ${stepCompleted ? 'completed' : 'pending'}`}>
+            <li
+              key={step}
+              className={`conversion-step ${isCurrent ? 'current' : ''} ${stepCompleted ? 'completed' : 'pending'}`}
+            >
               <div className="step-icon">
                 {stepCompleted ? <CheckmarkIcon /> : <PendingIcon />}
               </div>
@@ -344,7 +429,9 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
                     {agent.status === 'completed' && <CheckmarkIcon />}
                     {agent.status === 'running' && <SpinnerIcon />}
                     {agent.status === 'pending' && <PendingIcon />}
-                    {agent.status === 'failed' && <span className="error-icon">✕</span>}
+                    {agent.status === 'failed' && (
+                      <span className="error-icon">✕</span>
+                    )}
                   </div>
                   <span className="agent-name">{agent.name}</span>
                   <span className="agent-status">{agent.status}</span>
@@ -394,14 +481,17 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
 
       {/* Estimated Time Remaining */}
       <div className="time-remaining">
-        <strong>Estimated Time Remaining:</strong> {progressData.estimated_time_remaining || 'N/A'}
+        <strong>Estimated Time Remaining:</strong>{' '}
+        {progressData.estimated_time_remaining || 'N/A'}
       </div>
 
-      {statusMessage && statusMessage !== progressData.status && progressData.status !== 'failed' && (
-        <div className="additional-message">
-          <strong>Message:</strong> {statusMessage}
-        </div>
-      )}
+      {statusMessage &&
+        statusMessage !== progressData.status &&
+        progressData.status !== 'failed' && (
+          <div className="additional-message">
+            <strong>Message:</strong> {statusMessage}
+          </div>
+        )}
 
       {/* Connection Error */}
       {connectionError && (
@@ -421,10 +511,19 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       {/* Error Display */}
       {progressData.status === 'failed' && (
         <div className="error-message">
-          <p><strong>Error:</strong> {progressData.error || progressData.message || 'An unknown error occurred.'}</p>
-          {progressData.message && progressData.message !== progressData.error && progressData.error && (
-            <p><strong>Details:</strong> {progressData.message}</p>
-          )}
+          <p>
+            <strong>Error:</strong>{' '}
+            {progressData.error ||
+              progressData.message ||
+              'An unknown error occurred.'}
+          </p>
+          {progressData.message &&
+            progressData.message !== progressData.error &&
+            progressData.error && (
+              <p>
+                <strong>Details:</strong> {progressData.message}
+              </p>
+            )}
         </div>
       )}
     </div>

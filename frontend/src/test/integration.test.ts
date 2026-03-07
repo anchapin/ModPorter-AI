@@ -4,11 +4,11 @@
  */
 
 import { describe, test, expect, beforeAll } from 'vitest';
-import { 
-  uploadFile, 
-  convertMod, 
+import {
+  uploadFile,
+  convertMod,
   getConversionStatus,
-  API_BASE_URL 
+  API_BASE_URL,
 } from '../services/api';
 
 // Test configuration
@@ -38,10 +38,10 @@ describe('Frontend-Backend Integration', () => {
       console.warn('Skipping backend health check test - backend not running');
       return;
     }
-    
+
     const response = await fetch(`${BACKEND_URL}/health`);
     expect(response.ok).toBe(true);
-    
+
     const data = await response.json();
     expect(data).toHaveProperty('status', 'healthy');
     expect(data).toHaveProperty('version');
@@ -53,80 +53,84 @@ describe('Frontend-Backend Integration', () => {
       console.warn('Skipping file upload test - backend not running');
       return;
     }
-    
+
     // Create a simple test file
     const testContent = 'Test jar file content';
     const testFile = new File([testContent], 'test-mod.jar', {
       type: 'application/java-archive',
     });
-    
+
     // Ensure file name is set correctly for test environment
     Object.defineProperty(testFile, 'name', {
       value: 'test-mod.jar',
-      writable: false
+      writable: false,
     });
 
     const uploadResponse = await uploadFile(testFile);
-    
+
     expect(uploadResponse).toHaveProperty('file_id');
     expect(uploadResponse).toHaveProperty('original_filename', 'test-mod.jar');
     expect(uploadResponse).toHaveProperty('size', testContent.length);
     expect(uploadResponse.message).toContain('saved successfully');
   });
 
-  test('Conversion workflow integration', async () => {
-    if (!isBackendRunning) {
-      console.warn('Skipping conversion workflow test - backend not running');
-      return;
-    }
-    
-    // Create a test file
-    const testContent = 'PK\x03\x04'; // Basic ZIP file signature
-    const testFile = new File([testContent], 'test-conversion.jar', {
-      type: 'application/java-archive',
-    });
+  test(
+    'Conversion workflow integration',
+    async () => {
+      if (!isBackendRunning) {
+        console.warn('Skipping conversion workflow test - backend not running');
+        return;
+      }
 
-    // Step 1: Start conversion
-    const conversionResponse = await convertMod({
-      file: testFile,
-      smartAssumptions: true,
-      includeDependencies: false,
-    });
+      // Create a test file
+      const testContent = 'PK\x03\x04'; // Basic ZIP file signature
+      const testFile = new File([testContent], 'test-conversion.jar', {
+        type: 'application/java-archive',
+      });
 
-    expect(conversionResponse).toHaveProperty('job_id');
-    expect(conversionResponse).toHaveProperty('status');
-    expect(conversionResponse.message).toContain('started');
+      // Step 1: Start conversion
+      const conversionResponse = await convertMod({
+        file: testFile,
+        smartAssumptions: true,
+        includeDependencies: false,
+      });
 
-    const jobId = conversionResponse.job_id;
+      expect(conversionResponse).toHaveProperty('job_id');
+      expect(conversionResponse).toHaveProperty('status');
+      expect(conversionResponse.message).toContain('started');
 
-    // Step 2: Check status (may take time in real scenario)
-    const statusResponse = await getConversionStatus(jobId);
-    
-    expect(statusResponse).toHaveProperty('job_id', jobId);
-    expect(statusResponse).toHaveProperty('status');
-    expect(statusResponse).toHaveProperty('progress');
-    expect(statusResponse).toHaveProperty('message');
-    expect(statusResponse.progress).toBeGreaterThanOrEqual(0);
-    expect(statusResponse.progress).toBeLessThanOrEqual(100);
+      const jobId = conversionResponse.job_id;
 
-    // Note: In real scenarios, you would poll until completion
-    // For this test, we just verify the status endpoint works
-  }, TEST_TIMEOUT);
+      // Step 2: Check status (may take time in real scenario)
+      const statusResponse = await getConversionStatus(jobId);
+
+      expect(statusResponse).toHaveProperty('job_id', jobId);
+      expect(statusResponse).toHaveProperty('status');
+      expect(statusResponse).toHaveProperty('progress');
+      expect(statusResponse).toHaveProperty('message');
+      expect(statusResponse.progress).toBeGreaterThanOrEqual(0);
+      expect(statusResponse.progress).toBeLessThanOrEqual(100);
+
+      // Note: In real scenarios, you would poll until completion
+      // For this test, we just verify the status endpoint works
+    },
+    TEST_TIMEOUT
+  );
 
   test('API error handling', async () => {
     if (!isBackendRunning) {
       console.warn('Skipping API error handling test - backend not running');
       return;
     }
-    
+
     // Test invalid job ID
     await expect(getConversionStatus('invalid-job-id')).rejects.toThrow();
-    
+
     // Test invalid file
     const invalidFile = new File(['not a jar'], 'test.txt', {
       type: 'text/plain',
     });
-    
+
     await expect(uploadFile(invalidFile)).rejects.toThrow();
   });
 
@@ -135,9 +139,11 @@ describe('Frontend-Backend Integration', () => {
       console.warn('Skipping API content types test - backend not running');
       return;
     }
-    
+
     const healthResponse = await fetch(`${BACKEND_URL}/health`);
-    expect(healthResponse.headers.get('content-type')).toContain('application/json');
+    expect(healthResponse.headers.get('content-type')).toContain(
+      'application/json'
+    );
   });
 });
 

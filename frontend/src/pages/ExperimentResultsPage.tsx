@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CircularProgress, 
-  FormControl, 
-  Grid, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
+import {
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  CircularProgress,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   Typography,
   Table,
   TableBody,
@@ -17,9 +17,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
 } from '@mui/material';
-import { fetchExperiments, fetchExperimentResults, fetchExperimentVariants } from '../services/experiments';
+import {
+  fetchExperiments,
+  fetchExperimentResults,
+  fetchExperimentVariants,
+} from '../services/experiments';
 import { Experiment, ExperimentResult } from '../types/experiment';
 
 const ExperimentResultsPage: React.FC = () => {
@@ -57,14 +61,14 @@ const ExperimentResultsPage: React.FC = () => {
         setLoading(true);
         // First, fetch variants for the selected experiment
         const variants = await fetchExperimentVariants(selectedExperimentId);
-        
+
         // Then fetch results for each variant
         const allResults: ExperimentResult[] = [];
         for (const variant of variants) {
           const variantResults = await fetchExperimentResults(variant.id);
           allResults.push(...variantResults);
         }
-        
+
         setResults(allResults);
       } catch (err) {
         setError('Failed to load experiment results');
@@ -102,7 +106,7 @@ const ExperimentResultsPage: React.FC = () => {
     let costCount = 0;
     let feedbackCount = 0;
 
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.kpi_quality !== null) {
         qualitySum += result.kpi_quality;
         qualityCount++;
@@ -137,7 +141,12 @@ const ExperimentResultsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -145,7 +154,12 @@ const ExperimentResultsPage: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4">Experiment Results</Typography>
       </Box>
 
@@ -164,13 +178,15 @@ const ExperimentResultsPage: React.FC = () => {
                 <InputLabel>Select Experiment</InputLabel>
                 <Select
                   value={selectedExperimentId}
-                  onChange={(e) => setSelectedExperimentId(e.target.value as string)}
+                  onChange={(e) =>
+                    setSelectedExperimentId(e.target.value as string)
+                  }
                   label="Select Experiment"
                 >
                   <MenuItem value="">
                     <em>Select an experiment</em>
                   </MenuItem>
-                  {experiments.map(experiment => (
+                  {experiments.map((experiment) => (
                     <MenuItem key={experiment.id} value={experiment.id}>
                       {experiment.name}
                     </MenuItem>
@@ -194,7 +210,7 @@ const ExperimentResultsPage: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg Quality Score" />
@@ -205,7 +221,7 @@ const ExperimentResultsPage: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg Speed (ms)" />
@@ -216,7 +232,7 @@ const ExperimentResultsPage: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid size={{ xs: 12, md: 3 }}>
               <Card>
                 <CardHeader title="Avg User Feedback" />
@@ -248,14 +264,32 @@ const ExperimentResultsPage: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {results.map(result => (
+                    {results.map((result) => (
                       <TableRow key={result.id}>
-                        <TableCell>{result.session_id.substring(0, 8)}...</TableCell>
-                        <TableCell>{result.kpi_quality !== null ? result.kpi_quality.toFixed(2) : 'N/A'}</TableCell>
-                        <TableCell>{result.kpi_speed !== null ? result.kpi_speed : 'N/A'}</TableCell>
-                        <TableCell>{result.kpi_cost !== null ? result.kpi_cost.toFixed(2) : 'N/A'}</TableCell>
-                        <TableCell>{result.user_feedback_score !== null ? result.user_feedback_score.toFixed(2) : 'N/A'}</TableCell>
-                        <TableCell>{new Date(result.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {result.session_id.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell>
+                          {result.kpi_quality !== null
+                            ? result.kpi_quality.toFixed(2)
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {result.kpi_speed !== null ? result.kpi_speed : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {result.kpi_cost !== null
+                            ? result.kpi_cost.toFixed(2)
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {result.user_feedback_score !== null
+                            ? result.user_feedback_score.toFixed(2)
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(result.created_at).toLocaleDateString()}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

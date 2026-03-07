@@ -4,7 +4,9 @@ interface ComparisonReportPageProps {
   fullReport: any; // Replace 'any' with the main ComparisonResult type
 }
 
-const ComparisonReportPage: React.FC<ComparisonReportPageProps> = ({ fullReport }) => {
+const ComparisonReportPage: React.FC<ComparisonReportPageProps> = ({
+  fullReport,
+}) => {
   return (
     <div>
       <h2>Full Comparison Report (ComparisonReportPage)</h2>
