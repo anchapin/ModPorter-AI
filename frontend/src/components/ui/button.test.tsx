@@ -5,7 +5,9 @@ import { Button } from './button';
 describe('Button Component', () => {
   it('renders correctly', () => {
     render(<Button>Click me</Button>);
-    expect(screen.getByRole('button', { name: /click me/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /click me/i })
+    ).toBeInTheDocument();
   });
 
   it('handles loading state', () => {
@@ -18,8 +20,14 @@ describe('Button Component', () => {
   });
 
   it('handles loading state with custom text', () => {
-    render(<Button loading loadingText="Saving...">Click me</Button>);
-    expect(screen.getByRole('button', { name: /saving.../i })).toBeInTheDocument();
+    render(
+      <Button loading loadingText="Saving...">
+        Click me
+      </Button>
+    );
+    expect(
+      screen.getByRole('button', { name: /saving.../i })
+    ).toBeInTheDocument();
     expect(screen.queryByText(/click me/i)).not.toBeInTheDocument();
   });
 
@@ -44,14 +52,22 @@ describe('Button Component', () => {
 
   it('does not call onClick when disabled', () => {
     const handleClick = vi.fn();
-    render(<Button disabled onClick={handleClick}>Click me</Button>);
+    render(
+      <Button disabled onClick={handleClick}>
+        Click me
+      </Button>
+    );
     fireEvent.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();
   });
 
   it('does not call onClick when loading', () => {
     const handleClick = vi.fn();
-    render(<Button loading onClick={handleClick}>Click me</Button>);
+    render(
+      <Button loading onClick={handleClick}>
+        Click me
+      </Button>
+    );
     fireEvent.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();
   });
@@ -64,7 +80,9 @@ describe('Button Component', () => {
   });
 
   it('applies custom className', () => {
-    const { getByRole } = render(<Button className="custom-class">Click me</Button>);
+    const { getByRole } = render(
+      <Button className="custom-class">Click me</Button>
+    );
     const button = getByRole('button');
     expect(button.className).toContain('custom-class');
   });

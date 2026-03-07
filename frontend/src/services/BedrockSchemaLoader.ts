@@ -19,36 +19,40 @@ export class BedrockSchemaLoader {
     this.registerSchema({
       uri: 'schemas/bedrock_block_schema.json',
       schema: bedrockBlockSchema,
-      fileMatch: ['blocks/*.json', '*/blocks/*.json']
+      fileMatch: ['blocks/*.json', '*/blocks/*.json'],
     });
 
     // Additional schemas can be loaded from AI engine or external sources
-    this.registerRemoteSchema('schemas/bedrock_item_schema.json', '/api/v1/schemas/bedrock_item_schema.json', [
-      'items/*.json',
-      '*/items/*.json'
-    ]);
+    this.registerRemoteSchema(
+      'schemas/bedrock_item_schema.json',
+      '/api/v1/schemas/bedrock_item_schema.json',
+      ['items/*.json', '*/items/*.json']
+    );
 
-    this.registerRemoteSchema('schemas/bedrock_recipe_schema.json', '/api/v1/schemas/bedrock_recipe_schema.json', [
-      'recipes/*.json',
-      '*/recipes/*.json'
-    ]);
+    this.registerRemoteSchema(
+      'schemas/bedrock_recipe_schema.json',
+      '/api/v1/schemas/bedrock_recipe_schema.json',
+      ['recipes/*.json', '*/recipes/*.json']
+    );
 
-    this.registerRemoteSchema('schemas/bedrock_loot_table_schema.json', '/api/v1/schemas/bedrock_loot_table_schema.json', [
-      'loot_tables/*.json',
-      '*/loot_tables/*.json'
-    ]);
+    this.registerRemoteSchema(
+      'schemas/bedrock_loot_table_schema.json',
+      '/api/v1/schemas/bedrock_loot_table_schema.json',
+      ['loot_tables/*.json', '*/loot_tables/*.json']
+    );
 
-    this.registerRemoteSchema('schemas/bedrock_entity_schema.json', '/api/v1/schemas/bedrock_entity_schema.json', [
-      'entities/*.json',
-      '*/entities/*.json'
-    ]);
+    this.registerRemoteSchema(
+      'schemas/bedrock_entity_schema.json',
+      '/api/v1/schemas/bedrock_entity_schema.json',
+      ['entities/*.json', '*/entities/*.json']
+    );
   }
 
   registerSchema(definition: SchemaDefinition) {
     this.schemas.set(definition.uri, definition);
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
-      schemas: this.getSchemaDefinitions()
+      schemas: this.getSchemaDefinitions(),
     });
   }
 
@@ -69,7 +73,7 @@ export class BedrockSchemaLoader {
       this.registerSchema({
         uri,
         schema: this.createPlaceholderSchema(),
-        fileMatch
+        fileMatch,
       });
     }
   }
@@ -83,19 +87,19 @@ export class BedrockSchemaLoader {
       properties: {
         format_version: {
           type: 'string',
-          description: 'Format version'
-        }
-      }
+          description: 'Format version',
+        },
+      },
     };
   }
 
   getSchemaDefinitions(): monaco.languages.json.SchemaAdditions {
     const additions: monaco.languages.json.SchemaAdditions = [];
-    this.schemas.forEach(definition => {
+    this.schemas.forEach((definition) => {
       additions.push({
         uri: definition.uri,
         fileMatch: definition.fileMatch || [],
-        schema: definition.schema
+        schema: definition.schema,
       });
     });
     return additions;
@@ -116,9 +120,7 @@ export class BedrockSchemaLoader {
 
   private matchPattern(filePath: string, pattern: string): boolean {
     // Convert glob pattern to regex
-    const regexPattern = pattern
-      .replace(/\*/g, '.*')
-      .replace(/\?/g, '.');
+    const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.');
     const regex = new RegExp(regexPattern, 'i');
     return regex.test(filePath);
   }
@@ -131,18 +133,18 @@ export class BedrockSchemaLoader {
           startLineNumber: 1,
           startColumn: 1,
           endLineNumber: position.lineNumber,
-          endColumn: position.column
+          endColumn: position.column,
         });
 
         // Block component completions
         if (textUntilPosition.includes('"components"')) {
           return {
-            suggestions: this.getBlockComponentSuggestions()
+            suggestions: this.getBlockComponentSuggestions(),
           };
         }
 
         return { suggestions: [] };
-      }
+      },
     });
   }
 
@@ -152,44 +154,44 @@ export class BedrockSchemaLoader {
         label: 'minecraft:display_name',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:display_name": {\n  "value": ""\n}',
-        documentation: 'Display name for the block'
+        documentation: 'Display name for the block',
       },
       {
         label: 'minecraft:destroy_time',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:destroy_time": 0',
-        documentation: 'Block hardness in seconds'
+        documentation: 'Block hardness in seconds',
       },
       {
         label: 'minecraft:explosion_resistance',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:explosion_resistance": 0',
-        documentation: 'Explosion resistance'
+        documentation: 'Explosion resistance',
       },
       {
         label: 'minecraft:friction',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:friction": 0.6',
-        documentation: 'Slipperiness (0-1)'
+        documentation: 'Slipperiness (0-1)',
       },
       {
         label: 'minecraft:light_emission',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:light_emission": 0',
-        documentation: 'Light level emitted (0-15)'
+        documentation: 'Light level emitted (0-15)',
       },
       {
         label: 'minecraft:material',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:material": "stone"',
-        documentation: 'Material type'
+        documentation: 'Material type',
       },
       {
         label: 'minecraft:geometry',
         kind: monaco.languages.CompletionItemKind.Property,
         insertText: '"minecraft:geometry": ""',
-        documentation: 'Geometry identifier'
-      }
+        documentation: 'Geometry identifier',
+      },
     ];
   }
 

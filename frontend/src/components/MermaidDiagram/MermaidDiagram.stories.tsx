@@ -143,7 +143,8 @@ export const SystemArchitecture: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Complete system architecture showing all components and their relationships.',
+        story:
+          'Complete system architecture showing all components and their relationships.',
       },
     },
   },
@@ -169,7 +170,8 @@ export const SmartAssumptionsTree: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Decision tree for applying smart assumptions during conversion.',
+        story:
+          'Decision tree for applying smart assumptions during conversion.',
       },
     },
   },

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from db import models
 
+
 async def create_behavior_template(
     session: AsyncSession,
     *,
@@ -73,30 +74,33 @@ async def get_behavior_templates(
     # Apply filters
     if category:
         stmt = stmt.where(models.BehaviorTemplate.category == category)
-    
+
     if template_type:
         stmt = stmt.where(models.BehaviorTemplate.template_type == template_type)
-    
+
     if is_public is not None:
         stmt = stmt.where(models.BehaviorTemplate.is_public == is_public)
-    
+
     if tags:
         # Filter by tags - any tag match
         tag_conditions = [models.BehaviorTemplate.tags.any(tag=tag) for tag in tags]
         stmt = stmt.where(func.or_(*tag_conditions))
-    
+
     if search:
         # Search in name and description
         search_filter = func.or_(
             models.BehaviorTemplate.name.ilike(f"%{search}%"),
-            models.BehaviorTemplate.description.ilike(f"%{search}%")
+            models.BehaviorTemplate.description.ilike(f"%{search}%"),
         )
         stmt = stmt.where(search_filter)
 
     # Apply pagination and ordering
-    stmt = stmt.offset(skip).limit(limit).order_by(
-        models.BehaviorTemplate.is_public.desc(),
-        models.BehaviorTemplate.updated_at.desc()
+    stmt = (
+        stmt.offset(skip)
+        .limit(limit)
+        .order_by(
+            models.BehaviorTemplate.is_public.desc(), models.BehaviorTemplate.updated_at.desc()
+        )
     )
 
     result = await session.execute(stmt)
@@ -117,16 +121,25 @@ async def update_behavior_template(
 
     # Build update statement with provided fields
     update_values = {
-        key: value for key, value in updates.items() 
-        if value is not None and key in [
-            'name', 'description', 'category', 'template_type', 
-            'template_data', 'tags', 'is_public', 'version'
+        key: value
+        for key, value in updates.items()
+        if value is not None
+        and key
+        in [
+            "name",
+            "description",
+            "category",
+            "template_type",
+            "template_data",
+            "tags",
+            "is_public",
+            "version",
         ]
     }
-    
+
     if update_values:
-        update_values['updated_at'] = datetime.now(timezone.utc)
-        
+        update_values["updated_at"] = datetime.now(timezone.utc)
+
         stmt = (
             update(models.BehaviorTemplate)
             .where(models.BehaviorTemplate.id == template_uuid)
@@ -134,12 +147,12 @@ async def update_behavior_template(
             .returning(models.BehaviorTemplate)
         )
         result = await session.execute(stmt)
-        
+
         if commit:
             await session.commit()
-        
+
         return result.scalar_one_or_none()
-    
+
     # No updates provided
     return await get_behavior_template(session, template_id)
 
@@ -162,10 +175,10 @@ async def delete_behavior_template(
 
     stmt = delete(models.BehaviorTemplate).where(models.BehaviorTemplate.id == template_uuid)
     result = await session.execute(stmt)
-    
+
     if commit:
         await session.commit()
-    
+
     return result.rowcount > 0
 
 
@@ -187,30 +200,26 @@ async def apply_behavior_template(
 
     # Generate content based on template type
     content = template.template_data.copy()
-    
+
     # Add template metadata
     if isinstance(content, dict):
         content["_template_info"] = {
             "template_id": str(template.id),
             "template_name": template.name,
             "template_version": template.version,
-            "generated_at": datetime.now(timezone.utc).isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     # Determine file type based on category
     file_type_map = {
         "block_behavior": "block_behavior",
-        "entity_behavior": "entity_behavior", 
+        "entity_behavior": "entity_behavior",
         "recipe": "recipe",
         "loot_table": "loot_table",
         "logic_flow": "logic_flow",
-        "item_behavior": "item_behavior"
+        "item_behavior": "item_behavior",
     }
-    
+
     file_type = file_type_map.get(template.category, "custom")
 
-    return {
-        "content": content,
-        "file_path": file_path,
-        "file_type": file_type
-    }
+    return {"content": content, "file_path": file_path, "file_type": file_type}

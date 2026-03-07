@@ -75,7 +75,8 @@
 }
 
 @keyframes drag-pulse {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #2563eb;
     box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
   }
@@ -91,7 +92,8 @@
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -184,7 +186,7 @@
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 500px;
   gap: 1rem;
@@ -329,7 +331,7 @@
   position: relative;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   opacity: 0;
   width: 0;
   height: 0;
@@ -345,16 +347,18 @@
   border: 1px solid #adb5bd;
   border-radius: 4px;
   margin-right: 10px;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  transition:
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
 }
 
-.checkbox-label input[type="checkbox"]:checked + .checkmark {
+.checkbox-label input[type='checkbox']:checked + .checkmark {
   background-color: #1a73e8;
   border-color: #1a73e8;
 }
 
-.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
-  content: "";
+.checkbox-label input[type='checkbox']:checked + .checkmark::after {
+  content: '';
   position: absolute;
   left: 6px;
   top: 2px;
@@ -490,7 +494,9 @@
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .cancel-button:hover {
@@ -641,7 +647,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -693,7 +700,9 @@
 }
 
 @keyframes conversion-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive design */

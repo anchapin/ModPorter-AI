@@ -31,11 +31,11 @@
     padding: var(--spacing-lg);
     margin: var(--spacing-md);
   }
-  
+
   .heroTitle {
     font-size: var(--font-size-4xl);
   }
-  
+
   .heroDescription {
     font-size: var(--font-size-base);
   }

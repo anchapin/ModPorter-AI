@@ -11,11 +11,12 @@ interface ConversionAssetsManagerProps {
   className?: string;
 }
 
-export const ConversionAssetsManager: React.FC<ConversionAssetsManagerProps> = ({
-  conversionId,
-  className = ''
-}) => {
-  const [selectedAsset, setSelectedAsset] = useState<ConversionAsset | null>(null);
+export const ConversionAssetsManager: React.FC<
+  ConversionAssetsManagerProps
+> = ({ conversionId, className = '' }) => {
+  const [selectedAsset, setSelectedAsset] = useState<ConversionAsset | null>(
+    null
+  );
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
 
@@ -25,16 +26,16 @@ export const ConversionAssetsManager: React.FC<ConversionAssetsManagerProps> = (
 
   const handleAssetUpdated = useCallback((updatedAsset: ConversionAsset) => {
     setSelectedAsset(updatedAsset);
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   const handleAssetUploaded = useCallback((newAsset: ConversionAsset) => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
     console.log('Asset uploaded:', newAsset);
   }, []);
 
   const handleRefresh = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   const handleCloseDetails = useCallback(() => {
@@ -45,17 +46,19 @@ export const ConversionAssetsManager: React.FC<ConversionAssetsManagerProps> = (
     try {
       setIsConverting(true);
       const result = await api.convertAllConversionAssets(conversionId);
-      
+
       // Show result to user
-      const message = `Conversion batch completed:\n` +
+      const message =
+        `Conversion batch completed:\n` +
         `Total assets: ${result.total_assets}\n` +
         `Converted: ${result.converted_count}\n` +
         `Failed: ${result.failed_count}`;
-      
+
       alert(message);
       handleRefresh();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to convert assets';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to convert assets';
       alert(`Error converting assets: ${errorMessage}`);
     } finally {
       setIsConverting(false);

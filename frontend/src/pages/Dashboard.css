@@ -286,24 +286,24 @@
   .dashboard {
     padding: 0.5rem;
   }
-  
+
   .dashboard-header {
     padding: 1.5rem;
   }
-  
+
   .dashboard-header h1 {
     font-size: 2rem;
   }
-  
+
   .quick-stats {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
   }
-  
+
   .stat-card {
     padding: 1rem;
   }
-  
+
   .stat-number {
     font-size: 1.5rem;
   }
@@ -314,26 +314,26 @@
     flex-direction: column;
     gap: 0.25rem;
   }
-  
+
   .nav-tab {
     padding: 0.8rem 1rem;
   }
-  
+
   .convert-tab,
   .history-tab,
   .performance-tab {
     padding: 1.5rem;
   }
-  
+
   .tab-header h2 {
     font-size: 1.5rem;
   }
-  
+
   .tips-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .tip-card {
     padding: 1rem;
   }
@@ -343,35 +343,35 @@
   .dashboard-header {
     padding: 1rem;
   }
-  
+
   .dashboard-header h1 {
     font-size: 1.5rem;
     flex-direction: column;
     text-align: center;
     gap: 0.3rem;
   }
-  
+
   .header-subtitle {
     font-size: 1rem;
     text-align: center;
   }
-  
+
   .quick-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .stat-card {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
   }
-  
+
   .convert-tab,
   .history-tab,
   .performance-tab {
     padding: 1rem;
   }
-  
+
   .tip-card {
     flex-direction: column;
     text-align: center;
@@ -405,23 +405,23 @@
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: #fff;
   }
-  
+
   .dashboard-header,
   .dashboard-nav,
   .dashboard-content {
     background: #2d3748;
     color: #fff;
   }
-  
+
   .stat-card {
     background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
   }
-  
+
   .tip-card {
     background: #4a5568;
     border-color: #718096;
   }
-  
+
   .tip-card:hover {
     background: #2d3748;
     border-color: #667eea;

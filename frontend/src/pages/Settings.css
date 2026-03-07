@@ -57,9 +57,9 @@
   color: #333;
 }
 
-.form-group input[type="text"],
-.form-group input[type="password"],
-.form-group input[type="number"],
+.form-group input[type='text'],
+.form-group input[type='password'],
+.form-group input[type='number'],
 .form-group select {
   width: 100%;
   padding: 0.75rem;
@@ -89,7 +89,7 @@
   cursor: pointer;
 }
 
-.checkbox-group input[type="checkbox"] {
+.checkbox-group input[type='checkbox'] {
   width: 18px;
   height: 18px;
 }

@@ -28,9 +28,9 @@
   grid-template-columns: 250px 1fr 300px;
   grid-template-rows: 60px 1fr 50px;
   grid-template-areas:
-    "header header header"
-    "sidebar-left main sidebar-right"
-    "footer footer footer";
+    'header header header'
+    'sidebar-left main sidebar-right'
+    'footer footer footer';
   height: 100vh;
   overflow: hidden;
 }
@@ -150,10 +150,10 @@
     grid-template-columns: 1fr;
     grid-template-rows: 60px 200px 1fr 50px;
     grid-template-areas:
-      "header"
-      "sidebar-left" 
-      "main"
-      "footer";
+      'header'
+      'sidebar-left'
+      'main'
+      'footer';
   }
 
   .editor-sidebar-right {

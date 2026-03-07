@@ -6,60 +6,75 @@
 import React, { useState, useCallback } from 'react';
 import { ConversionUploadEnhanced } from '../components/ConversionUpload/ConversionUploadEnhanced';
 import { ConversionReportContainer } from '../components/ConversionReport/ConversionReportContainer';
-import { ConversionHistory, useConversionHistory } from '../components/ConversionHistory';
+import {
+  ConversionHistory,
+  useConversionHistory,
+} from '../components/ConversionHistory';
 import { PerformanceBenchmark } from '../components/PerformanceBenchmark';
 import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'convert' | 'history' | 'performance'>('convert');
+  const [activeTab, setActiveTab] = useState<
+    'convert' | 'history' | 'performance'
+  >('convert');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
-  
-  const { addConversion, updateConversion, setHistoryRef } = useConversionHistory();
+
+  const { addConversion, updateConversion, setHistoryRef } =
+    useConversionHistory();
 
   // Handle conversion start with filename
-  const handleConversionStart = useCallback((jobId: string, filename: string) => {
-    console.log('Conversion started:', jobId, 'File:', filename);
+  const handleConversionStart = useCallback(
+    (jobId: string, filename: string) => {
+      console.log('Conversion started:', jobId, 'File:', filename);
 
-    // Add to history with filename
-    addConversion({
-      job_id: jobId,
-      original_filename: filename,
-      status: 'processing',
-      created_at: new Date().toISOString(),
-      options: {
-        smartAssumptions: true,
-        includeDependencies: true
-      }
-    });
-  }, [addConversion]);
+      // Add to history with filename
+      addConversion({
+        job_id: jobId,
+        original_filename: filename,
+        status: 'processing',
+        created_at: new Date().toISOString(),
+        options: {
+          smartAssumptions: true,
+          includeDependencies: true,
+        },
+      });
+    },
+    [addConversion]
+  );
 
   // Handle conversion completion
-  const handleConversionComplete = useCallback((jobId: string) => {
-    console.log('Conversion completed:', jobId);
+  const handleConversionComplete = useCallback(
+    (jobId: string) => {
+      console.log('Conversion completed:', jobId);
 
-    // Update conversion status
-    updateConversion(jobId, {
-      status: 'completed',
-      completed_at: new Date().toISOString()
-    });
+      // Update conversion status
+      updateConversion(jobId, {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      });
 
-    // Show the report
-    setCurrentJobId(jobId);
-    setShowReport(true);
-  }, [updateConversion]);
+      // Show the report
+      setCurrentJobId(jobId);
+      setShowReport(true);
+    },
+    [updateConversion]
+  );
 
   // Handle conversion failure
-  const handleConversionFailed = useCallback((jobId: string, error: string) => {
-    console.log('Conversion failed:', jobId, 'Error:', error);
+  const handleConversionFailed = useCallback(
+    (jobId: string, error: string) => {
+      console.log('Conversion failed:', jobId, 'Error:', error);
 
-    // Update conversion status
-    updateConversion(jobId, {
-      status: 'failed',
-      completed_at: new Date().toISOString(),
-      error: error
-    });
-  }, [updateConversion]);
+      // Update conversion status
+      updateConversion(jobId, {
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        error: error,
+      });
+    },
+    [updateConversion]
+  );
 
   // Update conversion file info
   // const updateConversionInfo = useCallback((jobId: string, filename: string, fileSize?: number) => {
@@ -72,20 +87,27 @@ export const Dashboard: React.FC = () => {
   const getDashboardStats = () => {
     const storedHistory = localStorage.getItem('modporter_conversion_history');
     const history = storedHistory ? JSON.parse(storedHistory) : [];
-    
+
     const total = history.length;
-    const completed = history.filter((item: any) => item.status === 'completed').length;
-    const failed = history.filter((item: any) => item.status === 'failed').length;
-    const processing = history.filter((item: any) => item.status === 'processing').length;
-    
-    const actualSuccessRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
+    const completed = history.filter(
+      (item: any) => item.status === 'completed'
+    ).length;
+    const failed = history.filter(
+      (item: any) => item.status === 'failed'
+    ).length;
+    const processing = history.filter(
+      (item: any) => item.status === 'processing'
+    ).length;
+
+    const actualSuccessRate =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
+
     return {
       total,
       completed,
       failed,
       processing,
-      successRate: actualSuccessRate
+      successRate: actualSuccessRate,
     };
   };
 
@@ -104,7 +126,7 @@ export const Dashboard: React.FC = () => {
             Convert, manage, and track your Minecraft mod conversions
           </p>
         </div>
-        
+
         {/* Quick Stats */}
         <div className="quick-stats">
           <div className="stat-card">
@@ -114,7 +136,7 @@ export const Dashboard: React.FC = () => {
               <div className="stat-label">Total Conversions</div>
             </div>
           </div>
-          
+
           <div className="stat-card">
             <div className="stat-icon">✅</div>
             <div className="stat-content">
@@ -122,7 +144,7 @@ export const Dashboard: React.FC = () => {
               <div className="stat-label">Completed</div>
             </div>
           </div>
-          
+
           <div className="stat-card">
             <div className="stat-icon">📈</div>
             <div className="stat-content">
@@ -130,7 +152,7 @@ export const Dashboard: React.FC = () => {
               <div className="stat-label">Success Rate</div>
             </div>
           </div>
-          
+
           <div className="stat-card">
             <div className="stat-icon">⏳</div>
             <div className="stat-content">
@@ -150,7 +172,7 @@ export const Dashboard: React.FC = () => {
           <span className="tab-icon">🚀</span>
           Convert Mods
         </button>
-        
+
         <button
           className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
@@ -158,7 +180,7 @@ export const Dashboard: React.FC = () => {
           <span className="tab-icon">📋</span>
           Conversion History
         </button>
-        
+
         <button
           className={`nav-tab ${activeTab === 'performance' ? 'active' : ''}`}
           onClick={() => setActiveTab('performance')}
@@ -178,39 +200,47 @@ export const Dashboard: React.FC = () => {
                 Convert Your Mods
               </h2>
               <p className="section-description">
-                Upload your Java Edition mods and convert them to Bedrock Edition using AI
+                Upload your Java Edition mods and convert them to Bedrock
+                Edition using AI
               </p>
             </div>
-            
+
             <ConversionUploadEnhanced
               onConversionStart={handleConversionStart}
               onConversionComplete={handleConversionComplete}
               onConversionFailed={handleConversionFailed}
             />
-            
+
             {/* Show conversion report when available */}
             {showReport && currentJobId && (
               <div style={{ marginTop: '2rem' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  marginBottom: '1rem',
-                  padding: '1rem',
-                  backgroundColor: '#d4edda',
-                  borderRadius: '8px',
-                  border: '1px solid #c3e6cb'
-                }}>
-                  <h3 style={{ margin: 0, color: '#155724' }}>Conversion Complete!</h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    backgroundColor: '#d4edda',
+                    borderRadius: '8px',
+                    border: '1px solid #c3e6cb',
+                  }}
+                >
+                  <h3 style={{ margin: 0, color: '#155724' }}>
+                    Conversion Complete!
+                  </h3>
                   <button
-                    onClick={() => { setShowReport(false); setCurrentJobId(null); }}
+                    onClick={() => {
+                      setShowReport(false);
+                      setCurrentJobId(null);
+                    }}
                     style={{
                       backgroundColor: '#007bff',
                       color: 'white',
                       border: 'none',
                       padding: '0.5rem 1rem',
                       borderRadius: '4px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     Start New Conversion
@@ -222,7 +252,7 @@ export const Dashboard: React.FC = () => {
                 />
               </div>
             )}
-            
+
             {/* Conversion Tips */}
             <div className="conversion-tips">
               <h3>💡 Conversion Tips</h3>
@@ -231,31 +261,43 @@ export const Dashboard: React.FC = () => {
                   <div className="tip-icon">📦</div>
                   <div className="tip-content">
                     <h4>File Formats</h4>
-                    <p>Supports .jar files and .zip modpack archives. Ensure your files are not corrupted.</p>
+                    <p>
+                      Supports .jar files and .zip modpack archives. Ensure your
+                      files are not corrupted.
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="tip-card">
                   <div className="tip-icon">🧠</div>
                   <div className="tip-content">
                     <h4>Smart Assumptions</h4>
-                    <p>Enable for better conversion rates. AI will make intelligent assumptions for incompatible features.</p>
+                    <p>
+                      Enable for better conversion rates. AI will make
+                      intelligent assumptions for incompatible features.
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="tip-card">
                   <div className="tip-icon">⚡</div>
                   <div className="tip-content">
                     <h4>Performance</h4>
-                    <p>Smaller mods convert faster. Large modpacks may take several minutes to process.</p>
+                    <p>
+                      Smaller mods convert faster. Large modpacks may take
+                      several minutes to process.
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="tip-card">
                   <div className="tip-icon">🔧</div>
                   <div className="tip-content">
                     <h4>Dependencies</h4>
-                    <p>Include dependencies option will attempt to convert required libraries and APIs.</p>
+                    <p>
+                      Include dependencies option will attempt to convert
+                      required libraries and APIs.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -274,8 +316,8 @@ export const Dashboard: React.FC = () => {
                 View, download, and manage your previous conversions
               </p>
             </div>
-            
-            <ConversionHistory 
+
+            <ConversionHistory
               ref={setHistoryRef}
               className="dashboard-history"
               maxItems={100}
@@ -295,7 +337,7 @@ export const Dashboard: React.FC = () => {
                 Monitor system performance and benchmark conversion speed
               </p>
             </div>
-            
+
             <PerformanceBenchmark />
           </div>
         )}

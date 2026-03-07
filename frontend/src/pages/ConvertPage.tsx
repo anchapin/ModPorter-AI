@@ -6,7 +6,10 @@
 import React, { useState } from 'react';
 import { ConversionFlowManager } from '../components/ConversionFlow';
 import { BatchConversionManager } from '../components/BatchConversion';
-import { AdvancedOptionsPanel, AdvancedOptions } from '../components/AdvancedOptions';
+import {
+  AdvancedOptionsPanel,
+  AdvancedOptions,
+} from '../components/AdvancedOptions';
 import './ConvertPage.css';
 
 const DEFAULT_ADVANCED_OPTIONS: AdvancedOptions = {
@@ -16,12 +19,16 @@ const DEFAULT_ADVANCED_OPTIONS: AdvancedOptions = {
   enableSmartAssumptions: true,
   enableTextureOptimization: true,
   targetVersion: '1.20.0',
-  generateReport: true
+  generateReport: true,
 };
 
 export const ConvertPage: React.FC = () => {
-  const [conversionMode, setConversionMode] = useState<'single' | 'batch'>('single');
-  const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptions>(DEFAULT_ADVANCED_OPTIONS);
+  const [conversionMode, setConversionMode] = useState<'single' | 'batch'>(
+    'single'
+  );
+  const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptions>(
+    DEFAULT_ADVANCED_OPTIONS
+  );
 
   const handleComplete = (jobId: string, filename: string) => {
     console.log('Conversion completed:', jobId, filename);
@@ -41,9 +48,7 @@ export const ConvertPage: React.FC = () => {
     <div className="convert-page">
       <div className="convert-page-header">
         <h1>Mod Converter</h1>
-        <p>
-          Convert your Minecraft Java Edition mods to Bedrock Edition
-        </p>
+        <p>Convert your Minecraft Java Edition mods to Bedrock Edition</p>
       </div>
 
       {/* Conversion Mode Tabs */}

@@ -31,7 +31,10 @@ interface ErrorBoundaryProps {
   showDetails?: boolean;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -83,7 +86,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     const { hasError, error, errorInfo, errorId } = this.state;
-    const { children, fallback, showRetry = true, showDetails = true } = this.props;
+    const {
+      children,
+      fallback,
+      showRetry = true,
+      showDetails = true,
+    } = this.props;
 
     if (!hasError) {
       return children;
@@ -113,13 +121,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             mb: 2,
           }}
         >
-          <AlertTitle>
-            Something went wrong
-          </AlertTitle>
+          <AlertTitle>Something went wrong</AlertTitle>
           <Typography variant="body2" gutterBottom>
             {error?.message || 'An unexpected error occurred'}
           </Typography>
-          
+
           {showRetry && (
             <Button
               variant="outlined"
@@ -220,9 +226,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                     Additional Information:
                   </Typography>
                   <Typography variant="body2" component="div">
-                    <strong>Error ID:</strong> {errorId}<br />
-                    <strong>Time:</strong> {new Date().toISOString()}<br />
-                    <strong>User Agent:</strong> {navigator.userAgent}<br />
+                    <strong>Error ID:</strong> {errorId}
+                    <br />
+                    <strong>Time:</strong> {new Date().toISOString()}
+                    <br />
+                    <strong>User Agent:</strong> {navigator.userAgent}
+                    <br />
                     <strong>URL:</strong> {window.location.href}
                   </Typography>
                 </Box>
@@ -244,7 +253,9 @@ interface ErrorBoundaryWrapperProps {
   showDetails?: boolean;
 }
 
-export const ErrorBoundaryWrapper: React.FC<ErrorBoundaryWrapperProps> = (props) => {
+export const ErrorBoundaryWrapper: React.FC<ErrorBoundaryWrapperProps> = (
+  props
+) => {
   return <ErrorBoundary {...props} />;
 };
 

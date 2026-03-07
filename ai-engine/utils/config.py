@@ -62,7 +62,7 @@ class Config:
     
     # Asset Processing Configuration
     MAX_TEXTURE_SIZE: int = int(os.getenv("MAX_TEXTURE_SIZE", "1024"))  # pixels
-    SUPPORTED_FORMATS: list = ["png", "jpg", "jpeg", "ogg", "wav"]
+    SUPPORTED_FORMATS: list[str] = ["png", "jpg", "jpeg", "ogg", "wav"]
 
     # Bedrock Scraper Configuration
     BEDROCK_SCRAPER_ENABLED: bool = os.getenv("BEDROCK_SCRAPER_ENABLED", "true").lower() == "true"

@@ -5,7 +5,12 @@ export { CodeEditor } from './CodeEditor';
 export { CodeEditorEnhanced } from './CodeEditorEnhanced';
 export { VisualEditor, FormBuilder, ValidationEngine } from './VisualEditor';
 export { BlockPropertyEditor, Preview3D } from './BlockEditor';
-export { RecipeBuilder, RecipeGrid, ItemLibrary, RecipeValidation } from './RecipeBuilder';
+export {
+  RecipeBuilder,
+  RecipeGrid,
+  ItemLibrary,
+  RecipeValidation,
+} from './RecipeBuilder';
 export type { BehaviorFileTreeNode } from './BehaviorFileTree';
 export type { FormField, ValidationRule } from './VisualEditor';
 export type { BlockProperties } from './BlockEditor';

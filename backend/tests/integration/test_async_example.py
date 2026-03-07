@@ -4,6 +4,7 @@ Example integration test showing proper async FastAPI + database testing.
 This demonstrates the recommended patterns for testing FastAPI applications
 with async database operations.
 """
+
 import pytest
 import httpx
 from httpx import AsyncClient
@@ -29,7 +30,10 @@ async def test_database_operations_async(async_test_db):
     """Test async database operations."""
     # Verify we have a valid async session
     from sqlalchemy.ext.asyncio import AsyncSession
-    assert isinstance(async_test_db, AsyncSession), f"Expected AsyncSession, got {type(async_test_db)}"
+
+    assert isinstance(async_test_db, AsyncSession), (
+        f"Expected AsyncSession, got {type(async_test_db)}"
+    )
 
     # Test basic database operations
     try:
@@ -59,7 +63,7 @@ async def test_app_startup():
 
         # Test that app is created successfully
         assert app is not None
-        assert hasattr(app, 'routes')
+        assert hasattr(app, "routes")
 
         # Test with async client
         transport = httpx.ASGITransport(app=app)

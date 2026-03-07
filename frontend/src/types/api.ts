@@ -110,6 +110,12 @@ export interface FeatureConversionDetail {
   visual_comparison_before?: string | null;
   visual_comparison_after?: string | null;
   impact_of_assumption?: string | null;
+  visual_comparison?: string | null; // Added for backward compatibility
+  assumptions_used?: string[] | null; // Added
+  before?: string | null; // Added for backward compatibility
+  after?: string | null; // Added for backward compatibility
+  technical_notes?: string | null; // Added
+  converted_type?: string | null; // Added
 }
 
 export interface FeatureAnalysis {
@@ -117,9 +123,13 @@ export interface FeatureAnalysis {
   compatibility_mapping_summary: string;
   visual_comparisons_overview?: string | null;
   impact_assessment_summary: string;
+  features?: string[] | null; // Added for backward compatibility
+  feature_categories?: Record<string, any> | null; // Added
+  conversion_patterns?: Record<string, any> | null; // Added
 }
 
-export interface AssumptionDetail { // Detailed version for AssumptionsReport
+export interface AssumptionDetail {
+  // Detailed version for AssumptionsReport
   assumption_id: string;
   feature_affected: string;
   description: string;
@@ -127,10 +137,19 @@ export interface AssumptionDetail { // Detailed version for AssumptionsReport
   impact_level: string; // "Low", "Medium", "High"
   user_explanation: string;
   technical_notes?: string | null;
+  visual_example?: string | null; // Added
+  confidence_score?: number | null; // Added
+  alternatives_considered?: string[] | null; // Added
+  technical_details?: string | null; // Added
+  assumption_type?: string | null; // Added
 }
 
 export interface AssumptionsReport {
   assumptions: AssumptionDetail[];
+  category_breakdown?: Record<string, any> | null; // Added
+  total_assumptions_count?: number | null; // Added
+  assumptions_report?: AssumptionDetail[] | null; // Added
+  impact_distribution?: Record<string, any> | null; // Added
 }
 
 export interface LogEntry {
@@ -146,9 +165,12 @@ export interface DeveloperLog {
   file_processing_log: LogEntry[];
   performance_metrics: Record<string, any>; // e.g., { "total_time_seconds": 60.5, "memory_peak_mb": 256 }
   error_summary: Array<Record<string, any>>; // { "error_message": "...", "stack_trace": "..." }
+  error_details?: Record<string, any> | null; // Added for backward compatibility
+  benchmark_comparisons?: Record<string, any> | null; // Added
 }
 
-export interface InteractiveReport { // This is the main model for the detailed report page
+export interface InteractiveReport {
+  // This is the main model for the detailed report page
   job_id: string;
   report_generation_date: string; // ISO date string
   summary: SummaryReport;
@@ -157,10 +179,10 @@ export interface InteractiveReport { // This is the main model for the detailed 
   feature_analysis?: FeatureAnalysis | null;
   smart_assumptions_report?: AssumptionsReport | null; // Uses AssumptionDetail
   developer_log?: DeveloperLog | null;
+  metadata?: Record<string, any> | null; // Added for backward compatibility
 }
 
 // --- Feedback Types (moved to top of file) ---
-
 
 // --- Potentially legacy or alternative types (review if still needed) ---
 // The following interfaces seem to be part of an older/different API design.
@@ -168,7 +190,8 @@ export interface InteractiveReport { // This is the main model for the detailed 
 // ConversionUpload, ConversionProgress for job status/initiation.
 // Or by the new InteractiveReport structure.
 
-export interface ConvertedMod { // Might be replaced by ModConversionStatus or be part of a different view
+export interface ConvertedMod {
+  // Might be replaced by ModConversionStatus or be part of a different view
   name: string;
   version: string;
   status: 'success' | 'partial' | 'failed'; // ModConversionStatus has more generic string status
@@ -176,20 +199,23 @@ export interface ConvertedMod { // Might be replaced by ModConversionStatus or b
   warnings: string[]; // ModConversionStatus also has warnings
 }
 
-export interface FailedMod { // Might be replaced by ModConversionStatus
+export interface FailedMod {
+  // Might be replaced by ModConversionStatus
   name: string;
   reason: string; // ModConversionStatus uses 'errors' field
   suggestions: string[];
 }
 
-export interface ModFeature { // Used by ConvertedMod above
+export interface ModFeature {
+  // Used by ConvertedMod above
   name: string;
   type: 'block' | 'item' | 'entity' | 'dimension' | 'gui' | 'logic';
   converted: boolean;
   changes?: string;
 }
 
-export interface DetailedReport { // This is likely superseded by InteractiveReport
+export interface DetailedReport {
+  // This is likely superseded by InteractiveReport
   stage: string;
   progress: number;
   logs: string[];
@@ -206,10 +232,11 @@ export const ConversionStatusEnum = {
   PACKAGING: 'postprocessing',
   COMPLETED: 'completed',
   FAILED: 'failed',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
 } as const;
 
-export type ConversionStatusType = typeof ConversionStatusEnum[keyof typeof ConversionStatusEnum];
+export type ConversionStatusType =
+  (typeof ConversionStatusEnum)[keyof typeof ConversionStatusEnum];
 
 // Extended interfaces for rich reporting (maintaining backward compatibility)
 export interface ExtendedConversionResponse extends ConversionResponse {
@@ -276,17 +303,20 @@ export interface AddonDetails extends AddonBase {
 
 // --- Types for Addon Data Upload (PUT request) ---
 
-export interface AddonBehaviorCreate { // Matches backend Pydantic AddonBehaviorCreate
+export interface AddonBehaviorCreate {
+  // Matches backend Pydantic AddonBehaviorCreate
   data: Record<string, any>;
 }
 
-export interface AddonBlockCreate { // Matches backend Pydantic AddonBlockCreate
+export interface AddonBlockCreate {
+  // Matches backend Pydantic AddonBlockCreate
   identifier: string;
   properties?: Record<string, any> | null;
   behavior?: AddonBehaviorCreate | null;
 }
 
-export interface AddonAssetCreate { // Matches backend Pydantic AddonAssetCreate
+export interface AddonAssetCreate {
+  // Matches backend Pydantic AddonAssetCreate
   type: string;
   // For direct asset uploads (POST to /assets), path & original_filename are from the file.
   // For AddonDataUpload (PUT to /addons/{id}), client might specify a conceptual path
@@ -296,13 +326,15 @@ export interface AddonAssetCreate { // Matches backend Pydantic AddonAssetCreate
   original_filename?: string | null;
 }
 
-export interface AddonRecipeCreate { // Matches backend Pydantic AddonRecipeCreate
+export interface AddonRecipeCreate {
+  // Matches backend Pydantic AddonRecipeCreate
   data: Record<string, any>;
 }
 
 // AddonDataUpload is based on AddonBase but requires name and user_id,
 // and uses "Create" types for child lists.
-export interface AddonDataUpload { // Matches backend Pydantic AddonDataUpload
+export interface AddonDataUpload {
+  // Matches backend Pydantic AddonDataUpload
   name: string; // Required
   description?: string | null;
   user_id: string; // Required

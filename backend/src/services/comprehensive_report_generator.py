@@ -15,8 +15,17 @@ import time
 import logging
 
 from ..schemas.report_types import (
-    InteractiveReport, SummaryReport, FeatureAnalysis, FeatureAnalysisItem,
-    AssumptionsReport, AssumptionReportItem, DeveloperLog, ConversionStatus, ImpactLevel, create_report_metadata, calculate_quality_score
+    InteractiveReport,
+    SummaryReport,
+    FeatureAnalysis,
+    FeatureAnalysisItem,
+    AssumptionsReport,
+    AssumptionReportItem,
+    DeveloperLog,
+    ConversionStatus,
+    ImpactLevel,
+    create_report_metadata,
+    calculate_quality_score,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +64,7 @@ class ConversionReportGenerator:
             download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {}),
             total_files_processed=conversion_result.get("total_files_processed", 0),
-            output_size_mb=conversion_result.get("output_size_mb", 0.0)
+            output_size_mb=conversion_result.get("output_size_mb", 0.0),
         )
 
         # Calculate quality score
@@ -91,9 +100,11 @@ class ConversionReportGenerator:
                 status=feature_data.get("status", ConversionStatus.FAILED),
                 compatibility_score=compatibility_score,
                 assumptions_used=feature_data.get("assumptions_used", []),
-                impact_assessment=feature_data.get("impact_assessment", "No impact analysis available"),
+                impact_assessment=feature_data.get(
+                    "impact_assessment", "No impact analysis available"
+                ),
                 visual_comparison=feature_data.get("visual_comparison"),
-                technical_notes=feature_data.get("technical_notes")
+                technical_notes=feature_data.get("technical_notes"),
             )
 
             # Update summary stats
@@ -123,15 +134,23 @@ class ConversionReportGenerator:
 
         return FeatureAnalysis(
             features=feature_items,
-            compatibility_mapping_summary=self._generate_compatibility_summary(total_features, successful_count, avg_compatibility),
-            visual_comparisons_overview=self._generate_visual_overview(total_features, visual_changes_count),
-            impact_assessment_summary=self._generate_impact_summary(total_features, with_assumptions_count),
+            compatibility_mapping_summary=self._generate_compatibility_summary(
+                total_features, successful_count, avg_compatibility
+            ),
+            visual_comparisons_overview=self._generate_visual_overview(
+                total_features, visual_changes_count
+            ),
+            impact_assessment_summary=self._generate_impact_summary(
+                total_features, with_assumptions_count
+            ),
             total_compatibility_score=round(avg_compatibility, 1),
             feature_categories=feature_categories,
-            conversion_patterns=conversion_patterns
+            conversion_patterns=conversion_patterns,
         )
 
-    def generate_assumptions_report(self, assumptions_data: List[Dict[str, Any]]) -> AssumptionsReport:
+    def generate_assumptions_report(
+        self, assumptions_data: List[Dict[str, Any]]
+    ) -> AssumptionsReport:
         """Generate detailed assumptions report with What Changed section."""
         assumption_items = []
         impact_distribution = {"low": 0, "medium": 0, "high": 0}
@@ -149,7 +168,7 @@ class ConversionReportGenerator:
                 technical_details=assumption_data.get("technical_details", ""),
                 visual_example=assumption_data.get("visual_example"),
                 confidence_score=assumption_data.get("confidence_score", 0.8),
-                alternatives_considered=assumption_data.get("alternatives_considered", [])
+                alternatives_considered=assumption_data.get("alternatives_considered", []),
             )
 
             assumption_items.append(assumption_item)
@@ -169,7 +188,7 @@ class ConversionReportGenerator:
             original = assumption_data.get("original_feature", "")
             converted = assumption_data.get("bedrock_equivalent", "")
             reason = assumption_data.get("user_explanation", "")
-            
+
             # Determine category based on assumption type
             assumption_type_lower = assumption_item.assumption_type.lower()
             if "biome" in assumption_type_lower:
@@ -188,20 +207,22 @@ class ConversionReportGenerator:
                 what_category = "GUI/HUD"
             else:
                 what_category = "General"
-            
-            what_changed.append({
-                "category": what_category,
-                "original": original,
-                "converted": converted,
-                "reason": reason
-            })
+
+            what_changed.append(
+                {
+                    "category": what_category,
+                    "original": original,
+                    "converted": converted,
+                    "reason": reason,
+                }
+            )
 
         return AssumptionsReport(
             assumptions=assumption_items,
             total_assumptions_count=len(assumption_items),
             impact_distribution=impact_distribution,
             category_breakdown=category_breakdown,
-            what_changed=what_changed
+            what_changed=what_changed,
         )
 
     def generate_developer_log(self, log_data: Dict[str, Any]) -> DeveloperLog:
@@ -214,10 +235,12 @@ class ConversionReportGenerator:
             error_details=log_data.get("error_details", []),
             optimization_opportunities=self._identify_optimizations(log_data),
             technical_debt_notes=self._identify_technical_debt(log_data),
-            benchmark_comparisons=log_data.get("benchmark_comparisons", {})
+            benchmark_comparisons=log_data.get("benchmark_comparisons", {}),
         )
 
-    def create_interactive_report(self, conversion_result: Dict[str, Any], job_id: str) -> InteractiveReport:
+    def create_interactive_report(
+        self, conversion_result: Dict[str, Any], job_id: str
+    ) -> InteractiveReport:
         """Create comprehensive interactive report."""
         logger.info(f"Generating comprehensive report for job {job_id}")
 
@@ -242,7 +265,7 @@ class ConversionReportGenerator:
             summary=summary,
             feature_analysis=feature_analysis,
             assumptions_report=assumptions_report,
-            developer_log=developer_log
+            developer_log=developer_log,
         )
 
         logger.info(f"Report generated successfully: {metadata.report_id}")
@@ -302,7 +325,9 @@ class ConversionReportGenerator:
         else:
             return None
 
-    def _generate_compatibility_summary(self, total_features: int, successful_count: int, avg_compatibility: float) -> str:
+    def _generate_compatibility_summary(
+        self, total_features: int, successful_count: int, avg_compatibility: float
+    ) -> str:
         """Generate compatibility mapping summary."""
         if total_features == 0:
             return "No features analyzed."
@@ -352,7 +377,9 @@ class ConversionReportGenerator:
             actions.append("Many assumptions applied. Review for potential improvements.")
 
         if summary.failed_features > 0:
-            actions.append(f"Review {summary.failed_features} failed features for manual conversion.")
+            actions.append(
+                f"Review {summary.failed_features} failed features for manual conversion."
+            )
 
         if summary.processing_time_seconds > 300:  # 5 minutes
             actions.append("Consider optimization for faster processing times.")

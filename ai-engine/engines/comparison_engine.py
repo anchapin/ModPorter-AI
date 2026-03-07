@@ -1,6 +1,8 @@
 import json
 from typing import Dict, List, Set
+
 from ..models.comparison import ComparisonResult, FeatureMapping
+
 
 class ComparisonEngine:
     def __init__(self):
@@ -98,7 +100,7 @@ class ComparisonEngine:
         
         return assumptions
     
-    def _perform_feature_mapping(self, java_mod_path: str, bedrock_addon_path: str, structural_diff: dict) -> list:
+    def _perform_feature_mapping(self, java_mod_path: str, bedrock_addon_path: str, structural_diff: Dict[str, List[str]]) -> List[FeatureMapping]:
         """Enhanced feature mapping with realistic patterns."""
         mappings = []
         java_files = set(structural_diff.get("files_removed", []))
@@ -196,8 +198,8 @@ class ComparisonEngine:
         return result
 
 if __name__ == '__main__':
-    from dataclasses import is_dataclass, asdict
     import json
+    from dataclasses import asdict, is_dataclass
 
     def dataclass_to_dict_for_print(obj):
         # Helper to convert dataclasses and other objects to dict for JSON printing
@@ -223,7 +225,7 @@ if __name__ == '__main__':
     bedrock_path_example = "bedrock_addon_example_for_engine"
     conv_id_example = "conv_test_002"
 
-    report = engine.compare(java_path_example, bedrock_path_example, conv_id_example)
+    report: ComparisonResult = engine.compare(java_path_example, bedrock_path_example, conv_id_example)
 
     report_dict = dataclass_to_dict_for_print(report)
     print("--- Comparison Report (JSON Output) ---")

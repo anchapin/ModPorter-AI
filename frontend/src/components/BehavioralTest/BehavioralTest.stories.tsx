@@ -8,21 +8,22 @@ const meta: Meta<typeof BehavioralTest> = {
     layout: 'padded',
     docs: {
       description: {
-        component: 'Behavioral testing component for validating mod conversion behavior preservation.'
-      }
-    }
+        component:
+          'Behavioral testing component for validating mod conversion behavior preservation.',
+      },
+    },
   },
   tags: ['autodocs'],
   argTypes: {
     conversionId: {
       description: 'ID of the conversion job to test',
-      control: 'text'
+      control: 'text',
     },
     onTestComplete: {
       description: 'Callback fired when behavioral test completes',
-      action: 'test-completed'
-    }
-  }
+      action: 'test-completed',
+    },
+  },
 };
 
 export default meta;
@@ -35,10 +36,10 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default behavioral test component ready to start testing.'
-      }
-    }
-  }
+        story: 'Default behavioral test component ready to start testing.',
+      },
+    },
+  },
 };
 
 export const WithCustomConversionId: Story = {
@@ -48,10 +49,10 @@ export const WithCustomConversionId: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Behavioral test component with a custom conversion ID.'
-      }
-    }
-  }
+        story: 'Behavioral test component with a custom conversion ID.',
+      },
+    },
+  },
 };
 
 // Mock component for testing different states
@@ -62,10 +63,11 @@ export const TestInProgress: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Behavioral test component showing progress state (requires manual interaction to see).'
-      }
-    }
-  }
+        story:
+          'Behavioral test component showing progress state (requires manual interaction to see).',
+      },
+    },
+  },
 };
 
 export const WithCallback: Story = {
@@ -73,13 +75,14 @@ export const WithCallback: Story = {
     conversionId: 'callback-test-101',
     onTestComplete: (results) => {
       console.log('Test completed with results:', results);
-    }
+    },
   },
   parameters: {
     docs: {
       description: {
-        story: 'Behavioral test component with completion callback (check console for results).'
-      }
-    }
-  }
+        story:
+          'Behavioral test component with completion callback (check console for results).',
+      },
+    },
+  },
 };

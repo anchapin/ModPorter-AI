@@ -6,7 +6,9 @@ interface TopNavigationProps {
   className?: string;
 }
 
-export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) => {
+export const TopNavigation: React.FC<TopNavigationProps> = ({
+  className = '',
+}) => {
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -24,7 +26,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
     { to: '/docs', label: 'Documentation' },
-    { to: '/settings', label: '⚙️' }
+    { to: '/settings', label: '⚙️' },
   ];
 
   return (
@@ -33,12 +35,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ className = '' }) 
         <Link to="/" className="top-navigation__logo">
           ModPorter AI
         </Link>
-        
+
         <div className="top-navigation__links">
           {navigationLinks.map(({ to, label }) => (
-            <Link 
+            <Link
               key={to}
-              to={to} 
+              to={to}
               className={`top-navigation__link ${isActive(to) ? 'top-navigation__link--active' : ''}`}
             >
               {label}

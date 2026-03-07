@@ -13,7 +13,7 @@ interface ConversionAssetsListProps {
 export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
   conversionId,
   onAssetSelect,
-  onRefresh
+  onRefresh,
 }) => {
   const [assets, setAssets] = useState<ConversionAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,9 +23,11 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
     status: string;
   }>({
     assetType: '',
-    status: ''
+    status: '',
   });
-  const [processingAssetId, setProcessingAssetId] = useState<string | null>(null);
+  const [processingAssetId, setProcessingAssetId] = useState<string | null>(
+    null
+  );
 
   const loadAssets = useCallback(async () => {
     try {
@@ -38,7 +40,8 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
       );
       setAssets(assetsList);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load assets';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load assets';
       setError(errorMessage);
       console.error('Error loading assets:', err);
     } finally {
@@ -63,7 +66,8 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
       await loadAssets(); // Refresh the list
       if (onRefresh) onRefresh();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete asset';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to delete asset';
       alert(`Error deleting asset: ${errorMessage}`);
     } finally {
       setProcessingAssetId(null);
@@ -77,7 +81,8 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
       await loadAssets(); // Refresh to show updated status
       if (onRefresh) onRefresh();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to convert asset';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to convert asset';
       alert(`Error converting asset: ${errorMessage}`);
     } finally {
       setProcessingAssetId(null);
@@ -86,11 +91,16 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'processing': return '🔄';
-      case 'converted': return '✅';
-      case 'failed': return '❌';
-      default: return '❓';
+      case 'pending':
+        return '⏳';
+      case 'processing':
+        return '🔄';
+      case 'converted':
+        return '✅';
+      case 'failed':
+        return '❌';
+      default:
+        return '❓';
     }
   };
 
@@ -134,7 +144,9 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
         <div className="assets-filters">
           <select
             value={filter.assetType}
-            onChange={(e) => setFilter(prev => ({ ...prev, assetType: e.target.value }))}
+            onChange={(e) =>
+              setFilter((prev) => ({ ...prev, assetType: e.target.value }))
+            }
             className="filter-select"
           >
             <option value="">All Types</option>
@@ -145,7 +157,9 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
           </select>
           <select
             value={filter.status}
-            onChange={(e) => setFilter(prev => ({ ...prev, status: e.target.value }))}
+            onChange={(e) =>
+              setFilter((prev) => ({ ...prev, status: e.target.value }))
+            }
             className="filter-select"
           >
             <option value="">All Status</option>

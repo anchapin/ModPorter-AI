@@ -46,21 +46,27 @@ describe('PerformanceBenchmark', () => {
     await act(async () => {
       render(<PerformanceBenchmark />);
     });
-    expect(screen.getByLabelText('Conversion ID (optional):')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Conversion ID (optional):')
+    ).toBeInTheDocument();
   });
 
   test('displays run benchmark button', async () => {
     await act(async () => {
       render(<PerformanceBenchmark />);
     });
-    expect(screen.getByRole('button', { name: 'Run Benchmark' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Run Benchmark' })
+    ).toBeInTheDocument();
   });
 
   test('displays create custom scenario button', async () => {
     await act(async () => {
       render(<PerformanceBenchmark />);
     });
-    expect(screen.getByRole('button', { name: 'Create Custom Scenario' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Create Custom Scenario' })
+    ).toBeInTheDocument();
   });
 
   test('run benchmark button is disabled when no scenario is selected', async () => {
@@ -81,13 +87,15 @@ describe('PerformanceBenchmark', () => {
           type: 'baseline',
           duration_seconds: 300,
           parameters: {},
-          thresholds: {}
-        }
-      ]
+          thresholds: {},
+        },
+      ],
     });
 
     const { performanceBenchmarkAPI } = await import('../../services/api');
-    (performanceBenchmarkAPI.getScenarios as any).mockImplementation(mockGetScenarios);
+    (performanceBenchmarkAPI.getScenarios as any).mockImplementation(
+      mockGetScenarios
+    );
 
     await act(async () => {
       render(<PerformanceBenchmark />);
@@ -99,10 +107,14 @@ describe('PerformanceBenchmark', () => {
   });
 
   test('displays error message when scenarios fail to load', async () => {
-    const mockGetScenarios = vi.fn().mockRejectedValue(new Error('Failed to load'));
+    const mockGetScenarios = vi
+      .fn()
+      .mockRejectedValue(new Error('Failed to load'));
 
     const { performanceBenchmarkAPI } = await import('../../services/api');
-    (performanceBenchmarkAPI.getScenarios as any).mockImplementation(mockGetScenarios);
+    (performanceBenchmarkAPI.getScenarios as any).mockImplementation(
+      mockGetScenarios
+    );
 
     await act(async () => {
       render(<PerformanceBenchmark />);

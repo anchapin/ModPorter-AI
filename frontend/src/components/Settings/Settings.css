@@ -31,8 +31,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .settings-tabs {
@@ -104,7 +108,7 @@
   cursor: pointer;
 }
 
-.setting-label input[type="checkbox"] {
+.setting-label input[type='checkbox'] {
   margin-top: 4px;
   width: 18px;
   height: 18px;
