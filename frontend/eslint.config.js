@@ -1,3 +1,4 @@
+// ESLint configuration for React 19 with TypeScript
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from 'eslint-plugin-storybook';
 
@@ -8,7 +9,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default [
-  { ignores: ['dist', 'coverage'] },
+  { ignores: ['dist', 'coverage', 'node_modules', 'build', '.vite'] },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -18,6 +19,11 @@ export default [
         ...globals.node,
       },
       parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
@@ -32,8 +38,8 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      '@typescript-eslint/no-explicit-any': 'off',
-      // Allow unused variables with underscore prefix
+      // React 19 strict rules
+      '@typescript-eslint/no-explicit-any': 'off', // Too many any types in codebase
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -46,12 +52,43 @@ export default [
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
       'react-hooks/exhaustive-deps': 'off',
-      // Naming conventions - DISABLED due to incompatibility with existing codebase
-      // The codebase uses PascalCase (React components), snake_case (API responses),
-      // kebab-case (HTTP headers), and other patterns that don't fit strict rules
-      // Re-enable with 'error' level once codebase is migrated to consistent naming
-      '@typescript-eslint/naming-convention': 'off',
+      // Disable camelcase - use TypeScript naming-convention instead
       camelcase: 'off',
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          // Classes, interfaces, types, enums should be PascalCase
+          selector: ['class', 'interface', 'typeAlias', 'enum', 'enumMember'],
+          format: ['PascalCase'],
+        },
+        {
+          // Variables can be camelCase, UPPER_CASE, PascalCase, or snake_case (for API responses)
+          selector: 'variable',
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase', 'snake_case'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          // Functions can be camelCase, UPPER_CASE, or PascalCase (for React components)
+          selector: 'function',
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          // Parameters should be camelCase (allow PascalCase for React component parameters)
+          selector: 'parameter',
+          format: ['camelCase', 'PascalCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          // Class properties should be camelCase
+          selector: 'classProperty',
+          format: ['camelCase', 'UPPER_CASE'],
+        },
+      ],
+      // React 19 specific rules
+      'react-hooks/set-state-in-effect': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
   {
@@ -72,27 +109,9 @@ export default [
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.test.tsx'],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-        describe: 'readonly',
-        test: 'readonly',
-        it: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        vi: 'readonly',
-        jest: 'readonly',
-      },
-    },
-  },
-  {
     files: ['**/*.{ts,tsx}'],
     rules: {
-      'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   ...storybook.configs['flat/recommended'],
