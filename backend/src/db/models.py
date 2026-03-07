@@ -581,3 +581,43 @@ class BehaviorTemplate(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+# Product Analytics Models
+
+
+class AnalyticsEvent(Base):
+    __tablename__ = "analytics_events"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    event_type: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )  # e.g., "page_view", "conversion_start", "conversion_complete", "button_click"
+    event_category: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # e.g., "navigation", "conversion", "feedback", "export"
+    user_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    conversion_id: Mapped[Optional[str]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )  # Link to conversion job if applicable
+    event_properties: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True)
+    # Properties like: { "button_id": "upload_mod", "page": "/", "target_version": "1.20.0" }
+    user_agent: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    ip_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # Hashed IP for privacy
+    referrer: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
+    device_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # "desktop", "mobile", "tablet"
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
