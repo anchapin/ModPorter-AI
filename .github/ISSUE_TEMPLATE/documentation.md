@@ -7,16 +7,17 @@ assignees: ''
 ---
 
 **Priority**
-- [ ] P1 - Critical: Documentation missing for critical feature
-- [ ] P2 - High: Major documentation issue
-- [ ] P3 - Medium: Minor documentation issue
-- [ ] P4 - Low: Cosmetic or low priority
+- [ ] P1 - Critical (System down, data loss)
+- [ ] P2 - High (Major functionality broken)
+- [ ] P3 - Medium (Minor functionality affected)
+- [ ] P4 - Low (Cosmetic or minor issue)
 
 **Component**
 - [ ] Backend
 - [ ] Frontend
 - [ ] AI Engine
 - [ ] Database
+- [ ] CLI
 - [ ] Documentation
 - [ ] CI/CD
 - [ ] Other
