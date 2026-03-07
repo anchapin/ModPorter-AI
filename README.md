@@ -178,8 +178,14 @@ All services include health checks for monitoring:
 # Check frontend health
 curl http://localhost:3000/health
 
-# Check backend health
-curl http://localhost:8080/api/v1/health
+# Check backend health (basic liveness)
+curl http://localhost:8080/health
+
+# Check backend readiness (includes dependency checks)
+curl http://localhost:8080/health/readiness
+
+# Check backend liveness (process running)
+curl http://localhost:8080/health/liveness
 
 # Check AI engine health
 curl http://localhost:8001/api/v1/health
@@ -187,6 +193,43 @@ curl http://localhost:8001/api/v1/health
 # Check all service status
 docker compose ps
 ```
+
+### Health Check Endpoints
+
+The backend provides three health check endpoints for Kubernetes probes:
+
+| Endpoint | Purpose | Dependencies Checked |
+|----------|---------|---------------------|
+| `/health` | Basic health check | None |
+| `/health/liveness` | Process is running | None |
+| `/health/readiness` | Can serve traffic | Database, Redis |
+
+**Response Format:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T00:00:00",
+  "checks": {
+    "dependencies": {
+      "database": {
+        "status": "healthy",
+        "latency_ms": 5.2,
+        "message": "Database connection successful"
+      },
+      "redis": {
+        "status": "healthy",
+        "latency_ms": 1.8,
+        "message": "Redis connection successful"
+      }
+    }
+  }
+}
+```
+
+**Status Values:**
+- `healthy`: All checks passed
+- `degraded`: Non-critical dependencies unavailable (e.g., Redis)
+- `unhealthy`: Critical dependencies unavailable (e.g., Database)
 
 ### Troubleshooting
 

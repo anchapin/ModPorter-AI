@@ -1,9 +1,11 @@
 /**
  * Error Boundary Component - Day 5 Enhancement
  * Catches JavaScript errors and provides user-friendly error handling
+ * Integrated with Sentry for production error tracking
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import './ErrorBoundary.css';
 
 interface Props {
@@ -39,6 +41,13 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // You can also log the error to an error reporting service
     console.error('Error caught by boundary:', error, errorInfo);
+
+    // Capture error with Sentry for production monitoring
+    Sentry.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+      },
+    });
 
     this.setState({
       error,
@@ -205,6 +214,8 @@ export const useErrorHandler = () => {
 
   const handleError = React.useCallback((error: Error) => {
     console.error('Error caught by hook:', error);
+    // Capture error with Sentry
+    Sentry.captureException(error);
     setError(error);
   }, []);
 

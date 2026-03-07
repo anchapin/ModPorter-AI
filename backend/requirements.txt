@@ -30,6 +30,8 @@ httpx==0.28.1
 
 # Monitoring
 prometheus_client>=0.17.0
+sentry-sdk[fastapi]>=2.0.0
+structlog>=24.0.0
 
 # Testing
 pytest>=8.2

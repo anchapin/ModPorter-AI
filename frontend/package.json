@@ -30,6 +30,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.5",
+    "@sentry/react": "^8.0.0",
     "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.6",
     "date-fns": "^4.1.0",
