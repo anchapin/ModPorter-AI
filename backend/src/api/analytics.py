@@ -102,7 +102,9 @@ async def track_event(
     This endpoint records user behavior events such as page views,
     button clicks, conversion starts, and other interactions.
     """
-    logger.info(f"Tracking analytics event: {event.event_type} ({event.event_category})")
+    logger.info(
+        f"Tracking analytics event: {event.event_type} ({event.event_category})"
+    )
 
     # Get client information from request
     user_agent = request.headers.get("user-agent")
@@ -139,7 +141,9 @@ async def track_event(
             event_category=db_event.event_category,
             user_id=db_event.user_id,
             session_id=db_event.session_id,
-            conversion_id=str(db_event.conversion_id) if db_event.conversion_id else None,
+            conversion_id=(
+                str(db_event.conversion_id) if db_event.conversion_id else None
+            ),
             event_properties=db_event.event_properties,
             created_at=db_event.created_at.isoformat(),
         )
@@ -147,9 +151,7 @@ async def track_event(
     except Exception as e:
         logger.error(f"Failed to track analytics event: {e}")
         # Don't fail the request if analytics fails
-        raise HTTPException(
-            status_code=500, detail=f"Failed to track event: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
 
 
 @router.get("/events", response_model=List[AnalyticsEventResponse])
@@ -223,9 +225,7 @@ async def get_events(
 
     except Exception as e:
         logger.error(f"Failed to query analytics events: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to query events: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to query events: {str(e)}")
 
 
 @router.get("/stats", response_model=AnalyticsStatsResponse)
@@ -286,9 +286,7 @@ async def get_analytics_stats(
 
     except Exception as e:
         logger.error(f"Failed to get analytics stats: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get stats: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
 
 
 # Convenience endpoint for tracking common events
@@ -387,9 +385,7 @@ async def track_conversion_event(
 
     except Exception as e:
         logger.error(f"Failed to track conversion event: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to track event: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
 
 
 @router.get("/events/types")
