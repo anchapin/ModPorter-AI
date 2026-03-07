@@ -18,11 +18,7 @@ import {
   getUserIdValue,
 } from '../services/analytics';
 
-export type {
-  AnalyticsEventType,
-  AnalyticsEventCategory,
-  AnalyticsOptions,
-};
+export type { AnalyticsEventType, AnalyticsEventCategory, AnalyticsOptions };
 
 export {
   trackEvent,
@@ -65,7 +61,7 @@ export const useButtonClickTracking = (
   const location = useLocation();
 
   return useCallback(
-    (event?: React.MouseEvent) => {
+    (_event?: React.MouseEvent) => {
       trackButtonClick(buttonId, location.pathname, {
         properties: additionalProperties,
       });

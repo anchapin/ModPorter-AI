@@ -55,7 +55,8 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Analytics tracking
-  const { trackStart, trackComplete, trackFail, trackDownload } = useConversionTracking();
+  const { trackStart, trackComplete, trackFail, trackDownload } =
+    useConversionTracking();
 
   // Clear any pending reset timeout
   useEffect(() => {
@@ -130,7 +131,14 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         }, resetDelay);
       }
     },
-    [flowState.filename, onComplete, autoReset, resetDelay, resetFlow, trackComplete]
+    [
+      flowState.filename,
+      onComplete,
+      autoReset,
+      resetDelay,
+      resetFlow,
+      trackComplete,
+    ]
   );
 
   // Handle conversion failed
@@ -161,7 +169,7 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     try {
       // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
       await triggerDownload(flowState.jobId);
-      
+
       // Track download
       trackDownload(flowState.jobId, { filename: flowState.filename });
     } catch (error: any) {

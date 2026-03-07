@@ -102,9 +102,7 @@ async def track_event(
     This endpoint records user behavior events such as page views,
     button clicks, conversion starts, and other interactions.
     """
-    logger.info(
-        f"Tracking analytics event: {event.event_type} ({event.event_category})"
-    )
+    logger.info(f"Tracking analytics event: {event.event_type} ({event.event_category})")
 
     # Get client information from request
     user_agent = request.headers.get("user-agent")
@@ -141,9 +139,7 @@ async def track_event(
             event_category=db_event.event_category,
             user_id=db_event.user_id,
             session_id=db_event.session_id,
-            conversion_id=(
-                str(db_event.conversion_id) if db_event.conversion_id else None
-            ),
+            conversion_id=(str(db_event.conversion_id) if db_event.conversion_id else None),
             event_properties=db_event.event_properties,
             created_at=db_event.created_at.isoformat(),
         )
@@ -324,9 +320,7 @@ async def track_page_view(
 
     except Exception as e:
         logger.error(f"Failed to track page view: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to track page view: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to track page view: {str(e)}")
 
 
 @router.post("/events/conversion")

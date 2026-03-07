@@ -72,8 +72,10 @@ const getUserId = (): string | undefined => {
   return userId;
 };
 
-export type AnalyticsEventType = (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
-export type AnalyticsEventCategory = (typeof AnalyticsEventCategory)[keyof typeof AnalyticsEventCategory];
+export type AnalyticsEventType =
+  (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
+export type AnalyticsEventCategory =
+  (typeof AnalyticsEventCategory)[keyof typeof AnalyticsEventCategory];
 
 export interface AnalyticsEvent {
   event_type: AnalyticsEventType;
@@ -184,13 +186,17 @@ export const trackButtonClick = (
   page: string,
   options: Omit<AnalyticsOptions, 'properties'> = {}
 ): void => {
-  trackEvent(AnalyticsEventType.BUTTON_CLICK, AnalyticsEventCategory.USER_ACTION, {
-    ...options,
-    properties: {
-      button_id: buttonId,
-      page,
-    },
-  });
+  trackEvent(
+    AnalyticsEventType.BUTTON_CLICK,
+    AnalyticsEventCategory.USER_ACTION,
+    {
+      ...options,
+      properties: {
+        button_id: buttonId,
+        page,
+      },
+    }
+  );
 };
 
 /**

@@ -184,31 +184,21 @@ async def shutdown_event():
 
 
 # Include API routers
-app.include_router(
-    performance.router, prefix="/api/v1/performance", tags=["performance"]
-)
-app.include_router(
-    behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"]
-)
+app.include_router(performance.router, prefix="/api/v1/performance", tags=["performance"])
+app.include_router(behavioral_testing.router, prefix="/api/v1", tags=["behavioral-testing"])
 app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
 app.include_router(comparison.router, prefix="/api/v1/comparison", tags=["comparison"])
 app.include_router(embeddings.router, prefix="/api/v1/embeddings", tags=["embeddings"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
-app.include_router(
-    experiments.router, prefix="/api/v1/experiments", tags=["experiments"]
-)
+app.include_router(experiments.router, prefix="/api/v1/experiments", tags=["experiments"])
 app.include_router(behavior_files.router, prefix="/api/v1", tags=["behavior-files"])
-app.include_router(
-    behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"]
-)
+app.include_router(behavior_templates.router, prefix="/api/v1", tags=["behavior-templates"])
 app.include_router(behavior_export.router, prefix="/api/v1", tags=["behavior-export"])
 app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-events"])
 app.include_router(conversions.router)  # Conversions API + WebSocket
 app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
-app.include_router(
-    rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"]
-)
+app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
@@ -226,9 +216,7 @@ class ConversionRequest(BaseModel):
     target_version: str = Field(
         default="1.20.0", description="Target Minecraft version for the conversion."
     )
-    options: Optional[dict] = Field(
-        default=None, description="Optional conversion settings."
-    )
+    options: Optional[dict] = Field(default=None, description="Optional conversion settings.")
 
     @property
     def resolved_file_id(self) -> str:
@@ -243,12 +231,8 @@ class ConversionRequest(BaseModel):
 class UploadResponse(BaseModel):
     """Response model for file upload"""
 
-    file_id: str = Field(
-        ..., description="Unique identifier assigned to the uploaded file."
-    )
-    original_filename: str = Field(
-        ..., description="The original name of the uploaded file."
-    )
+    file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
+    original_filename: str = Field(..., description="The original name of the uploaded file.")
     saved_filename: str = Field(
         ...,
         description="The name under which the file is saved on the server (job_id + extension).",
@@ -258,9 +242,7 @@ class UploadResponse(BaseModel):
         default=None, description="Detected content type of the uploaded file."
     )
     message: str = Field(..., description="Status message confirming the upload.")
-    filename: str = Field(
-        ..., description="The uploaded filename (matches original_filename)"
-    )
+    filename: str = Field(..., description="The uploaded filename (matches original_filename)")
 
 
 class ConversionResponse(BaseModel):
@@ -415,14 +397,12 @@ async def simulate_ai_conversion(job_id: str):
                 logger.error(f"Error: Job {job_id} not found for AI simulation.")
                 return
 
-            original_mod_name = job.input_data.get(
-                "original_filename", "ConvertedAddon"
-            ).split(".")[0]
+            original_mod_name = job.input_data.get("original_filename", "ConvertedAddon").split(
+                "."
+            )[0]
             # Attempt to get user_id from job input_data, fall back to a default if not found
             # This field might not exist in older job records.
-            user_id_for_addon = job.input_data.get(
-                "user_id", conversion_parser.DEFAULT_USER_ID
-            )
+            user_id_for_addon = job.input_data.get("user_id", conversion_parser.DEFAULT_USER_ID)
 
             def mirror_dict_from_job(
                 current_job, progress_val=None, result_url=None, error_message=None
@@ -435,9 +415,7 @@ async def simulate_ai_conversion(job_id: str):
                     progress=(
                         progress_val
                         if progress_val is not None
-                        else (
-                            current_job.progress.progress if current_job.progress else 0
-                        )
+                        else (current_job.progress.progress if current_job.progress else 0)
                     ),
                     target_version=current_job.input_data.get("target_version"),
                     options=current_job.input_data.get("options"),
@@ -464,17 +442,13 @@ async def simulate_ai_conversion(job_id: str):
                 )
 
                 # Stage 2: Preprocessing -> Processing
-                job = await crud.update_job_status(
-                    session, PyUUID(job_id), "processing"
-                )
+                job = await crud.update_job_status(session, PyUUID(job_id), "processing")
                 await crud.upsert_progress(session, PyUUID(job_id), 25)
                 mirror = mirror_dict_from_job(job, 25)
                 conversion_jobs_db[job_id] = mirror  # Keep legacy mirror for now
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 25)
-                logger.info(
-                    f"Job {job_id}: Status updated to {job.status}, Progress: 25%"
-                )
+                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
 
                 # Stage 3: BedrockArchitectAgent (25-50%)
                 await ProgressHandler.broadcast_agent_start(
@@ -500,17 +474,13 @@ async def simulate_ai_conversion(job_id: str):
                 if job.status == "cancelled":
                     logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                     return
-                job = await crud.update_job_status(
-                    session, PyUUID(job_id), "postprocessing"
-                )
+                job = await crud.update_job_status(session, PyUUID(job_id), "postprocessing")
                 await crud.upsert_progress(session, PyUUID(job_id), 50)
                 mirror = mirror_dict_from_job(job, 50)
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 50)
-                logger.info(
-                    f"Job {job_id}: Status updated to {job.status}, Progress: 50%"
-                )
+                logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 50%")
 
                 # Stage 5: LogicTranslatorAgent (50-75%)
                 await ProgressHandler.broadcast_agent_start(
@@ -629,9 +599,7 @@ async def simulate_ai_conversion(job_id: str):
                         f,
                     )
                 # Dummy block behavior
-                with open(
-                    os.path.join(bp_dir, "blocks", "simulated_block.json"), "w"
-                ) as f:
+                with open(os.path.join(bp_dir, "blocks", "simulated_block.json"), "w") as f:
                     json.dump(
                         {
                             "minecraft:block": {
@@ -644,9 +612,7 @@ async def simulate_ai_conversion(job_id: str):
                         f,
                     )
                 # Dummy recipe
-                with open(
-                    os.path.join(bp_dir, "recipes", "simulated_recipe.json"), "w"
-                ) as f:
+                with open(os.path.join(bp_dir, "recipes", "simulated_recipe.json"), "w") as f:
                     json.dump(
                         {
                             "minecraft:recipe_shaped": {
@@ -677,9 +643,7 @@ async def simulate_ai_conversion(job_id: str):
                 )
 
                 # Save Addon, Blocks, Recipes (assets list in addon_data_upload is empty)
-                await crud.update_addon_details(
-                    session, PyUUID(job_id), addon_data_upload
-                )
+                await crud.update_addon_details(session, PyUUID(job_id), addon_data_upload)
                 logger.info(
                     f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB."
                 )
@@ -699,27 +663,19 @@ async def simulate_ai_conversion(job_id: str):
 
                 # Asset conversion integration - convert uploaded assets using AI engine
                 try:
-                    logger.info(
-                        f"Job {job_id}: Starting asset conversion for conversion job"
-                    )
+                    logger.info(f"Job {job_id}: Starting asset conversion for conversion job")
                     asset_conversion_result = (
-                        await asset_conversion_service.convert_assets_for_conversion(
-                            job_id
-                        )
+                        await asset_conversion_service.convert_assets_for_conversion(job_id)
                     )
 
                     if asset_conversion_result.get("success"):
-                        converted_count = asset_conversion_result.get(
-                            "converted_count", 0
-                        )
+                        converted_count = asset_conversion_result.get("converted_count", 0)
                         failed_count = asset_conversion_result.get("failed_count", 0)
                         logger.info(
                             f"Job {job_id}: Asset conversion completed - {converted_count} converted, {failed_count} failed"
                         )
                     else:
-                        logger.warning(
-                            f"Job {job_id}: Asset conversion batch had issues"
-                        )
+                        logger.warning(f"Job {job_id}: Asset conversion batch had issues")
 
                 except Exception as asset_error:
                     logger.error(f"Job {job_id}: Asset conversion error: {asset_error}")
@@ -727,9 +683,7 @@ async def simulate_ai_conversion(job_id: str):
 
                 # Original ZIP creation (can be retained or removed)
                 os.makedirs(CONVERSION_OUTPUTS_DIR, exist_ok=True)
-                mock_output_filename_internal = (
-                    f"{job.id}_converted.zip"  # Original ZIP name
-                )
+                mock_output_filename_internal = f"{job.id}_converted.zip"  # Original ZIP name
                 mock_output_filepath = os.path.join(
                     CONVERSION_OUTPUTS_DIR, mock_output_filename_internal
                 )
@@ -741,9 +695,7 @@ async def simulate_ai_conversion(job_id: str):
                     "zip",
                     simulated_pack_output_path,
                 )
-                logger.info(
-                    f"Job {job_id}: Original ZIP archive created at {mock_output_filepath}"
-                )
+                logger.info(f"Job {job_id}: Original ZIP archive created at {mock_output_filepath}")
 
                 job = await crud.update_job_status(session, PyUUID(job_id), "completed")
                 await crud.upsert_progress(session, PyUUID(job_id), 100)
@@ -769,9 +721,7 @@ async def simulate_ai_conversion(job_id: str):
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
-                logger.error(
-                    f"Job {job_id}: Status updated to FAILED due to error in processing."
-                )
+                logger.error(f"Job {job_id}: Status updated to FAILED due to error in processing.")
 
                 # Broadcast failure to WebSocket clients
                 await ProgressHandler.broadcast_conversion_failed(job_id, str(e_inner))
@@ -803,9 +753,7 @@ async def simulate_ai_conversion(job_id: str):
                 job_data_uuid_key = conversion_jobs_db[PyUUID(job_id)]
                 job_data_uuid_key.status = "failed"
                 # ... update other fields ...
-                await cache.set_job_status(
-                    str(PyUUID(job_id)), job_data_uuid_key.model_dump()
-                )
+                await cache.set_job_status(str(PyUUID(job_id)), job_data_uuid_key.model_dump())
 
         except Exception as cache_error:
             logger.error(
@@ -824,9 +772,7 @@ async def call_ai_engine_conversion(job_id: str):
             print(f"Error: Job {job_id} not found for AI Engine conversion.")
             return
 
-        def mirror_dict_from_job(
-            job, progress_val=None, result_url=None, error_message=None
-        ):
+        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
             # Compose dict for legacy mirror
             return ConversionJob(
                 job_id=str(job.id),
@@ -853,9 +799,7 @@ async def call_ai_engine_conversion(job_id: str):
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
 
             # Get the input file path
-            input_file_path = os.path.join(
-                TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar"
-            )
+            input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
 
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
@@ -867,15 +811,11 @@ async def call_ai_engine_conversion(job_id: str):
                 "conversion_options": conversion_options,
             }
 
-            print(
-                f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}"
-            )
+            print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
 
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
-                response = await client.post(
-                    f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request
-                )
+                response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
 
                 if response.status_code != 200:
                     raise Exception(
@@ -891,20 +831,14 @@ async def call_ai_engine_conversion(job_id: str):
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
-                        print(
-                            f"Job {job_id} was cancelled. Stopping AI Engine polling."
-                        )
+                        print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
                         return
 
                     # Get status from AI Engine
-                    status_response = await client.get(
-                        f"{AI_ENGINE_URL}/api/v1/status/{job_id}"
-                    )
+                    status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
 
                     if status_response.status_code != 200:
-                        print(
-                            f"Failed to get AI Engine status: {status_response.status_code}"
-                        )
+                        print(f"Failed to get AI Engine status: {status_response.status_code}")
                         continue
 
                     ai_status = status_response.json()
@@ -944,9 +878,7 @@ async def call_ai_engine_conversion(job_id: str):
                     )
                     # Verify the file exists
                     if not os.path.exists(output_path):
-                        print(
-                            f"Warning: Expected output file not found at {output_path}"
-                        )
+                        print(f"Warning: Expected output file not found at {output_path}")
                 else:
                     print(f"Job {job_id}: AI Engine conversion FAILED")
 
@@ -1079,9 +1011,7 @@ async def get_conversion_status(
             descriptive_message = "Conversion completed successfully."
         elif status == "failed":
             descriptive_message = (
-                f"Conversion failed: {error_message}"
-                if error_message
-                else "Conversion failed."
+                f"Conversion failed: {error_message}" if error_message else "Conversion failed."
             )
         elif status == "cancelled":
             descriptive_message = "Job was cancelled by the user."
@@ -1103,9 +1033,7 @@ async def get_conversion_status(
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
     progress = job.progress.progress if job.progress else 0
     error_message = None
     result_url = None
@@ -1157,9 +1085,7 @@ async def get_conversion_status(
     )
 
 
-@app.get(
-    "/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"]
-)
+@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -1220,9 +1146,7 @@ async def cancel_conversion(
     """
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
     if job.status == "cancelled":
         return {"message": f"Conversion job {job_id} is already cancelled."}
     job = await crud.update_job_status(db, job_id, "cancelled")
@@ -1264,9 +1188,7 @@ async def download_converted_mod(
     job = conversion_jobs_db.get(job_id)
 
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
 
     if job.status != "completed":
         raise HTTPException(
@@ -1292,9 +1214,7 @@ async def download_converted_mod(
     if not os.path.exists(file_path):
         print(f"Error: Converted file not found at path: {file_path} for job {job_id}")
         # This case might indicate an issue post-completion or if the file was manually removed.
-        raise HTTPException(
-            status_code=404, detail="Converted file not found on server."
-        )
+        raise HTTPException(status_code=404, detail="Converted file not found on server.")
 
     # Determine a user-friendly download filename
     original_filename_base = os.path.splitext(job.original_filename)[0]
@@ -1420,12 +1340,8 @@ async def upsert_addon_details(
     and will create the addon if it doesn't exist, or update it if it does.
     For child collections (blocks, assets, recipes), this performs a full replacement.
     """
-    db_addon = await crud.update_addon_details(
-        session=db, addon_id=addon_id, addon_data=addon_data
-    )
-    if (
-        db_addon is None
-    ):  # Should not happen if crud.update_addon_details works as expected
+    db_addon = await crud.update_addon_details(session=db, addon_id=addon_id, addon_data=addon_data)
+    if db_addon is None:  # Should not happen if crud.update_addon_details works as expected
         raise HTTPException(status_code=500, detail="Error processing addon data")
     return db_addon
 
@@ -1452,23 +1368,17 @@ async def create_addon_asset_endpoint(
         session=db, addon_id=addon_id
     )  # Using get_addon_details to ensure addon exists
     if not addon:
-        raise HTTPException(
-            status_code=404, detail=f"Addon with id {addon_id} not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Addon with id {addon_id} not found.")
 
     try:
         db_asset = await crud.create_addon_asset(
             session=db, addon_id=addon_id, file=file, asset_type=asset_type
         )
-    except (
-        ValueError
-    ) as e:  # Catch errors like Addon not found from CRUD (though checked above)
+    except ValueError as e:  # Catch errors like Addon not found from CRUD (though checked above)
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to create addon asset: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to create addon asset: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to create addon asset: {str(e)}")
     return db_asset
 
 
@@ -1494,9 +1404,7 @@ async def get_addon_asset_file(
     file_full_path = os.path.join(crud.BASE_ASSET_PATH, db_asset.path)
 
     if not os.path.exists(file_full_path):
-        logger.error(
-            f"Asset file not found on disk: {file_full_path} for asset_id {asset_id}"
-        )
+        logger.error(f"Asset file not found on disk: {file_full_path} for asset_id {asset_id}")
         raise HTTPException(status_code=404, detail="Asset file not found on server.")
 
     return FileResponse(
@@ -1528,25 +1436,17 @@ async def update_addon_asset_endpoint(
         )
 
     try:
-        updated_asset = await crud.update_addon_asset(
-            session=db, asset_id=asset_id, file=file
-        )
+        updated_asset = await crud.update_addon_asset(session=db, asset_id=asset_id, file=file)
     except Exception as e:
         logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update addon asset: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to update addon asset: {str(e)}")
 
     if not updated_asset:  # Should be caught by prior check or raise exception in CRUD
-        raise HTTPException(
-            status_code=404, detail="Asset not found after update attempt."
-        )
+        raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
     return updated_asset
 
 
-@app.delete(
-    "/api/v1/addons/{addon_id}/assets/{asset_id}", status_code=204, tags=["addons"]
-)
+@app.delete("/api/v1/addons/{addon_id}/assets/{asset_id}", status_code=204, tags=["addons"])
 async def delete_addon_asset_endpoint(
     addon_id: PyUUID,  # Validate addon ownership of asset
     asset_id: PyUUID,
@@ -1564,9 +1464,7 @@ async def delete_addon_asset_endpoint(
 
     deleted_asset_info = await crud.delete_addon_asset(session=db, asset_id=asset_id)
     if not deleted_asset_info:  # Should be caught by prior check
-        raise HTTPException(
-            status_code=404, detail="Asset not found during delete operation."
-        )
+        raise HTTPException(status_code=404, detail="Asset not found during delete operation.")
 
     # Return 204 No Content by default for DELETE operations
     # FastAPI will automatically handle returning no body if status_code is 204
@@ -1593,9 +1491,7 @@ async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_
             addon_pydantic=addon_details, asset_base_path=crud.BASE_ASSET_PATH
         )
     except Exception as e:
-        logger.error(
-            f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to export addon: {str(e)}")
 
     # Sanitize addon name for filename
