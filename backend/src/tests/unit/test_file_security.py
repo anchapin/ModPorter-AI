@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from io import BytesIO
 
-from backend.src.security.file_security import (
+from security.file_security import (
     FileSecurityScanner,
     SecurityConfig,
     SecurityScanResult,
