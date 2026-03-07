@@ -252,8 +252,6 @@ dev = [
     "black",
     "ruff",
     "isort",
-    # Mutation testing
-    "mutmut",
 ]
 
 # All GPU options combined

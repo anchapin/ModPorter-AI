@@ -63,10 +63,6 @@ jobs:
               - '**/requirements*.txt'
               - '**/package.json'
               - 'frontend/pnpm-lock.yaml'
-            python:
-              - '**/*.py'
-              - 'pyproject.toml'
-              - '**/pyproject.toml'
             ruff:
               - '**/*.py'
               - '**/pyproject.toml'
@@ -1034,7 +1030,7 @@ jobs:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base, format-check]
+    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
