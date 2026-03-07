@@ -2815,7 +2815,13 @@ class AssetConverterAgent:
             Dict with extraction results including success status, texture list, etc.
         """
         if texture_types is None:
-            texture_types = ['blocks', 'items', 'entity', 'mob', 'armor', 'particle']
+            # Include both singular and plural forms for Minecraft texture directories
+            texture_types = [
+                'blocks', 'block',   # Block textures
+                'items', 'item',     # Item textures  
+                'entity', 'mob',     # Entity textures
+                'armor', 'particle'  # Other textures
+            ]
 
         try:
             jar_path_obj = Path(jar_path)
@@ -2831,7 +2837,8 @@ class AssetConverterAgent:
 
             with zipfile.ZipFile(jar_path, 'r') as jar:
                 # Find all texture files in assets/*/textures/...
-                texture_patterns = [f'assets/{mod_id}/textures/{ttype}/'
+                # Use prefix matching to handle both "block" and "blocks" directories
+                texture_prefixes = [f'assets/{mod_id}/textures/{ttype}/'
                                    for mod_id in self._get_mod_ids_from_jar(jar)
                                    for ttype in texture_types]
 
@@ -2842,8 +2849,8 @@ class AssetConverterAgent:
                     if not file_path.endswith(('.png', '.jpg', '.jpeg', '.tga')):
                         continue
 
-                    # Check if it matches our texture patterns
-                    is_texture = any(file_path.startswith(pattern) for pattern in texture_patterns)
+                    # Check if it matches our texture prefixes (starts with any pattern)
+                    is_texture = any(file_path.startswith(prefix) for prefix in texture_prefixes)
 
                     if is_texture:
                         try:
@@ -2891,7 +2898,7 @@ class AssetConverterAgent:
                 'jar_path': jar_path,
                 'output_dir': str(output_path),
                 'extracted_count': len(extracted_textures),
-                'textures': extracted_textures,
+                'extracted_textures': extracted_textures,
                 'errors': errors
             }
 
