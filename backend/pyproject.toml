@@ -2,13 +2,92 @@
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
+[tool.mypy]
+python_version = "3.10"
+strict = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+pretty = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "asyncpg.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pydantic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "fastapi.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "uvicorn.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "httpx.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "redis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "psycopg2.*"
+ignore_missing_imports = true
+
 [tool.ruff]
+target-version = "py311"
+line-length = 100
 exclude = [
     "tests/",
     "src/tests/",
+    ".git/",
+    "__pycache__/",
+    "*.egg-info/",
+    ".venv/",
+    "venv/",
 ]
 
 [tool.ruff.lint]
+# Enable pycodestyle (E), Pyflakes (F), isort (I), and flake8-quotes (Q)
+select = ["E", "F", "I", "Q", "N"]
 ignore = [
-    "E402",  # module level import not at top of file (ignore for test files)
+    "E402",  # module level import not at top of file
+    "E501",  # line too long (handled by formatter)
+    "Q000",  # bad quote marks
+    "Q001",  # bad quote marks in multiline strings
+    "Q002",  # bad quote marks in strings
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
+"__init__.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "core", "src"]
+force-single-line = false
+order-by-type = false
+case-sensitive = false
+force-alphabetic-order = false
