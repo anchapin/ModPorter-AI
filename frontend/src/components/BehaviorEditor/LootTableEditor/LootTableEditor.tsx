@@ -31,7 +31,8 @@ import {
   Inventory2,
   Save,
   Preview,
-  Add
+  Add,
+  Settings
 } from '@mui/icons-material';
 
 // Loot table interfaces
@@ -296,7 +297,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
         <CardContent>
           <Typography variant="h6" gutterBottom>Basic Information</Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Loot Table ID"
@@ -306,7 +307,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
                 placeholder="minecraft:entities/zombie"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <Label>Type</Label>
                 <Select
@@ -396,7 +397,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
               <AccordionDetails>
                 <Grid container spacing={2}>
                   {/* Pool Settings */}
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       fullWidth
                       label="Pool Name"
@@ -406,7 +407,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
                       size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                       <TextField
                         label="Rolls"
@@ -436,7 +437,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
                   </Grid>
 
                   {/* Pool Actions */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                       <Button
                         variant="outlined"
@@ -450,7 +451,7 @@ export const LootTableEditor: React.FC<LootTableEditorProps> = ({
                       <Button
                         variant="outlined"
                         size="small"
-                        startIcon={<functions />}
+                        startIcon={<Settings />}
                         onClick={() => addFunction({ type: 'pool', id: pool.id })}
                         disabled={readOnly}
                       >

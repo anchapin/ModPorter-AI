@@ -110,6 +110,12 @@ export interface FeatureConversionDetail {
   visual_comparison_before?: string | null;
   visual_comparison_after?: string | null;
   impact_of_assumption?: string | null;
+  visual_comparison?: string | null; // Added for backward compatibility
+  assumptions_used?: string[] | null; // Added
+  before?: string | null; // Added for backward compatibility
+  after?: string | null; // Added for backward compatibility
+  technical_notes?: string | null; // Added
+  converted_type?: string | null; // Added
 }
 
 export interface FeatureAnalysis {
@@ -117,6 +123,9 @@ export interface FeatureAnalysis {
   compatibility_mapping_summary: string;
   visual_comparisons_overview?: string | null;
   impact_assessment_summary: string;
+  features?: string[] | null; // Added for backward compatibility
+  feature_categories?: Record<string, any> | null; // Added
+  conversion_patterns?: Record<string, any> | null; // Added
 }
 
 export interface AssumptionDetail { // Detailed version for AssumptionsReport
@@ -127,10 +136,19 @@ export interface AssumptionDetail { // Detailed version for AssumptionsReport
   impact_level: string; // "Low", "Medium", "High"
   user_explanation: string;
   technical_notes?: string | null;
+  visual_example?: string | null; // Added
+  confidence_score?: number | null; // Added
+  alternatives_considered?: string[] | null; // Added
+  technical_details?: string | null; // Added
+  assumption_type?: string | null; // Added
 }
 
 export interface AssumptionsReport {
   assumptions: AssumptionDetail[];
+  category_breakdown?: Record<string, any> | null; // Added
+  total_assumptions_count?: number | null; // Added
+  assumptions_report?: AssumptionDetail[] | null; // Added
+  impact_distribution?: Record<string, any> | null; // Added
 }
 
 export interface LogEntry {
@@ -146,6 +164,8 @@ export interface DeveloperLog {
   file_processing_log: LogEntry[];
   performance_metrics: Record<string, any>; // e.g., { "total_time_seconds": 60.5, "memory_peak_mb": 256 }
   error_summary: Array<Record<string, any>>; // { "error_message": "...", "stack_trace": "..." }
+  error_details?: Record<string, any> | null; // Added for backward compatibility
+  benchmark_comparisons?: Record<string, any> | null; // Added
 }
 
 export interface InteractiveReport { // This is the main model for the detailed report page
@@ -157,6 +177,7 @@ export interface InteractiveReport { // This is the main model for the detailed 
   feature_analysis?: FeatureAnalysis | null;
   smart_assumptions_report?: AssumptionsReport | null; // Uses AssumptionDetail
   developer_log?: DeveloperLog | null;
+  metadata?: Record<string, any> | null; // Added for backward compatibility
 }
 
 // --- Feedback Types (moved to top of file) ---

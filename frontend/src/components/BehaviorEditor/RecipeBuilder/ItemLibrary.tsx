@@ -141,7 +141,7 @@ export const ItemLibrary: React.FC<ItemLibraryProps> = ({
       <Box className="items-grid" sx={{ maxHeight: 400, overflowY: 'auto' }}>
         <Grid container spacing={1}>
           {filteredItems.map(item => (
-            <Grid item xs={6} sm={4} md={3} key={item.id}>
+            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={item.id}>
               <Paper
                 className={`item-card ${selectedItem?.id === item.id ? 'selected' : ''}`}
                 onClick={() => handleItemClick(item)}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Editor } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
+import type { editor, IDisposable } from 'monaco-editor';
 import './CodeEditor.css';
 
 interface BehaviorFile {
@@ -38,7 +38,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const validationDisposablesRef = useRef<editor.IEditorDisposable[]>([]);
+  const validationDisposablesRef = useRef<IDisposable[]>([]);
 
   // Check if content has unsaved changes
   const hasUnsavedChanges = content !== originalContent;

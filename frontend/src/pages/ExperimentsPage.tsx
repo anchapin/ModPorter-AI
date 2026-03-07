@@ -315,7 +315,7 @@ const ExperimentsPage: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* Experiments List */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardHeader title="Experiments" />
             <CardContent>
@@ -409,7 +409,7 @@ const ExperimentsPage: React.FC = () => {
         </Grid>
 
         {/* Variants List */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardHeader 
               title={selectedExperiment ? `Variants for ${selectedExperiment.name}` : "Select an Experiment"}
