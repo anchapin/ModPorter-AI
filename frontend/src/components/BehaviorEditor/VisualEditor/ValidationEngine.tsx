@@ -7,22 +7,19 @@ export class ValidationEngine {
     this.rules = rules;
   }
 
-  validate(
-    data: Record<string, any>,
-    fields: FormField[]
-  ): ValidationRule[] {
+  validate(data: Record<string, any>, fields: FormField[]): ValidationRule[] {
     const errors: ValidationRule[] = [];
 
     // Validate each field
-    fields.forEach(field => {
+    fields.forEach((field) => {
       const value = data[field.name];
       const fieldErrors = this.validateField(field, value);
       errors.push(...fieldErrors);
 
       // Apply custom validation rules
       const customRules = this.rules[field.name] || [];
-      customRules.forEach(rule => {
-        if (this.shouldApplyRule(rule, value, data)) {
+      customRules.forEach((rule) => {
+        if (this.shouldApplyRule(rule, value)) {
           errors.push(rule);
         }
       });
@@ -40,7 +37,7 @@ export class ValidationEngine {
         field: field.name,
         rule: 'required',
         message: `${field.label} is required`,
-        severity: 'error'
+        severity: 'error',
       });
       return errors;
     }
@@ -58,7 +55,7 @@ export class ValidationEngine {
             field: field.name,
             rule: 'type',
             message: `${field.label} must be a valid number`,
-            severity: 'error'
+            severity: 'error',
           });
         } else {
           const numValue = Number(value);
@@ -67,7 +64,7 @@ export class ValidationEngine {
               field: field.name,
               rule: 'min',
               message: `${field.label} must be at least ${field.min}`,
-              severity: 'error'
+              severity: 'error',
             });
           }
           if (field.max !== undefined && numValue > field.max) {
@@ -75,7 +72,7 @@ export class ValidationEngine {
               field: field.name,
               rule: 'max',
               message: `${field.label} must not exceed ${field.max}`,
-              severity: 'error'
+              severity: 'error',
             });
           }
         }
@@ -83,41 +80,50 @@ export class ValidationEngine {
 
       case 'text': {
         const strValue = String(value);
-        if (field.validation?.minLength && strValue.length < field.validation.minLength) {
+        if (
+          field.validation?.minLength &&
+          strValue.length < field.validation.minLength
+        ) {
           errors.push({
             field: field.name,
             rule: 'minLength',
             message: `${field.label} must be at least ${field.validation.minLength} characters long`,
-            severity: 'error'
+            severity: 'error',
           });
         }
-        if (field.validation?.maxLength && strValue.length > field.validation.maxLength) {
+        if (
+          field.validation?.maxLength &&
+          strValue.length > field.validation.maxLength
+        ) {
           errors.push({
             field: field.name,
             rule: 'maxLength',
             message: `${field.label} must not exceed ${field.validation.maxLength} characters`,
-            severity: 'error'
+            severity: 'error',
           });
         }
-        if (field.validation?.pattern && !new RegExp(field.validation.pattern).test(strValue)) {
+        if (
+          field.validation?.pattern &&
+          !new RegExp(field.validation.pattern).test(strValue)
+        ) {
           errors.push({
             field: field.name,
             rule: 'pattern',
             message: `${field.label} has an invalid format`,
-            severity: 'error'
+            severity: 'error',
           });
         }
         break;
       }
 
       case 'select': {
-        const validOptions = field.options?.map(opt => opt.value) || [];
+        const validOptions = field.options?.map((opt) => opt.value) || [];
         if (!validOptions.includes(value)) {
           errors.push({
             field: field.name,
             rule: 'invalidOption',
             message: `${field.label} has an invalid option selected`,
-            severity: 'error'
+            severity: 'error',
           });
         }
         break;
@@ -132,7 +138,7 @@ export class ValidationEngine {
           field: field.name,
           rule: 'custom',
           message: customError,
-          severity: 'error'
+          severity: 'error',
         });
       }
     }
@@ -169,9 +175,8 @@ export class ValidationEngine {
   // Helper method to remove validation rules
   removeRule(fieldName: string, ruleType?: string): void {
     if (ruleType) {
-      this.rules[fieldName] = this.rules[fieldName]?.filter(
-        rule => rule.rule !== ruleType
-      ) || [];
+      this.rules[fieldName] =
+        this.rules[fieldName]?.filter((rule) => rule.rule !== ruleType) || [];
     } else {
       delete this.rules[fieldName];
     }
@@ -190,10 +195,10 @@ export class ValidationEngine {
     fields: string[];
   } {
     const summary = {
-      errors: errors.filter(e => e.severity === 'error').length,
-      warnings: errors.filter(e => e.severity === 'warning').length,
-      info: errors.filter(e => e.severity === 'info').length,
-      fields: [...new Set(errors.map(e => e.field))]
+      errors: errors.filter((e) => e.severity === 'error').length,
+      warnings: errors.filter((e) => e.severity === 'warning').length,
+      info: errors.filter((e) => e.severity === 'info').length,
+      fields: [...new Set(errors.map((e) => e.field))],
     };
 
     return summary;
@@ -205,7 +210,7 @@ export class ValidationEngine {
       field: '',
       rule: 'required',
       message: message || 'This field is required',
-      severity: 'error'
+      severity: 'error',
     };
   }
 
@@ -214,7 +219,7 @@ export class ValidationEngine {
       field: '',
       rule: 'min',
       message: message || `Value must be at least ${min}`,
-      severity: 'error'
+      severity: 'error',
     };
   }
 
@@ -223,7 +228,7 @@ export class ValidationEngine {
       field: '',
       rule: 'max',
       message: message || `Value must not exceed ${max}`,
-      severity: 'error'
+      severity: 'error',
     };
   }
 
@@ -232,7 +237,7 @@ export class ValidationEngine {
       field: '',
       rule: 'positive',
       message: message || 'Value must be positive',
-      severity: 'error'
+      severity: 'error',
     };
   }
 
@@ -241,7 +246,7 @@ export class ValidationEngine {
       field: '',
       rule: 'percentage',
       message: message || 'Value must be between 0 and 100',
-      severity: 'error'
+      severity: 'error',
     };
   }
 
@@ -250,7 +255,7 @@ export class ValidationEngine {
       field: '',
       rule: 'warning',
       message: message,
-      severity: 'warning'
+      severity: 'warning',
     };
   }
 
@@ -259,7 +264,7 @@ export class ValidationEngine {
       field: '',
       rule: 'info',
       message: message,
-      severity: 'info'
+      severity: 'info',
     };
   }
 }

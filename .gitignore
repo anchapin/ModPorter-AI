@@ -167,3 +167,4 @@ AGENTS.MD
 # Exclude patterns
 ai-engine/tests/test_smart_assumptions.py
 
+.worktrees/

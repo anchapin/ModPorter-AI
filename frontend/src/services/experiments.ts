@@ -1,12 +1,19 @@
 // services/experiments.ts
 // Service functions for A/B testing experiments API
 
-import { Experiment, ExperimentVariant, ExperimentResult } from '../types/experiment';
+import {
+  Experiment,
+  ExperimentVariant,
+  ExperimentResult,
+} from '../types/experiment';
 
 const API_BASE_URL = '/api/v1/experiments';
 
 // Helper function for API requests
-const apiRequest = async (url: string, options: { [key: string]: any } = {}) => {
+const apiRequest = async (
+  url: string,
+  options: { [key: string]: any } = {}
+) => {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -17,7 +24,9 @@ const apiRequest = async (url: string, options: { [key: string]: any } = {}) => 
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.detail || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -33,14 +42,19 @@ export const fetchExperiment = async (id: string): Promise<Experiment> => {
   return apiRequest(`${API_BASE_URL}/experiments/${id}`);
 };
 
-export const createExperiment = async (experiment: Omit<Experiment, 'id' | 'created_at' | 'updated_at'>): Promise<Experiment> => {
+export const createExperiment = async (
+  experiment: Omit<Experiment, 'id' | 'created_at' | 'updated_at'>
+): Promise<Experiment> => {
   return apiRequest(`${API_BASE_URL}/experiments`, {
     method: 'POST',
     body: JSON.stringify(experiment),
   });
 };
 
-export const updateExperiment = async (id: string, experiment: Partial<Experiment>): Promise<Experiment> => {
+export const updateExperiment = async (
+  id: string,
+  experiment: Partial<Experiment>
+): Promise<Experiment> => {
   return apiRequest(`${API_BASE_URL}/experiments/${id}`, {
     method: 'PUT',
     body: JSON.stringify(experiment),
@@ -55,17 +69,27 @@ export const deleteExperiment = async (id: string): Promise<void> => {
 
 // Experiment Variant API functions
 
-export const fetchExperimentVariants = async (experimentId: string): Promise<ExperimentVariant[]> => {
+export const fetchExperimentVariants = async (
+  experimentId: string
+): Promise<ExperimentVariant[]> => {
   return apiRequest(`${API_BASE_URL}/experiments/${experimentId}/variants`);
 };
 
-export const fetchExperimentVariant = async (experimentId: string, variantId: string): Promise<ExperimentVariant> => {
-  return apiRequest(`${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`);
+export const fetchExperimentVariant = async (
+  experimentId: string,
+  variantId: string
+): Promise<ExperimentVariant> => {
+  return apiRequest(
+    `${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`
+  );
 };
 
 export const createExperimentVariant = async (
-  experimentId: string, 
-  variant: Omit<ExperimentVariant, 'id' | 'experiment_id' | 'created_at' | 'updated_at'>
+  experimentId: string,
+  variant: Omit<
+    ExperimentVariant,
+    'id' | 'experiment_id' | 'created_at' | 'updated_at'
+  >
 ): Promise<ExperimentVariant> => {
   return apiRequest(`${API_BASE_URL}/experiments/${experimentId}/variants`, {
     method: 'POST',
@@ -74,20 +98,29 @@ export const createExperimentVariant = async (
 };
 
 export const updateExperimentVariant = async (
-  experimentId: string, 
-  variantId: string, 
+  experimentId: string,
+  variantId: string,
   variant: Partial<ExperimentVariant>
 ): Promise<ExperimentVariant> => {
-  return apiRequest(`${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`, {
-    method: 'PUT',
-    body: JSON.stringify(variant),
-  });
+  return apiRequest(
+    `${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(variant),
+    }
+  );
 };
 
-export const deleteExperimentVariant = async (experimentId: string, variantId: string): Promise<void> => {
-  await apiRequest(`${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`, {
-    method: 'DELETE',
-  });
+export const deleteExperimentVariant = async (
+  experimentId: string,
+  variantId: string
+): Promise<void> => {
+  await apiRequest(
+    `${API_BASE_URL}/experiments/${experimentId}/variants/${variantId}`,
+    {
+      method: 'DELETE',
+    }
+  );
 };
 
 // Experiment Result API functions
@@ -99,7 +132,7 @@ export const fetchExperimentResults = async (
   const params = new URLSearchParams();
   if (variantId) params.append('variant_id', variantId);
   if (sessionId) params.append('session_id', sessionId);
-  
+
   const queryString = params.toString() ? `?${params.toString()}` : '';
   return apiRequest(`${API_BASE_URL}/experiment_results${queryString}`);
 };

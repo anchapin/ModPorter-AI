@@ -1,24 +1,47 @@
+---
+name: New Feature
+about: Add a new feature to ModPorter AI
+title: '[FEATURE] '
+labels: enhancement
+assignees: ''
+---
+
 ## Description
-Brief description of the changes made.
+Brief description of the new feature.
+
+## Related Issue
+Closes #[issue_number]
 
 ## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
+- [x] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Performance improvement
-- [ ] Code refactoring
 
 ## PRD Compliance
 - [ ] Changes align with Product Requirements Document
 - [ ] Feature implements specified user stories
 - [ ] Acceptance criteria have been met
 
-## Testing
+## Feature Details
+
+### Problem/Use Case
+Describe the problem this feature solves or the use case it addresses.
+
+### Solution
+Describe the solution implemented.
+
+### Alternatives Considered
+Describe any alternative solutions or features you've considered.
+
+## How Has This Been Tested?
+Please describe in detail how you tested your changes.
+
 - [ ] Unit tests added/updated and passing
 - [ ] Integration tests added/updated and passing  
 - [ ] Manual testing completed
 - [ ] Test coverage maintained or improved
+
+## Screenshots (if applicable)
+Add screenshots to help reviewers understand the feature.
 
 ## Code Quality
 - [ ] Code follows project style guidelines
@@ -37,11 +60,9 @@ Brief description of the changes made.
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] I have added tests that prove my feature works
 - [ ] New and existing unit tests pass locally with my changes
-
-## Screenshots (if applicable)
-Add screenshots to help reviewers understand the visual changes.
+- [ ] Any dependent changes have been merged and published
 
 ## Additional Notes
-Any additional information that reviewers should know about this PR.
+Any additional information that reviewers should know about this feature.

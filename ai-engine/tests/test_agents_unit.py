@@ -79,7 +79,7 @@ class TestJavaAnalyzerAgent:
         
         result = agent.analyze_jar_with_ast(str(jar_path))
         
-        assert result['success'] == True
+        assert result['success']
         assert result['file_count'] == 0
         assert 'empty' in result['errors'][0].lower() or 'empty' in str(result).lower()
     
@@ -87,7 +87,7 @@ class TestJavaAnalyzerAgent:
         """Test analysis of valid JAR file"""
         result = agent.analyze_jar_with_ast(str(mock_jar_path))
         
-        assert result['success'] == True
+        assert result['success']
         assert 'mod_info' in result
         assert 'assets' in result
         assert 'features' in result
@@ -145,7 +145,7 @@ class TestJavaAnalyzerAgent:
         result = tool.func(str(mock_jar_path))
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'analysis_results' in result_data
     
     def test_extract_assets_tool(self, agent, mock_jar_path):
@@ -155,7 +155,7 @@ class TestJavaAnalyzerAgent:
         result = tool.func(str(mock_jar_path))
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'assets' in result_data
 
 
@@ -229,7 +229,7 @@ class TestLogicTranslatorAgent:
         result = agent.translate_java_method(method_data)
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'translated_javascript' in result_data
     
     def test_convert_java_class(self, agent):
@@ -245,7 +245,7 @@ class TestLogicTranslatorAgent:
         result = agent.convert_java_class(class_data)
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'javascript_class' in result_data
     
     def test_map_java_apis(self, agent):
@@ -257,7 +257,7 @@ class TestLogicTranslatorAgent:
         result = agent.map_java_apis(api_data)
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'mapped_apis' in result_data
     
     def test_generate_event_handlers(self, agent):
@@ -269,7 +269,7 @@ class TestLogicTranslatorAgent:
         result = agent.generate_event_handlers(event_data)
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'event_handlers' in result_data
     
     def test_validate_javascript_syntax(self, agent):
@@ -278,13 +278,13 @@ class TestLogicTranslatorAgent:
         valid_js = json.dumps({"javascript_code": "function test() { return 1; }"})
         result = agent.validate_javascript_syntax(valid_js)
         result_data = json.loads(result)
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         
         # Invalid syntax
         invalid_js = json.dumps({"javascript_code": "function test {"})
         result = agent.validate_javascript_syntax(invalid_js)
         result_data = json.loads(result)
-        assert result_data.get('is_valid') == False
+        assert not result_data.get('is_valid')
     
     def test_translate_crafting_recipe_json(self, agent):
         """Test crafting recipe translation"""
@@ -298,7 +298,7 @@ class TestLogicTranslatorAgent:
         result = agent.translate_crafting_recipe_json(recipe_data)
         result_data = json.loads(result)
         
-        assert result_data.get('success') == True
+        assert result_data.get('success')
         assert 'bedrock_recipe' in result_data
     
     # ========== Block Generation Tests (Issue #546) ==========
@@ -318,7 +318,7 @@ class TestLogicTranslatorAgent:
         
         result = agent.generate_bedrock_block_json(block_analysis)
         
-        assert result.get('success') == True
+        assert result.get('success')
         assert result.get('block_json') is not None
         assert 'minecraft:block' in result['block_json']
     
@@ -341,7 +341,7 @@ class TestLogicTranslatorAgent:
         
         result = agent._validate_block_json(valid_block)
         
-        assert result.get('is_valid') == True
+        assert result.get('is_valid')
         assert len(result.get('errors', [])) == 0
     
     def test_validate_block_json_missing_fields(self, agent):
@@ -354,7 +354,7 @@ class TestLogicTranslatorAgent:
         
         result = agent._validate_block_json(invalid_block)
         
-        assert result.get('is_valid') == False
+        assert not result.get('is_valid')
         assert len(result.get('errors', [])) > 0
     
     def test_map_java_block_properties_to_bedrock(self, agent):

@@ -19,13 +19,15 @@ export const AssetUpload: React.FC = () => {
     }
   };
 
-  const handleAssetTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleAssetTypeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setAssetType(event.target.value);
   };
 
   const handleUpload = useCallback(async () => {
     if (!selectedFile || !addonData?.id) {
-      setUploadError("Please select a file and ensure an addon is loaded.");
+      setUploadError('Please select a file and ensure an addon is loaded.');
       return;
     }
 
@@ -34,19 +36,24 @@ export const AssetUpload: React.FC = () => {
 
     try {
       // Call the (mocked) API function
-      const newAsset = await api.uploadAddonAsset(addonData.id, selectedFile, assetType);
+      const newAsset = await api.uploadAddonAsset(
+        addonData.id,
+        selectedFile,
+        assetType
+      );
       addAsset(newAsset); // Update context state
-      console.log("Asset uploaded and added to context:", newAsset);
+      console.log('Asset uploaded and added to context:', newAsset);
       setSelectedFile(null); // Clear file input after successful upload
       // Optionally reset assetType or clear form fully
       // setAssetType('texture_block');
-      const fileInput = document.getElementById('asset-file-input') as HTMLInputElement;
+      const fileInput = document.getElementById(
+        'asset-file-input'
+      ) as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-
-
     } catch (error) {
-      console.error("Error uploading asset:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error uploading asset:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setUploadError(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);

@@ -7,19 +7,19 @@
     "install-all": "pnpm install && cd frontend && pnpm install",
     "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:frontend": "cd frontend && pnpm run dev",
-    "dev:backend": "cd backend && source .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
+    "dev:backend": "cd backend && . .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
     "build": "pnpm run build:frontend",
     "build:frontend": "cd frontend && pnpm run build",
     "test": "pnpm run test:frontend && pnpm run test:backend",
     "test:frontend": "cd frontend && pnpm run test",
-    "test:backend": "cd backend && source .venv/bin/activate && python -m pytest",
+    "test:backend": "cd backend && . .venv/bin/activate && python -m pytest",
     "test:e2e": "cd frontend && pnpm run test:e2e",
     "test:e2e:install": "cd frontend && pnpm run test:e2e:install",
     "test:all": "pnpm run test:frontend && pnpm run test:backend && pnpm run test:e2e",
     "test:watch": "concurrently \"pnpm run test:frontend -- --watch\" \"pnpm run test:backend -- --watch\"",
     "lint": "pnpm run lint:frontend && pnpm run lint:backend",
     "lint:frontend": "cd frontend && pnpm run lint",
-    "lint:backend": "cd backend && source .venv/bin/activate && python -m ruff check src/ tests/",
+    "lint:backend": "cd backend && . .venv/bin/activate && python -m ruff check src/ tests/",
     "format": "pnpm run format:frontend && pnpm run format:backend",
     "format:check": "pnpm run format:check:frontend && pnpm run format:check:backend",
     "format:check:frontend": "cd frontend && pnpm prettier --check .",
@@ -43,10 +43,15 @@
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@types/jest": "^30.0.0",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "prettier": "^3.8.1"
   },
   "overrides": {
-    "form-data@>=4.0.0 <4.0.4": ">=4.0.4"
+    "form-data@>=4.0.0 <4.0.4": ">=4.0.4",
+    "dompurify": "^3.3.2",
+    "lodash-es": "^4.17.23",
+    "axios": "^1.13.5",
+    "react-router-dom": "^7.12.0"
   },
   "engines": {
     "node": ">=20.0.0",

@@ -169,16 +169,16 @@
   .recipe-grid {
     margin-bottom: 16px;
   }
-  
+
   .grid {
     min-height: 150px;
   }
-  
+
   .item-icon {
     width: 24px;
     height: 24px;
   }
-  
+
   .item-card {
     min-height: 80px;
   }
@@ -188,16 +188,16 @@
   .grid {
     min-height: 120px;
   }
-  
+
   .item-icon {
     width: 20px;
     height: 20px;
   }
-  
+
   .recipe-slot {
     padding: 2px;
   }
-  
+
   .item-card {
     min-height: 70px;
   }

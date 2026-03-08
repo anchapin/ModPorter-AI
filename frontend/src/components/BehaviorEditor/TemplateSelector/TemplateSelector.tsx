@@ -54,10 +54,15 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 }) => {
   const { state, actions } = useTemplates();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(category || '');
-  const [selectedTemplateType, setSelectedTemplateType] = useState<string>(templateType || '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    category || ''
+  );
+  const [selectedTemplateType, setSelectedTemplateType] = useState<string>(
+    templateType || ''
+  );
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<BehaviorTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<BehaviorTemplate | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
@@ -73,11 +78,17 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       // For now, we'll filter on the client side
     }
     actions.setFilters(filters);
-  }, [searchTerm, selectedCategory, selectedTemplateType, excludeTemplateIds.length, actions]);
+  }, [
+    searchTerm,
+    selectedCategory,
+    selectedTemplateType,
+    excludeTemplateIds.length,
+    actions,
+  ]);
 
   // Filter templates on client side for excludeTemplateIds
   const filteredTemplates = state.templates.filter(
-    template => !excludeTemplateIds.includes(template.id)
+    (template) => !excludeTemplateIds.includes(template.id)
   );
 
   const handleTemplateSelect = (template: BehaviorTemplate) => {
@@ -92,7 +103,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   const handleApplyTemplate = async (template: BehaviorTemplate) => {
     if (!onTemplateApply || disabled) return;
-    
+
     try {
       setApplyingTemplate(template.id);
       await onTemplateApply(template);
@@ -105,15 +116,13 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   };
 
-
-
   const getCategoryDisplayName = (categoryName: string) => {
-    const category = state.categories.find(cat => cat.name === categoryName);
+    const category = state.categories.find((cat) => cat.name === categoryName);
     return category?.display_name || categoryName;
   };
 
   const getCategoryIcon = (categoryName: string) => {
-    const category = state.categories.find(cat => cat.name === categoryName);
+    const category = state.categories.find((cat) => cat.name === categoryName);
     return category?.icon || '📄';
   };
 
@@ -122,19 +131,21 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Search and Filters */}
       <Box sx={{ mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               placeholder="Search templates..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                startAdornment: (
+                  <Search sx={{ mr: 1, color: 'text.secondary' }} />
+                ),
               }}
               disabled={disabled}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <IconButton
                 onClick={() => setShowFilters(!showFilters)}
@@ -152,7 +163,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <Collapse in={showFilters}>
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -164,14 +175,16 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     <MenuItem value="">All Categories</MenuItem>
                     {state.categories.map((cat) => (
                       <MenuItem key={cat.name} value={cat.name}>
-                        {cat.icon && <span style={{ marginRight: 8 }}>{cat.icon}</span>}
+                        {cat.icon && (
+                          <span style={{ marginRight: 8 }}>{cat.icon}</span>
+                        )}
                         {cat.display_name}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Template Type</InputLabel>
                   <Select
@@ -185,7 +198,9 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     <MenuItem value="custom_block">Custom Block</MenuItem>
                     <MenuItem value="entity_behavior">Entity Behavior</MenuItem>
                     <MenuItem value="shaped_crafting">Shaped Crafting</MenuItem>
-                    <MenuItem value="shapeless_crafting">Shapeless Crafting</MenuItem>
+                    <MenuItem value="shapeless_crafting">
+                      Shapeless Crafting
+                    </MenuItem>
                     <MenuItem value="entity_drops">Entity Drops</MenuItem>
                     <MenuItem value="block_drops">Block Drops</MenuItem>
                     <MenuItem value="visual_logic">Visual Logic</MenuItem>
@@ -210,7 +225,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Template Grid */}
       <Grid container spacing={2}>
         {filteredTemplates.map((template) => (
-          <Grid item xs={12} sm={6} lg={4} key={template.id}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={template.id}>
             <Card
               sx={{
                 height: '100%',
@@ -218,7 +233,10 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 flexDirection: 'column',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 border: selectedTemplate?.id === template.id ? 2 : 1,
-                borderColor: selectedTemplate?.id === template.id ? 'primary.main' : 'divider',
+                borderColor:
+                  selectedTemplate?.id === template.id
+                    ? 'primary.main'
+                    : 'divider',
                 opacity: disabled ? 0.6 : 1,
               }}
               onClick={() => !disabled && handleTemplateSelect(template)}
@@ -241,12 +259,18 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     </IconButton>
                   </Tooltip>
                 </Box>
-                
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
                   {template.description}
                 </Typography>
-                
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+
+                <Box
+                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}
+                >
                   <Chip
                     size="small"
                     label={getCategoryDisplayName(template.category)}
@@ -290,7 +314,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </Box>
                 )}
               </CardContent>
-              
+
               <CardActions>
                 {showApplyButton && onTemplateApply && (
                   <Button
@@ -309,8 +333,11 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       ) : null
                     }
                   >
-                    {applyingTemplate === template.id ? 'Applying...' : 
-                     applySuccess === template.id ? 'Applied!' : 'Apply'}
+                    {applyingTemplate === template.id
+                      ? 'Applying...'
+                      : applySuccess === template.id
+                        ? 'Applied!'
+                        : 'Apply'}
                   </Button>
                 )}
                 <Button
@@ -332,10 +359,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Load More */}
       {state.pagination.hasMore && !state.loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Button
-            onClick={() => actions.loadMore()}
-            disabled={state.loading}
-          >
+          <Button onClick={() => actions.loadMore()} disabled={state.loading}>
             Load More
           </Button>
         </Box>
@@ -349,10 +373,14 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">
-              {selectedTemplate?.name}
-            </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography variant="h6">{selectedTemplate?.name}</Typography>
             <IconButton onClick={() => setPreviewDialogOpen(false)}>
               <Close />
             </IconButton>
@@ -364,12 +392,16 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               <Typography variant="body1" sx={{ mb: 2 }}>
                 {selectedTemplate.description}
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                <Chip label={`Category: ${getCategoryDisplayName(selectedTemplate.category)}`} />
+                <Chip
+                  label={`Category: ${getCategoryDisplayName(selectedTemplate.category)}`}
+                />
                 <Chip label={`Type: ${selectedTemplate.template_type}`} />
                 <Chip label={`Version: ${selectedTemplate.version}`} />
-                {selectedTemplate.is_public && <Chip label="Public" color="success" />}
+                {selectedTemplate.is_public && (
+                  <Chip label="Public" color="success" />
+                )}
               </Box>
 
               {selectedTemplate.tags.length > 0 && (
@@ -400,16 +432,16 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     overflow: 'auto',
                   }}
                 >
-                  <pre>{JSON.stringify(selectedTemplate.template_data, null, 2)}</pre>
+                  <pre>
+                    {JSON.stringify(selectedTemplate.template_data, null, 2)}
+                  </pre>
                 </Box>
               </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewDialogOpen(false)}>
-            Close
-          </Button>
+          <Button onClick={() => setPreviewDialogOpen(false)}>Close</Button>
           {showApplyButton && onTemplateApply && selectedTemplate && (
             <Button
               variant="contained"

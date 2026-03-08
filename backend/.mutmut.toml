@@ -1,0 +1,34 @@
+[mutmut]
+# Test command to run (required for mutation testing)
+test_command = python -m pytest
+
+# Number of times to run each mutation
+runs = 2
+
+# Spawn strategy (2 = subprocess)
+spawn_strategy = 2
+
+# Disable progress output (cleaner logs)
+no_progress = 1
+
+# Disable git diff (faster execution)
+disable_git_diff = 1
+
+# Global exclusions
+excluded_paths = [
+    "tests/",
+    "test_*.py",
+    "*_test.py",
+    ".venv/",
+    "venv/",
+    "__pycache__/",
+    "*.egg-info/",
+    ".pytest_cache/",
+]
+
+# Global annotations that disable mutation
+no_mutationAnnotations = [
+    "# no mutation",
+    "# pylint: disable=",
+    "# type: ignore",
+]

@@ -47,6 +47,7 @@ from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
 )
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -96,9 +97,7 @@ class ConversionOptions(BaseModel):
 class ConversionCreateRequest(BaseModel):
     """Request model for creating a conversion (multipart form data)."""
 
-    options: Optional[ConversionOptions] = Field(
-        default=None, description="Conversion options"
-    )
+    options: Optional[ConversionOptions] = Field(default=None, description="Conversion options")
 
 
 class ConversionCreateResponse(BaseModel):
@@ -141,6 +140,7 @@ class ConversionListResponse(BaseModel):
 # Resumable Upload Models
 class ChunkUploadInitResponse(BaseModel):
     """Response for initializing a chunked upload."""
+
     upload_id: str = Field(..., description="Unique identifier for this upload session")
     chunk_size: int = Field(..., description="Size of each chunk in bytes")
     total_size: int = Field(..., description="Total file size in bytes")
@@ -150,6 +150,7 @@ class ChunkUploadInitResponse(BaseModel):
 
 class ChunkUploadResponse(BaseModel):
     """Response for chunk upload."""
+
     upload_id: str = Field(..., description="Upload session ID")
     chunk_number: int = Field(..., description="Current chunk number (1-indexed)")
     chunks_received: int = Field(..., description="Total chunks received")
@@ -159,6 +160,7 @@ class ChunkUploadResponse(BaseModel):
 
 class UploadProgressResponse(BaseModel):
     """Response for upload progress check."""
+
     upload_id: str
     received_bytes: int
     total_bytes: int
@@ -179,49 +181,49 @@ def sanitize_filename(filename: str) -> str:
     """
     # Remove directory paths (handles both / and \)
     filename = os.path.basename(filename)
-    
+
     # Remove any path components that might have slipped through
     # This handles any attempts to use .. or absolute paths
     filename = filename.replace("..", "")
     filename = filename.replace("\\", "")
-    
+
     # Also check for URL-encoded path traversal
     filename = filename.replace("%2e%2e", "")
     filename = filename.replace("%2E%2E", "")
-    
+
     # Remove dangerous characters - only allow safe characters
     # This is a whitelist approach: alphanumeric, underscore, hyphen, and period
     filename = "".join(c for c in filename if c.isalnum() or c in "._-")
-    
+
     # Ensure filename is not empty
     if not filename:
         filename = "uploaded_file"
-    
+
     # Additional check: verify the filename doesn't start with a period
     # (hidden files on Unix systems)
     if filename.startswith("."):
         filename = "file" + filename
-    
+
     return filename
 
 
 def validate_path_safe(path: str, base_dir: Path) -> bool:
     """
     Validate that a path doesn't escape the base directory.
-    
+
     This is a defense-in-depth check for path traversal.
-    
+
     Args:
         path: The path to validate
         base_dir: The base directory that should contain the path
-        
+
     Returns:
         True if the path is safe (within base_dir), False otherwise
     """
     try:
         # Resolve the full path
         full_path = (base_dir / path).resolve()
-        
+
         # Check if the resolved path is within the base directory
         full_path.relative_to(base_dir.resolve())
         return True
@@ -273,78 +275,72 @@ async def validate_file_size(file: UploadFile) -> tuple[bool, str]:
 async def scan_uploaded_file(file_path: Path) -> SecurityScanResult:
     """
     Perform security scan on an uploaded file.
-    
+
     This function:
     - Scans for ZIP bombs and compression bombs
     - Detects path traversal attempts
     - Checks for nested archives
     - Validates file count limits
     - Checks for suspicious content
-    
+
     Args:
         file_path: Path to the uploaded file
-        
+
     Returns:
         SecurityScanResult with scan findings
-        
+
     Raises:
         HTTPException: If critical security threats are found
     """
     scanner = get_security_scanner()
     result = scanner.scan_file(file_path)
-    
+
     if result.has_critical_threats:
         logger.warning(f"Critical security threat detected in {file_path}: {result.threats}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File rejected due to security threat: {result.threats[0].message}"
+            detail=f"File rejected due to security threat: {result.threats[0].message}",
         )
-    
+
     if result.has_high_threats:
         logger.warning(f"High severity security threat detected in {file_path}: {result.threats}")
         # Log but don't reject for high severity - could be false positives
-    
+
     return result
 
 
 async def validate_and_scan_file(file: UploadFile, file_path: Path) -> SecurityScanResult:
     """
     Validate and scan an uploaded file.
-    
+
     Performs both basic validation (size, type) and security scanning.
-    
+
     Args:
         file: The uploaded file
         file_path: Path where the file will be saved
-        
+
     Returns:
         SecurityScanResult with scan findings
-        
+
     Raises:
         HTTPException: If validation or scanning fails
     """
     # Step 1: Validate file size
     is_valid_size, size_error = await validate_file_size(file)
     if not is_valid_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=size_error
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=size_error)
+
     # Step 2: Validate file type
     is_valid_type, type_error = validate_file_type(file.filename or "unknown")
     if not is_valid_type:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=type_error
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=type_error)
+
     # Step 3: Sanitize filename to prevent path traversal
     sanitize_filename(file.filename or "uploaded_file")
-    
+
     # Step 4: Perform security scan
     result = await scan_uploaded_file(file_path)
-    
+
     return result
 
 
@@ -513,7 +509,7 @@ async def create_conversion(
             for chunk in file.file:
                 buffer.write(chunk)
         logger.info(f"File saved: {file_path}")
-        
+
         # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
         try:
             security_result = await scan_uploaded_file(Path(file_path))
@@ -576,10 +572,10 @@ async def create_conversion(
                 "target_version": conversion_options.target_version,
                 "options": conversion_options.dict(),
             },
-            priority=TaskPriority.NORMAL
+            priority=TaskPriority.NORMAL,
         )
         logger.info(f"Conversion task enqueued for job: {conversion_id}")
-        
+
         # Start AI Engine conversion in background task for real-time progress updates
         if background_tasks:
             conversion_service = get_conversion_service()
@@ -592,7 +588,7 @@ async def create_conversion(
                 options=conversion_options.dict(),
             )
             logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
-            
+
     except Exception as e:
         # Log but don't fail - conversion is still created, can be picked up by worker
         logger.warning(f"Failed to enqueue conversion task: {e}")
@@ -897,19 +893,19 @@ async def init_chunked_upload(
 ):
     """
     Initialize a resumable/chunked upload session.
-    
+
     For large files, use this endpoint to start a chunked upload session.
     Returns an upload_id to be used in subsequent chunk upload requests.
-    
+
     **Benefits:**
     - Supports resumable uploads (resume from where left off)
     - Better for large files (100MB+)
     - Progress tracking per chunk
-    
+
     **Request:** multipart/form-data
     - filename: Original filename
     - total_size: Total file size in bytes
-    
+
     **Response:**
     ```json
     {
@@ -925,9 +921,9 @@ async def init_chunked_upload(
     if total_size > MAX_UPLOAD_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit"
+            detail=f"File size exceeds {MAX_UPLOAD_SIZE // (1024 * 1024)}MB limit",
         )
-    
+
     # Validate file type
     safe_filename = sanitize_filename(filename)
     is_valid, error_msg = validate_file_type(safe_filename)
@@ -936,10 +932,10 @@ async def init_chunked_upload(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
         )
-    
+
     # Generate upload ID
     upload_id = str(uuid.uuid4())
-    
+
     # Store upload metadata in cache
     upload_metadata = {
         "upload_id": upload_id,
@@ -949,19 +945,19 @@ async def init_chunked_upload(
         "chunks_received": 0,
         "status": "in_progress",
     }
-    
+
     await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
-    
+
     # Create temporary directory for chunks
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
     os.makedirs(chunks_dir, exist_ok=True)
-    
+
     return ChunkUploadInitResponse(
         upload_id=upload_id,
         chunk_size=CHUNK_SIZE,
         total_size=total_size,
         filename=safe_filename,
-        message="Upload session initialized. Use upload_id in subsequent chunk requests."
+        message="Upload session initialized. Use upload_id in subsequent chunk requests.",
     )
 
 
@@ -978,12 +974,12 @@ async def upload_chunk(
 ):
     """
     Upload a single chunk of a resumable upload.
-    
+
     **Request:** multipart/form-data
     - chunk_number: Current chunk number (1-indexed)
     - total_chunks: Total number of chunks expected
     - chunk: Binary chunk data
-    
+
     **Response:**
     ```json
     {
@@ -998,69 +994,65 @@ async def upload_chunk(
     upload_id_str = str(upload_id)
     # Get upload metadata
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
-    
+
     if not upload_metadata:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload session not found. Initialize with /api/v1/uploads/init first."
+            detail="Upload session not found. Initialize with /api/v1/uploads/init first.",
         )
-    
+
     if upload_metadata.get("status") != "in_progress":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Upload session is {upload_metadata.get('status')}"
+            detail=f"Upload session is {upload_metadata.get('status')}",
         )
-    
+
     # Validate chunk size
     chunk_data = await chunk.read()
     if len(chunk_data) > CHUNK_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chunk size exceeds maximum of {CHUNK_SIZE} bytes"
+            detail=f"Chunk size exceeds maximum of {CHUNK_SIZE} bytes",
         )
-    
+
     # SECURITY: Validate chunk_number is within reasonable bounds
     if chunk_number < 1 or chunk_number > 10000:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid chunk number"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chunk number")
+
     # Save chunk to disk - use safe path construction to prevent path traversal
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
-    
+
     # SECURITY: Validate the chunks_dir is within allowed directory
     base_dir = Path(TEMP_UPLOADS_DIR).resolve()
     if not validate_path_safe(os.path.join("chunks", upload_id_str), base_dir):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid upload session"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid upload session"
         )
-    
+
     # Ensure chunks directory exists
     os.makedirs(chunks_dir, exist_ok=True)
-    
+
     # SECURITY: Construct chunk filename safely - only allow numeric extension
     safe_chunk_name = f"chunk_{chunk_number:04d}"
     chunk_path = os.path.join(chunks_dir, safe_chunk_name)
-    
+
     with open(chunk_path, "wb") as f:
         f.write(chunk_data)
-    
+
     # Update chunks received count
     chunks_received = upload_metadata.get("chunks_received", 0) + 1
     upload_metadata["chunks_received"] = chunks_received
     await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
-    
+
     # Calculate progress
     progress = (chunks_received / total_chunks) * 100
-    
+
     return ChunkUploadResponse(
         upload_id=upload_id_str,
         chunk_number=chunk_number,
         chunks_received=chunks_received,
         total_chunks=total_chunks,
-        progress=round(progress, 2)
+        progress=round(progress, 2),
     )
 
 
@@ -1072,7 +1064,7 @@ async def upload_chunk(
 async def get_upload_progress(upload_id: UUID):
     """
     Get the progress of a resumable upload.
-    
+
     **Response:**
     ```json
     {
@@ -1086,31 +1078,30 @@ async def get_upload_progress(upload_id: UUID):
     """
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
-    
+
     if not upload_metadata:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload session not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
-    
+
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     received_bytes = 0
-    
+
     if os.path.exists(chunks_dir):
         for chunk_file in os.listdir(chunks_dir):
             chunk_path = os.path.join(chunks_dir, chunk_file)
             if os.path.isfile(chunk_path):
                 received_bytes += os.path.getsize(chunk_path)
-    
+
     total_bytes = upload_metadata.get("total_size", 0)
     progress = (received_bytes / total_bytes * 100) if total_bytes > 0 else 0
-    
+
     return UploadProgressResponse(
         upload_id=upload_id_str,
         received_bytes=received_bytes,
         total_bytes=total_bytes,
         progress=round(progress, 2),
-        status=upload_metadata.get("status", "unknown")
+        status=upload_metadata.get("status", "unknown"),
     )
 
 
@@ -1125,36 +1116,35 @@ async def complete_chunked_upload(
 ):
     """
     Complete a resumable upload by combining all chunks.
-    
+
     This endpoint combines all uploaded chunks into the final file
     and creates a conversion job.
     """
     upload_id_str = str(upload_id)
     # Get upload metadata
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
-    
+
     if not upload_metadata:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload session not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
-    
+
     if upload_metadata.get("status") != "in_progress":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Upload session is {upload_metadata.get('status')}"
+            detail=f"Upload session is {upload_metadata.get('status')}",
         )
-    
+
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     safe_filename = upload_metadata["filename"]
     total_size = upload_metadata["total_size"]
-    
+
     # Combine chunks
     file_id = str(uuid.uuid4())
     file_ext = os.path.splitext(safe_filename)[1]
     saved_filename = f"{file_id}{file_ext}"
     file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
-    
+
     try:
         with open(file_path, "wb") as outfile:
             # Read chunks in order
@@ -1166,15 +1156,15 @@ async def complete_chunked_upload(
                 with open(chunk_path, "rb") as infile:
                     outfile.write(infile.read())
                 chunk_number += 1
-        
+
         # Verify file size
         actual_size = os.path.getsize(file_path)
         if actual_size != total_size:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File size mismatch. Expected {total_size}, got {actual_size}"
+                detail=f"File size mismatch. Expected {total_size}, got {actual_size}",
             )
-        
+
         # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
         try:
             security_result = await scan_uploaded_file(Path(file_path))
@@ -1190,11 +1180,11 @@ async def complete_chunked_upload(
         except Exception as e:
             # Log but don't fail on security scan errors
             logger.error(f"Security scan error (continuing): {e}")
-        
+
         # Update upload status
         upload_metadata["status"] = "completed"
         await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
-        
+
         # Create conversion job
         job = await crud.create_job(
             session=db,
@@ -1204,9 +1194,9 @@ async def complete_chunked_upload(
             options={},
             commit=True,
         )
-        
+
         conversion_id = str(job.id)
-        
+
         # Cache job status
         await cache.set_job_status(
             conversion_id,
@@ -1218,17 +1208,17 @@ async def complete_chunked_upload(
             },
         )
         await cache.set_progress(conversion_id, 0)
-        
+
         # Clean up chunks
         shutil.rmtree(chunks_dir, ignore_errors=True)
-        
+
         return ConversionCreateResponse(
             conversion_id=conversion_id,
             status="queued",
             estimated_time_seconds=1800,
             created_at=job.created_at,
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to complete chunked upload: {e}")
         # Clean up on failure
@@ -1236,8 +1226,7 @@ async def complete_chunked_upload(
             os.remove(file_path)
         shutil.rmtree(chunks_dir, ignore_errors=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to complete upload"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to complete upload"
         )
 
 
@@ -1249,24 +1238,23 @@ async def complete_chunked_upload(
 async def cancel_upload(upload_id: UUID):
     """
     Cancel a resumable upload session.
-    
+
     Deletes all uploaded chunks and cleans up the upload session.
     """
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
-    
+
     if not upload_metadata:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Upload session not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
-    
+
     # Update status to cancelled
     upload_metadata["status"] = "cancelled"
     await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
-    
+
     # Clean up chunks
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
     shutil.rmtree(chunks_dir, ignore_errors=True)
-    
+
     return None

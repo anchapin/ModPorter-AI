@@ -19,9 +19,9 @@ interface SettingsProps {
   onSettingsChange?: (settings: SettingsPreferences) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ 
+export const Settings: React.FC<SettingsProps> = ({
   className = '',
-  onSettingsChange 
+  onSettingsChange,
 }) => {
   const [preferences, setPreferences] = useState<SettingsPreferences>({
     defaultSmartAssumptions: true,
@@ -30,16 +30,18 @@ export const Settings: React.FC<SettingsProps> = ({
     theme: 'auto',
     notifications: true,
   });
-  
+
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     curseforge: '',
     modrinth: '',
   });
-  
+
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'preferences' | 'api-keys'>('preferences');
+  const [activeTab, setActiveTab] = useState<'preferences' | 'api-keys'>(
+    'preferences'
+  );
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -47,7 +49,7 @@ export const Settings: React.FC<SettingsProps> = ({
     if (storedPreferences) {
       try {
         const parsed = JSON.parse(storedPreferences);
-        setPreferences(prev => ({ ...prev, ...parsed }));
+        setPreferences((prev) => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error('Failed to parse stored preferences:', e);
       }
@@ -58,7 +60,7 @@ export const Settings: React.FC<SettingsProps> = ({
     if (storedKeyStatus) {
       try {
         const status = JSON.parse(storedKeyStatus);
-        setApiKeys(prev => ({
+        setApiKeys((prev) => ({
           ...prev,
           openai: status.openai ? '••••••••••••••••' : '',
           curseforge: status.curseforge ? '••••••••••••••••' : '',
@@ -73,12 +75,15 @@ export const Settings: React.FC<SettingsProps> = ({
   // Save preferences to localStorage
   const savePreferences = (newPreferences: SettingsPreferences) => {
     setPreferences(newPreferences);
-    localStorage.setItem('modporter_preferences', JSON.stringify(newPreferences));
-    
+    localStorage.setItem(
+      'modporter_preferences',
+      JSON.stringify(newPreferences)
+    );
+
     if (onSettingsChange) {
       onSettingsChange(newPreferences);
     }
-    
+
     showSavedMessage();
   };
 
@@ -86,7 +91,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const saveApiKey = (keyName: string, value: string) => {
     const newKeys = { ...apiKeys, [keyName]: value };
     setApiKeys(newKeys);
-    
+
     // Store only the status (whether key exists), never the actual key
     const status = {
       openai: newKeys.openai.length > 0,
@@ -94,7 +99,7 @@ export const Settings: React.FC<SettingsProps> = ({
       modrinth: newKeys.modrinth.length > 0,
     };
     localStorage.setItem('modporter_api_keys_status', JSON.stringify(status));
-    
+
     // In production, you would send the actual key to the backend securely
     // For now, we just store the status
     showSavedMessage();
@@ -106,10 +111,13 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   const toggleApiKeyVisibility = (keyName: string) => {
-    setShowApiKeys(prev => ({ ...prev, [keyName]: !prev[keyName] }));
+    setShowApiKeys((prev) => ({ ...prev, [keyName]: !prev[keyName] }));
   };
 
-  const handlePreferenceChange = (key: keyof SettingsPreferences, value: any) => {
+  const handlePreferenceChange = (
+    key: keyof SettingsPreferences,
+    value: any
+  ) => {
     const newPreferences = { ...preferences, [key]: value };
     savePreferences(newPreferences);
   };
@@ -117,7 +125,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const handleApiKeyChange = (keyName: string, value: string) => {
     // Don't save actual API keys to localStorage in production
     // This is just for demonstration
-    setApiKeys(prev => ({ ...prev, [keyName]: value }));
+    setApiKeys((prev) => ({ ...prev, [keyName]: value }));
   };
 
   const handleApiKeyBlur = (keyName: string) => {
@@ -133,13 +141,13 @@ export const Settings: React.FC<SettingsProps> = ({
       </div>
 
       <div className="settings-tabs">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'preferences' ? 'active' : ''}`}
           onClick={() => setActiveTab('preferences')}
         >
           Preferences
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'api-keys' ? 'active' : ''}`}
           onClick={() => setActiveTab('api-keys')}
         >
@@ -151,18 +159,24 @@ export const Settings: React.FC<SettingsProps> = ({
         <div className="settings-content">
           <div className="settings-section">
             <h3>Default Conversion Options</h3>
-            
+
             <div className="setting-item">
               <label className="setting-label">
                 <input
                   type="checkbox"
                   checked={preferences.defaultSmartAssumptions}
-                  onChange={(e) => handlePreferenceChange('defaultSmartAssumptions', e.target.checked)}
+                  onChange={(e) =>
+                    handlePreferenceChange(
+                      'defaultSmartAssumptions',
+                      e.target.checked
+                    )
+                  }
                 />
                 <span className="label-text">
                   Smart Assumptions
                   <span className="label-description">
-                    Automatically make reasonable assumptions for missing information
+                    Automatically make reasonable assumptions for missing
+                    information
                   </span>
                 </span>
               </label>
@@ -173,7 +187,12 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="checkbox"
                   checked={preferences.defaultIncludeDependencies}
-                  onChange={(e) => handlePreferenceChange('defaultIncludeDependencies', e.target.checked)}
+                  onChange={(e) =>
+                    handlePreferenceChange(
+                      'defaultIncludeDependencies',
+                      e.target.checked
+                    )
+                  }
                 />
                 <span className="label-text">
                   Include Dependencies
@@ -187,7 +206,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
           <div className="settings-section">
             <h3>Application</h3>
-            
+
             <div className="setting-item">
               <label className="setting-label">
                 <span className="label-text">
@@ -198,7 +217,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 </span>
                 <select
                   value={preferences.theme}
-                  onChange={(e) => handlePreferenceChange('theme', e.target.value)}
+                  onChange={(e) =>
+                    handlePreferenceChange('theme', e.target.value)
+                  }
                   className="setting-select"
                 >
                   <option value="light">Light</option>
@@ -213,7 +234,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="checkbox"
                   checked={preferences.notifications}
-                  onChange={(e) => handlePreferenceChange('notifications', e.target.checked)}
+                  onChange={(e) =>
+                    handlePreferenceChange('notifications', e.target.checked)
+                  }
                 />
                 <span className="label-text">
                   Notifications
@@ -229,7 +252,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="checkbox"
                   checked={preferences.autoCheckUpdates}
-                  onChange={(e) => handlePreferenceChange('autoCheckUpdates', e.target.checked)}
+                  onChange={(e) =>
+                    handlePreferenceChange('autoCheckUpdates', e.target.checked)
+                  }
                 />
                 <span className="label-text">
                   Auto-check Updates
@@ -248,9 +273,10 @@ export const Settings: React.FC<SettingsProps> = ({
           <div className="settings-section">
             <h3>API Keys</h3>
             <p className="section-description">
-              Enter your API keys for enhanced functionality. Keys are stored securely and never shared.
+              Enter your API keys for enhanced functionality. Keys are stored
+              securely and never shared.
             </p>
-            
+
             <div className="api-key-item">
               <label className="api-key-label">
                 OpenAI API Key
@@ -289,7 +315,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type={showApiKeys.curseforge ? 'text' : 'password'}
                   value={apiKeys.curseforge}
-                  onChange={(e) => handleApiKeyChange('curseforge', e.target.value)}
+                  onChange={(e) =>
+                    handleApiKeyChange('curseforge', e.target.value)
+                  }
                   onBlur={() => handleApiKeyBlur('curseforge')}
                   placeholder="Enter your CurseForge API key"
                   className="api-key-input"
@@ -316,7 +344,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type={showApiKeys.modrinth ? 'text' : 'password'}
                   value={apiKeys.modrinth}
-                  onChange={(e) => handleApiKeyChange('modrinth', e.target.value)}
+                  onChange={(e) =>
+                    handleApiKeyChange('modrinth', e.target.value)
+                  }
                   onBlur={() => handleApiKeyBlur('modrinth')}
                   placeholder="Enter your Modrinth API key"
                   className="api-key-input"
@@ -336,17 +366,36 @@ export const Settings: React.FC<SettingsProps> = ({
           <div className="settings-section">
             <h3>API Key Status</h3>
             <div className="api-status-list">
-              <div className={`api-status-item ${apiKeys.openai ? 'configured' : 'not-configured'}`}>
-                <span className="status-icon">{apiKeys.openai ? '✅' : '❌'}</span>
-                <span>OpenAI {apiKeys.openai ? 'configured' : 'not configured'}</span>
+              <div
+                className={`api-status-item ${apiKeys.openai ? 'configured' : 'not-configured'}`}
+              >
+                <span className="status-icon">
+                  {apiKeys.openai ? '✅' : '❌'}
+                </span>
+                <span>
+                  OpenAI {apiKeys.openai ? 'configured' : 'not configured'}
+                </span>
               </div>
-              <div className={`api-status-item ${apiKeys.curseforge ? 'configured' : 'not-configured'}`}>
-                <span className="status-icon">{apiKeys.curseforge ? '✅' : '❌'}</span>
-                <span>CurseForge {apiKeys.curseforge ? 'configured' : 'not configured'}</span>
+              <div
+                className={`api-status-item ${apiKeys.curseforge ? 'configured' : 'not-configured'}`}
+              >
+                <span className="status-icon">
+                  {apiKeys.curseforge ? '✅' : '❌'}
+                </span>
+                <span>
+                  CurseForge{' '}
+                  {apiKeys.curseforge ? 'configured' : 'not configured'}
+                </span>
               </div>
-              <div className={`api-status-item ${apiKeys.modrinth ? 'configured' : 'not-configured'}`}>
-                <span className="status-icon">{apiKeys.modrinth ? '✅' : '❌'}</span>
-                <span>Modrinth {apiKeys.modrinth ? 'configured' : 'not configured'}</span>
+              <div
+                className={`api-status-item ${apiKeys.modrinth ? 'configured' : 'not-configured'}`}
+              >
+                <span className="status-icon">
+                  {apiKeys.modrinth ? '✅' : '❌'}
+                </span>
+                <span>
+                  Modrinth {apiKeys.modrinth ? 'configured' : 'not configured'}
+                </span>
               </div>
             </div>
           </div>
@@ -379,12 +428,15 @@ export const useSettings = () => {
   }, []);
 
   const updatePreference = <K extends keyof SettingsPreferences>(
-    key: K, 
+    key: K,
     value: SettingsPreferences[K]
   ) => {
     const newPreferences = { ...preferences, [key]: value };
     setPreferences(newPreferences);
-    localStorage.setItem('modporter_preferences', JSON.stringify(newPreferences));
+    localStorage.setItem(
+      'modporter_preferences',
+      JSON.stringify(newPreferences)
+    );
   };
 
   return {

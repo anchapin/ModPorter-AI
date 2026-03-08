@@ -31,7 +31,14 @@ interface BedrockDocItem {
   id: string;
   title: string;
   description: string;
-  category: 'entity' | 'block' | 'item' | 'recipe' | 'loot_table' | 'component' | 'event';
+  category:
+    | 'entity'
+    | 'block'
+    | 'item'
+    | 'recipe'
+    | 'loot_table'
+    | 'component'
+    | 'event';
   syntax?: string;
   example?: string;
   properties?: Record<string, string>;
@@ -49,50 +56,52 @@ const bedrockDocs: BedrockDocItem[] = [
   {
     id: 'entity-identifier',
     title: 'minecraft:identifier',
-    description: 'Defines the entity\'s unique identifier used to spawn it in-game.',
+    description:
+      "Defines the entity's unique identifier used to spawn it in-game.",
     category: 'entity',
     syntax: '"minecraft:identifier": { "id": "<namespace>:<name>" }',
     example: '"minecraft:identifier": { "id": "minecraft:creeper" }',
     properties: {
-      'id': 'The unique identifier (e.g., "minecraft:zombie")',
+      id: 'The unique identifier (e.g., "minecraft:zombie")',
     },
     related: ['minecraft:spawn_entity', 'minecraft:entity'],
   },
   {
     id: 'entity-health',
     title: 'minecraft:health',
-    description: 'Sets the entity\'s health value and maximum health.',
+    description: "Sets the entity's health value and maximum health.",
     category: 'entity',
     syntax: '"minecraft:health": { "value": <number>, "max": <number> }',
     example: '"minecraft:health": { "value": 20, "max": 20 }',
     properties: {
-      'value': 'Current health value',
-      'max': 'Maximum health value',
+      value: 'Current health value',
+      max: 'Maximum health value',
     },
     related: ['minecraft:damage', 'minecraft:heal'],
   },
   {
     id: 'entity-movement',
     title: 'minecraft:movement',
-    description: 'Defines the entity\'s movement speed.',
+    description: "Defines the entity's movement speed.",
     category: 'entity',
     syntax: '"minecraft:movement": { "value": <number> }',
     example: '"minecraft:movement": { "value": 0.25 }',
     properties: {
-      'value': 'Movement speed (0.0-1.0)',
+      value: 'Movement speed (0.0-1.0)',
     },
     related: ['minecraft:movement.basic', 'minecraft:movement.jump'],
   },
   {
     id: 'entity-collision',
     title: 'minecraft:collision_box',
-    description: 'Defines the entity\'s collision box size.',
+    description: "Defines the entity's collision box size.",
     category: 'entity',
-    syntax: '"minecraft:collision_box": { "width": <number>, "height": <number> }',
+    syntax:
+      '"minecraft:collision_box": { "width": <number>, "height": <number> }',
     example: '"minecraft:collision_box": { "width": 0.6, "height": 1.8 }',
     properties: {
-      'width': 'Width of collision box',
-      'height': 'Height of collision box',
+      width: 'Width of collision box',
+      height: 'Height of collision box',
     },
     related: ['minecraft:physics'],
   },
@@ -100,24 +109,24 @@ const bedrockDocs: BedrockDocItem[] = [
   {
     id: 'block-identifier',
     title: 'minecraft:identifier',
-    description: 'Defines the block\'s unique identifier.',
+    description: "Defines the block's unique identifier.",
     category: 'block',
     syntax: '"minecraft:identifier": "<namespace>:<name>"',
     example: '"minecraft:identifier": "minecraft:diamond_block"',
     properties: {
-      'id': 'The unique identifier (e.g., "minecraft:stone")',
+      id: 'The unique identifier (e.g., "minecraft:stone")',
     },
     related: ['minecraft:block', 'minecraft:block_light_absorption'],
   },
   {
     id: 'block-hardness',
     title: 'minecraft:blast_resistance',
-    description: 'Defines the block\'s blast resistance value.',
+    description: "Defines the block's blast resistance value.",
     category: 'block',
     syntax: '"minecraft:blast_resistance": <number>',
     example: '"minecraft:blast_resistance": 30',
     properties: {
-      'value': 'Blast resistance (higher = more resistant)',
+      value: 'Blast resistance (higher = more resistant)',
     },
     related: ['minecraft:hardness'],
   },
@@ -129,7 +138,7 @@ const bedrockDocs: BedrockDocItem[] = [
     syntax: '"minecraft:loot": "loot_tables/<path>.json"',
     example: '"minecraft:loot": "loot_tables/blocks/diamond_ore.json"',
     properties: {
-      'table': 'Path to loot table file',
+      table: 'Path to loot table file',
     },
     related: ['minecraft:pick_loot'],
   },
@@ -139,9 +148,10 @@ const bedrockDocs: BedrockDocItem[] = [
     description: 'Defines crafting recipes for the block.',
     category: 'block',
     syntax: '"minecraft:crafting_table": { "recipes": [...] }',
-    example: '"minecraft:crafting_table": { "recipes": [{ "result": "minecraft:diamond_sword", "count": 1 }] }',
+    example:
+      '"minecraft:crafting_table": { "recipes": [{ "result": "minecraft:diamond_sword", "count": 1 }] }',
     properties: {
-      'recipes': 'Array of recipe definitions',
+      recipes: 'Array of recipe definitions',
     },
     related: ['minecraft:recipe'],
   },
@@ -149,12 +159,12 @@ const bedrockDocs: BedrockDocItem[] = [
   {
     id: 'item-identifier',
     title: 'minecraft:icon',
-    description: 'Defines the item\'s icon texture.',
+    description: "Defines the item's icon texture.",
     category: 'item',
     syntax: '"minecraft:icon": "<texture_name>"',
     example: '"minecraft:icon": "diamond_sword"',
     properties: {
-      'texture': 'Name of the texture without extension',
+      texture: 'Name of the texture without extension',
     },
     related: ['minecraft:display_name', 'minecraft:stack_size'],
   },
@@ -166,7 +176,7 @@ const bedrockDocs: BedrockDocItem[] = [
     syntax: '"minecraft:stack_size": <number>',
     example: '"minecraft:stack_size": 64',
     properties: {
-      'size': 'Maximum stack size (1-64)',
+      size: 'Maximum stack size (1-64)',
     },
     related: ['minecraft:max_damage', 'minecraft:durability'],
   },
@@ -179,7 +189,7 @@ const bedrockDocs: BedrockDocItem[] = [
     syntax: '"minecraft:annotation": { "value": "<text>" }',
     example: '"minecraft:annotation": { "value": "A friendly creeper" }',
     properties: {
-      'value': 'The annotation text',
+      value: 'The annotation text',
     },
     related: ['minecraft:sensor', 'minecraft:behavior'],
   },
@@ -192,9 +202,9 @@ const bedrockDocs: BedrockDocItem[] = [
     syntax: 'minecraft:entity.<event_name>',
     example: 'minecraft:entity.spawned',
     properties: {
-      'spawned': 'Triggered when entity spawns',
-      'died': 'Triggered when entity dies',
-      'hurt': 'Triggered when entity takes damage',
+      spawned: 'Triggered when entity spawns',
+      died: 'Triggered when entity dies',
+      hurt: 'Triggered when entity takes damage',
     },
     related: ['minecraft:player', 'minecraft:ageable'],
   },
@@ -206,9 +216,9 @@ const bedrockDocs: BedrockDocItem[] = [
     syntax: 'minecraft:component.<action>_<component_name>',
     example: 'minecraft:component.health.set_value',
     properties: {
-      'add': 'Add a component',
-      'remove': 'Remove a component',
-      'set': 'Set component value',
+      add: 'Add a component',
+      remove: 'Remove a component',
+      set: 'Set component value',
     },
     related: ['minecraft:entity'],
   },
@@ -243,7 +253,9 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>('entity');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(
+    'entity'
+  );
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -261,7 +273,10 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
   }, [searchQuery]);
 
   // Group filtered docs by category
-  const groupedDocs = useMemo(() => categorizeDocs(filteredDocs), [filteredDocs]);
+  const groupedDocs = useMemo(
+    () => categorizeDocs(filteredDocs),
+    [filteredDocs]
+  );
 
   // Handle copy to clipboard
   const handleCopy = async (text: string, id: string) => {
@@ -339,7 +354,15 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
       <div className="docs-content">
         {Object.entries(groupedDocs).map(([category, docs]) => {
           const tabCategories: Record<number, string[]> = {
-            0: ['entity', 'block', 'item', 'recipe', 'loot_table', 'component', 'event'],
+            0: [
+              'entity',
+              'block',
+              'item',
+              'recipe',
+              'loot_table',
+              'component',
+              'event',
+            ],
             1: ['entity'],
             2: ['block'],
             3: ['item'],
@@ -362,7 +385,11 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                   primary={categoryInfo[category]?.label || category}
                   secondary={`${docs.length} items`}
                 />
-                {expandedCategory === category ? <ExpandLess /> : <ExpandMore />}
+                {expandedCategory === category ? (
+                  <ExpandLess />
+                ) : (
+                  <ExpandMore />
+                )}
               </ListItemButton>
 
               <Collapse in={expandedCategory === category}>
@@ -385,7 +412,11 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                             </Typography>
                           }
                         />
-                        {expandedDoc === doc.id ? <ExpandLess /> : <ExpandMore />}
+                        {expandedDoc === doc.id ? (
+                          <ExpandLess />
+                        ) : (
+                          <ExpandMore />
+                        )}
                       </ListItemButton>
 
                       <Collapse in={expandedDoc === doc.id}>
@@ -393,7 +424,10 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                           {/* Syntax */}
                           {doc.syntax && (
                             <div className="doc-section">
-                              <Typography variant="subtitle2" className="section-label">
+                              <Typography
+                                variant="subtitle2"
+                                className="section-label"
+                              >
                                 Syntax:
                               </Typography>
                               <div className="code-block">
@@ -401,7 +435,12 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                                 <Tooltip title="Copy syntax">
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleCopy(doc.syntax!, `${doc.id}-syntax`)}
+                                    onClick={() =>
+                                      handleCopy(
+                                        doc.syntax!,
+                                        `${doc.id}-syntax`
+                                      )
+                                    }
                                   >
                                     {copiedId === `${doc.id}-syntax` ? (
                                       <ContentCopy fontSize="small" />
@@ -417,7 +456,10 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                           {/* Example */}
                           {doc.example && (
                             <div className="doc-section">
-                              <Typography variant="subtitle2" className="section-label">
+                              <Typography
+                                variant="subtitle2"
+                                className="section-label"
+                              >
                                 Example:
                               </Typography>
                               <div className="code-block">
@@ -425,7 +467,12 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                                 <Tooltip title="Copy example">
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleCopy(doc.example!, `${doc.id}-example`)}
+                                    onClick={() =>
+                                      handleCopy(
+                                        doc.example!,
+                                        `${doc.id}-example`
+                                      )
+                                    }
                                   >
                                     {copiedId === `${doc.id}-example` ? (
                                       <ContentCopy fontSize="small" />
@@ -439,28 +486,37 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                           )}
 
                           {/* Properties */}
-                          {doc.properties && Object.keys(doc.properties).length > 0 && (
-                            <div className="doc-section">
-                              <Typography variant="subtitle2" className="section-label">
-                                Properties:
-                              </Typography>
-                              <div className="properties-list">
-                                {Object.entries(doc.properties).map(([key, value]) => (
-                                  <Chip
-                                    key={key}
-                                    label={`${key}: ${value}`}
-                                    size="small"
-                                    className="property-chip"
-                                  />
-                                ))}
+                          {doc.properties &&
+                            Object.keys(doc.properties).length > 0 && (
+                              <div className="doc-section">
+                                <Typography
+                                  variant="subtitle2"
+                                  className="section-label"
+                                >
+                                  Properties:
+                                </Typography>
+                                <div className="properties-list">
+                                  {Object.entries(doc.properties).map(
+                                    ([key, value]) => (
+                                      <Chip
+                                        key={key}
+                                        label={`${key}: ${value}`}
+                                        size="small"
+                                        className="property-chip"
+                                      />
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
                           {/* Related */}
                           {doc.related && doc.related.length > 0 && (
                             <div className="doc-section">
-                              <Typography variant="subtitle2" className="section-label">
+                              <Typography
+                                variant="subtitle2"
+                                className="section-label"
+                              >
                                 Related:
                               </Typography>
                               <div className="related-list">
@@ -482,7 +538,9 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
                             <div className="doc-actions">
                               <Chip
                                 label="Insert to Editor"
-                                onClick={() => handleInsert(doc.example || doc.syntax || '')}
+                                onClick={() =>
+                                  handleInsert(doc.example || doc.syntax || '')
+                                }
                                 color="primary"
                                 size="small"
                                 className="insert-chip"

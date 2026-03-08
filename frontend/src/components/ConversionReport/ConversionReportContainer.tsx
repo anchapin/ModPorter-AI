@@ -13,10 +13,9 @@ interface ConversionReportContainerProps {
   jobStatus?: 'completed' | 'failed' | 'processing';
 }
 
-export const ConversionReportContainer: React.FC<ConversionReportContainerProps> = ({
-  jobId,
-  jobStatus
-}) => {
+export const ConversionReportContainer: React.FC<
+  ConversionReportContainerProps
+> = ({ jobId, jobStatus }) => {
   const [reportData, setReportData] = useState<InteractiveReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +33,7 @@ export const ConversionReportContainer: React.FC<ConversionReportContainerProps>
 
       // Try new conversions endpoint first, fall back to legacy jobs endpoint
       let response = await fetch(`${API_BASE_URL}/conversions/${jobId}/report`);
-      
+
       if (response.status === 404) {
         // Fallback to legacy endpoint
         response = await fetch(`${API_BASE_URL}/jobs/${jobId}/report`);
@@ -42,16 +41,22 @@ export const ConversionReportContainer: React.FC<ConversionReportContainerProps>
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Conversion report not found. Please ensure the conversion completed successfully.');
+          throw new Error(
+            'Conversion report not found. Please ensure the conversion completed successfully.'
+          );
         }
-        throw new Error(`Failed to fetch report: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch report: ${response.status} ${response.statusText}`
+        );
       }
 
       const data: InteractiveReport = await response.json();
       setReportData(data);
     } catch (err) {
       console.error('Error fetching conversion report:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load conversion report');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load conversion report'
+      );
     } finally {
       setLoading(false);
     }
@@ -75,10 +80,7 @@ export const ConversionReportContainer: React.FC<ConversionReportContainerProps>
       <div className={styles.errorContainer}>
         <h2>Unable to Load Report</h2>
         <p>{error}</p>
-        <button 
-          onClick={fetchReportData} 
-          className={styles.retryButton}
-        >
+        <button onClick={fetchReportData} className={styles.retryButton}>
           Retry
         </button>
       </div>
@@ -94,5 +96,7 @@ export const ConversionReportContainer: React.FC<ConversionReportContainerProps>
     );
   }
 
-  return <ConversionReport conversionResult={reportData} jobStatus={jobStatus} />;
+  return (
+    <ConversionReport conversionResult={reportData} jobStatus={jobStatus} />
+  );
 };

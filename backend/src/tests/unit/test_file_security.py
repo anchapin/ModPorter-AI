@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from io import BytesIO
 
-from backend.src.security.file_security import (
+from security.file_security import (
     FileSecurityScanner,
     SecurityConfig,
     SecurityScanResult,
@@ -362,6 +362,12 @@ class TestSecurityScanResult:
 
 class TestConvenienceFunctions:
     """Tests for convenience functions."""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
     
     def test_scan_archive_function(self, temp_dir):
         """Test the scan_archive convenience function."""

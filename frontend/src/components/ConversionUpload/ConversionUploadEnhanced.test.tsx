@@ -33,10 +33,16 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
     // Check initial state
     expect(infoButton).toHaveClass('info-button');
-    expect(infoButton).toHaveAttribute('aria-label', 'Learn more about smart assumptions');
+    expect(infoButton).toHaveAttribute(
+      'aria-label',
+      'Learn more about smart assumptions'
+    );
     // These are the new attributes we expect to add
     expect(infoButton).toHaveAttribute('aria-expanded', 'false');
-    expect(infoButton).toHaveAttribute('aria-controls', 'smart-assumptions-info');
+    expect(infoButton).toHaveAttribute(
+      'aria-controls',
+      'smart-assumptions-info'
+    );
 
     // Click to expand
     fireEvent.click(infoButton);
@@ -45,7 +51,9 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     expect(infoButton).toHaveAttribute('aria-expanded', 'true');
 
     // Check if the info panel appears and has the correct ID
-    const infoPanel = screen.getByText(/When enabled, our AI will make intelligent assumptions/i).closest('.info-panel');
+    const infoPanel = screen
+      .getByText(/When enabled, our AI will make intelligent assumptions/i)
+      .closest('.info-panel');
     expect(infoPanel).toBeInTheDocument();
     expect(infoPanel).toHaveAttribute('id', 'smart-assumptions-info');
   });
@@ -55,7 +63,9 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     render(<ConversionUploadEnhanced />);
 
     // Upload a file
-    const file = new File(['dummy content'], 'test-mod.jar', { type: 'application/java-archive' });
+    const file = new File(['dummy content'], 'test-mod.jar', {
+      type: 'application/java-archive',
+    });
     const fileInput = screen.getByLabelText(/file upload/i);
 
     await user.upload(fileInput, file);
@@ -84,7 +94,9 @@ describe('ConversionUploadEnhanced Accessibility', () => {
       expect(screen.getByText(/Please enter a valid URL/i)).toBeInTheDocument();
     });
 
-    const errorMessage = screen.getByText(/Please enter a valid URL/i).closest('.error-message');
+    const errorMessage = screen
+      .getByText(/Please enter a valid URL/i)
+      .closest('.error-message');
     expect(errorMessage).toHaveAttribute('role', 'alert');
   });
 
@@ -104,7 +116,9 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     expect(submitButton).toBeDisabled();
 
     // Upload a file
-    const file = new File(['dummy content'], 'test-mod.jar', { type: 'application/java-archive' });
+    const file = new File(['dummy content'], 'test-mod.jar', {
+      type: 'application/java-archive',
+    });
     const fileInput = screen.getByLabelText(/file upload/i);
     await user.upload(fileInput, file);
 
@@ -121,25 +135,32 @@ describe('ConversionUploadEnhanced Accessibility', () => {
     // It is `convertMod: vi.fn()`.
 
     // Mock the convertMod function
-    vi.mocked(convertMod).mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({ job_id: '123' } as any), 100)));
+    vi.mocked(convertMod).mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ job_id: '123' } as any), 100)
+        )
+    );
 
     // Click submit
     await user.click(submitButton);
 
     // Check for spinner
     await waitFor(() => {
-        // Check if button text changed (either Uploading or Processing, depending on timing)
-        // Since the mock resolves fast, it likely goes to Processing
-        const button = screen.getByRole('button', { name: /Processing|Uploading/i });
-        expect(button).toBeInTheDocument();
+      // Check if button text changed (either Uploading or Processing, depending on timing)
+      // Since the mock resolves fast, it likely goes to Processing
+      const button = screen.getByRole('button', {
+        name: /Processing|Uploading/i,
+      });
+      expect(button).toBeInTheDocument();
 
-        // Check if spinner exists by class name
-        // React Testing Library doesn't recommend querying by class, but for this specific visual element it's acceptable
-        // or we can query by aria-hidden, but that's not specific enough.
-        // We can check if the span with class conversion-spinner is present in the document.
-        const spinner = document.querySelector('.conversion-spinner');
-        expect(spinner).toBeInTheDocument();
-        expect(spinner).toHaveAttribute('aria-hidden', 'true');
+      // Check if spinner exists by class name
+      // React Testing Library doesn't recommend querying by class, but for this specific visual element it's acceptable
+      // or we can query by aria-hidden, but that's not specific enough.
+      // We can check if the span with class conversion-spinner is present in the document.
+      const spinner = document.querySelector('.conversion-spinner');
+      expect(spinner).toBeInTheDocument();
+      expect(spinner).toHaveAttribute('aria-hidden', 'true');
     });
   });
 });

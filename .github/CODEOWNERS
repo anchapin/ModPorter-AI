@@ -1,0 +1,69 @@
+# Code Ownership Rules
+# 
+# This CODEOWNERS file defines code ownership and review requirements for the ModPorter-AI project.
+# Review is required from code owners before merging changes.
+# 
+# For more information about CODEOWNERS, see:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ============================================================================
+# Default Owners (catch-all for any file not matching specific rules)
+# ============================================================================
+*       @anchapin
+
+# ============================================================================
+# Frontend Team - React/TypeScript UI Components
+# ============================================================================
+# All frontend-related files require review from frontend maintainers
+/frontend/                                   @anchapin
+
+# ============================================================================
+# Backend Team - Python API and Server
+# ============================================================================
+# All backend-related files require review from backend maintainers
+/backend/                                    @anchapin
+
+# ============================================================================
+# AI-Engine Team - ML/AI Components
+# ============================================================================
+# All AI engine-related files require review from AI engine maintainers
+/ai-engine/                                  @anchapin
+
+# ============================================================================
+# Infrastructure & DevOps
+# ============================================================================
+# Docker and infrastructure configurations
+/docker/                                     @anchapin
+docker-compose*.yml                          @anchapin
+Dockerfile*                                  @anchapin
+
+# ============================================================================
+# Security & Compliance
+# ============================================================================
+# Security-related files require review from security team
+/.github/security-check.sh                   @anchapin
+/.github/security-config-guide.md            @anchapin
+
+# ============================================================================
+# Documentation
+# ============================================================================
+# Documentation changes can be reviewed by any maintainer
+/docs/                                       @anchapin
+*.md                                         @anchapin
+!/.github/*.md
+
+# ============================================================================
+# Configuration Files
+# ============================================================================
+# Project-wide configuration files
+/.github/                                    @anchapin
+/database/                                   @anchapin
+/monitoring/                                 @anchapin
+/scripts/                                    @anchapin
+/modporter/                                  @anchapin
+/tests/                                      @anchapin
+
+# ============================================================================
+# CI/CD Workflows
+# ============================================================================
+/.github/workflows/                          @anchapin

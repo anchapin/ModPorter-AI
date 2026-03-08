@@ -13,6 +13,9 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Vitest types for vite.config.ts */
+    "types": ["vitest"],
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

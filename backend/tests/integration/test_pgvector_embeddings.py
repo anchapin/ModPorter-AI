@@ -30,8 +30,7 @@ TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:
 IS_POSTGRES = TEST_DATABASE_URL.startswith("postgresql")
 
 pytestmark = pytest.mark.skipif(
-    not IS_POSTGRES,
-    reason="pgvector integration tests require PostgreSQL with pgvector extension"
+    not IS_POSTGRES, reason="pgvector integration tests require PostgreSQL with pgvector extension"
 )
 
 # Sample embedding dimensions (using 1536 for OpenAI ada embeddings)
@@ -62,7 +61,7 @@ def pgvector_engine():
     """Create a test engine for PostgreSQL with pgvector."""
     if not IS_POSTGRES:
         pytest.skip("PostgreSQL required for pgvector tests")
-    
+
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     return engine
 
@@ -71,16 +70,15 @@ def pgvector_engine():
 async def pgvector_session(pgvector_engine):
     """Create a database session for pgvector tests."""
     async_session = async_sessionmaker(
-        bind=pgvector_engine,
-        expire_on_commit=False,
-        class_=AsyncSession
+        bind=pgvector_engine, expire_on_commit=False, class_=AsyncSession
     )
-    
+
     async with pgvector_engine.begin() as conn:
         # Ensure pgvector extension is available
         from sqlalchemy import text
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
-    
+
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
+
     async with async_session() as session:
         yield session
         await session.close()
@@ -90,7 +88,7 @@ async def pgvector_session(pgvector_engine):
 async def test_find_similar_embeddings_basic(pgvector_session: AsyncSession):
     """
     Test basic similarity search functionality.
-    
+
     Creates embeddings at known distances and verifies that
     similar embeddings are returned first.
     """
@@ -101,35 +99,34 @@ async def test_find_similar_embeddings_basic(pgvector_session: AsyncSession):
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
     )
-    
+
     await crud.create_document_embedding(
         db=pgvector_session,
         embedding=SAMPLE_EMBEDDING_SIMILAR,  # Very similar to EMBEDDING_1
         document_source=SAMPLE_SOURCE_4,
         content_hash=SAMPLE_HASH_4,
     )
-    
+
     await crud.create_document_embedding(
         db=pgvector_session,
         embedding=SAMPLE_EMBEDDING_DIFFERENT,  # Very different
         document_source=SAMPLE_SOURCE_5,
         content_hash=SAMPLE_HASH_5,
     )
-    
+
     # Query using EMBEDDING_1 - should return EMBEDDING_1 (itself) and SAMPLE_EMBEDDING_SIMILAR first
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=3
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=3
     )
-    
+
     assert len(results) > 0, "Should return at least one similar embedding"
-    
+
     # The most similar should be EMBEDDING_1 (exact match) or SAMPLE_EMBEDDING_SIMILAR
     # Check that we get relevant results
     sources = [r.document_source for r in results]
-    assert SAMPLE_SOURCE_1 in sources or SAMPLE_SOURCE_4 in sources, \
+    assert SAMPLE_SOURCE_1 in sources or SAMPLE_SOURCE_4 in sources, (
         "Should find similar embeddings"
+    )
 
 
 @pytest.mark.asyncio
@@ -144,14 +141,12 @@ async def test_find_similar_embeddings_limit(pgvector_session: AsyncSession):
             document_source=f"doc_{i}.txt",
             content_hash=f"hash_{i}",
         )
-    
+
     # Query with limit=2
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=2
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=2
     )
-    
+
     assert len(results) <= 2, "Should respect the limit parameter"
 
 
@@ -159,11 +154,9 @@ async def test_find_similar_embeddings_limit(pgvector_session: AsyncSession):
 async def test_find_similar_embeddings_empty_database(pgvector_session: AsyncSession):
     """Test that similarity search handles empty database gracefully."""
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=5
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=5
     )
-    
+
     assert len(results) == 0, "Should return empty list for empty database"
 
 
@@ -178,14 +171,12 @@ async def test_find_similar_embeddings_no_match(pgvector_session: AsyncSession):
         document_source="far_doc.txt",
         content_hash="far_hash",
     )
-    
+
     # Query with very different embedding
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=5
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=5
     )
-    
+
     # Should still return results but they will be "similar" within the vector space
     # The exact behavior depends on the implementation
     assert results is not None
@@ -201,14 +192,12 @@ async def test_find_similar_embeddings_exact_match(pgvector_session: AsyncSessio
         document_source=SAMPLE_SOURCE_1,
         content_hash=SAMPLE_HASH_1,
     )
-    
+
     # Query with the exact same embedding
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=1
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=1
     )
-    
+
     assert len(results) > 0, "Should find exact match"
     assert results[0].content_hash == SAMPLE_HASH_1, "Should match the exact embedding"
 
@@ -223,20 +212,18 @@ async def test_find_similar_embeddings_with_filters(pgvector_session: AsyncSessi
         document_source="filter_test_doc1.txt",
         content_hash="filter_hash_1",
     )
-    
+
     await crud.create_document_embedding(
         db=pgvector_session,
         embedding=SAMPLE_EMBEDDING_2,
         document_source="filter_test_doc2.txt",
         content_hash="filter_hash_2",
     )
-    
+
     results = await crud.find_similar_embeddings(
-        db=pgvector_session,
-        query_embedding=SAMPLE_EMBEDDING_1,
-        limit=10
+        db=pgvector_session, query_embedding=SAMPLE_EMBEDDING_1, limit=10
     )
-    
+
     # Verify we get results
     assert len(results) >= 2, "Should find multiple embeddings"
 
@@ -244,16 +231,17 @@ async def test_find_similar_embeddings_with_filters(pgvector_session: AsyncSessi
 def test_pgvector_extension_available(pgvector_engine):
     """Test that pgvector extension is available in the database."""
     import asyncio
-    
+
     async def check_extension():
         async with pgvector_engine.connect() as conn:
             from sqlalchemy import text
-            result = await conn.execute(text(
-                "SELECT extname FROM pg_extension WHERE extname = 'vector'"
-            ))
+
+            result = await conn.execute(
+                text("SELECT extname FROM pg_extension WHERE extname = 'vector'")
+            )
             row = result.fetchone()
             return row is not None
-    
+
     result = asyncio.run(check_extension())
     assert result, "pgvector extension should be available"
 
@@ -270,5 +258,6 @@ def test_l2_distance_operator():
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line(
-        "markers", "pgvector: marks tests as pgvector integration tests (deselect with '-m \"not pgvector\"')"
+        "markers",
+        "pgvector: marks tests as pgvector integration tests (deselect with '-m \"not pgvector\"')",
     )

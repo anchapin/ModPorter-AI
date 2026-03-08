@@ -15,10 +15,10 @@ interface ConversionHistoryProps {
   onStartNewConversion?: () => void;
 }
 
-export const ConversionHistory: React.FC<ConversionHistoryProps> = ({ 
+export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   className = '',
   maxItems = 50,
-  onStartNewConversion
+  onStartNewConversion,
 }) => {
   const [history, setHistory] = useState<ConversionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,18 +40,22 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // For MVP, use localStorage to store conversion history
-      const storedHistory = localStorage.getItem('modporter_conversion_history');
-      const parsedHistory: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
-      
+      const storedHistory = localStorage.getItem(
+        'modporter_conversion_history'
+      );
+      const parsedHistory: ConversionHistoryItem[] = storedHistory
+        ? JSON.parse(storedHistory)
+        : [];
+
       // ⚡ Bolt optimization: ISO 8601 strings are lexicographically sortable.
       // Using standard operators (>, <) avoids both Date instantiation AND the slow
       // Internationalization (Intl) API used by localeCompare, making sorting ~20x faster.
-      const sortedHistory = parsedHistory.sort((a, b) => 
+      const sortedHistory = parsedHistory.sort((a, b) =>
         b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0
       );
-      
+
       setHistory(sortedHistory.slice(0, maxItems));
       setError(null);
     } catch (err) {
@@ -71,29 +75,38 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   // This ensures deletions and updates are persisted without side effects in updaters
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(history));
+      localStorage.setItem(
+        'modporter_conversion_history',
+        JSON.stringify(history)
+      );
     }
   }, [history, loading]);
 
   // Add new conversion to history
-  const addToHistory = useCallback((item: ConversionHistoryItem) => {
-    setHistory(prevHistory => {
-      const updatedHistory = [item, ...prevHistory].slice(0, maxItems);
-      // LocalStorage sync handled by useEffect
-      return updatedHistory;
-    });
-  }, [maxItems]);
+  const addToHistory = useCallback(
+    (item: ConversionHistoryItem) => {
+      setHistory((prevHistory) => {
+        const updatedHistory = [item, ...prevHistory].slice(0, maxItems);
+        // LocalStorage sync handled by useEffect
+        return updatedHistory;
+      });
+    },
+    [maxItems]
+  );
 
   // Update existing conversion status
-  const updateConversionStatus = useCallback((jobId: string, updates: Partial<ConversionHistoryItem>) => {
-    setHistory(prevHistory => {
-      const updatedHistory = prevHistory.map(item =>
-        item.job_id === jobId ? { ...item, ...updates } : item
-      );
-      // LocalStorage sync handled by useEffect
-      return updatedHistory;
-    });
-  }, []);
+  const updateConversionStatus = useCallback(
+    (jobId: string, updates: Partial<ConversionHistoryItem>) => {
+      setHistory((prevHistory) => {
+        const updatedHistory = prevHistory.map((item) =>
+          item.job_id === jobId ? { ...item, ...updates } : item
+        );
+        // LocalStorage sync handled by useEffect
+        return updatedHistory;
+      });
+    },
+    []
+  );
 
   // Download conversion result
   const downloadConversion = useCallback(async (jobId: string) => {
@@ -107,12 +120,14 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Delete conversion from history
   const deleteConversion = useCallback((jobId: string) => {
-    setHistory(prevHistory => {
-      const updatedHistory = prevHistory.filter(item => item.job_id !== jobId);
+    setHistory((prevHistory) => {
+      const updatedHistory = prevHistory.filter(
+        (item) => item.job_id !== jobId
+      );
       return updatedHistory;
     });
 
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       if (!prev.has(jobId)) return prev;
       const updated = new Set(prev);
       updated.delete(jobId);
@@ -130,7 +145,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Toggle item selection
   const toggleSelection = useCallback((jobId: string) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       const updated = new Set(prev);
       if (updated.has(jobId)) {
         updated.delete(jobId);
@@ -143,8 +158,10 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Delete selected items
   const deleteSelected = useCallback(() => {
-    setHistory(currentHistory => {
-      const newHistory = currentHistory.filter(item => !selectedItems.has(item.job_id));
+    setHistory((currentHistory) => {
+      const newHistory = currentHistory.filter(
+        (item) => !selectedItems.has(item.job_id)
+      );
       return newHistory;
     });
     setSelectedItems(new Set());
@@ -152,15 +169,23 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   }, [selectedItems]);
 
   // Expose methods for parent components
-  React.useImperativeHandle(React.useRef(), () => ({
-    addToHistory,
-    updateConversionStatus,
-    loadHistory
-  }), [addToHistory, updateConversionStatus, loadHistory]);
+  React.useImperativeHandle(
+    React.useRef(),
+    () => ({
+      addToHistory,
+      updateConversionStatus,
+      loadHistory,
+    }),
+    [addToHistory, updateConversionStatus, loadHistory]
+  );
 
   if (loading) {
     return (
-      <div className={`conversion-history loading ${className}`} role="status" aria-label="Loading history">
+      <div
+        className={`conversion-history loading ${className}`}
+        role="status"
+        aria-label="Loading history"
+      >
         <div className="loading-spinner">⏳ Loading conversion history...</div>
       </div>
     );
@@ -172,30 +197,38 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         <h3>
           <span className="history-icon">📋</span>
           Conversion History
-          {history.length > 0 && <span className="count">({history.length})</span>}
+          {history.length > 0 && (
+            <span className="count">({history.length})</span>
+          )}
         </h3>
-        
+
         {history.length > 0 && (
           <div className="history-actions">
-            {selectedItems.size > 0 && (
-              confirmDelete ? (
-                <div className="confirm-actions" role="alertdialog" aria-label="Confirm delete selected">
-                    <span className="confirm-text">Delete {selectedItems.size} items?</span>
-                    <button
-                      className="delete-selected-btn"
-                      onClick={deleteSelected}
-                      aria-label="Yes, delete selected items"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      className="cancel-btn"
-                      onClick={() => setConfirmDelete(false)}
-                      aria-label="Cancel delete"
-                      autoFocus
-                    >
-                      No
-                    </button>
+            {selectedItems.size > 0 &&
+              (confirmDelete ? (
+                <div
+                  className="confirm-actions"
+                  role="alertdialog"
+                  aria-label="Confirm delete selected"
+                >
+                  <span className="confirm-text">
+                    Delete {selectedItems.size} items?
+                  </span>
+                  <button
+                    className="delete-selected-btn"
+                    onClick={deleteSelected}
+                    aria-label="Yes, delete selected items"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="cancel-btn"
+                    onClick={() => setConfirmDelete(false)}
+                    aria-label="Cancel delete"
+                    autoFocus
+                  >
+                    No
+                  </button>
                 </div>
               ) : (
                 <button
@@ -206,30 +239,33 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                 >
                   🗑️ Delete Selected ({selectedItems.size})
                 </button>
-              )
-            )}
+              ))}
 
             {confirmClear ? (
-                <div className="confirm-actions" role="alertdialog" aria-label="Confirm clear all history">
-                    <span className="confirm-text">Clear all?</span>
-                    <button
-                      className="clear-all-btn"
-                      onClick={clearAllHistory}
-                      aria-label="Yes, clear all history"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      className="cancel-btn"
-                      onClick={() => setConfirmClear(false)}
-                      aria-label="Cancel clear all"
-                      autoFocus
-                    >
-                      No
-                    </button>
-                </div>
+              <div
+                className="confirm-actions"
+                role="alertdialog"
+                aria-label="Confirm clear all history"
+              >
+                <span className="confirm-text">Clear all?</span>
+                <button
+                  className="clear-all-btn"
+                  onClick={clearAllHistory}
+                  aria-label="Yes, clear all history"
+                >
+                  Yes
+                </button>
+                <button
+                  className="cancel-btn"
+                  onClick={() => setConfirmClear(false)}
+                  aria-label="Cancel clear all"
+                  autoFocus
+                >
+                  No
+                </button>
+              </div>
             ) : (
-              <button 
+              <button
                 className="clear-all-btn"
                 onClick={() => setConfirmClear(true)}
                 title="Clear all history"
@@ -250,9 +286,13 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
       {history.length === 0 ? (
         <div className="empty-history" role="status">
-          <div className="empty-icon" aria-hidden="true">📭</div>
+          <div className="empty-icon" aria-hidden="true">
+            📭
+          </div>
           <p>No conversions yet</p>
-          <p className="empty-subtitle">Your conversion history will appear here</p>
+          <p className="empty-subtitle">
+            Your conversion history will appear here
+          </p>
           {onStartNewConversion && (
             <button
               className="start-new-btn"
@@ -291,31 +331,48 @@ export const useConversionHistory = () => {
       historyRef.addToHistory(conversion);
     } else {
       // Fallback to localStorage if ref not available
-      const storedHistory = localStorage.getItem('modporter_conversion_history');
-      const history: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
+      const storedHistory = localStorage.getItem(
+        'modporter_conversion_history'
+      );
+      const history: ConversionHistoryItem[] = storedHistory
+        ? JSON.parse(storedHistory)
+        : [];
       const updatedHistory = [conversion, ...history];
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      localStorage.setItem(
+        'modporter_conversion_history',
+        JSON.stringify(updatedHistory)
+      );
     }
   };
 
-  const updateConversion = (jobId: string, updates: Partial<ConversionHistoryItem>) => {
+  const updateConversion = (
+    jobId: string,
+    updates: Partial<ConversionHistoryItem>
+  ) => {
     if (historyRef?.updateConversionStatus) {
       historyRef.updateConversionStatus(jobId, updates);
     } else {
       // Fallback to localStorage
-      const storedHistory = localStorage.getItem('modporter_conversion_history');
-      const history: ConversionHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
-      const updatedHistory = history.map(item => 
+      const storedHistory = localStorage.getItem(
+        'modporter_conversion_history'
+      );
+      const history: ConversionHistoryItem[] = storedHistory
+        ? JSON.parse(storedHistory)
+        : [];
+      const updatedHistory = history.map((item) =>
         item.job_id === jobId ? { ...item, ...updates } : item
       );
-      localStorage.setItem('modporter_conversion_history', JSON.stringify(updatedHistory));
+      localStorage.setItem(
+        'modporter_conversion_history',
+        JSON.stringify(updatedHistory)
+      );
     }
   };
 
   return {
     setHistoryRef,
     addConversion,
-    updateConversion
+    updateConversion,
   };
 };
 

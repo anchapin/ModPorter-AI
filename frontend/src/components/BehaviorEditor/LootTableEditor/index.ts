@@ -4,5 +4,5 @@ export type {
   LootPool,
   LootEntry,
   LootCondition,
-  LootFunction
+  LootFunction,
 } from './LootTableEditor';

@@ -34,7 +34,7 @@ class ReportExporter:
         context = {
             "report": self._escape_report_data(report.to_dict()),
             "generation_date": html.escape(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-            "title": html.escape(f"Conversion Report - {report.metadata.job_id}")
+            "title": html.escape(f"Conversion Report - {report.metadata.job_id}"),
         }
 
         # Template substitution with escaped data
@@ -73,11 +73,15 @@ class ReportExporter:
         # Feature analysis
         for feature in report.feature_analysis.features:
             csv_content.append(f"Features,{feature.name},{feature.status}")
-            csv_content.append(f"Features,{feature.name} Compatibility,{feature.compatibility_score}%")
+            csv_content.append(
+                f"Features,{feature.name} Compatibility,{feature.compatibility_score}%"
+            )
 
         # Assumptions
         for assumption in report.assumptions_report.assumptions:
-            csv_content.append(f"Assumptions,{assumption.original_feature},{assumption.impact_level}")
+            csv_content.append(
+                f"Assumptions,{assumption.original_feature},{assumption.impact_level}"
+            )
 
         return "\n".join(csv_content)
 
@@ -107,7 +111,7 @@ class ReportExporter:
             "job_id": report.metadata.job_id,
             "generated_at": report.metadata.generation_timestamp.isoformat(),
             "version": report.metadata.version,
-            "export_formats": list(package.keys())
+            "export_formats": list(package.keys()),
         }
         package["metadata.json"] = json.dumps(metadata, indent=2)
 
@@ -290,6 +294,7 @@ class PDFExporter:
         """Check if PDF export dependencies are available."""
         try:
             import importlib.util
+
             spec = importlib.util.find_spec("weasyprint")  # or reportlab
             return spec is not None
         except ImportError:
@@ -321,5 +326,5 @@ class PDFExporter:
         """Export report to PDF and return as base64 string."""
         pdf_bytes = self.export_to_pdf(report)
         if pdf_bytes:
-            return base64.b64encode(pdf_bytes).decode('utf-8')
+            return base64.b64encode(pdf_bytes).decode("utf-8")
         return None

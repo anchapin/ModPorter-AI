@@ -13,7 +13,7 @@ import {
   DialogActions,
   Button,
   Tooltip,
-  Chip
+  Chip,
 } from '@mui/material';
 import {
   Search,
@@ -24,7 +24,7 @@ import {
   Delete,
   ContentCopy,
   Folder as FolderIcon,
-  Download
+  Download,
 } from '@mui/icons-material';
 import './BehaviorFileTree.css';
 
@@ -44,17 +44,18 @@ interface BehaviorFileTreeEnhancedProps {
   readOnly?: boolean;
 }
 
-export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> = ({
-  conversionId,
-  onFileSelect,
-  selectedFileId,
-  readOnly = false
-}) => {
+export const BehaviorFileTreeEnhanced: React.FC<
+  BehaviorFileTreeEnhancedProps
+> = ({ conversionId, onFileSelect, selectedFileId, readOnly = false }) => {
   const [treeData, setTreeData] = useState<BehaviorFileTreeNode[]>([]);
-  const [filteredTreeData, setFilteredTreeData] = useState<BehaviorFileTreeNode[]>([]);
+  const [filteredTreeData, setFilteredTreeData] = useState<
+    BehaviorFileTreeNode[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set()
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [contextMenu, setContextMenu] = useState<{
     node: BehaviorFileTreeNode;
@@ -82,7 +83,9 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
       setError(null);
 
       try {
-        const response = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+        const response = await fetch(
+          `/api/v1/conversions/${conversionId}/behaviors`
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -91,11 +94,15 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
         setFilteredTreeData(data);
 
         // Auto-expand root level directories
-        const rootDirs = data.filter(node => node.type === 'directory').map(node => node.path);
+        const rootDirs = data
+          .filter((node) => node.type === 'directory')
+          .map((node) => node.path);
         setExpandedFolders(new Set(rootDirs));
       } catch (err) {
         console.error('Error fetching behavior file tree:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load file tree');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load file tree'
+        );
       } finally {
         setIsLoading(false);
       }
@@ -111,12 +118,16 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     if (!searchQuery.trim()) {
       setFilteredTreeData(treeData);
       // Restore expanded folders
-      const rootDirs = treeData.filter(node => node.type === 'directory').map(node => node.path);
+      const rootDirs = treeData
+        .filter((node) => node.type === 'directory')
+        .map((node) => node.path);
       setExpandedFolders(new Set(rootDirs));
       return;
     }
 
-    const filterTree = (nodes: BehaviorFileTreeNode[]): BehaviorFileTreeNode[] => {
+    const filterTree = (
+      nodes: BehaviorFileTreeNode[]
+    ): BehaviorFileTreeNode[] => {
       const filtered: BehaviorFileTreeNode[] = [];
 
       for (const node of nodes) {
@@ -128,7 +139,9 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
           const filteredChildren = filterTree(node.children);
           if (filteredChildren.length > 0) {
             filtered.push({ ...node, children: filteredChildren });
-          } else if (node.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          } else if (
+            node.name.toLowerCase().includes(searchQuery.toLowerCase())
+          ) {
             filtered.push({ ...node });
           }
         }
@@ -146,8 +159,9 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
 
       const expandNode = (node: BehaviorFileTreeNode) => {
         if (node.type === 'directory') {
-          const hasMatch = node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            node.children.some(child =>
+          const hasMatch =
+            node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            node.children.some((child) =>
               child.name.toLowerCase().includes(searchQuery.toLowerCase())
             );
 
@@ -176,13 +190,16 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     setExpandedFolders(newExpanded);
   };
 
-  const handleContextMenu = (event: React.MouseEvent, node: BehaviorFileTreeNode) => {
+  const handleContextMenu = (
+    event: React.MouseEvent,
+    node: BehaviorFileTreeNode
+  ) => {
     event.preventDefault();
     event.stopPropagation();
 
     setContextMenu({
       node,
-      anchorEl: event.currentTarget as HTMLElement
+      anchorEl: event.currentTarget as HTMLElement,
     });
   };
 
@@ -199,16 +216,21 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     if (!renameDialog.node) return;
 
     try {
-      const response = await fetch(`/api/v1/behaviors/${renameDialog.node.id}/rename`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_name: renameDialog.newName })
-      });
+      const response = await fetch(
+        `/api/v1/behaviors/${renameDialog.node.id}/rename`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_name: renameDialog.newName }),
+        }
+      );
 
       if (!response.ok) throw new Error('Failed to rename');
 
       // Refresh tree
-      const response2 = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+      const response2 = await fetch(
+        `/api/v1/conversions/${conversionId}/behaviors`
+      );
       const data = await response2.json();
       setTreeData(data);
       setFilteredTreeData(data);
@@ -224,13 +246,15 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
 
     try {
       const response = await fetch(`/api/v1/behaviors/${node.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       });
 
       if (!response.ok) throw new Error('Failed to delete');
 
       // Refresh tree
-      const response2 = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+      const response2 = await fetch(
+        `/api/v1/conversions/${conversionId}/behaviors`
+      );
       const data = await response2.json();
       setTreeData(data);
       setFilteredTreeData(data);
@@ -263,7 +287,10 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     }
   };
 
-  const handleCreate = (parentNode: BehaviorFileTreeNode | null, type: 'file' | 'directory') => {
+  const handleCreate = (
+    parentNode: BehaviorFileTreeNode | null,
+    type: 'file' | 'directory'
+  ) => {
     setCreateDialog({ open: true, parentNode, type, name: '' });
     handleCloseContextMenu();
   };
@@ -271,20 +298,25 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
   const handleCreateConfirm = async () => {
     try {
       const parentPath = createDialog.parentNode?.path || '';
-      const response = await fetch(`/api/v1/conversions/${conversionId}/behaviors`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: createDialog.name,
-          type: createDialog.type,
-          parent_path: parentPath
-        })
-      });
+      const response = await fetch(
+        `/api/v1/conversions/${conversionId}/behaviors`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: createDialog.name,
+            type: createDialog.type,
+            parent_path: parentPath,
+          }),
+        }
+      );
 
       if (!response.ok) throw new Error('Failed to create');
 
       // Refresh tree
-      const response2 = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+      const response2 = await fetch(
+        `/api/v1/conversions/${conversionId}/behaviors`
+      );
       const data = await response2.json();
       setTreeData(data);
       setFilteredTreeData(data);
@@ -296,23 +328,37 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     } catch (err) {
       console.error('Error creating:', err);
     } finally {
-      setCreateDialog({ open: false, parentNode: null, type: 'file', name: '' });
+      setCreateDialog({
+        open: false,
+        parentNode: null,
+        type: 'file',
+        name: '',
+      });
     }
   };
 
   // Drag and drop handlers
-  const handleDragStart = (event: React.DragEvent, node: BehaviorFileTreeNode) => {
+  const handleDragStart = (
+    event: React.DragEvent,
+    node: BehaviorFileTreeNode
+  ) => {
     draggedNodeRef.current = node;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', node.path);
   };
 
-  const handleDragOver = (event: React.DragEvent, _node: BehaviorFileTreeNode) => {
+  const handleDragOver = (
+    event: React.DragEvent,
+    _node: BehaviorFileTreeNode
+  ) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (event: React.DragEvent, targetNode: BehaviorFileTreeNode) => {
+  const handleDrop = async (
+    event: React.DragEvent,
+    targetNode: BehaviorFileTreeNode
+  ) => {
     event.preventDefault();
     const draggedNode = draggedNodeRef.current;
     if (!draggedNode || draggedNode.id === targetNode.id) return;
@@ -322,13 +368,15 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
       const response = await fetch(`/api/v1/behaviors/${draggedNode.id}/move`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_path: targetNode.path })
+        body: JSON.stringify({ target_path: targetNode.path }),
       });
 
       if (!response.ok) throw new Error('Failed to move');
 
       // Refresh tree
-      const response2 = await fetch(`/api/v1/conversions/${conversionId}/behaviors`);
+      const response2 = await fetch(
+        `/api/v1/conversions/${conversionId}/behaviors`
+      );
       const data = await response2.json();
       setTreeData(data);
       setFilteredTreeData(data);
@@ -342,7 +390,10 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
     }
   };
 
-  const renderTreeNode = (node: BehaviorFileTreeNode, level: number = 0): React.ReactNode => {
+  const renderTreeNode = (
+    node: BehaviorFileTreeNode,
+    level: number = 0
+  ): React.ReactNode => {
     const isExpanded = expandedFolders.has(node.path);
     const isSelected = node.id === selectedFileId;
     const indentStyle = { paddingLeft: `${level * 20 + 8}px` };
@@ -361,7 +412,11 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
             onDrop={(e) => handleDrop(e, node)}
           >
             <span className={`folder-icon ${isExpanded ? 'expanded' : ''}`}>
-              {isExpanded ? <FolderOpen fontSize="small" /> : <Folder fontSize="small" />}
+              {isExpanded ? (
+                <FolderOpen fontSize="small" />
+              ) : (
+                <Folder fontSize="small" />
+              )}
             </span>
             <span className="node-name">{node.name}</span>
             <Chip
@@ -373,7 +428,7 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
           </div>
           {isExpanded && (
             <div className="tree-children">
-              {node.children.map(child => renderTreeNode(child, level + 1))}
+              {node.children.map((child) => renderTreeNode(child, level + 1))}
             </div>
           )}
         </div>
@@ -389,7 +444,9 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
             draggable={!readOnly}
             onDragStart={(e) => handleDragStart(e, node)}
           >
-            <span className="file-icon">{getFileIcon(node.file_type, node.name)}</span>
+            <span className="file-icon">
+              {getFileIcon(node.file_type, node.name)}
+            </span>
             <span className="node-name">{node.name}</span>
             <span className="file-type-badge">{node.file_type}</span>
           </div>
@@ -399,12 +456,18 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
   };
 
   const getFileIcon = (fileType: string, fileName: string): React.ReactNode => {
-    if (fileName.endsWith('.json')) return <InsertDriveFile fontSize="small" sx={{ color: '#f57c00' }} />;
-    if (fileName.endsWith('.js') || fileName.endsWith('.ts')) return <InsertDriveFile fontSize="small" sx={{ color: '#ffca28' }} />;
-    if (fileType === 'entity_behavior') return <InsertDriveFile fontSize="small" sx={{ color: '#7e57c2' }} />;
-    if (fileType === 'block_behavior') return <InsertDriveFile fontSize="small" sx={{ color: '#8d6e63' }} />;
-    if (fileType === 'script') return <InsertDriveFile fontSize="small" sx={{ color: '#42a5f5' }} />;
-    if (fileType === 'recipe') return <InsertDriveFile fontSize="small" sx={{ color: '#66bb6a' }} />;
+    if (fileName.endsWith('.json'))
+      return <InsertDriveFile fontSize="small" sx={{ color: '#f57c00' }} />;
+    if (fileName.endsWith('.js') || fileName.endsWith('.ts'))
+      return <InsertDriveFile fontSize="small" sx={{ color: '#ffca28' }} />;
+    if (fileType === 'entity_behavior')
+      return <InsertDriveFile fontSize="small" sx={{ color: '#7e57c2' }} />;
+    if (fileType === 'block_behavior')
+      return <InsertDriveFile fontSize="small" sx={{ color: '#8d6e63' }} />;
+    if (fileType === 'script')
+      return <InsertDriveFile fontSize="small" sx={{ color: '#42a5f5' }} />;
+    if (fileType === 'recipe')
+      return <InsertDriveFile fontSize="small" sx={{ color: '#66bb6a' }} />;
     return <InsertDriveFile fontSize="small" sx={{ color: '#78909c' }} />;
   };
 
@@ -440,7 +503,16 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
         <Tooltip title="Create new file or folder">
           <IconButton
             size="small"
-            onClick={(e) => handleContextMenu(e, { id: 'root', name: '', path: '', type: 'directory', file_type: '', children: [] })}
+            onClick={(e) =>
+              handleContextMenu(e, {
+                id: 'root',
+                name: '',
+                path: '',
+                type: 'directory',
+                file_type: '',
+                children: [],
+              })
+            }
             disabled={readOnly}
           >
             <Add fontSize="small" />
@@ -464,14 +536,11 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
             ),
             endAdornment: searchQuery && (
               <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchQuery('')}
-                >
+                <IconButton size="small" onClick={() => setSearchQuery('')}>
                   ✕
                 </IconButton>
               </InputAdornment>
-            )
+            ),
           }}
         />
       </div>
@@ -484,12 +553,15 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
             ) : (
               <>
                 <p>No behavior files found for this conversion.</p>
-                <p>Files will appear here after conversion generates editable behaviors.</p>
+                <p>
+                  Files will appear here after conversion generates editable
+                  behaviors.
+                </p>
               </>
             )}
           </div>
         ) : (
-          filteredTreeData.map(node => renderTreeNode(node))
+          filteredTreeData.map((node) => renderTreeNode(node))
         )}
       </div>
 
@@ -501,57 +573,109 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
       >
         {contextMenu.node.type === 'file' && (
           <>
-            <MenuItem onClick={() => onFileSelect(contextMenu.node.id, contextMenu.node.path, contextMenu.node.file_type)}>
-              <ListItemIcon><InsertDriveFile fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() =>
+                onFileSelect(
+                  contextMenu.node.id,
+                  contextMenu.node.path,
+                  contextMenu.node.file_type
+                )
+              }
+            >
+              <ListItemIcon>
+                <InsertDriveFile fontSize="small" />
+              </ListItemIcon>
               <ListItemText>Open</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleRename(contextMenu.node)} disabled={readOnly}>
+            <MenuItem
+              onClick={() => handleRename(contextMenu.node)}
+              disabled={readOnly}
+            >
               <ListItemText>Rename</ListItemText>
             </MenuItem>
             <MenuItem onClick={() => handleDownload(contextMenu.node)}>
-              <ListItemIcon><Download fontSize="small" /></ListItemIcon>
+              <ListItemIcon>
+                <Download fontSize="small" />
+              </ListItemIcon>
               <ListItemText>Download</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => {
-              navigator.clipboard.writeText(contextMenu.node.path);
-              handleCloseContextMenu();
-            }}>
-              <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => {
+                navigator.clipboard.writeText(contextMenu.node.path);
+                handleCloseContextMenu();
+              }}
+            >
+              <ListItemIcon>
+                <ContentCopy fontSize="small" />
+              </ListItemIcon>
               <ListItemText>Copy Path</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleDelete(contextMenu.node)} disabled={readOnly}>
-              <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleDelete(contextMenu.node)}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <Delete fontSize="small" />
+              </ListItemIcon>
               <ListItemText>Delete</ListItemText>
             </MenuItem>
           </>
         )}
         {contextMenu.node.type === 'directory' && (
           <>
-            <MenuItem onClick={() => handleCreate(contextMenu.node, 'file')} disabled={readOnly}>
-              <ListItemIcon><InsertDriveFile fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleCreate(contextMenu.node, 'file')}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <InsertDriveFile fontSize="small" />
+              </ListItemIcon>
               <ListItemText>New File</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleCreate(contextMenu.node, 'directory')} disabled={readOnly}>
-              <ListItemIcon><FolderIcon fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleCreate(contextMenu.node, 'directory')}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <FolderIcon fontSize="small" />
+              </ListItemIcon>
               <ListItemText>New Folder</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleRename(contextMenu.node)} disabled={readOnly}>
+            <MenuItem
+              onClick={() => handleRename(contextMenu.node)}
+              disabled={readOnly}
+            >
               <ListItemText>Rename</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleDelete(contextMenu.node)} disabled={readOnly}>
-              <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleDelete(contextMenu.node)}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <Delete fontSize="small" />
+              </ListItemIcon>
               <ListItemText>Delete</ListItemText>
             </MenuItem>
           </>
         )}
         {contextMenu.node.id === 'root' && (
           <>
-            <MenuItem onClick={() => handleCreate(null, 'file')} disabled={readOnly}>
-              <ListItemIcon><InsertDriveFile fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleCreate(null, 'file')}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <InsertDriveFile fontSize="small" />
+              </ListItemIcon>
               <ListItemText>New File</ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => handleCreate(null, 'directory')} disabled={readOnly}>
-              <ListItemIcon><FolderIcon fontSize="small" /></ListItemIcon>
+            <MenuItem
+              onClick={() => handleCreate(null, 'directory')}
+              disabled={readOnly}
+            >
+              <ListItemIcon>
+                <FolderIcon fontSize="small" />
+              </ListItemIcon>
               <ListItemText>New Folder</ListItemText>
             </MenuItem>
           </>
@@ -559,7 +683,10 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
       </Menu>
 
       {/* Rename Dialog */}
-      <Dialog open={renameDialog.open} onClose={() => setRenameDialog({ ...renameDialog, open: false })}>
+      <Dialog
+        open={renameDialog.open}
+        onClose={() => setRenameDialog({ ...renameDialog, open: false })}
+      >
         <DialogTitle>Rename {renameDialog.node?.type}</DialogTitle>
         <DialogContent>
           <TextField
@@ -567,31 +694,56 @@ export const BehaviorFileTreeEnhanced: React.FC<BehaviorFileTreeEnhancedProps> =
             fullWidth
             label="New Name"
             value={renameDialog.newName}
-            onChange={(e) => setRenameDialog({ ...renameDialog, newName: e.target.value })}
+            onChange={(e) =>
+              setRenameDialog({ ...renameDialog, newName: e.target.value })
+            }
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRenameDialog({ ...renameDialog, open: false })}>Cancel</Button>
-          <Button onClick={handleRenameConfirm} variant="contained">Rename</Button>
+          <Button
+            onClick={() => setRenameDialog({ ...renameDialog, open: false })}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleRenameConfirm} variant="contained">
+            Rename
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Create Dialog */}
-      <Dialog open={createDialog.open} onClose={() => setCreateDialog({ ...createDialog, open: false })}>
-        <DialogTitle>Create New {createDialog.type === 'file' ? 'File' : 'Folder'}</DialogTitle>
+      <Dialog
+        open={createDialog.open}
+        onClose={() => setCreateDialog({ ...createDialog, open: false })}
+      >
+        <DialogTitle>
+          Create New {createDialog.type === 'file' ? 'File' : 'Folder'}
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             fullWidth
             label={`${createDialog.type === 'file' ? 'File' : 'Folder'} Name`}
             value={createDialog.name}
-            onChange={(e) => setCreateDialog({ ...createDialog, name: e.target.value })}
-            helperText={createDialog.type === 'file' ? 'Include .json extension if needed' : 'Folder name without extension'}
+            onChange={(e) =>
+              setCreateDialog({ ...createDialog, name: e.target.value })
+            }
+            helperText={
+              createDialog.type === 'file'
+                ? 'Include .json extension if needed'
+                : 'Folder name without extension'
+            }
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialog({ ...createDialog, open: false })}>Cancel</Button>
-          <Button onClick={handleCreateConfirm} variant="contained">Create</Button>
+          <Button
+            onClick={() => setCreateDialog({ ...createDialog, open: false })}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleCreateConfirm} variant="contained">
+            Create
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

@@ -4,7 +4,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import type { AssumptionsReport as AssumptionsReportType, AssumptionDetail } from '../../types/api';
+import type {
+  AssumptionsReport as AssumptionsReportType,
+  AssumptionDetail,
+} from '../../types/api';
 import styles from './ConversionReport.module.css';
 
 interface AssumptionsReportProps {
@@ -20,7 +23,7 @@ interface AssumptionCardProps {
 const ImpactBadge: React.FC<{ impact: string }> = ({ impact }) => {
   const getImpactInfo = (impact: string) => {
     const normalizedImpact = impact.toLowerCase();
-    
+
     switch (normalizedImpact) {
       case 'high':
         return { color: '#dc3545', icon: '🔴', bg: '#f8d7da' };
@@ -36,12 +39,12 @@ const ImpactBadge: React.FC<{ impact: string }> = ({ impact }) => {
   const impactInfo = getImpactInfo(impact);
 
   return (
-    <span 
+    <span
       className={styles.impactBadge}
-      style={{ 
+      style={{
         backgroundColor: impactInfo.bg,
         color: impactInfo.color,
-        border: `1px solid ${impactInfo.color}40`
+        border: `1px solid ${impactInfo.color}40`,
       }}
     >
       {impactInfo.icon} {impact}
@@ -61,11 +64,11 @@ const ConfidenceIndicator: React.FC<{ score: number }> = ({ score }) => {
   return (
     <div className={styles.confidenceIndicator}>
       <div className={styles.confidenceBar}>
-        <div 
+        <div
           className={styles.confidenceFill}
-          style={{ 
+          style={{
             width: `${confidencePercentage}%`,
-            backgroundColor: getConfidenceColor(score)
+            backgroundColor: getConfidenceColor(score),
           }}
         />
       </div>
@@ -81,16 +84,21 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
 
   return (
     <div className={styles.assumptionCard}>
-      <div className={styles.assumptionHeader} onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className={styles.assumptionHeader}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className={styles.assumptionTitle}>
-          <h4 className={styles.assumptionFeature}>{assumption.feature_affected}</h4>
+          <h4 className={styles.assumptionFeature}>
+            {assumption.feature_affected}
+          </h4>
           <ImpactBadge impact={assumption.impact_level} />
         </div>
         <div className={styles.assumptionMetrics}>
           {assumption.confidence_score && (
             <ConfidenceIndicator score={assumption.confidence_score} />
           )}
-          <button 
+          <button
             className={styles.expandButton}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
@@ -110,7 +118,8 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
               <strong>Original Feature:</strong> {assumption.original_feature}
             </div>
             <div className={styles.assumptionInfoItem}>
-              <strong>Bedrock Equivalent:</strong> {assumption.bedrock_equivalent}
+              <strong>Bedrock Equivalent:</strong>{' '}
+              {assumption.bedrock_equivalent}
             </div>
             <div className={styles.assumptionInfoItem}>
               <strong>Assumption Type:</strong> {assumption.assumption_type}
@@ -126,22 +135,27 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
           {assumption.technical_details && (
             <div className={styles.technicalDetails}>
               <strong>Technical Details:</strong>
-              <p className={styles.technicalText}>{assumption.technical_details}</p>
+              <p className={styles.technicalText}>
+                {assumption.technical_details}
+              </p>
             </div>
           )}
 
-          {assumption.alternatives_considered && assumption.alternatives_considered.length > 0 && (
-            <div className={styles.alternatives}>
-              <strong>Alternatives Considered:</strong>
-              <ul className={styles.alternativesList}>
-                {assumption.alternatives_considered.map((alternative, index) => (
-                  <li key={index} className={styles.alternativeItem}>
-                    {alternative}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {assumption.alternatives_considered &&
+            assumption.alternatives_considered.length > 0 && (
+              <div className={styles.alternatives}>
+                <strong>Alternatives Considered:</strong>
+                <ul className={styles.alternativesList}>
+                  {assumption.alternatives_considered.map(
+                    (alternative, index) => (
+                      <li key={index} className={styles.alternativeItem}>
+                        {alternative}
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
 
           {assumption.visual_example && (
             <div className={styles.visualExample}>
@@ -168,8 +182,13 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
   );
 };
 
-const ImpactDistribution: React.FC<{ distribution: Record<string, number> }> = ({ distribution }) => {
-  const total = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+const ImpactDistribution: React.FC<{
+  distribution: Record<string, number>;
+}> = ({ distribution }) => {
+  const total = Object.values(distribution).reduce(
+    (sum, count) => sum + count,
+    0
+  );
 
   if (total === 0) return null;
 
@@ -181,28 +200,32 @@ const ImpactDistribution: React.FC<{ distribution: Record<string, number> }> = (
           const percentage = (count / total) * 100;
           const getColor = (level: string) => {
             switch (level.toLowerCase()) {
-              case 'high': return '#dc3545';
-              case 'medium': return '#ffc107';
-              case 'low': return '#28a745';
-              default: return '#6c757d';
+              case 'high':
+                return '#dc3545';
+              case 'medium':
+                return '#ffc107';
+              case 'low':
+                return '#28a745';
+              default:
+                return '#6c757d';
             }
           };
 
           return (
             <div key={level} className={styles.distributionItem}>
               <div className={styles.distributionLabel}>
-                <span 
+                <span
                   className={styles.distributionColor}
                   style={{ backgroundColor: getColor(level) }}
                 />
                 {level} Impact
               </div>
               <div className={styles.distributionBar}>
-                <div 
+                <div
                   className={styles.distributionFill}
-                  style={{ 
+                  style={{
                     width: `${percentage}%`,
-                    backgroundColor: getColor(level)
+                    backgroundColor: getColor(level),
                   }}
                 />
               </div>
@@ -217,8 +240,8 @@ const ImpactDistribution: React.FC<{ distribution: Record<string, number> }> = (
   );
 };
 
-const CategoryBreakdown: React.FC<{ 
-  categories: Record<string, AssumptionDetail[]> 
+const CategoryBreakdown: React.FC<{
+  categories: Record<string, AssumptionDetail[]>;
 }> = ({ categories }) => {
   if (Object.keys(categories).length === 0) return null;
 
@@ -229,7 +252,9 @@ const CategoryBreakdown: React.FC<{
         {Object.entries(categories).map(([category, assumptions]) => (
           <div key={category} className={styles.categoryCard}>
             <h5 className={styles.categoryTitle}>{category}</h5>
-            <div className={styles.categoryCount}>{assumptions.length} assumptions</div>
+            <div className={styles.categoryCount}>
+              {assumptions.length} assumptions
+            </div>
             <div className={styles.categoryImpacts}>
               {assumptions.slice(0, 3).map((assumption, index) => (
                 <ImpactBadge key={index} impact={assumption.impact_level} />
@@ -253,25 +278,39 @@ const FilterControls: React.FC<{
   impactFilter: string;
   categoryFilter: string;
   categories: string[];
-}> = ({ onImpactFilter, onCategoryFilter, impactFilter, categoryFilter, categories }) => {
+}> = ({
+  onImpactFilter,
+  onCategoryFilter,
+  impactFilter,
+  categoryFilter,
+  categories,
+}) => {
   return (
     <div className={styles.filterControls}>
       <div className={styles.filterGroup}>
         <label>Impact Level:</label>
-        <select value={impactFilter} onChange={(e) => onImpactFilter(e.target.value)}>
+        <select
+          value={impactFilter}
+          onChange={(e) => onImpactFilter(e.target.value)}
+        >
           <option value="all">All Impacts</option>
           <option value="high">High Impact</option>
           <option value="medium">Medium Impact</option>
           <option value="low">Low Impact</option>
         </select>
       </div>
-      
+
       <div className={styles.filterGroup}>
         <label>Category:</label>
-        <select value={categoryFilter} onChange={(e) => onCategoryFilter(e.target.value)}>
+        <select
+          value={categoryFilter}
+          onChange={(e) => onCategoryFilter(e.target.value)}
+        >
           <option value="all">All Categories</option>
-          {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
           ))}
         </select>
       </div>
@@ -279,10 +318,10 @@ const FilterControls: React.FC<{
   );
 };
 
-export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({ 
-  assumptions, 
-  isExpanded, 
-  onToggle 
+export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
+  assumptions,
+  isExpanded,
+  onToggle,
 }) => {
   const [impactFilter, setImpactFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -296,15 +335,15 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
 
     // Apply impact filter
     if (impactFilter !== 'all') {
-      filtered = filtered.filter(assumption =>
-        assumption.impact_level?.toLowerCase() === impactFilter
+      filtered = filtered.filter(
+        (assumption) => assumption.impact_level?.toLowerCase() === impactFilter
       );
     }
 
     // Apply category filter
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(assumption =>
-        assumption.assumption_type === categoryFilter
+      filtered = filtered.filter(
+        (assumption) => assumption.assumption_type === categoryFilter
       );
     }
 
@@ -312,9 +351,11 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
   }, [assumptions.assumptions, impactFilter, categoryFilter]);
 
   const averageConfidence = useMemo(() => {
-    if (!assumptions.assumptions || assumptions.assumptions.length === 0) return 0;
-    const total = assumptions.assumptions.reduce((sum, assumption) => 
-      sum + (assumption.confidence_score || 0.8), 0
+    if (!assumptions.assumptions || assumptions.assumptions.length === 0)
+      return 0;
+    const total = assumptions.assumptions.reduce(
+      (sum, assumption) => sum + (assumption.confidence_score || 0.8),
+      0
     );
     return total / assumptions.assumptions.length;
   }, [assumptions.assumptions]);
@@ -333,8 +374,8 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
         {isExpanded && (
           <div className={styles.sectionContent}>
             <p className={styles.noAssumptions}>
-              No smart assumptions were required for this conversion. 
-              All features were directly translatable to Bedrock Edition.
+              No smart assumptions were required for this conversion. All
+              features were directly translatable to Bedrock Edition.
             </p>
           </div>
         )}
@@ -348,7 +389,7 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
         <h3 className={styles.sectionTitle}>
           🧠 Smart Assumptions ({assumptions.total_assumptions_count} applied)
         </h3>
-        <button 
+        <button
           className={styles.toggleButton}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
@@ -362,11 +403,15 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
           <div className={styles.assumptionsSummary}>
             <div className={styles.summaryCards}>
               <div className={styles.summaryCard}>
-                <div className={styles.summaryValue}>{assumptions.total_assumptions_count}</div>
+                <div className={styles.summaryValue}>
+                  {assumptions.total_assumptions_count}
+                </div>
                 <div className={styles.summaryLabel}>Total Assumptions</div>
               </div>
               <div className={styles.summaryCard}>
-                <div className={styles.summaryValue}>{Math.round(averageConfidence * 100)}%</div>
+                <div className={styles.summaryValue}>
+                  {Math.round(averageConfidence * 100)}%
+                </div>
                 <div className={styles.summaryLabel}>Avg. Confidence</div>
               </div>
               <div className={styles.summaryCard}>
@@ -374,24 +419,28 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
                 <div className={styles.summaryLabel}>Categories</div>
               </div>
             </div>
-            
+
             <div className={styles.summaryDescription}>
               <p>
-                Smart assumptions were applied to bridge compatibility gaps between Java and Bedrock editions. 
-                Each assumption maintains functionality while adapting to Bedrock's constraints.
+                Smart assumptions were applied to bridge compatibility gaps
+                between Java and Bedrock editions. Each assumption maintains
+                functionality while adapting to Bedrock's constraints.
               </p>
             </div>
           </div>
 
           {/* Impact Distribution */}
           {assumptions.impact_distribution && (
-            <ImpactDistribution distribution={assumptions.impact_distribution} />
+            <ImpactDistribution
+              distribution={assumptions.impact_distribution}
+            />
           )}
 
           {/* Category Breakdown */}
-          {assumptions.category_breakdown && Object.keys(assumptions.category_breakdown).length > 0 && (
-            <CategoryBreakdown categories={assumptions.category_breakdown} />
-          )}
+          {assumptions.category_breakdown &&
+            Object.keys(assumptions.category_breakdown).length > 0 && (
+              <CategoryBreakdown categories={assumptions.category_breakdown} />
+            )}
 
           {/* Filter Controls */}
           <FilterControls
@@ -403,15 +452,16 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
           />
 
           <div className={styles.resultsCount}>
-            {filteredAssumptions.length} of {assumptions.total_assumptions_count} assumptions
+            {filteredAssumptions.length} of{' '}
+            {assumptions.total_assumptions_count} assumptions
           </div>
 
           {/* Assumptions List */}
           <div className={styles.assumptionsList}>
             {filteredAssumptions.map((assumption, index) => (
-              <AssumptionCard 
-                key={assumption.assumption_id || index} 
-                assumption={assumption} 
+              <AssumptionCard
+                key={assumption.assumption_id || index}
+                assumption={assumption}
               />
             ))}
           </div>

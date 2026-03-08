@@ -3,7 +3,8 @@
   flex-direction: column;
   height: 100vh;
   background: #f8f9fa;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .behavior-editor-container {
@@ -18,7 +19,9 @@
   max-width: 500px;
   background: #f8f9fa;
   border-right: 1px solid #e9ecef;
-  transition: width 0.3s ease, margin-left 0.3s ease;
+  transition:
+    width 0.3s ease,
+    margin-left 0.3s ease;
   overflow: hidden;
 }
 
@@ -78,7 +81,7 @@
   padding: 16px;
   background-color: #fff;
   border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mode-toggle-buttons {

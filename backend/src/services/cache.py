@@ -15,13 +15,13 @@ class CacheService:
     CACHE_MOD_ANALYSIS_PREFIX = "cache:mod_analysis:"
     CACHE_CONVERSION_RESULT_PREFIX = "cache:conversion_result:"
     CACHE_ASSET_CONVERSION_PREFIX = "cache:asset_conversion:"
-    
+
     # Default TTL configurations (in seconds)
     DEFAULT_TTL_MOD_ANALYSIS = int(os.getenv("CACHE_TTL_MOD_ANALYSIS", "3600"))  # 1 hour
     DEFAULT_TTL_CONVERSION_RESULT = int(os.getenv("CACHE_TTL_CONVERSION_RESULT", "7200"))  # 2 hours
     DEFAULT_TTL_ASSET_CONVERSION = int(os.getenv("CACHE_TTL_ASSET_CONVERSION", "3600"))  # 1 hour
     DEFAULT_TTL_JOB_STATUS = int(os.getenv("CACHE_TTL_JOB_STATUS", "300"))  # 5 minutes
-    
+
     # Cache size limits
     MAX_CACHE_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "1000"))
 
@@ -35,9 +35,7 @@ class CacheService:
             logger.info("Redis disabled for tests")
         else:
             try:
-                self._client = aioredis.from_url(
-                    settings.redis_url, decode_responses=True
-                )
+                self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
                 self._redis_available = True
                 logger.info("Redis cache initialized successfully")
             except Exception as e:
@@ -177,15 +175,11 @@ class CacheService:
         try:
             await self._client.delete(cache_key)
         except Exception as e:
-            logger.warning(
-                f"Redis operation failed for invalidate_cache for key {cache_key}: {e}"
-            )
+            logger.warning(f"Redis operation failed for invalidate_cache for key {cache_key}: {e}")
 
     async def get_cache_stats(self) -> CacheStats:
         try:
-            mod_analysis_keys = await self._client.keys(
-                f"{self.CACHE_MOD_ANALYSIS_PREFIX}*"
-            )
+            mod_analysis_keys = await self._client.keys(f"{self.CACHE_MOD_ANALYSIS_PREFIX}*")
             conversion_result_keys = await self._client.keys(
                 f"{self.CACHE_CONVERSION_RESULT_PREFIX}*"
             )
@@ -194,9 +188,7 @@ class CacheService:
             )
 
             current_items = (
-                len(mod_analysis_keys)
-                + len(conversion_result_keys)
-                + len(asset_conversion_keys)
+                len(mod_analysis_keys) + len(conversion_result_keys) + len(asset_conversion_keys)
             )
 
             info = await self._client.info("memory")
@@ -219,7 +211,9 @@ class CacheService:
             )
         return stats
 
-    async def set_export_data(self, conversion_id: str, export_data: bytes, ttl_seconds: int = 3600) -> None:
+    async def set_export_data(
+        self, conversion_id: str, export_data: bytes, ttl_seconds: int = 3600
+    ) -> None:
         """
         Store exported behavior pack data in cache.
         """
@@ -227,12 +221,8 @@ class CacheService:
             return
         try:
             # Store binary data as base64 string
-            encoded_data = base64.b64encode(export_data).decode('utf-8')
-            await self._client.setex(
-                f"export:{conversion_id}:data",
-                ttl_seconds,
-                encoded_data
-            )
+            encoded_data = base64.b64encode(export_data).decode("utf-8")
+            await self._client.setex(f"export:{conversion_id}:data", ttl_seconds, encoded_data)
         except Exception as e:
             logger.warning(f"Redis operation failed for set_export_data: {e}")
             self._redis_available = False
@@ -246,7 +236,7 @@ class CacheService:
         try:
             encoded_data = await self._client.get(f"export:{conversion_id}:data")
             if encoded_data:
-                return base64.b64decode(encoded_data.encode('utf-8'))
+                return base64.b64decode(encoded_data.encode("utf-8"))
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_export_data: {e}")
@@ -266,61 +256,61 @@ class CacheService:
             self._redis_available = False
 
     # Enhanced caching methods for Issue #381
-    
+
     async def cache_conversion_by_hash(
         self, mod_content: bytes, result: dict, ttl_seconds: Optional[int] = None
     ) -> str:
         """
         Cache conversion result by computing hash of mod content.
-        
+
         Args:
             mod_content: The mod file content bytes
             result: The conversion result to cache
             ttl_seconds: Optional TTL, defaults to DEFAULT_TTL_CONVERSION_RESULT
-            
+
         Returns:
             The hash key used for caching
         """
         import hashlib
-        
+
         if ttl_seconds is None:
             ttl_seconds = self.DEFAULT_TTL_CONVERSION_RESULT
-        
+
         # Compute SHA256 hash of mod content
         mod_hash = hashlib.sha256(mod_content).hexdigest()
-        
+
         # Cache the result
         await self.cache_conversion_result(mod_hash, result, ttl_seconds)
-        
+
         logger.info(f"Cached conversion result with hash: {mod_hash[:16]}...")
         return mod_hash
 
     async def get_cached_conversion_by_hash(self, mod_content: bytes) -> Optional[dict]:
         """
         Retrieve cached conversion result by computing hash of mod content.
-        
+
         Args:
             mod_content: The mod file content bytes
-            
+
         Returns:
             Cached conversion result or None if not found
         """
         import hashlib
-        
+
         mod_hash = hashlib.sha256(mod_content).hexdigest()
         result = await self.get_conversion_result(mod_hash)
-        
+
         if result:
             logger.info(f"Cache hit for conversion hash: {mod_hash[:16]}...")
         else:
             logger.info(f"Cache miss for conversion hash: {mod_hash[:16]}...")
-            
+
         return result
 
     async def invalidate_conversion_cache(self, mod_hash: str) -> None:
         """
         Invalidate a specific conversion result cache.
-        
+
         Args:
             mod_hash: The hash key of the conversion to invalidate
         """
@@ -331,7 +321,7 @@ class CacheService:
     async def invalidate_mod_analysis_cache(self, mod_hash: str) -> None:
         """
         Invalidate a specific mod analysis cache.
-        
+
         Args:
             mod_hash: The hash key of the mod analysis to invalidate
         """
@@ -362,7 +352,7 @@ class CacheService:
     def get_cache_hit_rate(self) -> float:
         """
         Calculate cache hit rate.
-        
+
         Returns:
             Hit rate as a percentage (0-100)
         """
@@ -372,14 +362,14 @@ class CacheService:
         return (self._cache_hits / total) * 100
 
     # Progress tracking from AI Engine
-    
+
     async def get_ai_engine_progress(self, job_id: str) -> Optional[dict]:
         """
         Get the latest progress update from AI Engine for a job.
-        
+
         Args:
             job_id: The conversion job ID
-            
+
         Returns:
             Progress data dict or None if not available
         """
@@ -396,10 +386,10 @@ class CacheService:
     async def subscribe_to_ai_engine_progress(self, job_id: str):
         """
         Subscribe to real-time progress updates from AI Engine.
-        
+
         Args:
             job_id: The conversion job ID
-            
+
         Returns:
             Redis pub/sub channel for progress updates
         """

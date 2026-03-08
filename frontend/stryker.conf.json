@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "reporters": ["html", "json", "cleartext"],
+  "vitest": {
+    "configFile": "vite.config.ts",
+    "enableFindRelatedTests": true
+  },
+  "mutate": [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/**/*.spec.{ts,tsx}",
+    "!src/**/*.stories.{ts,tsx}",
+    "!src/**/mocks/**"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 70,
+    "break": 70
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**"
+  ],
+  "concurrency": 4,
+  "coverageAnalysis": "perTest"
+}

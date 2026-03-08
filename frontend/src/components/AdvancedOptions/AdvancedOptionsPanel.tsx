@@ -4,7 +4,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { useSuccessNotification, useErrorNotification, useWarningNotification, useInfoNotification } from '../NotificationSystem';
+import {
+  useSuccessNotification,
+  useErrorNotification,
+  useWarningNotification,
+  useInfoNotification,
+} from '../NotificationSystem';
 import './AdvancedOptionsPanel.css';
 
 export interface AdvancedOptions {
@@ -29,7 +34,7 @@ const DEFAULT_OPTIONS: AdvancedOptions = {
   enableSmartAssumptions: true,
   enableTextureOptimization: true,
   targetVersion: '1.20.0',
-  generateReport: true
+  generateReport: true,
 };
 
 const TARGET_VERSIONS = [
@@ -38,12 +43,12 @@ const TARGET_VERSIONS = [
   { value: '1.18.0', label: '1.18.0 (Caves & Cliffs II)' },
   { value: '1.17.0', label: '1.17.0 (Caves & Cliffs I)' },
   { value: '1.16.0', label: '1.16.0 (Nether Update)' },
-  { value: '1.14.0', label: '1.14.0 (Village & Pillage)' }
+  { value: '1.14.0', label: '1.14.0 (Village & Pillage)' },
 ];
 
 export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
   options,
-  onChange
+  onChange,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const successNotification = useSuccessNotification();
@@ -51,10 +56,13 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
   const warningNotification = useWarningNotification();
   const infoNotification = useInfoNotification();
 
-  const handleChange = useCallback((key: keyof AdvancedOptions, value: any) => {
-    const newOptions = { ...options, [key]: value };
-    onChange(newOptions);
-  }, [options, onChange]);
+  const handleChange = useCallback(
+    (key: keyof AdvancedOptions, value: any) => {
+      const newOptions = { ...options, [key]: value };
+      onChange(newOptions);
+    },
+    [options, onChange]
+  );
 
   const handleReset = useCallback(() => {
     onChange(DEFAULT_OPTIONS);
@@ -83,17 +91,14 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
 
   return (
     <div className="advanced-options-panel">
-      <div 
-        className="panel-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="panel-header" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="header-title">
           <span className="toggle-icon">{isExpanded ? '▼' : '▶'}</span>
           <h3>Advanced Options</h3>
         </div>
         {isExpanded && (
           <div className="header-actions">
-            <button 
+            <button
               className="preset-button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -102,7 +107,7 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
             >
               Load Preset
             </button>
-            <button 
+            <button
               className="preset-button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -146,7 +151,9 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
               min={0}
               max={10}
               value={options.maxRetries}
-              onChange={(e) => handleChange('maxRetries', Number(e.target.value))}
+              onChange={(e) =>
+                handleChange('maxRetries', Number(e.target.value))
+              }
             />
           </div>
 
@@ -161,8 +168,10 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
               value={options.targetVersion}
               onChange={(e) => handleChange('targetVersion', e.target.value)}
             >
-              {TARGET_VERSIONS.map(v => (
-                <option key={v.value} value={v.value}>{v.label}</option>
+              {TARGET_VERSIONS.map((v) => (
+                <option key={v.value} value={v.value}>
+                  {v.label}
+                </option>
               ))}
             </select>
           </div>
@@ -174,12 +183,16 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
                 <input
                   type="checkbox"
                   checked={options.parallelProcessing}
-                  onChange={(e) => handleChange('parallelProcessing', e.target.checked)}
+                  onChange={(e) =>
+                    handleChange('parallelProcessing', e.target.checked)
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <span className="toggle-text">
                   Parallel Processing
-                  <span className="hint">Process multiple files concurrently</span>
+                  <span className="hint">
+                    Process multiple files concurrently
+                  </span>
                 </span>
               </label>
             </div>
@@ -189,12 +202,16 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
                 <input
                   type="checkbox"
                   checked={options.enableSmartAssumptions}
-                  onChange={(e) => handleChange('enableSmartAssumptions', e.target.checked)}
+                  onChange={(e) =>
+                    handleChange('enableSmartAssumptions', e.target.checked)
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <span className="toggle-text">
                   Smart Assumptions
-                  <span className="hint">AI makes intelligent guesses for missing info</span>
+                  <span className="hint">
+                    AI makes intelligent guesses for missing info
+                  </span>
                 </span>
               </label>
             </div>
@@ -204,7 +221,9 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
                 <input
                   type="checkbox"
                   checked={options.enableTextureOptimization}
-                  onChange={(e) => handleChange('enableTextureOptimization', e.target.checked)}
+                  onChange={(e) =>
+                    handleChange('enableTextureOptimization', e.target.checked)
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <span className="toggle-text">
@@ -219,12 +238,16 @@ export const AdvancedOptionsPanel: React.FC<AdvancedOptionsPanelProps> = ({
                 <input
                   type="checkbox"
                   checked={options.generateReport}
-                  onChange={(e) => handleChange('generateReport', e.target.checked)}
+                  onChange={(e) =>
+                    handleChange('generateReport', e.target.checked)
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <span className="toggle-text">
                   Generate Report
-                  <span className="hint">Create detailed conversion report</span>
+                  <span className="hint">
+                    Create detailed conversion report
+                  </span>
                 </span>
               </label>
             </div>

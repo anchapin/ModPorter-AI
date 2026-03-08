@@ -66,7 +66,9 @@ export const PerformanceBenchmark: React.FC = () => {
   const [deviceType, setDeviceType] = useState<string>('desktop');
   const [conversionId, setConversionId] = useState<string>('');
   const [currentRun, setCurrentRun] = useState<BenchmarkRun | null>(null);
-  const [currentReport, setCurrentReport] = useState<BenchmarkReport | null>(null);
+  const [currentReport, setCurrentReport] = useState<BenchmarkReport | null>(
+    null
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateScenario, setShowCreateScenario] = useState(false);
@@ -76,7 +78,7 @@ export const PerformanceBenchmark: React.FC = () => {
     type: 'custom',
     duration_seconds: 300,
     parameters: {},
-    thresholds: {}
+    thresholds: {},
   });
 
   const loadScenarios = async () => {
@@ -103,7 +105,9 @@ export const PerformanceBenchmark: React.FC = () => {
     if (!currentRun) return;
 
     try {
-      const response = await performanceBenchmarkAPI.getBenchmarkStatus(currentRun.run_id);
+      const response = await performanceBenchmarkAPI.getBenchmarkStatus(
+        currentRun.run_id
+      );
       const status = response.data;
 
       setCurrentRun(status);
@@ -151,14 +155,14 @@ export const PerformanceBenchmark: React.FC = () => {
       const response = await performanceBenchmarkAPI.runBenchmark({
         scenario_id: selectedScenario,
         device_type: deviceType,
-        conversion_id: conversionId || undefined
+        conversion_id: conversionId || undefined,
       });
 
       setCurrentRun({
         run_id: response.data.run_id,
         status: 'pending',
         progress: 0,
-        current_stage: 'initializing'
+        current_stage: 'initializing',
       });
 
       // Start polling for status updates
@@ -170,7 +174,6 @@ export const PerformanceBenchmark: React.FC = () => {
     }
   };
 
-
   const createCustomScenario = async () => {
     if (!customScenario.scenario_name || !customScenario.description) {
       setError('Please provide scenario name and description');
@@ -178,7 +181,8 @@ export const PerformanceBenchmark: React.FC = () => {
     }
 
     try {
-      const response = await performanceBenchmarkAPI.createCustomScenario(customScenario);
+      const response =
+        await performanceBenchmarkAPI.createCustomScenario(customScenario);
       setScenarios([...scenarios, response.data]);
       setShowCreateScenario(false);
       setCustomScenario({
@@ -187,7 +191,7 @@ export const PerformanceBenchmark: React.FC = () => {
         type: 'custom',
         duration_seconds: 300,
         parameters: {},
-        thresholds: {}
+        thresholds: {},
       });
     } catch (err) {
       setError('Failed to create custom scenario');
@@ -195,12 +199,14 @@ export const PerformanceBenchmark: React.FC = () => {
     }
   };
 
-  const selectedScenarioData = scenarios.find(s => s.scenario_id === selectedScenario);
+  const selectedScenarioData = scenarios.find(
+    (s) => s.scenario_id === selectedScenario
+  );
 
   return (
     <div className="performance-benchmark">
       <h2>Performance Benchmarking</h2>
-      
+
       {error && (
         <div className="error-message">
           <span className="error-icon">⚠️</span>
@@ -218,7 +224,7 @@ export const PerformanceBenchmark: React.FC = () => {
             disabled={isRunning}
           >
             <option value="">-- Choose a scenario --</option>
-            {scenarios.map(scenario => (
+            {scenarios.map((scenario) => (
               <option key={scenario.scenario_id} value={scenario.scenario_id}>
                 {scenario.scenario_name} ({scenario.type})
               </option>
@@ -229,11 +235,24 @@ export const PerformanceBenchmark: React.FC = () => {
         {selectedScenarioData && (
           <div className="scenario-details">
             <h3>Scenario Details</h3>
-            <p><strong>Description:</strong> {selectedScenarioData.description}</p>
-            <p><strong>Type:</strong> {selectedScenarioData.type}</p>
-            <p><strong>Duration:</strong> {selectedScenarioData.duration_seconds} seconds</p>
-            <p><strong>Parameters:</strong> {JSON.stringify(selectedScenarioData.parameters)}</p>
-            <p><strong>Thresholds:</strong> {JSON.stringify(selectedScenarioData.thresholds)}</p>
+            <p>
+              <strong>Description:</strong> {selectedScenarioData.description}
+            </p>
+            <p>
+              <strong>Type:</strong> {selectedScenarioData.type}
+            </p>
+            <p>
+              <strong>Duration:</strong> {selectedScenarioData.duration_seconds}{' '}
+              seconds
+            </p>
+            <p>
+              <strong>Parameters:</strong>{' '}
+              {JSON.stringify(selectedScenarioData.parameters)}
+            </p>
+            <p>
+              <strong>Thresholds:</strong>{' '}
+              {JSON.stringify(selectedScenarioData.thresholds)}
+            </p>
           </div>
         )}
 
@@ -271,7 +290,7 @@ export const PerformanceBenchmark: React.FC = () => {
           >
             {isRunning ? 'Running...' : 'Run Benchmark'}
           </button>
-          
+
           <button
             onClick={() => setShowCreateScenario(true)}
             disabled={isRunning}
@@ -287,13 +306,18 @@ export const PerformanceBenchmark: React.FC = () => {
         <div className="custom-scenario-modal">
           <div className="modal-content">
             <h3>Create Custom Scenario</h3>
-            
+
             <div className="form-group">
               <label>Scenario Name:</label>
               <input
                 type="text"
                 value={customScenario.scenario_name}
-                onChange={(e) => setCustomScenario({...customScenario, scenario_name: e.target.value})}
+                onChange={(e) =>
+                  setCustomScenario({
+                    ...customScenario,
+                    scenario_name: e.target.value,
+                  })
+                }
                 placeholder="Enter scenario name"
               />
             </div>
@@ -302,7 +326,12 @@ export const PerformanceBenchmark: React.FC = () => {
               <label>Description:</label>
               <textarea
                 value={customScenario.description}
-                onChange={(e) => setCustomScenario({...customScenario, description: e.target.value})}
+                onChange={(e) =>
+                  setCustomScenario({
+                    ...customScenario,
+                    description: e.target.value,
+                  })
+                }
                 placeholder="Describe the scenario"
               />
             </div>
@@ -311,7 +340,9 @@ export const PerformanceBenchmark: React.FC = () => {
               <label>Type:</label>
               <select
                 value={customScenario.type}
-                onChange={(e) => setCustomScenario({...customScenario, type: e.target.value})}
+                onChange={(e) =>
+                  setCustomScenario({ ...customScenario, type: e.target.value })
+                }
               >
                 <option value="custom">Custom</option>
                 <option value="stress">Stress Test</option>
@@ -325,7 +356,12 @@ export const PerformanceBenchmark: React.FC = () => {
               <input
                 type="number"
                 value={customScenario.duration_seconds}
-                onChange={(e) => setCustomScenario({...customScenario, duration_seconds: parseInt(e.target.value)})}
+                onChange={(e) =>
+                  setCustomScenario({
+                    ...customScenario,
+                    duration_seconds: parseInt(e.target.value),
+                  })
+                }
                 min="60"
                 max="3600"
               />
@@ -333,7 +369,9 @@ export const PerformanceBenchmark: React.FC = () => {
 
             <div className="modal-buttons">
               <button onClick={createCustomScenario}>Create Scenario</button>
-              <button onClick={() => setShowCreateScenario(false)}>Cancel</button>
+              <button onClick={() => setShowCreateScenario(false)}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -359,23 +397,31 @@ export const PerformanceBenchmark: React.FC = () => {
       {currentReport && (
         <div className="benchmark-report">
           <h3>Benchmark Report</h3>
-          
+
           <div className="score-summary">
             <div className="score-item">
               <span className="score-label">Overall Score:</span>
-              <span className="score-value">{currentReport.benchmark.overall_score}/100</span>
+              <span className="score-value">
+                {currentReport.benchmark.overall_score}/100
+              </span>
             </div>
             <div className="score-item">
               <span className="score-label">CPU Score:</span>
-              <span className="score-value">{currentReport.benchmark.cpu_score}/100</span>
+              <span className="score-value">
+                {currentReport.benchmark.cpu_score}/100
+              </span>
             </div>
             <div className="score-item">
               <span className="score-label">Memory Score:</span>
-              <span className="score-value">{currentReport.benchmark.memory_score}/100</span>
+              <span className="score-value">
+                {currentReport.benchmark.memory_score}/100
+              </span>
             </div>
             <div className="score-item">
               <span className="score-label">Network Score:</span>
-              <span className="score-value">{currentReport.benchmark.network_score}/100</span>
+              <span className="score-value">
+                {currentReport.benchmark.network_score}/100
+              </span>
             </div>
           </div>
 
@@ -396,9 +442,19 @@ export const PerformanceBenchmark: React.FC = () => {
                   <tr key={index}>
                     <td>{metric.metric_name}</td>
                     <td>{metric.metric_category}</td>
-                    <td>{metric.java_value} {metric.unit}</td>
-                    <td>{metric.bedrock_value} {metric.unit}</td>
-                    <td className={metric.improvement_percentage < 0 ? 'improvement' : 'regression'}>
+                    <td>
+                      {metric.java_value} {metric.unit}
+                    </td>
+                    <td>
+                      {metric.bedrock_value} {metric.unit}
+                    </td>
+                    <td
+                      className={
+                        metric.improvement_percentage < 0
+                          ? 'improvement'
+                          : 'regression'
+                      }
+                    >
                       {metric.improvement_percentage.toFixed(1)}%
                     </td>
                   </tr>
@@ -412,17 +468,21 @@ export const PerformanceBenchmark: React.FC = () => {
             <div className="issues">
               <h5>Identified Issues:</h5>
               <ul>
-                {currentReport.analysis.identified_issues.map((issue, index) => (
-                  <li key={index}>{issue}</li>
-                ))}
+                {currentReport.analysis.identified_issues.map(
+                  (issue, index) => (
+                    <li key={index}>{issue}</li>
+                  )
+                )}
               </ul>
             </div>
             <div className="suggestions">
               <h5>Optimization Suggestions:</h5>
               <ul>
-                {currentReport.analysis.optimization_suggestions.map((suggestion, index) => (
-                  <li key={index}>{suggestion}</li>
-                ))}
+                {currentReport.analysis.optimization_suggestions.map(
+                  (suggestion, index) => (
+                    <li key={index}>{suggestion}</li>
+                  )
+                )}
               </ul>
             </div>
           </div>

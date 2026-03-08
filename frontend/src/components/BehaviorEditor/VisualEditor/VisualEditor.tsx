@@ -1,5 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Tabs, Tab, Typography, Alert, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Tabs,
+  Tab,
+  Typography,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { FormBuilder } from './FormBuilder';
 import { ValidationEngine } from './ValidationEngine';
 import './VisualEditor.css';
@@ -7,7 +14,15 @@ import './VisualEditor.css';
 export interface FormField {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'select' | 'boolean' | 'textarea' | 'range' | 'color' | 'file';
+  type:
+    | 'text'
+    | 'number'
+    | 'select'
+    | 'boolean'
+    | 'textarea'
+    | 'range'
+    | 'color'
+    | 'file';
   label: string;
   value: any;
   required?: boolean;
@@ -63,10 +78,12 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   categories = [],
   layout = 'tabs',
   validationRules = {},
-  readOnly = false
+  readOnly = false,
 }) => {
   const [formData, setFormData] = useState<Record<string, any>>(initialData);
-  const [validationErrors, setValidationErrors] = useState<ValidationRule[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationRule[]>(
+    []
+  );
   const [activeTab, setActiveTab] = useState(0);
   const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
 
@@ -78,22 +95,25 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   // Initialize fields with default values
   useEffect(() => {
     const defaultValues: Record<string, any> = {};
-    fields.forEach(field => {
+    fields.forEach((field) => {
       if (formData[field.name] === undefined && field.value !== undefined) {
         defaultValues[field.name] = field.value;
       }
     });
     if (Object.keys(defaultValues).length > 0) {
-      setFormData(prev => ({ ...prev, ...defaultValues }));
+      setFormData((prev) => ({ ...prev, ...defaultValues }));
     }
   }, [fields, formData]);
 
   // Handle field value changes
-  const handleFieldChange = useCallback((fieldId: string, value: any) => {
-    setFormData(prev => ({ ...prev, [fieldId]: value }));
-    setDirtyFields(prev => new Set(prev).add(fieldId));
-    onFieldChange?.(fieldId, value);
-  }, [onFieldChange]);
+  const handleFieldChange = useCallback(
+    (fieldId: string, value: any) => {
+      setFormData((prev) => ({ ...prev, [fieldId]: value }));
+      setDirtyFields((prev) => new Set(prev).add(fieldId));
+      onFieldChange?.(fieldId, value);
+    },
+    [onFieldChange]
+  );
 
   // Handle validation
   useEffect(() => {
@@ -104,19 +124,25 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   }, [formData, fields, validationRules, onValidationChange]);
 
   // Get fields for specific category or all fields
-  const getFieldsForCategory = useCallback((categoryId?: string): FormField[] => {
-    if (!categoryId || categories.length === 0) {
-      return fields;
-    }
-    const category = categories.find(c => c.id === categoryId);
-    if (!category) return [];
-    return fields.filter(field => category.fields.includes(field.name));
-  }, [fields, categories]);
+  const getFieldsForCategory = useCallback(
+    (categoryId?: string): FormField[] => {
+      if (!categoryId || categories.length === 0) {
+        return fields;
+      }
+      const category = categories.find((c) => c.id === categoryId);
+      if (!category) return [];
+      return fields.filter((field) => category.fields.includes(field.name));
+    },
+    [fields, categories]
+  );
 
   // Get field errors
-  const getFieldErrors = useCallback((fieldName: string): ValidationRule[] => {
-    return validationErrors.filter(error => error.field === fieldName);
-  }, [validationErrors]);
+  const getFieldErrors = useCallback(
+    (fieldName: string): ValidationRule[] => {
+      return validationErrors.filter((error) => error.field === fieldName);
+    },
+    [validationErrors]
+  );
 
   // Check if form has unsaved changes
   const hasUnsavedChanges = dirtyFields.size > 0;
@@ -125,14 +151,23 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   const renderContent = () => {
     if (loading) {
       return (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight={400}
+        >
           <CircularProgress />
         </Box>
       );
     }
 
     if (error) {
-      return <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>;
+      return (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      );
     }
 
     if (layout === 'single') {
@@ -148,12 +183,21 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
     }
 
     // Tabs or Accordion layout
-    const tabContent = categories.length > 0 ? categories : [{ id: 'all', label: 'All Fields', fields: fields.map(f => f.name) }];
-    
+    const tabContent =
+      categories.length > 0
+        ? categories
+        : [
+            {
+              id: 'all',
+              label: 'All Fields',
+              fields: fields.map((f) => f.name),
+            },
+          ];
+
     return (
       <>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
           sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
         >
@@ -161,13 +205,9 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
             <Tab key={category.id} label={category.label} />
           ))}
         </Tabs>
-        
+
         {tabContent.map((category, index) => (
-          <Box
-            key={category.id}
-            hidden={activeTab !== index}
-            sx={{ py: 2 }}
-          >
+          <Box key={category.id} hidden={activeTab !== index} sx={{ py: 2 }}>
             {activeTab === index && (
               <FormBuilder
                 fields={getFieldsForCategory(category.id)}
@@ -195,21 +235,31 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
           </Typography>
         )}
       </Box>
-      
-      <Box className="editor-content">
-        {renderContent()}
-      </Box>
-      
+
+      <Box className="editor-content">{renderContent()}</Box>
+
       {onFormSubmit && (
-        <Box className="editor-footer" sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Box
+          className="editor-footer"
+          sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}
+        >
           <Box className="validation-summary">
             {validationErrors.length > 0 && (
-              <Alert 
-                severity={validationErrors.some(e => e.severity === 'error') ? 'error' : 'warning'}
+              <Alert
+                severity={
+                  validationErrors.some((e) => e.severity === 'error')
+                    ? 'error'
+                    : 'warning'
+                }
                 sx={{ mb: 2 }}
               >
-                {validationErrors.filter(e => e.severity === 'error').length} errors, 
-                {validationErrors.filter(e => e.severity === 'warning').length} warnings
+                {validationErrors.filter((e) => e.severity === 'error').length}{' '}
+                errors,
+                {
+                  validationErrors.filter((e) => e.severity === 'warning')
+                    .length
+                }{' '}
+                warnings
               </Alert>
             )}
           </Box>

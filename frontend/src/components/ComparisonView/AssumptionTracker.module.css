@@ -254,28 +254,28 @@
     padding: 15px;
     margin: 15px 0;
   }
-  
+
   .emptyState {
     padding: 30px 15px;
   }
-  
+
   .emptyIcon {
     font-size: 36px;
   }
-  
+
   .assumptionHeader {
     padding: 12px;
   }
-  
+
   .assumptionMeta {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .expandedContent {
     padding: 12px;
   }
-  
+
   .proTip {
     padding: 12px;
   }

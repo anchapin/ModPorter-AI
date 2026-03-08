@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
 import uuid
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
 
 @dataclass
 class FeatureMapping:
@@ -8,7 +9,7 @@ class FeatureMapping:
     bedrock_equivalent: str
     mapping_type: str  # e.g., "DIRECT", "ASSUMED", "MANUAL"
     confidence_score: float
-    assumption_applied: str = None # Identifier for the assumption, if any
+    assumption_applied: Optional[str] = None  # Identifier for the assumption, if any
 
 @dataclass
 class ComparisonResult:

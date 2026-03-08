@@ -16,13 +16,20 @@ from dotenv import load_dotenv
 import redis.asyncio as aioredis
 
 # Configure logging using centralized configuration
-from utils.logging_config import setup_logging, get_agent_logger
+from utils.logging_config import setup_logging, get_agent_logger, configure_structlog
 
 # Load environment variables
 load_dotenv()
 
 # Setup logging with environment-based configuration
 debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+
+# Also configure structlog for structured JSON logging in production
+configure_structlog(
+    debug_mode=debug_mode,
+    json_format=os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
+)
+
 setup_logging(
     debug_mode=debug_mode,
     enable_file_logging=os.getenv("ENABLE_FILE_LOGGING", "true").lower() == "true"

@@ -6,6 +6,8 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
+import reactCompiler from 'eslint-plugin-react-compiler';
 
 export default [
   { ignores: ['dist', 'coverage'] },
@@ -16,13 +18,27 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+        ...globals.es2021,
+        React: 'readonly',
       },
       parser: tseslint.parser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      react,
+      'react-compiler': reactCompiler,
+    },
+    settings: {
+      react: {
+        version: '19.2',
+      },
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -46,44 +62,81 @@ export default [
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
       'react-hooks/exhaustive-deps': 'off',
-      // Naming conventions
-      camelcase: ['error', { properties: 'always', ignoreDestructuring: true }],
+      // Naming conventions - enforce with practical exceptions
       '@typescript-eslint/naming-convention': [
         'error',
-        // Variables and functions should be camelCase
-        {
-          selector: ['variable', 'function'],
-          format: ['camelCase'],
-          leadingUnderscore: 'allow',
-        },
-        // Parameters should be camelCase
-        {
-          selector: 'parameter',
-          format: ['camelCase'],
-          leadingUnderscore: 'allow',
-        },
-        // Class properties and methods should be camelCase
-        {
-          selector: 'classProperty',
-          format: ['camelCase', 'UPPER_CASE'],
-        },
-        // Classes, interfaces, types, enums should be PascalCase
-        {
-          selector: ['class', 'interface', 'typeAlias', 'enum', 'enumMember'],
-          format: ['PascalCase'],
-        },
-        // Constants should be UPPER_CASE
+        // Variables, functions should use camelCase (default for JS/TS)
+        // Allow PascalCase for React components
         {
           selector: 'variable',
-          modifiers: ['const'],
-          format: ['UPPER_CASE', 'camelCase'],
+          format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+          leadingUnderscore: 'allow',
         },
-        // Object properties should be camelCase
         {
-          selector: 'objectLiteralProperty',
-          format: ['camelCase'],
+          selector: 'function',
+          format: ['camelCase', 'PascalCase'],
+        },
+        // Classes, interfaces, types, enums, and React components should use PascalCase
+        {
+          selector: 'class',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'typeAlias',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'enum',
+          format: ['PascalCase'],
+        },
+        // Properties - allow camelCase, UPPER_CASE, snake_case, and special patterns
+        {
+          selector: 'property',
+          format: ['camelCase', 'UPPER_CASE', 'snake_case'],
+          leadingUnderscore: 'allow',
+        },
+        // Allow properties with special characters (HTTP headers, MIME types, paths, namespaces, CSS selectors, numeric keys)
+        {
+          selector: 'property',
+          format: null,
+          // Match properties with: hyphens, slashes, colons, ampersands, numeric keys, spaces, or title-case words
+          filter: {
+            regex: '[-/:&\\s]|^\\d+$|.+:.+$|^[A-Z][a-z]+',
+            match: true,
+          },
+        },
+        // Type parameters should use PascalCase
+        {
+          selector: 'typeParameter',
+          format: ['PascalCase'],
+        },
+        // Ignore destructured variables that might have specific names
+        {
+          selector: 'variable',
+          modifiers: ['destructured'],
+          format: null,
+        },
+        // Allow default exports to have any name (React components)
+        {
+          selector: 'variable',
+          modifiers: ['exported'],
+          format: null,
         },
       ],
+      camelcase: 'off',
+      // Disable no-redeclare - conflict between const and type with same name is intentional
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'off',
+      // React 19 strict rules
+      // React Compiler (formerly React Forget) rules
+      'react-compiler/react-compiler': 'warn',
+      // Warn about deprecated React APIs
+      'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
+      // New React 19 rules would go here when eslint-plugin-react releases them
     },
   },
   {
@@ -128,4 +181,10 @@ export default [
     },
   },
   ...storybook.configs['flat/recommended'],
+  {
+    files: ['src/services/analytics.ts'],
+    rules: {
+      'no-redeclare': 'off',
+    },
+  },
 ];

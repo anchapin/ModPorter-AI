@@ -15,7 +15,7 @@ import json
 import subprocess
 import hashlib
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from pathlib import Path
 import base64
@@ -47,8 +47,8 @@ class GameplayComparisonResult:
     conversion_id: str
     java_screenshots: List[Screenshot]
     bedrock_screenshots: List[Screenshot]
-    visual_diffs: List[Dict]
-    functional_tests: List[Dict]
+    visual_diffs: List[Dict[str, Any]]
+    functional_tests: List[Dict[str, Any]]
     overall_score: float
     missing_features: List[str]
     recommendations: List[str]
@@ -60,7 +60,7 @@ class MinecraftLauncher:
     def __init__(self, java_path: Optional[str] = None, bedrock_path: Optional[str] = None):
         self.java_path = java_path or os.environ.get('MINECRAFT_JAVA_PATH', '/opt/minecraft-launcher')
         self.bedrock_path = bedrock_path or os.environ.get('MINECRAFT_BEDROCK_PATH', '/opt/minecraft-bedrock')
-        self.running_instances: Dict[str, subprocess.Popen] = {}
+        self.running_instances: Dict[str, Optional[subprocess.Popen[Any]]] = {}
     
     def is_java_installed(self) -> bool:
         """Check if Java Minecraft is available."""
@@ -90,7 +90,7 @@ class MinecraftLauncher:
         try:
             # Placeholder for actual launch logic
             print(f"[MOCK] Java Edition launched at {datetime.now()}")
-            self.running_instances['java'] = None
+            self.running_instances['java'] = None  # type: ignore[assignment]
             return True
         except Exception as e:
             print(f"Failed to launch Java Edition: {e}")
@@ -102,20 +102,20 @@ class MinecraftLauncher:
         try:
             # Placeholder for actual launch logic
             print(f"[MOCK] Bedrock Edition launched at {datetime.now()}")
-            self.running_instances['bedrock'] = None
+            self.running_instances['bedrock'] = None  # type: ignore[assignment]
             return True
         except Exception as e:
             print(f"Failed to launch Bedrock Edition: {e}")
             return False
     
-    def stop_instance(self, edition: str):
+    def stop_instance(self, edition: str) -> None:
         """Stop a running Minecraft instance."""
         if edition in self.running_instances:
             print(f"Stopping Minecraft {edition}...")
             # In production, would terminate the process
             del self.running_instances[edition]
     
-    def close_all(self):
+    def close_all(self) -> None:
         """Close all running instances."""
         for edition in list(self.running_instances.keys()):
             self.stop_instance(edition)
@@ -134,11 +134,11 @@ class GameplayTestRunner:
         game_edition: str,
         script: GameTestScript,
         game_version: str
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Execute a test script and capture results."""
         print(f"Running test '{script.name}' on {game_edition}...")
         
-        results = {
+        results: Dict[str, Any] = {
             "test_name": script.name,
             "game_edition": game_edition,
             "commands_executed": [],
@@ -678,7 +678,7 @@ class GameplayComparisonAgent:
         self,
         result: GameplayComparisonResult,
         output_path: str
-    ):
+    ) -> None:
         """Export the comparison report to a file."""
         report_dict = {
             "overall_score": result.overall_score,

@@ -135,7 +135,7 @@ class TestCurseForgeManifestParser:
         required = parser.get_required_mods()
         assert len(required) == 2
     
-    def test_validate_manifest_missing_manifestType(self):
+    def test_validate_manifest_missing_manifest_type(self):
         """Test validation fails for missing manifestType."""
         invalid_manifest = SAMPLE_CURSEFORGE_MANIFEST.copy()
         del invalid_manifest["manifestType"]

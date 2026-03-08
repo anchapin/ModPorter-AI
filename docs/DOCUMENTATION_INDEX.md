@@ -35,6 +35,7 @@ This directory contains all project documentation organized by category.
 - `DIAGRAMS.md` - System diagrams
 - `GITHUB_ISSUES_PLAN.md` - GitHub issues management plan
 - `GITHUB_SETUP_SUMMARY.md` - GitHub setup summary
+- `health-checks.md` - Health check endpoints for Kubernetes probes
 - `PRD.md` - Product Requirements Document
 - `project-docs.md` - Additional project documentation
 - `RAG_TESTING.md` - RAG system testing documentation

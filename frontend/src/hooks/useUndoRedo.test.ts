@@ -175,7 +175,9 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('maxHistory limits history size', () => {
-      const { result } = renderHook(() => useUndoRedo('initial', { maxHistory: 3 }));
+      const { result } = renderHook(() =>
+        useUndoRedo('initial', { maxHistory: 3 })
+      );
 
       act(() => {
         result.current.updateState('2', 'Update 2');
@@ -204,7 +206,10 @@ describe('useUndoRedo Hook', () => {
       const { result } = renderHook(() => useUndoRedo({ count: 0 }));
 
       act(() => {
-        result.current.updateState((prev: any) => ({ count: prev.count + 1 }), 'Increment');
+        result.current.updateState(
+          (prev: any) => ({ count: prev.count + 1 }),
+          'Increment'
+        );
       });
 
       expect(result.current.state).toEqual({ count: 1 });
@@ -214,7 +219,9 @@ describe('useUndoRedo Hook', () => {
   describe('Debounce Option', () => {
     test('debounces updates when enabled', async () => {
       jest.useFakeTimers();
-      const { result } = renderHook(() => useUndoRedo('initial', { debounceMs: 100, enableDebounce: true }));
+      const { result } = renderHook(() =>
+        useUndoRedo('initial', { debounceMs: 100, enableDebounce: true })
+      );
 
       act(() => {
         result.current.updateState('state1', 'Update 1');
@@ -239,7 +246,9 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('no debounce when disabled', () => {
-      const { result } = renderHook(() => useUndoRedo('initial', { debounceMs: 100, enableDebounce: false }));
+      const { result } = renderHook(() =>
+        useUndoRedo('initial', { debounceMs: 100, enableDebounce: false })
+      );
 
       act(() => {
         result.current.updateState('state1', 'Update 1');

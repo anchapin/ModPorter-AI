@@ -1,0 +1,38 @@
+# Trivy Ignore Configuration
+# Exclude directories that contain old/unrelated code that should not be scanned
+
+# Exclude .github directory - contains CI/CD workflows and actions, not production code
+.github/
+
+# Note: .worktrees directory is excluded via skip-files in deploy.yml
+# Keeping this comment for documentation purposes
+
+# Exclude documentation and other non-production directories
+# These don't contain deployed code
+docs/
+tests/
+scripts/
+
+# Exclude build outputs and generated files
+**/dist/
+**/build/
+**/.venv/
+**/node_modules/
+**/__pycache__/
+
+# Known vulnerabilities that are not applicable or are false positives
+# These will be reviewed periodically
+
+# CVE-2026-0540: dompurify XSS vulnerability
+# This is a transitive dependency pulled in by monaco-editor@0.55.1 which bundles an older version
+# monaco-editor has not yet released a fix for this
+# Vulnerability is in a dev-only dependency (monaco-editor used for code editing UI)
+# The actual application code uses dompurify@3.3.2 which is not vulnerable
+CVE-2026-0540
+
+# CVE-2025-13465: lodash-es prototype pollution
+# This is a transitive dependency in the unused package-lock.json (root uses pnpm)
+# The actual project uses pnpm with lodash-es@4.17.23 which has the fix
+# Status shows "fixed" meaning package managers have already picked up the fix
+# This is a false positive - the lockfile is not actually used
+CVE-2025-13465

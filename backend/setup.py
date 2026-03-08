@@ -28,5 +28,6 @@ setup(
         'ruff==0.15.1',
         'black==26.1.0',
         'python-dotenv==1.2.1',
+        'structlog>=24.0.0',
     ],
 )

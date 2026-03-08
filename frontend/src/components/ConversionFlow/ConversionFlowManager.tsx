@@ -9,12 +9,19 @@ import { ConversionUploadEnhanced } from '../ConversionUpload/ConversionUploadEn
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
 import { triggerDownload } from '../../services/api';
+import { useConversionTracking } from '../../hooks/useAnalytics';
 import './ConversionFlowManager.css';
 
 export interface ConversionFlowState {
   jobId: string | null;
   filename: string;
-  status: 'idle' | 'uploading' | 'converting' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | 'idle'
+    | 'uploading'
+    | 'converting'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
   progress: number;
   error: string | null;
   resultUrl: string | null;
@@ -33,7 +40,7 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   onError,
   showReport = true,
   autoReset = false,
-  resetDelay = 30000
+  resetDelay = 30000,
 }) => {
   const [flowState, setFlowState] = useState<ConversionFlowState>({
     jobId: null,
@@ -41,11 +48,15 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     status: 'idle',
     progress: 0,
     error: null,
-    resultUrl: null
+    resultUrl: null,
   });
 
   const [currentStatus, setCurrentStatus] = useState<any>(null);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Analytics tracking
+  const { trackStart, trackComplete, trackFail, trackDownload } =
+    useConversionTracking();
 
   // Clear any pending reset timeout
   useEffect(() => {
@@ -69,62 +80,87 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
       status: 'idle',
       progress: 0,
       error: null,
-      resultUrl: null
+      resultUrl: null,
     });
     setCurrentStatus(null);
   }, []);
 
   // Handle conversion start
-  const handleConversionStart = useCallback((jobId: string, filename: string) => {
-    console.log('[ConversionFlow] Started:', jobId, filename);
+  const handleConversionStart = useCallback(
+    (jobId: string, filename: string) => {
+      console.log('[ConversionFlow] Started:', jobId, filename);
 
-    setFlowState({
-      jobId,
-      filename,
-      status: 'converting',
-      progress: 0,
-      error: null,
-      resultUrl: null
-    });
-  }, []);
+      // Track conversion start
+      trackStart(jobId, { filename });
+
+      setFlowState({
+        jobId,
+        filename,
+        status: 'converting',
+        progress: 0,
+        error: null,
+        resultUrl: null,
+      });
+    },
+    [trackStart]
+  );
 
   // Handle conversion complete
-  const handleConversionComplete = useCallback((jobId: string) => {
-    console.log('[ConversionFlow] Completed:', jobId);
+  const handleConversionComplete = useCallback(
+    (jobId: string) => {
+      console.log('[ConversionFlow] Completed:', jobId);
 
-    setFlowState(prev => ({
-      ...prev,
-      status: 'completed',
-      progress: 100,
-      resultUrl: `/api/v1/conversions/${jobId}/download`
-    }));
+      // Track conversion complete
+      trackComplete(jobId, { filename: flowState.filename });
 
-    if (onComplete) {
-      onComplete(jobId, flowState.filename);
-    }
+      setFlowState((prev) => ({
+        ...prev,
+        status: 'completed',
+        progress: 100,
+        resultUrl: `/api/v1/conversions/${jobId}/download`,
+      }));
 
-    // Auto-reset if enabled
-    if (autoReset) {
-      resetTimeoutRef.current = setTimeout(() => {
-        resetFlow();
-      }, resetDelay);
-    }
-  }, [flowState.filename, onComplete, autoReset, resetDelay, resetFlow]);
+      if (onComplete) {
+        onComplete(jobId, flowState.filename);
+      }
+
+      // Auto-reset if enabled
+      if (autoReset) {
+        resetTimeoutRef.current = setTimeout(() => {
+          resetFlow();
+        }, resetDelay);
+      }
+    },
+    [
+      flowState.filename,
+      onComplete,
+      autoReset,
+      resetDelay,
+      resetFlow,
+      trackComplete,
+    ]
+  );
 
   // Handle conversion failed
-  const handleConversionFailed = useCallback((jobId: string, error: string) => {
-    console.error('[ConversionFlow] Failed:', jobId, error);
+  const handleConversionFailed = useCallback(
+    (jobId: string, error: string) => {
+      console.error('[ConversionFlow] Failed:', jobId, error);
 
-    setFlowState(prev => ({
-      ...prev,
-      status: 'failed',
-      error
-    }));
+      // Track conversion fail
+      trackFail(jobId, { error: error.substring(0, 200) });
 
-    if (onError) {
-      onError(error);
-    }
-  }, [onError]);
+      setFlowState((prev) => ({
+        ...prev,
+        status: 'failed',
+        error,
+      }));
+
+      if (onError) {
+        onError(error);
+      }
+    },
+    [onError, trackFail]
+  );
 
   // Handle manual download
   const handleDownload = useCallback(async () => {
@@ -133,14 +169,17 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     try {
       // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
       await triggerDownload(flowState.jobId);
+
+      // Track download
+      trackDownload(flowState.jobId, { filename: flowState.filename });
     } catch (error: any) {
       console.error('[ConversionFlow] Download failed:', error);
-      setFlowState(prev => ({
+      setFlowState((prev) => ({
         ...prev,
-        error: `Download failed: ${error.message || 'Unknown error'}`
+        error: `Download failed: ${error.message || 'Unknown error'}`,
       }));
     }
-  }, [flowState.jobId]);
+  }, [flowState.jobId, flowState.filename, trackDownload]);
 
   // Render upload component when idle
   if (flowState.status === 'idle') {
@@ -212,7 +251,10 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
           <p className="filename">{flowState.filename}</p>
 
           <div className="action-buttons">
-            <button className="download-button primary" onClick={handleDownload}>
+            <button
+              className="download-button primary"
+              onClick={handleDownload}
+            >
               <span className="icon">⬇</span>
               Download .mcaddon
             </button>
@@ -222,7 +264,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
                 className="report-button secondary"
                 onClick={() => {
                   // Scroll to report
-                  const reportElement = document.getElementById(`conversion-report-${flowState.jobId}`);
+                  const reportElement = document.getElementById(
+                    `conversion-report-${flowState.jobId}`
+                  );
                   if (reportElement) {
                     reportElement.scrollIntoView({ behavior: 'smooth' });
                   }
@@ -240,7 +284,10 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
           </div>
 
           {showReport && flowState.jobId && (
-            <div id={`conversion-report-${flowState.jobId}`} className="flow-report">
+            <div
+              id={`conversion-report-${flowState.jobId}`}
+              className="flow-report"
+            >
               <ConversionReportContainer
                 jobId={flowState.jobId}
                 jobStatus="completed"
@@ -298,7 +345,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
                 className="report-button secondary"
                 onClick={() => {
                   // Even failed conversions might have partial reports
-                  const reportElement = document.getElementById(`conversion-report-${flowState.jobId}`);
+                  const reportElement = document.getElementById(
+                    `conversion-report-${flowState.jobId}`
+                  );
                   if (reportElement) {
                     reportElement.scrollIntoView({ behavior: 'smooth' });
                   }
@@ -311,7 +360,10 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
           </div>
 
           {showReport && flowState.jobId && (
-            <div id={`conversion-report-${flowState.jobId}`} className="flow-report">
+            <div
+              id={`conversion-report-${flowState.jobId}`}
+              className="flow-report"
+            >
               <ConversionReportContainer
                 jobId={flowState.jobId}
                 jobStatus="failed"

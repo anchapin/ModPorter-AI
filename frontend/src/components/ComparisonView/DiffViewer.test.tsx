@@ -12,8 +12,12 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={mockCodeDiff} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
-    expect(screen.getByText('Interactive diff view will be implemented here.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Interactive diff view will be implemented here.')
+    ).toBeInTheDocument();
   });
 
   test('displays code diff data as JSON', () => {
@@ -38,14 +42,18 @@ describe('DiffViewer', () => {
   test('handles null code diff', () => {
     render(<DiffViewer codeDiff={null} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
     expect(screen.getByText('null')).toBeInTheDocument();
   });
 
   test('handles undefined code diff', () => {
     render(<DiffViewer codeDiff={undefined} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
   });
 
   test('handles empty object code diff', () => {
@@ -53,7 +61,9 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={emptyDiff} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
     expect(screen.getByText('{}')).toBeInTheDocument();
   });
 
@@ -87,8 +97,10 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={complexDiff} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
-    
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
+
     // Verify that the complex structure is displayed in the pre element
     const preElement = document.querySelector('pre');
     expect(preElement).toBeInTheDocument();
@@ -107,8 +119,10 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={arrayDiff} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
-    
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
+
     const preElement = document.querySelector('pre');
     expect(preElement).toBeInTheDocument();
     expect(preElement?.textContent).toContain('file1.java');
@@ -123,7 +137,9 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={stringDiff} />);
 
-    expect(screen.getByText('Code Differences (DiffViewer)')).toBeInTheDocument();
+    expect(
+      screen.getByText('Code Differences (DiffViewer)')
+    ).toBeInTheDocument();
     expect(screen.getByText(`"${stringDiff}"`)).toBeInTheDocument();
   });
 
@@ -132,13 +148,17 @@ describe('DiffViewer', () => {
 
     render(<DiffViewer codeDiff={mockCodeDiff} />);
 
-    const container = screen.getByText('Code Differences (DiffViewer)').closest('div');
+    const container = screen
+      .getByText('Code Differences (DiffViewer)')
+      .closest('div');
     expect(container).toBeInTheDocument();
 
     const heading = screen.getByRole('heading', { level: 2 });
     expect(heading).toHaveTextContent('Code Differences (DiffViewer)');
 
-    const paragraph = screen.getByText('Interactive diff view will be implemented here.');
+    const paragraph = screen.getByText(
+      'Interactive diff view will be implemented here.'
+    );
     expect(paragraph.tagName).toBe('P');
 
     const preElement = container?.querySelector('pre');
@@ -165,7 +185,7 @@ describe('DiffViewer', () => {
     expect(preElement?.textContent).toContain('nested');
     expect(preElement?.textContent).toContain('array');
     expect(preElement?.textContent).toContain('elements');
-    
+
     // Verify proper JSON formatting (should contain indentation)
     expect(preElement?.textContent).toMatch(/\s{2,}/); // Contains multiple spaces (indentation)
   });

@@ -34,7 +34,7 @@ interface TestResult {
 
 export const BehavioralTest: React.FC<BehavioralTestProps> = ({
   conversionId,
-  onTestComplete
+  onTestComplete,
 }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -43,32 +43,40 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
 
   const defaultScenarios: TestScenario[] = [
     {
-      scenario: "Block Interaction Test",
+      scenario: 'Block Interaction Test',
       steps: [
-        { action: "place_block", position: [0, 60, 0], block_type: "custom_block" },
-        { action: "right_click", target: "custom_block" },
-        { action: "verify_state", key: "gui_opened_for_custom_block_A", expected: "main_menu_mock_value" }
+        {
+          action: 'place_block',
+          position: [0, 60, 0],
+          block_type: 'custom_block',
+        },
+        { action: 'right_click', target: 'custom_block' },
+        {
+          action: 'verify_state',
+          key: 'gui_opened_for_custom_block_A',
+          expected: 'main_menu_mock_value',
+        },
       ],
-      expected_outcome: "Block GUI opens correctly"
+      expected_outcome: 'Block GUI opens correctly',
     },
     {
-      scenario: "Entity Behavior Test",
+      scenario: 'Entity Behavior Test',
       steps: [
-        { action: "spawn_entity", type: "custom_mob", position: [10, 60, 10] },
-        { action: "player_approach", target: "custom_mob", distance: 5 },
-        { action: "verify_behavior", expected_behavior_id: "hostile_reaction" }
+        { action: 'spawn_entity', type: 'custom_mob', position: [10, 60, 10] },
+        { action: 'player_approach', target: 'custom_mob', distance: 5 },
+        { action: 'verify_behavior', expected_behavior_id: 'hostile_reaction' },
       ],
-      expected_outcome: "Entity attacks player when approached"
+      expected_outcome: 'Entity attacks player when approached',
     },
     {
-      scenario: "Item Usage Test",
+      scenario: 'Item Usage Test',
       steps: [
-        { action: "give_item", item_type: "custom_tool", quantity: 1 },
-        { action: "use_item", target: "custom_tool" },
-        { action: "verify_state", key: "item_effect_active", expected: true }
+        { action: 'give_item', item_type: 'custom_tool', quantity: 1 },
+        { action: 'use_item', target: 'custom_tool' },
+        { action: 'verify_state', key: 'item_effect_active', expected: true },
       ],
-      expected_outcome: "Custom item effect activates"
-    }
+      expected_outcome: 'Custom item effect activates',
+    },
   ];
 
   const startBehavioralTest = async () => {
@@ -80,12 +88,12 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
       const testRequest = {
         conversion_id: conversionId,
         test_scenarios: defaultScenarios,
-        test_environment: "bedrock_test",
-        minecraft_version: "1.20.0",
+        test_environment: 'bedrock_test',
+        minecraft_version: '1.20.0',
         test_config: {
-          report_format: "json",
-          timeout_per_scenario: 30000
-        }
+          report_format: 'json',
+          timeout_per_scenario: 30000,
+        },
       };
 
       const response = await fetch('/api/behavioral-testing/tests', {
@@ -105,7 +113,6 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
 
       // Poll for test completion
       await pollTestProgress(result.test_id);
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       setIsRunning(false);
@@ -136,12 +143,12 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
           const elapsed = Date.now() - startTime;
           const estimatedProgress = Math.min((elapsed / maxPollTime) * 100, 90);
           setProgress(estimatedProgress);
-          
+
           setTimeout(poll, pollInterval);
         } else {
           setProgress(100);
           setIsRunning(false);
-          
+
           if (onTestComplete) {
             onTestComplete(result);
           }
@@ -159,15 +166,19 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
     if (!testResult) return;
 
     try {
-      const response = await fetch(`/api/behavioral-testing/tests/${testResult.test_id}/report?format=json`);
+      const response = await fetch(
+        `/api/behavioral-testing/tests/${testResult.test_id}/report?format=json`
+      );
       if (!response.ok) {
         throw new Error('Failed to download report');
       }
 
       const reportData = await response.json();
-      const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+        type: 'application/json',
+      });
       const url = URL.createObjectURL(blob);
-      
+
       const a = document.createElement('a');
       a.href = url;
       a.download = `behavioral_test_report_${testResult.test_id}.json`;
@@ -176,7 +187,9 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download report');
+      setError(
+        err instanceof Error ? err.message : 'Failed to download report'
+      );
     }
   };
 
@@ -271,7 +284,9 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
 
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-600">Total Scenarios</div>
-                  <div className="text-lg font-medium">{testResult.total_scenarios}</div>
+                  <div className="text-lg font-medium">
+                    {testResult.total_scenarios}
+                  </div>
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg">
@@ -279,18 +294,18 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
                   <div className="text-lg font-medium">
                     {testResult.total_scenarios > 0
                       ? `${Math.round((testResult.passed_scenarios / testResult.total_scenarios) * 100)}%`
-                      : '0%'
-                    }
+                      : '0%'}
                   </div>
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-600">Behavioral Score</div>
-                  <div className={`text-lg font-medium ${getBehavioralScoreColor(testResult.behavioral_score)}`}>
+                  <div
+                    className={`text-lg font-medium ${getBehavioralScoreColor(testResult.behavioral_score)}`}
+                  >
                     {testResult.behavioral_score
                       ? `${Math.round(testResult.behavioral_score * 100)}%`
-                      : 'N/A'
-                    }
+                      : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -299,13 +314,16 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
                 <h4 className="font-medium mb-2">Test Summary</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-green-600">Passed:</span> {testResult.passed_scenarios}
+                    <span className="text-green-600">Passed:</span>{' '}
+                    {testResult.passed_scenarios}
                   </div>
                   <div>
-                    <span className="text-red-600">Failed:</span> {testResult.failed_scenarios}
+                    <span className="text-red-600">Failed:</span>{' '}
+                    {testResult.failed_scenarios}
                   </div>
                   <div>
-                    <span className="text-gray-600">Duration:</span> {Math.round(testResult.execution_time_ms / 1000)}s
+                    <span className="text-gray-600">Duration:</span>{' '}
+                    {Math.round(testResult.execution_time_ms / 1000)}s
                   </div>
                 </div>
               </div>
@@ -316,9 +334,16 @@ export const BehavioralTest: React.FC<BehavioralTestProps> = ({
             <h4 className="font-medium mb-2">Default Test Scenarios</h4>
             <div className="space-y-2">
               {defaultScenarios.map((scenario, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium">{scenario.scenario}</span>
-                  <span className="text-xs text-gray-600">{scenario.steps.length} steps</span>
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                >
+                  <span className="text-sm font-medium">
+                    {scenario.scenario}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {scenario.steps.length} steps
+                  </span>
                 </div>
               ))}
             </div>

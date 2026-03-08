@@ -35,9 +35,9 @@ interface UploadResponse {
   message: string;
 }
 
-export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({ 
+export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   onConversionStart,
-  onConversionComplete
+  onConversionComplete,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [modUrl, setModUrl] = useState('');
@@ -45,13 +45,16 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   const [includeDependencies, setIncludeDependencies] = useState(true);
   const [isConverting, setIsConverting] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<ConversionStatus | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
-  const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = useState(false);
+  const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] =
+    useState(false);
 
   // API Base URL - Use proxy path for development, environment variable for production
   const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
-  
+
   // Debug logging (only in development)
   if (import.meta.env.DEV) {
     console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
@@ -61,29 +64,43 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   // Centralized API error handling
   const handleApiError = (error: any): Error => {
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      return new Error('Unable to connect to the server. Please check if the backend is running.');
+      return new Error(
+        'Unable to connect to the server. Please check if the backend is running.'
+      );
     }
     return error instanceof Error ? error : new Error(String(error));
   };
 
   // Centralized fetch wrapper with error handling
-  const apiFetch = useCallback(async (url: string, options?: globalThis.RequestInit): Promise<Response> => {
-    try {
-      const response = await fetch(url, options);
-      return response;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  }, []);
+  const apiFetch = useCallback(
+    async (
+      url: string,
+      options?: globalThis.RequestInit
+    ): Promise<Response> => {
+      try {
+        const response = await fetch(url, options);
+        return response;
+      } catch (error) {
+        throw handleApiError(error);
+      }
+    },
+    []
+  );
 
   // File validation
   const validateFile = (file: File): boolean => {
-    const validTypes = ['application/java-archive', 'application/zip', 'application/x-zip-compressed'];
+    const validTypes = [
+      'application/java-archive',
+      'application/zip',
+      'application/x-zip-compressed',
+    ];
     const validExtensions = ['.jar', '.zip'];
-    
+
     const hasValidType = validTypes.includes(file.type);
-    const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-    
+    const hasValidExtension = validExtensions.some((ext) =>
+      file.name.toLowerCase().endsWith(ext)
+    );
+
     return hasValidType || hasValidExtension;
   };
 
@@ -93,12 +110,12 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       'curseforge.com',
       'www.curseforge.com',
       'modrinth.com',
-      'www.modrinth.com'
+      'www.modrinth.com',
     ];
-    
+
     try {
       const urlObj = new URL(url);
-      return validDomains.some(domain => urlObj.hostname === domain);
+      return validDomains.some((domain) => urlObj.hostname === domain);
     } catch {
       return false;
     }
@@ -120,7 +137,9 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Upload failed' }));
       throw new Error(errorData.detail || 'File upload failed');
     }
 
@@ -128,7 +147,10 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   };
 
   // Start conversion
-  const startConversion = async (fileId: string, filename: string): Promise<ConversionResponse> => {
+  const startConversion = async (
+    fileId: string,
+    filename: string
+  ): Promise<ConversionResponse> => {
     const response = await apiFetch(`${API_BASE_URL}/convert`, {
       method: 'POST',
       headers: {
@@ -146,7 +168,9 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Conversion failed' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: 'Conversion failed' }));
       throw new Error(errorData.detail || 'Conversion failed');
     }
 
@@ -154,16 +178,23 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   };
 
   // Get conversion status
-  const getConversionStatus = useCallback(async (jobId: string): Promise<ConversionStatus> => {
-    const response = await apiFetch(`${API_BASE_URL}/convert/${jobId}/status`);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Failed to get status' }));
-      throw new Error(errorData.detail || 'Failed to get status');
-    }
+  const getConversionStatus = useCallback(
+    async (jobId: string): Promise<ConversionStatus> => {
+      const response = await apiFetch(
+        `${API_BASE_URL}/convert/${jobId}/status`
+      );
 
-    return response.json();
-  }, [API_BASE_URL, apiFetch]);
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ detail: 'Failed to get status' }));
+        throw new Error(errorData.detail || 'Failed to get status');
+      }
+
+      return response.json();
+    },
+    [API_BASE_URL, apiFetch]
+  );
 
   // Polling for status updates (every 2 seconds as per issue #171)
   useEffect(() => {
@@ -188,7 +219,9 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             setError(status.error || 'Conversion failed');
           } else if (attempts >= maxAttempts) {
             setIsConverting(false);
-            setError('Conversion timed out after 10 minutes. Please try again.');
+            setError(
+              'Conversion timed out after 10 minutes. Please try again.'
+            );
           }
         } catch (error) {
           console.error('Status check error:', error);
@@ -213,15 +246,15 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
       setError('Unsupported file type. Please upload .jar or .zip files only.');
       return;
     }
-    
+
     const file = acceptedFiles[0];
     if (!file) return;
-    
+
     if (!validateFile(file)) {
       setError('Unsupported file type. Please upload .jar or .zip files only.');
       return;
     }
-    
+
     setSelectedFile(file);
     setModUrl('');
     setError(null);
@@ -232,20 +265,20 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     accept: {
       'application/java-archive': ['.jar'],
       'application/zip': ['.zip'],
-      'application/x-zip-compressed': ['.zip']
+      'application/x-zip-compressed': ['.zip'],
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
   });
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
     setModUrl(url);
-    
+
     if (url) {
       setSelectedFile(null);
     }
-    
+
     if (url && !validateUrl(url)) {
       setError('Please enter a valid CurseForge or Modrinth URL.');
     } else {
@@ -255,55 +288,59 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedFile && !modUrl) {
       setError('Please select a file or enter a URL.');
       return;
     }
-    
+
     if (modUrl && !validateUrl(modUrl)) {
       setError('Please enter a valid CurseForge or Modrinth URL.');
       return;
     }
 
     if (!selectedFile) {
-      setError('File upload is required for conversion. URL-only conversion is not yet supported.');
+      setError(
+        'File upload is required for conversion. URL-only conversion is not yet supported.'
+      );
       return;
     }
-    
+
     setIsConverting(true);
     setError(null);
     setCurrentStatus(null);
-    
+
     try {
       if (import.meta.env.DEV) {
         console.log('Starting real conversion...');
       }
-      
+
       // Step 1: Upload file
       const uploadResponse = await uploadFile(selectedFile);
       if (import.meta.env.DEV) {
         console.log('File uploaded:', uploadResponse);
       }
-      
+
       // Step 2: Start conversion
-      const conversionResponse = await startConversion(uploadResponse.file_id, uploadResponse.original_filename);
+      const conversionResponse = await startConversion(
+        uploadResponse.file_id,
+        uploadResponse.original_filename
+      );
       if (import.meta.env.DEV) {
         console.log('Conversion started:', conversionResponse);
       }
-      
+
       setCurrentJobId(conversionResponse.job_id);
       setCurrentStatus({
         job_id: conversionResponse.job_id,
         status: conversionResponse.status,
         progress: 0,
-        message: conversionResponse.message || 'Conversion started'
+        message: conversionResponse.message || 'Conversion started',
       });
 
       if (onConversionStart) {
         onConversionStart(conversionResponse.job_id);
       }
-      
     } catch (err: any) {
       console.error('Conversion error:', err);
       setError(err.message || 'Conversion failed. Please try again.');
@@ -313,7 +350,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
   const downloadResult = async () => {
     if (!currentJobId) return;
-    
+
     try {
       // ⚡ Bolt optimization: Use triggerDownload to prevent large memory spikes from blob allocation
       await triggerDownload(currentJobId);
@@ -326,7 +363,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
   const getStatusMessage = () => {
     if (!currentStatus) return 'Ready to convert';
-    
+
     switch (currentStatus.status) {
       case 'queued':
         return 'Queued for processing...';
@@ -345,35 +382,45 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
     <div className="conversion-upload">
       <h2>Convert Your Modpack</h2>
       <p className="description">
-        Upload your Java Edition modpack and we'll convert it to Bedrock Edition using AI.
+        Upload your Java Edition modpack and we'll convert it to Bedrock Edition
+        using AI.
       </p>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
       {/* Progress Display */}
       {(isConverting || currentStatus) && currentStatus && (
-        <div className={`progress-display status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
+        <div
+          className={`progress-display status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}
+        >
           <div className="progress-header">
             <h4 className="progress-title">
-              {currentStatus.status === 'completed' ? '✅ Conversion Complete!' : 
-               currentStatus.status === 'failed' ? '❌ Conversion Failed' : '🔄 Converting...'}
+              {currentStatus.status === 'completed'
+                ? '✅ Conversion Complete!'
+                : currentStatus.status === 'failed'
+                  ? '❌ Conversion Failed'
+                  : '🔄 Converting...'}
             </h4>
-            <span className={`progress-status-badge status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}>
+            <span
+              className={`progress-status-badge status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}
+            >
               {currentStatus.status}
             </span>
           </div>
-          <p className="progress-message"><strong>Message:</strong> {getStatusMessage()}</p>
+          <p className="progress-message">
+            <strong>Message:</strong> {getStatusMessage()}
+          </p>
           {currentStatus.progress !== undefined && (
             <>
-              <p className="progress-percentage"><strong>Progress:</strong> {currentStatus.progress}%</p>
+              <p className="progress-percentage">
+                <strong>Progress:</strong> {currentStatus.progress}%
+              </p>
               <div className="progress-bar-container">
-                <div 
+                <div
                   className={`progress-bar-fill status-${currentStatus.status === 'completed' ? 'completed' : currentStatus.status === 'failed' ? 'failed' : 'processing'}`}
-                  style={{ width: `${Math.max(0, Math.min(100, currentStatus.progress))}%` }}
+                  style={{
+                    width: `${Math.max(0, Math.min(100, currentStatus.progress))}%`,
+                  }}
                 ></div>
               </div>
             </>
@@ -386,21 +433,27 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
 
       <form onSubmit={handleSubmit}>
         {/* File Upload Area */}
-        <div 
-          {...getRootProps()} 
+        <div
+          {...getRootProps()}
           className={`dropzone ${isDragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''} ${isConverting ? 'disabled-dropzone' : ''}`}
         >
-          <input {...getInputProps()} aria-label="File upload" disabled={isConverting} />
-          
+          <input
+            {...getInputProps()}
+            aria-label="File upload"
+            disabled={isConverting}
+          />
+
           {selectedFile ? (
             <div className="file-preview">
               <div className="file-icon">📦</div>
               <div className="file-info">
                 <div className="file-name">{selectedFile.name}</div>
-                <div className="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                <div className="file-size">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </div>
                 <div className="status">Ready for real AI conversion</div>
               </div>
-              <button 
+              <button
                 type="button"
                 className="remove-file"
                 onClick={(e) => {
@@ -417,8 +470,19 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               <div className="upload-icon">📁</div>
               <h3>Drag & drop your modpack here</h3>
               <p>Supports .jar files and .zip modpack archives</p>
-              <p><strong>Real AI conversion with {process.env.NODE_ENV === 'development' ? 'Mock LLM' : 'Ollama/OpenAI'}</strong></p>
-              <button type="button" className="browse-button" disabled={isConverting}>
+              <p>
+                <strong>
+                  Real AI conversion with{' '}
+                  {process.env.NODE_ENV === 'development'
+                    ? 'Mock LLM'
+                    : 'Ollama/OpenAI'}
+                </strong>
+              </p>
+              <button
+                type="button"
+                className="browse-button"
+                disabled={isConverting}
+              >
                 Browse Files
               </button>
             </div>
@@ -442,13 +506,17 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
             />
 
             <div className="supported-sites">
-              <span>Supported: CurseForge • Modrinth (File upload required for now)</span>
+              <span>
+                Supported: CurseForge • Modrinth (File upload required for now)
+              </span>
             </div>
           </div>
         )}
 
         {/* Configuration Options */}
-        <div className={`conversion-options ${isConverting ? 'disabled-options' : ''}`}>
+        <div
+          className={`conversion-options ${isConverting ? 'disabled-options' : ''}`}
+        >
           <div className="option-group">
             <label className="checkbox-label">
               <input
@@ -459,10 +527,12 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               />
               <span className="checkmark"></span>
               Enable Smart Assumptions
-              <button 
+              <button
                 type="button"
                 className="info-button"
-                onClick={() => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)}
+                onClick={() =>
+                  setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)
+                }
                 aria-label="Learn more about smart assumptions"
                 disabled={isConverting}
               >
@@ -474,14 +544,23 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               <div className="info-panel">
                 <h4>Smart Assumptions</h4>
                 <p>
-                  When enabled, our AI will make intelligent assumptions to convert incompatible features:
+                  When enabled, our AI will make intelligent assumptions to
+                  convert incompatible features:
                 </p>
                 <ul>
-                  <li>Custom dimensions → Large structures in existing dimensions</li>
-                  <li>Complex machinery → Simplified blocks with similar functionality</li>
+                  <li>
+                    Custom dimensions → Large structures in existing dimensions
+                  </li>
+                  <li>
+                    Complex machinery → Simplified blocks with similar
+                    functionality
+                  </li>
                   <li>Custom GUIs → Book or sign-based interfaces</li>
                 </ul>
-                <p>This increases conversion success rate but may alter some mod features.</p>
+                <p>
+                  This increases conversion success rate but may alter some mod
+                  features.
+                </p>
               </div>
             )}
           </div>
@@ -508,7 +587,9 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               className="upload-button"
               disabled={isConverting || (!selectedFile && !modUrl)}
             >
-              {isConverting ? 'Converting with AI...' : 'Convert to Bedrock (Real AI)'}
+              {isConverting
+                ? 'Converting with AI...'
+                : 'Convert to Bedrock (Real AI)'}
             </button>
           ) : currentStatus.status === 'completed' ? (
             <button

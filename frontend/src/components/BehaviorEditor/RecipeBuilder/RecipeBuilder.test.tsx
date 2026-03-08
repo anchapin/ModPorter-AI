@@ -3,15 +3,31 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { RecipeBuilder, Recipe, RecipeItem } from './RecipeBuilder';
 
 const mockAvailableItems: RecipeItem[] = [
-  { id: 'minecraft:oak_planks', type: 'minecraft:item', name: 'Oak Planks', count: 1 },
+  {
+    id: 'minecraft:oak_planks',
+    type: 'minecraft:item',
+    name: 'Oak Planks',
+    count: 1,
+  },
   { id: 'minecraft:stick', type: 'minecraft:item', name: 'Stick', count: 1 },
-  { id: 'minecraft:iron_ingot', type: 'minecraft:item', name: 'Iron Ingot', count: 1 },
+  {
+    id: 'minecraft:iron_ingot',
+    type: 'minecraft:item',
+    name: 'Iron Ingot',
+    count: 1,
+  },
 ];
 
 const mockRecipe: Partial<Recipe> = {
@@ -237,7 +253,9 @@ describe('RecipeBuilder Component', () => {
 
       // Click on a grid slot
       const gridSlots = screen.getAllByRole('button');
-      const firstSlot = gridSlots.find(slot => slot.textContent?.includes('Slot 1'));
+      const firstSlot = gridSlots.find((slot) =>
+        slot.textContent?.includes('Slot 1')
+      );
       expect(firstSlot).toBeInTheDocument();
     });
   });
@@ -320,7 +338,9 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      expect(screen.getByText(/Recipe identifier is required/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Recipe identifier is required/)
+      ).toBeInTheDocument();
     });
 
     test('shows validation errors for missing name', async () => {
@@ -346,7 +366,9 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      expect(screen.getByText(/Recipe identifier is required/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Recipe identifier is required/)
+      ).toBeInTheDocument();
       expect(screen.getByText(/Recipe name is required/)).toBeInTheDocument();
     });
   });
@@ -406,7 +428,7 @@ describe('RecipeBuilder Component', () => {
 
       // Fix validation by adding proper recipe data
       fireEvent.change(screen.getByLabelText('Recipe Name'), {
-        target: { value: 'Valid Recipe' }
+        target: { value: 'Valid Recipe' },
       });
 
       await waitFor(() => {

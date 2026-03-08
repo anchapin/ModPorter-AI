@@ -1,10 +1,16 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { 
-  behaviorTemplatesAPI, 
-  BehaviorTemplate, 
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+  useEffect,
+} from 'react';
+import {
+  behaviorTemplatesAPI,
+  BehaviorTemplate,
   BehaviorTemplateCategory,
   BehaviorTemplateCreate,
-  BehaviorTemplateUpdate
+  BehaviorTemplateUpdate,
 } from '../services/api';
 
 // State interface
@@ -57,59 +63,83 @@ const initialState: TemplatesState = {
 };
 
 // Reducer
-const templatesReducer = (state: TemplatesState, action: TemplatesAction): TemplatesState => {
+const templatesReducer = (
+  state: TemplatesState,
+  action: TemplatesAction
+): TemplatesState => {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
-    
+
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false };
-    
+
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
-    
+
     case 'SET_TEMPLATES':
-      return { ...state, templates: action.payload, pagination: { ...state.pagination, hasMore: action.payload.length >= state.pagination.limit } };
-    
-    case 'ADD_TEMPLATES':
-      return { 
-        ...state, 
-        templates: [...state.templates, ...action.payload],
-        pagination: { ...state.pagination, hasMore: action.payload.length >= state.pagination.limit }
+      return {
+        ...state,
+        templates: action.payload,
+        pagination: {
+          ...state.pagination,
+          hasMore: action.payload.length >= state.pagination.limit,
+        },
       };
-    
+
+    case 'ADD_TEMPLATES':
+      return {
+        ...state,
+        templates: [...state.templates, ...action.payload],
+        pagination: {
+          ...state.pagination,
+          hasMore: action.payload.length >= state.pagination.limit,
+        },
+      };
+
     case 'SET_CURRENT_TEMPLATE':
       return { ...state, currentTemplate: action.payload };
-    
+
     case 'SET_FILTERS':
-      return { 
-        ...state, 
+      return {
+        ...state,
         filters: { ...state.filters, ...action.payload },
-        pagination: { ...initialState.pagination } // Reset pagination when filters change
+        pagination: { ...initialState.pagination }, // Reset pagination when filters change
       };
-    
+
     case 'SET_PAGINATION':
-      return { ...state, pagination: { ...state.pagination, ...action.payload } };
-    
+      return {
+        ...state,
+        pagination: { ...state.pagination, ...action.payload },
+      };
+
     case 'UPDATE_TEMPLATE':
       return {
         ...state,
-        templates: state.templates.map(template =>
+        templates: state.templates.map((template) =>
           template.id === action.payload.id ? action.payload : template
         ),
-        currentTemplate: state.currentTemplate?.id === action.payload.id ? action.payload : state.currentTemplate,
+        currentTemplate:
+          state.currentTemplate?.id === action.payload.id
+            ? action.payload
+            : state.currentTemplate,
       };
-    
+
     case 'REMOVE_TEMPLATE':
       return {
         ...state,
-        templates: state.templates.filter(template => template.id !== action.payload),
-        currentTemplate: state.currentTemplate?.id === action.payload ? null : state.currentTemplate,
+        templates: state.templates.filter(
+          (template) => template.id !== action.payload
+        ),
+        currentTemplate:
+          state.currentTemplate?.id === action.payload
+            ? null
+            : state.currentTemplate,
       };
-    
+
     case 'RESET':
       return initialState;
-    
+
     default:
       return state;
   }
@@ -122,18 +152,29 @@ const TemplatesContext = createContext<{
     loadCategories: () => Promise<void>;
     loadTemplates: (reset?: boolean) => Promise<void>;
     loadTemplate: (templateId: string) => Promise<void>;
-    createTemplate: (template: BehaviorTemplateCreate) => Promise<BehaviorTemplate>;
-    updateTemplate: (templateId: string, updates: BehaviorTemplateUpdate) => Promise<BehaviorTemplate>;
+    createTemplate: (
+      template: BehaviorTemplateCreate
+    ) => Promise<BehaviorTemplate>;
+    updateTemplate: (
+      templateId: string,
+      updates: BehaviorTemplateUpdate
+    ) => Promise<BehaviorTemplate>;
     deleteTemplate: (templateId: string) => Promise<void>;
     setFilters: (filters: Partial<TemplatesState['filters']>) => void;
     loadMore: () => Promise<void>;
     reset: () => void;
-    applyTemplate: (templateId: string, conversionId: string, filePath?: string) => Promise<any>;
+    applyTemplate: (
+      templateId: string,
+      conversionId: string,
+      filePath?: string
+    ) => Promise<any>;
   };
 } | null>(null);
 
 // Provider component
-export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [state, dispatch] = useReducer(templatesReducer, initialState);
 
   // Load categories
@@ -143,7 +184,8 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const categories = await behaviorTemplatesAPI.getCategories();
       dispatch({ type: 'SET_CATEGORIES', payload: categories });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load categories';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to load categories';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -151,32 +193,39 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   // Load templates with current filters
-  const loadTemplates = useCallback(async (reset = false) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      dispatch({ type: 'SET_ERROR', payload: null });
-      
-      const skip = reset ? 0 : state.pagination.skip;
-      const templates = await behaviorTemplatesAPI.getTemplates({
-        ...state.filters,
-        skip,
-        limit: state.pagination.limit,
-      });
+  const loadTemplates = useCallback(
+    async (reset = false) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERROR', payload: null });
 
-      if (reset) {
-        dispatch({ type: 'SET_TEMPLATES', payload: templates });
-      } else {
-        dispatch({ type: 'ADD_TEMPLATES', payload: templates });
+        const skip = reset ? 0 : state.pagination.skip;
+        const templates = await behaviorTemplatesAPI.getTemplates({
+          ...state.filters,
+          skip,
+          limit: state.pagination.limit,
+        });
+
+        if (reset) {
+          dispatch({ type: 'SET_TEMPLATES', payload: templates });
+        } else {
+          dispatch({ type: 'ADD_TEMPLATES', payload: templates });
+        }
+
+        dispatch({
+          type: 'SET_PAGINATION',
+          payload: { skip: skip + state.pagination.limit },
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load templates';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
-      
-      dispatch({ type: 'SET_PAGINATION', payload: { skip: skip + state.pagination.limit } });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load templates';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, [state.filters, state.pagination.skip, state.pagination.limit]);
+    },
+    [state.filters, state.pagination.skip, state.pagination.limit]
+  );
 
   // Load specific template
   const loadTemplate = useCallback(async (templateId: string) => {
@@ -185,7 +234,8 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const template = await behaviorTemplatesAPI.getTemplate(templateId);
       dispatch({ type: 'SET_CURRENT_TEMPLATE', payload: template });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load template';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to load template';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -193,56 +243,77 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   // Create template
-  const createTemplate = useCallback(async (template: BehaviorTemplateCreate): Promise<BehaviorTemplate> => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const newTemplate = await behaviorTemplatesAPI.createTemplate(template);
-      dispatch({ type: 'UPDATE_TEMPLATE', payload: newTemplate });
-      return newTemplate;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create template';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
+  const createTemplate = useCallback(
+    async (template: BehaviorTemplateCreate): Promise<BehaviorTemplate> => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        const newTemplate = await behaviorTemplatesAPI.createTemplate(template);
+        dispatch({ type: 'UPDATE_TEMPLATE', payload: newTemplate });
+        return newTemplate;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to create template';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
 
   // Update template
-  const updateTemplate = useCallback(async (templateId: string, updates: BehaviorTemplateUpdate): Promise<BehaviorTemplate> => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const updatedTemplate = await behaviorTemplatesAPI.updateTemplate(templateId, updates);
-      dispatch({ type: 'UPDATE_TEMPLATE', payload: updatedTemplate });
-      return updatedTemplate;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update template';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
+  const updateTemplate = useCallback(
+    async (
+      templateId: string,
+      updates: BehaviorTemplateUpdate
+    ): Promise<BehaviorTemplate> => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        const updatedTemplate = await behaviorTemplatesAPI.updateTemplate(
+          templateId,
+          updates
+        );
+        dispatch({ type: 'UPDATE_TEMPLATE', payload: updatedTemplate });
+        return updatedTemplate;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to update template';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
 
   // Delete template
-  const deleteTemplate = useCallback(async (templateId: string): Promise<void> => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      await behaviorTemplatesAPI.deleteTemplate(templateId);
-      dispatch({ type: 'REMOVE_TEMPLATE', payload: templateId });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete template';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
+  const deleteTemplate = useCallback(
+    async (templateId: string): Promise<void> => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        await behaviorTemplatesAPI.deleteTemplate(templateId);
+        dispatch({ type: 'REMOVE_TEMPLATE', payload: templateId });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete template';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
 
   // Set filters
-  const setFilters = useCallback((filters: Partial<TemplatesState['filters']>) => {
-    dispatch({ type: 'SET_FILTERS', payload: filters });
-  }, []);
+  const setFilters = useCallback(
+    (filters: Partial<TemplatesState['filters']>) => {
+      dispatch({ type: 'SET_FILTERS', payload: filters });
+    },
+    []
+  );
 
   // Load more templates
   const loadMore = useCallback(async () => {
@@ -257,23 +328,27 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   // Apply template to conversion
-  const applyTemplate = useCallback(async (templateId: string, conversionId: string, filePath?: string) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const result = await behaviorTemplatesAPI.applyTemplate({
-        template_id: templateId,
-        conversion_id: conversionId,
-        file_path: filePath,
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to apply template';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
+  const applyTemplate = useCallback(
+    async (templateId: string, conversionId: string, filePath?: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        const result = await behaviorTemplatesAPI.applyTemplate({
+          template_id: templateId,
+          conversion_id: conversionId,
+          file_path: filePath,
+        });
+        return result;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to apply template';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    []
+  );
 
   // Load categories on mount
   useEffect(() => {

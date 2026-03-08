@@ -12,7 +12,7 @@ export interface ParsedModURL {
 
 /**
  * Parse a CurseForge or Modrinth URL to extract mod information
- * 
+ *
  * Supports URLs like:
  * - https://www.curseforge.com/minecraft/mods/mod-name
  * - https://curseforge.com/minecraft/mods/mod-name
@@ -34,7 +34,7 @@ export function parseModUrl(url: string): ParsedModURL {
   // Try CurseForge patterns
   const curseforgePatterns = [
     /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/mods\/([^/?]+)/i,
-    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/modpacks\/([^/?]+)/i,  // Modpacks
+    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/modpacks\/([^/?]+)/i, // Modpacks
   ];
 
   for (const pattern of curseforgePatterns) {
@@ -53,7 +53,7 @@ export function parseModUrl(url: string): ParsedModURL {
   // Try Modrinth patterns
   const modrinthPatterns = [
     /(?:https?:\/\/)?(?:www\.)?modrinth\.com\/(mod|resourcepack|plugin|pack)\/([^/?]+)/i,
-    /(?:https?:\/\/)?modrinth\.com\/([^/?]+)/i,  // Short URL
+    /(?:https?:\/\/)?modrinth\.com\/([^/?]+)/i, // Short URL
   ];
 
   for (const pattern of modrinthPatterns) {
@@ -94,7 +94,9 @@ export function parseModUrl(url: string): ParsedModURL {
 /**
  * Get platform display name
  */
-export function getPlatformDisplayName(platform: 'curseforge' | 'modrinth' | 'unknown'): string {
+export function getPlatformDisplayName(
+  platform: 'curseforge' | 'modrinth' | 'unknown'
+): string {
   switch (platform) {
     case 'curseforge':
       return 'CurseForge';
@@ -108,7 +110,9 @@ export function getPlatformDisplayName(platform: 'curseforge' | 'modrinth' | 'un
 /**
  * Get platform icon/color
  */
-export function getPlatformInfo(platform: 'curseforge' | 'modrinth' | 'unknown'): {
+export function getPlatformInfo(
+  platform: 'curseforge' | 'modrinth' | 'unknown'
+): {
   name: string;
   color: string;
   bgColor: string;
@@ -140,7 +144,7 @@ export function getPlatformInfo(platform: 'curseforge' | 'modrinth' | 'unknown')
  */
 export function formatDownloadCount(count?: number): string {
   if (!count || count === 0) return '0';
-  
+
   if (count >= 1000000) {
     return `${(count / 1000000).toFixed(1)}M`;
   }
@@ -155,10 +159,10 @@ export function formatDownloadCount(count?: number): string {
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
-  
+
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }

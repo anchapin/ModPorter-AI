@@ -1,10 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Card, CardContent, Typography, Grid } from '@mui/material';
-import { 
-  VisualEditor, 
-  FormField, 
-  ValidationRule 
-} from '../VisualEditor';
+import { VisualEditor, FormField, ValidationRule } from '../VisualEditor';
 import { ValidationEngine } from '../VisualEditor/ValidationEngine';
 import { Preview3D } from './BlockPreview';
 import './BlockPropertyEditor.css';
@@ -15,20 +11,20 @@ export interface BlockProperties {
   displayName: string;
   description: string;
   category: string;
-  
+
   // Physical Properties
   hardness: number;
   resistance: number;
   friction: number;
   lightEmission: number;
   lightDampening: number;
-  
+
   // Material Properties
   material: string;
   soundGroup: string;
   mapColor: string;
   faceData: string;
-  
+
   // Behavior Properties
   solid: boolean;
   liquid: boolean;
@@ -36,10 +32,10 @@ export interface BlockProperties {
   walkable: boolean;
   climbable: boolean;
   flammable: boolean;
-  
+
   // Block States
   blockStates: Record<string, any>;
-  
+
   // Events
   onInteract: string;
   onPlace: string;
@@ -58,7 +54,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
   blockData = {},
   onPropertiesChange,
   onValidationChange,
-  readOnly = false
+  readOnly = false,
 }) => {
   const [currentProperties, setCurrentProperties] = useState<BlockProperties>({
     // Default values
@@ -66,32 +62,32 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     displayName: '',
     description: '',
     category: 'construction',
-    
+
     hardness: 1.0,
     resistance: 6.0,
     friction: 0.6,
     lightEmission: 0,
     lightDampening: 0,
-    
+
     material: 'stone',
     soundGroup: 'stone',
     mapColor: '#888888',
     faceData: '',
-    
+
     solid: true,
     liquid: false,
     transparent: false,
     walkable: true,
     climbable: false,
     flammable: false,
-    
+
     blockStates: {},
-    
+
     onInteract: '',
     onPlace: '',
     onDestroy: '',
     onStepOn: '',
-    ...blockData
+    ...blockData,
   });
 
   // Form field definitions
@@ -112,10 +108,10 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
             return 'Identifier must contain only lowercase letters, numbers, underscores, and colons';
           }
           return null;
-        }
+        },
       },
       description: 'Unique identifier for the block (e.g., "minecraft:stone")',
-      category: 'basic'
+      category: 'basic',
     },
     {
       id: 'displayName',
@@ -126,7 +122,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       required: true,
       validation: { minLength: 1 },
       description: 'Name displayed in-game',
-      category: 'basic'
+      category: 'basic',
     },
     {
       id: 'description',
@@ -136,7 +132,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       value: currentProperties.description,
       validation: { maxLength: 256 },
       description: 'Optional description for the block',
-      category: 'basic'
+      category: 'basic',
     },
     {
       id: 'category',
@@ -150,10 +146,10 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         { value: 'decoration', label: 'Decoration' },
         { value: 'redstone', label: 'Redstone' },
         { value: 'transportation', label: 'Transportation' },
-        { value: 'misc', label: 'Miscellaneous' }
+        { value: 'misc', label: 'Miscellaneous' },
       ],
       required: true,
-      category: 'basic'
+      category: 'basic',
     },
 
     // Physical Properties
@@ -168,7 +164,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       step: 0.1,
       validation: { min: 0, max: 50 },
       description: 'Time to break with proper tool (seconds)',
-      category: 'physical'
+      category: 'physical',
     },
     {
       id: 'resistance',
@@ -181,7 +177,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       step: 0.5,
       validation: { min: 0, max: 3600 },
       description: 'Resistance to explosions',
-      category: 'physical'
+      category: 'physical',
     },
     {
       id: 'friction',
@@ -194,7 +190,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       step: 0.05,
       validation: { min: 0, max: 1 },
       description: 'Slipperiness of the block',
-      category: 'physical'
+      category: 'physical',
     },
     {
       id: 'lightEmission',
@@ -207,7 +203,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       step: 1,
       validation: { min: 0, max: 15 },
       description: 'Light level emitted (0-15)',
-      category: 'physical'
+      category: 'physical',
     },
 
     // Material Properties
@@ -227,10 +223,10 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         { value: 'metal', label: 'Metal' },
         { value: 'cloth', label: 'Cloth' },
         { value: 'water', label: 'Water' },
-        { value: 'lava', label: 'Lava' }
+        { value: 'lava', label: 'Lava' },
       ],
       required: true,
-      category: 'material'
+      category: 'material',
     },
     {
       id: 'soundGroup',
@@ -248,10 +244,10 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         { value: 'metal', label: 'Metal' },
         { value: 'cloth', label: 'Cloth' },
         { value: 'water', label: 'Water' },
-        { value: 'lava', label: 'Lava' }
+        { value: 'lava', label: 'Lava' },
       ],
       required: true,
-      category: 'material'
+      category: 'material',
     },
     {
       id: 'mapColor',
@@ -265,10 +261,10 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
             return 'Must be a valid hex color';
           }
           return null;
-        }
+        },
       },
       description: 'Color shown on maps',
-      category: 'material'
+      category: 'material',
     },
 
     // Behavior Properties
@@ -278,7 +274,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Solid',
       value: currentProperties.solid,
-      category: 'behavior'
+      category: 'behavior',
     },
     {
       id: 'liquid',
@@ -286,7 +282,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Liquid',
       value: currentProperties.liquid,
-      category: 'behavior'
+      category: 'behavior',
     },
     {
       id: 'transparent',
@@ -294,7 +290,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Transparent',
       value: currentProperties.transparent,
-      category: 'behavior'
+      category: 'behavior',
     },
     {
       id: 'walkable',
@@ -302,7 +298,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Walkable',
       value: currentProperties.walkable,
-      category: 'behavior'
+      category: 'behavior',
     },
     {
       id: 'climbable',
@@ -310,7 +306,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Climbable',
       value: currentProperties.climbable,
-      category: 'behavior'
+      category: 'behavior',
     },
     {
       id: 'flammable',
@@ -318,43 +314,73 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       type: 'boolean',
       label: 'Flammable',
       value: currentProperties.flammable,
-      category: 'behavior'
-    }
+      category: 'behavior',
+    },
   ];
 
   // Categories for tab organization
   const categories = [
-    { id: 'basic', label: 'Basic Properties', fields: ['identifier', 'displayName', 'description', 'category'] },
-    { id: 'physical', label: 'Physical Properties', fields: ['hardness', 'resistance', 'friction', 'lightEmission'] },
-    { id: 'material', label: 'Material Properties', fields: ['material', 'soundGroup', 'mapColor'] },
-    { id: 'behavior', label: 'Behavior', fields: ['solid', 'liquid', 'transparent', 'walkable', 'climbable', 'flammable'] }
+    {
+      id: 'basic',
+      label: 'Basic Properties',
+      fields: ['identifier', 'displayName', 'description', 'category'],
+    },
+    {
+      id: 'physical',
+      label: 'Physical Properties',
+      fields: ['hardness', 'resistance', 'friction', 'lightEmission'],
+    },
+    {
+      id: 'material',
+      label: 'Material Properties',
+      fields: ['material', 'soundGroup', 'mapColor'],
+    },
+    {
+      id: 'behavior',
+      label: 'Behavior',
+      fields: [
+        'solid',
+        'liquid',
+        'transparent',
+        'walkable',
+        'climbable',
+        'flammable',
+      ],
+    },
   ];
 
   // Custom validation rules
   const validationRules: Record<string, ValidationRule[]> = {
     hardness: [
-      ValidationEngine.warning('Hardness of 0 makes the block instantly breakable')
+      ValidationEngine.warning(
+        'Hardness of 0 makes the block instantly breakable'
+      ),
     ],
     resistance: [
-      ValidationEngine.warning('Resistance above 1000 makes the block explosion-proof')
+      ValidationEngine.warning(
+        'Resistance above 1000 makes the block explosion-proof'
+      ),
     ],
     lightEmission: [
-      ValidationEngine.info('Light level 15 is the maximum in Minecraft')
-    ]
+      ValidationEngine.info('Light level 15 is the maximum in Minecraft'),
+    ],
   };
 
   // Handle property changes
-  const handleFieldChange = useCallback((fieldId: string, value: any) => {
-    const updatedProperties = { ...currentProperties, [fieldId]: value };
-    setCurrentProperties(updatedProperties);
-    onPropertiesChange(updatedProperties);
-  }, [currentProperties, onPropertiesChange]);
+  const handleFieldChange = useCallback(
+    (fieldId: string, value: any) => {
+      const updatedProperties = { ...currentProperties, [fieldId]: value };
+      setCurrentProperties(updatedProperties);
+      onPropertiesChange(updatedProperties);
+    },
+    [currentProperties, onPropertiesChange]
+  );
 
   return (
     <Box className="block-property-editor">
       <Grid container spacing={3}>
         {/* Main Editor */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
               <VisualEditor
@@ -373,7 +399,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </Grid>
 
         {/* Preview Panel */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Editor } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
+import type { editor, IDisposable } from 'monaco-editor';
 import './CodeEditor.css';
 
 interface BehaviorFile {
@@ -28,7 +28,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   fileType,
   onContentChange,
   onSave,
-  readOnly = false
+  readOnly = false,
 }) => {
   const [content, setContent] = useState<string>('');
   const [originalContent, setOriginalContent] = useState<string>('');
@@ -38,7 +38,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const validationDisposablesRef = useRef<editor.IEditorDisposable[]>([]);
+  const validationDisposablesRef = useRef<IDisposable[]>([]);
 
   // Check if content has unsaved changes
   const hasUnsavedChanges = content !== originalContent;
@@ -46,20 +46,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Determine the Monaco language based on file type and extension
   const getEditorLanguage = (fileType: string, filePath: string): string => {
     const extension = filePath.split('.').pop()?.toLowerCase();
-    
+
     if (extension === 'json') return 'json';
     if (extension === 'js') return 'javascript';
     if (extension === 'ts') return 'typescript';
     if (extension === 'mcfunction') return 'plaintext'; // Custom Minecraft function files
-    
+
     // Fallback based on behavior file type
-    if (fileType === 'entity_behavior' || fileType === 'block_behavior' || fileType === 'recipe') {
+    if (
+      fileType === 'entity_behavior' ||
+      fileType === 'block_behavior' ||
+      fileType === 'recipe'
+    ) {
       return 'json'; // Most behavior files are JSON
     }
     if (fileType === 'script') {
       return 'javascript';
     }
-    
+
     return 'plaintext';
   };
 
@@ -81,7 +85,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const fileData: BehaviorFile = await response.json();
         setContent(fileData.content);
         setOriginalContent(fileData.content);
@@ -130,7 +134,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const updatedFile: BehaviorFile = await response.json();
       setOriginalContent(content);
       setLastSaved(new Date(updatedFile.updated_at));
-      
+
       if (onSave) {
         await onSave(fileId, content);
       }
@@ -156,24 +160,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [handleSave]);
 
   // Live JSON validation for Bedrock files
-  const validateJsonContent = useCallback((content: string): { valid: boolean; errors: string[] } => {
-    const errors: string[] = [];
-    
-    try {
-      JSON.parse(content);
-    } catch (e) {
-      if (e instanceof SyntaxError) {
-        errors.push(e.message);
+  const validateJsonContent = useCallback(
+    (content: string): { valid: boolean; errors: string[] } => {
+      const errors: string[] = [];
+
+      try {
+        JSON.parse(content);
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          errors.push(e.message);
+        }
       }
-    }
-    
-    return { valid: errors.length === 0, errors };
-  }, []);
+
+      return { valid: errors.length === 0, errors };
+    },
+    []
+  );
 
   // Configure Monaco editor
   const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
-    
+
     // Configure editor options
     editor.updateOptions({
       minimap: { enabled: false },
@@ -183,22 +190,23 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       automaticLayout: true,
       scrollBeyondLastLine: false,
       fontSize: 14,
-      fontFamily: '"Fira Code", "JetBrains Mono", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+      fontFamily:
+        '"Fira Code", "JetBrains Mono", "Monaco", "Menlo", "Ubuntu Mono", monospace',
       tabSize: 2,
       insertSpaces: true,
     });
-    
+
     // Add JSON validation on content change for JSON files
     const jsonExtension = filePath.split('.').pop()?.toLowerCase();
     if (jsonExtension === 'json') {
       const disposable = editor.onDidChangeModelContent(() => {
         const currentContent = editor.getValue();
         const validation = validateJsonContent(currentContent);
-        
+
         // Use Monaco's marker API to show errors in the editor
         const model = editor.getModel();
         if (model) {
-          const markers = validation.errors.map(error => ({
+          const markers = validation.errors.map((error) => ({
             severity: 8, // Error severity
             message: error,
             startLineNumber: 1,
@@ -206,14 +214,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             endLineNumber: 1,
             endColumn: 1,
           }));
-          (window as any).monaco?.editor?.setModelMarkers(model, 'json-validation', markers);
+          (window as any).monaco?.editor?.setModelMarkers(
+            model,
+            'json-validation',
+            markers
+          );
         }
-        
+
         if (!validation.valid) {
           console.log('JSON validation errors:', validation.errors);
         }
       });
-      
+
       // Store disposable for cleanup
       validationDisposablesRef.current.push(disposable);
     }
@@ -222,7 +234,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Cleanup disposables on unmount
   useEffect(() => {
     return () => {
-      validationDisposablesRef.current.forEach(disposable => {
+      validationDisposablesRef.current.forEach((disposable) => {
         disposable.dispose();
       });
       validationDisposablesRef.current = [];
@@ -242,7 +254,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="empty-content">
             <span className="empty-icon">📝</span>
             <h3>Select a file to start editing</h3>
-            <p>Choose a behavior file from the tree on the left to view and edit its content.</p>
+            <p>
+              Choose a behavior file from the tree on the left to view and edit
+              its content.
+            </p>
           </div>
         </div>
       </div>
@@ -259,14 +274,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           </span>
           <span className="file-type-badge">{fileType}</span>
         </div>
-        
+
         <div className="editor-actions">
           {lastSaved && (
             <span className="last-saved">
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
-          
+
           {hasUnsavedChanges && !readOnly && (
             <button
               className="save-button"
@@ -301,9 +316,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <span className="error-icon">❌</span>
             <h3>Failed to load file</h3>
             <p>{error}</p>
-            <button onClick={() => window.location.reload()}>
-              Retry
-            </button>
+            <button onClick={() => window.location.reload()}>Retry</button>
           </div>
         ) : (
           <Editor
