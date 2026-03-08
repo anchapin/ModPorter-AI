@@ -396,7 +396,7 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
           </h3>
           <span
             className={styles.toggleButton}
-          aria-hidden="true"
+            aria-hidden="true"
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
             tabIndex={-1}
           >
