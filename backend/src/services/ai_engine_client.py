@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 # AI Engine configuration
 AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://ai-engine:8001")
-AI_ENGINE_TIMEOUT = httpx.Timeout(
-    1800.0
-)  # 30 minutes timeout for long-running conversions
+AI_ENGINE_TIMEOUT = httpx.Timeout(1800.0)  # 30 minutes timeout for long-running conversions
 
 # Default poll interval for checking conversion status
 DEFAULT_POLL_INTERVAL = 2.0  # seconds

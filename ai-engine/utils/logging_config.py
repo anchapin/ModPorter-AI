@@ -27,9 +27,7 @@ from collections import defaultdict
 import json
 
 # Context variable for correlation ID
-correlation_id_var: ContextVar[Optional[str]] = ContextVar(
-    "correlation_id", default=None
-)
+correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
 
 
 def configure_structlog(
@@ -111,7 +109,10 @@ def configure_structlog(
         log_file = os.path.join(log_dir, "ai-engine.log")
 
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
+        log_file,
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",  # 10MB
     )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter("%(message)s"))
@@ -129,9 +130,7 @@ class AgentLogFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         # Base format with timestamp, level, and logger name
-        timestamp = datetime.fromtimestamp(record.created).strftime(
-            "%Y-%m-%d %H:%M:%S.%f"
-        )[:-3]
+        timestamp = datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
         # Extract agent name from logger name (e.g., 'agents.java_analyzer' -> 'JavaAnalyzer')
         logger_parts = record.name.split(".")
@@ -147,9 +146,7 @@ class AgentLogFormatter(logging.Formatter):
             agent_name = record.name.split(".")[-1].title()
 
         # Build the log message
-        base_msg = (
-            f"{timestamp} [{record.levelname}] {agent_name}: {record.getMessage()}"
-        )
+        base_msg = f"{timestamp} [{record.levelname}] {agent_name}: {record.getMessage()}"
 
         # Add extra context if available
         if hasattr(record, "agent_context") and self.include_agent_context:
@@ -207,13 +204,9 @@ class AgentLogger:
 
     def log_operation_complete(self, operation: str, duration: float, **context):
         """Log the completion of an operation with timing"""
-        self.info(
-            f"Completed {operation}", operation_time=duration, agent_context=context
-        )
+        self.info(f"Completed {operation}", operation_time=duration, agent_context=context)
 
-    def log_tool_usage(
-        self, tool_name: str, result: Any = None, duration: Optional[float] = None
-    ):
+    def log_tool_usage(self, tool_name: str, result: Any = None, duration: Optional[float] = None):
         """Log tool usage with results"""
         kwargs = {"tool_name": tool_name}
         if result is not None:
@@ -321,9 +314,7 @@ def setup_logging(
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("crewai").setLevel(
-        logging.INFO if debug_mode else logging.WARNING
-    )
+    logging.getLogger("crewai").setLevel(logging.INFO if debug_mode else logging.WARNING)
 
     # Log the configuration
     logger = logging.getLogger(__name__)
@@ -428,9 +419,7 @@ def log_performance(operation_name: str = None):
                 return result
             except Exception as e:
                 duration = time.time() - start_time
-                logger.error(
-                    f"Operation {op_name} failed after {duration:.3f}s: {str(e)}"
-                )
+                logger.error(f"Operation {op_name} failed after {duration:.3f}s: {str(e)}")
                 raise
 
         return wrapper
@@ -443,9 +432,7 @@ def log_performance(operation_name: str = None):
 # ============================================================================
 
 # Context variable for tracking operation context across async boundaries
-_operation_context: ContextVar[Dict[str, Any]] = ContextVar(
-    "operation_context", default={}
-)
+_operation_context: ContextVar[Dict[str, Any]] = ContextVar("operation_context", default={})
 
 
 @dataclass
@@ -517,9 +504,7 @@ class AgentLogAnalyzer:
                 if d.confidence is not None:
                     avg_confidence += d.confidence
             avg_confidence /= (
-                len([d for d in decisions if d.confidence is not None])
-                if decisions
-                else 1
+                len([d for d in decisions if d.confidence is not None]) if decisions else 1
             )
 
         # Calculate tool usage statistics
@@ -542,9 +527,7 @@ class AgentLogAnalyzer:
         # Calculate success rates
         success_rates = {}
         for tool, counts in tool_success_rate.items():
-            success_rates[tool] = (
-                counts["success"] / counts["total"] if counts["total"] > 0 else 0
-            )
+            success_rates[tool] = counts["success"] / counts["total"] if counts["total"] > 0 else 0
 
         return {
             "agent_name": agent_name or "all",
@@ -557,9 +540,7 @@ class AgentLogAnalyzer:
             "average_tool_durations_ms": avg_durations,
         }
 
-    def get_decision_trace(
-        self, agent_name: str = None, limit: int = 100
-    ) -> List[Dict]:
+    def get_decision_trace(self, agent_name: str = None, limit: int = 100) -> List[Dict]:
         """Get a trace of recent decisions"""
         with self._lock:
             decisions = self.decisions.copy()
@@ -572,9 +553,7 @@ class AgentLogAnalyzer:
 
         return [asdict(d) for d in decisions]
 
-    def get_tool_usage_trace(
-        self, agent_name: str = None, limit: int = 100
-    ) -> List[Dict]:
+    def get_tool_usage_trace(self, agent_name: str = None, limit: int = 100) -> List[Dict]:
         """Get a trace of recent tool usages"""
         with self._lock:
             usages = self.tool_usages.copy()
@@ -632,9 +611,7 @@ class EnhancedAgentLogger(AgentLogger):
 
     def __init__(self, name: str, debug_mode: bool = False):
         super().__init__(name)
-        self._debug_mode = (
-            debug_mode or os.getenv("AGENT_DEBUG_MODE", "false").lower() == "true"
-        )
+        self._debug_mode = debug_mode or os.getenv("AGENT_DEBUG_MODE", "false").lower() == "true"
         self._analyzer = get_log_analyzer()
         self._operation_stack: List[Dict[str, Any]] = []
         self._lock = threading.Lock()
@@ -688,16 +665,12 @@ class EnhancedAgentLogger(AgentLogger):
 
         if self._debug_mode:
             # Verbose output in debug mode
-            self.info(
-                f"DECISION [{decision_type}]: {decision}", agent_context=log_context
-            )
+            self.info(f"DECISION [{decision_type}]: {decision}", agent_context=log_context)
             self.debug(f"  Reasoning: {reasoning}")
             if alternatives:
                 self.debug(f"  Alternatives considered: {alternatives}")
         else:
-            self.info(
-                f"Decision: {decision_type} -> {decision}", agent_context=log_context
-            )
+            self.info(f"Decision: {decision_type} -> {decision}", agent_context=log_context)
 
     def log_tool_call(
         self,
@@ -769,9 +742,7 @@ class EnhancedAgentLogger(AgentLogger):
             if details:
                 self.debug(f"  Details: {details}")
 
-    def log_state_change(
-        self, state_name: str, old_value: Any, new_value: Any, reason: str = None
-    ):
+    def log_state_change(self, state_name: str, old_value: Any, new_value: Any, reason: str = None):
         """
         Log a state change in the agent.
 
@@ -856,14 +827,10 @@ class EnhancedAgentLogger(AgentLogger):
             "metric_value": value,
             "metric_unit": unit,
         }
-        self.debug(
-            f"Performance: {metric_name} = {value}{unit or ''}", agent_context=context
-        )
+        self.debug(f"Performance: {metric_name} = {value}{unit or ''}", agent_context=context)
 
 
-def get_enhanced_agent_logger(
-    agent_name: str, debug_mode: bool = False
-) -> EnhancedAgentLogger:
+def get_enhanced_agent_logger(agent_name: str, debug_mode: bool = False) -> EnhancedAgentLogger:
     """
     Get an enhanced agent logger with comprehensive logging capabilities.
 
@@ -898,9 +865,7 @@ def export_log_analysis(filepath: str = None):
     if filepath is None:
         log_dir = Path(os.getenv("LOG_DIR", "/tmp/modporter-ai/logs"))
         log_dir.mkdir(parents=True, exist_ok=True)
-        filepath = (
-            log_dir / f"agent_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        filepath = log_dir / f"agent_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
     analyzer = get_log_analyzer()
     analyzer.export_analysis(str(filepath))
