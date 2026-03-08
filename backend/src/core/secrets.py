@@ -37,7 +37,7 @@ class SecretStr(str):
 class SecretsManagerSettings(BaseSettings):
     """
     Settings for secrets management configuration.
-    
+
     Supports multiple backends via SECRETS_BACKEND env var:
     - "aws": AWS Secrets Manager
     - "vault": HashiCorp Vault
@@ -121,7 +121,7 @@ def get_secrets_settings() -> SecretsManagerSettings:
 class SecretsManager:
     """
     Unified secrets manager that supports multiple backends.
-    
+
     Usage:
         manager = SecretsManager()
         secret = manager.get_secret("DATABASE_URL")
@@ -154,6 +154,7 @@ class SecretsManager:
         """Initialize AWS Secrets Manager backend."""
         try:
             import boto3
+
             self._aws_client = boto3.client(
                 "secretsmanager",
                 region_name=self.settings.aws_region,
@@ -180,6 +181,7 @@ class SecretsManager:
 
         try:
             import hvac
+
             self._vault_client = hvac.Client(
                 url=self.settings.vault_url,
                 token=self.settings.vault_token,
@@ -199,6 +201,7 @@ class SecretsManager:
 
         try:
             import requests
+
             self._doppler_headers = {
                 "Authorization": f"Bearer {self.settings.doppler_token}",
             }
@@ -213,11 +216,11 @@ class SecretsManager:
     def get_secret(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """
         Get a secret value from the configured backend.
-        
+
         Args:
             key: The secret key name (e.g., "DATABASE_URL")
             default: Default value if secret not found
-            
+
         Returns:
             The secret value or default
         """
@@ -254,9 +257,7 @@ class SecretsManager:
     def _get_aws_secret(self, key: str) -> Optional[str]:
         """Get secret from AWS Secrets Manager."""
         try:
-            response = self._aws_client.get_secret_value(
-                SecretId=self.settings.aws_secret_name
-            )
+            response = self._aws_client.get_secret_value(SecretId=self.settings.aws_secret_name)
             secret_dict = json.loads(response["SecretString"])
             return secret_dict.get(key)
         except Exception as e:
@@ -284,6 +285,7 @@ class SecretsManager:
                 f"&format=json"
             )
             import requests
+
             response = requests.get(url, headers=self._doppler_headers)
             response.raise_for_status()
             secrets = response.json()
@@ -295,7 +297,7 @@ class SecretsManager:
     def get_all_secrets(self) -> Dict[str, str]:
         """
         Get all secrets from the configured backend.
-        
+
         Returns:
             Dictionary of all secret key-value pairs
         """
@@ -305,9 +307,7 @@ class SecretsManager:
 
         if backend == "aws":
             try:
-                response = self._aws_client.get_secret_value(
-                    SecretId=self.settings.aws_secret_name
-                )
+                response = self._aws_client.get_secret_value(SecretId=self.settings.aws_secret_name)
                 return json.loads(response["SecretString"])
             except Exception as e:
                 logger.error(f"AWS Secrets Manager error: {e}")
@@ -332,6 +332,7 @@ class SecretsManager:
                     f"&format=json"
                 )
                 import requests
+
                 response = requests.get(url, headers=self._doppler_headers)
                 response.raise_for_status()
                 return response.json()
@@ -342,10 +343,18 @@ class SecretsManager:
         else:  # local
             # Return all environment variables that are typically secrets
             secret_keys = [
-                "SECRET_KEY", "JWT_SECRET_KEY", "DB_PASSWORD", "DATABASE_URL",
-                "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "SMTP_PASSWORD",
-                "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "SENTRY_DSN",
-                "GRAFANA_ADMIN_PASSWORD", "REDIS_URL",
+                "SECRET_KEY",
+                "JWT_SECRET_KEY",
+                "DB_PASSWORD",
+                "DATABASE_URL",
+                "OPENAI_API_KEY",
+                "ANTHROPIC_API_KEY",
+                "SMTP_PASSWORD",
+                "AWS_ACCESS_KEY_ID",
+                "AWS_SECRET_ACCESS_KEY",
+                "SENTRY_DSN",
+                "GRAFANA_ADMIN_PASSWORD",
+                "REDIS_URL",
             ]
             return {k: os.getenv(k, "") for k in secret_keys if os.getenv(k)}
 
@@ -365,7 +374,7 @@ def get_secrets_manager() -> SecretsManager:
 class Settings(BaseSettings):
     """
     Extended settings class with secrets management support.
-    
+
     This class integrates with the SecretsManager to provide
     secrets from multiple backends while maintaining compatibility
     with the existing .env file approach.
@@ -388,7 +397,7 @@ class Settings(BaseSettings):
     ) -> tuple[Any, ...]:
         """
         Customize sources to check secrets manager first, then environment variables.
-        
+
         This ensures secrets from AWS/Vault/Doppler take precedence over .env files.
         """
         # First check secrets manager
