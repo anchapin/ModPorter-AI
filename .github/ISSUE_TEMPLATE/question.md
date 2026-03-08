@@ -7,16 +7,17 @@ assignees: ''
 ---
 
 **Priority**
-- [ ] P1 - Critical: Urgent question blocking progress
-- [ ] P2 - High: Important question
-- [ ] P3 - Medium: General question
-- [ ] P4 - Low: Curiosity
+- [ ] P1 - Critical (System down, data loss)
+- [ ] P2 - High (Major functionality broken)
+- [ ] P3 - Medium (Minor functionality affected)
+- [ ] P4 - Low (Cosmetic or minor issue)
 
 **Component**
 - [ ] Backend
 - [ ] Frontend
 - [ ] AI Engine
 - [ ] Database
+- [ ] CLI
 - [ ] Documentation
 - [ ] CI/CD
 - [ ] Other

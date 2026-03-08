@@ -7,10 +7,20 @@ assignees: ''
 ---
 
 **Priority**
-- [ ] P1 - Critical: System cannot start or deploy
-- [ ] P2 - High: Major configuration issue
-- [ ] P3 - Medium: Minor configuration issue
-- [ ] P4 - Low: Cosmetic or improvement
+- [ ] P1 - Critical (System down, data loss)
+- [ ] P2 - High (Major functionality broken)
+- [ ] P3 - Medium (Minor functionality affected)
+- [ ] P4 - Low (Cosmetic or minor issue)
+
+**Component**
+- [ ] Backend
+- [ ] Frontend
+- [ ] AI Engine
+- [ ] Database
+- [ ] CLI
+- [ ] Documentation
+- [ ] CI/CD
+- [ ] Other
 
 **Type of configuration issue**
 - [ ] Environment variable
@@ -18,15 +28,6 @@ assignees: ''
 - [ ] API configuration
 - [ ] Build configuration
 - [ ] Runtime configuration
-- [ ] Other
-
-**Component**
-Which component is this issue related to?
-- [ ] Backend
-- [ ] Frontend
-- [ ] AI Engine
-- [ ] Database
-- [ ] CI/CD
 - [ ] Other
 
 **Describe the issue**

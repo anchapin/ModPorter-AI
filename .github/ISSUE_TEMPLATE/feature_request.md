@@ -7,16 +7,17 @@ assignees: ''
 ---
 
 **Priority**
-- [ ] P1 - Critical: Must have for project success
-- [ ] P2 - High: Important feature
-- [ ] P3 - Medium: Nice to have
-- [ ] P4 - Low: Future consideration
+- [ ] P1 - Critical (System down, data loss)
+- [ ] P2 - High (Major functionality broken)
+- [ ] P3 - Medium (Minor functionality affected)
+- [ ] P4 - Low (Cosmetic or minor issue)
 
 **Component**
 - [ ] Backend
 - [ ] Frontend
 - [ ] AI Engine
 - [ ] Database
+- [ ] CLI
 - [ ] Documentation
 - [ ] CI/CD
 - [ ] Other
