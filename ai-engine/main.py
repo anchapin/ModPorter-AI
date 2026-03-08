@@ -93,9 +93,9 @@ app = FastAPI(
 )
 
 # CORS middleware - Restrict origins for security
-allowed_origins = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080"
-).split(",")
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(
+    ","
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -120,20 +120,14 @@ class RedisJobManager:
         """Store job status in Redis with error handling"""
         try:
             if not self.available:
-                raise HTTPException(
-                    status_code=503, detail="Job state storage unavailable"
-                )
+                raise HTTPException(status_code=503, detail="Job state storage unavailable")
 
             status_dict = status.model_dump()
             status_dict["started_at"] = (
-                status_dict["started_at"].isoformat()
-                if status_dict["started_at"]
-                else None
+                status_dict["started_at"].isoformat() if status_dict["started_at"] else None
             )
             status_dict["completed_at"] = (
-                status_dict["completed_at"].isoformat()
-                if status_dict["completed_at"]
-                else None
+                status_dict["completed_at"].isoformat() if status_dict["completed_at"] else None
             )
 
             await self.redis.set(
@@ -159,19 +153,13 @@ class RedisJobManager:
             status_dict = json.loads(data)
             # Convert ISO strings back to datetime
             if status_dict.get("started_at"):
-                status_dict["started_at"] = datetime.fromisoformat(
-                    status_dict["started_at"]
-                )
+                status_dict["started_at"] = datetime.fromisoformat(status_dict["started_at"])
             if status_dict.get("completed_at"):
-                status_dict["completed_at"] = datetime.fromisoformat(
-                    status_dict["completed_at"]
-                )
+                status_dict["completed_at"] = datetime.fromisoformat(status_dict["completed_at"])
 
             return ConversionStatus(**status_dict)
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve job status from Redis: {e}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve job status from Redis: {e}", exc_info=True)
             self.available = False
             return None
 
@@ -307,9 +295,7 @@ async def health_check():
 
 
 @app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion(
-    request: ConversionRequest, background_tasks: BackgroundTasks
-):
+async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks):
     """Start a new mod conversion job"""
 
     if not job_manager or not job_manager.available:
@@ -350,9 +336,7 @@ async def start_conversion(
     )
 
 
-@app.get(
-    "/api/v1/status/{job_id}", response_model=ConversionStatus, tags=["conversion"]
-)
+@app.get("/api/v1/status/{job_id}", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str):
     """Get the status of a conversion job"""
 
@@ -374,9 +358,7 @@ async def list_jobs():
 
     # Note: In production, implement pagination and filtering
     # For now, return empty list as Redis doesn't have easy "list all" without keys
-    logger.warning(
-        "list_jobs endpoint returns empty - implement Redis SCAN for production"
-    )
+    logger.warning("list_jobs endpoint returns empty - implement Redis SCAN for production")
     return []
 
 
@@ -404,9 +386,7 @@ async def process_conversion(
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
 
-        logger.info(
-            f"Processing conversion for job {job_id} with variant {experiment_variant}"
-        )
+        logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
 
         # Create progress callback for real-time updates if available
         if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
@@ -434,9 +414,7 @@ async def process_conversion(
             crew = ModPorterConversionCrew(
                 variant_id=experiment_variant, progress_callback=progress_callback
             )
-            logger.info(
-                f"ModPorterConversionCrew initialized with variant: {experiment_variant}"
-            )
+            logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
 
             # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)
@@ -462,7 +440,9 @@ async def process_conversion(
                 job_status = await job_manager.get_job_status(job_id)
                 if job_status:
                     job_status.status = "failed"
-                    job_status.message = f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                    job_status.message = (
+                        f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                    )
                     await job_manager.set_job_status(job_id, job_status)
                 logger.error(
                     f"Conversion failed for job {job_id}: {conversion_result.get('error')}"
@@ -493,9 +473,7 @@ async def process_conversion(
 
             # Verify output file was created
             if not os.path.exists(output_path):
-                logger.error(
-                    f"Output file not created by conversion crew: {output_path}"
-                )
+                logger.error(f"Output file not created by conversion crew: {output_path}")
                 logger.error(
                     "This indicates a serious conversion failure that should not be masked"
                 )
@@ -547,11 +525,7 @@ async def process_conversion(
                 )
     finally:
         # Clean up progress callback
-        if (
-            progress_callback
-            and PROGRESS_CALLBACK_AVAILABLE
-            and cleanup_progress_callback
-        ):
+        if progress_callback and PROGRESS_CALLBACK_AVAILABLE and cleanup_progress_callback:
             try:
                 await cleanup_progress_callback(job_id)
                 logger.info(f"Cleaned up progress callback for job {job_id}")
