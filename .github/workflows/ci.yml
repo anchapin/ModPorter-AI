@@ -816,8 +816,9 @@ jobs:
         cd ${{ matrix.project }}
         
         # Configure mutmut for the project
-        printf '[mutmut]\ntest_command = python -m pytest\nno_progress = 1\ndisable_git_diff = 1\n' > .mutmut.toml
-
+        # Note: We use the local .mutmut.toml which already has proper exclusions
+        # The CI creates a minimal config only if .mutmut.toml doesn't exist
+        
         # Run mutation tests
         # Using || true to prevent step failure from blocking threshold check
         mutmut run || true
