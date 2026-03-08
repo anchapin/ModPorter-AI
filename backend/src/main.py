@@ -48,6 +48,7 @@ from services.rate_limiter import (
 )
 from services.security_headers import SecurityHeadersMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
+from services.tracing import init_tracing, shutdown_tracing
 
 # Import API routers
 from api import (
@@ -101,8 +102,15 @@ async def lifespan(app: FastAPI):
     if testing_env != "true":
         await init_db()
         logger.info("Database initialized")
+    
+    # Initialize tracing
+    init_tracing(app=app, service_name="modporter-backend")
+    logger.info("Distributed tracing initialized")
+    
     yield
+    
     # Shutdown
+    shutdown_tracing()
     logger.info("Application shutdown")
 
 
