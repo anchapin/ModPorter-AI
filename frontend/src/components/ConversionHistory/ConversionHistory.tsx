@@ -165,8 +165,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     [addToHistory, updateConversionStatus]
   );
 
-
-
   return (
     <div className={`conversion-history ${className}`}>
       <div className="history-header">
