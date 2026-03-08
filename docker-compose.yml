@@ -26,11 +26,17 @@ services:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
       - LOG_LEVEL=INFO
+      - TRACING_ENABLED=true
+      - TRACING_EXPORTER=jaeger
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     volumes:
       - ./backend/src:/app/src
       - conversion-cache:/app/cache
@@ -59,9 +65,15 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO
       - PORT=8001
+      - TRACING_ENABLED=true
+      - TRACING_EXPORTER=jaeger
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
     depends_on:
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     volumes:
       - model-cache:/app/models
       - temp-uploads:/app/temp_uploads
@@ -120,6 +132,34 @@ services:
       retries: 5
       start_period: 30s
 
+  # Jaeger for distributed tracing visualization
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    ports:
+      - "6831:6831/udp"  # Jaeger thrift compact protocol
+      - "16686:16686"    # Jaeger UI
+      - "4317:4317"      # OTLP gRPC receiver
+      - "4318:4318"      # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+    volumes:
+      - jaeger-data:/var/lib/jaeger
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
 volumes:
   redis-data:
     driver: local
@@ -132,6 +172,8 @@ volumes:
   temp-uploads:
     driver: local
   conversion-outputs:
+    driver: local
+  jaeger-data:
     driver: local
 
 networks:
