@@ -1,0 +1,26 @@
+# Depcheck configuration for frontend
+# Detects unused dependencies in package.json
+
+{
+  "ignoreDirs": [
+    "dist",
+    "node_modules",
+    ".git",
+    "coverage",
+    "e2e"
+  ],
+  "ignorePatterns": [
+    "*.test.ts",
+    "*.test.tsx",
+    "*.spec.ts",
+    "*.spec.tsx",
+    "stories",
+    "**/*.stories.tsx"
+  ],
+  "skipMissing": false,
+  "detective": {
+    "ts": {
+      "parser": "typescript"
+    }
+  }
+}
