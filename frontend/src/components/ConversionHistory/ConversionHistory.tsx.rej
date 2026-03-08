@@ -1,5 +1,5 @@
---- frontend/src/components/ConversionHistory/ConversionHistory.tsx
-+++ frontend/src/components/ConversionHistory/ConversionHistory.tsx
+--- ConversionHistory.tsx
++++ ConversionHistory.tsx
 @@ -51,10 +51,9 @@
    // Sync state to localStorage whenever history changes
    // This ensures deletions and updates are persisted without side effects in updaters
@@ -14,5 +14,3 @@
 +      JSON.stringify(history)
 +    );
 +  }, [history]);
-
-   // Add new conversion to history
