@@ -836,18 +836,22 @@ jobs:
         
         # Parse mutmut results and check threshold
         # If we can't parse results, allow the build to pass in CI to avoid false failures
-        if mutmut results 2>&1 | grep -q "No mutations found"; then
+        # Note: mutmut results returns exit code 1 when mutations are not checked (timeout, etc.)
+        # We capture the output first to avoid pipeline exit code issues
+        MUTATION_OUTPUT=$(mutmut results 2>&1 || true)
+        echo "$MUTATION_OUTPUT"
+        
+        # Check if no mutations were found
+        if echo "$MUTATION_OUTPUT" | grep -q "No mutations found"; then
           echo "⚠️ No mutations found - skipping threshold check"
           exit 0
         fi
         
-        # Check if we have valid results
-        MUTATION_SUMMARY=$(mutmut results 2>&1 || echo "")
-        echo "$MUTATION_SUMMARY"
-        
         # For CI, we allow mutation testing to fail gracefully
         # Real threshold enforcement happens in mutation-testing-summary job
+        # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
+        exit 0
 
   # Mutation Testing - JavaScript/TypeScript (frontend)
   mutation-testing-frontend:
