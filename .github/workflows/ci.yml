@@ -730,6 +730,8 @@ jobs:
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
+            # Clear node_modules/.cache to fix zod-validation-error export issue
+            rm -rf frontend/node_modules/.cache
             # Run linting
             npm run lint
             ;;
@@ -1026,6 +1028,91 @@ jobs:
       run: |
         cd backend
         ruff format --check src/ tests/
+
+  # Dependency vulnerability scanning
+  vulnerability-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    # Python dependency vulnerability scanning (pip-audit)
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+
+    - name: Install pip-audit
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-audit
+
+    - name: Scan Python dependencies (Backend)
+      if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
+      run: |
+        echo "=== Scanning Backend Dependencies ==="
+        cd backend
+        pip-audit -r requirements.txt || true
+      continue-on-error: true
+
+    - name: Scan Python dependencies (AI Engine)
+      if: needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true'
+      run: |
+        echo "=== Scanning AI Engine Dependencies ==="
+        cd ai-engine
+        pip-audit -r requirements.txt || true
+      continue-on-error: true
+
+    # Node.js dependency vulnerability scanning (npm audit)
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Get pnpm store directory
+      id: pnpm-store
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Scan npm dependencies (Frontend)
+      if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
+      run: |
+        echo "=== Scanning Frontend npm Dependencies ==="
+        cd frontend
+        npm audit --audit-level=high || true
+      continue-on-error: true
+
+    - name: Scan npm dependencies (Root workspace)
+      run: |
+        echo "=== Scanning Root npm Workspace Dependencies ==="
+        npm audit --audit-level=high || true
+      continue-on-error: true
 
   # Performance tracking and optimization monitoring
   performance-monitoring:
