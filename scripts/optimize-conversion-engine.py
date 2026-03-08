@@ -26,7 +26,6 @@ import psutil
 import hashlib
 from dataclasses import dataclass
 from functools import lru_cache, wraps
-import pickle
 import gzip
 
 # Add paths for imports
@@ -58,7 +57,7 @@ class PerformanceOptimizer:
         }
         
         with gzip.open(cache_file, 'wb') as f:
-            pickle.dump(cache_data, f)
+            f.write(json.dumps(cache_data).encode('utf-8'))
     
     def get_cached_file_result(self, cache_key: str) -> Optional[Any]:
         """Retrieve cached file result if valid"""
@@ -69,7 +68,7 @@ class PerformanceOptimizer:
         
         try:
             with gzip.open(cache_file, 'rb') as f:
-                cache_data = pickle.load(f)
+                cache_data = json.loads(f.read().decode('utf-8'))
                 
             # Check if cache is still valid
             if time.time() - cache_data["timestamp"] > cache_data["ttl"]:
