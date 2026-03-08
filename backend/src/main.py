@@ -74,7 +74,7 @@ from services.report_generator import (
     MOCK_CONVERSION_RESULT_SUCCESS,
     MOCK_CONVERSION_RESULT_FAILURE,
 )
-from services.metrics import get_metrics
+from services.metrics import get_metrics, MetricsMiddleware
 from services.structured_logging import configure_structlog
 
 # Configure logging
@@ -174,6 +174,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Request/Response Logging Middleware
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(RequestContextMiddleware)
+
+# Metrics Middleware for Prometheus
+app.add_middleware(MetricsMiddleware)
 
 
 @app.on_event("startup")
@@ -1523,6 +1526,14 @@ async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_
 
 
 # Metrics endpoint for Prometheus scraping
+@app.get("/metrics", tags=["monitoring"])
+async def prometheus_metrics():
+    """
+    Prometheus metrics endpoint (standard path).
+    """
+    return Response(content=get_metrics(), media_type="text/plain")
+
+
 @app.get("/api/v1/metrics", tags=["monitoring"])
 async def metrics():
     """
