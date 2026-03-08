@@ -15,6 +15,9 @@ import json
 from dotenv import load_dotenv
 import redis.asyncio as aioredis
 
+# Import tracing module
+from tracing import init_tracing, shutdown_tracing
+
 # Configure logging using centralized configuration
 from utils.logging_config import setup_logging, get_agent_logger, configure_structlog
 
@@ -198,6 +201,10 @@ async def startup_event():
     
     logger.info("Starting ModPorter AI Engine...")
     
+    # Initialize tracing
+    init_tracing(app=app, service_name="modporter-ai-engine")
+    logger.info("Distributed tracing initialized")
+    
     try:
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -223,6 +230,22 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Service initialization failed")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    global redis_client
+    
+    # Shutdown tracing
+    shutdown_tracing()
+    logger.info("Distributed tracing shutdown")
+    
+    # Close Redis connection
+    if redis_client:
+        await redis_client.close()
+        logger.info("Redis connection closed")
+    
+    logger.info("ModPorter AI Engine shutdown complete")
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
