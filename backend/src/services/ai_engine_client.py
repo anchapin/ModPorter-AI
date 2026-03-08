@@ -3,6 +3,7 @@ AI Engine Client Service
 
 Provides HTTP client for communicating with the AI Engine API.
 Handles file transfers, conversion requests, and progress polling.
+Includes distributed tracing support.
 """
 
 import asyncio
@@ -12,6 +13,8 @@ from typing import Optional, Dict, Any, AsyncIterator, Callable, Awaitable
 from pathlib import Path
 
 import httpx
+
+from services.tracing import inject_trace_context, get_trace_id
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,21 @@ class AIEngineClient:
             )
         return self._client
 
+    def _get_trace_headers(self) -> Dict[str, str]:
+        """
+        Get trace context headers for propagating to downstream services.
+        
+        Returns:
+            Dictionary of trace headers to include in requests
+        """
+        headers = {}
+        inject_trace_context(headers)
+        # Also add trace_id for logging purposes
+        trace_id = get_trace_id()
+        if trace_id:
+            headers["X-Trace-ID"] = trace_id
+        return headers
+
     async def close(self):
         """Close the HTTP client."""
         if self._client and not self._client.is_closed:
@@ -78,7 +96,8 @@ class AIEngineClient:
         """
         try:
             client = await self._get_client()
-            response = await client.get("/api/v1/health")
+            headers = self._get_trace_headers()
+            response = await client.get("/api/v1/health", headers=headers)
             return response.status_code == 200
         except Exception as e:
             logger.warning(f"AI Engine health check failed: {e}")
@@ -108,6 +127,7 @@ class AIEngineClient:
         """
         try:
             client = await self._get_client()
+            headers = self._get_trace_headers()
 
             request_data = {
                 "job_id": job_id,
@@ -121,6 +141,7 @@ class AIEngineClient:
             response = await client.post(
                 "/api/v1/convert",
                 json=request_data,
+                headers=headers,
             )
 
             if response.status_code != 200:
@@ -161,7 +182,8 @@ class AIEngineClient:
         """
         try:
             client = await self._get_client()
-            response = await client.get(f"/api/v1/status/{job_id}")
+            headers = self._get_trace_headers()
+            response = await client.get(f"/api/v1/status/{job_id}", headers=headers)
 
             if response.status_code == 404:
                 raise AIEngineError("Job not found", status_code=404)

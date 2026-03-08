@@ -13,3 +13,7 @@ pre-commit>=3.0.0
 
 # Logging
 structlog
+
+# Dependency checking
+pip-audit>=2.7.0
+pipdeptree>=2.23.0
