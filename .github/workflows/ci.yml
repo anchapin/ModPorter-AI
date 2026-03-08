@@ -42,9 +42,12 @@ jobs:
       ruff: ${{ steps.changes.outputs.ruff }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: dorny/paths-filter@v3
         id: changes
         with:
+          base: main
           filters: |
             backend:
               - 'backend/**'
