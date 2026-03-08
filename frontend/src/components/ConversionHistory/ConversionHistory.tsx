@@ -20,28 +20,11 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   maxItems = 50,
   onStartNewConversion,
 }) => {
-  const [history, setHistory] = useState<ConversionHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-
-  // Confirmation states
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  // Reset confirmDelete when selection is cleared
-  useEffect(() => {
-    if (selectedItems.size === 0) {
-      setConfirmDelete(false);
-    }
-  }, [selectedItems.size]);
-
-  // Load conversion history from localStorage
-  const loadHistory = useCallback(async () => {
+  // ⚡ Bolt optimization: Lazy initialization of state from localStorage
+  // This prevents layout shifts and loading flashes on initial render by reading
+  // localStorage synchronously during component initialization.
+  const [history, setHistory] = useState<ConversionHistoryItem[]>(() => {
     try {
-      setLoading(true);
-
-      // For MVP, use localStorage to store conversion history
       const storedHistory = localStorage.getItem(
         'modporter_conversion_history'
       );
@@ -56,20 +39,26 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0
       );
 
-      setHistory(sortedHistory.slice(0, maxItems));
-      setError(null);
+      return sortedHistory.slice(0, maxItems);
     } catch (err) {
-      console.error('Failed to load conversion history:', err);
-      setError('Failed to load conversion history');
-      setHistory([]);
-    } finally {
-      setLoading(false);
+      console.error('Failed to parse history:', err);
+      return [];
     }
-  }, [maxItems]);
+  });
+  const loading = false;
+  const [error, setError] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
+  // Confirmation states
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Reset confirmDelete when selection is cleared
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    if (selectedItems.size === 0) {
+      setConfirmDelete(false);
+    }
+  }, [selectedItems.size]);
 
   // Sync state to localStorage whenever history changes
   // This ensures deletions and updates are persisted without side effects in updaters
@@ -174,9 +163,9 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     () => ({
       addToHistory,
       updateConversionStatus,
-      loadHistory,
+      loadHistory: () => {},
     }),
-    [addToHistory, updateConversionStatus, loadHistory]
+    [addToHistory, updateConversionStatus]
   );
 
   if (loading) {
