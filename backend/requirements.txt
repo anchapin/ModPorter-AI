@@ -45,3 +45,12 @@ black==26.1.0
 
 # Utilities
 python-dotenv==1.2.1
+
+# Optional Secrets Management Dependencies
+# Install only what you need:
+# - AWS Secrets Manager: pip install boto3
+# - HashiCorp Vault: pip install hvac
+# - Doppler: pip install requests
+# boto3>=1.34.0
+# hvac>=2.1.0
+# requests>=2.31.0
