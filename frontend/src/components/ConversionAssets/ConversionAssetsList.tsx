@@ -168,7 +168,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
             <option value="converted">Converted</option>
             <option value="failed">Failed</option>
           </select>
-          <Button onClick={loadAssets} className="refresh-button">
+          <Button onClick={loadAssets} className="refresh-button" aria-label="Refresh assets">
             🔄 Refresh
           </Button>
         </div>
@@ -223,6 +223,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
                     }}
                     className="action-button convert-button"
                     loading={processingAssetId === asset.id}
+                    aria-label={`Convert ${asset.original_filename}`}
                   >
                     Convert
                   </Button>
@@ -235,6 +236,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
                     }}
                     className="action-button retry-button"
                     loading={processingAssetId === asset.id}
+                    aria-label={`Retry ${asset.original_filename}`}
                   >
                     Retry
                   </Button>
@@ -246,6 +248,7 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
                   }}
                   className="action-button delete-button"
                   loading={processingAssetId === asset.id}
+                  aria-label={`Delete ${asset.original_filename}`}
                 >
                   Delete
                 </Button>
