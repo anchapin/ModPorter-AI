@@ -3,7 +3,7 @@
  * Part of Issue #10 - Conversion Report Generation System
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useId } from 'react';
 import type {
   AssumptionsReport as AssumptionsReportType,
   AssumptionDetail,
@@ -81,12 +81,24 @@ const ConfidenceIndicator: React.FC<{ score: number }> = ({ score }) => {
 
 const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const baseId = useId();
+  const contentId = `assumption-${baseId}`;
 
   return (
     <div className={styles.assumptionCard}>
       <div
         className={styles.assumptionHeader}
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls={contentId}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
       >
         <div className={styles.assumptionTitle}>
           <h4 className={styles.assumptionFeature}>
@@ -98,12 +110,14 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
           {assumption.confidence_score && (
             <ConfidenceIndicator score={assumption.confidence_score} />
           )}
-          <button
+          <span
             className={styles.expandButton}
+            aria-hidden="true"
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            tabIndex={-1}
           >
             {isExpanded ? '▼' : '▶'}
-          </button>
+          </span>
         </div>
       </div>
 
@@ -112,7 +126,7 @@ const AssumptionCard: React.FC<AssumptionCardProps> = ({ assumption }) => {
       </div>
 
       {isExpanded && (
-        <div className={styles.assumptionDetails}>
+        <div id={contentId} className={styles.assumptionDetails}>
           <div className={styles.assumptionInfo}>
             <div className={styles.assumptionInfoItem}>
               <strong>Original Feature:</strong> {assumption.original_feature}
@@ -363,16 +377,34 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
   if (!assumptions.assumptions || assumptions.assumptions.length === 0) {
     return (
       <div className={styles.section}>
-        <div className={styles.sectionHeader} onClick={onToggle}>
+        <div
+          className={styles.sectionHeader}
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+          aria-controls="assumptions-empty-content"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggle();
+            }
+          }}
+        >
           <h3 className={styles.sectionTitle}>
             🧠 Smart Assumptions (0 applied)
           </h3>
-          <button className={styles.toggleButton}>
+          <span
+            className={styles.toggleButton}
+            aria-hidden="true"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            tabIndex={-1}
+          >
             {isExpanded ? '▼' : '▶'}
-          </button>
+          </span>
         </div>
         {isExpanded && (
-          <div className={styles.sectionContent}>
+          <div id="assumptions-empty-content" className={styles.sectionContent}>
             <p className={styles.noAssumptions}>
               No smart assumptions were required for this conversion. All
               features were directly translatable to Bedrock Edition.
@@ -385,20 +417,35 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
 
   return (
     <div className={styles.section}>
-      <div className={styles.sectionHeader} onClick={onToggle}>
+      <div
+        className={styles.sectionHeader}
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        aria-controls="assumptions-content"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+      >
         <h3 className={styles.sectionTitle}>
           🧠 Smart Assumptions ({assumptions.total_assumptions_count} applied)
         </h3>
-        <button
+        <span
           className={styles.toggleButton}
+          aria-hidden="true"
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          tabIndex={-1}
         >
           {isExpanded ? '▼' : '▶'}
-        </button>
+        </span>
       </div>
 
       {isExpanded && (
-        <div className={styles.sectionContent}>
+        <div id="assumptions-content" className={styles.sectionContent}>
           {/* Summary Information */}
           <div className={styles.assumptionsSummary}>
             <div className={styles.summaryCards}>

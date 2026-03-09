@@ -3,7 +3,7 @@
  * Part of Issue #10 - Conversion Report Generation System
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useId } from 'react';
 import type {
   DeveloperLog as DeveloperLogType,
   LogEntry,
@@ -61,6 +61,8 @@ const LogLevelBadge: React.FC<{ level: string }> = ({ level }) => {
 
 const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const baseId = useId();
+  const contentId = `log-entry-${baseId}`;
 
   return (
     <div className={styles.logEntry}>
@@ -70,18 +72,21 @@ const LogEntryComponent: React.FC<{ entry: LogEntry }> = ({ entry }) => {
         </span>
         <LogLevelBadge level={entry.level} />
         {entry.details && (
-          <button
+          <span
             className={styles.logExpandButton}
+            aria-hidden="true"
             onClick={() => setIsExpanded(!isExpanded)}
             aria-label={isExpanded ? 'Hide details' : 'Show details'}
+            aria-expanded={isExpanded}
+            aria-controls={contentId}
           >
             {isExpanded ? '▼' : '▶'}
-          </button>
+          </span>
         )}
       </div>
       <div className={styles.logMessage}>{entry.message}</div>
       {isExpanded && entry.details && (
-        <div className={styles.logDetails}>
+        <div id={contentId} className={styles.logDetails}>
           <pre className={styles.logDetailsContent}>
             {JSON.stringify(entry.details, null, 2)}
           </pre>
@@ -118,6 +123,9 @@ const LogSection: React.FC<LogSectionProps> = ({
     return counts;
   }, [logs]);
 
+  const baseId = useId();
+  const contentId = `log-section-${baseId}`;
+
   if (logs.length === 0) return null;
 
   return (
@@ -125,6 +133,16 @@ const LogSection: React.FC<LogSectionProps> = ({
       <div
         className={styles.logSectionHeader}
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls={contentId}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
       >
         <h4 className={styles.logSectionTitle}>
           {icon} {title} ({logs.length})
@@ -146,16 +164,18 @@ const LogSection: React.FC<LogSectionProps> = ({
             </span>
           )}
         </div>
-        <button
+        <span
           className={styles.toggleButton}
+          aria-hidden="true"
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          tabIndex={-1}
         >
           {isExpanded ? '▼' : '▶'}
-        </button>
+        </span>
       </div>
 
       {isExpanded && (
-        <div className={styles.logSectionContent}>
+        <div id={contentId} className={styles.logSectionContent}>
           <div className={styles.logControls}>
             <select
               value={levelFilter}
@@ -375,22 +395,37 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
 
   return (
     <div className={styles.section}>
-      <div className={styles.sectionHeader} onClick={onToggle}>
+      <div
+        className={styles.sectionHeader}
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        aria-controls="developer-log-content"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+      >
         <h3 className={styles.sectionTitle}>
           🛠️ Developer Technical Log
           {hasErrors && <span className={styles.errorIndicator}>⚠️</span>}
         </h3>
         <div className={styles.logSummary}>{totalLogEntries} entries</div>
-        <button
+        <span
           className={styles.toggleButton}
+          aria-hidden="true"
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          tabIndex={-1}
         >
           {isExpanded ? '▼' : '▶'}
-        </button>
+        </span>
       </div>
 
       {isExpanded && (
-        <div className={styles.sectionContent}>
+        <div id="developer-log-content" className={styles.sectionContent}>
           {/* Performance Metrics */}
           {log.performance_metrics &&
             Object.keys(log.performance_metrics).length > 0 && (
