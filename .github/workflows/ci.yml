@@ -739,8 +739,9 @@ jobs:
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
-            # Clear node_modules/.cache to fix zod-validation-error export issue
-            rm -rf node_modules/.cache
+            # Force reinstall of potentially corrupted packages from stale cache
+            rm -rf node_modules
+            pnpm install --frozen-lockfile
             # Run linting
             pnpm run lint
             ;;
