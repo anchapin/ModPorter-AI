@@ -63,10 +63,11 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   // This ensures deletions and updates are persisted without side effects in updaters
   useEffect(() => {
     localStorage.setItem(
-      'modporter_conversion_history',
-      JSON.stringify(history)
-    );
-  }, [history]);
+        'modporter_conversion_history',
+        JSON.stringify(history)
+      );
+    }
+  }, [history, loading]);
 
   // Add new conversion to history
   const addToHistory = useCallback(
@@ -164,6 +165,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }),
     [addToHistory, updateConversionStatus]
   );
+
+
 
   return (
     <div className={`conversion-history ${className}`}>
