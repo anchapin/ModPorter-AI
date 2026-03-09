@@ -40,7 +40,8 @@ validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 ddgs>=5.3.0              # For actual web search functionality (replaces duckduckgo-search)
 
 # Redis for job management
-redis>=4.5.0
+# Pin redis to avoid resolution issues with complex dependency graph
+redis>=4.5.0,<6.0.0
 
 # Configuration Management
 pydantic>=2.0.0
