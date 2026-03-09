@@ -612,7 +612,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -671,7 +671,7 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
+        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-npm-cache-
@@ -683,7 +683,7 @@ jobs:
           node_modules
           frontend/node_modules
           ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}
+        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
         restore-keys: |
           ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-frontend-
@@ -700,19 +700,25 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-
 
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
+        cache: 'pnpm'
+        cache-dependency-path: 'frontend/pnpm-lock.yaml'
+
     - name: Install dependencies (optimized)
       run: |
-        echo "⚡ Installing frontend dependencies with optimizations..."
+        echo "⚡ Installing frontend dependencies with pnpm..."
         cd frontend
         
-        # Clear npm cache to avoid 'Cannot read properties of null' error
-        npm cache clean --force
-        
-        # Remove platform-specific package-lock and regenerate for Linux
-        rm -f package-lock.json
-        
-        # Use npm install with platform-specific filtering
-        npm install --prefer-offline --no-audit --no-fund --force
+        # Use pnpm install with frozen lockfile
+        pnpm install --frozen-lockfile
         
         echo "✅ Dependencies installed successfully"
 
@@ -724,11 +730,11 @@ jobs:
         case "${{ matrix.test-type }}" in
           "unit")
             # Run tests with coverage in CI mode
-            npm run test:ci
+            pnpm run test:ci
             ;;
           "build")
             # Build with production optimizations
-            NODE_ENV=production npm run build
+            NODE_ENV=production pnpm run build
             echo "Build size analysis:"
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
@@ -736,7 +742,7 @@ jobs:
             # Clear node_modules/.cache to fix zod-validation-error export issue
             rm -rf node_modules/.cache
             # Run linting
-            npm run lint
+            pnpm run lint
             ;;
         esac
 
@@ -1156,14 +1162,14 @@ jobs:
         echo "📊 Cache Strategy Analysis"
         echo "=========================="
         echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
         
         echo ""
         echo "Cache Keys (v2 optimized):"
         echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
         echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
         
         echo ""
         echo "🎯 Optimization Results"
