@@ -48,6 +48,7 @@ from services.rate_limiter import (
 )
 from services.security_headers import SecurityHeadersMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
+from services.tracing import init_tracing, shutdown_tracing
 
 # Import API routers
 from api import (
@@ -101,8 +102,15 @@ async def lifespan(app: FastAPI):
     if testing_env != "true":
         await init_db()
         logger.info("Database initialized")
+
+    # Initialize tracing
+    init_tracing(app=app)
+    logger.info("Distributed tracing initialized")
+
     yield
+
     # Shutdown
+    shutdown_tracing()
     logger.info("Application shutdown")
 
 
@@ -831,9 +839,18 @@ async def call_ai_engine_conversion(job_id: str):
 
             print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
 
+            # Inject trace context for distributed tracing
+            from services.tracing import inject_trace_context
+            headers = {}
+            inject_trace_context(headers)
+
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
-                # Start AI Engine conversion
-                response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
+                # Start AI Engine conversion with trace context
+                response = await client.post(
+                    f"{AI_ENGINE_URL}/api/v1/convert", 
+                    json=ai_request,
+                    headers=headers
+                )
 
                 if response.status_code != 200:
                     raise Exception(

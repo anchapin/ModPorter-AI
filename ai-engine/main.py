@@ -17,6 +17,7 @@ import redis.asyncio as aioredis
 
 # Configure logging using centralized configuration
 from utils.logging_config import setup_logging, get_agent_logger, configure_structlog
+from tracing import init_tracing, shutdown_tracing
 
 # Load environment variables
 load_dotenv()
@@ -199,6 +200,10 @@ async def startup_event():
     logger.info("Starting ModPorter AI Engine...")
     
     try:
+        # Initialize tracing
+        init_tracing(app)
+        logger.info("Tracing initialized")
+        
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         redis_client = aioredis.from_url(redis_url, decode_responses=True)
@@ -223,6 +228,25 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Service initialization failed")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup resources on shutdown"""
+    global redis_client
+    
+    logger.info("Shutting down ModPorter AI Engine...")
+    
+    # Shutdown tracing
+    shutdown_tracing()
+    logger.info("Tracing shutdown complete")
+    
+    # Close Redis connection if open
+    if redis_client:
+        await redis_client.close()
+        logger.info("Redis connection closed")
+    
+    logger.info("ModPorter AI Engine shutdown complete")
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
