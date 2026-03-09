@@ -16,11 +16,15 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
-select = ["E", "F", "I", "Q", "N", "D", "UP"]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
+    # W (pycodestyle warnings) ignores for legacy code
+    "W291",  # trailing whitespace (legacy code has inconsistent whitespace)
+    "W292",  # no newline at end of file (legacy code has inconsistent newlines)
+    "W293",  # blank line contains whitespace (legacy code has inconsistent blank lines)
     "Q000",  # bad quote marks
     "Q001",  # bad quote marks in multiline strings
     "Q002",  # bad quote marks in strings
