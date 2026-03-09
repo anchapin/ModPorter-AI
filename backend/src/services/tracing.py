@@ -31,11 +31,13 @@ except ImportError:
     # Fallback detectors when the OpenTelemetry AWS extension package is not installed
     class AwsEc2ResourceDetector:
         """Fallback no-op AWS EC2 resource detector."""
+
         def detect(self) -> Resource:
             return Resource.create({})
 
     class AwsEcsResourceDetector:
         """Fallback no-op AWS ECS resource detector."""
+
         def detect(self) -> Resource:
             return Resource.create({})
 
@@ -86,10 +88,12 @@ def get_otlp_endpoint() -> str:
 
 def _create_resource() -> Resource:
     """Create OpenTelemetry resource with service metadata."""
-    resource = Resource.create({
-        SERVICE_NAME: get_service_name(),
-        SERVICE_VERSION: get_service_version(),
-    })
+    resource = Resource.create(
+        {
+            SERVICE_NAME: get_service_name(),
+            SERVICE_VERSION: get_service_version(),
+        }
+    )
 
     # Try to add AWS resource attributes if available
     try:
@@ -163,7 +167,9 @@ def init_tracing(app=None) -> None:
             processor = _setup_jaeger_exporter()
             if processor:
                 _tracer_provider.add_span_processor(processor)
-                logger.info(f"Jaeger exporter configured: {get_jaeger_host()}:{get_jaeger_port()}")
+                logger.info(
+                    f"Jaeger exporter configured: {get_jaeger_host()}:{get_jaeger_port()}"
+                )
 
         if exporter_type in ("otlp", "all"):
             processor = _setup_otlp_exporter()
@@ -173,7 +179,9 @@ def init_tracing(app=None) -> None:
 
         # Always add console exporter for development
         if os.getenv("TRACING_CONSOLE", "false").lower() == "true":
-            _tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+            _tracer_provider.add_span_processor(
+                BatchSpanProcessor(ConsoleSpanExporter())
+            )
             logger.info("Console exporter enabled")
 
         # Set global tracer provider
