@@ -19,7 +19,9 @@ from structlog.stdlib import LoggerFactory
 from structlog.stdlib import ProcessorFormatter
 
 # Context variable to store correlation ID across async operations
-correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
+correlation_id_var: ContextVar[Optional[str]] = ContextVar(
+    "correlation_id", default=None
+)
 
 # Context variable to store request metadata
 request_metadata_var: ContextVar[Optional[Dict[str, Any]]] = ContextVar(
@@ -99,7 +101,8 @@ def configure_structlog(
     else:
         console_handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
     root_logger.addHandler(console_handler)
@@ -207,7 +210,8 @@ def get_standard_logger(name: str) -> logging.Logger:
         console_handler.setLevel(logging.INFO)
 
         console_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
@@ -307,7 +311,9 @@ class LogContext:
 
         # Bind to structlog context
         structlog.contextvars.clear_contextvars()
-        structlog.contextvars.bind_contextvars(correlation_id=self.correlation_id, **self.metadata)
+        structlog.contextvars.bind_contextvars(
+            correlation_id=self.correlation_id, **self.metadata
+        )
 
         return self
 
