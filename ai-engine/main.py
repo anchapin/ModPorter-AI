@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import time
 from enum import Enum
 import uvicorn
 import os
@@ -165,6 +166,22 @@ class HealthResponse(BaseModel):
     timestamp: str
     services: Dict[str, str]
 
+
+class DependencyHealth(BaseModel):
+    """Individual dependency health status"""
+    name: str
+    status: str
+    latency_ms: float = 0.0
+    message: str = ""
+
+
+class HealthStatus(BaseModel):
+    """Health check response model for readiness/liveness"""
+    status: str = Field(..., description="Overall health status: healthy, degraded, or unhealthy")
+    timestamp: str = Field(..., description="ISO timestamp of the health check")
+    checks: Dict[str, Any] = Field(..., description="Individual check results")
+
+
 class ConversionRequest(BaseModel):
     """Conversion request model"""
     job_id: str = Field(..., description="Unique job identifier")
@@ -239,6 +256,93 @@ async def health_check():
         timestamp=datetime.utcnow().isoformat(),
         services=services
     )
+
+
+async def check_redis_health() -> DependencyHealth:
+    """
+    Check Redis connectivity and return health status.
+    """
+    start_time = time.time()
+    
+    try:
+        if not redis_client:
+            return DependencyHealth(
+                name="redis",
+                status="unhealthy",
+                latency_ms=0.0,
+                message="Redis client not initialized"
+            )
+        
+        # Try a simple Redis operation
+        await redis_client.ping()
+        
+        latency_ms = (time.time() - start_time) * 1000
+        
+        return DependencyHealth(
+            name="redis",
+            status="healthy",
+            latency_ms=latency_ms,
+            message="Redis connection successful"
+        )
+    except Exception as e:
+        latency_ms = (time.time() - start_time) * 1000
+        logger.error(f"Redis health check failed: {e}")
+        
+        return DependencyHealth(
+            name="redis",
+            status="unhealthy",
+            latency_ms=latency_ms,
+            message=f"Redis connection failed: {str(e)}"
+        )
+
+
+@app.get("/health/readiness", response_model=HealthStatus, tags=["health"])
+async def readiness_check():
+    """
+    Readiness probe - checks if the application can serve traffic.
+    
+    This endpoint verifies that all required dependencies (Redis) are available.
+    The application should only receive traffic when this endpoint returns healthy.
+    """
+    checks = []
+    
+    # Check Redis
+    redis_health = await check_redis_health()
+    checks.append(redis_health)
+    
+    # Determine overall status
+    unhealthy_checks = [c for c in checks if c.status == "unhealthy"]
+    
+    if unhealthy_checks:
+        status = "unhealthy"
+    else:
+        status = "healthy"
+    
+    return HealthStatus(
+        status=status,
+        timestamp=datetime.utcnow().isoformat(),
+        checks={
+            "dependencies": {
+                c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
+                for c in checks
+            }
+        }
+    )
+
+
+@app.get("/health/liveness", response_model=HealthStatus, tags=["health"])
+async def liveness_check():
+    """
+    Liveness probe - checks if the application is running and doesn't need restart.
+    
+    This endpoint verifies that the application process is running and can handle requests.
+    """
+    return HealthStatus(
+        status="healthy",
+        timestamp=datetime.utcnow().isoformat(),
+        checks={"application": {"status": "running", "message": "Application process is running"}}
+    )
+
 
 @app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
 async def start_conversion(
