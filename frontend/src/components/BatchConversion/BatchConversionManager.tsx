@@ -227,7 +227,11 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           <div className="file-list-header">
             <span>{items.length} file(s) queued</span>
             {!isConverting && (
-              <button className="clear-button" onClick={clearAll} aria-label="Clear all queued files">
+              <button
+                className="clear-button"
+                onClick={clearAll}
+                aria-label="Clear all queued files"
+              >
                 Clear All
               </button>
             )}

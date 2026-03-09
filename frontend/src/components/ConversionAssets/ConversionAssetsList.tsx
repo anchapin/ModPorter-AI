@@ -168,7 +168,11 @@ export const ConversionAssetsList: React.FC<ConversionAssetsListProps> = ({
             <option value="converted">Converted</option>
             <option value="failed">Failed</option>
           </select>
-          <Button onClick={loadAssets} className="refresh-button" aria-label="Refresh assets">
+          <Button
+            onClick={loadAssets}
+            className="refresh-button"
+            aria-label="Refresh assets"
+          >
             🔄 Refresh
           </Button>
         </div>
