@@ -557,7 +557,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-integration-${{ matrix.test-suite }}
         path: .github/perf-metrics/*.json
@@ -565,7 +565,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -795,7 +795,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -832,7 +832,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
         path: .github/perf-metrics/*.json
@@ -933,7 +933,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-python-${{ matrix.project }}
         path: .github/perf-metrics/*.json
@@ -1027,7 +1027,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-frontend
         path: .github/perf-metrics/*.json
@@ -1243,146 +1243,49 @@ jobs:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, prepare-base-images, prepare-node-base]
+    needs: [integration-tests, frontend-tests, mutation-testing-python, mutation-testing-frontend, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
 
-    - name: Calculate performance metrics
-      id: metrics
-      run: |
-        echo "🚀 CI Performance Analysis"
-        echo "=========================="
-        
-        # Get job durations from the GitHub API (approximation)
-        WORKFLOW_START=$(date -d "5 minutes ago" +%s)
-        CURRENT_TIME=$(date +%s)
-        TOTAL_DURATION=$((CURRENT_TIME - WORKFLOW_START))
-        
-        echo "Workflow Performance:"
-        echo "- Total estimated time: ${TOTAL_DURATION}s"
-        echo "- Reduced timeout: integration-tests (30→20min), frontend-tests (15→10min)"
-        echo "- Base image strategy: ${{ needs.prepare-base-images.outputs.should-build == 'false' && '✅ Using cached base images' || '🏗️ Building new base images' }}"
-        
-        # Cache analysis
-        echo ""
-        echo "📊 Cache Strategy Analysis"
-        echo "=========================="
-        echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
-        
-        echo ""
-        echo "Cache Keys (v2 optimized):"
-        echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
-        
-        echo ""
-        echo "🎯 Optimization Results"
-        echo "======================"
-        echo "- ✅ Multi-level caching strategy implemented"
-        echo "- ✅ Base image strategy for dependency pre-caching"
-        echo "- ✅ Conditional Python setup (fallback)"
-        echo "- ✅ Optimized pnpm configuration"
-        echo "- ✅ Parallel matrix job execution"
-        echo "- ✅ Reduced timeouts and improved fail-fast"
+    - name: Download all performance metrics
+      uses: actions/download-artifact@v4
+      with:
+        pattern: perf-metrics-*
+        path: .github/perf-metrics
+        merge-multiple: true
 
-    - name: Performance benchmark comparison
+    - name: Run performance tracking
       run: |
-        echo ""
-        echo "📈 Expected Performance Improvements"
-        echo "===================================="
-        echo ""
-        echo "BEFORE (Original CI):"
-        echo "- Python 3.11 setup: 20-30 minutes"
-        echo "- Dependencies install: 15-20 minutes per job"
-        echo "- Total CI time: 45-60 minutes"
-        echo "- Cache hit rate: ~60%"
-        echo "- Setup overhead: ~65% of total time"
-        echo ""
-        echo "AFTER (Optimized CI):"
-        echo "- Python setup: 2-3 minutes (base image) or 5-8 minutes (fallback)"
-        echo "- Dependencies install: 2-5 minutes per job (cached)"
-        echo "- Total CI time: 15-25 minutes"
-        echo "- Cache hit rate: >90%"
-        echo "- Setup overhead: ~25% of total time"
-        echo ""
-        echo "🎉 IMPROVEMENT SUMMARY:"
-        echo "- Time reduction: ~55% (30-35 minutes saved)"
-        echo "- Setup optimization: ~65% → ~25%"
-        echo "- Cache efficiency: 60% → 90%+"
-        echo "- Developer productivity: ⚡ Much faster feedback"
-        echo "- Cost reduction: ~50-60% in GitHub Actions minutes"
-
-    - name: Cache health check
-      run: |
-        echo ""
-        echo "🏥 Cache Health Assessment"
-        echo "=========================="
+        chmod +x ./scripts/ci-performance-tracker.sh
+        echo "=== Aggregating Performance Metrics ==="
+        ./scripts/ci-performance-tracker.sh aggregate
         
-        # Simulate cache health checks
-        echo "Cache Strategy Status:"
-        echo "- ✅ L1 Cache (pip/pnpm store): Active"
-        echo "- ✅ L2 Cache (site-packages/node_modules): Active"  
-        echo "- ✅ L3 Cache (test artifacts): Active"
-        echo "- ✅ Base Images: ${{ needs.prepare-base-images.outputs.should-build == 'false' && 'Using cached images' || 'Building fresh images' }}"
+        echo "=== Comparing with Baseline ==="
+        ./scripts/ci-performance-tracker.sh compare || true
         
-        echo ""
-        echo "Optimization Features Active:"
-        echo "- ✅ Conditional dependency installation"
-        echo "- ✅ Multi-level fallback caching"
-        echo "- ✅ Parallel job execution"
-        echo "- ✅ Smart cache invalidation"
-        echo "- ✅ Performance monitoring"
+        echo "=== Updating Performance History ==="
+        ./scripts/ci-performance-tracker.sh history
+        
+        echo "=== Generating Performance Report ==="
+        ./scripts/ci-performance-tracker.sh report
 
-    - name: Generate optimization report
-      if: github.event_name == 'pull_request'
+    - name: Display Performance Reports
       run: |
-        echo ""
-        echo "📋 CI Optimization Report for PR"
-        echo "================================="
-        echo ""
-        echo "This PR implements comprehensive CI performance optimizations:"
-        echo ""
-        echo "🔧 **Key Optimizations:**"
-        echo "1. **Base Image Strategy** - Pre-built images with dependencies"
-        echo "2. **Multi-Level Caching** - pip, site-packages, pnpm store, node_modules"
-        echo "3. **Conditional Setup** - Skip Python setup when using base images"
-        echo "4. **Smart Dependencies** - Install only what's needed per job"
-        echo "5. **Parallel Execution** - Improved matrix job coordination"
-        echo "6. **Reduced Timeouts** - More realistic time limits"
-        echo ""
-        echo "📊 **Expected Impact:**"
-        echo "- **55% faster CI** (45-60min → 15-25min)"
-        echo "- **90%+ cache hit rate** (up from 60%)"
-        echo "- **50-60% cost reduction** in GitHub Actions minutes"
-        echo "- **Better developer experience** with faster feedback"
-        echo ""
-        echo "🛡️ **Reliability Improvements:**"
-        echo "- Fallback mechanisms for setup failures"
-        echo "- Better error handling and reporting"
-        echo "- Health checks and monitoring"
-        echo ""
-        echo "To test these optimizations, merge this PR and monitor the next few CI runs!"
+        echo "## 🚀 CI Build Performance Analysis" >> $GITHUB_STEP_SUMMARY
+        if [ -f ".github/perf-metrics/pr-report.md" ]; then
+          cat .github/perf-metrics/pr-report.md >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ -f ".github/perf-metrics/trend-report.md" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat .github/perf-metrics/trend-report.md >> $GITHUB_STEP_SUMMARY
+        fi
 
-    - name: Cleanup recommendation
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        echo ""
-        echo "🧹 Cache Maintenance Recommendations"
-        echo "==================================="
-        echo ""
-        echo "Weekly Tasks:"
-        echo "- ✅ Auto-rebuild base images (via build-base-images.yml)"
-        echo "- ✅ Cache cleanup via cache-cleanup.yml workflow"
-        echo ""
-        echo "Monthly Tasks:"
-        echo "- Review cache hit rates in Actions tab"
-        echo "- Update CACHE_VERSION in workflow if major changes"
-        echo "- Monitor repository cache usage (current limit: 10GB)"
-        echo ""
-        echo "Repository Cache Status:"
-        echo "- Current optimization level: v2"
-        echo "- Base images: Managed automatically"
-        echo "- Cache retention: 7 days for test artifacts"
+    - name: Upload performance summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-performance-summary
+        path: |
+          .github/perf-metrics/summary.json
+          .github/perf-metrics/history.json
+          .github/perf-metrics/*.md
