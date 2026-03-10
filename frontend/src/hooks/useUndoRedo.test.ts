@@ -60,7 +60,10 @@ describe('useUndoRedo Hook', () => {
     test('undo returns null when no history', () => {
       const { result } = renderHook(() => useUndoRedo('initial'));
 
-      const undoResult = act(() => result.current.undo());
+      let undoResult: any;
+      act(() => {
+        undoResult = result.current.undo();
+      });
 
       expect(undoResult).toBe(null);
       expect(result.current.state).toBe('initial');
@@ -114,7 +117,10 @@ describe('useUndoRedo Hook', () => {
     test('redo returns null when no redo history', () => {
       const { result } = renderHook(() => useUndoRedo('initial'));
 
-      const redoResult = act(() => result.current.redo());
+      let redoResult: any;
+      act(() => {
+        redoResult = result.current.redo();
+      });
 
       expect(redoResult).toBe(null);
     });
@@ -140,7 +146,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('History Management', () => {
     test('clearHistory resets to current state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('second', 'Update 1');
@@ -160,7 +166,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('getHistory returns current state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('second', 'Update');
@@ -218,7 +224,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Debounce Option', () => {
     test('debounces updates when enabled', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       const { result } = renderHook(() =>
         useUndoRedo('initial', { debounceMs: 100, enableDebounce: true })
       );
@@ -236,13 +242,13 @@ describe('useUndoRedo Hook', () => {
       expect(result.current.canUndo).toBe(false);
 
       act(() => {
-        jest.advanceTimersByTime(100);
+        vi.advanceTimersByTime(100);
       });
 
       // After debounce, canUndo should be true
       expect(result.current.canUndo).toBe(true);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     test('no debounce when disabled', () => {
@@ -296,7 +302,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Edge Cases', () => {
     test('handles rapid undo/redo operations', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('1', 'Update 1');
@@ -317,7 +323,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('handles update with same value as previous', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('initial', 'Same value');

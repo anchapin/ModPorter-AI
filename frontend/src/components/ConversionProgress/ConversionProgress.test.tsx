@@ -342,6 +342,9 @@ describe('ConversionProgress', () => {
   });
 
   test('WebSocket constructor is called with correct URL when jobId provided', async () => {
+    // Clear instances before test
+    MockWebSocket.instances = [];
+    
     await act(async () => {
       render(<ConversionProgress jobId="test-job-123" />);
       await vi.advanceTimersByTimeAsync(100);
@@ -349,8 +352,9 @@ describe('ConversionProgress', () => {
 
     // Verify WebSocket was instantiated (even though it's mocked)
     expect(MockWebSocket.instances).toHaveLength(1);
+    // API_BASE_URL is empty in tests, so WebSocket URL uses relative path
     expect(MockWebSocket.instances[0].url).toBe(
-      'ws://localhost:8080/ws/v1/convert/test-job-123/progress'
+      '/ws/v1/convert/test-job-123/progress'
     );
   });
 });

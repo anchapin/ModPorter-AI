@@ -5,10 +5,10 @@ import { server } from '../test/setup';
 
 describe('API Service - Feedback', () => {
   beforeEach(() => {
-    // Reset MSW handlers
-    server.resetHandlers();
-
-    // Mock fetch since MSW is disabled
+    // Reset all mocks to ensure clean state
+    vi.restoreAllMocks();
+    
+    // Set up a fresh mock for each test
     global.fetch = vi.fn();
   });
 
@@ -43,7 +43,7 @@ describe('API Service - Feedback', () => {
       const result = await submitFeedback(mockPayload);
       expect(result).toEqual(mockSuccessResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/feedback',
+        '/api/v1/feedback',
         {
           method: 'POST',
           headers: {

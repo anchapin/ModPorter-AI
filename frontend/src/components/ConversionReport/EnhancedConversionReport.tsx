@@ -199,14 +199,16 @@ export const EnhancedConversionReport: React.FC<
   // Determine overall status
   const overallStatus = useMemo(() => {
     if (jobStatus) return jobStatus;
-    if (!reportData.summary) return 'failed';
+    if (!reportData || !reportData.summary) return 'failed';
     return reportData.summary.overall_success_rate > 10
       ? 'completed'
       : 'failed';
-  }, [jobStatus, reportData.summary]);
+  }, [jobStatus, reportData?.summary]);
 
   // Create navigation items
   const navigationSections = useMemo<NavigationItem[]>(() => {
+    if (!reportData) return [];
+
     const sections: NavigationItem[] = [
       {
         id: 'summary',
@@ -342,7 +344,7 @@ export const EnhancedConversionReport: React.FC<
       <div className={styles.reportSections}>
         {/* Summary Section */}
         <div id="section-summary" className={styles.section}>
-          <ReportSummary summary={reportData.summary} />
+          <ReportSummary summary={reportData?.summary} />
         </div>
 
         {/* Feature Analysis Section */}
