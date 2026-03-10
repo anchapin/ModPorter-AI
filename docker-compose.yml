@@ -26,10 +26,15 @@ services:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
       - LOG_LEVEL=INFO
+      - TRACING_EXPORTER=jaeger
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=14268
     depends_on:
       redis:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      jaeger:
         condition: service_healthy
     volumes:
       - ./backend/src:/app/src
@@ -59,8 +64,13 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO
       - PORT=8001
+      - TRACING_EXPORTER=jaeger
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=14268
     depends_on:
       redis:
+        condition: service_healthy
+      jaeger:
         condition: service_healthy
     volumes:
       - model-cache:/app/models
@@ -120,6 +130,27 @@ services:
       retries: 5
       start_period: 30s
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.58
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector (HTTP)
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+    volumes:
+      - jaeger-data:/var/lib/jaeger/data
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   redis-data:
     driver: local
@@ -132,6 +163,8 @@ volumes:
   temp-uploads:
     driver: local
   conversion-outputs:
+    driver: local
+  jaeger-data:
     driver: local
 
 networks:

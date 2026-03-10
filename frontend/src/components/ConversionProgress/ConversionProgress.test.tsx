@@ -350,7 +350,7 @@ describe('ConversionProgress', () => {
     // Verify WebSocket was instantiated (even though it's mocked)
     expect(MockWebSocket.instances).toHaveLength(1);
     expect(MockWebSocket.instances[0].url).toBe(
-      'ws://localhost:8080/ws/v1/convert/test-job-123/progress'
+      'ws://localhost:8000/ws/v1/convert/test-job-123/progress'
     );
   });
 });
