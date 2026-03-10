@@ -7,9 +7,6 @@ describe('API Service - Feedback', () => {
   beforeEach(() => {
     // Reset MSW handlers
     server.resetHandlers();
-
-    // Mock fetch since MSW is disabled
-    global.fetch = vi.fn();
   });
 
   afterEach(() => {
@@ -42,8 +39,9 @@ describe('API Service - Feedback', () => {
 
       const result = await submitFeedback(mockPayload);
       expect(result).toEqual(mockSuccessResponse);
+      // Use relative URL since test environment uses relative paths
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/feedback',
+        '/api/v1/feedback',
         {
           method: 'POST',
           headers: {
