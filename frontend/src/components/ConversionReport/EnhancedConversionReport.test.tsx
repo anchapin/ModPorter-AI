@@ -585,7 +585,7 @@ describe('EnhancedConversionReport Component', () => {
     // Just verify it doesn't crash completely
     try {
       render(<EnhancedConversionReport reportData={null as any} />);
-    } catch (e) {
+    } catch (_e) {
       // Component may throw when given null - this is acceptable
       // The test ensures no unhandled exceptions in the test runner
     }
