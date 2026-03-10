@@ -1143,6 +1143,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Set up Python for performance tracking
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+
+    - name: Record workflow metrics
+      id: record-metrics
+      run: |
+        # Record major workflow step timings
+        WORKFLOW_START="${{ job.start_time }}"
+        CURRENT_TIME=$(date +%s)
+        
+        # Initialize performance tracking
+        python3 scripts/ci_performance_tracker.py aggregate
+        python3 scripts/ci_performance_tracker.py compare
+        
+        echo "✅ Performance metrics recorded and aggregated"
+
     - name: Calculate performance metrics
       id: metrics
       run: |
@@ -1182,6 +1200,7 @@ jobs:
         echo "- ✅ Optimized pnpm configuration"
         echo "- ✅ Parallel matrix job execution"
         echo "- ✅ Reduced timeouts and improved fail-fast"
+        echo "- ✅ Build performance tracking with metrics collection"
 
     - name: Performance benchmark comparison
       run: |
@@ -1261,6 +1280,20 @@ jobs:
         echo ""
         echo "To test these optimizations, merge this PR and monitor the next few CI runs!"
 
+    - name: Generate performance report
+      if: github.event_name == 'pull_request'
+      run: |
+        python3 scripts/ci_performance_tracker.py report --output /tmp/perf-report.md
+        cat /tmp/perf-report.md
+
+    - name: Upload performance metrics artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-performance-metrics
+        path: .github/perf-metrics/
+        retention-days: 30
+
     - name: Cleanup recommendation
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
@@ -1276,8 +1309,10 @@ jobs:
         echo "- Review cache hit rates in Actions tab"
         echo "- Update CACHE_VERSION in workflow if major changes"
         echo "- Monitor repository cache usage (current limit: 10GB)"
+        echo "- Review performance trends in ci-performance-metrics artifacts"
         echo ""
         echo "Repository Cache Status:"
         echo "- Current optimization level: v2"
         echo "- Base images: Managed automatically"
         echo "- Cache retention: 7 days for test artifacts"
+        echo "- Performance metrics: Retained for 30 days"
