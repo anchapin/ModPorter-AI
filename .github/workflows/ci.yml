@@ -186,7 +186,7 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
-    # Use Python base image only when dependencies changed, otherwise use runner's Python
+    # Use Python base image only when it's available and should-build is false
     container:
       image: ${{ needs.prepare-base-images.outputs.python-image }}
       options: --name test-container-${{ matrix.test-suite }} --user root
@@ -558,14 +558,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
     - name: Install Ruff
       run: pip install ruff
 
-    - name: Run Ruff on backend
-      run: ruff check backend/
-
-    - name: Run Ruff on ai-engine
-      run: ruff check ai-engine/
+    - name: Run Ruff Lint
+      run: ruff check .
 
   # Prepare Node.js base image for frontend
   prepare-node-base:
@@ -1137,7 +1139,7 @@ jobs:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
+    needs: [integration-tests, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
       uses: actions/checkout@v6

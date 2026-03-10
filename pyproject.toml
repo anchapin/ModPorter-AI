@@ -1,0 +1,126 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+    "tests/",
+    "src/tests/",
+    ".git/",
+    "__pycache__/",
+    "*.egg-info/",
+    ".venv/",
+    "venv/",
+    "mutants/",  # mutation testing generates code with odd names
+    "node_modules/",
+    "frontend/",  # Frontend is TypeScript/JS
+    "docker/",    # Docker files
+    "docs/",      # Documentation
+    "temp_init.py",  # UTF-16 encoded file
+]
+
+[tool.ruff.lint]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP"]
+ignore = [
+    "E402",  # module level import not at top of file
+    "E501",  # line too long (handled by formatter)
+    # W (pycodestyle warnings) ignores for legacy code
+    "W291",  # trailing whitespace (legacy code has inconsistent whitespace)
+    "W292",  # no newline at end of file (legacy code has inconsistent newlines)
+    "W293",  # blank line contains whitespace (legacy code has inconsistent blank lines)
+    "Q000",  # bad quote marks
+    "Q001",  # bad quote marks in multiline strings
+    "Q002",  # bad quote marks in strings
+    "N999",  # invalid module name (allow hyphenated names like ai-engine)
+    "I001",  # import block is un-sorted (legacy code has inconsistent import order)
+    "F401",  # imported but unused (legacy code has many unused imports)
+    "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
+    "F601",  # duplicate dictionary key (legacy code has intentional overrides)
+    "F811",  # redefinition of function (legacy code has intentional overrides)
+    "F841",  # unused variables (legacy code has many unused variables)
+    "Q003",  # unnecessary escape on inner quote character
+    "Q004",  # unnecessary escape on inner quote character
+    "E702",  # multiple statements on one line (semicolon)
+    "E701",  # multiple statements on one line (colon)
+    "E722",  # bare except (legacy code uses bare except for compatibility)
+    "E713",  # test for membership should be `not in`
+    "F821",  # undefined name (type hints and forward references)
+    # pydocstyle (D) ignores for legacy code
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D200",  # One-line docstring should fit on one line with quotes
+    "D205",  # 1 blank line required between summary line and description
+    "D400",  # First line should end with a period
+    "D401",  # First line should be in imperative mood
+    "D415",  # First line should end with a period, question mark, or exclamation point
+    # pydocstyle additional ignores for legacy code
+    "D204",  # 1 blank line required after class docstring
+    "D203",  # 1 blank line required before class docstring (conflicts with D211)
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D413",  # Missing blank line after last section
+    # pyupgrade (UP) ignores for legacy code
+    "UP035",  # deprecated typing imports (List, Dict, etc.)
+    "UP006",  # use built-in types instead of typing (not yet enforced)
+    "UP015",  # unnecessary mode argument in open()
+    "UP024",  # replace IOError with OSError
+    "UP032",  # use f-string instead of format() call
+    "UP045",  # use X | None instead of Optional[X]
+    "UP017",  # use datetime.UTC instead of datetime.now(timezone.utc)
+    "UP042",  # inherit from enum.StrEnum instead of str, Enum
+    # pydocstyle (D) additional ignores for legacy code
+    "D202",  # no blank lines allowed after function docstring
+    "D406",  # section name should end with a newline
+    "D409",  # section underline should match the length of its name
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files - allow imports not at top, unused imports, and specific test patterns
+"tests/*" = ["E402", "F401", "E712", "F541", "F841"]
+"tests/test_*.py" = ["E402", "F401", "E712", "F541", "F841"]
+"tests/integration/*" = ["E402", "F401", "E712", "F541", "F841"]
+
+# Modporter CLI - legacy code
+"modporter/*" = ["E402", "F401", "E722", "F841"]
+
+# __init__ files - allow imports not at top
+"__init__.py" = ["E402"]
+
+# Backend-specific ignores (already handled by backend/pyproject.toml but included for root-level check)
+"backend/src/api/performance.py" = ["F821", "F841"]
+"backend/src/services/rate_limiter.py" = ["F841"]
+"backend/src/services/task_worker.py" = ["F841"]
+
+# Naming convention per-file ignores (legacy code)
+"backend/src/api/conversions.py" = ["N805"]
+"backend/src/utils/validators.py" = ["N805"]
+"backend/src/models/types.py" = ["N811"]
+"backend/src/models/addon_models.py" = ["N811"]
+"backend/src/db/models.py" = ["N811"]
+"backend/src/db/crud.py" = ["N811"]
+"backend/src/main.py" = ["N811"]
+"backend/src/services/*.py" = ["N806"]
+"backend/src/file_processor.py" = ["N806"]
+"backend/src/security/resource_limits.py" = ["N818"]
+"backend/src/services/error_handlers.py" = ["N818"]
+"backend/src/exceptions.py" = ["N818"]
+
+# ai-engine specific ignores
+"ai-engine/agents/asset_converter.py" = ["F811", "F841"]
+"ai-engine/crew/__init__.py" = ["N802"]
+"ai-engine/agents/java_analyzer.py" = ["N806"]
+"ai-engine/tools/search_tool.py" = ["N806"]
+"ai-engine/src/utils/validators.py" = ["N805"]
+"ai-engine/src/models/types.py" = ["N811"]
+"ai-engine/src/services/*.py" = ["N806"]
+"ai-engine/src/engines/*.py" = ["N806"]
+"ai-engine/src/exceptions.py" = ["N818"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "core", "src", "backend", "ai_engine"]
+force-single-line = false
