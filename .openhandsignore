@@ -1,74 +1,14 @@
-# .openhandsignore
-# This file tells OpenHands which directories to skip when running commands like ls or find
-# It prevents output truncation that can cause path hallucination issues
-
-# Python cache directories
-__pycache__/
-**/__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Node.js
+# OpenHands ignore file to prevent directory listing overflows
 node_modules/
 **/node_modules/
-.pnpm/
-.pnpm-store/
-.pnpm-store/**
-
-# Python virtual environments
-venv/
-**/venv/
-env/
-**/env/
-.venv/
-**/.venv/
-
-# Test and coverage artifacts
-.pytest_cache/
-**/.pytest_cache/
-.coverage
-coverage/
-**/coverage/
-htmlcov/
-
-# Build outputs
-dist/
 build/
-*.egg-info/
-
-# Git
+dist/
 .git/
-**/.git/
-
-# IDE
-.vscode/
-.idea/
-
-# Cache directories
-.cache/
-.parcel-cache/
-.next/
-.nuxt/
-
-# Large binary and generated files
-*.jar
-*.war
-*.ear
-*.zip
-*.mcaddon
-*.class
-*.bin
-*.exe
-
-# Storybook
-storybook-static/
-dist-storybook/
-
-# Specific large directories in the project
-frontend/node_modules/
-backend/node_modules/
-ai-engine/node_modules/
-frontend/dist/
-backend/dist/
-ai-engine/dist/
+__pycache__/
+**/__pycache__/
+venv/
+.venv/
+venv_test/
+venv_muttest/
+.pytest_cache/
+.ruff_cache/

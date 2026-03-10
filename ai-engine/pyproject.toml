@@ -82,7 +82,12 @@ ignore = [
 "__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
 "__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
 "agents/asset_converter.py" = ["F811", "F841", "C901"]  # Allow duplicate function definitions and unused variables in legacy code
-"crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
+"agents/qa_validator.py" = ["C901"]
+"agents/recipe_converter.py" = ["C901"]
+"agents/validation_agent.py" = ["C901"]
+"benchmarking/performance_system.py" = ["C901"]
+"crew/__init__.py" = ["N802"]
+  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
 "agents/java_analyzer.py" = ["N806", "C901"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
 "tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
 # Naming convention per-file ignores (legacy code)
@@ -97,7 +102,7 @@ known-first-party = ["src"]
 force-single-line = false
 
 [tool.ruff.lint.mccabe]
-max-complexity = 30
+max-complexity = 20
 
 [tool.mutmut]
 paths_to_mutate = ["src"]
