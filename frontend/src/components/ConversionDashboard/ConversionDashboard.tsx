@@ -36,13 +36,6 @@ export const ConversionDashboard: React.FC = () => {
   const renderContent = () => {
     switch (dashboardState) {
       case 'upload':
-        return (
-          <ConversionUpload
-            onConversionStart={handleConversionStart}
-            onConversionComplete={handleConversionComplete}
-          />
-        );
-
       case 'processing':
         return (
           <ConversionUpload

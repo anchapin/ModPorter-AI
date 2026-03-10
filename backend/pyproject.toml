@@ -133,7 +133,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401", "E712"]  # Allow imports not at top, unused imports, and == True/False in tests
+"tests/*" = ["E402", "F401", "F841", "E712"]  # Allow imports not at top, unused imports/variables, and == True/False in tests
 "__init__.py" = ["E402"]
 "src/api/performance.py" = ["F821", "F841"]  # Undefined name and unused variable
 "src/services/rate_limiter.py" = ["F841"]
