@@ -233,7 +233,7 @@ class MockWebSocket {
     }, 0);
   }
 
-  send(data: string): void {}
+  send(_data: string): void {}
   close(): void {
     this.readyState = 3; // CLOSED
     if (this.onclose) {
