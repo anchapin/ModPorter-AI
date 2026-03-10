@@ -190,35 +190,19 @@ curl http://localhost:8080/health/liveness
 # Check AI engine health
 curl http://localhost:8001/api/v1/health
 
-# Check AI engine readiness (Redis dependency check)
-curl http://localhost:8001/health/readiness
-
-# Check AI engine liveness (process running)
-curl http://localhost:8001/health/liveness
-
 # Check all service status
 docker compose ps
 ```
 
 ### Health Check Endpoints
 
-The backend and AI engine provide health check endpoints for Kubernetes probes:
-
-#### Backend (port 8080)
+The backend provides three health check endpoints for Kubernetes probes:
 
 | Endpoint | Purpose | Dependencies Checked |
 |----------|---------|---------------------|
 | `/health` | Basic health check | None |
 | `/health/liveness` | Process is running | None |
 | `/health/readiness` | Can serve traffic | Database, Redis |
-
-#### AI Engine (port 8001)
-
-| Endpoint | Purpose | Dependencies Checked |
-|----------|---------|---------------------|
-| `/api/v1/health` | Basic health check | Assumption engine |
-| `/health/liveness` | Process running | None |
-| `/health/readiness` | Can serve traffic | Redis |
 
 **Response Format:**
 ```json

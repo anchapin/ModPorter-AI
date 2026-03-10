@@ -1,0 +1,16 @@
+--- ConversionHistory.tsx
++++ ConversionHistory.tsx
+@@ -51,10 +51,9 @@
+   // Sync state to localStorage whenever history changes
+   // This ensures deletions and updates are persisted without side effects in updaters
+   useEffect(() => {
+     localStorage.setItem(
+-        'modporter_conversion_history',
+-        JSON.stringify(history)
+-      );
+-    }
+-  }, [history, loading]);
++      'modporter_conversion_history',
++      JSON.stringify(history)
++    );
++  }, [history]);
