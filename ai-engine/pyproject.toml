@@ -224,7 +224,7 @@ dependencies = [
 
     # Vector Database (pin version for embedchain compatibility)
 
-    "chromadb<1.5.0",
+    "chromadb<1.6.0",
     
     # Data Processing
     "numpy",
