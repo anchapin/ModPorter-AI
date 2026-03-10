@@ -207,7 +207,7 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
-    # Use Python base image only when dependencies changed, otherwise use runner's Python
+    # Use Python base image only when it's available and should-build is false
     container:
       image: ${{ needs.prepare-base-images.outputs.python-image }}
       options: --name test-container-${{ matrix.test-suite }} --user root
