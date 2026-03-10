@@ -1077,6 +1077,9 @@ jobs:
     - name: Check frontend format
       run: pnpm format:check:frontend
 
+    - name: Check duplicates
+      run: pnpm run lint:duplicates
+
     - name: Build frontend with bundle analysis
       run: pnpm build:analyze
 

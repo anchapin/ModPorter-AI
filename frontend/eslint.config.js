@@ -10,6 +10,8 @@ import react from 'eslint-plugin-react';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import boundaries from 'eslint-plugin-boundaries';
 import * as importX from 'eslint-plugin-import-x';
+import unusedImports from 'eslint-plugin-unused-imports';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 export default [
   { ignores: ['dist', 'coverage', 'node_modules'] },
@@ -38,6 +40,8 @@ export default [
       'react-compiler': reactCompiler,
       boundaries,
       'import-x': importX,
+      'unused-imports': unusedImports,
+      sonarjs,
     },
     settings: {
       react: {
@@ -97,6 +101,22 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // Unused imports detection and removal
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
+      // Duplicated code detection via SonarJS
+      'sonarjs/no-duplicated-branches': 'error',
+      'sonarjs/no-identical-functions': 'error',
+      'sonarjs/no-identical-expressions': 'error',
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 3 }],
       // Disable base rule to avoid conflicts
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
