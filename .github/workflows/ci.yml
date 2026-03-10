@@ -77,15 +77,30 @@ jobs:
     name: Prepare Base Images
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ needs.changes.outputs.dependencies == 'true' }}
+    # Always run to provide outputs for dependent jobs
     permissions:
       contents: read
       packages: write
     outputs:
       python-image: ${{ steps.image-tags.outputs.python-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
+      dependencies-changed: ${{ needs.changes.outputs.dependencies }}
     steps:
+    - name: Check if dependencies changed
+      id: check-deps
+      run: |
+        if [ "${{ needs.changes.outputs.dependencies }}" != "true" ]; then
+          echo "dependencies-changed=false" >> $GITHUB_OUTPUT
+          echo "python-image=" >> $GITHUB_OUTPUT
+          echo "should-build=false" >> $GITHUB_OUTPUT
+          echo "⏭️ Dependencies not changed, skipping image build"
+        else
+          echo "dependencies-changed=true" >> $GITHUB_OUTPUT
+          echo "📦 Dependencies changed, proceeding with image build"
+        fi
+
     - name: Free up disk space
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       run: |
         echo "🧹 Cleaning up disk space before Docker build"
         echo "Initial disk usage:"
@@ -112,12 +127,15 @@ jobs:
         df -h
 
     - name: Checkout code
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       uses: actions/checkout@v6
 
     - name: Set up Docker Buildx
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       uses: docker/setup-buildx-action@v4
 
     - name: Log in to Container Registry
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       uses: docker/login-action@v4
       with:
         registry: ${{ env.REGISTRY }}
@@ -125,6 +143,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Calculate dependency hash
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       id: deps-hash
       run: |
         # Hash only the files actually copied by Dockerfile
@@ -133,6 +152,7 @@ jobs:
         echo "Dependencies hash: $DEPS_HASH"
 
     - name: Set image tags
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       id: image-tags
       run: |
         REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
@@ -141,6 +161,7 @@ jobs:
         echo "Python base image: $PYTHON_IMAGE"
 
     - name: Check if base image exists
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
       id: check-cache
       run: |
         if docker buildx imagetools inspect "${{ steps.image-tags.outputs.python-image }}" > /dev/null 2>&1; then
@@ -152,7 +173,7 @@ jobs:
         fi
 
     - name: Build and push Python base image
-      if: steps.check-cache.outputs.should-build == 'true'
+      if: steps.check-deps.outputs.dependencies-changed == 'true' && steps.check-cache.outputs.should-build == 'true'
       uses: docker/build-push-action@v7
       with:
         context: .
@@ -558,14 +579,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
     - name: Install Ruff
       run: pip install ruff
 
-    - name: Run Ruff on backend
-      run: ruff check backend/
-
-    - name: Run Ruff on ai-engine
-      run: ruff check ai-engine/
+    - name: Run Ruff Lint
+      run: ruff check .
 
   # Prepare Node.js base image for frontend
   prepare-node-base:
@@ -660,45 +683,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
-
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
-    # Multi-level caching for Node.js
-    - name: Cache Node.js packages (L1 - npm cache)
-      uses: actions/cache@v5
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-npm-cache-
-
-    - name: Cache Node.js packages (L2 - node_modules)
-      uses: actions/cache@v5
-      with:
-        path: |
-          node_modules
-          frontend/node_modules
-          ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-frontend-
-
-    - name: Cache build artifacts
-      if: matrix.test-type == 'build'
-      uses: actions/cache@v5
-      with:
-        path: |
-          frontend/dist
-          frontend/.vite
-          frontend/node_modules/.vite
-        key: ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/src/**', 'frontend/index.html', 'frontend/vite.config.*') }}
-        restore-keys: |
-          ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
@@ -1137,7 +1121,7 @@ jobs:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
+    needs: [integration-tests, prepare-base-images, prepare-node-base]
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
