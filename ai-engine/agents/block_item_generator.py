@@ -639,7 +639,6 @@ class BlockItemGenerator:
         return bedrock_item
     
     def _convert_java_block(self, java_block: Dict[str, Any]) -> Dict[str, Any]:
-
         """Convert a single Java block to Bedrock format."""
         block_id = java_block.get('id', 'unknown_block')
         namespace = java_block.get('namespace', 'modporter')

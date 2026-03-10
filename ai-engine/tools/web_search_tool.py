@@ -36,6 +36,7 @@ class WebSearchTool(BaseTool):
         Args:
             max_results: Maximum number of search results to return
             timeout: Search timeout in seconds
+            **kwargs: Additional keyword arguments passed to parent class.
         """
         super().__init__(max_results=max_results, timeout=timeout, **kwargs)
         # Initialize DuckDuckGo search after super init

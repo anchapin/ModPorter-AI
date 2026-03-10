@@ -83,7 +83,7 @@ class WorkerPool:
                 max_workers = min(32, (multiprocessing.cpu_count() or 1) + 4)
         
         self.max_workers = max_workers
-        self.executor: Optional[Union[ThreadPoolExecutor, ProcessPoolExecutor]] = None
+        self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
         self.active_futures: Dict[str, Future] = {}
         self.worker_stats: Dict[int, WorkerStats] = {}
         self.task_queue = queue.PriorityQueue()

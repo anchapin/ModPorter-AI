@@ -56,7 +56,7 @@ class LLMSemanticAnalyzer:
             findings.append("Code appears semantically sound (mock).")
         elif not findings:
             findings.append("Mock analysis complete.")
-        print("LLMSemanticAnalyzer: Analysis complete. Intent preserved: %s, Confidence: %.2f" % (intent_preserved, confidence))
+        print("LLMSemanticAnalyzer: Analysis complete. Intent preserved: {}, Confidence: {:.2f}".format(intent_preserved, confidence))
         return {"intent_preserved": intent_preserved, "confidence": round(confidence, 2), "findings": findings}
 
 
@@ -117,7 +117,7 @@ class BehaviorAnalysisEngine:
         elif not potential_issues:
             potential_issues.append("Mock behavior prediction complete; review confidence.")
 
-        print("BehaviorAnalysisEngine: Prediction complete. Confidence: %.2f" % confidence)
+        print("BehaviorAnalysisEngine: Prediction complete. Confidence: {:.2f}".format(confidence))
 
         return {
             "behavior_diff": behavior_diff,
@@ -141,7 +141,7 @@ class AssetIntegrityChecker:
             full_path = os.path.join(base_path, asset_path) if base_path and base_path != "." else asset_path
             if "missing" in asset_path.lower():
                 corrupted_files.append(asset_path)
-                asset_specific_issues.setdefault(asset_path, []).append("File missing: '%s'." % full_path)
+                asset_specific_issues.setdefault(asset_path, []).append("File missing: '{}'.".format(full_path))
                 continue
             _, ext = os.path.splitext(asset_path)
             ext = ext.lower()
@@ -153,16 +153,16 @@ class AssetIntegrityChecker:
                     issues.append("Mock: Texture oversized.")
             elif ext in self.supported_sound_extensions:
                 if ext != ".ogg" and "allow_non_ogg" not in asset_path:
-                    issues.append("Mock: Non-preferred sound format '%s'." % ext)
+                    issues.append("Mock: Non-preferred sound format '{}'.".format(ext))
                 if "corrupt_sound" in asset_path:
                     issues.append("Mock: Sound corrupt.")
             elif ext in self.supported_model_extensions:
                 if "invalid_geo" in asset_path:
                     issues.append("Mock: Model geo invalid.")
             elif not ext:
-                issues.append("Warning: File '%s' no extension." % asset_path)
+                issues.append("Warning: File '{}' no extension.".format(asset_path))
             else:
-                issues.append("Warning: Unrecognized extension '%s' for '%s'." % (ext, asset_path))
+                issues.append("Warning: Unrecognized extension '{}' for '{}'.".format(ext, asset_path))
             if issues:
                 corrupted_files.append(asset_path)
                 asset_specific_issues.setdefault(asset_path, []).extend(issues)
@@ -182,12 +182,12 @@ class ManifestValidator:
             err.append("Missing 'format_version'.")
         elif not isinstance(fv, int):
             if isinstance(fv, str) and fv.isdigit():
-                warn.append("format_version (%s) is str, should be int." % str(fv))
+                warn.append("format_version ({}) is str, should be int.".format(str(fv)))
                 fv = int(fv)
             else:
-                err.append("format_version (%s) must be int." % str(fv))
+                err.append("format_version ({}) must be int.".format(str(fv)))
         if isinstance(fv, int) and fv != 2:
-            warn.append("format_version (%s) not typical (2)." % str(fv))
+            warn.append("format_version ({}) not typical (2).".format(str(fv)))
         hd = md.get("header")
         if hd is None:
             err.append("Missing 'header'.")
@@ -196,18 +196,18 @@ class ManifestValidator:
         else:
             for field in ["name","description","uuid","version"]:
                 if field not in hd:
-                    err.append("Header missing '%s'." % field)
+                    err.append("Header missing '{}'.".format(field))
             if hd.get("uuid"):
                 try:
                     uuid.UUID(str(hd.get("uuid")))
                 except ValueError:
-                    err.append("Header uuid (%s) invalid." % str(hd.get("uuid")))
+                    err.append("Header uuid ({}) invalid.".format(str(hd.get("uuid"))))
             v = hd.get("version")
             if v and not (isinstance(v,list) and len(v)==3 and all(isinstance(i,int) for i in v)):
-                err.append("Header version (%s) invalid." % str(v))
+                err.append("Header version ({}) invalid.".format(str(v)))
             mev = hd.get("min_engine_version")
             if mev and not (isinstance(mev,list) and len(mev)>=3 and all(isinstance(i,int) for i in mev)):
-                warn.append("Header min_engine_version (%s) invalid." % str(mev))
+                warn.append("Header min_engine_version ({}) invalid.".format(str(mev)))
         mods = md.get("modules")
         if mods is None:
             err.append("Missing 'modules'.")
@@ -327,7 +327,7 @@ if __name__ == '__main__':
     }
 
     for test_name, codes in behavior_code_samples.items():
-        print("\n--- Test Case (Agent - Behavior - %s) ---" % test_name)
+        print("\n--- Test Case (Agent - Behavior - {}) ---".format(test_name))
         mock_artifacts_behavior = {
             'conversion_id': 'conv_behavior_' + test_name,
             'java_code': codes["java"],

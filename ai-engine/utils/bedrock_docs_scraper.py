@@ -781,7 +781,7 @@ class BedrockDocsScraper:
         
         return documents
     
-    def _is_schema(self, data: Union[Dict, List]) -> bool:
+    def _is_schema(self, data: Dict | List) -> bool:
         """
         Determine if JSON data represents a schema definition.
         """

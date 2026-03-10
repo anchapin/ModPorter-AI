@@ -785,6 +785,7 @@ class SmartAssumptionEngine:
         Args:
             feature_context: Contextual information about the custom dimension feature.
             assumption: The specific "Custom Dimensions" smart assumption being applied.
+            analysis_result: The analysis result containing conflict information.
 
         Returns:
             A dictionary formatted to be used in a ConversionPlanComponent.
@@ -846,6 +847,7 @@ class SmartAssumptionEngine:
         Args:
             feature_context: Contextual information about the complex machinery feature.
             assumption: The specific "Complex Machinery" smart assumption being applied.
+            analysis_result: The analysis result containing conflict information.
 
         Returns:
             A dictionary formatted to be used in a ConversionPlanComponent.
@@ -1034,6 +1036,7 @@ class SmartAssumptionEngine:
         Args:
             feature_context: Contextual information about the custom GUI feature.
             assumption: The specific "Custom GUI/HUD" smart assumption being applied.
+            analysis_result: The analysis result containing conflict information.
 
         Returns:
             A dictionary formatted to be used in a ConversionPlanComponent.

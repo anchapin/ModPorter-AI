@@ -324,9 +324,9 @@ class BehavioralReportGenerator:
     def generate_report(self,
                         processed_test_summary: Dict[str, Any],
                         report_format: str = "json",
-                        filename_prefix: str = "behavioral_report") -> Union[str, Dict[str, Any]]:
+                        filename_prefix: str = "behavioral_report") -> str | Dict[str, Any]:
         self.logger.info(f"Generating behavioral report in '{report_format}' format.")
-        report_content: Union[str, Dict[str, Any]] = {}
+        report_content: str | Dict[str, Any] = {}
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         report_data_to_embed = processed_test_summary.copy()

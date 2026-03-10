@@ -135,7 +135,7 @@ class ModpackOrchestrator:
     
     def parse_modpack(
         self,
-        pack_path: Union[Path, str],
+        pack_path: Path | str,
         format: Optional[PackFormat] = None
     ) -> Dict[str, Any]:
         """
@@ -200,7 +200,7 @@ class ModpackOrchestrator:
     
     def analyze_modpack(
         self,
-        pack_path: Union[Path, str],
+        pack_path: Path | str,
         format: Optional[PackFormat] = None
     ) -> ModpackAnalysisResult:
         """
@@ -438,7 +438,7 @@ class ModpackConversionCrew:
     
     def process_modpack(
         self,
-        pack_path: Union[Path, str],
+        pack_path: Path | str,
         format: Optional[PackFormat] = None
     ) -> ModpackAnalysisResult:
         """

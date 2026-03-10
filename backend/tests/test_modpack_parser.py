@@ -58,7 +58,7 @@ class TestCurseForgeManifestParser:
             assert result.manifest.mod_count == 3
             assert result.manifest.required_mod_count == 2
             assert result.game_version == "1.20.1"
-            assert result.is_client_side == True
+            assert result.is_client_side
         finally:
             manifest_path.unlink()
 
@@ -141,7 +141,7 @@ class TestCurseForgeManifestParser:
         try:
             result = parser.parse_from_file(manifest_path)
             # Server in name should indicate it's server-side
-            assert result.is_client_side == False
+            assert not result.is_client_side
         finally:
             manifest_path.unlink()
 
@@ -282,7 +282,7 @@ class TestDataClasses:
 
         assert mf.project_id == 123
         assert mf.file_id == 456
-        assert mf.required == True
+        assert mf.required
         assert mf.source == "curseforge"
 
     def test_curseforge_manifest_properties(self):

@@ -36,6 +36,7 @@ class BedrockScraperTool(BaseTool):
         Args:
             max_depth: Maximum scraping depth
             rate_limit: Rate limit between requests
+            **kwargs: Additional keyword arguments passed to parent class.
         """
         super().__init__(max_depth=max_depth, rate_limit=rate_limit, **kwargs)
     

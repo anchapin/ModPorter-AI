@@ -338,7 +338,7 @@ class MultiModalEmbeddingGenerator:
         
     async def generate_embedding(
         self, 
-        content: Union[str, Chunk, Dict[str, Any]], 
+        content: str | Chunk | Dict[str, Any], 
         strategy: EmbeddingStrategy = EmbeddingStrategy.HYBRID
     ) -> Optional[EmbeddingResult]:
         """
@@ -524,7 +524,7 @@ class MultiModalEmbeddingGenerator:
     
     async def batch_generate_embeddings(
         self, 
-        contents: List[Union[str, Chunk, Dict[str, Any]]], 
+        contents: List[str | Chunk | Dict[str, Any]], 
         strategy: EmbeddingStrategy = EmbeddingStrategy.HYBRID
     ) -> List[Optional[EmbeddingResult]]:
         """

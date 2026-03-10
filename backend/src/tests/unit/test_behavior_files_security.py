@@ -70,8 +70,8 @@ class TestBehaviorFilesSecurity:
         """Test that zip export sanitizes paths."""
 
         # Mock behavior file object
-        MockBehaviorFile = type('BehaviorFile', (), {})
-        malicious_file = MockBehaviorFile()
+        mock_behavior_file = type('BehaviorFile', (), {})
+        malicious_file = mock_behavior_file()
         malicious_file.file_path = "../../evil.sh"
         malicious_file.content = "echo pwned"
         malicious_file.file_type = "script"

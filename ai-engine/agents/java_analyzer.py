@@ -1761,7 +1761,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str:
+    def analyze_mod_structure_tool(mod_data: str | Dict) -> str:
         """
         Analyze the overall structure of a Java mod.
         
@@ -2160,7 +2160,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_mod_metadata_tool(mod_data: Union[str, Dict]) -> str:
+    def extract_mod_metadata_tool(mod_data: str | Dict) -> str:
         """
         Extract metadata from mod files.
         
@@ -2280,7 +2280,7 @@ class JavaAnalyzerAgent:
 
     @tool 
     @staticmethod
-    def identify_features_tool(mod_data: Union[str, Dict]) -> str:
+    def identify_features_tool(mod_data: str | Dict) -> str:
         """
         Identify features in the mod.
         
@@ -2499,7 +2499,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def analyze_dependencies_tool(mod_data: Union[str, Dict]) -> str:
+    def analyze_dependencies_tool(mod_data: str | Dict) -> str:
         """
         Analyze mod dependencies.
         
@@ -2598,7 +2598,7 @@ class JavaAnalyzerAgent:
 
     @tool
     @staticmethod
-    def extract_assets_tool(mod_data: Union[str, Dict]) -> str:
+    def extract_assets_tool(mod_data: str | Dict) -> str:
         """
         Extract assets from the mod.
         

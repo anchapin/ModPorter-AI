@@ -80,6 +80,7 @@ class QueryMonitor:
         Normalize SQL query for pattern matching
         
         Removes values from WHERE clauses, IN clauses, etc. to group similar queries.
+
         Example:
             SELECT * FROM users WHERE id = 123
             SELECT * FROM users WHERE id = 456

@@ -54,7 +54,7 @@ class TestFileProcessor:
     @pytest.mark.asyncio
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_disposition(
-        self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
+        self, mock_async_client, file_processor, mock_job_id, temp_job_dirs
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -71,7 +71,7 @@ class TestFileProcessor:
         mock_response.aiter_bytes = mock_aiter_bytes
 
         mock_get = mock.AsyncMock(return_value=mock_response)
-        MockAsyncClient.return_value.__aenter__.return_value.get = (
+        mock_async_client.return_value.__aenter__.return_value.get = (
             mock_get  # For async context manager
         )
 
@@ -98,14 +98,14 @@ class TestFileProcessor:
         # The loop calls client.get(..., follow_redirects=False).
 
         # Verify that get was called with follow_redirects=False
-        MockAsyncClient.return_value.__aenter__.return_value.get.assert_called_with(
+        mock_async_client.return_value.__aenter__.return_value.get.assert_called_with(
             url, follow_redirects=False, timeout=30.0
         )
 
     @pytest.mark.asyncio
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_url_path_filename(
-        self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
+        self, mock_async_client, file_processor, mock_job_id, temp_job_dirs
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -120,7 +120,7 @@ class TestFileProcessor:
             yield b"jar content"
 
         mock_response.aiter_bytes = mock_aiter_bytes
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
+        mock_async_client.return_value.__aenter__.return_value.get.return_value = (
             mock_response
         )
 
@@ -138,7 +138,7 @@ class TestFileProcessor:
     @pytest.mark.asyncio
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_success_content_type_extension(
-        self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
+        self, mock_async_client, file_processor, mock_job_id, temp_job_dirs
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -150,7 +150,7 @@ class TestFileProcessor:
             yield b"java archive"
 
         mock_response.aiter_bytes = mock_aiter_bytes
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
+        mock_async_client.return_value.__aenter__.return_value.get.return_value = (
             mock_response
         )
 
@@ -174,7 +174,7 @@ class TestFileProcessor:
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_http_errors(
         self,
-        MockAsyncClient,
+        mock_async_client,
         file_processor,
         mock_job_id,
         status_code,
@@ -197,7 +197,7 @@ class TestFileProcessor:
             )
         )
 
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
+        mock_async_client.return_value.__aenter__.return_value.get.return_value = (
             mock_response
         )
 
@@ -228,7 +228,7 @@ class TestFileProcessor:
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_network_io_exceptions(
         self,
-        MockAsyncClient,
+        mock_async_client,
         file_processor,
         mock_job_id,
         exception_type,
@@ -248,7 +248,7 @@ class TestFileProcessor:
                 yield b"data"
 
             mock_response.aiter_bytes = mock_aiter_bytes_io
-            MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
+            mock_async_client.return_value.__aenter__.return_value.get.return_value = (
                 mock_response
             )
 
@@ -260,7 +260,7 @@ class TestFileProcessor:
                 )
         else:
             # For httpx exceptions, the client.get call itself fails
-            MockAsyncClient.return_value.__aenter__.return_value.get.side_effect = (
+            mock_async_client.return_value.__aenter__.return_value.get.side_effect = (
                 exception_type("Simulated network/timeout error")
             )
             result = await file_processor.download_from_url(
@@ -274,7 +274,7 @@ class TestFileProcessor:
     @pytest.mark.asyncio
     @mock.patch("file_processor.httpx.AsyncClient")
     async def test_download_from_url_empty_file(
-        self, MockAsyncClient, file_processor, mock_job_id, temp_job_dirs
+        self, mock_async_client, file_processor, mock_job_id, temp_job_dirs
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
@@ -288,7 +288,7 @@ class TestFileProcessor:
                 yield
 
         mock_response.aiter_bytes = mock_aiter_bytes_empty
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
+        mock_async_client.return_value.__aenter__.return_value.get.return_value = (
             mock_response
         )
 
