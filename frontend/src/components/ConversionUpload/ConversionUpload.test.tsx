@@ -71,12 +71,14 @@ describe('ConversionUpload Component', () => {
       await act(async () => {
         await user.type(
           urlInput,
-          'https://www.curseforge.com/minecraft/mc-mods/example-mod'
+          'https://www.curseforge.com/minecraft/mods/example-mod'
         );
       });
-      // Validation happens on convert button click, not on type
-      // Just verify the URL was entered
-      expect(urlInput).toHaveValue('https://www.curseforge.com/minecraft/mc-mods/example-mod');
+      // The valid URL should NOT show any invalid URL error
+      // It should show a platform indicator instead
+      expect(screen.queryByText(/Invalid URL/)).not.toBeInTheDocument();
+      // Verify platform is detected
+      expect(screen.getByText(/CurseForge detected/)).toBeInTheDocument();
     });
   });
 

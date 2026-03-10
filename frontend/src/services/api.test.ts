@@ -5,8 +5,11 @@ import { server } from '../test/setup';
 
 describe('API Service - Feedback', () => {
   beforeEach(() => {
-    // Reset MSW handlers
-    server.resetHandlers();
+    // Reset all mocks to ensure clean state
+    vi.restoreAllMocks();
+    
+    // Set up a fresh mock for each test
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
@@ -39,7 +42,6 @@ describe('API Service - Feedback', () => {
 
       const result = await submitFeedback(mockPayload);
       expect(result).toEqual(mockSuccessResponse);
-      // Use relative URL since test environment uses relative paths
       expect(mockFetch).toHaveBeenCalledWith(
         '/api/v1/feedback',
         {
