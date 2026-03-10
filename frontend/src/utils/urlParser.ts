@@ -33,7 +33,7 @@ export function parseModUrl(url: string): ParsedModURL {
 
   // Try CurseForge patterns
   const curseforgePatterns = [
-    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/(?:mc-)?mods\/([^/?]+)/i,
+    /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/mods\/([^/?]+)/i,
     /(?:https?:\/\/)?(?:www\.)?curseforge\.com\/minecraft\/modpacks\/([^/?]+)/i, // Modpacks
   ];
 

@@ -20,31 +20,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   maxItems = 50,
   onStartNewConversion,
 }) => {
-  // ⚡ Bolt optimization: Lazy initialization of state from localStorage
-  // This prevents layout shifts and loading flashes on initial render by reading
-  // localStorage synchronously during component initialization.
-  const [history, setHistory] = useState<ConversionHistoryItem[]>(() => {
-    try {
-      const storedHistory = localStorage.getItem(
-        'modporter_conversion_history'
-      );
-      const parsedHistory: ConversionHistoryItem[] = storedHistory
-        ? JSON.parse(storedHistory)
-        : [];
-
-      // ⚡ Bolt optimization: ISO 8601 strings are lexicographically sortable.
-      // Using standard operators (>, <) avoids both Date instantiation AND the slow
-      // Internationalization (Intl) API used by localeCompare, making sorting ~20x faster.
-      const sortedHistory = parsedHistory.sort((a, b) =>
-        b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0
-      );
-
-      return sortedHistory.slice(0, maxItems);
-    } catch (err) {
-      console.error('Failed to parse history:', err);
-      return [];
-    }
-  });
+  const [history, setHistory] = useState<ConversionHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -59,14 +36,51 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }
   }, [selectedItems.size]);
 
+  // Load conversion history from localStorage
+  const loadHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // For MVP, use localStorage to store conversion history
+      const storedHistory = localStorage.getItem(
+        'modporter_conversion_history'
+      );
+      const parsedHistory: ConversionHistoryItem[] = storedHistory
+        ? JSON.parse(storedHistory)
+        : [];
+
+      // ⚡ Bolt optimization: ISO 8601 strings are lexicographically sortable.
+      // Using standard operators (>, <) avoids both Date instantiation AND the slow
+      // Internationalization (Intl) API used by localeCompare, making sorting ~20x faster.
+      const sortedHistory = parsedHistory.sort((a, b) =>
+        b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0
+      );
+
+      setHistory(sortedHistory.slice(0, maxItems));
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load conversion history:', err);
+      setError('Failed to load conversion history');
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [maxItems]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   // Sync state to localStorage whenever history changes
   // This ensures deletions and updates are persisted without side effects in updaters
   useEffect(() => {
-    localStorage.setItem(
-      'modporter_conversion_history',
-      JSON.stringify(history)
-    );
-  }, [history]);
+    if (!loading) {
+      localStorage.setItem(
+        'modporter_conversion_history',
+        JSON.stringify(history)
+      );
+    }
+  }, [history, loading]);
 
   // Add new conversion to history
   const addToHistory = useCallback(
@@ -160,10 +174,22 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     () => ({
       addToHistory,
       updateConversionStatus,
-      loadHistory: () => {},
+      loadHistory,
     }),
-    [addToHistory, updateConversionStatus]
+    [addToHistory, updateConversionStatus, loadHistory]
   );
+
+  if (loading) {
+    return (
+      <div
+        className={`conversion-history loading ${className}`}
+        role="status"
+        aria-label="Loading history"
+      >
+        <div className="loading-spinner">⏳ Loading conversion history...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={`conversion-history ${className}`}>

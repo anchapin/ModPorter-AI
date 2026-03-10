@@ -1,6 +1,7 @@
 import { submitFeedback } from './api';
 import type { FeedbackCreatePayload, FeedbackResponse } from '../types/api';
 import { beforeEach, describe, test, expect, vi, afterEach } from 'vitest';
+import { server } from '../test/setup';
 
 describe('API Service - Feedback', () => {
   beforeEach(() => {

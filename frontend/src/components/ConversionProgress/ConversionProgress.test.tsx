@@ -344,7 +344,7 @@ describe('ConversionProgress', () => {
   test('WebSocket constructor is called with correct URL when jobId provided', async () => {
     // Clear instances before test
     MockWebSocket.instances = [];
-    
+
     await act(async () => {
       render(<ConversionProgress jobId="test-job-123" />);
       await vi.advanceTimersByTimeAsync(100);
