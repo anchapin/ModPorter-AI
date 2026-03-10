@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:analyze": "VITE_ANALYZE=true vite build",
+    "build:report": "node ../scripts/generate-bundle-report.cjs",
+    "build:check": "pnpm run build && pnpm run build:report",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -77,6 +80,7 @@
     "patch-package": "^8.0.0",
     "playwright": "^1.58.2",
     "prettier": "^3.8.1",
+    "rollup-plugin-visualizer": "^5.14.0",
     "storybook": "^10.2.17",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.0",

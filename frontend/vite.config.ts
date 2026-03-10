@@ -1,9 +1,15 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+const shouldAnalyze = process.env.VITE_ANALYZE === 'true';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    ...(shouldAnalyze ? [visualizer({ filename: 'dist/stats.html', open: false, gzipSize: true, brotliSize: true })] : []),
+  ],
   build: {
     rollupOptions: {
       output: {
