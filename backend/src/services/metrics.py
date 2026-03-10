@@ -8,7 +8,6 @@ Issue: #384 - Monitoring dashboards with Grafana/Prometheus (Phase 3)
 from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry, generate_latest
 from typing import Optional
 import time
-from datetime import datetime
 from collections import defaultdict
 import threading
 

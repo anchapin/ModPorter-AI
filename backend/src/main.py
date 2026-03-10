@@ -41,7 +41,6 @@ from services.report_generator import ConversionReportGenerator
 from services.error_handlers import register_exception_handlers
 from services.rate_limiter import (
     RateLimitMiddleware,
-    get_rate_limiter,
     init_rate_limiter,
     close_rate_limiter,
     create_global_limiter,

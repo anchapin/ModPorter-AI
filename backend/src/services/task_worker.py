@@ -6,11 +6,10 @@ Issue: #379 - Implement async task queue (Phase 3)
 """
 
 import asyncio
-import signal
 import logging
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable
 
-from services.task_queue import AsyncTaskQueue, TaskStatus, TaskPriority, get_task_queue, Task
+from services.task_queue import AsyncTaskQueue, get_task_queue, Task
 
 logger = logging.getLogger(__name__)
 

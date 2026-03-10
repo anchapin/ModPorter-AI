@@ -19,7 +19,6 @@ import json
 import sys
 import os
 import psutil
-import subprocess
 import logging
 import traceback
 from datetime import datetime
@@ -27,7 +26,6 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import requests
 from dataclasses import dataclass
-import statistics
 
 # Configure logging
 logging.basicConfig(
@@ -278,7 +276,6 @@ class PerformanceAnalyzer:
 
         try:
             # Test database connection
-            import asyncpg
 
             # This would need actual DB connection details
             # For now, we'll simulate some common metrics

@@ -8,8 +8,7 @@ Handles file transfers, conversion requests, and progress polling.
 import asyncio
 import logging
 import os
-from typing import Optional, Dict, Any, AsyncIterator, Callable, Awaitable
-from pathlib import Path
+from typing import Optional, Dict, Any, AsyncIterator
 
 import httpx
 

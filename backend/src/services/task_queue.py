@@ -8,7 +8,7 @@ Issue: #379 - Implement async task queue (Phase 3)
 import json
 import asyncio
 import uuid
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum

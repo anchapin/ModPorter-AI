@@ -17,11 +17,9 @@ import os
 import sys
 import subprocess
 import shutil
-import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-import requests
 
 
 @dataclass

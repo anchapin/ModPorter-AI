@@ -13,7 +13,7 @@ This addresses GitHub Issues:
 import logging
 import os
 import json
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 import asyncio
 

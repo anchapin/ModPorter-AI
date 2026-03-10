@@ -18,10 +18,10 @@ import tempfile
 import threading
 import uuid
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Generator, Any
+from typing import Dict, List, Optional, Generator, Any
 
 logger = logging.getLogger(__name__)
 

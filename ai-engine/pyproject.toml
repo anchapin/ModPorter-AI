@@ -16,8 +16,8 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
-select = ["E", "F", "W", "I", "Q", "N", "D", "UP"]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
@@ -30,11 +30,9 @@ ignore = [
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
-    "F401",  # imported but unused (legacy code has many unused imports)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
     "F601",  # duplicate dictionary key (legacy code has intentional overrides)
     "F811",  # redefinition of function (legacy code has intentional overrides)
-    "F841",  # unused variables (legacy code has many unused variables)
     "Q003",  # unnecessary escape on inner quote character
     "Q004",  # unnecessary escape on inner quote character
     "E702",  # multiple statements on one line (semicolon)
@@ -83,9 +81,9 @@ ignore = [
 "tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
 "__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
 "__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
-"agents/asset_converter.py" = ["F811", "F841"]  # Allow duplicate function definitions and unused variables in legacy code
+"agents/asset_converter.py" = ["F811", "F841", "C901"]  # Allow duplicate function definitions and unused variables in legacy code
 "crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
-"agents/java_analyzer.py" = ["N806"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
+"agents/java_analyzer.py" = ["N806", "C901"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
 "tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
 # Naming convention per-file ignores (legacy code)
 "src/utils/validators.py" = ["N805"]  # First arg of method should be self (validators use cls)
@@ -97,6 +95,9 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 force-single-line = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 30
 
 [tool.mutmut]
 paths_to_mutate = ["src"]

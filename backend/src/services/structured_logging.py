@@ -14,9 +14,8 @@ from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, Optional
 from logging.handlers import RotatingFileHandler
-from structlog.processors import JSONRenderer, TimeStamper, add_log_level
+from structlog.processors import JSONRenderer, TimeStamper
 from structlog.stdlib import LoggerFactory
-from structlog.stdlib import ProcessorFormatter
 
 # Context variable to store correlation ID across async operations
 correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)

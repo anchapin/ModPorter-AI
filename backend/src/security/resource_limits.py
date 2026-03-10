@@ -7,7 +7,6 @@ to prevent resource exhaustion attacks.
 Issue: #576 - Backend: File Processing Security
 """
 
-import asyncio
 import logging
 import os
 import resource

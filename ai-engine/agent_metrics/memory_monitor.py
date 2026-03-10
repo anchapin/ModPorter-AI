@@ -5,7 +5,6 @@ Memory Monitor for tracking memory usage during operations
 import time
 import threading
 import tracemalloc
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any

@@ -1040,7 +1040,7 @@ class QAValidatorAgent:
         errors = []
         warnings = []
 
-        rules = VALIDATION_RULES["blocks"]
+        VALIDATION_RULES["blocks"]
 
         # Check required fields
         checks += 1
@@ -1139,7 +1139,7 @@ class QAValidatorAgent:
         errors = []
         warnings = []
 
-        rules = VALIDATION_RULES["items"]
+        VALIDATION_RULES["items"]
 
         # Check required fields
         checks += 1
@@ -1334,7 +1334,7 @@ class QAValidatorAgent:
 
                 if isinstance(components, dict):
                     # Check for valid components
-                    valid_comps = [c for c in components.keys() if c in valid_entity_components]
+                    [c for c in components.keys() if c in valid_entity_components]
                     invalid_comps = [
                         c for c in components.keys() if c not in valid_entity_components
                     ]
@@ -1455,7 +1455,6 @@ class QAValidatorAgent:
 
         # Check min_engine_version in manifests
         manifest_files = [name for name in namelist if name.endswith("manifest.json")]
-        max_version = [1, 16, 0]  # Minimum supported
 
         for manifest_path in manifest_files:
             try:
@@ -1755,7 +1754,7 @@ class QAValidatorAgent:
                 compat_validation = validation_result["validations"].get(
                     "bedrock_compatibility", {}
                 )
-                stats = validation_result.get("stats", {})
+                validation_result.get("stats", {})
 
                 # Calculate compatibility score
                 checks = compat_validation.get("checks", 0)

@@ -12,14 +12,13 @@ Usage:
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Optional
 
 import click
 import structlog
 
-from .debt_tracker import DebtTracker, DebtSeverity
+from .debt_tracker import DebtTracker
 
 logger = structlog.get_logger()
 

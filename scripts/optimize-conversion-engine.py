@@ -18,14 +18,13 @@ import json
 import sys
 import os
 import multiprocessing
-import threading
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple, Callable
+from typing import Dict, List, Any, Optional
 import psutil
 import hashlib
 from dataclasses import dataclass
-from functools import lru_cache, wraps
+from functools import lru_cache
 import gzip
 
 # Add paths for imports
@@ -397,7 +396,7 @@ class PerformanceOptimizer:
         )
 
         # 2. Caching layers
-        cache_result = await self.implement_caching_layers()
+        await self.implement_caching_layers()
         optimizations.append("Multi-level caching implemented")
 
         # 3. Memory optimization
@@ -408,11 +407,11 @@ class PerformanceOptimizer:
             )
 
         # 4. Database optimization
-        db_result = await self.optimize_database_operations()
+        await self.optimize_database_operations()
         optimizations.append("Database operations optimized")
 
         # 5. AI engine optimization
-        ai_result = await self.optimize_ai_engine_integration()
+        await self.optimize_ai_engine_integration()
         optimizations.append("AI engine integration optimized")
 
         # Run optimized test
@@ -423,7 +422,7 @@ class PerformanceOptimizer:
         time_improvement = (
             (baseline["total_time"] - optimized["total_time"]) / baseline["total_time"]
         ) * 100
-        memory_improvement = (
+        (
             (
                 (baseline["memory_increase_mb"] - optimized["memory_increase_mb"])
                 / baseline["memory_increase_mb"]

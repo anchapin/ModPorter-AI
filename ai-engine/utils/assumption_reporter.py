@@ -6,7 +6,7 @@ Provides user-friendly explanations and technical details for transparency.
 """
 
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 import json
 import logging
@@ -18,12 +18,9 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.smart_assumptions import (
-    SmartAssumption,
     AssumptionImpact,
     FeatureContext,
-    AssumptionResult,
     ConversionPlanComponent,
-    AssumptionReport,
     AppliedAssumptionReportItem,
     SmartAssumptionEngine,
 )
@@ -389,7 +386,6 @@ class AssumptionReporter:
 
     def _format_html(self, report: DetailedAssumptionReport) -> str:
         """Format report as HTML"""
-        impact_colors = {"high": "#ef4444", "medium": "#f59e0b", "low": "#22c55e"}
 
         html = f"""<!DOCTYPE html>
 <html lang="en">

@@ -18,8 +18,8 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
-select = ["E", "F", "W", "I", "Q", "N", "D", "UP"]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
@@ -32,11 +32,9 @@ ignore = [
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
-    "F401",  # imported but unused (legacy code has many unused imports)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
     "F601",  # duplicate dictionary key (legacy code has intentional overrides)
     "F811",  # redefinition of function (legacy code has intentional overrides)
-    "F841",  # unused variables (legacy code has many unused variables)
     "Q003",  # unnecessary escape on inner quote character
     "Q004",  # unnecessary escape on inner quote character
     "E702",  # multiple statements on one line (semicolon)
@@ -95,32 +93,35 @@ ignore = [
 "backend/src/api/performance.py" = ["F821", "F841"]
 "backend/src/services/rate_limiter.py" = ["F841"]
 "backend/src/services/task_worker.py" = ["F841"]
-
-# Naming convention per-file ignores (legacy code)
-"backend/src/api/conversions.py" = ["N805"]
-"backend/src/utils/validators.py" = ["N805"]
-"backend/src/models/types.py" = ["N811"]
-"backend/src/models/addon_models.py" = ["N811"]
-"backend/src/db/models.py" = ["N811"]
-"backend/src/db/crud.py" = ["N811"]
-"backend/src/main.py" = ["N811"]
-"backend/src/services/*.py" = ["N806"]
-"backend/src/file_processor.py" = ["N806"]
-"backend/src/security/resource_limits.py" = ["N818"]
-"backend/src/services/error_handlers.py" = ["N818"]
-"backend/src/exceptions.py" = ["N818"]
+"backend/main.py" = ["C901"]
+"backend/src/main.py" = ["N811", "C901"]
+"backend/src/file_processor.py" = ["N806", "C901"]
+"backend/src/security/file_security.py" = ["C901"]
+"backend/src/services/addon_exporter.py" = ["C901"]
+"backend/src/services/conversion_parser.py" = ["C901"]
+"backend/src/api/validation.py" = ["C901"]
+"modporter/cli/fix_ci.py" = ["C901"]
 
 # ai-engine specific ignores
-"ai-engine/agents/asset_converter.py" = ["F811", "F841"]
+"ai-engine/agents/asset_converter.py" = ["F811", "F841", "C901"]
 "ai-engine/crew/__init__.py" = ["N802"]
-"ai-engine/agents/java_analyzer.py" = ["N806"]
+"ai-engine/agents/java_analyzer.py" = ["N806", "C901"]
 "ai-engine/tools/search_tool.py" = ["N806"]
 "ai-engine/src/utils/validators.py" = ["N805"]
 "ai-engine/src/models/types.py" = ["N811"]
 "ai-engine/src/services/*.py" = ["N806"]
 "ai-engine/src/engines/*.py" = ["N806"]
 "ai-engine/src/exceptions.py" = ["N818"]
+"ai-engine/main.py" = ["C901"]
+"ai-engine/orchestration/orchestrator.py" = ["C901"]
+"ai-engine/agents/packaging_agent.py" = ["C901"]
+"ai-engine/agents/qa_validator.py" = ["C901"]
+"ai-engine/agents/recipe_converter.py" = ["C901"]
+"ai-engine/agents/validation_agent.py" = ["C901"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "core", "src", "backend", "ai_engine"]
 force-single-line = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 30

@@ -7,7 +7,6 @@ to Bedrock-compatible recipe JSON files.
 
 import json
 import logging
-from pathlib import Path
 from typing import Dict, List
 
 from crewai.tools import tool

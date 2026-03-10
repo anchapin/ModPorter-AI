@@ -4,7 +4,7 @@ import time
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from models import (
     BenchmarkRunRequest,

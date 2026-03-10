@@ -15,9 +15,8 @@ Issue: #574 - Backend: Task Queue System - Background Job Processing
 import json
 import asyncio
 import uuid
-import math
 import time
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum

@@ -9,7 +9,6 @@ Issue: #691 - Build performance tracking
 """
 
 import logging
-import time
 import psutil
 import threading
 from typing import Dict, Any, Optional, List

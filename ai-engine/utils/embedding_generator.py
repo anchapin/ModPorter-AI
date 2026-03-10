@@ -219,7 +219,6 @@ class EmbeddingStorage:
         if db_url:
             try:
                 import psycopg2
-                from psycopg2 import sql
 
                 # Note: In production, would need pgvector extension
                 self._connection = psycopg2.connect(db_url)
