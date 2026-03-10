@@ -17,11 +17,10 @@ import importlib.util
 
 # Load packaging_validator directly
 spec = importlib.util.spec_from_file_location(
-    'packaging_validator',
-    Path(__file__).parent.parent / 'agents' / 'packaging_validator.py'
+    "packaging_validator", Path(__file__).parent.parent / "agents" / "packaging_validator.py"
 )
 validator_module = importlib.util.module_from_spec(spec)
-sys.modules['packaging_validator'] = validator_module
+sys.modules["packaging_validator"] = validator_module
 spec.loader.exec_module(validator_module)
 
 PackagingValidator = validator_module.PackagingValidator
@@ -37,6 +36,7 @@ class TestBedrockFolderStructure:
 
     def teardown_method(self):
         import shutil
+
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
@@ -46,13 +46,13 @@ class TestBedrockFolderStructure:
         include_behavior: bool = True,
         include_resource: bool = True,
         use_plural: bool = True,
-        include_blocks: bool = False
+        include_blocks: bool = False,
     ) -> None:
         """Helper to create test .mcaddon files."""
         pack_type = "behavior_packs" if use_plural else "behavior_pack"
         res_type = "resource_packs" if use_plural else "resource_pack"
 
-        with zipfile.ZipFile(output_path, 'w') as zipf:
+        with zipfile.ZipFile(output_path, "w") as zipf:
             if include_behavior:
                 bp_uuid = str(uuid.uuid4())
                 manifest = {
@@ -62,13 +62,9 @@ class TestBedrockFolderStructure:
                         "description": "Test pack for validation",
                         "uuid": bp_uuid,
                         "version": [1, 0, 0],
-                        "min_engine_version": [1, 19, 0]
+                        "min_engine_version": [1, 19, 0],
                     },
-                    "modules": [{
-                        "type": "data",
-                        "uuid": str(uuid.uuid4()),
-                        "version": [1, 0, 0]
-                    }]
+                    "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
                 }
 
                 manifest_path = f"{pack_type}/test_bp/manifest.json"
@@ -79,30 +75,28 @@ class TestBedrockFolderStructure:
                     block1 = {
                         "format_version": "1.20.0",
                         "minecraft:block": {
-                            "description": {
-                                "identifier": "testmod:copper_block"
-                            },
+                            "description": {"identifier": "testmod:copper_block"},
                             "components": {
                                 "minecraft:destroy_time": 2.0,
-                                "minecraft:explosion_resistance": 3.0
-                            }
-                        }
+                                "minecraft:explosion_resistance": 3.0,
+                            },
+                        },
                     }
 
                     block2 = {
                         "format_version": "1.20.0",
                         "minecraft:block": {
-                            "description": {
-                                "identifier": "testmod:tin_block"
-                            },
+                            "description": {"identifier": "testmod:tin_block"},
                             "components": {
                                 "minecraft:destroy_time": 2.5,
-                                "minecraft:explosion_resistance": 3.5
-                            }
-                        }
+                                "minecraft:explosion_resistance": 3.5,
+                            },
+                        },
                     }
 
-                    zipf.writestr(f"{pack_type}/test_bp/blocks/copper_block.json", json.dumps(block1))
+                    zipf.writestr(
+                        f"{pack_type}/test_bp/blocks/copper_block.json", json.dumps(block1)
+                    )
                     zipf.writestr(f"{pack_type}/test_bp/blocks/tin_block.json", json.dumps(block2))
 
             if include_resource:
@@ -113,13 +107,11 @@ class TestBedrockFolderStructure:
                         "name": "Test Resource Pack",
                         "description": "Test resource pack",
                         "uuid": rp_uuid,
-                        "version": [1, 0, 0]
+                        "version": [1, 0, 0],
                     },
-                    "modules": [{
-                        "type": "resources",
-                        "uuid": str(uuid.uuid4()),
-                        "version": [1, 0, 0]
-                    }]
+                    "modules": [
+                        {"type": "resources", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}
+                    ],
                 }
 
                 manifest_path = f"{res_type}/test_rp/manifest.json"
@@ -133,8 +125,8 @@ class TestBedrockFolderStructure:
         result = self.validator.validate_mcaddon(mcaddon_path)
 
         assert result.is_valid
-        assert len(result.file_structure['behavior_packs']) == 1
-        assert len(result.file_structure['resource_packs']) == 1
+        assert len(result.file_structure["behavior_packs"]) == 1
+        assert len(result.file_structure["resource_packs"]) == 1
         assert len(result.get_issues_by_severity(ValidationSeverity.ERROR)) == 0
 
     def test_incorrect_singular_folder_structure(self):
@@ -159,6 +151,7 @@ class TestManifestValidation:
 
     def teardown_method(self):
         import shutil
+
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
@@ -166,7 +159,7 @@ class TestManifestValidation:
         """Helper to create .mcaddon with custom manifest."""
         mcaddon_path = self.temp_dir / "test.mcaddon"
 
-        with zipfile.ZipFile(mcaddon_path, 'w') as zipf:
+        with zipfile.ZipFile(mcaddon_path, "w") as zipf:
             zipf.writestr("behavior_packs/test_bp/manifest.json", json.dumps(manifest_data))
 
         return mcaddon_path
@@ -180,20 +173,20 @@ class TestManifestValidation:
                 "description": "A valid test pack",
                 "uuid": str(uuid.uuid4()),
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0]
+                "min_engine_version": [1, 19, 0],
             },
-            "modules": [{
-                "type": "data",
-                "uuid": str(uuid.uuid4()),
-                "version": [1, 0, 0]
-            }]
+            "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
         }
 
         mcaddon_path = self.create_mcaddon_with_manifest(manifest)
         result = self.validator.validate_mcaddon(mcaddon_path)
 
-        manifest_errors = [i for i in result.issues if i.category == "manifest" and
-                          i.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.ERROR]]
+        manifest_errors = [
+            i
+            for i in result.issues
+            if i.category == "manifest"
+            and i.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.ERROR]
+        ]
         assert len(manifest_errors) == 0
 
     def test_invalid_uuid_fails_validation(self):
@@ -204,13 +197,9 @@ class TestManifestValidation:
                 "name": "Invalid UUID Pack",
                 "description": "Pack with bad UUID",
                 "uuid": "not-a-valid-uuid",
-                "version": [1, 0, 0]
+                "version": [1, 0, 0],
             },
-            "modules": [{
-                "type": "data",
-                "uuid": str(uuid.uuid4()),
-                "version": [1, 0, 0]
-            }]
+            "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
         }
 
         mcaddon_path = self.create_mcaddon_with_manifest(manifest)
@@ -227,7 +216,7 @@ class TestManifestValidation:
                 "name": "Incomplete Pack"
                 # Missing description, uuid, version
             },
-            "modules": []  # Empty modules
+            "modules": [],  # Empty modules
         }
 
         mcaddon_path = self.create_mcaddon_with_manifest(manifest)
@@ -248,6 +237,7 @@ class TestValidationReporting:
 
     def teardown_method(self):
         import shutil
+
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
@@ -256,20 +246,16 @@ class TestValidationReporting:
         mcaddon_path = self.temp_dir / "test.mcaddon"
 
         # Create minimal valid package
-        with zipfile.ZipFile(mcaddon_path, 'w') as zipf:
+        with zipfile.ZipFile(mcaddon_path, "w") as zipf:
             manifest = {
                 "format_version": 2,
                 "header": {
                     "name": "Test Pack",
                     "description": "Test pack for reporting",
                     "uuid": str(uuid.uuid4()),
-                    "version": [1, 0, 0]
+                    "version": [1, 0, 0],
                 },
-                "modules": [{
-                    "type": "data",
-                    "uuid": str(uuid.uuid4()),
-                    "version": [1, 0, 0]
-                }]
+                "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
             }
             zipf.writestr("behavior_packs/test_bp/manifest.json", json.dumps(manifest))
 
@@ -283,5 +269,5 @@ class TestValidationReporting:
         assert "Compatibility:" in report
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

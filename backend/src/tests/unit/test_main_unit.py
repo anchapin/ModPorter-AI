@@ -96,7 +96,9 @@ class TestConversionEndpoints:
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
     @pytest.mark.asyncio
-    async def test_start_conversion(self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient):
+    async def test_start_conversion(
+        self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient
+    ):
         """Test starting a conversion job."""
         # Mock the database calls
         mock_job = AsyncMock()
@@ -124,14 +126,18 @@ class TestConversionEndpoints:
 
         data = response.json()
         assert "job_id" in data
-        assert data["status"] == "preprocessing"  # The application sets status to preprocessing initially
+        assert (
+            data["status"] == "preprocessing"
+        )  # The application sets status to preprocessing initially
         assert "estimated_time" in data
 
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_get_conversion_status(self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient):
+    def test_get_conversion_status(
+        self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient
+    ):
         """Test getting conversion job status."""
         # Mock database calls
         mock_job = AsyncMock()
@@ -142,7 +148,7 @@ class TestConversionEndpoints:
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
             "target_version": "1.20.0",
-            "options": {}
+            "options": {},
         }
 
         # Make sure mocks return the mock job directly (not as coroutines)
@@ -174,7 +180,9 @@ class TestConversionEndpoints:
     @patch("db.crud.list_jobs")
     @patch("db.crud.create_job")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_list_conversions(self, mock_add_task, mock_create_job, mock_list_jobs, client: TestClient):
+    def test_list_conversions(
+        self, mock_add_task, mock_create_job, mock_list_jobs, client: TestClient
+    ):
         """Test listing all conversion jobs."""
         # Mock database call
         mock_list_jobs.return_value = []
@@ -195,7 +203,15 @@ class TestConversionEndpoints:
     @patch("db.crud.get_job")
     @patch("db.crud.upsert_progress")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_cancel_conversion(self, mock_add_task, mock_upsert_progress, mock_get_job, mock_update_job, mock_create_job, client: TestClient):
+    def test_cancel_conversion(
+        self,
+        mock_add_task,
+        mock_upsert_progress,
+        mock_get_job,
+        mock_update_job,
+        mock_create_job,
+        client: TestClient,
+    ):
         """Test cancelling a conversion job."""
         # Mock database calls
         mock_job = AsyncMock()
@@ -205,7 +221,7 @@ class TestConversionEndpoints:
             "file_id": "mock-file-id",
             "original_filename": "test-mod.jar",
             "target_version": "1.20.0",
-            "options": {}
+            "options": {},
         }
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
@@ -249,7 +265,9 @@ class TestConversionRequestValidation:
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_conversion_request_valid(self, mock_add_task, mock_update_job, mock_create_job, client: TestClient):
+    def test_conversion_request_valid(
+        self, mock_add_task, mock_update_job, mock_create_job, client: TestClient
+    ):
         """Test valid conversion request."""
         # Mock database call
         mock_job = AsyncMock()
@@ -270,9 +288,7 @@ class TestConversionRequestValidation:
         response = client.post("/api/v1/convert", json=request_data)
         assert response.status_code == 200
 
-    def test_conversion_request_missing_file_id(
-        self, client: TestClient
-    ):  # Renamed test
+    def test_conversion_request_missing_file_id(self, client: TestClient):  # Renamed test
         """Test conversion request with missing file_id."""
         request_data = {"original_filename": "test-mod.jar", "target_version": "1.20.0"}
         # This will likely fail due to Pydantic model validation on backend if file_id is mandatory
@@ -287,7 +303,9 @@ class TestConversionRequestValidation:
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("fastapi.BackgroundTasks.add_task")
-    def test_conversion_request_default_target_version(self, mock_add_task, mock_update_job, mock_create_job, client: TestClient):
+    def test_conversion_request_default_target_version(
+        self, mock_add_task, mock_update_job, mock_create_job, client: TestClient
+    ):
         """Test conversion request uses default target version."""
         # Mock database call
         mock_job = AsyncMock()

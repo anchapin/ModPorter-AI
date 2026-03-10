@@ -6,9 +6,10 @@ from typing import Any, Dict, Optional
 @dataclass
 class Document:
     """Represents a document for indexing or retrieval."""
+
     content: str
-    source: str # URL or identifier of the source
-    doc_type: str = "generic" # e.g., "api_reference", "tutorial", "schema"
+    source: str  # URL or identifier of the source
+    doc_type: str = "generic"  # e.g., "api_reference", "tutorial", "schema"
     metadata: Dict[str, Any] = field(default_factory=dict)
     content_hash: Optional[str] = None
 

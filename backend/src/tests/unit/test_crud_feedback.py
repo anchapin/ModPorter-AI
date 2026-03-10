@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, AsyncMock
 from db import crud
 from db.models import ConversionFeedback
 
+
 @pytest.mark.asyncio
 async def test_create_feedback():
     """Test creating a feedback entry."""
@@ -27,6 +28,7 @@ async def test_create_feedback():
         feedback.id = uuid.uuid4()
         # Also set created_at since it's automatically set by the model
         from datetime import datetime
+
         feedback.created_at = datetime.now()
         return None
 

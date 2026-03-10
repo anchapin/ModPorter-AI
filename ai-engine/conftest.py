@@ -1,4 +1,5 @@
 """Global pytest configuration for ai-engine."""
+
 import os
 import sys
 from pathlib import Path
@@ -36,4 +37,3 @@ os.environ["TESTING"] = "true"
 
 # Explicitly exclude the problematic test file from collection
 collect_ignore = ["test_smart_assumptions.py"]
-

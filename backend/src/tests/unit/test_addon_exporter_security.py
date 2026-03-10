@@ -1,4 +1,3 @@
-
 import pytest
 import os
 import io
@@ -8,6 +7,7 @@ import datetime
 from unittest.mock import MagicMock, patch
 from services import addon_exporter
 from models import addon_models as pydantic_addon_models
+
 
 def test_create_mcaddon_zip_prevents_zip_slip(tmp_path):
     """
@@ -43,12 +43,12 @@ def test_create_mcaddon_zip_prevents_zip_slip(tmp_path):
                 addon_id=mock_addon_id,
                 created_at=datetime.datetime.now(),
                 updated_at=datetime.datetime.now(),
-                type="texture_block", # Uses "textures/blocks" path
+                type="texture_block",  # Uses "textures/blocks" path
                 path=asset_path_on_disk,
-                original_filename=malicious_filename
+                original_filename=malicious_filename,
             )
         ],
-        recipes=[]
+        recipes=[],
     )
 
     # Execute the vulnerable function

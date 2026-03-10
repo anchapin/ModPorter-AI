@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 
 class AssumptionImpact(Enum):
     LOW = "low"
-    MEDIUM = "medium" 
+    MEDIUM = "medium"
     HIGH = "high"
 
 
 @dataclass
 class SmartAssumption:
     """Represents a single smart assumption mapping per PRD"""
+
     java_feature: str
     inconvertible_aspect: str
     bedrock_workaround: str
@@ -28,7 +29,7 @@ class SmartAssumption:
     # Additional fields expected by tests
     match_patterns: List[str] = None
     explanation: str = None
-    
+
     def __post_init__(self):
         # Set explanation to description if not provided for backward compatibility
         if self.explanation is None:
@@ -37,27 +38,32 @@ class SmartAssumption:
         if self.match_patterns is None:
             self.match_patterns = [word.lower() for word in self.java_feature.split()]
 
+
 # New Data Classes Start Here
+
 
 @dataclass
 class FeatureContext:
     """Provides context about the Java feature being analyzed."""
+
     feature_id: str  # A unique identifier for the feature instance
     feature_type: str  # e.g., 'custom_dimension', 'complex_machinery_block', 'custom_gui_screen'
     original_data: Dict[str, Any]  # Raw data extracted for this feature by JavaAnalyzerAgent
-    name: Optional[str] = None # User-friendly name if available
+    name: Optional[str] = None  # User-friendly name if available
 
     # Example: original_data for a dimension might include {'biome_data': ..., 'generation_rules': ...}
     # Example: original_data for a machine might include {'power_input_type': ..., 'processes_items': ...}
 
+
 @dataclass
 class AssumptionResult:
     """Result of analyzing a feature against the smart assumption table."""
+
     feature_context: FeatureContext
-    applied_assumption: Optional[SmartAssumption] = None # The assumption that applies
-    conflicting_assumptions: List[SmartAssumption] = None # Other assumptions that also matched
-    conflict_resolution_reason: Optional[str] = None # Why this assumption was selected over others
-    had_conflict: bool = False # Whether conflicts were detected during analysis
+    applied_assumption: Optional[SmartAssumption] = None  # The assumption that applies
+    conflicting_assumptions: List[SmartAssumption] = None  # Other assumptions that also matched
+    conflict_resolution_reason: Optional[str] = None  # Why this assumption was selected over others
+    had_conflict: bool = False  # Whether conflicts were detected during analysis
     # If no assumption applies, this can remain None, or a specific 'no_assumption_needed' or 'cannot_convert' status could be added.
     # For now, None indicates either it's directly convertible or no specific smart assumption handles it.
 
@@ -67,41 +73,51 @@ class AssumptionResult:
         # Set had_conflict based on the number of conflicting assumptions
         self.had_conflict = len(self.conflicting_assumptions) > 1
 
+
 @dataclass
 class ConversionPlanComponent:
     """Details a specific part of the conversion for a feature based on an assumption."""
+
     original_feature_id: str
     original_feature_type: str
-    assumption_type: Optional[str] # e.g., "dimension_to_structure", "machinery_simplification"
+    assumption_type: Optional[str]  # e.g., "dimension_to_structure", "machinery_simplification"
     bedrock_equivalent: str
-    impact_level: str # "low", "medium", "high"
+    impact_level: str  # "low", "medium", "high"
     user_explanation: str
     technical_notes: Optional[str] = None
     # This structure is based on the example output's "assumptions_applied" list items
     # It will be populated by methods like _convert_custom_dimension
 
+
 @dataclass
 class ConversionPlan:
     """Represents the overall plan for converting features, including those with assumptions."""
+
     components: List[ConversionPlanComponent]
     # This might evolve to include more details, like features that are directly convertible without assumptions.
     # For now, it focuses on parts that involved an assumption.
 
+
 @dataclass
 class AppliedAssumptionReportItem:
     """Mirrors the structure of items in the 'assumptions_applied' list from the example output."""
-    original_feature: str # Name or description of the original Java feature
-    assumption_type: str # e.g., "dimension_to_structure"
+
+    original_feature: str  # Name or description of the original Java feature
+    assumption_type: str  # e.g., "dimension_to_structure"
     bedrock_equivalent: str
-    impact_level: str # "low", "medium", "high"
+    impact_level: str  # "low", "medium", "high"
     user_explanation: str
+
 
 @dataclass
 class AssumptionReport:
     """The final report detailing all smart assumptions applied during a conversion process."""
+
     assumptions_applied: List[AppliedAssumptionReportItem]
 
+
 # New Data Classes End Here
+
 
 class SmartAssumptionEngine:
     """
@@ -114,7 +130,9 @@ class SmartAssumptionEngine:
         self.assumption_table = self._build_prd_assumption_table()
         # Validate assumptions on initialization
         self._validate_assumption_table()
-        logger.info(f"SmartAssumptionEngine initialized with {len(self.assumption_table)} assumptions")
+        logger.info(
+            f"SmartAssumptionEngine initialized with {len(self.assumption_table)} assumptions"
+        )
 
     def _validate_assumption_table(self) -> None:
         """
@@ -128,7 +146,9 @@ class SmartAssumptionEngine:
                 self._validate_single_assumption(assumption)
             except ValueError as e:
                 logger.error(f"Invalid assumption at index {i} ({assumption.java_feature}): {e}")
-                raise ValueError(f"Assumption validation failed for '{assumption.java_feature}': {e}")
+                raise ValueError(
+                    f"Assumption validation failed for '{assumption.java_feature}': {e}"
+                )
         logger.info("All assumptions validated successfully")
 
     def _validate_single_assumption(self, assumption: SmartAssumption) -> None:
@@ -192,13 +212,17 @@ class SmartAssumptionEngine:
         # Check for duplicates
         for existing in self.assumption_table:
             if existing.java_feature.lower() == assumption.java_feature.lower():
-                logger.warning(f"Duplicate assumption detected: {assumption.java_feature}. Overwriting existing.")
+                logger.warning(
+                    f"Duplicate assumption detected: {assumption.java_feature}. Overwriting existing."
+                )
                 self.assumption_table.remove(existing)
                 break
 
         # Add the assumption
         self.assumption_table.append(assumption)
-        logger.info(f"Added new assumption: {assumption.java_feature} (Impact: {assumption.impact.value})")
+        logger.info(
+            f"Added new assumption: {assumption.java_feature} (Impact: {assumption.impact.value})"
+        )
 
     def add_assumptions_batch(self, assumptions: List[SmartAssumption]) -> None:
         """
@@ -232,8 +256,7 @@ class SmartAssumptionEngine:
         """
         original_count = len(self.assumption_table)
         self.assumption_table = [
-            a for a in self.assumption_table
-            if a.java_feature.lower() != java_feature.lower()
+            a for a in self.assumption_table if a.java_feature.lower() != java_feature.lower()
         ]
         removed = len(self.assumption_table) < original_count
 
@@ -281,14 +304,14 @@ class SmartAssumptionEngine:
         summary = {
             AssumptionImpact.LOW.value: 0,
             AssumptionImpact.MEDIUM.value: 0,
-            AssumptionImpact.HIGH.value: 0
+            AssumptionImpact.HIGH.value: 0,
         }
 
         for assumption in self.assumption_table:
             summary[assumption.impact.value] += 1
 
         return summary
-    
+
     def _build_prd_assumption_table(self) -> List[SmartAssumption]:
         """Build the assumption table from PRD specifications"""
         return [
@@ -298,45 +321,40 @@ class SmartAssumptionEngine:
                 bedrock_workaround="Convert to large, self-contained structure in existing dimension",
                 impact=AssumptionImpact.HIGH,
                 description="Recreate as 'skybox' or far-off landmass in Overworld or The End",
-                implementation_notes="Preserve assets and generation rules as static structures"
+                implementation_notes="Preserve assets and generation rules as static structures",
             ),
-            
             SmartAssumption(
                 java_feature="Complex Machinery",
                 inconvertible_aspect="Custom Java logic for power, processing, multi-block interactions",
                 bedrock_workaround="Replace complex logic with closest Bedrock component",
                 impact=AssumptionImpact.HIGH,
                 description="Convert model/texture but simplify to decorative block or container",
-                implementation_notes="Core functionality lost, aesthetic preserved"
+                implementation_notes="Core functionality lost, aesthetic preserved",
             ),
-            
             SmartAssumption(
                 java_feature="Custom GUI/HUD",
                 inconvertible_aspect="No Bedrock API for creating new UI screens",
                 bedrock_workaround="Recreate interface using in-game items",
                 impact=AssumptionImpact.HIGH,
                 description="Use books or signs for information display",
-                implementation_notes="Significant UX change but information access preserved"
+                implementation_notes="Significant UX change but information access preserved",
             ),
-            
             SmartAssumption(
                 java_feature="Client-Side Rendering",
                 inconvertible_aspect="No access to Bedrock's Render Dragon engine",
                 bedrock_workaround="Exclude from conversion with notification",
                 impact=AssumptionImpact.HIGH,
                 description="Identify and exclude shaders, performance enhancers",
-                implementation_notes="Explicitly notify user of unsupported features"
+                implementation_notes="Explicitly notify user of unsupported features",
             ),
-            
             SmartAssumption(
                 java_feature="Mod Dependencies",
                 inconvertible_aspect="Bedrock add-ons designed to be self-contained",
                 bedrock_workaround="Bundle simple libraries, flag complex dependencies",
                 impact=AssumptionImpact.MEDIUM,
                 description="Attempt bundling for simple libs, halt for complex deps",
-                implementation_notes="Explain dependency issues to user with clear reasoning"
+                implementation_notes="Explain dependency issues to user with clear reasoning",
             ),
-            
             # Additional common assumptions
             SmartAssumption(
                 java_feature="Advanced Redstone Logic",
@@ -344,18 +362,16 @@ class SmartAssumptionEngine:
                 bedrock_workaround="Simplify to basic redstone components",
                 impact=AssumptionImpact.MEDIUM,
                 description="Convert complex circuits to simple on/off mechanisms",
-                implementation_notes="Document original logic for manual implementation"
+                implementation_notes="Document original logic for manual implementation",
             ),
-            
             SmartAssumption(
                 java_feature="Custom Entity AI",
                 inconvertible_aspect="Limited entity behavior customization in Bedrock",
                 bedrock_workaround="Use closest vanilla entity behavior",
                 impact=AssumptionImpact.MEDIUM,
                 description="Map to existing Bedrock entity with similar characteristics",
-                implementation_notes="Preserve appearance, adapt behavior to Bedrock limitations"
+                implementation_notes="Preserve appearance, adapt behavior to Bedrock limitations",
             ),
-            
             # Phase 2: New Smart Assumptions
             SmartAssumption(
                 java_feature="Custom Biomes",
@@ -363,59 +379,54 @@ class SmartAssumptionEngine:
                 bedrock_workaround="Create large structure with terrain features in existing biome",
                 impact=AssumptionImpact.HIGH,
                 description="Recreate biome features as a large structure with terrain generation in an existing biome",
-                implementation_notes="Preserve unique terrain features, vegetation, and ambient elements as structure decorations"
+                implementation_notes="Preserve unique terrain features, vegetation, and ambient elements as structure decorations",
             ),
-            
             SmartAssumption(
                 java_feature="Custom Enchantments",
                 inconvertible_aspect="Limited enchantment system in Bedrock",
                 bedrock_workaround="Add as item attributes or exclude with note",
                 impact=AssumptionImpact.MEDIUM,
                 description="Map to Bedrock item attributes if possible, otherwise exclude with explanation",
-                implementation_notes="Some enchantments can be approximated using item components or attributes"
+                implementation_notes="Some enchantments can be approximated using item components or attributes",
             ),
-            
             SmartAssumption(
                 java_feature="Custom Redstone",
                 inconvertible_aspect="Different redstone behavior in Bedrock",
                 bedrock_workaround="Simplify to basic on/off or exclude",
                 impact=AssumptionImpact.MEDIUM,
                 description="Convert complex redstone circuits to basic on/off mechanisms or exclude with note",
-                implementation_notes="Document original logic for manual implementation in Bedrock"
+                implementation_notes="Document original logic for manual implementation in Bedrock",
             ),
-            
             SmartAssumption(
                 java_feature="Fluid Systems",
                 inconvertible_aspect="No custom fluid support in Bedrock",
                 bedrock_workaround="Use lava/water with visual similarity or exclude",
                 impact=AssumptionImpact.HIGH,
                 description="Replace custom fluids with similar vanilla fluids or exclude with explanation",
-                implementation_notes="Custom fluid mechanics cannot be ported, only visual representation"
+                implementation_notes="Custom fluid mechanics cannot be ported, only visual representation",
             ),
-            
             SmartAssumption(
                 java_feature="Custom Particles",
                 inconvertible_aspect="Limited particle system in Bedrock",
                 bedrock_workaround="Use closest Bedrock particle or exclude",
                 impact=AssumptionImpact.LOW,
                 description="Map to closest available Bedrock particle effect or exclude",
-                implementation_notes="Most custom particles will need manual reassignment"
+                implementation_notes="Most custom particles will need manual reassignment",
             ),
-            
             SmartAssumption(
                 java_feature="Custom Sounds",
                 inconvertible_aspect="Custom sound format not supported",
                 bedrock_workaround="Use similar vanilla sounds or exclude",
                 impact=AssumptionImpact.LOW,
                 description="Map to similar vanilla sounds or exclude with note",
-                implementation_notes="Custom sound files will need manual reassignment to vanilla equivalents"
-            )
+                implementation_notes="Custom sound files will need manual reassignment to vanilla equivalents",
+            ),
         ]
-    
+
     def get_assumption_table(self) -> List[SmartAssumption]:
         """Get the complete assumption table"""
         return self.assumption_table
-    
+
     def find_assumption(self, feature_type: str) -> Optional[SmartAssumption]:
         """
         Find appropriate assumption for a given feature type with conflict detection.
@@ -434,7 +445,9 @@ class SmartAssumptionEngine:
             logger.debug(f"No matching assumptions found for feature type: {feature_type}")
             return None
         elif len(matching_assumptions) == 1:
-            logger.debug(f"Found single matching assumption: {matching_assumptions[0].java_feature}")
+            logger.debug(
+                f"Found single matching assumption: {matching_assumptions[0].java_feature}"
+            )
             return matching_assumptions[0]
         else:
             # Handle conflicts by selecting highest priority assumption
@@ -447,69 +460,77 @@ class SmartAssumptionEngine:
                 f"Conflict resolved: Selected '{selected.java_feature}' for feature type '{feature_type}'"
             )
             return selected
-    
+
     def find_all_matching_assumptions(self, feature_type: str) -> List[SmartAssumption]:
         """Find all assumptions that could apply to a given feature type"""
         feature_lower = feature_type.lower()
         matching_assumptions = []
-        
+
         for assumption in self.assumption_table:
             # Split assumption keywords and feature keywords
             assumption_keywords = [word.lower() for word in assumption.java_feature.lower().split()]
-            feature_keywords = feature_lower.replace('_', ' ').split()
-            
+            feature_keywords = feature_lower.replace("_", " ").split()
+
             # Calculate match score for better precision
             match_score = 0
             specific_matches = 0
-            
+
             for feature_word in feature_keywords:
                 for assumption_word in assumption_keywords:
                     # High-value specific matches
-                    if (feature_word == 'gui' and assumption_word == 'gui/hud') or \
-                       (feature_word == 'hud' and assumption_word == 'gui/hud') or \
-                       (feature_word == 'screen' and 'gui' in assumption_word) or \
-                       ('dimension' in feature_word and 'dimensions' in assumption_word) or \
-                       (feature_word == 'machinery' and 'machinery' in assumption_word) or \
-                       (feature_word == 'machine' and 'machinery' in assumption_word) or \
-                       ('biome' in feature_word and 'biomes' in assumption_word) or \
-                       ('enchant' in feature_word and 'enchantments' in assumption_word) or \
-                       ('redstone' in feature_word and 'redstone' in assumption_word) or \
-                       ('fluid' in feature_word and 'fluid' in assumption_word) or \
-                       ('particle' in feature_word and 'particles' in assumption_word) or \
-                       ('sound' in feature_word and 'sounds' in assumption_word):
+                    if (
+                        (feature_word == "gui" and assumption_word == "gui/hud")
+                        or (feature_word == "hud" and assumption_word == "gui/hud")
+                        or (feature_word == "screen" and "gui" in assumption_word)
+                        or ("dimension" in feature_word and "dimensions" in assumption_word)
+                        or (feature_word == "machinery" and "machinery" in assumption_word)
+                        or (feature_word == "machine" and "machinery" in assumption_word)
+                        or ("biome" in feature_word and "biomes" in assumption_word)
+                        or ("enchant" in feature_word and "enchantments" in assumption_word)
+                        or ("redstone" in feature_word and "redstone" in assumption_word)
+                        or ("fluid" in feature_word and "fluid" in assumption_word)
+                        or ("particle" in feature_word and "particles" in assumption_word)
+                        or ("sound" in feature_word and "sounds" in assumption_word)
+                    ):
                         match_score += 10
                         specific_matches += 1
                     # Exact word matches (but not 'custom' alone)
-                    elif feature_word == assumption_word and feature_word != 'custom':
+                    elif feature_word == assumption_word and feature_word != "custom":
                         match_score += 8
                         specific_matches += 1
                     # Substring matches for significant words
-                    elif len(feature_word) > 3 and (feature_word in assumption_word or assumption_word in feature_word):
+                    elif len(feature_word) > 3 and (
+                        feature_word in assumption_word or assumption_word in feature_word
+                    ):
                         match_score += 5
                         specific_matches += 1
                     # Generic 'custom' match (low value)
-                    elif feature_word == 'custom' and assumption_word == 'custom':
+                    elif feature_word == "custom" and assumption_word == "custom":
                         match_score += 1
-            
+
             # Only include if we have at least one specific match AND not just 'custom'
             # OR if we have a high match score from multiple good matches
             non_custom_matches = 0
             for feature_word in feature_keywords:
                 for assumption_word in assumption_keywords:
-                    if feature_word == assumption_word and feature_word != 'custom':
+                    if feature_word == assumption_word and feature_word != "custom":
                         non_custom_matches += 1
-                    elif ('dimension' in feature_word and 'dimensions' in assumption_word) or \
-                         ('gui' in feature_word and 'gui' in assumption_word) or \
-                         ('machinery' in feature_word and 'machinery' in assumption_word):
+                    elif (
+                        ("dimension" in feature_word and "dimensions" in assumption_word)
+                        or ("gui" in feature_word and "gui" in assumption_word)
+                        or ("machinery" in feature_word and "machinery" in assumption_word)
+                    ):
                         non_custom_matches += 1
-            
+
             # Include if we have specific non-custom matches or very high score
             if non_custom_matches > 0 or match_score >= 15:
                 matching_assumptions.append(assumption)
-        
+
         return matching_assumptions
-    
-    def _resolve_assumption_conflict(self, conflicting_assumptions: List[SmartAssumption], feature_type: str) -> SmartAssumption:
+
+    def _resolve_assumption_conflict(
+        self, conflicting_assumptions: List[SmartAssumption], feature_type: str
+    ) -> SmartAssumption:
         """
         Resolve conflicts between multiple matching assumptions using priority rules.
 
@@ -529,8 +550,12 @@ class SmartAssumptionEngine:
         Raises:
             ValueError: If conflicting_assumptions is empty
         """
-        logger.info(f"Resolving assumption conflict for feature type '{feature_type}' with {len(conflicting_assumptions)} candidates")
-        logger.debug(f"Conflicting assumptions: {[a.java_feature for a in conflicting_assumptions]}")
+        logger.info(
+            f"Resolving assumption conflict for feature type '{feature_type}' with {len(conflicting_assumptions)} candidates"
+        )
+        logger.debug(
+            f"Conflicting assumptions: {[a.java_feature for a in conflicting_assumptions]}"
+        )
 
         # Handle edge case of empty list
         if not conflicting_assumptions:
@@ -541,98 +566,124 @@ class SmartAssumptionEngine:
         if len(conflicting_assumptions) == 1:
             logger.debug(f"Only one matching assumption: {conflicting_assumptions[0].java_feature}")
             return conflicting_assumptions[0]
-        
+
         # Priority rule 1: Exact feature type match takes precedence
-        exact_matches = [a for a in conflicting_assumptions if a.java_feature.lower().replace(" ", "_").replace("/", "_") == feature_type.lower()]
+        exact_matches = [
+            a
+            for a in conflicting_assumptions
+            if a.java_feature.lower().replace(" ", "_").replace("/", "_") == feature_type.lower()
+        ]
         if exact_matches:
             selected = exact_matches[0]
-            logger.info(f"Selected assumption '{selected.java_feature}' due to exact feature type match")
+            logger.info(
+                f"Selected assumption '{selected.java_feature}' due to exact feature type match"
+            )
             return selected
-            
+
         # Priority rule 1.5: High specificity keyword matches (e.g., "gui" in feature should strongly prefer "GUI" assumption)
-        feature_words = set(feature_type.lower().replace('_', ' ').split())
-        
+        feature_words = set(feature_type.lower().replace("_", " ").split())
+
         def calculate_keyword_relevance(assumption: SmartAssumption, feature_type: str) -> int:
             """Calculate how relevant an assumption is based on specific keyword matches"""
-            assumption_words = set(assumption.java_feature.lower().replace('/', ' ').split())
+            assumption_words = set(assumption.java_feature.lower().replace("/", " ").split())
             score = 0
-            
+
             # High value matches for specific keywords
-            if 'gui' in feature_words and any('gui' in word for word in assumption_words):
+            if "gui" in feature_words and any("gui" in word for word in assumption_words):
                 score += 10
-            if 'hud' in feature_words and any('hud' in word for word in assumption_words):
+            if "hud" in feature_words and any("hud" in word for word in assumption_words):
                 score += 10
-            if 'dimension' in feature_words and 'dimensions' in assumption_words:
+            if "dimension" in feature_words and "dimensions" in assumption_words:
                 score += 10
-            if 'machinery' in feature_words and 'machinery' in assumption_words:
+            if "machinery" in feature_words and "machinery" in assumption_words:
                 score += 10
-            if 'machine' in feature_words and 'machinery' in assumption_words:
+            if "machine" in feature_words and "machinery" in assumption_words:
                 score += 8
-                
+
             # Lower value for generic matches
-            if 'custom' in feature_words and 'custom' in assumption_words:
+            if "custom" in feature_words and "custom" in assumption_words:
                 score += 1
-                
+
             return score
-        
+
         # Sort by keyword relevance first
-        sorted_by_relevance = sorted(conflicting_assumptions, 
-                                   key=lambda a: calculate_keyword_relevance(a, feature_type), 
-                                   reverse=True)
-        
+        sorted_by_relevance = sorted(
+            conflicting_assumptions,
+            key=lambda a: calculate_keyword_relevance(a, feature_type),
+            reverse=True,
+        )
+
         # If there's a clear winner by relevance, use it
         top_relevance = calculate_keyword_relevance(sorted_by_relevance[0], feature_type)
-        if top_relevance > 0 and (len(sorted_by_relevance) == 1 or 
-                                 calculate_keyword_relevance(sorted_by_relevance[1], feature_type) < top_relevance):
+        if top_relevance > 0 and (
+            len(sorted_by_relevance) == 1
+            or calculate_keyword_relevance(sorted_by_relevance[1], feature_type) < top_relevance
+        ):
             selected = sorted_by_relevance[0]
-            logger.info(f"Selected assumption '{selected.java_feature}' due to highest keyword relevance (score: {top_relevance})")
+            logger.info(
+                f"Selected assumption '{selected.java_feature}' due to highest keyword relevance (score: {top_relevance})"
+            )
             return selected
-        
+
         # Priority rule 2: Higher impact assumptions take precedence (HIGH > MEDIUM > LOW)
-        impact_priority = {AssumptionImpact.HIGH: 3, AssumptionImpact.MEDIUM: 2, AssumptionImpact.LOW: 1}
-        sorted_by_impact = sorted(conflicting_assumptions, key=lambda a: impact_priority[a.impact], reverse=True)
-        
+        impact_priority = {
+            AssumptionImpact.HIGH: 3,
+            AssumptionImpact.MEDIUM: 2,
+            AssumptionImpact.LOW: 1,
+        }
+        sorted_by_impact = sorted(
+            conflicting_assumptions, key=lambda a: impact_priority[a.impact], reverse=True
+        )
+
         # If top impacts are equal, use specificity (more keywords = more specific)
         top_impact = sorted_by_impact[0].impact
         top_impact_assumptions = [a for a in sorted_by_impact if a.impact == top_impact]
-        
+
         if len(top_impact_assumptions) == 1:
             selected = top_impact_assumptions[0]
-            logger.info(f"Selected assumption '{selected.java_feature}' due to highest impact level ({selected.impact.value})")
+            logger.info(
+                f"Selected assumption '{selected.java_feature}' due to highest impact level ({selected.impact.value})"
+            )
             return selected
-        
+
         # Priority rule 3: More specific assumptions (more keywords) take precedence
         def calculate_specificity(assumption: SmartAssumption, feature_type: str) -> int:
             """Calculate how specific an assumption is for a given feature type"""
-            feature_words = set(feature_type.lower().split('_'))
-            assumption_words = set(assumption.java_feature.lower().replace('/', ' ').split())
+            feature_words = set(feature_type.lower().split("_"))
+            assumption_words = set(assumption.java_feature.lower().replace("/", " ").split())
             return len(feature_words.intersection(assumption_words))
-        
-        sorted_by_specificity = sorted(top_impact_assumptions, 
-                                     key=lambda a: calculate_specificity(a, feature_type), 
-                                     reverse=True)
-        
+
+        sorted_by_specificity = sorted(
+            top_impact_assumptions,
+            key=lambda a: calculate_specificity(a, feature_type),
+            reverse=True,
+        )
+
         selected = sorted_by_specificity[0]
         specificity_score = calculate_specificity(selected, feature_type)
-        logger.info(f"Selected assumption '{selected.java_feature}' due to highest specificity (score: {specificity_score})")
-        
+        logger.info(
+            f"Selected assumption '{selected.java_feature}' due to highest specificity (score: {specificity_score})"
+        )
+
         return selected
 
-    def _resolve_assumption_conflict_with_details(self, conflicting_assumptions: List[SmartAssumption], feature_type: str) -> Dict[str, Any]:
+    def _resolve_assumption_conflict_with_details(
+        self, conflicting_assumptions: List[SmartAssumption], feature_type: str
+    ) -> Dict[str, Any]:
         """Resolve conflicts and return detailed information for testing/analysis purposes"""
         if not conflicting_assumptions:
             raise ValueError("Cannot resolve conflict with empty assumption list")
-            
+
         if len(conflicting_assumptions) == 1:
             return {
-                'resolved_assumption': conflicting_assumptions[0],
-                'resolution_reason': "Only one assumption provided - no conflict to resolve"
+                "resolved_assumption": conflicting_assumptions[0],
+                "resolution_reason": "Only one assumption provided - no conflict to resolve",
             }
-        
+
         selected = self._resolve_assumption_conflict(conflicting_assumptions, feature_type)
         return {
-            'resolved_assumption': selected,
-            'resolution_reason': f"Selected '{selected.java_feature}' using conflict resolution rules"
+            "resolved_assumption": selected,
+            "resolution_reason": f"Selected '{selected.java_feature}' using conflict resolution rules",
         }
 
     def analyze_feature(self, feature_context: FeatureContext) -> AssumptionResult:
@@ -646,34 +697,46 @@ class SmartAssumptionEngine:
             An AssumptionResult containing the original feature context and any
             SmartAssumption that applies, plus conflict resolution information.
         """
-        logger.info(f"Analyzing feature: {feature_context.feature_id} of type {feature_context.feature_type}")
-        
+        logger.info(
+            f"Analyzing feature: {feature_context.feature_id} of type {feature_context.feature_type}"
+        )
+
         # Find all matching assumptions to detect conflicts
         all_matching = self.find_all_matching_assumptions(feature_context.feature_type)
         applicable_assumption = None
         conflict_resolution_reason = None
-        
+
         if all_matching:
             if len(all_matching) == 1:
                 applicable_assumption = all_matching[0]
-                logger.info(f"Found single applicable assumption for {feature_context.feature_type}: {applicable_assumption.java_feature} -> {applicable_assumption.bedrock_workaround}")
+                logger.info(
+                    f"Found single applicable assumption for {feature_context.feature_type}: {applicable_assumption.java_feature} -> {applicable_assumption.bedrock_workaround}"
+                )
             else:
                 # Multiple matches - resolve conflict
-                applicable_assumption = self._resolve_assumption_conflict(all_matching, feature_context.feature_type)
+                applicable_assumption = self._resolve_assumption_conflict(
+                    all_matching, feature_context.feature_type
+                )
                 conflict_resolution_reason = f"Selected from {len(all_matching)} conflicting assumptions using priority rules"
-                logger.info(f"Resolved conflict for {feature_context.feature_type}: selected {applicable_assumption.java_feature} from {[a.java_feature for a in all_matching]}")
+                logger.info(
+                    f"Resolved conflict for {feature_context.feature_type}: selected {applicable_assumption.java_feature} from {[a.java_feature for a in all_matching]}"
+                )
         else:
-            logger.info(f"No specific smart assumption found for feature type: {feature_context.feature_type}")
+            logger.info(
+                f"No specific smart assumption found for feature type: {feature_context.feature_type}"
+            )
 
         return AssumptionResult(
             feature_context=feature_context,
             applied_assumption=applicable_assumption,
             conflicting_assumptions=all_matching if len(all_matching) > 1 else [],
             conflict_resolution_reason=conflict_resolution_reason,
-            had_conflict=len(all_matching) > 1
+            had_conflict=len(all_matching) > 1,
         )
-    
-    def apply_assumption(self, analysis_result: AssumptionResult) -> Optional[ConversionPlanComponent]:
+
+    def apply_assumption(
+        self, analysis_result: AssumptionResult
+    ) -> Optional[ConversionPlanComponent]:
         """
         Applies a smart assumption to an analyzed feature and generates conversion plan details.
 
@@ -695,7 +758,7 @@ class SmartAssumptionEngine:
 
         feature_context = analysis_result.feature_context
         assumption = analysis_result.applied_assumption
-        feature_type_lower = feature_context.feature_type.lower() # Use feature_type from context
+        feature_type_lower = feature_context.feature_type.lower()  # Use feature_type from context
 
         logger.info(
             f"Applying smart assumption for feature type '{feature_context.feature_type}' "
@@ -714,25 +777,45 @@ class SmartAssumptionEngine:
         conversion_details_dict: Optional[Dict[str, Any]] = None
 
         # PRD Phase 1: Three core assumptions
-        if "dimension" in feature_type_lower and "custom dimensions" in assumption.java_feature.lower():
+        if (
+            "dimension" in feature_type_lower
+            and "custom dimensions" in assumption.java_feature.lower()
+        ):
             logger.debug(f"Applying dimension conversion logic")
-            conversion_details_dict = self._convert_custom_dimension(feature_context, assumption, analysis_result)
-        elif "machinery" in feature_type_lower and "complex machinery" in assumption.java_feature.lower():
+            conversion_details_dict = self._convert_custom_dimension(
+                feature_context, assumption, analysis_result
+            )
+        elif (
+            "machinery" in feature_type_lower
+            and "complex machinery" in assumption.java_feature.lower()
+        ):
             logger.debug(f"Applying machinery simplification logic")
-            conversion_details_dict = self._convert_complex_machinery(feature_context, assumption, analysis_result)
-        elif ("gui" in feature_type_lower or "hud" in feature_type_lower) and "custom gui/hud" in assumption.java_feature.lower():
+            conversion_details_dict = self._convert_complex_machinery(
+                feature_context, assumption, analysis_result
+            )
+        elif (
+            "gui" in feature_type_lower or "hud" in feature_type_lower
+        ) and "custom gui/hud" in assumption.java_feature.lower():
             logger.debug(f"Applying GUI to book conversion logic")
-            conversion_details_dict = self._convert_custom_gui(feature_context, assumption, analysis_result)
+            conversion_details_dict = self._convert_custom_gui(
+                feature_context, assumption, analysis_result
+            )
 
         # Placeholder for other assumptions from the PRD table (not part of Phase 1 implementation focus)
-        elif "rendering" in feature_type_lower and "client-side rendering" in assumption.java_feature.lower():
+        elif (
+            "rendering" in feature_type_lower
+            and "client-side rendering" in assumption.java_feature.lower()
+        ):
             # conversion_details_dict = self._exclude_client_rendering(feature_context, assumption) # Assuming it returns a dict
             logger.warning(
                 f"Smart assumption for '{feature_context.feature_type}' (Client-Side Rendering) "
                 f"is defined but not fully implemented in Phase 1."
             )
             # Fallback to generic or skip
-        elif "dependency" in feature_type_lower and "mod dependencies" in assumption.java_feature.lower():
+        elif (
+            "dependency" in feature_type_lower
+            and "mod dependencies" in assumption.java_feature.lower()
+        ):
             # conversion_details_dict = self._handle_mod_dependency(feature_context, assumption) # Assuming it returns a dict
             logger.warning(
                 f"Smart assumption for '{feature_context.feature_type}' (Mod Dependencies) "
@@ -749,13 +832,15 @@ class SmartAssumptionEngine:
                 f"Generated conversion plan component: {conversion_details_dict.get('assumption_type', 'unknown')}"
             )
             return ConversionPlanComponent(
-                original_feature_id=conversion_details_dict['original_feature_id'],
-                original_feature_type=conversion_details_dict['original_feature_type'],
-                assumption_type=conversion_details_dict['assumption_type'],
-                bedrock_equivalent=conversion_details_dict['bedrock_equivalent'],
-                impact_level=conversion_details_dict['impact_level'],
-                user_explanation=conversion_details_dict['user_explanation'],
-                technical_notes=conversion_details_dict.get('technical_notes') # .get for optional field
+                original_feature_id=conversion_details_dict["original_feature_id"],
+                original_feature_type=conversion_details_dict["original_feature_type"],
+                assumption_type=conversion_details_dict["assumption_type"],
+                bedrock_equivalent=conversion_details_dict["bedrock_equivalent"],
+                impact_level=conversion_details_dict["impact_level"],
+                user_explanation=conversion_details_dict["user_explanation"],
+                technical_notes=conversion_details_dict.get(
+                    "technical_notes"
+                ),  # .get for optional field
             )
         else:
             # If it's an assumption we know about but don't have specific logic for (e.g. non-Phase 1)
@@ -771,14 +856,19 @@ class SmartAssumptionEngine:
             return ConversionPlanComponent(
                 original_feature_id=feature_context.feature_id,
                 original_feature_type=feature_context.feature_type,
-                assumption_type=assumption.java_feature.lower().replace(" ", "_"), # A generic type
+                assumption_type=assumption.java_feature.lower().replace(" ", "_"),  # A generic type
                 bedrock_equivalent=assumption.bedrock_workaround,
                 impact_level=assumption.impact.value,
-                user_explanation=assumption.description, # Generic description
-                technical_notes=f"Generic assumption applied. Specific conversion path not detailed in Phase 1. {assumption.implementation_notes}"
+                user_explanation=assumption.description,  # Generic description
+                technical_notes=f"Generic assumption applied. Specific conversion path not detailed in Phase 1. {assumption.implementation_notes}",
             )
 
-    def _convert_custom_dimension(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
+    def _convert_custom_dimension(
+        self,
+        feature_context: FeatureContext,
+        assumption: SmartAssumption,
+        analysis_result: AssumptionResult = None,
+    ) -> Dict[str, Any]:
         """
         Generates conversion details for turning a custom dimension into a large structure.
 
@@ -794,13 +884,15 @@ class SmartAssumptionEngine:
 
         # Determine target dimension (e.g., based on theme, or default to Overworld)
         # This could be made more sophisticated later, perhaps by analyzing feature_data['theme'] if available.
-        target_dimension_bedrock = 'Overworld'
-        if 'nether_like' in feature_data.get('theme', '').lower():
-            target_dimension_bedrock = 'The Nether' # Though PRD mentions Overworld/End, Nether is also a possibility.
-        elif 'end_like' in feature_data.get('theme', '').lower():
-            target_dimension_bedrock = 'The End'
+        target_dimension_bedrock = "Overworld"
+        if "nether_like" in feature_data.get("theme", "").lower():
+            target_dimension_bedrock = (
+                "The Nether"  # Though PRD mentions Overworld/End, Nether is also a possibility.
+            )
+        elif "end_like" in feature_data.get("theme", "").lower():
+            target_dimension_bedrock = "The End"
 
-        original_biomes = feature_data.get('biomes', [])
+        original_biomes = feature_data.get("biomes", [])
         original_biomes_str = ", ".join(original_biomes) if original_biomes else "unknown"
 
         structure_name = f"{feature_name.replace(' ', '_')}_structure"
@@ -819,7 +911,7 @@ class SmartAssumptionEngine:
             f"Generation rules are to be translated into a fixed structural layout. "
             f"Assets (textures, models) associated with the dimension are to be mapped to this structure."
         )
-        
+
         # Add conflict information if there were conflicts
         if analysis_result and analysis_result.had_conflict:
             conflict_info = (
@@ -830,16 +922,21 @@ class SmartAssumptionEngine:
             technical_notes += conflict_info
 
         return {
-            'original_feature_id': feature_context.feature_id,
-            'original_feature_type': feature_context.feature_type,
-            'assumption_type': "dimension_to_structure", # Matches example output
-            'bedrock_equivalent': f"Large structure '{structure_name}' in {target_dimension_bedrock}",
-            'impact_level': assumption.impact.value,
-            'user_explanation': user_explanation,
-            'technical_notes': technical_notes
+            "original_feature_id": feature_context.feature_id,
+            "original_feature_type": feature_context.feature_type,
+            "assumption_type": "dimension_to_structure",  # Matches example output
+            "bedrock_equivalent": f"Large structure '{structure_name}' in {target_dimension_bedrock}",
+            "impact_level": assumption.impact.value,
+            "user_explanation": user_explanation,
+            "technical_notes": technical_notes,
         }
-    
-    def _convert_complex_machinery(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
+
+    def _convert_complex_machinery(
+        self,
+        feature_context: FeatureContext,
+        assumption: SmartAssumption,
+        analysis_result: AssumptionResult = None,
+    ) -> Dict[str, Any]:
         """
         Generates conversion details for simplifying complex machinery.
 
@@ -852,27 +949,36 @@ class SmartAssumptionEngine:
         """
         feature_data = feature_context.original_data
         feature_name = feature_context.name if feature_context.name else feature_context.feature_id
-        
+
         # Ensure feature_name is a string
         if feature_name is None:
             feature_name = "unknown_machine"
 
         # Determine replacement type (decorative or container)
         # This could be based on feature_data analysis, e.g., if it has inventory slots.
-        is_decorative_default = True # Default to decorative
-        if feature_data.get('has_inventory', False) or 'chest' in str(feature_name).lower() or 'storage' in str(feature_name).lower():
+        is_decorative_default = True  # Default to decorative
+        if (
+            feature_data.get("has_inventory", False)
+            or "chest" in str(feature_name).lower()
+            or "storage" in str(feature_name).lower()
+        ):
             is_decorative_default = False
 
-        replacement_type = 'decorative_block' if is_decorative_default else 'simple_container_block'
+        replacement_type = "decorative_block" if is_decorative_default else "simple_container_block"
 
-        preserved_elements = ['model', 'texture', 'name', 'general_shape']
-        removed_elements = ['custom_java_logic', 'power_system', 'processing_logic', 'multi-block_interactions', 'complex_event_handling']
+        preserved_elements = ["model", "texture", "name", "general_shape"]
+        removed_elements = [
+            "custom_java_logic",
+            "power_system",
+            "processing_logic",
+            "multi-block_interactions",
+            "complex_event_handling",
+        ]
 
-        if feature_data.get('power_related', False):
-            preserved_elements.append('power_connection_visuals (if any, non-functional)')
-        if feature_data.get('item_io_ports', False):
-            preserved_elements.append('item_port_visuals (if any, non-functional)')
-
+        if feature_data.get("power_related", False):
+            preserved_elements.append("power_connection_visuals (if any, non-functional)")
+        if feature_data.get("item_io_ports", False):
+            preserved_elements.append("item_port_visuals (if any, non-functional)")
 
         user_explanation = (
             f"The complex machine '{feature_name}' will be simplified. Its visual appearance "
@@ -888,7 +994,7 @@ class SmartAssumptionEngine:
             f"Target Bedrock type: {replacement_type}. "
             f"Asset conversion for models and textures is critical. Any animations tied to logic will likely be lost or simplified."
         )
-        
+
         # Add conflict information if there were conflicts
         if analysis_result and analysis_result.had_conflict:
             conflict_info = (
@@ -899,16 +1005,18 @@ class SmartAssumptionEngine:
             technical_notes += conflict_info
 
         return {
-            'original_feature_id': feature_context.feature_id,
-            'original_feature_type': feature_context.feature_type,
-            'assumption_type': "machinery_simplification", # Matches example output style
-            'bedrock_equivalent': f"{replacement_type.replace('_', ' ')} preserving original appearance of '{feature_name}'",
-            'impact_level': assumption.impact.value,
-            'user_explanation': user_explanation,
-            'technical_notes': technical_notes
+            "original_feature_id": feature_context.feature_id,
+            "original_feature_type": feature_context.feature_type,
+            "assumption_type": "machinery_simplification",  # Matches example output style
+            "bedrock_equivalent": f"{replacement_type.replace('_', ' ')} preserving original appearance of '{feature_name}'",
+            "impact_level": assumption.impact.value,
+            "user_explanation": user_explanation,
+            "technical_notes": technical_notes,
         }
-    
-    def _convert_gui_elements_to_pages(self, elements: List[Dict[str, Any]], feature_name: str) -> List[str]:
+
+    def _convert_gui_elements_to_pages(
+        self, elements: List[Dict[str, Any]], feature_name: str
+    ) -> List[str]:
         """
         Converts a list of GUI element data into a list of strings, representing book pages.
 
@@ -928,30 +1036,34 @@ class SmartAssumptionEngine:
         lines_on_current_page = 1
 
         if not elements:
-            pages.append(current_page_content + "\n(No specific UI elements data found for this GUI)")
+            pages.append(
+                current_page_content + "\n(No specific UI elements data found for this GUI)"
+            )
             return pages
 
         for i, element in enumerate(elements):
             element_text = ""
-            el_type = element.get('type', 'unknown').lower()
-            el_text_content = element.get('text', element.get('label', element.get('content', '')))
+            el_type = element.get("type", "unknown").lower()
+            el_text_content = element.get("text", element.get("label", element.get("content", "")))
 
-            if el_type == 'label' or el_type == 'text':
+            if el_type == "label" or el_type == "text":
                 element_text = f"Info: {el_text_content}"
-            elif el_type == 'button':
+            elif el_type == "button":
                 element_text = f"Button: '{el_text_content}' (Note: Action '{element.get('action_id', 'unspecified')}' will be non-functional)"
-            elif el_type == 'image':
+            elif el_type == "image":
                 element_text = f"Image: {element.get('resource_id', 'unspecified_image')} (Note: Display as text only)"
-            elif el_type == 'slot' or el_type == 'item_slot':
+            elif el_type == "slot" or el_type == "item_slot":
                 element_text = f"Item Slot: Displays {element.get('item_id', 'item')} (Note: Interaction removed)"
-            elif el_type == 'text_area':
+            elif el_type == "text_area":
                 element_text = f"Text Area: (Content from '{element.get('content_variable', 'dynamic_text')}' would appear here)"
-            elif el_type == 'checkbox' or el_type == 'toggle':
+            elif el_type == "checkbox" or el_type == "toggle":
                 element_text = f"Option: '{el_text_content}' (Note: Setting will be non-functional)"
             else:
                 element_text = f"UI Element: Type '{el_type}', Content: '{el_text_content}' (Note: Functionality removed)"
 
-            if lines_on_current_page > 10 or len(current_page_content) + len(element_text) > 250: # Simple page break logic
+            if (
+                lines_on_current_page > 10 or len(current_page_content) + len(element_text) > 250
+            ):  # Simple page break logic
                 pages.append(current_page_content)
                 current_page_content = ""
                 lines_on_current_page = 0
@@ -959,18 +1071,26 @@ class SmartAssumptionEngine:
             current_page_content += element_text + "\n"
             lines_on_current_page += 1
 
-            if i == len(elements) - 1 and current_page_content.strip(): # Add last page if it has content
-                 pages.append(current_page_content)
+            if (
+                i == len(elements) - 1 and current_page_content.strip()
+            ):  # Add last page if it has content
+                pages.append(current_page_content)
 
-        if not pages and current_page_content.strip(): # Ensure at least one page if there was initial content
+        if (
+            not pages and current_page_content.strip()
+        ):  # Ensure at least one page if there was initial content
             pages.append(current_page_content)
-        elif not pages: # Fallback if elements was empty and initial content was also somehow skipped
+        elif (
+            not pages
+        ):  # Fallback if elements was empty and initial content was also somehow skipped
             pages.append(f"--- {feature_name} Interface ---\n(No displayable content extracted)")
 
         # Ensure all pages are strings
         return [str(page_content) for page_content in pages]
 
-    def generate_assumption_report(self, conversion_plan_components: List[ConversionPlanComponent]) -> AssumptionReport:
+    def generate_assumption_report(
+        self, conversion_plan_components: List[ConversionPlanComponent]
+    ) -> AssumptionReport:
         """
         Generates a final report object from a list of conversion plan components
         that involved smart assumptions.
@@ -985,18 +1105,24 @@ class SmartAssumptionEngine:
         report_items: List[AppliedAssumptionReportItem] = []
 
         if not conversion_plan_components:
-            logger.info("generate_assumption_report called with no conversion plan components. Returning empty report.")
+            logger.info(
+                "generate_assumption_report called with no conversion plan components. Returning empty report."
+            )
             return AssumptionReport(assumptions_applied=[])
 
         for component in conversion_plan_components:
-            if component is None: # Should ideally not happen if list is filtered beforehand
-                logger.warning("Encountered a None component in conversion_plan_components list. Skipping.")
+            if component is None:  # Should ideally not happen if list is filtered beforehand
+                logger.warning(
+                    "Encountered a None component in conversion_plan_components list. Skipping."
+                )
                 continue
 
             # Constructing the 'original_feature' string.
             # This might need refinement based on how FeatureContext.name is populated or if more detail is desired.
             # For now, using original_feature_type and a part of original_feature_id.
-            original_feature_description = f"{component.original_feature_type} (ID: ...{component.original_feature_id[-6:]})"
+            original_feature_description = (
+                f"{component.original_feature_type} (ID: ...{component.original_feature_id[-6:]})"
+            )
             # If a more user-friendly name was stored in ConversionPlanComponent, that would be better.
             # Let's assume for now that original_feature_type is descriptive enough for the report's 'original_feature' field.
             # Or, if the component's 'user_explanation' already names the feature well, we can rely on that.
@@ -1005,29 +1131,40 @@ class SmartAssumptionEngine:
             # Let's try to extract that feature name.
 
             # Attempt to extract a more descriptive name from the user_explanation
-            explanation_intro_pattern = r"The .+? '([^']+)'" # Matches "The custom dimension 'feature_name'"
+            explanation_intro_pattern = (
+                r"The .+? '([^']+)'"  # Matches "The custom dimension 'feature_name'"
+            )
             import re
+
             match = re.search(explanation_intro_pattern, component.user_explanation)
             if match:
-                original_feature_description = f"{match.group(1)} ({component.original_feature_type})" # e.g. "Twilight Forest (custom_dimension)"
+                original_feature_description = f"{match.group(1)} ({component.original_feature_type})"  # e.g. "Twilight Forest (custom_dimension)"
             else:
                 # Fallback if pattern doesn't match (e.g. generic assumption user_explanation)
-                original_feature_description = f"{component.original_feature_type} (ID: {component.original_feature_id})"
-
+                original_feature_description = (
+                    f"{component.original_feature_type} (ID: {component.original_feature_id})"
+                )
 
             report_item = AppliedAssumptionReportItem(
                 original_feature=original_feature_description,
-                assumption_type=component.assumption_type if component.assumption_type else "unknown_assumption",
+                assumption_type=component.assumption_type
+                if component.assumption_type
+                else "unknown_assumption",
                 bedrock_equivalent=component.bedrock_equivalent,
                 impact_level=component.impact_level,
-                user_explanation=component.user_explanation
+                user_explanation=component.user_explanation,
             )
             report_items.append(report_item)
 
         logger.info(f"Generated assumption report with {len(report_items)} items.")
         return AssumptionReport(assumptions_applied=report_items)
 
-    def _convert_custom_gui(self, feature_context: FeatureContext, assumption: SmartAssumption, analysis_result: AssumptionResult = None) -> Dict[str, Any]:
+    def _convert_custom_gui(
+        self,
+        feature_context: FeatureContext,
+        assumption: SmartAssumption,
+        analysis_result: AssumptionResult = None,
+    ) -> Dict[str, Any]:
         """
         Generates conversion details for adapting a custom GUI to a book/sign interface.
 
@@ -1042,9 +1179,11 @@ class SmartAssumptionEngine:
         feature_name = feature_context.name if feature_context.name else feature_context.feature_id
 
         # Assume feature_data['elements'] is a list of dicts describing UI elements
-        gui_elements = feature_data.get('elements', [])
+        gui_elements = feature_data.get("elements", [])
         if not isinstance(gui_elements, list):
-            logger.warning(f"GUI elements for {feature_name} is not a list: {type(gui_elements)}. Treating as empty.")
+            logger.warning(
+                f"GUI elements for {feature_name} is not a list: {type(gui_elements)}. Treating as empty."
+            )
             gui_elements = []
 
         book_pages_content = self._convert_gui_elements_to_pages(gui_elements, feature_name)
@@ -1068,7 +1207,7 @@ class SmartAssumptionEngine:
             f"All interactive components (buttons, checkboxes, text inputs) are mapped to static text descriptions. "
             f"Layout is simplified to sequential pages."
         )
-        
+
         # Add conflict information if there were conflicts
         if analysis_result and analysis_result.had_conflict:
             conflict_info = (
@@ -1079,68 +1218,71 @@ class SmartAssumptionEngine:
             technical_notes += conflict_info
 
         return {
-            'original_feature_id': feature_context.feature_id,
-            'original_feature_type': feature_context.feature_type,
-            'assumption_type': "gui_to_book_interface", # Matches example output style
-            'bedrock_equivalent': bedrock_equivalent_desc,
-            'impact_level': assumption.impact.value,
-            'user_explanation': user_explanation,
-            'technical_notes': technical_notes,
-            'conversion_details': { # Adding extra structured data if useful later
-                'book_title': feature_name,
-                'pages_content': book_pages_content
-            }
+            "original_feature_id": feature_context.feature_id,
+            "original_feature_type": feature_context.feature_type,
+            "assumption_type": "gui_to_book_interface",  # Matches example output style
+            "bedrock_equivalent": bedrock_equivalent_desc,
+            "impact_level": assumption.impact.value,
+            "user_explanation": user_explanation,
+            "technical_notes": technical_notes,
+            "conversion_details": {  # Adding extra structured data if useful later
+                "book_title": feature_name,
+                "pages_content": book_pages_content,
+            },
         }
-    
-    def _exclude_client_rendering(self, feature_data: Dict[str, Any], assumption: SmartAssumption) -> Dict[str, Any]:
+
+    def _exclude_client_rendering(
+        self, feature_data: Dict[str, Any], assumption: SmartAssumption
+    ) -> Dict[str, Any]:
         """Exclude client-side rendering mods per PRD assumption"""
         return {
-            'conversion_type': 'exclusion',
-            'reason': 'client_side_rendering_unsupported',
-            'excluded_features': feature_data.get('rendering_features', []),
-            'assumption_applied': assumption.description,
-            'impact': assumption.impact.value,
-            'user_note': 'Client-side rendering mods cannot be converted to Bedrock'
+            "conversion_type": "exclusion",
+            "reason": "client_side_rendering_unsupported",
+            "excluded_features": feature_data.get("rendering_features", []),
+            "assumption_applied": assumption.description,
+            "impact": assumption.impact.value,
+            "user_note": "Client-side rendering mods cannot be converted to Bedrock",
         }
-    
-    def _handle_mod_dependency(self, feature_data: Dict[str, Any], assumption: SmartAssumption) -> Dict[str, Any]:
+
+    def _handle_mod_dependency(
+        self, feature_data: Dict[str, Any], assumption: SmartAssumption
+    ) -> Dict[str, Any]:
         """Handle mod dependencies per PRD assumption"""
         dependency_complexity = self._assess_dependency_complexity(feature_data)
-        
-        if dependency_complexity == 'simple':
+
+        if dependency_complexity == "simple":
             return {
-                'conversion_type': 'dependency_bundling',
-                'bundled_functions': feature_data.get('required_functions', []),
-                'assumption_applied': assumption.description,
-                'impact': assumption.impact.value,
-                'user_note': 'Simple dependency functions bundled into add-on'
+                "conversion_type": "dependency_bundling",
+                "bundled_functions": feature_data.get("required_functions", []),
+                "assumption_applied": assumption.description,
+                "impact": assumption.impact.value,
+                "user_note": "Simple dependency functions bundled into add-on",
             }
         else:
             return {
-                'conversion_type': 'dependency_failure',
-                'failed_dependency': feature_data.get('dependency_name'),
-                'reason': 'complex_dependency_unsupported',
-                'assumption_applied': assumption.description,
-                'impact': assumption.impact.value,
-                'user_note': 'Complex dependency prevents conversion - manual porting required'
+                "conversion_type": "dependency_failure",
+                "failed_dependency": feature_data.get("dependency_name"),
+                "reason": "complex_dependency_unsupported",
+                "assumption_applied": assumption.description,
+                "impact": assumption.impact.value,
+                "user_note": "Complex dependency prevents conversion - manual porting required",
             }
-    
-    
+
     def _assess_dependency_complexity(self, feature_data: Dict[str, Any]) -> str:
         """Assess if dependency is simple enough to bundle"""
         # Simple heuristics - would be more sophisticated in real implementation
-        dep_size = feature_data.get('dependency_size', 0)
-        dep_type = feature_data.get('dependency_type', 'unknown')
-        
-        if dep_size < 100000 and dep_type in ['library', 'utility']:  # < 100KB
-            return 'simple'
+        dep_size = feature_data.get("dependency_size", 0)
+        dep_type = feature_data.get("dependency_type", "unknown")
+
+        if dep_size < 100000 and dep_type in ["library", "utility"]:  # < 100KB
+            return "simple"
         else:
-            return 'complex'
-    
+            return "complex"
+
     def get_conflict_analysis(self, feature_type: str) -> Dict[str, Any]:
         """Get detailed analysis of assumption conflicts for a feature type"""
         all_matching = self.find_all_matching_assumptions(feature_type)
-        
+
         if len(all_matching) <= 1:
             return {
                 "feature_name": feature_type,
@@ -1149,23 +1291,25 @@ class SmartAssumptionEngine:
                 "resolution_details": {
                     "resolved_assumption": all_matching[0] if all_matching else None,
                     "resolution_reason": "No conflicts detected - only one or zero assumptions match",
-                    "total_matches": len(all_matching)
-                }
+                    "total_matches": len(all_matching),
+                },
             }
-        
+
         # Resolve conflict to determine selected assumption
-        conflict_resolution = self._resolve_assumption_conflict_with_details(all_matching, feature_type)
-        selected = conflict_resolution['resolved_assumption']
-        
+        conflict_resolution = self._resolve_assumption_conflict_with_details(
+            all_matching, feature_type
+        )
+        selected = conflict_resolution["resolved_assumption"]
+
         return {
             "feature_name": feature_type,
             "has_conflicts": True,
             "matching_assumptions": [a.java_feature for a in all_matching],
             "resolution_details": {
                 "resolved_assumption": selected,
-                "resolution_reason": conflict_resolution['resolution_reason'],
+                "resolution_reason": conflict_resolution["resolution_reason"],
                 "total_conflicts": len(all_matching),
                 "impact_levels": {a.java_feature: a.impact.value for a in all_matching},
-                "selected_impact": selected.impact.value
-            }
+                "selected_impact": selected.impact.value,
+            },
         }

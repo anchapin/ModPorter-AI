@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class MobCategory(Enum):
     """Categories for different mob types in Bedrock."""
+
     HOSTILE = "hostile"
     PASSIVE = "passive"
     NEUTRAL = "neutral"
@@ -52,7 +53,7 @@ class EntityConverter:
     Converter for Java entities to Bedrock entity format.
     Handles entity definitions, behaviors, and animations.
     """
-    
+
     def __init__(self):
         # Bedrock entity definition template
         self.entity_template = {
@@ -62,45 +63,35 @@ class EntityConverter:
                     "identifier": "",
                     "is_spawnable": True,
                     "is_summonable": True,
-                    "is_experimental": False
+                    "is_experimental": False,
                 },
                 "component_groups": {},
                 "components": {},
-                "events": {}
-            }
+                "events": {},
+            },
         }
-        
+
         # Common Bedrock entity components
         self.base_components = {
-            "minecraft:type_family": {
-                "family": ["mob"]
-            },
-            "minecraft:collision_box": {
-                "width": 0.6,
-                "height": 1.8
-            },
-            "minecraft:health": {
-                "value": 20,
-                "max": 20
-            },
-            "minecraft:movement": {
-                "value": 0.25
-            },
+            "minecraft:type_family": {"family": ["mob"]},
+            "minecraft:collision_box": {"width": 0.6, "height": 1.8},
+            "minecraft:health": {"value": 20, "max": 20},
+            "minecraft:movement": {"value": 0.25},
             "minecraft:navigation.walk": {
                 "can_path_over_water": True,
                 "avoid_water": True,
-                "avoid_damage_at_all_costs": True
+                "avoid_damage_at_all_costs": True,
             },
             "minecraft:movement.basic": {},
             "minecraft:jump.static": {},
             "minecraft:can_climb": {},
-            "minecraft:physics": {}
+            "minecraft:physics": {},
         }
-        
+
         # Behavior mappings from Java to Bedrock
         self.behavior_mappings = {
             "follow_player": "minecraft:behavior.follow_player",
-            "look_at_player": "minecraft:behavior.look_at_player", 
+            "look_at_player": "minecraft:behavior.look_at_player",
             "random_look_around": "minecraft:behavior.random_look_around",
             "random_stroll": "minecraft:behavior.random_stroll",
             "panic": "minecraft:behavior.panic",
@@ -109,200 +100,197 @@ class EntityConverter:
             "melee_attack": "minecraft:behavior.melee_attack",
             "ranged_attack": "minecraft:behavior.ranged_attack",
             "breed": "minecraft:behavior.breed",
-            "tempt": "minecraft:behavior.tempt"
+            "tempt": "minecraft:behavior.tempt",
         }
-    
+
     def convert_entities(self, java_entities: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Convert Java entities to Bedrock format.
-        
+
         Args:
             java_entities: List of Java entity definitions
-            
+
         Returns:
             Dictionary of Bedrock entity definitions
         """
         logger.info(f"Converting {len(java_entities)} Java entities to Bedrock format")
         bedrock_entities = {}
-        
+
         for java_entity in java_entities:
             try:
                 bedrock_entity = self._convert_java_entity(java_entity)
                 entity_id = bedrock_entity["minecraft:entity"]["description"]["identifier"]
                 bedrock_entities[entity_id] = bedrock_entity
-                
+
                 # Also generate behavior and animation files if needed
                 behaviors = self._generate_entity_behaviors(java_entity)
                 animations = self._generate_entity_animations(java_entity)
-                
+
                 if behaviors:
                     bedrock_entities[f"{entity_id}_behaviors"] = behaviors
                 if animations:
                     bedrock_entities[f"{entity_id}_animations"] = animations
-                    
+
             except Exception as e:
                 logger.error(f"Failed to convert entity {java_entity.get('id', 'unknown')}: {e}")
                 continue
-        
+
         logger.info(f"Successfully converted {len(bedrock_entities)} entities")
         return bedrock_entities
-    
+
     # Specialized Entity Template Methods for Issue #452
-    
+
     def generate_hostile_mob(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate a Bedrock hostile mob definition with AI behaviors.
-        
+
         Args:
             java_entity: Java hostile mob definition
-            
+
         Returns:
             Bedrock hostile mob entity definition
         """
         return self._create_hostile_mob_entity(java_entity)
-    
+
     def generate_passive_mob(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate a Bedrock passive mob definition with AI behaviors.
-        
+
         Args:
             java_entity: Java passive mob definition
-            
+
         Returns:
             Bedrock passive mob entity definition
         """
         return self._create_passive_mob_entity(java_entity)
-    
+
     def _create_hostile_mob_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """Create a Bedrock hostile mob entity with aggressive AI behaviors."""
-        entity_id = java_entity.get('id', 'unknown_hostile')
-        namespace = java_entity.get('namespace', 'modporter')
+        entity_id = java_entity.get("id", "unknown_hostile")
+        namespace = java_entity.get("namespace", "modporter")
         full_id = f"{namespace}:{entity_id}"
-        
+
         # Parse base properties
         properties = self._parse_java_entity_properties(java_entity)
         properties.entity_type = EntityType.HOSTILE
-        
+
         # Create entity definition
         bedrock_entity = {
             "format_version": "1.19.0",
             "minecraft:entity": {
                 "description": {
                     "identifier": full_id,
-                    "is_spawnable": java_entity.get('spawnable', True),
-                    "is_summonable": java_entity.get('summonable', True),
-                    "is_experimental": False
+                    "is_spawnable": java_entity.get("spawnable", True),
+                    "is_summonable": java_entity.get("summonable", True),
+                    "is_experimental": False,
                 },
                 "component_groups": {},
                 "components": {},
-                "events": {}
-            }
+                "events": {},
+            },
         }
-        
+
         components = bedrock_entity["minecraft:entity"]["components"]
-        
+
         # Base components
         components.update(self.base_components.copy())
-        
+
         # Apply properties
         self._apply_entity_properties(components, properties)
-        
+
         # Add hostile-specific AI behaviors
         self._add_hostile_ai_behaviors(components, java_entity)
-        
+
         # Add attack behavior
-        if java_entity.get('can_attack', True):
+        if java_entity.get("can_attack", True):
             components["minecraft:attack"] = {
                 "damage": properties.attack_damage if properties.attack_damage > 0 else 4.0
             }
-        
+
         # Add hostile type family
         components["minecraft:type_family"]["family"] = ["mob", "monster", "hostile"]
-        
+
         # Hostile mobs usually have spawn egg
-        if java_entity.get('has_spawn_egg', True):
+        if java_entity.get("has_spawn_egg", True):
             components["minecraft:spawn_egg"] = {
-                "base_color": java_entity.get('spawn_egg_primary', "#5A1D1D"),
-                "overlay_color": java_entity.get('spawn_egg_secondary', "#1D1D1D")
+                "base_color": java_entity.get("spawn_egg_primary", "#5A1D1D"),
+                "overlay_color": java_entity.get("spawn_egg_secondary", "#1D1D1D"),
             }
-        
+
         # Add loot table
-        if 'loot_table' in java_entity:
-            components["minecraft:loot"] = {"table": java_entity['loot_table']}
-        
+        if "loot_table" in java_entity:
+            components["minecraft:loot"] = {"table": java_entity["loot_table"]}
+
         return bedrock_entity
-    
+
     def _create_passive_mob_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """Create a Bedrock passive mob entity with peaceful AI behaviors."""
-        entity_id = java_entity.get('id', 'unknown_passive')
-        namespace = java_entity.get('namespace', 'modporter')
+        entity_id = java_entity.get("id", "unknown_passive")
+        namespace = java_entity.get("namespace", "modporter")
         full_id = f"{namespace}:{entity_id}"
-        
+
         # Parse base properties
         properties = self._parse_java_entity_properties(java_entity)
         properties.entity_type = EntityType.PASSIVE
-        
+
         # Create entity definition
         bedrock_entity = {
             "format_version": "1.19.0",
             "minecraft:entity": {
                 "description": {
                     "identifier": full_id,
-                    "is_spawnable": java_entity.get('spawnable', True),
-                    "is_summonable": java_entity.get('summonable', True),
-                    "is_experimental": False
+                    "is_spawnable": java_entity.get("spawnable", True),
+                    "is_summonable": java_entity.get("summonable", True),
+                    "is_experimental": False,
                 },
                 "component_groups": {},
                 "components": {},
-                "events": {}
-            }
+                "events": {},
+            },
         }
-        
+
         components = bedrock_entity["minecraft:entity"]["components"]
-        
+
         # Base components
         components.update(self.base_components.copy())
-        
+
         # Apply properties
         self._apply_entity_properties(components, properties)
-        
+
         # Add passive-specific AI behaviors (no attack, peaceful)
         self._add_passive_ai_behaviors(components, java_entity)
-        
+
         # Remove attack capabilities for passive mobs
         if "minecraft:attack" in components:
             del components["minecraft:attack"]
-        
+
         # Add passive type family
         components["minecraft:type_family"]["family"] = ["mob", "passive"]
-        
+
         # Passive mobs have spawn egg
-        if java_entity.get('has_spawn_egg', True):
+        if java_entity.get("has_spawn_egg", True):
             components["minecraft:spawn_egg"] = {
-                "base_color": java_entity.get('spawn_egg_primary', "#1D5D1D"),
-                "overlay_color": java_entity.get('spawn_egg_secondary', "#FFFFFF")
+                "base_color": java_entity.get("spawn_egg_primary", "#1D5D1D"),
+                "overlay_color": java_entity.get("spawn_egg_secondary", "#FFFFFF"),
             }
-        
+
         # Add breed behavior if applicable
-        if java_entity.get('can_breed', True):
+        if java_entity.get("can_breed", True):
             components["minecraft:behavior.breed"] = {"priority": 4}
-        
+
         # Add tameable component if applicable
-        if java_entity.get('is_tameable', False):
+        if java_entity.get("is_tameable", False):
             components["minecraft:tameable"] = {
-                "probability": java_entity.get('tame_probability', 0.33),
-                "tame_event": {
-                    "event": "minecraft:on_tame",
-                    "target": "self"
-                }
+                "probability": java_entity.get("tame_probability", 0.33),
+                "tame_event": {"event": "minecraft:on_tame", "target": "self"},
             }
-        
+
         # Add loot table (for when passive mobs are killed)
-        if 'loot_table' in java_entity:
-            components["minecraft:loot"] = {"table": java_entity['loot_table']}
-        
+        if "loot_table" in java_entity:
+            components["minecraft:loot"] = {"table": java_entity["loot_table"]}
+
         return bedrock_entity
-    
+
     def _add_hostile_ai_behaviors(self, components: Dict[str, Any], java_entity: Dict[str, Any]):
         """Add AI behaviors specific to hostile mobs."""
         # Melee attack behavior
@@ -310,46 +298,46 @@ class EntityConverter:
             "priority": 3,
             "speed_multiplier": 1.0,
             "track_target": True,
-            "reach_multiplier": 0.8
+            "reach_multiplier": 0.8,
         }
-        
+
         # Look at target
         components["minecraft:behavior.look_at_player"] = {
             "priority": 5,
             "look_distance": 8.0,
-            "look_time": [2, 4]
+            "look_time": [2, 4],
         }
-        
+
         # Move towards target
         components["minecraft:behavior.move_towards_target"] = {
             "priority": 4,
             "speed_multiplier": 1.0,
-            "target_distance": 4.0
+            "target_distance": 4.0,
         }
-        
+
         # Wander when idle
         components["minecraft:behavior.wander"] = {
             "priority": 6,
             "speed_multiplier": 0.8,
             "wander_distance": 10,
-            "start_chance": 0.2
+            "start_chance": 0.2,
         }
-        
+
         # Panic when hurt
         components["minecraft:behavior.panic"] = {
             "priority": 1,
             "speed_multiplier": 1.25,
-            "panic_sound": "mob.hostile.hurt"
+            "panic_sound": "mob.hostile.hurt",
         }
-        
+
         # Add Java entity's custom behaviors
-        if 'behaviors' in java_entity:
+        if "behaviors" in java_entity:
             self._add_entity_behaviors(components, java_entity)
-        
+
         # Add custom AI goals
-        if 'ai_goals' in java_entity:
-            self._add_ai_goals(components, java_entity['ai_goals'])
-    
+        if "ai_goals" in java_entity:
+            self._add_ai_goals(components, java_entity["ai_goals"])
+
     def _add_passive_ai_behaviors(self, components: Dict[str, Any], java_entity: Dict[str, Any]):
         """Add AI behaviors specific to passive mobs."""
         # Follow player if tamed
@@ -357,181 +345,175 @@ class EntityConverter:
             "priority": 6,
             "speed_multiplier": 1.0,
             "start_distance": 5.0,
-            "stop_distance": 2.0
+            "stop_distance": 2.0,
         }
-        
+
         # Random look around
         components["minecraft:behavior.random_look_around"] = {
             "priority": 8,
             "look_distance": 6.0,
-            "look_time": [4, 8]
+            "look_time": [4, 8],
         }
-        
+
         # Random wander
         components["minecraft:behavior.wander"] = {
             "priority": 7,
             "speed_multiplier": 0.5,
             "wander_distance": 5,
-            "start_chance": 0.3
+            "start_chance": 0.3,
         }
-        
+
         # Float (swimming idle)
-        components["minecraft:behavior.float"] = {
-            "priority": 0
-        }
-        
+        components["minecraft:behavior.float"] = {"priority": 0}
+
         # Add Java entity's custom behaviors
-        if 'behaviors' in java_entity:
+        if "behaviors" in java_entity:
             self._add_entity_behaviors(components, java_entity)
-        
+
         # Add custom AI goals
-        if 'ai_goals' in java_entity:
-            self._add_ai_goals(components, java_entity['ai_goals'])
-    
+        if "ai_goals" in java_entity:
+            self._add_ai_goals(components, java_entity["ai_goals"])
+
     def _convert_java_entity(self, java_entity: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a single Java entity to Bedrock format."""
-        entity_id = java_entity.get('id', 'unknown_entity')
-        namespace = java_entity.get('namespace', 'modporter')
+        entity_id = java_entity.get("id", "unknown_entity")
+        namespace = java_entity.get("namespace", "modporter")
         full_id = f"{namespace}:{entity_id}"
-        
+
         # Create entity definition
         bedrock_entity = {
             "format_version": "1.19.0",
             "minecraft:entity": {
                 "description": {
                     "identifier": full_id,
-                    "is_spawnable": java_entity.get('spawnable', True),
-                    "is_summonable": java_entity.get('summonable', True),
-                    "is_experimental": False
+                    "is_spawnable": java_entity.get("spawnable", True),
+                    "is_summonable": java_entity.get("summonable", True),
+                    "is_experimental": False,
                 },
                 "component_groups": {},
                 "components": {},
-                "events": {}
-            }
+                "events": {},
+            },
         }
-        
+
         # Parse Java properties
         properties = self._parse_java_entity_properties(java_entity)
-        
+
         # Add base components
         components = bedrock_entity["minecraft:entity"]["components"]
         components.update(self.base_components.copy())
-        
+
         # Update with entity-specific properties
         self._apply_entity_properties(components, properties)
-        
+
         # Add behaviors
         self._add_entity_behaviors(components, java_entity)
-        
+
         # Add AI goals if present
-        if 'ai_goals' in java_entity:
-            self._add_ai_goals(components, java_entity['ai_goals'])
-        
+        if "ai_goals" in java_entity:
+            self._add_ai_goals(components, java_entity["ai_goals"])
+
         # Add loot table if present
-        if 'loot_table' in java_entity:
-            components["minecraft:loot"] = {
-                "table": java_entity['loot_table']
-            }
-        
+        if "loot_table" in java_entity:
+            components["minecraft:loot"] = {"table": java_entity["loot_table"]}
+
         # Add spawn egg if applicable
-        if java_entity.get('has_spawn_egg', False):
+        if java_entity.get("has_spawn_egg", False):
             components["minecraft:spawn_egg"] = {
-                "base_color": java_entity.get('spawn_egg_primary', "#7F7F7F"),
-                "overlay_color": java_entity.get('spawn_egg_secondary', "#FFFFFF")
+                "base_color": java_entity.get("spawn_egg_primary", "#7F7F7F"),
+                "overlay_color": java_entity.get("spawn_egg_secondary", "#FFFFFF"),
             }
-        
+
         return bedrock_entity
-    
+
     def _parse_java_entity_properties(self, java_entity: Dict[str, Any]) -> EntityProperties:
         """Parse Java entity properties."""
         properties = EntityProperties()
-        
-        if 'attributes' in java_entity:
-            attrs = java_entity['attributes']
-            properties.health = attrs.get('max_health', 20.0)
-            properties.movement_speed = attrs.get('movement_speed', 0.25)
-            properties.follow_range = attrs.get('follow_range', 16.0)
-            properties.attack_damage = attrs.get('attack_damage', 0.0)
-            properties.armor = attrs.get('armor', 0.0)
-            properties.knockback_resistance = attrs.get('knockback_resistance', 0.0)
-        
+
+        if "attributes" in java_entity:
+            attrs = java_entity["attributes"]
+            properties.health = attrs.get("max_health", 20.0)
+            properties.movement_speed = attrs.get("movement_speed", 0.25)
+            properties.follow_range = attrs.get("follow_range", 16.0)
+            properties.attack_damage = attrs.get("attack_damage", 0.0)
+            properties.armor = attrs.get("armor", 0.0)
+            properties.knockback_resistance = attrs.get("knockback_resistance", 0.0)
+
         # Determine entity type
-        entity_category = java_entity.get('category', 'passive').lower()
+        entity_category = java_entity.get("category", "passive").lower()
         try:
             properties.entity_type = EntityType(entity_category)
         except ValueError:
             logger.warning(f"Unknown entity category: {entity_category}, using passive")
             properties.entity_type = EntityType.PASSIVE
-        
+
         # Environmental properties
-        properties.can_swim = java_entity.get('can_swim', True)
-        properties.can_climb = java_entity.get('can_climb', False)
-        properties.can_fly = java_entity.get('can_fly', False)
-        properties.breathes_air = java_entity.get('breathes_air', True)
-        properties.breathes_water = java_entity.get('breathes_water', False)
-        properties.pushable = java_entity.get('pushable', True)
-        
+        properties.can_swim = java_entity.get("can_swim", True)
+        properties.can_climb = java_entity.get("can_climb", False)
+        properties.can_fly = java_entity.get("can_fly", False)
+        properties.breathes_air = java_entity.get("breathes_air", True)
+        properties.breathes_water = java_entity.get("breathes_water", False)
+        properties.pushable = java_entity.get("pushable", True)
+
         return properties
-    
+
     def _apply_entity_properties(self, components: Dict[str, Any], properties: EntityProperties):
         """Apply entity properties to Bedrock components."""
         # Health
         components["minecraft:health"]["value"] = properties.health
         components["minecraft:health"]["max"] = properties.health
-        
+
         # Movement
         components["minecraft:movement"]["value"] = properties.movement_speed
-        
+
         # Combat properties
         if properties.attack_damage > 0:
             components["minecraft:damage"] = {
                 "range": [properties.attack_damage, properties.attack_damage]
             }
-            components["minecraft:attack"] = {
-                "damage": properties.attack_damage
-            }
-        
+            components["minecraft:attack"] = {"damage": properties.attack_damage}
+
         # Armor
         if properties.armor > 0:
             components["minecraft:damage_sensor"] = {
                 "triggers": [
                     {
                         "cause": "all",
-                        "damage_modifier": -(properties.armor * 4)  # Convert to damage reduction
+                        "damage_modifier": -(properties.armor * 4),  # Convert to damage reduction
                     }
                 ]
             }
-        
+
         # Knockback resistance
         if properties.knockback_resistance > 0:
             components["minecraft:knockback_resistance"] = {
                 "value": properties.knockback_resistance
             }
-        
+
         # Environmental adaptations
         if not properties.can_swim:
             components["minecraft:navigation.walk"]["avoid_water"] = True
-        
+
         if properties.can_climb:
             components["minecraft:can_climb"] = {}
-        
+
         if properties.can_fly:
             components["minecraft:can_fly"] = {}
             components["minecraft:movement.fly"] = {}
-        
+
         if not properties.breathes_air:
             components["minecraft:breathable"] = {
                 "breathes_air": False,
                 "breathes_water": properties.breathes_water,
-                "generates_bubbles": False
+                "generates_bubbles": False,
             }
-        
+
         if not properties.pushable:
             components["minecraft:pushable"] = {
                 "is_pushable": False,
-                "is_pushable_by_piston": False
+                "is_pushable_by_piston": False,
             }
-        
+
         # Type family based on entity type
         type_families = ["mob"]
         if properties.entity_type == EntityType.HOSTILE:
@@ -542,137 +524,134 @@ class EntityConverter:
             type_families.append("neutral")
         elif properties.entity_type == EntityType.BOSS:
             type_families.extend(["boss", "hostile"])
-        
+
         components["minecraft:type_family"]["family"] = type_families
-    
+
     def _add_entity_behaviors(self, components: Dict[str, Any], java_entity: Dict[str, Any]):
         """Add behavior components based on Java entity behaviors."""
-        behaviors = java_entity.get('behaviors', [])
-        
+        behaviors = java_entity.get("behaviors", [])
+
         for behavior in behaviors:
-            behavior_type = behavior.get('type', '')
+            behavior_type = behavior.get("type", "")
             bedrock_behavior = self.behavior_mappings.get(behavior_type)
-            
+
             if bedrock_behavior:
-                behavior_config = behavior.get('config', {})
+                behavior_config = behavior.get("config", {})
                 components[bedrock_behavior] = behavior_config
-    
+
     def _add_ai_goals(self, components: Dict[str, Any], ai_goals: List[Dict[str, Any]]):
         """Add AI goals as behavior components."""
         for goal in ai_goals:
-            goal_type = goal.get('type', '')
-            priority = goal.get('priority', 1)
-            
+            goal_type = goal.get("type", "")
+            priority = goal.get("priority", 1)
+
             # Map Java AI goals to Bedrock behaviors
             if goal_type == "look_at_player":
                 components["minecraft:behavior.look_at_player"] = {
                     "priority": priority,
-                    "look_distance": goal.get('range', 6.0)
+                    "look_distance": goal.get("range", 6.0),
                 }
             elif goal_type == "random_look_around":
-                components["minecraft:behavior.random_look_around"] = {
-                    "priority": priority
-                }
+                components["minecraft:behavior.random_look_around"] = {"priority": priority}
             elif goal_type == "random_stroll":
                 components["minecraft:behavior.random_stroll"] = {
                     "priority": priority,
-                    "speed_multiplier": goal.get('speed', 1.0)
+                    "speed_multiplier": goal.get("speed", 1.0),
                 }
             elif goal_type == "panic":
                 components["minecraft:behavior.panic"] = {
                     "priority": priority,
-                    "speed_multiplier": goal.get('speed_multiplier', 1.25)
+                    "speed_multiplier": goal.get("speed_multiplier", 1.25),
                 }
             elif goal_type == "melee_attack":
                 components["minecraft:behavior.melee_attack"] = {
                     "priority": priority,
-                    "speed_multiplier": goal.get('speed_multiplier', 1.0),
-                    "track_target": goal.get('track_target', True)
+                    "speed_multiplier": goal.get("speed_multiplier", 1.0),
+                    "track_target": goal.get("track_target", True),
                 }
-    
+
     def _generate_entity_behaviors(self, java_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Generate separate behavior file for complex entities."""
         # For now, return None as behaviors are integrated into main entity file
         # In future versions, complex behaviors could be separated
         return None
-    
+
     def _generate_entity_animations(self, java_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Generate animation definitions for entities."""
-        animations = java_entity.get('animations', [])
+        animations = java_entity.get("animations", [])
         if not animations:
             return None
-        
-        animation_definitions = {
-            "format_version": "1.19.0",
-            "animations": {}
-        }
-        
+
+        animation_definitions = {"format_version": "1.19.0", "animations": {}}
+
         for animation in animations:
-            anim_name = animation.get('name', 'default')
-            animation_definitions["animations"][f"animation.{java_entity.get('id', 'entity')}.{anim_name}"] = {
-                "loop": animation.get('loop', False),
-                "animation_length": animation.get('length', 1.0),
-                "bones": animation.get('bones', {})
+            anim_name = animation.get("name", "default")
+            animation_definitions["animations"][
+                f"animation.{java_entity.get('id', 'entity')}.{anim_name}"
+            ] = {
+                "loop": animation.get("loop", False),
+                "animation_length": animation.get("length", 1.0),
+                "bones": animation.get("bones", {}),
             }
-        
+
         return animation_definitions if animation_definitions["animations"] else None
-    
-    def write_entities_to_disk(self, entities: Dict[str, Any], bp_path: Path, rp_path: Path) -> Dict[str, List[Path]]:
+
+    def write_entities_to_disk(
+        self, entities: Dict[str, Any], bp_path: Path, rp_path: Path
+    ) -> Dict[str, List[Path]]:
         """
         Write entity definitions to disk.
-        
+
         Args:
             entities: Dictionary of entity definitions
             bp_path: Behavior pack path
             rp_path: Resource pack path
-            
+
         Returns:
             Dictionary of written file paths
         """
-        written_files = {
-            'entities': [],
-            'behaviors': [],
-            'animations': []
-        }
-        
+        written_files = {"entities": [], "behaviors": [], "animations": []}
+
         # Create directories
         bp_entities_dir = bp_path / "entities"
         bp_entities_dir.mkdir(parents=True, exist_ok=True)
-        
+
         rp_entity_dir = rp_path / "entity"
         rp_entity_dir.mkdir(parents=True, exist_ok=True)
-        
+
         for entity_key, entity_data in entities.items():
             try:
-                if entity_key.endswith('_behaviors'):
+                if entity_key.endswith("_behaviors"):
                     # Write behavior file
-                    entity_id = entity_key.replace('_behaviors', '')
+                    entity_id = entity_key.replace("_behaviors", "")
                     behavior_file = bp_entities_dir / f"{entity_id.split(':')[-1]}_behaviors.json"
-                    with open(behavior_file, 'w', encoding='utf-8') as f:
+                    with open(behavior_file, "w", encoding="utf-8") as f:
                         json.dump(entity_data, f, indent=2, ensure_ascii=False)
-                    written_files['behaviors'].append(behavior_file)
-                    
-                elif entity_key.endswith('_animations'):
+                    written_files["behaviors"].append(behavior_file)
+
+                elif entity_key.endswith("_animations"):
                     # Write animation file to resource pack
-                    entity_id = entity_key.replace('_animations', '')
+                    entity_id = entity_key.replace("_animations", "")
                     anim_file = rp_entity_dir / f"{entity_id.split(':')[-1]}_animations.json"
-                    with open(anim_file, 'w', encoding='utf-8') as f:
+                    with open(anim_file, "w", encoding="utf-8") as f:
                         json.dump(entity_data, f, indent=2, ensure_ascii=False)
-                    written_files['animations'].append(anim_file)
-                    
+                    written_files["animations"].append(anim_file)
+
                 else:
                     # Write main entity file
                     entity_file = bp_entities_dir / f"{entity_key.split(':')[-1]}.json"
-                    with open(entity_file, 'w', encoding='utf-8') as f:
+                    with open(entity_file, "w", encoding="utf-8") as f:
                         json.dump(entity_data, f, indent=2, ensure_ascii=False)
-                    written_files['entities'].append(entity_file)
-                    
+                    written_files["entities"].append(entity_file)
+
             except Exception as e:
                 logger.error(f"Failed to write entity {entity_key}: {e}")
                 continue
-        
-        logger.info(f"Written {len(written_files['entities'])} entities, "
-                   f"{len(written_files['behaviors'])} behaviors, "
-                   f"{len(written_files['animations'])} animations to disk")
-        
+
+        logger.info(
+            f"Written {len(written_files['entities'])} entities, "
+            f"{len(written_files['behaviors'])} behaviors, "
+            f"{len(written_files['animations'])} animations to disk"
+        )
+
         return written_files

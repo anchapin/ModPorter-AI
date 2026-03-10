@@ -28,9 +28,7 @@ from main import app
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
@@ -204,9 +202,7 @@ async def test_progress_handler_broadcast():
     await manager.connect(mock_ws, conversion_id)
 
     # Broadcast agent start
-    await ProgressHandler.broadcast_agent_start(
-        conversion_id, "TestAgent", "Starting test task"
-    )
+    await ProgressHandler.broadcast_agent_start(conversion_id, "TestAgent", "Starting test task")
 
     # Verify message sent
     assert mock_ws.send_json.call_count == 1
@@ -216,9 +212,7 @@ async def test_progress_handler_broadcast():
     assert sent_data["data"]["progress"] == 0
 
     # Broadcast agent update
-    await ProgressHandler.broadcast_agent_update(
-        conversion_id, "TestAgent", 50, "Halfway through"
-    )
+    await ProgressHandler.broadcast_agent_update(conversion_id, "TestAgent", 50, "Halfway through")
 
     assert mock_ws.send_json.call_count == 2
     sent_data = mock_ws.send_json.call_args[0][0]

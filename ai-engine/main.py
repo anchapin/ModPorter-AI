@@ -27,8 +27,7 @@ debug_mode = os.getenv("DEBUG", "false").lower() == "true"
 
 # Also configure structlog for structured JSON logging in production
 configure_structlog(
-    debug_mode=debug_mode,
-    json_format=os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
+    debug_mode=debug_mode, json_format=os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
 )
 
 setup_logging(
@@ -45,6 +44,7 @@ from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_infere
 # Import progress callback for real-time updates
 try:
     from utils.progress_callback import create_progress_callback, cleanup_progress_callback
+
     PROGRESS_CALLBACK_AVAILABLE = True
 except ImportError:
     PROGRESS_CALLBACK_AVAILABLE = False
@@ -85,7 +85,9 @@ app = FastAPI(
 )
 
 # CORS middleware - Restrict origins for security
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(
+    ","
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -110,11 +112,15 @@ class RedisJobManager:
         try:
             if not self.available:
                 raise HTTPException(status_code=503, detail="Job state storage unavailable")
-            
+
             status_dict = status.model_dump()
-            status_dict['started_at'] = status_dict['started_at'].isoformat() if status_dict['started_at'] else None
-            status_dict['completed_at'] = status_dict['completed_at'].isoformat() if status_dict['completed_at'] else None
-            
+            status_dict["started_at"] = (
+                status_dict["started_at"].isoformat() if status_dict["started_at"] else None
+            )
+            status_dict["completed_at"] = (
+                status_dict["completed_at"].isoformat() if status_dict["completed_at"] else None
+            )
+
             await self.redis.set(
                 f"ai_engine:jobs:{job_id}", 
                 json.dumps(status_dict),
@@ -137,11 +143,11 @@ class RedisJobManager:
             
             status_dict = json.loads(data)
             # Convert ISO strings back to datetime
-            if status_dict.get('started_at'):
-                status_dict['started_at'] = datetime.fromisoformat(status_dict['started_at'])
-            if status_dict.get('completed_at'):
-                status_dict['completed_at'] = datetime.fromisoformat(status_dict['completed_at'])
-                
+            if status_dict.get("started_at"):
+                status_dict["started_at"] = datetime.fromisoformat(status_dict["started_at"])
+            if status_dict.get("completed_at"):
+                status_dict["completed_at"] = datetime.fromisoformat(status_dict["completed_at"])
+
             return ConversionStatus(**status_dict)
         except Exception as e:
             logger.error(f"Failed to retrieve job status from Redis: {e}", exc_info=True)
@@ -169,6 +175,7 @@ class HealthResponse(BaseModel):
 
 class DependencyHealth(BaseModel):
     """Individual dependency health status"""
+
     name: str
     status: str
     latency_ms: float = 0.0
@@ -177,6 +184,7 @@ class DependencyHealth(BaseModel):
 
 class HealthStatus(BaseModel):
     """Health check response model for readiness/liveness"""
+
     status: str = Field(..., description="Overall health status: healthy, degraded, or unhealthy")
     timestamp: str = Field(..., description="ISO timestamp of the health check")
     checks: Dict[str, Any] = Field(..., description="Individual check results")
@@ -241,6 +249,7 @@ async def startup_event():
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Service initialization failed")
 
+
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Check the health status of the AI Engine"""
@@ -263,36 +272,36 @@ async def check_redis_health() -> DependencyHealth:
     Check Redis connectivity and return health status.
     """
     start_time = time.time()
-    
+
     try:
         if not redis_client:
             return DependencyHealth(
                 name="redis",
                 status="unhealthy",
                 latency_ms=0.0,
-                message="Redis client not initialized"
+                message="Redis client not initialized",
             )
-        
+
         # Try a simple Redis operation
         await redis_client.ping()
-        
+
         latency_ms = (time.time() - start_time) * 1000
-        
+
         return DependencyHealth(
             name="redis",
             status="healthy",
             latency_ms=latency_ms,
-            message="Redis connection successful"
+            message="Redis connection successful",
         )
     except Exception as e:
         latency_ms = (time.time() - start_time) * 1000
         logger.error(f"Redis health check failed: {e}")
-        
+
         return DependencyHealth(
             name="redis",
             status="unhealthy",
             latency_ms=latency_ms,
-            message=f"Redis connection failed: {str(e)}"
+            message=f"Redis connection failed: {str(e)}",
         )
 
 
@@ -300,24 +309,24 @@ async def check_redis_health() -> DependencyHealth:
 async def readiness_check():
     """
     Readiness probe - checks if the application can serve traffic.
-    
+
     This endpoint verifies that all required dependencies (Redis) are available.
     The application should only receive traffic when this endpoint returns healthy.
     """
     checks = []
-    
+
     # Check Redis
     redis_health = await check_redis_health()
     checks.append(redis_health)
-    
+
     # Determine overall status
     unhealthy_checks = [c for c in checks if c.status == "unhealthy"]
-    
+
     if unhealthy_checks:
         status = "unhealthy"
     else:
         status = "healthy"
-    
+
     return HealthStatus(
         status=status,
         timestamp=datetime.utcnow().isoformat(),
@@ -326,7 +335,7 @@ async def readiness_check():
                 c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
                 for c in checks
             }
-        }
+        },
     )
 
 
@@ -334,21 +343,18 @@ async def readiness_check():
 async def liveness_check():
     """
     Liveness probe - checks if the application is running and doesn't need restart.
-    
+
     This endpoint verifies that the application process is running and can handle requests.
     """
     return HealthStatus(
         status="healthy",
         timestamp=datetime.utcnow().isoformat(),
-        checks={"application": {"status": "running", "message": "Application process is running"}}
+        checks={"application": {"status": "running", "message": "Application process is running"}},
     )
 
 
 @app.post("/api/v1/convert", response_model=ConversionResponse, tags=["conversion"])
-async def start_conversion(
-    request: ConversionRequest,
-    background_tasks: BackgroundTasks
-):
+async def start_conversion(request: ConversionRequest, background_tasks: BackgroundTasks):
     """Start a new mod conversion job"""
     
     if not job_manager or not job_manager.available:
@@ -387,6 +393,7 @@ async def start_conversion(
         message="Conversion job started",
         estimated_time=120  # Placeholder - would be calculated based on mod size
     )
+
 
 @app.get("/api/v1/status/{job_id}", response_model=ConversionStatus, tags=["conversion"])
 async def get_conversion_status(job_id: str):
@@ -430,9 +437,9 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
         job_status.message = "Analyzing mod structure"
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
-        
+
         logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
-        
+
         # Create progress callback for real-time updates if available
         if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
             try:
@@ -458,7 +465,7 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 progress_callback=progress_callback
             )
             logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
-            
+
             # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)
             if job_status:
@@ -482,7 +489,9 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
                 job_status = await job_manager.get_job_status(job_id)
                 if job_status:
                     job_status.status = "failed"
-                    job_status.message = f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                    job_status.message = (
+                        f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                    )
                     await job_manager.set_job_status(job_id, job_status)
                 logger.error(f"Conversion failed for job {job_id}: {conversion_result.get('error')}")
                 return
@@ -511,8 +520,10 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
             # Verify output file was created
             if not os.path.exists(output_path):
                 logger.error(f"Output file not created by conversion crew: {output_path}")
-                logger.error("This indicates a serious conversion failure that should not be masked")
-                
+                logger.error(
+                    "This indicates a serious conversion failure that should not be masked"
+                )
+
                 # Mark job as failed explicitly instead of creating a fake successful output
                 job_status = await job_manager.get_job_status(job_id)
                 if job_status:
@@ -554,7 +565,9 @@ async def process_conversion(job_id: str, mod_file_path: str, options: Dict[str,
             try:
                 await job_manager.set_job_status(job_id, job_status)
             except Exception as status_error:
-                logger.error(f"Failed to update job status after error: {status_error}", exc_info=True)
+                logger.error(
+                    f"Failed to update job status after error: {status_error}", exc_info=True
+                )
     finally:
         # Clean up progress callback
         if progress_callback and PROGRESS_CALLBACK_AVAILABLE and cleanup_progress_callback:

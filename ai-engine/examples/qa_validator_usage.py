@@ -33,7 +33,9 @@ def validate_addon(mcaddon_path: str):
     result = agent.validate_mcaddon(mcaddon_path)
 
     # Display overall results
-    score_icon = "✓" if result['overall_score'] >= 90 else "⚠" if result['overall_score'] >= 70 else "✗"
+    score_icon = (
+        "✓" if result["overall_score"] >= 90 else "⚠" if result["overall_score"] >= 70 else "✗"
+    )
     print(f"{score_icon} Overall Score: {result['overall_score']}/100")
     print(f"   Status: {result['status'].upper()}")
     print(f"   Time: {result.get('validation_time', 0):.2f}s")
@@ -44,24 +46,30 @@ def validate_addon(mcaddon_path: str):
     print("Validation Results:")
     print("-" * 70)
 
-    for category, validation in result['validations'].items():
-        status_icon = "✓" if validation['status'] == "pass" else "⚠" if validation['status'] == "partial" else "✗"
+    for category, validation in result["validations"].items():
+        status_icon = (
+            "✓"
+            if validation["status"] == "pass"
+            else "⚠"
+            if validation["status"] == "partial"
+            else "✗"
+        )
         print(f"\n{status_icon} {category.replace('_', ' ').title()}")
         print(f"   Status: {validation['status']}")
         print(f"   Checks: {validation['passed']}/{validation['checks']}")
 
-        if validation.get('errors'):
+        if validation.get("errors"):
             print(f"   Errors ({len(validation['errors'])}):")
-            for error in validation['errors'][:3]:
+            for error in validation["errors"][:3]:
                 print(f"     - {error}")
-            if len(validation['errors']) > 3:
+            if len(validation["errors"]) > 3:
                 print(f"     ... and {len(validation['errors']) - 3} more")
 
-        if validation.get('warnings'):
+        if validation.get("warnings"):
             print(f"   Warnings ({len(validation['warnings'])}):")
-            for warning in validation['warnings'][:3]:
+            for warning in validation["warnings"][:3]:
                 print(f"     - {warning}")
-            if len(validation['warnings']) > 3:
+            if len(validation["warnings"]) > 3:
                 print(f"     ... and {len(validation['warnings']) - 3} more")
 
     # Display statistics
@@ -70,15 +78,15 @@ def validate_addon(mcaddon_path: str):
     print("Statistics:")
     print("-" * 70)
 
-    stats = result.get('stats', {})
+    stats = result.get("stats", {})
     print(f"Total Files: {stats.get('total_files', 0)}")
     print(f"Total Size: {stats.get('total_size_bytes', 0) / 1024:.1f} KB")
     print(f"Compressed Size: {stats.get('total_size_compressed', 0) / 1024:.1f} KB")
 
-    packs = stats.get('packs', {})
-    if packs.get('behavior_packs'):
+    packs = stats.get("packs", {})
+    if packs.get("behavior_packs"):
         print(f"Behavior Packs: {', '.join(packs['behavior_packs'])}")
-    if packs.get('resource_packs'):
+    if packs.get("resource_packs"):
         print(f"Resource Packs: {', '.join(packs['resource_packs'])}")
 
     # Display recommendations
@@ -87,7 +95,7 @@ def validate_addon(mcaddon_path: str):
     print("Recommendations:")
     print("-" * 70)
 
-    recommendations = result.get('recommendations', [])
+    recommendations = result.get("recommendations", [])
     if recommendations:
         for i, rec in enumerate(recommendations, 1):
             print(f"{i}. {rec}")
@@ -95,23 +103,23 @@ def validate_addon(mcaddon_path: str):
         print("No recommendations - add-on is in good shape!")
 
     # Display issues
-    if result.get('issues'):
+    if result.get("issues"):
         print()
         print("-" * 70)
         print("Issues Found:")
         print("-" * 70)
-        for issue in result['issues'][:5]:
-            severity = issue.get('severity', 'unknown').upper()
-            category = issue.get('category', 'general')
-            message = issue.get('message', issue.get('description', ''))
+        for issue in result["issues"][:5]:
+            severity = issue.get("severity", "unknown").upper()
+            category = issue.get("category", "general")
+            message = issue.get("message", issue.get("description", ""))
             print(f"[{severity}] {category}: {message}")
-        if len(result['issues']) > 5:
+        if len(result["issues"]) > 5:
             print(f"... and {len(result['issues']) - 5} more issues")
 
     print()
     print("=" * 70)
 
-    return result['status'] in ['pass', 'partial']
+    return result["status"] in ["pass", "partial"]
 
 
 def main():
@@ -138,6 +146,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

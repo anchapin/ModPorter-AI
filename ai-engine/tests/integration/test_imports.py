@@ -1,4 +1,5 @@
 """Test basic imports to verify package structure."""
+
 import pytest
 import sys
 import os
@@ -20,7 +21,9 @@ def test_can_import_main():
 
     # Verify key imports are present
     assert "from fastapi import FastAPI" in main_content, "main.py should import FastAPI"
-    assert "from crew.conversion_crew import" in main_content, "main.py should import from crew.conversion_crew"
+    assert "from crew.conversion_crew import" in main_content, (
+        "main.py should import from crew.conversion_crew"
+    )
     assert "ConversionStatusEnum" in main_content, "main.py should define ConversionStatusEnum"
     assert "app = FastAPI" in main_content, "main.py should initialize FastAPI app"
 
@@ -36,7 +39,7 @@ def test_can_import_agents():
         "agents/logic_translator.py",
         "agents/asset_converter.py",
         "agents/packaging_agent.py",
-        "agents/qa_validator.py"
+        "agents/qa_validator.py",
     ]
 
     for agent_file in agent_files:
@@ -50,8 +53,9 @@ def test_can_import_agents():
         # Verify agent has basic structure
         assert "class" in content, f"{agent_file} should define a class"
         # Most agents import from crewai.tools
-        assert ("from crewai.tools" in content or "from crewai" in content), \
+        assert "from crewai.tools" in content or "from crewai" in content, (
             f"{agent_file} should import from crewai"
+        )
 
     print("✅ All agent modules have correct structure")
 

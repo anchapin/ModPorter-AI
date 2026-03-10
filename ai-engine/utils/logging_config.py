@@ -72,11 +72,11 @@ def configure_structlog(
         processors.append(structlog.processors.JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer(colors=False))
-    
+
     # Add exception info processor
     processors.append(structlog.processors.StackInfoRenderer())
     processors.append(structlog.processors.format_exc_info)
-    
+
     # Configure structlog
     structlog.configure(
         processors=processors,
@@ -96,10 +96,11 @@ def configure_structlog(
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, log_level, logging.INFO))
-    console_handler.setFormatter(logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    ))
+    console_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
+    )
     root_logger.addHandler(console_handler)
     
     # File handler for production
@@ -111,7 +112,7 @@ def configure_structlog(
         log_file,
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=5,
-        encoding='utf-8'
+        encoding="utf-8",
     )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter(
@@ -131,8 +132,8 @@ class AgentLogFormatter(logging.Formatter):
     
     def format(self, record: logging.LogRecord) -> str:
         # Base format with timestamp, level, and logger name
-        timestamp = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        
+        timestamp = datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
         # Extract agent name from logger name (e.g., 'agents.java_analyzer' -> 'JavaAnalyzer')
         logger_parts = record.name.split('.')
         if 'agents' in logger_parts:
@@ -148,7 +149,7 @@ class AgentLogFormatter(logging.Formatter):
         
         # Build the log message
         base_msg = f"{timestamp} [{record.levelname}] {agent_name}: {record.getMessage()}"
-        
+
         # Add extra context if available
         if hasattr(record, 'agent_context') and self.include_agent_context:
             context = record.agent_context
@@ -206,7 +207,7 @@ class AgentLogger:
     def log_operation_complete(self, operation: str, duration: float, **context):
         """Log the completion of an operation with timing"""
         self.info(f"Completed {operation}", operation_time=duration, agent_context=context)
-    
+
     def log_tool_usage(self, tool_name: str, result: Any = None, duration: Optional[float] = None):
         """Log tool usage with results"""
         kwargs = {'tool_name': tool_name}
@@ -223,19 +224,19 @@ class AgentLogger:
         log_context['decision'] = decision
         log_context['reasoning'] = reasoning
         self.info(f"Decision: {decision}", agent_context=log_context)
-    
-    def log_data_transfer(self, from_agent: str, to_agent: str, data_type: str, data_size: Optional[int] = None):
+
+    def log_data_transfer(
+        self, from_agent: str, to_agent: str, data_type: str, data_size: Optional[int] = None
+    ):
         """Log data transfer between agents"""
-        context = {
-            'from_agent': from_agent,
-            'to_agent': to_agent,
-            'data_type': data_type
-        }
+        context = {"from_agent": from_agent, "to_agent": to_agent, "data_type": data_type}
         if data_size is not None:
-            context['data_size'] = data_size
-        
-        self.info(f"Data transfer: {data_type} from {from_agent} to {to_agent}", agent_context=context)
-    
+            context["data_size"] = data_size
+
+        self.info(
+            f"Data transfer: {data_type} from {from_agent} to {to_agent}", agent_context=context
+        )
+
     def _build_extra(self, **kwargs) -> Dict[str, Any]:
         """Build extra dictionary for logging"""
         valid_keys = {'agent_context', 'operation_time', 'tool_name', 'tool_result'}
@@ -310,7 +311,7 @@ def setup_logging(
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("crewai").setLevel(logging.INFO if debug_mode else logging.WARNING)
-    
+
     # Log the configuration
     logger = logging.getLogger(__name__)
     logger.info(f"Logging configured - Level: {log_level}, Debug: {debug_mode}, File: {enable_file_logging}")
@@ -423,7 +424,7 @@ def log_performance(operation_name: str = None):
 # ============================================================================
 
 # Context variable for tracking operation context across async boundaries
-_operation_context: ContextVar[Dict[str, Any]] = ContextVar('operation_context', default={})
+_operation_context: ContextVar[Dict[str, Any]] = ContextVar("operation_context", default={})
 
 
 @dataclass
@@ -492,8 +493,10 @@ class AgentLogAnalyzer:
                 decision_types[d.decision_type] += 1
                 if d.confidence is not None:
                     avg_confidence += d.confidence
-            avg_confidence /= len([d for d in decisions if d.confidence is not None]) if decisions else 1
-        
+            avg_confidence /= (
+                len([d for d in decisions if d.confidence is not None]) if decisions else 1
+            )
+
         # Calculate tool usage statistics
         tool_counts = defaultdict(int)
         tool_success_rate = defaultdict(lambda: {'success': 0, 'total': 0})
@@ -514,8 +517,8 @@ class AgentLogAnalyzer:
         # Calculate success rates
         success_rates = {}
         for tool, counts in tool_success_rate.items():
-            success_rates[tool] = counts['success'] / counts['total'] if counts['total'] > 0 else 0
-        
+            success_rates[tool] = counts["success"] / counts["total"] if counts["total"] > 0 else 0
+
         return {
             'agent_name': agent_name or 'all',
             'total_decisions': len(decisions),
@@ -526,7 +529,7 @@ class AgentLogAnalyzer:
             'tool_success_rates': success_rates,
             'average_tool_durations_ms': avg_durations,
         }
-    
+
     def get_decision_trace(self, agent_name: str = None, limit: int = 100) -> List[Dict]:
         """Get a trace of recent decisions"""
         with self._lock:
@@ -539,7 +542,7 @@ class AgentLogAnalyzer:
         decisions = sorted(decisions, key=lambda d: d.timestamp, reverse=True)[:limit]
         
         return [asdict(d) for d in decisions]
-    
+
     def get_tool_usage_trace(self, agent_name: str = None, limit: int = 100) -> List[Dict]:
         """Get a trace of recent tool usages"""
         with self._lock:
@@ -652,19 +655,13 @@ class EnhancedAgentLogger(AgentLogger):
         
         if self._debug_mode:
             # Verbose output in debug mode
-            self.info(
-                f"DECISION [{decision_type}]: {decision}",
-                agent_context=log_context
-            )
+            self.info(f"DECISION [{decision_type}]: {decision}", agent_context=log_context)
             self.debug(f"  Reasoning: {reasoning}")
             if alternatives:
                 self.debug(f"  Alternatives considered: {alternatives}")
         else:
-            self.info(
-                f"Decision: {decision_type} -> {decision}",
-                agent_context=log_context
-            )
-    
+            self.info(f"Decision: {decision_type} -> {decision}", agent_context=log_context)
+
     def log_tool_call(
         self,
         tool_name: str,
@@ -690,7 +687,9 @@ class EnhancedAgentLogger(AgentLogger):
             agent_name=self.agent_name,
             tool_name=tool_name,
             input_params=input_params,
-            output_result=result if not isinstance(result, str) else result[:1000],  # Truncate long strings
+            output_result=result
+            if not isinstance(result, str)
+            else result[:1000],  # Truncate long strings
             success=success,
             duration_ms=duration_ms,
             error_message=error,
@@ -732,7 +731,7 @@ class EnhancedAgentLogger(AgentLogger):
             self.debug(f"Reasoning: {step}")
             if details:
                 self.debug(f"  Details: {details}")
-    
+
     def log_state_change(self, state_name: str, old_value: Any, new_value: Any, reason: str = None):
         """
         Log a state change in the agent.
@@ -855,7 +854,7 @@ def export_log_analysis(filepath: str = None):
         log_dir = Path(os.getenv("LOG_DIR", "/tmp/modporter-ai/logs"))
         log_dir.mkdir(parents=True, exist_ok=True)
         filepath = log_dir / f"agent_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    
+
     analyzer = get_log_analyzer()
     analyzer.export_analysis(str(filepath))
     
@@ -877,3 +876,39 @@ def get_agent_log_summary(agent_name: str = None) -> Dict[str, Any]:
     """
     analyzer = get_log_analyzer()
     return analyzer.get_agent_statistics(agent_name)
+
+
+def get_crew_logger() -> AgentLogger:
+    """Get a configured logger for crew operations"""
+    return AgentLogger("crew.conversion_crew")
+
+
+# Performance timing decorator
+def log_performance(operation_name: str = None):
+    """Decorator to log operation performance"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            
+            # Get logger from the class instance if available
+            if args and hasattr(args[0], 'logger'):
+                logger = args[0].logger
+            else:
+                logger = get_agent_logger(func.__module__.split('.')[-1])
+            
+            op_name = operation_name or func.__name__
+            start_time = time.time()
+            
+            logger.log_operation_start(op_name)
+            
+            try:
+                result = func(*args, **kwargs)
+                duration = time.time() - start_time
+                logger.log_operation_complete(op_name, duration)
+                return result
+            except Exception as e:
+                duration = time.time() - start_time
+                logger.error(f"Operation {op_name} failed after {duration:.3f}s: {str(e)}")
+                raise
+        
+        return wrapper
+    return decorator

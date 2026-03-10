@@ -23,11 +23,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import importlib.util
 
 spec = importlib.util.spec_from_file_location(
-    'packaging_validator',
-    Path(__file__).parent.parent / 'agents' / 'packaging_validator.py'
+    "packaging_validator", Path(__file__).parent.parent / "agents" / "packaging_validator.py"
 )
 validator_module = importlib.util.module_from_spec(spec)
-sys.modules['packaging_validator'] = validator_module
+sys.modules["packaging_validator"] = validator_module
 spec.loader.exec_module(validator_module)
 
 PackagingValidator = validator_module.PackagingValidator
@@ -38,7 +37,7 @@ def create_example_mcaddon(output_path: Path) -> None:
     """Create an example .mcaddon file with correct structure."""
     print(f"Creating example .mcaddon file: {output_path}")
 
-    with zipfile.ZipFile(output_path, 'w') as zipf:
+    with zipfile.ZipFile(output_path, "w") as zipf:
         # Behavior Pack
         bp_uuid = str(uuid.uuid4())
         bp_manifest = {
@@ -48,18 +47,13 @@ def create_example_mcaddon(output_path: Path) -> None:
                 "description": "Adds copper blocks to Bedrock Edition",
                 "uuid": bp_uuid,
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0]
+                "min_engine_version": [1, 19, 0],
             },
-            "modules": [{
-                "type": "data",
-                "uuid": str(uuid.uuid4()),
-                "version": [1, 0, 0]
-            }]
+            "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
         }
 
         zipf.writestr(
-            "behavior_packs/example_copper_mod_bp/manifest.json",
-            json.dumps(bp_manifest, indent=2)
+            "behavior_packs/example_copper_mod_bp/manifest.json", json.dumps(bp_manifest, indent=2)
         )
 
         # Add copper block definition
@@ -69,20 +63,20 @@ def create_example_mcaddon(output_path: Path) -> None:
                 "description": {
                     "identifier": "examplemod:copper_block",
                     "register_to_creative_menu": True,
-                    "category": "construction"
+                    "category": "construction",
                 },
                 "components": {
                     "minecraft:display_name": {"value": "Copper Block"},
                     "minecraft:destroy_time": 2.0,
                     "minecraft:explosion_resistance": 3.0,
-                    "minecraft:map_color": "#E8A040"
-                }
-            }
+                    "minecraft:map_color": "#E8A040",
+                },
+            },
         }
 
         zipf.writestr(
             "behavior_packs/example_copper_mod_bp/blocks/copper_block.json",
-            json.dumps(copper_block, indent=2)
+            json.dumps(copper_block, indent=2),
         )
 
         # Resource Pack
@@ -93,22 +87,14 @@ def create_example_mcaddon(output_path: Path) -> None:
                 "name": "Example Copper Mod RP",
                 "description": "Textures for copper blocks",
                 "uuid": rp_uuid,
-                "version": [1, 0, 0]
+                "version": [1, 0, 0],
             },
-            "modules": [{
-                "type": "resources",
-                "uuid": str(uuid.uuid4()),
-                "version": [1, 0, 0]
-            }],
-            "dependencies": [{
-                "uuid": bp_uuid,
-                "version": [1, 0, 0]
-            }]
+            "modules": [{"type": "resources", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
+            "dependencies": [{"uuid": bp_uuid, "version": [1, 0, 0]}],
         }
 
         zipf.writestr(
-            "resource_packs/example_copper_mod_rp/manifest.json",
-            json.dumps(rp_manifest, indent=2)
+            "resource_packs/example_copper_mod_rp/manifest.json", json.dumps(rp_manifest, indent=2)
         )
 
     print("✓ Example .mcaddon created with correct structure")
@@ -118,7 +104,7 @@ def create_invalid_mcaddon(output_path: Path) -> None:
     """Create an example .mcaddon file with common errors."""
     print(f"Creating invalid .mcaddon file: {output_path}")
 
-    with zipfile.ZipFile(output_path, 'w') as zipf:
+    with zipfile.ZipFile(output_path, "w") as zipf:
         # WRONG: Using singular form (will be flagged)
         bp_manifest = {
             "format_version": 2,
@@ -126,18 +112,14 @@ def create_invalid_mcaddon(output_path: Path) -> None:
                 "name": "Invalid Pack",
                 "description": "This pack has errors",
                 "uuid": "invalid-uuid-format",  # Invalid UUID
-                "version": [1, 0, 0]
+                "version": [1, 0, 0],
             },
-            "modules": [{
-                "type": "data",
-                "uuid": str(uuid.uuid4()),
-                "version": [1, 0, 0]
-            }]
+            "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
         }
 
         zipf.writestr(
             "behavior_pack/invalid_bp/manifest.json",  # Wrong: singular
-            json.dumps(bp_manifest, indent=2)
+            json.dumps(bp_manifest, indent=2),
         )
 
         # Add a temporary file (should be flagged)
