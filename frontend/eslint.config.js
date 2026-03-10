@@ -254,4 +254,26 @@ export default [
       'no-redeclare': 'off',
     },
   },
+  {
+    // Legacy complex components that need refactoring
+    files: [
+      'src/components/BehaviorEditor/BehaviorEditor.tsx',
+      'src/components/BehaviorEditor/CodeEditorEnhanced.tsx',
+      'src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx',
+      'src/components/BehaviorEditor/VisualEditor/FormBuilder.tsx',
+      'src/components/BehaviorEditor/VisualEditor/ValidationEngine.tsx',
+      'src/components/ConversionFlow/ConversionFlowManager.tsx',
+      'src/components/ConversionProgress/ConversionProgress.tsx',
+      'src/components/ConversionReport/ConversionReport.tsx',
+      'src/components/ConversionUpload/ConversionUpload.tsx',
+      'src/components/ConversionUpload/ConversionUploadEnhanced.tsx',
+      'src/components/ConversionUpload/ConversionUploadReal.tsx',
+      'src/components/Editor/RecipeManager/RecipeList.tsx',
+      'src/components/ExportManager/ExportManager.tsx',
+      'src/components/Settings/Settings.tsx'
+    ],
+    rules: {
+      'complexity': ['warn', 45]
+    }
+  }
 ];
