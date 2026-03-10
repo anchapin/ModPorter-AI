@@ -603,6 +603,29 @@ jobs:
     - name: Run Ruff Lint
       run: ruff check .
 
+  # Check for large files in the repository
+  large-file-check:
+    name: Large File Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 2
+
+    - name: Check for files larger than 10MB
+      run: |
+        echo "🔍 Checking for files larger than 10MB..."
+        LARGE_FILES=$(find . -type f -not -path '*/.*' -size +10M)
+        if [ -n "$LARGE_FILES" ]; then
+          echo "❌ Found files larger than 10MB:"
+          echo "$LARGE_FILES"
+          echo "Please use Git LFS for these files or reduce their size."
+          exit 1
+        else
+          echo "✅ No files larger than 10MB found."
+        fi
+
   # Prepare Node.js base image for frontend
   prepare-node-base:
     name: Prepare Node Base Image
