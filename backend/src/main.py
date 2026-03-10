@@ -67,6 +67,7 @@ from api import (
     mod_imports,
     analytics,
     health,
+    build_performance,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -229,6 +230,7 @@ app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-eve
 app.include_router(conversions.router)  # Conversions API + WebSocket
 app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(build_performance.router, prefix="/api/v1/build-performance", tags=["build-performance"])
 app.include_router(
     rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"]
 )
