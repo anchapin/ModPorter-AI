@@ -16,11 +16,14 @@ import uuid
 
 class BuildStageTiming(BaseModel):
     """Timing information for a single build stage."""
+
     stage_name: str = Field(..., description="Name of the build stage")
     start_time: datetime = Field(..., description="When the stage started")
     end_time: Optional[datetime] = Field(None, description="When the stage ended")
     duration_ms: Optional[float] = Field(None, description="Duration in milliseconds")
-    status: str = Field(default="pending", description="Stage status: pending, running, completed, failed")
+    status: str = Field(
+        default="pending", description="Stage status: pending, running, completed, failed"
+    )
     error_message: Optional[str] = Field(None, description="Error message if failed")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional stage metadata")
 
@@ -35,6 +38,7 @@ class BuildStageTiming(BaseModel):
 
 class BuildResourceUsage(BaseModel):
     """Resource usage metrics during a build."""
+
     cpu_usage_percent: Optional[float] = Field(None, description="CPU usage percentage")
     memory_usage_mb: Optional[float] = Field(None, description="Memory usage in MB")
     peak_memory_mb: Optional[float] = Field(None, description="Peak memory usage in MB")
@@ -45,37 +49,47 @@ class BuildResourceUsage(BaseModel):
 
 class BuildPerformanceMetrics(BaseModel):
     """Complete performance metrics for a build."""
-    build_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique build identifier")
+
+    build_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), description="Unique build identifier"
+    )
     conversion_id: str = Field(..., description="Associated conversion ID")
-    
+
     # Timing
     stages: List[BuildStageTiming] = Field(default_factory=list, description="Build stage timings")
-    total_duration_ms: Optional[float] = Field(None, description="Total build duration in milliseconds")
-    
+    total_duration_ms: Optional[float] = Field(
+        None, description="Total build duration in milliseconds"
+    )
+
     # Resource usage
     resource_usage: Optional[BuildResourceUsage] = Field(None, description="Resource usage metrics")
-    
+
     # Build details
-    build_type: str = Field(default="conversion", description="Type of build: conversion, benchmark, test")
+    build_type: str = Field(
+        default="conversion", description="Type of build: conversion, benchmark, test"
+    )
     target_version: str = Field(default="1.20.0", description="Target Minecraft version")
     mod_size_bytes: Optional[int] = Field(None, description="Size of the mod file in bytes")
-    
+
     # Status
-    status: str = Field(default="pending", description="Build status: pending, running, completed, failed")
+    status: str = Field(
+        default="pending", description="Build status: pending, running, completed, failed"
+    )
     error_message: Optional[str] = Field(None, description="Error message if build failed")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = Field(None)
-    
+
     # Performance scores
     performance_score: Optional[float] = Field(None, description="Overall performance score 0-100")
     build_efficiency: Optional[float] = Field(None, description="Build efficiency percentage")
-    
+
     # Additional data
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class BuildPerformanceSnapshot(BaseModel):
     """Snapshot of build performance at a point in time."""
+
     build_id: str
     conversion_id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -88,8 +102,10 @@ class BuildPerformanceSnapshot(BaseModel):
 
 # API Request/Response Models
 
+
 class BuildPerformanceStartRequest(BaseModel):
     """Request to start tracking build performance."""
+
     conversion_id: str = Field(..., description="Associated conversion ID")
     build_type: str = Field(default="conversion", description="Type of build")
     target_version: str = Field(default="1.20.0")
@@ -98,6 +114,7 @@ class BuildPerformanceStartRequest(BaseModel):
 
 class BuildPerformanceStartResponse(BaseModel):
     """Response when starting performance tracking."""
+
     build_id: str
     conversion_id: str
     message: str
@@ -106,6 +123,7 @@ class BuildPerformanceStartResponse(BaseModel):
 
 class BuildStageUpdateRequest(BaseModel):
     """Request to update a build stage."""
+
     stage_name: str
     status: str = "running"
     error_message: Optional[str] = None
@@ -114,6 +132,7 @@ class BuildStageUpdateRequest(BaseModel):
 
 class BuildPerformanceEndRequest(BaseModel):
     """Request to end build performance tracking."""
+
     status: str = Field(default="completed", description="Final status: completed, failed")
     error_message: Optional[str] = None
     performance_score: Optional[float] = None
@@ -121,6 +140,7 @@ class BuildPerformanceEndRequest(BaseModel):
 
 class BuildPerformanceResponse(BaseModel):
     """Response with build performance data."""
+
     build_id: str
     conversion_id: str
     status: str
@@ -135,6 +155,7 @@ class BuildPerformanceResponse(BaseModel):
 
 class BuildPerformanceSummary(BaseModel):
     """Summary of build performance for a conversion."""
+
     conversion_id: str
     build_id: str
     total_duration_ms: float
@@ -146,6 +167,7 @@ class BuildPerformanceSummary(BaseModel):
 
 class BuildPerformanceStats(BaseModel):
     """Aggregate performance statistics."""
+
     total_builds: int = 0
     completed_builds: int = 0
     failed_builds: int = 0
@@ -154,10 +176,10 @@ class BuildPerformanceStats(BaseModel):
     p95_duration_ms: Optional[float] = None
     p99_duration_ms: Optional[float] = None
     average_performance_score: Optional[float] = None
-    
+
     # Stage-specific stats
     stage_stats: Dict[str, Dict[str, float]] = Field(default_factory=dict)
-    
+
     # Time period
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None

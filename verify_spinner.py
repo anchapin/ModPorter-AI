@@ -2,6 +2,7 @@ from playwright.sync_api import sync_playwright, expect
 import re
 import os
 
+
 def verify_conversion_spinner():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -16,7 +17,7 @@ def verify_conversion_spinner():
 
         # Intercept both new and legacy endpoints just in case
         page.route("**/api/v1/conversions", handle_route)
-        page.route("**/convert", handle_route) # legacy fallback
+        page.route("**/convert", handle_route)  # legacy fallback
 
         print("Navigating to home page...")
         page.goto("http://localhost:3000")
@@ -70,6 +71,7 @@ def verify_conversion_spinner():
             os.remove("test-mod.jar")
 
         browser.close()
+
 
 if __name__ == "__main__":
     verify_conversion_spinner()

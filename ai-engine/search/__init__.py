@@ -12,7 +12,7 @@ from search.hybrid_search_engine import (
     KeywordSearchEngine,
     SearchMode,
     RankingStrategy,
-    SearchCandidate
+    SearchCandidate,
 )
 
 from search.reranking_engine import (
@@ -24,7 +24,7 @@ from search.reranking_engine import (
     EnsembleReRanker,
     ReRankingStrategy,
     ReRankingFeature,
-    ReRankingResult
+    ReRankingResult,
 )
 
 from search.query_expansion import (
@@ -34,7 +34,7 @@ from search.query_expansion import (
     ExpandedQuery,
     MinecraftDomainExpander,
     SynonymExpander,
-    ContextualExpander
+    ContextualExpander,
 )
 
 # Alias for backwards compatibility
@@ -42,31 +42,29 @@ QueryExpander = QueryExpansionEngine
 
 __all__ = [
     # Hybrid search
-    'HybridSearchEngine',
-    'UnifiedSearchEngine',
-    'KeywordSearchEngine',
-    'SearchMode',
-    'RankingStrategy',
-    'SearchCandidate',
-    
+    "HybridSearchEngine",
+    "UnifiedSearchEngine",
+    "KeywordSearchEngine",
+    "SearchMode",
+    "RankingStrategy",
+    "SearchCandidate",
     # Reranking
-    'CrossEncoderReRanker',
-    'NeuralReRanker',
-    'HybridReRanker',
-    'FeatureBasedReRanker',
-    'ContextualReRanker',
-    'EnsembleReRanker',
-    'ReRankingStrategy',
-    'ReRankingFeature',
-    'ReRankingResult',
-    
+    "CrossEncoderReRanker",
+    "NeuralReRanker",
+    "HybridReRanker",
+    "FeatureBasedReRanker",
+    "ContextualReRanker",
+    "EnsembleReRanker",
+    "ReRankingStrategy",
+    "ReRankingFeature",
+    "ReRankingResult",
     # Query expansion
-    'QueryExpansionEngine',
-    'QueryExpander',
-    'ExpansionStrategy',
-    'ExpansionTerm',
-    'ExpandedQuery',
-    'MinecraftDomainExpander',
-    'SynonymExpander',
-    'ContextualExpander',
+    "QueryExpansionEngine",
+    "QueryExpander",
+    "ExpansionStrategy",
+    "ExpansionTerm",
+    "ExpandedQuery",
+    "MinecraftDomainExpander",
+    "SynonymExpander",
+    "ContextualExpander",
 ]

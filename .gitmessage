@@ -1,0 +1,32 @@
+# <type>: <subject> (<issue-number>)
+# 
+# <body>
+# 
+# <footer>
+
+# Type can be:
+#   feat     (new feature)
+#   fix      (bug fix)
+#   refactor (code change that neither fixes bug nor adds feature)
+#   style    (changes that do not affect the meaning of code)
+#   perf     (code change that improves performance)
+#   test     (adding or updating tests)
+#   docs     (changes to documentation)
+#   chore    (changes to build process, dependencies, etc)
+#   ci       (changes to CI configuration files and scripts)
+#
+# Subject line rules:
+#   - Use imperative mood ("add feature" not "added feature")
+#   - Capitalize the subject line
+#   - Do not end with a period
+#   - Limit to 50 characters
+#   - Include issue number in parentheses if applicable
+#
+# Body:
+#   - Explain what and why, not how
+#   - Wrap at 72 characters
+#   - Separate from subject with blank line
+#
+# Footer:
+#   - Reference issues: Closes #123, Fixes #456
+#   - Note breaking changes: BREAKING CHANGE: description

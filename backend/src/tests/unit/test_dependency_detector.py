@@ -27,7 +27,7 @@ class TestParseRequirementsFile:
 
     def test_parse_simple_requirements(self):
         """Test parsing a simple requirements.txt file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("requests==2.28.0\n")
             f.write("flask>=2.0.0\n")
             f.write("# This is a comment\n")
@@ -36,16 +36,16 @@ class TestParseRequirementsFile:
 
         try:
             packages = parse_requirements_file(temp_file)
-            assert 'requests' in packages
-            assert packages['requests'] == '==2.28.0'
-            assert 'flask' in packages
-            assert 'numpy' in packages
+            assert "requests" in packages
+            assert packages["requests"] == "==2.28.0"
+            assert "flask" in packages
+            assert "numpy" in packages
         finally:
             os.unlink(temp_file)
 
     def test_parse_empty_requirements(self):
         """Test parsing an empty requirements file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             temp_file = f.name
 
         try:
@@ -56,7 +56,7 @@ class TestParseRequirementsFile:
 
     def test_parse_nonexistent_file(self):
         """Test parsing a file that doesn't exist."""
-        packages = parse_requirements_file('/nonexistent/file.txt')
+        packages = parse_requirements_file("/nonexistent/file.txt")
         assert packages == {}
 
 
@@ -65,7 +65,7 @@ class TestParsePyprojectDependencies:
 
     def test_parse_simple_pyproject(self):
         """Test parsing a simple pyproject.toml."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
             f.write("""
 [project]
 name = "test"
@@ -79,8 +79,8 @@ dependencies = [
 
         try:
             packages = parse_pyproject_dependencies(temp_file)
-            assert 'requests' in packages
-            assert 'flask' in packages
+            assert "requests" in packages
+            assert "flask" in packages
         finally:
             os.unlink(temp_file)
 
@@ -103,9 +103,9 @@ class TestFindPythonFiles:
 
             files = find_python_files(tmpdir)
             assert len(files) == 3
-            assert any('test1.py' in f for f in files)
-            assert any('test2.py' in f for f in files)
-            assert any('test3.py' in f for f in files)
+            assert any("test1.py" in f for f in files)
+            assert any("test2.py" in f for f in files)
+            assert any("test3.py" in f for f in files)
 
     def test_exclude_dirs(self):
         """Test excluding directories."""
@@ -118,7 +118,7 @@ class TestFindPythonFiles:
             pycache.mkdir()
             Path(pycache, "test.pyc").write_text("")
 
-            files = find_python_files(tmpdir, exclude_dirs=['__pycache__'])
+            files = find_python_files(tmpdir, exclude_dirs=["__pycache__"])
             assert len(files) == 1
 
 
@@ -127,7 +127,7 @@ class TestScanPythonFile:
 
     def test_scan_file_with_unused_import(self):
         """Test scanning a file with unused imports."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("""
 import os
 import sys
@@ -146,7 +146,7 @@ def hello():
 
     def test_scan_file_with_used_import(self):
         """Test scanning a file with used imports."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("""
 import os
 
@@ -159,7 +159,7 @@ def hello():
             unused = scan_python_file(temp_file)
             # os is used, so should not be in unused
             unused_names = [name for imp in unused for name in imp.imported_names]
-            assert 'os' not in unused_names
+            assert "os" not in unused_names
         finally:
             os.unlink(temp_file)
 
@@ -174,10 +174,10 @@ class TestGetAllImportedModules:
             Path(tmpdir, "test2.py").write_text("import json\nfrom pathlib import Path\n")
 
             imports = get_all_imported_modules(tmpdir)
-            assert 'os' in imports
-            assert 'sys' in imports
-            assert 'json' in imports
-            assert 'pathlib' in imports
+            assert "os" in imports
+            assert "sys" in imports
+            assert "json" in imports
+            assert "pathlib" in imports
 
 
 class TestFindUnusedPackages:
@@ -199,11 +199,11 @@ class TestFindUnusedPackages:
                 requirements_files=[str(req_file)],
                 pyproject_files=[],
                 source_directories=[str(src_dir)],
-                exclude_packages=set()
+                exclude_packages=set(),
             )
 
             assert len(unused) == 1
-            assert unused[0].package_name == 'unused_pkg'
+            assert unused[0].package_name == "unused_pkg"
 
 
 class TestAnalyzeDependencies:
@@ -224,11 +224,11 @@ class TestAnalyzeDependencies:
             report = analyze_dependencies(
                 source_directories=[str(src_dir)],
                 requirements_files=[str(req_file)],
-                exclude_packages={'pytest', 'ruff'}
+                exclude_packages={"pytest", "ruff"},
             )
 
             assert report.files_scanned >= 1
-            assert 'unused_package' in [p.package_name for p in report.unused_packages]
+            assert "unused_package" in [p.package_name for p in report.unused_packages]
 
 
 class TestDependencyReport:
@@ -244,21 +244,15 @@ class TestDependencyReport:
     def test_report_with_data(self):
         """Test creating a report with data."""
         unused_import = UnusedImport(
-            file_path="/test.py",
-            line_number=5,
-            import_statement="import os",
-            imported_names=["os"]
+            file_path="/test.py", line_number=5, import_statement="import os", imported_names=["os"]
         )
-        unused_package = UnusedPackage(
-            package_name="unused",
-            source_file="/requirements.txt"
-        )
+        unused_package = UnusedPackage(package_name="unused", source_file="/requirements.txt")
 
         report = DependencyReport(
             unused_imports=[unused_import],
             unused_packages=[unused_package],
             files_scanned=10,
-            packages_scanned=5
+            packages_scanned=5,
         )
 
         assert len(report.unused_imports) == 1

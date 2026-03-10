@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from main import app
 from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
+
 class TestPerformanceIntegration:
     """Integration tests for the performance benchmarking system."""
 
@@ -25,7 +26,7 @@ class TestPerformanceIntegration:
             "type": "baseline",
             "duration_seconds": 300,
             "parameters": {"load_level": "none"},
-            "thresholds": {"cpu": 5, "memory": 50}
+            "thresholds": {"cpu": 5, "memory": 50},
         }
 
     def test_full_benchmark_workflow(self):
@@ -40,7 +41,7 @@ class TestPerformanceIntegration:
         run_request = {
             "scenario_id": "baseline_idle_001",
             "device_type": "desktop",
-            "conversion_id": "test_conversion_123"
+            "conversion_id": "test_conversion_123",
         }
 
         run_response = self.client.post("/performance/run", json=run_request)
@@ -98,7 +99,7 @@ class TestPerformanceIntegration:
             "type": "custom",
             "duration_seconds": 180,
             "parameters": {"test_param": "value"},
-            "thresholds": {"cpu": 60, "memory": 100}
+            "thresholds": {"cpu": 60, "memory": 100},
         }
 
         scenario_response = self.client.post("/performance/scenarios", json=custom_scenario)
@@ -122,10 +123,7 @@ class TestPerformanceIntegration:
         assert custom_found, "Custom scenario not found in scenarios list"
 
         # Step 3: Use the custom scenario for benchmarking
-        run_request = {
-            "scenario_id": custom_scenario_id,
-            "device_type": "desktop"
-        }
+        run_request = {"scenario_id": custom_scenario_id, "device_type": "desktop"}
 
         run_response = self.client.post("/performance/run", json=run_request)
         assert run_response.status_code == 202
@@ -142,7 +140,7 @@ class TestPerformanceIntegration:
             run_request = {
                 "scenario_id": "baseline_idle_001",
                 "device_type": "desktop",
-                "conversion_id": f"test_conversion_{i}"
+                "conversion_id": f"test_conversion_{i}",
             }
 
             run_response = self.client.post("/performance/run", json=run_request)
@@ -154,7 +152,7 @@ class TestPerformanceIntegration:
         # Wait for completion and manually set some as completed for testing
         for i, run_id in enumerate(run_ids):
             mock_benchmark_runs[run_id]["status"] = "completed"
-            mock_benchmark_runs[run_id]["created_at"] = f"2023-01-0{i+1}T10:00:00"
+            mock_benchmark_runs[run_id]["created_at"] = f"2023-01-0{i + 1}T10:00:00"
 
             # Add mock report data
             mock_benchmark_reports[run_id] = {
@@ -162,7 +160,7 @@ class TestPerformanceIntegration:
                     "overall_score": 80.0 + i,
                     "cpu_score": 75.0 + i,
                     "memory_score": 85.0 + i,
-                    "network_score": 80.0 + i
+                    "network_score": 80.0 + i,
                 }
             }
 
@@ -188,10 +186,7 @@ class TestPerformanceIntegration:
     def test_api_error_handling(self):
         """Test API error handling for various scenarios."""
         # Test 1: Invalid scenario ID
-        invalid_run_request = {
-            "scenario_id": "nonexistent_scenario",
-            "device_type": "desktop"
-        }
+        invalid_run_request = {"scenario_id": "nonexistent_scenario", "device_type": "desktop"}
 
         response = self.client.post("/performance/run", json=invalid_run_request)
         assert response.status_code == 404
@@ -212,7 +207,7 @@ class TestPerformanceIntegration:
         invalid_scenario = {
             "scenario_name": "",  # Empty name
             "description": "Test",
-            "type": "custom"
+            "type": "custom",
         }
 
         response = self.client.post("/performance/scenarios", json=invalid_scenario)
@@ -225,7 +220,7 @@ class TestPerformanceIntegration:
             {
                 "scenario_id": "baseline_idle_001",
                 "device_type": "desktop",
-                "conversion_id": f"concurrent_test_{i}"
+                "conversion_id": f"concurrent_test_{i}",
             }
             for i in range(5)
         ]
@@ -251,23 +246,20 @@ class TestPerformanceIntegration:
             assert status_data["run_id"] == run_id
             assert status_data["status"] in ["pending", "running", "completed"]
 
-    @patch('src.api.performance.simulate_benchmark_execution')
+    @patch("src.api.performance.simulate_benchmark_execution")
     def test_benchmark_execution_failure_handling(self, mock_simulate):
         """Test handling of benchmark execution failures."""
+
         # Mock the execution to fail
         def failing_execution(run_id, scenario_id, device_type):
-            mock_benchmark_runs[run_id].update({
-                "status": "failed",
-                "error": "Simulated execution failure"
-            })
+            mock_benchmark_runs[run_id].update(
+                {"status": "failed", "error": "Simulated execution failure"}
+            )
 
         mock_simulate.side_effect = failing_execution
 
         # Create a benchmark run
-        run_request = {
-            "scenario_id": "baseline_idle_001",
-            "device_type": "desktop"
-        }
+        run_request = {"scenario_id": "baseline_idle_001", "device_type": "desktop"}
 
         run_response = self.client.post("/performance/run", json=run_request)
         assert run_response.status_code == 202

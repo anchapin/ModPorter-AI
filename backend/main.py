@@ -143,9 +143,7 @@ class ConversionRequest(BaseModel):
     target_version: str = Field(
         default="1.20.0", description="Target Minecraft version for the conversion."
     )
-    options: Optional[dict] = Field(
-        default=None, description="Optional conversion settings."
-    )
+    options: Optional[dict] = Field(default=None, description="Optional conversion settings.")
 
     @property
     def resolved_file_id(self) -> str:
@@ -160,12 +158,8 @@ class ConversionRequest(BaseModel):
 class UploadResponse(BaseModel):
     """Response model for file upload"""
 
-    file_id: str = Field(
-        ..., description="Unique identifier assigned to the uploaded file."
-    )
-    original_filename: str = Field(
-        ..., description="The original name of the uploaded file."
-    )
+    file_id: str = Field(..., description="Unique identifier assigned to the uploaded file.")
+    original_filename: str = Field(..., description="The original name of the uploaded file.")
     saved_filename: str = Field(
         ...,
         description="The name under which the file is saved on the server (job_id + extension).",
@@ -175,9 +169,7 @@ class UploadResponse(BaseModel):
         default=None, description="Detected content type of the uploaded file."
     )
     message: str = Field(..., description="Status message confirming the upload.")
-    filename: str = Field(
-        ..., description="The uploaded filename (matches original_filename)"
-    )
+    filename: str = Field(..., description="The uploaded filename (matches original_filename)")
 
 
 class ConversionResponse(BaseModel):
@@ -263,8 +255,7 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=415,
             detail=(
-                f"File type {file_ext} not supported. "
-                f"Allowed: {', '.join(allowed_extensions)}"
+                f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
             ),
         )
 
@@ -313,9 +304,7 @@ async def call_ai_engine_conversion(job_id: str):
             print(f"Error: Job {job_id} not found for AI Engine conversion.")
             return
 
-        def mirror_dict_from_job(
-            job, progress_val=None, result_url=None, error_message=None
-        ):
+        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
             # Compose dict for legacy mirror
             return ConversionJob(
                 job_id=str(job.id),
@@ -342,9 +331,7 @@ async def call_ai_engine_conversion(job_id: str):
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
 
             # Get the input file path
-            input_file_path = os.path.join(
-                TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar"
-            )
+            input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
 
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
@@ -356,15 +343,11 @@ async def call_ai_engine_conversion(job_id: str):
                 "conversion_options": conversion_options,
             }
 
-            print(
-                f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}"
-            )
+            print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
 
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
-                response = await client.post(
-                    f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request
-                )
+                response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
 
                 if response.status_code != 200:
                     raise Exception(
@@ -380,20 +363,14 @@ async def call_ai_engine_conversion(job_id: str):
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
-                        print(
-                            f"Job {job_id} was cancelled. Stopping AI Engine polling."
-                        )
+                        print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
                         return
 
                     # Get status from AI Engine
-                    status_response = await client.get(
-                        f"{AI_ENGINE_URL}/api/v1/status/{job_id}"
-                    )
+                    status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
 
                     if status_response.status_code != 200:
-                        print(
-                            f"Failed to get AI Engine status: {status_response.status_code}"
-                        )
+                        print(f"Failed to get AI Engine status: {status_response.status_code}")
                         continue
 
                     ai_status = status_response.json()
@@ -433,9 +410,7 @@ async def call_ai_engine_conversion(job_id: str):
                     )
                     # Verify the file exists
                     if not os.path.exists(output_path):
-                        print(
-                            f"Warning: Expected output file not found at {output_path}"
-                        )
+                        print(f"Warning: Expected output file not found at {output_path}")
                 else:
                     print(f"Job {job_id}: AI Engine conversion FAILED")
 
@@ -459,9 +434,7 @@ async def simulate_ai_conversion(job_id: str):
             print(f"Error: Job {job_id} not found for AI simulation.")
             return
 
-        def mirror_dict_from_job(
-            job, progress_val=None, result_url=None, error_message=None
-        ):
+        def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
             return ConversionJob(
                 job_id=str(job.id),
                 file_id=job.input_data.get("file_id"),
@@ -636,9 +609,7 @@ async def get_conversion_status(
             descriptive_message = "Conversion completed successfully."
         elif status == "failed":
             descriptive_message = (
-                f"Conversion failed: {error_message}"
-                if error_message
-                else "Conversion failed."
+                f"Conversion failed: {error_message}" if error_message else "Conversion failed."
             )
         elif status == "cancelled":
             descriptive_message = "Job was cancelled by the user."
@@ -660,9 +631,7 @@ async def get_conversion_status(
     # Fallback: load from DB
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
     progress = job.progress.progress if job.progress else 0
     error_message = None
     result_url = None
@@ -714,9 +683,7 @@ async def get_conversion_status(
     )
 
 
-@app.get(
-    "/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"]
-)
+@app.get("/api/v1/conversions", response_model=List[ConversionStatus], tags=["conversion"])
 async def list_conversions(db: AsyncSession = Depends(get_db)):
     """
     List all current and past conversion jobs.
@@ -777,9 +744,7 @@ async def cancel_conversion(
     """
     job = await crud.get_job(db, job_id)
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
     if job.status == "cancelled":
         return {"message": f"Conversion job {job_id} is already cancelled."}
     job = await crud.update_job_status(db, job_id, "cancelled")
@@ -810,7 +775,7 @@ async def download_converted_mod(
         ...,
         pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
         description="Unique identifier for the conversion job whose output is to be downloaded (standard UUID format).",
-    )
+    ),
 ):
     """
     Download the converted mod file.
@@ -821,9 +786,7 @@ async def download_converted_mod(
     job = conversion_jobs_db.get(job_id)
 
     if not job:
-        raise HTTPException(
-            status_code=404, detail=f"Conversion job with ID '{job_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
 
     if job.status != "completed":
         raise HTTPException(
@@ -849,9 +812,7 @@ async def download_converted_mod(
     if not os.path.exists(file_path):
         print(f"Error: Converted file not found at path: {file_path} for job {job_id}")
         # This case might indicate an issue post-completion or if the file was manually removed.
-        raise HTTPException(
-            status_code=404, detail="Converted file not found on server."
-        )
+        raise HTTPException(status_code=404, detail="Converted file not found on server.")
 
     # Determine a user-friendly download filename
     original_filename_base = os.path.splitext(job.original_filename)[0]
@@ -886,9 +847,7 @@ async def try_ai_engine_or_fallback(job_id: str):
                 await call_ai_engine_conversion(job_id)
                 return
     except Exception as e:
-        print(
-            f"AI Engine not available ({e}), falling back to simulation for job {job_id}"
-        )
+        print(f"AI Engine not available ({e}), falling back to simulation for job {job_id}")
 
     # Fallback to simulation
     await simulate_ai_conversion(job_id)

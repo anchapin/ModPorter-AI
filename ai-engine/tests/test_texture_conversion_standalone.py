@@ -1,6 +1,7 @@
 """
 Standalone unit tests for texture conversion functionality (without CrewAI dependency)
 """
+
 import json
 import os
 import sys
@@ -8,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Import only the parts we need without triggering CrewAI import
 from PIL import Image
@@ -19,9 +20,9 @@ class TextureConverter:
 
     def __init__(self):
         self.texture_constraints = {
-            'max_resolution': 1024,
-            'must_be_power_of_2': True,
-            'supported_channels': ['rgb', 'rgba']
+            "max_resolution": 1024,
+            "must_be_power_of_2": True,
+            "supported_channels": ["rgb", "rgba"],
         }
         self._conversion_cache = {}
 
@@ -48,25 +49,35 @@ class TextureConverter:
             power *= 2
         return power
 
-    def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)) -> Image.Image:
+    def _generate_fallback_texture(
+        self, usage: str = "block", size: tuple = (16, 16)
+    ) -> Image.Image:
         """Generate a fallback texture for edge cases"""
         colors = {
-            'block': (128, 128, 128, 255),
-            'item': (200, 200, 100, 255),
-            'entity': (150, 100, 100, 255),
-            'particle': (200, 200, 255, 255),
-            'ui': (100, 200, 100, 255),
-            'other': (128, 128, 128, 255)
+            "block": (128, 128, 128, 255),
+            "item": (200, 200, 100, 255),
+            "entity": (150, 100, 100, 255),
+            "particle": (200, 200, 255, 255),
+            "ui": (100, 200, 100, 255),
+            "other": (128, 128, 128, 255),
         }
 
-        color = colors.get(usage, colors['other'])
-        img = Image.new('RGBA', size, color)
+        color = colors.get(usage, colors["other"])
+        img = Image.new("RGBA", size, color)
 
         # Add pattern
         for x in range(0, size[0], 4):
             for y in range(0, size[1], 4):
                 if (x + y) % 8 == 0:
-                    img.putpixel((x, y), (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50), 255))
+                    img.putpixel(
+                        (x, y),
+                        (
+                            min(255, color[0] + 50),
+                            min(255, color[1] + 50),
+                            min(255, color[2] + 50),
+                            255,
+                        ),
+                    )
 
         return img
 
@@ -93,7 +104,7 @@ class TextureConverter:
                 try:
                     img = Image.open(texture_path)
                     original_dimensions = img.size
-                    is_valid_png = img.format == 'PNG'
+                    is_valid_png = img.format == "PNG"
                     img = img.convert("RGBA")
                     optimizations = ["Converted to RGBA"] if not is_valid_png else []
                 except Exception as e:
@@ -106,8 +117,8 @@ class TextureConverter:
             width, height = img.size
             resized = False
 
-            max_res = self.texture_constraints.get('max_resolution', 1024)
-            must_be_pot = self.texture_constraints.get('must_be_power_of_2', True)
+            max_res = self.texture_constraints.get("max_resolution", 1024)
+            must_be_pot = self.texture_constraints.get("must_be_power_of_2", True)
 
             new_width, new_height = width, height
 
@@ -133,16 +144,20 @@ class TextureConverter:
             # Perform resize
             if resized and (new_width != width or new_height != height):
                 img = img.resize((new_width, new_height), Image.LANCZOS)
-                optimizations.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
+                optimizations.append(
+                    f"Resized from {original_dimensions} to {(new_width, new_height)}"
+                )
 
             # Determine output path
-            base_name = Path(texture_path).stem if Path(texture_path).exists() else f"fallback_{usage}"
+            base_name = (
+                Path(texture_path).stem if Path(texture_path).exists() else f"fallback_{usage}"
+            )
 
-            if usage == 'block':
+            if usage == "block":
                 relative_path = f"textures/blocks/{base_name}.png"
-            elif usage == 'item':
+            elif usage == "item":
                 relative_path = f"textures/items/{base_name}.png"
-            elif usage == 'entity':
+            elif usage == "entity":
                 relative_path = f"textures/entity/{base_name}.png"
             else:
                 relative_path = f"textures/other/{base_name}.png"
@@ -150,21 +165,21 @@ class TextureConverter:
             # Save the file
             output_path = output_dir / relative_path
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            img.save(output_path, 'PNG', optimize=True)
+            img.save(output_path, "PNG", optimize=True)
 
             result = {
-                'success': True,
-                'original_path': str(texture_path),
-                'converted_path': str(output_path),
-                'relative_path': relative_path,
-                'original_dimensions': original_dimensions,
-                'converted_dimensions': (new_width, new_height),
-                'format': 'png',
-                'resized': resized,
-                'optimizations_applied': optimizations,
-                'bedrock_reference': f"{usage}_{base_name}",
-                'was_valid_png': is_valid_png,
-                'was_fallback': not Path(texture_path).exists()
+                "success": True,
+                "original_path": str(texture_path),
+                "converted_path": str(output_path),
+                "relative_path": relative_path,
+                "original_dimensions": original_dimensions,
+                "converted_dimensions": (new_width, new_height),
+                "format": "png",
+                "resized": resized,
+                "optimizations_applied": optimizations,
+                "bedrock_reference": f"{usage}_{base_name}",
+                "was_valid_png": is_valid_png,
+                "was_fallback": not Path(texture_path).exists(),
             }
 
             # Cache result
@@ -174,11 +189,7 @@ class TextureConverter:
 
         except Exception as e:
             print(f"Error converting texture: {e}")
-            return {
-                'success': False,
-                'original_path': str(texture_path),
-                'error': str(e)
-            }
+            return {"success": False, "original_path": str(texture_path), "error": str(e)}
 
 
 class TestTextureConversion:
@@ -193,15 +204,16 @@ class TestTextureConversion:
     def teardown_method(self):
         """Clean up temp files"""
         import shutil
+
         if Path(self.temp_dir).exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_test_image(self, filename: str, size=(64, 64), color=(255, 0, 0, 255)) -> str:
         """Create a test PNG image"""
-        img = Image.new('RGBA', size, color)
+        img = Image.new("RGBA", size, color)
         img_path = Path(self.temp_dir) / filename
         img_path.parent.mkdir(parents=True, exist_ok=True)
-        img.save(img_path, 'PNG')
+        img.save(img_path, "PNG")
         return str(img_path)
 
     def test_basic_conversion(self):
@@ -210,17 +222,17 @@ class TestTextureConversion:
 
         result = self.converter.convert_texture(img_path, self.output_dir, "block")
 
-        assert result['success'] is True
-        assert result['original_dimensions'] == (32, 32)
-        assert result['converted_dimensions'] == (32, 32)
-        assert result['resized'] is False
-        assert Path(result['converted_path']).exists()
+        assert result["success"] is True
+        assert result["original_dimensions"] == (32, 32)
+        assert result["converted_dimensions"] == (32, 32)
+        assert result["resized"] is False
+        assert Path(result["converted_path"]).exists()
 
         # Verify output file
-        output_img = Image.open(result['converted_path'])
+        output_img = Image.open(result["converted_path"])
         assert output_img.size == (32, 32)
-        assert output_img.format == 'PNG'
-        assert output_img.mode == 'RGBA'
+        assert output_img.format == "PNG"
+        assert output_img.mode == "RGBA"
 
     def test_power_of_2_resize(self):
         """Test power of 2 resizing"""
@@ -228,29 +240,29 @@ class TestTextureConversion:
 
         result = self.converter.convert_texture(img_path, self.output_dir, "block")
 
-        assert result['success'] is True
-        assert result['original_dimensions'] == (33, 45)
-        assert result['resized'] is True
+        assert result["success"] is True
+        assert result["original_dimensions"] == (33, 45)
+        assert result["resized"] is True
         # Should resize to next power of 2: 33 -> 64, 45 -> 64
-        assert result['converted_dimensions'] == (64, 64)
+        assert result["converted_dimensions"] == (64, 64)
 
         # Verify output
-        output_img = Image.open(result['converted_path'])
+        output_img = Image.open(result["converted_path"])
         assert output_img.size == (64, 64)
 
     def test_fallback_generation(self):
         """Test fallback texture generation for missing files"""
         result = self.converter.convert_texture("/nonexistent/file.png", self.output_dir, "block")
 
-        assert result['success'] is True
-        assert result['was_fallback'] is True
-        assert "fallback" in result['optimizations_applied'][0]
-        assert Path(result['converted_path']).exists()
+        assert result["success"] is True
+        assert result["was_fallback"] is True
+        assert "fallback" in result["optimizations_applied"][0]
+        assert Path(result["converted_path"]).exists()
 
         # Verify fallback texture was created
-        output_img = Image.open(result['converted_path'])
+        output_img = Image.open(result["converted_path"])
         assert output_img.size == (16, 16)  # Default fallback size
-        assert output_img.mode == 'RGBA'
+        assert output_img.mode == "RGBA"
 
     def test_path_mapping_block(self):
         """Test path mapping for block textures"""
@@ -258,9 +270,9 @@ class TestTextureConversion:
 
         result = self.converter.convert_texture(img_path, self.output_dir, "block")
 
-        assert result['success'] is True
-        assert 'textures/blocks/dirt.png' in result['relative_path']
-        assert result['bedrock_reference'] == 'block_dirt'
+        assert result["success"] is True
+        assert "textures/blocks/dirt.png" in result["relative_path"]
+        assert result["bedrock_reference"] == "block_dirt"
 
     def test_path_mapping_item(self):
         """Test path mapping for item textures"""
@@ -268,9 +280,9 @@ class TestTextureConversion:
 
         result = self.converter.convert_texture(img_path, self.output_dir, "item")
 
-        assert result['success'] is True
-        assert 'textures/items/diamond_sword.png' in result['relative_path']
-        assert result['bedrock_reference'] == 'item_diamond_sword'
+        assert result["success"] is True
+        assert "textures/items/diamond_sword.png" in result["relative_path"]
+        assert result["bedrock_reference"] == "item_diamond_sword"
 
     def test_max_resolution_capping(self):
         """Test capping at maximum resolution"""
@@ -280,29 +292,29 @@ class TestTextureConversion:
 
         result = self.converter.convert_texture(img_path, self.output_dir, "block")
 
-        assert result['success'] is True
-        assert result['original_dimensions'] == (2048, 2048)
-        assert result['resized'] is True
+        assert result["success"] is True
+        assert result["original_dimensions"] == (2048, 2048)
+        assert result["resized"] is True
         # Should cap at 1024 (max resolution)
-        assert result['converted_dimensions'] == (1024, 1024)
+        assert result["converted_dimensions"] == (1024, 1024)
 
     def test_non_png_to_png_conversion(self):
         """Test converting non-PNG to PNG"""
         # Create a JPEG image
-        img = Image.new('RGB', (32, 32), (255, 0, 0))
+        img = Image.new("RGB", (32, 32), (255, 0, 0))
         jpeg_path = Path(self.temp_dir) / "test.jpg"
-        img.save(jpeg_path, 'JPEG')
+        img.save(jpeg_path, "JPEG")
 
         result = self.converter.convert_texture(str(jpeg_path), self.output_dir, "block")
 
-        assert result['success'] is True
-        assert result['format'] == 'png'
-        assert 'Converted to RGBA' in result['optimizations_applied']
+        assert result["success"] is True
+        assert result["format"] == "png"
+        assert "Converted to RGBA" in result["optimizations_applied"]
 
         # Verify output is PNG
-        output_img = Image.open(result['converted_path'])
-        assert output_img.format == 'PNG'
-        assert output_img.mode == 'RGBA'
+        output_img = Image.open(result["converted_path"])
+        assert output_img.format == "PNG"
+        assert output_img.mode == "RGBA"
 
     def test_caching(self):
         """Test that conversion results are cached"""
@@ -313,7 +325,9 @@ class TestTextureConversion:
 
         assert result1 == result2
         # Second conversion should hit cache
-        assert ' Converted to RGBA' not in str(result2) or len(result2['optimizations_applied']) == len(result1['optimizations_applied'])
+        assert " Converted to RGBA" not in str(result2) or len(
+            result2["optimizations_applied"]
+        ) == len(result1["optimizations_applied"])
 
     def test_is_power_of_2(self):
         """Test power of 2 checking"""
@@ -361,6 +375,7 @@ class TestTextureConversion:
         assert TextureConverter._previous_power_of_2(1025) == 1024
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pytest
-    pytest.main([__file__, '-v'])
+
+    pytest.main([__file__, "-v"])

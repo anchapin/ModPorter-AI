@@ -24,17 +24,19 @@ engine_kwargs = {
 
 # Only add pooling parameters for PostgreSQL
 if not db_url.startswith("sqlite"):
-    engine_kwargs.update({
-        "pool_size": 1,
-        "max_overflow": 0,
-        "pool_pre_ping": True,
-        "pool_recycle": 3600,
-        "connect_args": {
-            "server_settings": {
-                "application_name": "modporter_test",
-            }
+    engine_kwargs.update(
+        {
+            "pool_size": 1,
+            "max_overflow": 0,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+            "connect_args": {
+                "server_settings": {
+                    "application_name": "modporter_test",
+                }
+            },
         }
-    })
+    )
 
 test_engine = create_async_engine(db_url, **engine_kwargs)
 
@@ -44,6 +46,7 @@ TestAsyncSessionLocal = async_sessionmaker(
 
 # Global flag to track database initialization
 _db_initialized = False
+
 
 def pytest_sessionstart(session):
     """Initialize database once at the start of the test session."""
@@ -57,11 +60,12 @@ def pytest_sessionstart(session):
                 from db.declarative_base import Base
                 from db import models
                 from sqlalchemy import text
+
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
                     if not db_url.startswith("sqlite"):
-                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\""))
-                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS \"vector\""))
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                     await conn.run_sync(Base.metadata.create_all)
 
             # Create a new event loop for this operation
@@ -77,17 +81,20 @@ def pytest_sessionstart(session):
             print(f"Warning: Database initialization failed: {e}")
             _db_initialized = False
 
+
 @pytest.fixture
 def project_root():
     """Get the project root directory for accessing test fixtures."""
     # Navigate from backend/src/tests/conftest.py to project root
     current_dir = Path(__file__).parent  # tests/
-    src_dir = current_dir.parent         # src/
-    backend_dir = src_dir.parent         # backend/
-    project_root = backend_dir.parent    # project root
+    src_dir = current_dir.parent  # src/
+    backend_dir = src_dir.parent  # backend/
+    project_root = backend_dir.parent  # project root
     return project_root
 
+
 import pytest_asyncio
+
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
@@ -99,11 +106,12 @@ async def db_session():
         finally:
             await session.close()
 
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
-    with patch('db.init_db.init_db', new_callable=AsyncMock):
+    with patch("db.init_db.init_db", new_callable=AsyncMock):
         # Import dependencies
         from src.main import app
         from db.base import get_db
@@ -111,9 +119,7 @@ def client():
 
         # Create a fresh session maker per test to avoid connection sharing
         test_session_maker = async_sessionmaker(
-            bind=test_engine,
-            expire_on_commit=False,
-            class_=AsyncSession
+            bind=test_engine, expire_on_commit=False, class_=AsyncSession
         )
 
         # Override the database dependency to use isolated sessions
@@ -136,11 +142,13 @@ def client():
         # Clean up dependency override
         app.dependency_overrides.clear()
 
+
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
     """Reset rate limiter state between tests to avoid interference."""
     # Import here to avoid circular imports
     from services.rate_limiter import _rate_limiter
+
     if _rate_limiter:
         # Clear the local state dictionary
         _rate_limiter._local_state.clear()

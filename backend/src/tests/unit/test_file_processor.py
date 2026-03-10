@@ -58,9 +58,7 @@ class TestFileProcessor:
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
-        mock_response.headers = {
-            "Content-Disposition": 'attachment; filename="example.zip"'
-        }
+        mock_response.headers = {"Content-Disposition": 'attachment; filename="example.zip"'}
         mock_response.url = httpx.URL("http://example.com/download/example.zip")
 
         # Simulate async iteration for content
@@ -75,9 +73,7 @@ class TestFileProcessor:
             mock_get  # For async context manager
         )
 
-        url = (
-            "http://example.com/download.zip"  # URL passed to function can be different
-        )
+        url = "http://example.com/download.zip"  # URL passed to function can be different
 
         # The temp_job_dirs fixture already creates the directory
         result = await file_processor.download_from_url(url, mock_job_id)
@@ -109,9 +105,7 @@ class TestFileProcessor:
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
-        mock_response.headers = {
-            "Content-Type": "application/zip"
-        }  # No Content-Disposition
+        mock_response.headers = {"Content-Type": "application/zip"}  # No Content-Disposition
         mock_response.url = httpx.URL(
             "http://example.com/another_example.jar"
         )  # Filename from URL path
@@ -120,9 +114,7 @@ class TestFileProcessor:
             yield b"jar content"
 
         mock_response.aiter_bytes = mock_aiter_bytes
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
         url = "http://example.com/another_example.jar"
         result = await file_processor.download_from_url(url, mock_job_id)
@@ -150,9 +142,7 @@ class TestFileProcessor:
             yield b"java archive"
 
         mock_response.aiter_bytes = mock_aiter_bytes
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
         url = "http://example.com/some_file_no_ext"
         result = await file_processor.download_from_url(url, mock_job_id)
@@ -197,9 +187,7 @@ class TestFileProcessor:
             )
         )
 
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
         url = "http://example.com/error_url"
         result = await file_processor.download_from_url(url, mock_job_id)
@@ -248,9 +236,7 @@ class TestFileProcessor:
                 yield b"data"
 
             mock_response.aiter_bytes = mock_aiter_bytes_io
-            MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
-                mock_response
-            )
+            MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
             # Patch open to raise IOError when writing
             with mock.patch("builtins.open", mock.mock_open()) as mock_file_open:
@@ -260,8 +246,8 @@ class TestFileProcessor:
                 )
         else:
             # For httpx exceptions, the client.get call itself fails
-            MockAsyncClient.return_value.__aenter__.return_value.get.side_effect = (
-                exception_type("Simulated network/timeout error")
+            MockAsyncClient.return_value.__aenter__.return_value.get.side_effect = exception_type(
+                "Simulated network/timeout error"
             )
             result = await file_processor.download_from_url(
                 "http://example.com/network_error_url", mock_job_id
@@ -278,9 +264,7 @@ class TestFileProcessor:
     ):
         mock_response = mock.AsyncMock(spec=httpx.Response)
         mock_response.status_code = 200
-        mock_response.headers = {
-            "Content-Disposition": 'attachment; filename="empty.zip"'
-        }
+        mock_response.headers = {"Content-Disposition": 'attachment; filename="empty.zip"'}
         mock_response.url = httpx.URL("http://example.com/empty.zip")
 
         async def mock_aiter_bytes_empty():
@@ -288,9 +272,7 @@ class TestFileProcessor:
                 yield
 
         mock_response.aiter_bytes = mock_aiter_bytes_empty
-        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        MockAsyncClient.return_value.__aenter__.return_value.get.return_value = mock_response
 
         url = "http://example.com/empty.zip"
         with mock.patch("file_processor.logger.warning") as mock_logger_warning:
@@ -313,10 +295,12 @@ class TestFileProcessor:
     @mock.patch("file_processor.socket.getaddrinfo")
     async def test_is_safe_url_public_ip(self, mock_getaddrinfo, temp_job_dirs):
         """Test _is_safe_url with a public IP."""
-        fp = FileProcessor() # Use real instance, not mocked fixture
+        fp = FileProcessor()  # Use real instance, not mocked fixture
 
         # Mock public IP for example.com
-        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))]
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))
+        ]
 
         result = await fp._is_safe_url("http://example.com/file.zip")
         assert result is True
@@ -328,7 +312,9 @@ class TestFileProcessor:
         fp = FileProcessor()
 
         # Mock private IP
-        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('192.168.1.1', 80))]
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.1", 80))
+        ]
 
         result = await fp._is_safe_url("http://internal.com/secret.zip")
         assert result is False
@@ -340,7 +326,9 @@ class TestFileProcessor:
         fp = FileProcessor()
 
         # Mock loopback IP
-        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 80))]
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 80))
+        ]
 
         result = await fp._is_safe_url("http://localhost/config")
         assert result is False
@@ -351,12 +339,9 @@ class TestFileProcessor:
         result = await fp._is_safe_url("ftp://example.com/file.zip")
         assert result is False
 
-
     # --- Tests for validate_downloaded_file ---
     @pytest.mark.asyncio
-    async def test_validate_downloaded_file_valid(
-        self, file_processor, temp_job_dirs, mock_job_id
-    ):
+    async def test_validate_downloaded_file_valid(self, file_processor, temp_job_dirs, mock_job_id):
         # Create a valid mock zip file (just needs magic number and to exist)
         # FileProcessor.ZIP_MAGIC_NUMBER is b"PK\x03\x04"
         valid_file_path = temp_job_dirs["upload"] / "valid.zip"
@@ -406,9 +391,7 @@ class TestFileProcessor:
         assert result.sanitized_filename == "oversized.zip"
 
     @pytest.mark.asyncio
-    async def test_validate_downloaded_file_empty(
-        self, file_processor, temp_job_dirs, mock_job_id
-    ):
+    async def test_validate_downloaded_file_empty(self, file_processor, temp_job_dirs, mock_job_id):
         empty_file_path = temp_job_dirs["upload"] / "empty.zip"
         empty_file_path.touch()  # Create an empty file
 
@@ -481,9 +464,7 @@ class TestFileProcessor:
             shutil.rmtree(job_dir_path)
 
         with mock.patch("file_processor.shutil.rmtree") as mock_rmtree:
-            with mock.patch.object(
-                logging.getLogger("file_processor"), "info"
-            ) as mock_logger_info:
+            with mock.patch.object(logging.getLogger("file_processor"), "info") as mock_logger_info:
                 result = file_processor.cleanup_temp_files(mock_job_id)
 
                 assert result is True
@@ -523,9 +504,7 @@ class TestFileProcessor:
         except Exception:
             pass  # If cleanup fails, that's okay for the test
 
-    @mock.patch(
-        "file_processor.shutil.rmtree", side_effect=Exception("Test generic error")
-    )
+    @mock.patch("file_processor.shutil.rmtree", side_effect=Exception("Test generic error"))
     @mock.patch.object(logging.getLogger("file_processor"), "error")
     def test_cleanup_temp_files_generic_error(
         self, mock_logger_error, mock_rmtree, file_processor, mock_job_id
@@ -557,9 +536,7 @@ class TestFileProcessor:
     # --- Tests for scan_for_malware ---
 
     @pytest.mark.asyncio
-    async def test_scan_for_malware_safe_zip(
-        self, file_processor, temp_job_dirs, mock_job_id
-    ):
+    async def test_scan_for_malware_safe_zip(self, file_processor, temp_job_dirs, mock_job_id):
         """Test malware scan on a safe ZIP file."""
         import zipfile
 
@@ -633,9 +610,7 @@ class TestFileProcessor:
         mock_member.compress_size = 1024  # 1KB compressed (ratio > 100)
 
         with mock.patch("zipfile.ZipFile") as mock_zipfile:
-            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [
-                mock_member
-            ]
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [mock_member]
 
             result = await file_processor.scan_for_malware(zip_bomb_path, "zip")
 
@@ -667,9 +642,7 @@ class TestFileProcessor:
             mock_members.append(mock_member)
 
         with mock.patch("zipfile.ZipFile") as mock_zipfile:
-            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = (
-                mock_members
-            )
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = mock_members
 
             result = await file_processor.scan_for_malware(zip_bomb_path, "zip")
 
@@ -710,9 +683,7 @@ class TestFileProcessor:
         assert "passed implemented security checks" in result.message
 
     @pytest.mark.asyncio
-    async def test_scan_for_malware_jar_file(
-        self, file_processor, temp_job_dirs, mock_job_id
-    ):
+    async def test_scan_for_malware_jar_file(self, file_processor, temp_job_dirs, mock_job_id):
         """Test malware scan on JAR file (which is a ZIP)."""
         import zipfile
 
@@ -720,9 +691,7 @@ class TestFileProcessor:
         safe_jar_path = temp_job_dirs["upload"] / "safe.jar"
         with zipfile.ZipFile(safe_jar_path, "w") as zip_file:
             zip_file.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
-            zip_file.writestr(
-                "com/example/Main.class", b"\xca\xfe\xba\xbe"
-            )  # Mock class file
+            zip_file.writestr("com/example/Main.class", b"\xca\xfe\xba\xbe")  # Mock class file
 
         result = await file_processor.scan_for_malware(safe_jar_path, "jar")
 
@@ -763,9 +732,7 @@ class TestFileProcessor:
         mock_member.compress_size = 0  # This could cause division by zero
 
         with mock.patch("zipfile.ZipFile") as mock_zipfile:
-            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [
-                mock_member
-            ]
+            mock_zipfile.return_value.__enter__.return_value.infolist.return_value = [mock_member]
 
             result = await file_processor.scan_for_malware(zip_path, "zip")
 

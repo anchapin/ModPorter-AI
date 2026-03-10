@@ -18,6 +18,7 @@ from typing import Optional
 @dataclass
 class UnusedImport:
     """Represents an unused import found in a file."""
+
     file_path: str
     line_number: int
     import_statement: str
@@ -27,6 +28,7 @@ class UnusedImport:
 @dataclass
 class UnusedPackage:
     """Represents an unused package found in requirements."""
+
     package_name: str
     source_file: str
     reason: str = ""
@@ -35,6 +37,7 @@ class UnusedPackage:
 @dataclass
 class DependencyReport:
     """Complete dependency analysis report."""
+
     unused_imports: list[UnusedImport] = field(default_factory=list)
     unused_packages: list[UnusedPackage] = field(default_factory=list)
     files_scanned: int = 0
@@ -45,7 +48,7 @@ class ImportVisitor(ast.NodeVisitor):
     """AST visitor to extract imports and their usage from a Python file."""
 
     def __init__(self, source_code: str):
-        self.source_lines = source_code.split('\n')
+        self.source_lines = source_code.split("\n")
         self.imports: dict[str, list[tuple[int, str]]] = {}
         self.defined_names: set[str] = set()
         self.used_names: set[str] = set()
@@ -56,19 +59,19 @@ class ImportVisitor(ast.NodeVisitor):
         """Visit import statements."""
         for alias in node.names:
             name = alias.asname if alias.asname else alias.name
-            full_name = alias.name.split('.')[0]
+            full_name = alias.name.split(".")[0]
             if full_name not in self.imports:
                 self.imports[full_name] = []
             self.imports[full_name].append((node.lineno, name))
 
     def visit_ImportFrom(self, node: ast.ImportFrom):
         """Visit from...import statements."""
-        module = node.module or ''
+        module = node.module or ""
         for alias in node.names:
             name = alias.asname if alias.asname else alias.name
-            if name == '*':
+            if name == "*":
                 continue  # Skip wildcard imports
-            full_name = module.split('.')[0] if module else name
+            full_name = module.split(".")[0] if module else name
             if full_name not in self.imports:
                 self.imports[full_name] = []
             self.imports[full_name].append((node.lineno, name))
@@ -121,12 +124,14 @@ class ImportVisitor(ast.NodeVisitor):
                             stmt = self.source_lines[line_no - 1].strip()
                         else:
                             stmt = f"import {imported_name}"
-                        unused.append(UnusedImport(
-                            file_path="",
-                            line_number=line_no,
-                            import_statement=stmt,
-                            imported_names=[imported_name]
-                        ))
+                        unused.append(
+                            UnusedImport(
+                                file_path="",
+                                line_number=line_no,
+                                import_statement=stmt,
+                                imported_names=[imported_name],
+                            )
+                        )
         return unused
 
 
@@ -136,21 +141,21 @@ def parse_requirements_file(file_path: str) -> dict[str, str]:
     if not os.path.exists(file_path):
         return packages
 
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             # Skip empty lines and comments
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
             # Skip -r, -e, and other flags
-            if line.startswith('-'):
+            if line.startswith("-"):
                 continue
 
             # Parse package name and version
             # Handle various formats: package, package==version, package>=version, etc.
-            match = re.match(r'^([a-zA-Z0-9_-]+)([<>=!~]+.+)?', line)
+            match = re.match(r"^([a-zA-Z0-9_-]+)([<>=!~]+.+)?", line)
             if match:
-                pkg_name = match.group(1).lower().replace('-', '_')
+                pkg_name = match.group(1).lower().replace("-", "_")
                 version = match.group(2) or ""
                 packages[pkg_name] = version
 
@@ -163,7 +168,7 @@ def parse_pyproject_dependencies(file_path: str) -> dict[str, str]:
     if not os.path.exists(file_path):
         return packages
 
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Simple regex-based parsing for dependencies
@@ -172,8 +177,8 @@ def parse_pyproject_dependencies(file_path: str) -> dict[str, str]:
 
     # Match various dependency formats in toml
     patterns = [
-        r'dependencies\s*=\s*\[([^\]]+)\]',
-        r'project\s*=\s*\{[^}]*dependencies\s*=\s*\[([^\]]+)\]',
+        r"dependencies\s*=\s*\[([^\]]+)\]",
+        r"project\s*=\s*\{[^}]*dependencies\s*=\s*\[([^\]]+)\]",
     ]
 
     for pattern in patterns:
@@ -184,9 +189,9 @@ def parse_pyproject_dependencies(file_path: str) -> dict[str, str]:
             for dep in deps:
                 # Handle various formats
                 dep_clean = dep.strip()
-                match_pkg = re.match(r'^([a-zA-Z0-9_-]+)([<>=!~]+.+)?', dep_clean)
+                match_pkg = re.match(r"^([a-zA-Z0-9_-]+)([<>=!~]+.+)?", dep_clean)
                 if match_pkg:
-                    pkg_name = match_pkg.group(1).lower().replace('-', '_')
+                    pkg_name = match_pkg.group(1).lower().replace("-", "_")
                     version = match_pkg.group(2) or ""
                     packages[pkg_name] = version
 
@@ -196,7 +201,7 @@ def parse_pyproject_dependencies(file_path: str) -> dict[str, str]:
 def scan_python_file(file_path: str) -> list[UnusedImport]:
     """Scan a single Python file for unused imports."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             source = f.read()
     except (UnicodeDecodeError, OSError):
         return []
@@ -219,12 +224,21 @@ def scan_python_file(file_path: str) -> list[UnusedImport]:
 def find_python_files(root_dir: str, exclude_dirs: Optional[list[str]] = None) -> list[str]:
     """Find all Python files in a directory tree."""
     if exclude_dirs is None:
-        exclude_dirs = ['__pycache__', '.git', '.venv', 'venv', 'node_modules', '.pytest_cache', '.ruff_cache', 'mutants']
+        exclude_dirs = [
+            "__pycache__",
+            ".git",
+            ".venv",
+            "venv",
+            "node_modules",
+            ".pytest_cache",
+            ".ruff_cache",
+            "mutants",
+        ]
 
     python_files = []
     root = Path(root_dir)
 
-    for path in root.rglob('*.py'):
+    for path in root.rglob("*.py"):
         # Check if path should be excluded
         if any(excluded in path.parts for excluded in exclude_dirs):
             continue
@@ -234,8 +248,7 @@ def find_python_files(root_dir: str, exclude_dirs: Optional[list[str]] = None) -
 
 
 def scan_directory_for_unused_imports(
-    directory: str,
-    exclude_dirs: Optional[list[str]] = None
+    directory: str, exclude_dirs: Optional[list[str]] = None
 ) -> list[UnusedImport]:
     """Scan a directory for unused imports in all Python files."""
     python_files = find_python_files(directory, exclude_dirs)
@@ -255,7 +268,7 @@ def get_all_imported_modules(directory: str, exclude_dirs: Optional[list[str]] =
 
     for py_file in python_files:
         try:
-            with open(py_file, 'r', encoding='utf-8') as f:
+            with open(py_file, "r", encoding="utf-8") as f:
                 source = f.read()
         except (UnicodeDecodeError, OSError):
             continue
@@ -268,13 +281,13 @@ def get_all_imported_modules(directory: str, exclude_dirs: Optional[list[str]] =
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    module = alias.name.split('.')[0]
+                    module = alias.name.split(".")[0]
                     imported_modules.add(module.lower())
 
             elif isinstance(node, ast.ImportFrom):
-                module = node.module or ''
+                module = node.module or ""
                 if module:
-                    main_module = module.split('.')[0]
+                    main_module = module.split(".")[0]
                     imported_modules.add(main_module.lower())
 
     return imported_modules
@@ -284,7 +297,7 @@ def find_unused_packages(
     requirements_files: list[str],
     pyproject_files: list[str],
     source_directories: list[str],
-    exclude_packages: Optional[set[str]] = None
+    exclude_packages: Optional[set[str]] = None,
 ) -> list[UnusedPackage]:
     """Find packages that are listed but not imported anywhere."""
     if exclude_packages is None:
@@ -317,10 +330,11 @@ def find_unused_packages(
 
         # Check if the package is imported
         # Handle both underscore and hyphen variations
-        pkg_variants = {pkg_name, pkg_name.replace('_', '-')}
+        pkg_variants = {pkg_name, pkg_name.replace("_", "-")}
 
         is_used = any(
-            imp in pkg_variants or pkg_variants.intersection({imp.replace('_', '-'), imp.replace('-', '_')})
+            imp in pkg_variants
+            or pkg_variants.intersection({imp.replace("_", "-"), imp.replace("-", "_")})
             for imp in all_imports
         )
 
@@ -338,11 +352,13 @@ def find_unused_packages(
                         source_file = py_file
                         break
 
-            unused.append(UnusedPackage(
-                package_name=pkg_name,
-                source_file=source_file or "unknown",
-                reason="No import found in source code"
-            ))
+            unused.append(
+                UnusedPackage(
+                    package_name=pkg_name,
+                    source_file=source_file or "unknown",
+                    reason="No import found in source code",
+                )
+            )
 
     return unused
 
@@ -352,7 +368,7 @@ def analyze_dependencies(
     requirements_files: Optional[list[str]] = None,
     pyproject_files: Optional[list[str]] = None,
     exclude_dirs: Optional[list[str]] = None,
-    exclude_packages: Optional[set[str]] = None
+    exclude_packages: Optional[set[str]] = None,
 ) -> DependencyReport:
     """
     Perform complete dependency analysis.
@@ -374,12 +390,28 @@ def analyze_dependencies(
         pyproject_files = []
 
     if exclude_dirs is None:
-        exclude_dirs = ['__pycache__', '.git', '.venv', 'venv', 'node_modules',
-                       '.pytest_cache', '.ruff_cache', 'mutants', 'tests']
+        exclude_dirs = [
+            "__pycache__",
+            ".git",
+            ".venv",
+            "venv",
+            "node_modules",
+            ".pytest_cache",
+            ".ruff_cache",
+            "mutants",
+            "tests",
+        ]
 
     if exclude_packages is None:
-        exclude_packages = {'pytest', 'pytest-asyncio', 'ruff', 'black', 'mypy',
-                           'types-python-dateutil', 'types-pytz'}
+        exclude_packages = {
+            "pytest",
+            "pytest-asyncio",
+            "ruff",
+            "black",
+            "mypy",
+            "types-python-dateutil",
+            "types-pytz",
+        }
 
     # Scan for unused imports
     all_unused_imports = []
@@ -389,10 +421,7 @@ def analyze_dependencies(
 
     # Find unused packages
     unused_packages = find_unused_packages(
-        requirements_files,
-        pyproject_files,
-        source_directories,
-        exclude_packages
+        requirements_files, pyproject_files, source_directories, exclude_packages
     )
 
     # Count files scanned
@@ -404,7 +433,9 @@ def analyze_dependencies(
         unused_imports=all_unused_imports,
         unused_packages=unused_packages,
         files_scanned=files_scanned,
-        packages_scanned=len(set().union(*[parse_requirements_file(f) for f in requirements_files]))
+        packages_scanned=len(
+            set().union(*[parse_requirements_file(f) for f in requirements_files])
+        ),
     )
 
 
@@ -447,38 +478,24 @@ def main():
     """Main entry point for CLI usage."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Detect unused dependencies in Python projects"
+    parser = argparse.ArgumentParser(description="Detect unused dependencies in Python projects")
+    parser.add_argument(
+        "--dir",
+        "-d",
+        action="append",
+        help="Source directories to scan (can be specified multiple times)",
     )
     parser.add_argument(
-        '--dir', '-d',
-        action='append',
-        help='Source directories to scan (can be specified multiple times)'
+        "--requirements", "-r", action="append", help="requirements.txt files to check"
     )
-    parser.add_argument(
-        '--requirements', '-r',
-        action='append',
-        help='requirements.txt files to check'
-    )
-    parser.add_argument(
-        '--pyproject', '-p',
-        action='append',
-        help='pyproject.toml files to check'
-    )
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose output'
-    )
-    parser.add_argument(
-        '--output', '-o',
-        help='Output file for report (JSON format)'
-    )
+    parser.add_argument("--pyproject", "-p", action="append", help="pyproject.toml files to check")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument("--output", "-o", help="Output file for report (JSON format)")
 
     args = parser.parse_args()
 
     # Default to current directory if no directories specified
-    source_dirs = args.dir or ['.']
+    source_dirs = args.dir or ["."]
 
     # Auto-discover requirements files if not specified
     req_files = args.requirements or []
@@ -489,7 +506,7 @@ def main():
         for source_dir in source_dirs:
             for root, _, files in os.walk(source_dir):
                 for f in files:
-                    if f == 'requirements.txt':
+                    if f == "requirements.txt":
                         req_files.append(os.path.join(root, f))
 
     if not pyproject_files:
@@ -497,13 +514,13 @@ def main():
         for source_dir in source_dirs:
             for root, _, files in os.walk(source_dir):
                 for f in files:
-                    if f == 'pyproject.toml':
+                    if f == "pyproject.toml":
                         pyproject_files.append(os.path.join(root, f))
 
     report = analyze_dependencies(
         source_directories=source_dirs,
         requirements_files=req_files,
-        pyproject_files=pyproject_files
+        pyproject_files=pyproject_files,
     )
 
     print_report(report, args.verbose)
@@ -511,28 +528,25 @@ def main():
     # Output JSON if requested
     if args.output:
         import json
+
         report_dict = {
-            'files_scanned': report.files_scanned,
-            'packages_scanned': report.packages_scanned,
-            'unused_imports': [
+            "files_scanned": report.files_scanned,
+            "packages_scanned": report.packages_scanned,
+            "unused_imports": [
                 {
-                    'file': imp.file_path,
-                    'line': imp.line_number,
-                    'statement': imp.import_statement,
-                    'names': imp.imported_names
+                    "file": imp.file_path,
+                    "line": imp.line_number,
+                    "statement": imp.import_statement,
+                    "names": imp.imported_names,
                 }
                 for imp in report.unused_imports
             ],
-            'unused_packages': [
-                {
-                    'package': pkg.package_name,
-                    'source': pkg.source_file,
-                    'reason': pkg.reason
-                }
+            "unused_packages": [
+                {"package": pkg.package_name, "source": pkg.source_file, "reason": pkg.reason}
                 for pkg in report.unused_packages
-            ]
+            ],
         }
-        with open(args.output, 'w') as f:
+        with open(args.output, "w") as f:
             json.dump(report_dict, f, indent=2)
         print(f"\nJSON report written to: {args.output}")
 
@@ -544,5 +558,5 @@ def main():
         sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
