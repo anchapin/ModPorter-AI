@@ -1,8 +1,8 @@
-
 import pytest
 from fastapi.testclient import TestClient
 import io
 import json
+
 
 class TestConversionsAPI:
     def test_create_conversion_success(self, client):
@@ -11,17 +11,12 @@ class TestConversionsAPI:
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
 
         # Options as JSON string
-        options = json.dumps({
-            "assumptions": "conservative",
-            "target_version": "1.20.0"
-        })
+        options = json.dumps({"assumptions": "conservative", "target_version": "1.20.0"})
 
         response = client.post(
             "/api/v1/conversions",
-            files={
-                "file": ("test_mod.jar", io.BytesIO(jar_content), "application/java-archive")
-            },
-            data={"options": options}
+            files={"file": ("test_mod.jar", io.BytesIO(jar_content), "application/java-archive")},
+            data={"options": options},
         )
 
         # If 404, it means the router is not included or path is wrong
@@ -42,10 +37,7 @@ class TestConversionsAPI:
         We will test invalid file type here to ensure validation chain works.
         """
         response = client.post(
-            "/api/v1/conversions",
-            files={
-                "file": ("test.txt", io.BytesIO(b"text"), "text/plain")
-            }
+            "/api/v1/conversions", files={"file": ("test.txt", io.BytesIO(b"text"), "text/plain")}
         )
         assert response.status_code == 400
         data = response.json()

@@ -3,6 +3,7 @@ import asyncio
 from unittest.mock import MagicMock
 from services.rate_limiter import RateLimiter, RateLimitConfig, RateLimitState
 
+
 @pytest.mark.asyncio
 async def test_rate_limiter_override_config_no_side_effects():
     """
@@ -30,8 +31,7 @@ async def test_rate_limiter_override_config_no_side_effects():
     # The fix is to add override_config parameter to check_rate_limit
     try:
         is_allowed, metadata = await limiter.check_rate_limit(
-            mock_request,
-            override_config=override_config
+            mock_request, override_config=override_config
         )
     except TypeError:
         # If the method signature hasn't been updated yet, this test fails as expected
@@ -47,6 +47,7 @@ async def test_rate_limiter_override_config_no_side_effects():
     # 3. Verify subsequent call without override uses default
     is_allowed_default, metadata_default = await limiter.check_rate_limit(mock_request)
     assert metadata_default["limit_minute"] == 10
+
 
 @pytest.mark.asyncio
 async def test_concurrent_requests_isolation():
@@ -85,7 +86,7 @@ async def test_concurrent_requests_isolation():
             _, meta = await limiter.check_rate_limit(mock_req2, override_config=override_config)
             return meta["limit_minute"]
         except TypeError:
-             return -1
+            return -1
 
     # Run concurrently
     limit1, limit2 = await asyncio.gather(task1(), task2())

@@ -14,6 +14,7 @@ from PIL import Image
 try:
     from pydub import AudioSegment
     from pydub.exceptions import CouldntDecodeError
+
     HAS_AUDIO_SUPPORT = True
 except ImportError:
     HAS_AUDIO_SUPPORT = False
@@ -21,9 +22,7 @@ except ImportError:
     CouldntDecodeError = Exception
 
 from crewai.tools import tool
-from models.smart_assumptions import (
-    SmartAssumptionEngine
-)
+from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -33,58 +32,58 @@ class AssetConverterAgent:
     Asset Converter Agent responsible for converting visual and audio assets
     to Bedrock-compatible formats as specified in PRD Feature 2.
     """
-    
+
     _instance = None
-    
+
     def __init__(self):
         self.smart_assumption_engine = SmartAssumptionEngine()
-        
+
         # Supported asset formats
         self.texture_formats = {
-            'input': ['.png', '.jpg', '.jpeg', '.tga', '.bmp'],
-            'output': '.png'  # Bedrock uses PNG
+            "input": [".png", ".jpg", ".jpeg", ".tga", ".bmp"],
+            "output": ".png",  # Bedrock uses PNG
         }
-        
+
         self.model_formats = {
-            'input': ['.obj', '.fbx', '.json'],  # Java mod formats
-            'output': '.geo.json'  # Bedrock geometry format
+            "input": [".obj", ".fbx", ".json"],  # Java mod formats
+            "output": ".geo.json",  # Bedrock geometry format
         }
-        
+
         self.audio_formats = {
-            'input': ['.ogg', '.wav', '.mp3'],
-            'output': '.ogg'  # Bedrock prefers OGG
+            "input": [".ogg", ".wav", ".mp3"],
+            "output": ".ogg",  # Bedrock prefers OGG
         }
-        
+
         # Bedrock asset constraints
         self.texture_constraints = {
-            'max_resolution': 1024,  # Max texture size for performance
-            'must_be_power_of_2': True,
-            'supported_channels': ['rgb', 'rgba']
+            "max_resolution": 1024,  # Max texture size for performance
+            "must_be_power_of_2": True,
+            "supported_channels": ["rgb", "rgba"],
         }
-        
+
         self.model_constraints = {
-            'max_vertices': 3000,  # Bedrock model complexity limit
-            'max_textures': 8,
-            'supported_bones': 60  # Max bones for animated models
+            "max_vertices": 3000,  # Bedrock model complexity limit
+            "max_textures": 8,
+            "supported_bones": 60,  # Max bones for animated models
         }
-        
+
         self.audio_constraints = {
-            'max_file_size_mb': 10,
-            'sample_rates': [22050, 44100],
-            'max_duration_seconds': 300
+            "max_file_size_mb": 10,
+            "sample_rates": [22050, 44100],
+            "max_duration_seconds": 300,
         }
-        
+
         # Caching for performance optimization
         self._texture_cache = {}
         self._conversion_cache = {}
-    
+
     @classmethod
     def get_instance(cls):
         """Get singleton instance of AssetConverterAgent"""
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
-    
+
     def get_tools(self) -> List:
         """Get tools available to this agent"""
         return [
@@ -97,20 +96,20 @@ class AssetConverterAgent:
             AssetConverterAgent.extract_jar_textures_tool,
             AssetConverterAgent.convert_java_texture_path_tool,
             AssetConverterAgent.validate_texture_tool,
-            AssetConverterAgent.generate_fallback_texture_tool
+            AssetConverterAgent.generate_fallback_texture_tool,
         ]
-    
+
     def _is_power_of_2(self, n: int) -> bool:
         """Check if a number is a power of 2"""
         return n > 0 and (n & (n - 1)) == 0
-    
+
     def _next_power_of_2(self, n: int) -> int:
         """Get the next power of 2 greater than or equal to n"""
         power = 1
         while power < n:
             power *= 2
         return power
-    
+
     def _previous_power_of_2(self, n: int) -> int:
         """Get the previous power of 2 less than or equal to n"""
         if n <= 0:
@@ -120,23 +119,27 @@ class AssetConverterAgent:
             power *= 2
         return power
 
-    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+    def _convert_single_texture(
+        self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    ) -> Dict:
         """
         Convert a single texture file to Bedrock format with enhanced validation and optimization.
         If output_dir is provided, saves the converted texture to disk.
         """
         # Create a cache key
         cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
-        
+
         # Check if we have a cached result
         if cache_key in self._conversion_cache:
             logger.debug(f"Using cached result for texture conversion: {texture_path}")
             return self._conversion_cache[cache_key]
-        
+
         try:
             # Handle missing or corrupted files with fallback generation
             if not Path(texture_path).exists():
-                logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
+                logger.warning(
+                    f"Texture file not found: {texture_path}. Generating fallback texture."
+                )
                 img = self._generate_fallback_texture(usage)
                 original_dimensions = img.size
                 is_valid_png = False
@@ -146,15 +149,17 @@ class AssetConverterAgent:
                     # Open and validate the image
                     img = Image.open(texture_path)
                     original_dimensions = img.size
-                    
+
                     # Enhanced PNG validation - check if it's already a valid PNG
-                    is_valid_png = img.format == 'PNG'
-                    
+                    is_valid_png = img.format == "PNG"
+
                     # Convert to RGBA for consistency
                     img = img.convert("RGBA")
                     optimizations_applied = ["Converted to RGBA"] if not is_valid_png else []
                 except Exception as open_error:
-                    logger.warning(f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture.")
+                    logger.warning(
+                        f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture."
+                    )
                     img = self._generate_fallback_texture(usage)
                     original_dimensions = img.size
                     is_valid_png = False
@@ -163,13 +168,15 @@ class AssetConverterAgent:
             width, height = img.size
             resized = False
 
-            max_res = self.texture_constraints.get('max_resolution', 1024)
-            must_be_power_of_2 = self.texture_constraints.get('must_be_power_of_2', True)
+            max_res = self.texture_constraints.get("max_resolution", 1024)
+            must_be_power_of_2 = self.texture_constraints.get("must_be_power_of_2", True)
 
             new_width, new_height = width, height
 
-            needs_pot_resize = must_be_power_of_2 and (not self._is_power_of_2(width) or not self._is_power_of_2(height))
-            
+            needs_pot_resize = must_be_power_of_2 and (
+                not self._is_power_of_2(width) or not self._is_power_of_2(height)
+            )
+
             if needs_pot_resize:
                 new_width = self._next_power_of_2(width)
                 new_height = self._next_power_of_2(height)
@@ -194,7 +201,9 @@ class AssetConverterAgent:
                 else:
                     # Downscaling - use LANCZOS for better quality
                     img = img.resize((new_width, new_height), Image.LANCZOS)
-                optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
+                optimizations_applied.append(
+                    f"Resized from {original_dimensions} to {(new_width, new_height)}"
+                )
             else:
                 new_width, new_height = img.size
                 resized = False
@@ -208,51 +217,79 @@ class AssetConverterAgent:
             mcmeta_path = Path(str(texture_path) + ".mcmeta")
             if mcmeta_path.exists():
                 try:
-                    with open(mcmeta_path, 'r') as f:
+                    with open(mcmeta_path, "r") as f:
                         mcmeta_content = json.load(f)
                     if "animation" in mcmeta_content:
                         animation_data = mcmeta_content["animation"]
                         optimizations_applied.append("Parsed .mcmeta animation data")
                 except (json.JSONDecodeError, Exception) as e:
-                    logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
+                    logger.warning(
+                        "Could not parse .mcmeta file for {}: {}".format(texture_path, e)
+                    )
 
-            base_name = Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
+            base_name = (
+                Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
+            )
             # Enhanced asset path mapping from Java mod structure to Bedrock structure
             # Handle common Java mod asset paths and map them to Bedrock equivalents
-            texture_path_obj = Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
-            
+            texture_path_obj = (
+                Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
+            )
+
             # Try to infer usage from the original path if not explicitly provided
-            if usage == 'block' and 'block' not in str(texture_path_obj).lower():
+            if usage == "block" and "block" not in str(texture_path_obj).lower():
                 # Check if the path contains common block texture indicators
-                if any(block_indicator in str(texture_path_obj).lower() for block_indicator in 
-                       ['block/', 'blocks/', '/block/', '/blocks/', '_block', '-block']):
-                    usage = 'block'
+                if any(
+                    block_indicator in str(texture_path_obj).lower()
+                    for block_indicator in [
+                        "block/",
+                        "blocks/",
+                        "/block/",
+                        "/blocks/",
+                        "_block",
+                        "-block",
+                    ]
+                ):
+                    usage = "block"
                 # Check for item indicators
-                elif any(item_indicator in str(texture_path_obj).lower() for item_indicator in 
-                        ['item/', 'items/', '/item/', '/items/', '_item', '-item']):
-                    usage = 'item'
+                elif any(
+                    item_indicator in str(texture_path_obj).lower()
+                    for item_indicator in ["item/", "items/", "/item/", "/items/", "_item", "-item"]
+                ):
+                    usage = "item"
                 # Check for entity indicators
-                elif any(entity_indicator in str(texture_path_obj).lower() for entity_indicator in 
-                        ['entity/', 'entities/', '/entity/', '/entities/', '_entity', '-entity']):
-                    usage = 'entity'
+                elif any(
+                    entity_indicator in str(texture_path_obj).lower()
+                    for entity_indicator in [
+                        "entity/",
+                        "entities/",
+                        "/entity/",
+                        "/entities/",
+                        "_entity",
+                        "-entity",
+                    ]
+                ):
+                    usage = "entity"
                 # Check for particle indicators
-                elif 'particle' in str(texture_path_obj).lower():
-                    usage = 'particle'
+                elif "particle" in str(texture_path_obj).lower():
+                    usage = "particle"
                 # Check for GUI indicators
-                elif any(gui_indicator in str(texture_path_obj).lower() for gui_indicator in 
-                        ['gui/', 'ui/', 'interface/', 'menu/']):
-                    usage = 'ui'
-            
+                elif any(
+                    gui_indicator in str(texture_path_obj).lower()
+                    for gui_indicator in ["gui/", "ui/", "interface/", "menu/"]
+                ):
+                    usage = "ui"
+
             # Map to Bedrock structure
-            if usage == 'block':
+            if usage == "block":
                 converted_path = f"textures/blocks/{base_name}.png"
-            elif usage == 'item':
+            elif usage == "item":
                 converted_path = f"textures/items/{base_name}.png"
-            elif usage == 'entity':
+            elif usage == "entity":
                 converted_path = f"textures/entity/{base_name}.png"
-            elif usage == 'particle':
+            elif usage == "particle":
                 converted_path = f"textures/particle/{base_name}.png"
-            elif usage == 'ui':
+            elif usage == "ui":
                 converted_path = f"textures/ui/{base_name}.png"
             else:
                 # For other types, try to preserve some structure from the original path
@@ -260,13 +297,13 @@ class AssetConverterAgent:
                 try:
                     relative_path = texture_path_obj.relative_to(texture_path_obj.anchor).as_posix()
                     # Remove common prefixes that indicate source structure
-                    for prefix in ['assets/minecraft/textures/', 'textures/', 'images/', 'img/']:
+                    for prefix in ["assets/minecraft/textures/", "textures/", "images/", "img/"]:
                         if relative_path.startswith(prefix):
-                            relative_path = relative_path[len(prefix):]
+                            relative_path = relative_path[len(prefix) :]
                             break
                     # Remove file extension
-                    if '.' in relative_path:
-                        relative_path = relative_path[:relative_path.rindex('.')]
+                    if "." in relative_path:
+                        relative_path = relative_path[: relative_path.rindex(".")]
                     converted_path = f"textures/other/{relative_path}.png"
                 except Exception:
                     # Fallback to a simple path if relative path calculation fails
@@ -281,23 +318,23 @@ class AssetConverterAgent:
                 actual_output_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Save with optimization
-                img.save(actual_output_path, 'PNG', optimize=True)
+                img.save(actual_output_path, "PNG", optimize=True)
                 logger.info(f"Saved converted texture to {actual_output_path}")
 
             result = {
-                'success': True,
-                'original_path': str(texture_path),
-                'converted_path': str(actual_output_path) if actual_output_path else converted_path,
-                'relative_path': converted_path,
-                'original_dimensions': original_dimensions,
-                'converted_dimensions': (new_width, new_height),
-                'format': 'png',
-                'resized': resized,
-                'optimizations_applied': optimizations_applied,
-                'bedrock_reference': f"{usage}_{base_name}",
-                'animation_data': animation_data,
-                'was_valid_png': is_valid_png,
-                'was_fallback': not Path(texture_path).exists()
+                "success": True,
+                "original_path": str(texture_path),
+                "converted_path": str(actual_output_path) if actual_output_path else converted_path,
+                "relative_path": converted_path,
+                "original_dimensions": original_dimensions,
+                "converted_dimensions": (new_width, new_height),
+                "format": "png",
+                "resized": resized,
+                "optimizations_applied": optimizations_applied,
+                "bedrock_reference": f"{usage}_{base_name}",
+                "animation_data": animation_data,
+                "was_valid_png": is_valid_png,
+                "was_fallback": not Path(texture_path).exists(),
             }
 
             # Cache the result
@@ -306,11 +343,7 @@ class AssetConverterAgent:
             return result
         except Exception as e:
             logger.error(f"Texture conversion error for {texture_path}: {e}")
-            error_result = {
-                'success': False,
-                'original_path': str(texture_path),
-                'error': str(e)
-            }
+            error_result = {"success": False, "original_path": str(texture_path), "error": str(e)}
             # Cache error results too to avoid repeated failures
             self._conversion_cache[cache_key] = error_result
             return error_result
@@ -324,28 +357,30 @@ class AssetConverterAgent:
                 "description": "Assets converted from Java mod",
                 "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 16, 0]
+                "min_engine_version": [1, 16, 0],
             },
-            "modules": [{
-                "type": "resources",
-                "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
-                "version": [1, 0, 0]
-            }]
+            "modules": [
+                {
+                    "type": "resources",
+                    "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
+                    "version": [1, 0, 0],
+                }
+            ],
         }
 
         item_texture_data = {}
         terrain_texture_data = {}
         flipbook_entries = []
-        
+
         # Track texture atlases
         texture_atlases = {}
 
         for t_data in textures:
-            if not t_data.get('success'):
+            if not t_data.get("success"):
                 continue
 
-            bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
-            converted_path = t_data['converted_path']
+            bedrock_ref = t_data.get("bedrock_reference", Path(t_data["converted_path"]).stem)
+            converted_path = t_data["converted_path"]
             texture_entry = {"textures": converted_path}
 
             # Enhanced atlas handling - group related textures
@@ -355,10 +390,9 @@ class AssetConverterAgent:
                 atlas_name = base_name.split("_")[0]  # Group by prefix
                 if atlas_name not in texture_atlases:
                     texture_atlases[atlas_name] = []
-                texture_atlases[atlas_name].append({
-                    "reference": bedrock_ref,
-                    "path": converted_path
-                })
+                texture_atlases[atlas_name].append(
+                    {"reference": bedrock_ref, "path": converted_path}
+                )
 
             if bedrock_ref.startswith("item_") or "/items/" in converted_path:
                 item_texture_data[bedrock_ref] = texture_entry
@@ -369,13 +403,17 @@ class AssetConverterAgent:
             else:
                 terrain_texture_data[bedrock_ref] = texture_entry
 
-            if t_data.get('animation_data'):
-                anim_data = t_data['animation_data']
+            if t_data.get("animation_data"):
+                anim_data = t_data["animation_data"]
                 frames_list = anim_data.get("frames", [])
-                
+
                 if frames_list and all(isinstance(f, dict) for f in frames_list):
                     try:
-                        processed_frames = [int(f['index']) for f in frames_list if isinstance(f, dict) and 'index' in f]
+                        processed_frames = [
+                            int(f["index"])
+                            for f in frames_list
+                            if isinstance(f, dict) and "index" in f
+                        ]
                         if not processed_frames:
                             processed_frames = []
                     except (TypeError, ValueError):
@@ -393,7 +431,7 @@ class AssetConverterAgent:
                     "flipbook_texture": converted_path,
                     "atlas_tile": Path(converted_path).stem,
                     "ticks_per_frame": ticks,
-                    "frames": processed_frames
+                    "frames": processed_frames,
                 }
                 if "interpolate" in anim_data:
                     entry["interpolate"] = anim_data["interpolate"]
@@ -402,12 +440,18 @@ class AssetConverterAgent:
 
         result = {"pack_manifest.json": manifest}
         if item_texture_data:
-            result["item_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": item_texture_data}
+            result["item_texture.json"] = {
+                "resource_pack_name": "vanilla",
+                "texture_data": item_texture_data,
+            }
         if terrain_texture_data:
-            result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
+            result["terrain_texture.json"] = {
+                "resource_pack_name": "vanilla",
+                "texture_data": terrain_texture_data,
+            }
         if flipbook_entries:
             result["flipbook_textures.json"] = flipbook_entries
-            
+
         # Add texture atlas information if any were detected
         if texture_atlases:
             result["texture_atlases.json"] = texture_atlases
@@ -428,7 +472,11 @@ class AssetConverterAgent:
         try:
             # Parse texture_list
             if isinstance(texture_list, str):
-                data = json.loads(texture_list) if texture_list.startswith('[') or texture_list.startswith('{') else texture_list
+                data = (
+                    json.loads(texture_list)
+                    if texture_list.startswith("[") or texture_list.startswith("{")
+                    else texture_list
+                )
             else:
                 data = texture_list
 
@@ -438,7 +486,7 @@ class AssetConverterAgent:
                 textures = [{"path": path, "usage": "block"} for path in data]
             elif isinstance(data, dict):
                 # Structured data
-                textures = data.get('textures', [])
+                textures = data.get("textures", [])
             else:
                 # Single path
                 textures = [{"path": str(data), "usage": "block"}]
@@ -451,7 +499,7 @@ class AssetConverterAgent:
                 "total_textures": len(textures),
                 "successful_conversions": 0,
                 "failed_conversions": 0,
-                "errors": []
+                "errors": [],
             }
 
             for texture_data in textures:
@@ -461,26 +509,32 @@ class AssetConverterAgent:
                         usage = "block"
                         metadata = {}
                     else:
-                        texture_path = texture_data.get('path', '')
-                        usage = texture_data.get('usage', 'block')
-                        metadata = texture_data.get('metadata', {})
+                        texture_path = texture_data.get("path", "")
+                        usage = texture_data.get("usage", "block")
+                        metadata = texture_data.get("metadata", {})
 
                     # Convert the texture and save to output directory
-                    conversion_result = self._convert_single_texture(texture_path, metadata, usage, output_path)
+                    conversion_result = self._convert_single_texture(
+                        texture_path, metadata, usage, output_path
+                    )
 
-                    if conversion_result.get('success'):
-                        result["converted_textures"].append({
-                            "original_path": texture_path,
-                            "converted_path": conversion_result['converted_path'],
-                            "relative_path": conversion_result['relative_path'],
-                            "success": True,
-                            "dimensions": conversion_result['converted_dimensions'],
-                            "resized": conversion_result['resized'],
-                            "optimizations": conversion_result['optimizations_applied']
-                        })
+                    if conversion_result.get("success"):
+                        result["converted_textures"].append(
+                            {
+                                "original_path": texture_path,
+                                "converted_path": conversion_result["converted_path"],
+                                "relative_path": conversion_result["relative_path"],
+                                "success": True,
+                                "dimensions": conversion_result["converted_dimensions"],
+                                "resized": conversion_result["resized"],
+                                "optimizations": conversion_result["optimizations_applied"],
+                            }
+                        )
                         result["successful_conversions"] += 1
                     else:
-                        result["errors"].append(f"Failed to convert {texture_path}: {conversion_result.get('error', 'Unknown error')}")
+                        result["errors"].append(
+                            f"Failed to convert {texture_path}: {conversion_result.get('error', 'Unknown error')}"
+                        )
                         result["failed_conversions"] += 1
                 except Exception as e:
                     logger.error(f"Error converting texture {texture_data}: {e}")
@@ -491,45 +545,48 @@ class AssetConverterAgent:
 
         except Exception as e:
             logger.error(f"Error converting textures: {e}")
-            return json.dumps({
-                "converted_textures": [],
-                "total_textures": 0,
-                "successful_conversions": 0,
-                "failed_conversions": 0,
-                "errors": [str(e)]
-            }, indent=2)
+            return json.dumps(
+                {
+                    "converted_textures": [],
+                    "total_textures": 0,
+                    "successful_conversions": 0,
+                    "failed_conversions": 0,
+                    "errors": [str(e)],
+                },
+                indent=2,
+            )
 
     def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
         """Convert a single audio file to Bedrock format"""
         try:
             audio_path_obj = Path(audio_path)
-            
+
             if not audio_path_obj.exists():
                 return {
-                    'success': False,
-                    'original_path': str(audio_path),
-                    'error': 'Audio file not found'
+                    "success": False,
+                    "original_path": str(audio_path),
+                    "error": "Audio file not found",
                 }
 
             file_ext = audio_path_obj.suffix.lower()
-            
-            if file_ext not in self.audio_formats['input']:
+
+            if file_ext not in self.audio_formats["input"]:
                 return {
-                    'success': False,
-                    'original_path': str(audio_path),
-                    'error': f'Unsupported audio format: {file_ext}'
+                    "success": False,
+                    "original_path": str(audio_path),
+                    "error": f"Unsupported audio format: {file_ext}",
                 }
 
             original_format = file_ext[1:]
             base_name = audio_path_obj.stem
-            audio_path_parts = audio_type.replace('.', '/')
+            audio_path_parts = audio_type.replace(".", "/")
             converted_path = f"sounds/{audio_path_parts}/{base_name}.ogg"
-            
+
             conversion_performed = False
             optimizations_applied = []
-            duration_seconds = metadata.get('duration_seconds')
-            
-            if original_format == 'wav':
+            duration_seconds = metadata.get("duration_seconds")
+
+            if original_format == "wav":
                 try:
                     audio = AudioSegment.from_wav(audio_path)
                     conversion_performed = True
@@ -537,70 +594,66 @@ class AssetConverterAgent:
                     duration_seconds = audio.duration_seconds
                 except CouldntDecodeError as e:
                     return {
-                        'success': False,
-                        'original_path': str(audio_path),
-                        'error': f'Could not decode audio file: {e}'
+                        "success": False,
+                        "original_path": str(audio_path),
+                        "error": f"Could not decode audio file: {e}",
                     }
-            elif original_format == 'ogg':
+            elif original_format == "ogg":
                 conversion_performed = False
                 optimizations_applied.append("Validated OGG format")
-                
+
                 if duration_seconds is None:
                     try:
                         audio = AudioSegment.from_ogg(audio_path)
                         duration_seconds = audio.duration_seconds
                     except CouldntDecodeError as e:
                         return {
-                            'success': False,
-                            'original_path': str(audio_path),
-                            'error': f'Could not decode audio file: {e}'
+                            "success": False,
+                            "original_path": str(audio_path),
+                            "error": f"Could not decode audio file: {e}",
                         }
             else:
                 conversion_performed = True
                 optimizations_applied.append(f"Converted {original_format.upper()} to OGG")
                 duration_seconds = 1.0
-            
+
             bedrock_sound_event = f"{audio_type}.{base_name}"
-            
+
             return {
-                'success': True,
-                'original_path': str(audio_path),
-                'converted_path': converted_path,
-                'original_format': original_format,
-                'bedrock_format': 'ogg',
-                'conversion_performed': conversion_performed,
-                'optimizations_applied': optimizations_applied,
-                'bedrock_sound_event': bedrock_sound_event,
-                'duration_seconds': duration_seconds
+                "success": True,
+                "original_path": str(audio_path),
+                "converted_path": converted_path,
+                "original_format": original_format,
+                "bedrock_format": "ogg",
+                "conversion_performed": conversion_performed,
+                "optimizations_applied": optimizations_applied,
+                "bedrock_sound_event": bedrock_sound_event,
+                "duration_seconds": duration_seconds,
             }
-            
+
         except Exception as e:
             logger.error(f"Audio conversion error for {audio_path}: {e}")
-            return {
-                'success': False,
-                'original_path': str(audio_path),
-                'error': str(e)
-            }
+            return {"success": False, "original_path": str(audio_path), "error": str(e)}
 
     def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
         """Generate sound structure files"""
         sound_definitions = {}
-        
+
         for s_data in sounds:
-            if not s_data.get('success'):
+            if not s_data.get("success"):
                 continue
 
-            event_name = s_data.get('bedrock_sound_event')
-            converted_path = s_data.get('converted_path')
+            event_name = s_data.get("bedrock_sound_event")
+            converted_path = s_data.get("converted_path")
 
             if not event_name or not converted_path:
                 continue
 
             rel_path = Path(converted_path)
-            if rel_path.parts and rel_path.parts[0] == 'sounds':
-                sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(''))
+            if rel_path.parts and rel_path.parts[0] == "sounds":
+                sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(""))
             else:
-                sound_def_path = str(rel_path.with_suffix(''))
+                sound_def_path = str(rel_path.with_suffix(""))
 
             if event_name not in sound_definitions:
                 sound_definitions[event_name] = {"sounds": []}
@@ -613,12 +666,14 @@ class AssetConverterAgent:
 
     def _generate_model_structure(self, models: List[Dict]) -> Dict:
         """Generate model structure files"""
-        valid_models = [m for m in models if m.get('success')]
+        valid_models = [m for m in models if m.get("success")]
         return {
-            "geometry_files": [m['converted_path'] for m in valid_models if 'converted_path' in m],
-            "identifiers_used": [m['bedrock_identifier'] for m in valid_models if 'bedrock_identifier' in m]
+            "geometry_files": [m["converted_path"] for m in valid_models if "converted_path" in m],
+            "identifiers_used": [
+                m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
+            ],
         }
-    
+
     def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
         """Convert a single model to Bedrock format"""
         warnings = []
@@ -626,19 +681,19 @@ class AssetConverterAgent:
             model_p = Path(model_path)
             if not model_p.exists():
                 return {
-                    'success': False,
-                    'original_path': str(model_path),
-                    'error': 'Model file not found',
-                    'warnings': warnings
+                    "success": False,
+                    "original_path": str(model_path),
+                    "error": "Model file not found",
+                    "warnings": warnings,
                 }
 
-            with open(model_p, 'r') as f:
+            with open(model_p, "r") as f:
                 java_model = json.load(f)
 
             # Basic Bedrock geo.json structure
             bedrock_identifier = f"geometry.{entity_type}.{model_p.stem}"
-            texture_width = metadata.get('texture_width', 16)
-            texture_height = metadata.get('texture_height', 16)
+            texture_width = metadata.get("texture_width", 16)
+            texture_height = metadata.get("texture_height", 16)
 
             bedrock_geo = {
                 "format_version": "1.12.0",
@@ -650,11 +705,11 @@ class AssetConverterAgent:
                             "texture_height": texture_height,
                             "visible_bounds_width": 2,
                             "visible_bounds_height": 2,
-                            "visible_bounds_offset": [0, 0.5, 0]
+                            "visible_bounds_offset": [0, 0.5, 0],
                         },
-                        "bones": []
+                        "bones": [],
                     }
-                ]
+                ],
             }
 
             geo_main_part = bedrock_geo["minecraft:geometry"][0]
@@ -665,12 +720,20 @@ class AssetConverterAgent:
             java_elements = java_model.get("elements", [])
             processed_as_item_specific_type = False
 
-            if entity_type == "item" and java_parent in ["item/generated", "item/builtin/entity", "item/handheld"]:
+            if entity_type == "item" and java_parent in [
+                "item/generated",
+                "item/builtin/entity",
+                "item/handheld",
+            ]:
                 processed_as_item_specific_type = True
                 if java_parent in ["item/generated", "item/builtin/entity"]:
-                    warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
+                    warnings.append(
+                        f"Handling as '{java_parent}'. Display transformations not applied."
+                    )
                 elif java_parent == "item/handheld":
-                    warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
+                    warnings.append(
+                        "Handling as 'item/handheld'. Display transformations not applied."
+                    )
 
                 texture_layers = java_model.get("textures", {})
                 layer_count = 0
@@ -681,21 +744,27 @@ class AssetConverterAgent:
                         layer_bone = {
                             "name": layer_texture_key,
                             "pivot": [0.0, 0.0, 0.0],
-                            "cubes": [{
-                                "origin": [-8.0, -8.0, z_offset],
-                                "size": [16.0, 16.0, 0.1],
-                                "uv": [0, 0]
-                            }]
+                            "cubes": [
+                                {
+                                    "origin": [-8.0, -8.0, z_offset],
+                                    "size": [16.0, 16.0, 0.1],
+                                    "uv": [0, 0],
+                                }
+                            ],
                         }
                         all_bones.append(layer_bone)
                         layer_count += 1
 
                 if layer_count == 0 and "particle" in texture_layers:
-                    warnings.append("No layer0/layer1 found, using 'particle' texture for a fallback quad.")
+                    warnings.append(
+                        "No layer0/layer1 found, using 'particle' texture for a fallback quad."
+                    )
                     particle_bone = {
                         "name": "particle_quad",
                         "pivot": [0.0, 0.0, 0.0],
-                        "cubes": [{"origin": [-8.0, -8.0, -0.05], "size": [16.0, 16.0, 0.1], "uv": [0, 0]}]
+                        "cubes": [
+                            {"origin": [-8.0, -8.0, -0.05], "size": [16.0, 16.0, 0.1], "uv": [0, 0]}
+                        ],
                     }
                     all_bones.append(particle_bone)
                     layer_count = 1
@@ -705,14 +774,16 @@ class AssetConverterAgent:
                     geo_description["visible_bounds_height"] = 1.0
                     geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
                 else:
-                    warnings.append(f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model.")
+                    warnings.append(
+                        f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model."
+                    )
                     geo_description["visible_bounds_width"] = 0.1
                     geo_description["visible_bounds_height"] = 0.1
                     geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
 
             if not processed_as_item_specific_type and java_elements:
-                model_min_x, model_min_y, model_min_z = float('inf'), float('inf'), float('inf')
-                model_max_x, model_max_y, model_max_z = float('-inf'), float('-inf'), float('-inf')
+                model_min_x, model_min_y, model_min_z = float("inf"), float("inf"), float("inf")
+                model_max_x, model_max_y, model_max_z = float("-inf"), float("-inf"), float("-inf")
 
                 for i, element in enumerate(java_elements):
                     bone_name = f"element_{i}"
@@ -733,12 +804,18 @@ class AssetConverterAgent:
                             bone_rotation[2] = angle
                         else:
                             warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
-                        warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
+                        warnings.append(
+                            f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock."
+                        )
 
                     from_coords = element.get("from", [0.0, 0.0, 0.0])
                     to_coords = element.get("to", [16.0, 16.0, 16.0])
                     cube_origin = [from_coords[0] - 8.0, from_coords[1] - 8.0, from_coords[2] - 8.0]
-                    cube_size = [to_coords[0] - from_coords[0], to_coords[1] - from_coords[1], to_coords[2] - from_coords[2]]
+                    cube_size = [
+                        to_coords[0] - from_coords[0],
+                        to_coords[1] - from_coords[1],
+                        to_coords[2] - from_coords[2],
+                    ]
 
                     model_min_x = min(model_min_x, cube_origin[0])
                     model_min_y = min(model_min_y, cube_origin[1])
@@ -761,13 +838,15 @@ class AssetConverterAgent:
                             cube_uv = [face_data["uv"][0], face_data["uv"][1]]
                             texture_variable = face_data.get("texture")
                             if texture_variable and not texture_variable.startswith("#"):
-                                warnings.append(f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping.")
+                                warnings.append(
+                                    f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping."
+                                )
 
                     new_bone = {
                         "name": bone_name,
                         "pivot": bone_pivot,
                         "rotation": bone_rotation,
-                        "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}]
+                        "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}],
                     }
                     all_bones.append(new_bone)
 
@@ -780,17 +859,21 @@ class AssetConverterAgent:
                     geo_description["visible_bounds_offset"] = [
                         round(model_min_x + v_bounds_w / 2.0, 4),
                         round(model_min_y + v_bounds_h / 2.0, 4),
-                        round(model_min_z + v_bounds_d / 2.0, 4)
+                        round(model_min_z + v_bounds_d / 2.0, 4),
                     ]
                 else:
-                    warnings.append("No elements found and not a recognized item parent type. Resulting model may be empty or unexpected.")
+                    warnings.append(
+                        "No elements found and not a recognized item parent type. Resulting model may be empty or unexpected."
+                    )
                     geo_description["visible_bounds_width"] = 0.125
                     geo_description["visible_bounds_height"] = 0.125
                     geo_description["visible_bounds_offset"] = [0, 0.0625, 0]
 
             elif not processed_as_item_specific_type and not java_elements:
                 if java_parent:
-                    warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
+                    warnings.append(
+                        f"Model has unhandled parent '{java_parent}' and no local elements"
+                    )
                 else:
                     warnings.append("Model has no elements and no parent")
                 geo_description["visible_bounds_width"] = 0.1
@@ -803,304 +886,341 @@ class AssetConverterAgent:
             converted_filename = f"models/{entity_type}/{model_p.stem}.geo.json"
 
             return {
-                'success': True,
-                'original_path': str(model_path),
-                'converted_path': converted_filename,
-                'bedrock_format': 'geo.json',
-                'bedrock_identifier': bedrock_identifier,
-                'warnings': warnings,
-                'converted_model_json': bedrock_geo
+                "success": True,
+                "original_path": str(model_path),
+                "converted_path": converted_filename,
+                "bedrock_format": "geo.json",
+                "bedrock_identifier": bedrock_identifier,
+                "warnings": warnings,
+                "converted_model_json": bedrock_geo,
             }
 
         except FileNotFoundError as fnf_error:
             return {
-                'success': False,
-                'original_path': str(model_path),
-                'error': str(fnf_error),
-                'warnings': warnings
+                "success": False,
+                "original_path": str(model_path),
+                "error": str(fnf_error),
+                "warnings": warnings,
             }
         except json.JSONDecodeError as json_error:
             return {
-                'success': False,
-                'original_path': str(model_path),
-                'error': f"Invalid JSON: {json_error}",
-                'warnings': warnings
+                "success": False,
+                "original_path": str(model_path),
+                "error": f"Invalid JSON: {json_error}",
+                "warnings": warnings,
             }
         except Exception as e:
             logger.error(f"Model conversion error for {model_path}: {e}")
             return {
-                'success': False,
-                'original_path': str(model_path),
-                'error': str(e),
-                'warnings': warnings
+                "success": False,
+                "original_path": str(model_path),
+                "error": str(e),
+                "warnings": warnings,
             }
-    
+
     @tool
     @staticmethod
     def analyze_assets_tool(asset_data: str) -> str:
         """Analyze assets for conversion."""
         agent = AssetConverterAgent.get_instance()
+
         def _analyze_texture(texture_path: str, metadata: Dict) -> Dict:
             """Analyze a single texture for conversion needs"""
-            width = metadata.get('width', 16)
-            height = metadata.get('height', 16)
-            channels = metadata.get('channels', 'rgba')
+            width = metadata.get("width", 16)
+            height = metadata.get("height", 16)
+            channels = metadata.get("channels", "rgba")
             file_ext = Path(texture_path).suffix.lower()
-            
+
             issues = []
             needs_conversion = False
-            
+
             # Check resolution
-            if width > agent.texture_constraints['max_resolution'] or height > agent.texture_constraints['max_resolution']:
-                issues.append(f"Resolution {width}x{height} exceeds maximum {agent.texture_constraints['max_resolution']}")
+            if (
+                width > agent.texture_constraints["max_resolution"]
+                or height > agent.texture_constraints["max_resolution"]
+            ):
+                issues.append(
+                    f"Resolution {width}x{height} exceeds maximum {agent.texture_constraints['max_resolution']}"
+                )
                 needs_conversion = True
-            
+
             # Check if power of 2
-            if agent.texture_constraints['must_be_power_of_2']:
+            if agent.texture_constraints["must_be_power_of_2"]:
                 if not _is_power_of_2(width) or not _is_power_of_2(height):
                     issues.append(f"Resolution {width}x{height} is not power of 2")
                     needs_conversion = True
-            
+
             # Check format
-            if file_ext != agent.texture_formats['output']:
+            if file_ext != agent.texture_formats["output"]:
                 needs_conversion = True
-            
+
             # Check channels
-            if channels not in agent.texture_constraints['supported_channels']:
+            if channels not in agent.texture_constraints["supported_channels"]:
                 issues.append(f"Unsupported channel format: {channels}")
                 needs_conversion = True
-            
+
             return {
-                'path': texture_path,
-                'needs_conversion': needs_conversion,
-                'issues': issues,
-                'current_format': file_ext,
-                'target_format': agent.texture_formats['output'],
-                'current_resolution': f"{width}x{height}",
-                'recommended_resolution': _get_recommended_resolution(width, height)
+                "path": texture_path,
+                "needs_conversion": needs_conversion,
+                "issues": issues,
+                "current_format": file_ext,
+                "target_format": agent.texture_formats["output"],
+                "current_resolution": f"{width}x{height}",
+                "recommended_resolution": _get_recommended_resolution(width, height),
             }
-    
+
         def _analyze_model(model_path: str, metadata: Dict) -> Dict:
             """Analyze a single model for conversion needs"""
-            vertex_count = metadata.get('vertices', 100)
-            texture_count = metadata.get('textures', 1)
-            bone_count = metadata.get('bones', 0)
+            vertex_count = metadata.get("vertices", 100)
+            texture_count = metadata.get("textures", 1)
+            bone_count = metadata.get("bones", 0)
             file_ext = Path(model_path).suffix.lower()
-            
+
             issues = []
             needs_conversion = False
-            
+
             # Check complexity
-            if vertex_count > agent.model_constraints['max_vertices']:
-                issues.append(f"Vertex count {vertex_count} exceeds maximum {agent.model_constraints['max_vertices']}")
+            if vertex_count > agent.model_constraints["max_vertices"]:
+                issues.append(
+                    f"Vertex count {vertex_count} exceeds maximum {agent.model_constraints['max_vertices']}"
+                )
                 needs_conversion = True
-            
-            if texture_count > agent.model_constraints['max_textures']:
-                issues.append(f"Texture count {texture_count} exceeds maximum {agent.model_constraints['max_textures']}")
+
+            if texture_count > agent.model_constraints["max_textures"]:
+                issues.append(
+                    f"Texture count {texture_count} exceeds maximum {agent.model_constraints['max_textures']}"
+                )
                 needs_conversion = True
-            
-            if bone_count > agent.model_constraints['supported_bones']:
-                issues.append(f"Bone count {bone_count} exceeds maximum {agent.model_constraints['supported_bones']}")
+
+            if bone_count > agent.model_constraints["supported_bones"]:
+                issues.append(
+                    f"Bone count {bone_count} exceeds maximum {agent.model_constraints['supported_bones']}"
+                )
                 needs_conversion = True
-            
+
             # Check format
-            if file_ext != agent.model_formats['output']:
+            if file_ext != agent.model_formats["output"]:
                 needs_conversion = True
-            
+
             return {
-                'path': model_path,
-                'needs_conversion': needs_conversion,
-                'issues': issues,
-                'current_format': file_ext,
-                'target_format': agent.model_formats['output'],
-                'complexity': {
-                    'vertices': vertex_count,
-                    'textures': texture_count,
-                    'bones': bone_count
-                }
+                "path": model_path,
+                "needs_conversion": needs_conversion,
+                "issues": issues,
+                "current_format": file_ext,
+                "target_format": agent.model_formats["output"],
+                "complexity": {
+                    "vertices": vertex_count,
+                    "textures": texture_count,
+                    "bones": bone_count,
+                },
             }
-    
+
         def _analyze_audio(audio_path: str, metadata: Dict) -> Dict:
             """Analyze a single audio file for conversion needs"""
-            file_size_mb = metadata.get('file_size_mb', 1)
-            sample_rate = metadata.get('sample_rate', 44100)
-            duration = metadata.get('duration_seconds', 1)
+            file_size_mb = metadata.get("file_size_mb", 1)
+            sample_rate = metadata.get("sample_rate", 44100)
+            duration = metadata.get("duration_seconds", 1)
             file_ext = Path(audio_path).suffix.lower()
-            
+
             issues = []
             needs_conversion = False
-            
+
             # Check file size
-            if file_size_mb > agent.audio_constraints['max_file_size_mb']:
-                issues.append(f"File size {file_size_mb}MB exceeds maximum {agent.audio_constraints['max_file_size_mb']}MB")
+            if file_size_mb > agent.audio_constraints["max_file_size_mb"]:
+                issues.append(
+                    f"File size {file_size_mb}MB exceeds maximum {agent.audio_constraints['max_file_size_mb']}MB"
+                )
                 needs_conversion = True
-            
+
             # Check sample rate
-            if sample_rate not in agent.audio_constraints['sample_rates']:
-                issues.append(f"Sample rate {sample_rate} not in supported rates {agent.audio_constraints['sample_rates']}")
+            if sample_rate not in agent.audio_constraints["sample_rates"]:
+                issues.append(
+                    f"Sample rate {sample_rate} not in supported rates {agent.audio_constraints['sample_rates']}"
+                )
                 needs_conversion = True
-            
+
             # Check duration
-            if duration > agent.audio_constraints['max_duration_seconds']:
-                issues.append(f"Duration {duration}s exceeds maximum {agent.audio_constraints['max_duration_seconds']}s")
+            if duration > agent.audio_constraints["max_duration_seconds"]:
+                issues.append(
+                    f"Duration {duration}s exceeds maximum {agent.audio_constraints['max_duration_seconds']}s"
+                )
                 needs_conversion = True
-            
+
             # Check format
-            if file_ext != agent.audio_formats['output']:
+            if file_ext != agent.audio_formats["output"]:
                 needs_conversion = True
-            
+
             return {
-                'path': audio_path,
-                'needs_conversion': needs_conversion,
-                'issues': issues,
-                'current_format': file_ext,
-                'target_format': agent.audio_formats['output'],
-                'current_specs': {
-                    'file_size_mb': file_size_mb,
-                    'sample_rate': sample_rate,
-                    'duration': duration
-                }
+                "path": audio_path,
+                "needs_conversion": needs_conversion,
+                "issues": issues,
+                "current_format": file_ext,
+                "target_format": agent.audio_formats["output"],
+                "current_specs": {
+                    "file_size_mb": file_size_mb,
+                    "sample_rate": sample_rate,
+                    "duration": duration,
+                },
             }
+
         def _is_power_of_2(n: int) -> bool:
             """Check if a number is a power of 2"""
             return n > 0 and (n & (n - 1)) == 0
+
         def _get_recommended_resolution(width: int, height: int) -> str:
             """Get recommended resolution for texture"""
             # Find the nearest power of 2 that's within constraints
-            max_res = agent.texture_constraints['max_resolution']
-            
+            max_res = agent.texture_constraints["max_resolution"]
+
             target_width = min(max_res, _next_power_of_2(width))
             target_height = min(max_res, _next_power_of_2(height))
-            
+
             return f"{target_width}x{target_height}"
-    
+
         def _next_power_of_2(n: int) -> int:
             """Get the next power of 2 greater than or equal to n"""
             power = 1
             while power < n:
                 power *= 2
             return power
+
         def _generate_conversion_recommendations(analysis: Dict) -> List[str]:
             """Generate conversion recommendations based on analysis"""
             recommendations = []
-            
-            texture_count = analysis['textures']['count']
-            model_count = analysis['models']['count']
-            audio_count = analysis['audio']['count']
-            
+
+            texture_count = analysis["textures"]["count"]
+            model_count = analysis["models"]["count"]
+            audio_count = analysis["audio"]["count"]
+
             if texture_count > 0:
-                recommendations.append(f"Convert {texture_count} textures to PNG format with power-of-2 dimensions")
-            
+                recommendations.append(
+                    f"Convert {texture_count} textures to PNG format with power-of-2 dimensions"
+                )
+
             if model_count > 0:
                 recommendations.append(f"Convert {model_count} models to Bedrock geometry format")
-            
+
             if audio_count > 0:
                 recommendations.append(f"Convert {audio_count} audio files to OGG format")
-            
-            total_issues = (len(analysis['textures']['issues']) + 
-                           len(analysis['models']['issues']) + 
-                           len(analysis['audio']['issues']))
-            
+
+            total_issues = (
+                len(analysis["textures"]["issues"])
+                + len(analysis["models"]["issues"])
+                + len(analysis["audio"]["issues"])
+            )
+
             if total_issues > 0:
                 recommendations.append(f"Address {total_issues} compatibility issues")
-            
+
             return recommendations
-    
+
         def _assess_conversion_complexity(analysis: Dict) -> str:
             """Assess the complexity of the conversion task"""
-            total_conversions = (len(analysis['textures']['conversions_needed']) +
-                               len(analysis['models']['conversions_needed']) +
-                               len(analysis['audio']['conversions_needed']))
-            
-            total_issues = (len(analysis['textures']['issues']) +
-                           len(analysis['models']['issues']) +
-                           len(analysis['audio']['issues']))
-            
+            total_conversions = (
+                len(analysis["textures"]["conversions_needed"])
+                + len(analysis["models"]["conversions_needed"])
+                + len(analysis["audio"]["conversions_needed"])
+            )
+
+            total_issues = (
+                len(analysis["textures"]["issues"])
+                + len(analysis["models"]["issues"])
+                + len(analysis["audio"]["issues"])
+            )
+
             if total_conversions == 0 and total_issues == 0:
                 return "simple"
             elif total_conversions < 5 and total_issues < 3:
                 return "moderate"
             else:
                 return "complex"
+
         try:
             data = json.loads(asset_data)
-            asset_list = data.get('asset_list', [])
-            
+            asset_list = data.get("asset_list", [])
+
             analysis_results = {
-                'textures': {'count': 0, 'conversions_needed': [], 'issues': []},
-                'models': {'count': 0, 'conversions_needed': [], 'issues': []},
-                'audio': {'count': 0, 'conversions_needed': [], 'issues': []},
-                'other': {'count': 0, 'files': [], 'issues': []}
+                "textures": {"count": 0, "conversions_needed": [], "issues": []},
+                "models": {"count": 0, "conversions_needed": [], "issues": []},
+                "audio": {"count": 0, "conversions_needed": [], "issues": []},
+                "other": {"count": 0, "files": [], "issues": []},
             }
-            
+
             for asset in asset_list:
-                asset_path = asset.get('path', '')
-                metadata = asset.get('metadata', {})
-                
+                asset_path = asset.get("path", "")
+                metadata = asset.get("metadata", {})
+
                 file_ext = Path(asset_path).suffix.lower()
-                
-                if file_ext in agent.texture_formats['input']:
-                    analysis_results['textures']['count'] += 1
+
+                if file_ext in agent.texture_formats["input"]:
+                    analysis_results["textures"]["count"] += 1
                     texture_analysis = _analyze_texture(asset_path, metadata)
-                    if texture_analysis['needs_conversion']:
-                        analysis_results['textures']['conversions_needed'].append(texture_analysis)
-                    if texture_analysis['issues']:
-                        analysis_results['textures']['issues'].extend(texture_analysis['issues'])
-                
-                elif file_ext in agent.model_formats['input']:
-                    analysis_results['models']['count'] += 1
+                    if texture_analysis["needs_conversion"]:
+                        analysis_results["textures"]["conversions_needed"].append(texture_analysis)
+                    if texture_analysis["issues"]:
+                        analysis_results["textures"]["issues"].extend(texture_analysis["issues"])
+
+                elif file_ext in agent.model_formats["input"]:
+                    analysis_results["models"]["count"] += 1
                     model_analysis = _analyze_model(asset_path, metadata)
-                    if model_analysis['needs_conversion']:
-                        analysis_results['models']['conversions_needed'].append(model_analysis)
-                    if model_analysis['issues']:
-                        analysis_results['models']['issues'].extend(model_analysis['issues'])
-                
-                elif file_ext in agent.audio_formats['input']:
-                    analysis_results['audio']['count'] += 1
+                    if model_analysis["needs_conversion"]:
+                        analysis_results["models"]["conversions_needed"].append(model_analysis)
+                    if model_analysis["issues"]:
+                        analysis_results["models"]["issues"].extend(model_analysis["issues"])
+
+                elif file_ext in agent.audio_formats["input"]:
+                    analysis_results["audio"]["count"] += 1
                     audio_analysis = _analyze_audio(asset_path, metadata)
-                    if audio_analysis['needs_conversion']:
-                        analysis_results['audio']['conversions_needed'].append(audio_analysis)
-                    if audio_analysis['issues']:
-                        analysis_results['audio']['issues'].extend(audio_analysis['issues'])
-                
+                    if audio_analysis["needs_conversion"]:
+                        analysis_results["audio"]["conversions_needed"].append(audio_analysis)
+                    if audio_analysis["issues"]:
+                        analysis_results["audio"]["issues"].extend(audio_analysis["issues"])
+
                 else:
-                    analysis_results['other']['count'] += 1
-                    analysis_results['other']['files'].append(asset_path)
-                    if file_ext not in ['.txt', '.md', '.json']:  # Skip known text files
-                        analysis_results['other']['issues'].append(f"Unknown asset type: {asset_path}")
-            
+                    analysis_results["other"]["count"] += 1
+                    analysis_results["other"]["files"].append(asset_path)
+                    if file_ext not in [".txt", ".md", ".json"]:  # Skip known text files
+                        analysis_results["other"]["issues"].append(
+                            f"Unknown asset type: {asset_path}"
+                        )
+
             # Generate conversion recommendations
             recommendations = _generate_conversion_recommendations(analysis_results)
-            
+
             response = {
                 "success": True,
                 "analysis_results": analysis_results,
                 "recommendations": recommendations,
                 "total_assets": len(asset_list),
-                "conversion_complexity": _assess_conversion_complexity(analysis_results)
+                "conversion_complexity": _assess_conversion_complexity(analysis_results),
             }
-            
+
             logger.info(f"Analyzed {len(asset_list)} assets")
             return json.dumps(response, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Unhandled error in analyze_assets: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to analyze assets: {str(e)}"}, indent=2)
-    
+            return json.dumps(
+                {"success": False, "error": f"Failed to analyze assets: {str(e)}"}, indent=2
+            )
+
     @tool
     @staticmethod
     def convert_textures_tool(texture_data: str) -> str:
         """Convert textures to Bedrock format."""
         agent = AssetConverterAgent.get_instance()
+
         def _is_power_of_2(n: int) -> bool:
             """Check if a number is a power of 2"""
             return n > 0 and (n & (n - 1)) == 0
+
         def _next_power_of_2(n: int) -> int:
             """Get the next power of 2 greater than or equal to n"""
             power = 1
             while power < n:
                 power *= 2
             return power
+
         def _previous_power_of_2(n: int) -> int:
             if n <= 0:
                 return 1  # Smallest power of 2, or raise error
@@ -1108,7 +1228,10 @@ class AssetConverterAgent:
             while (power * 2) <= n:
                 power *= 2
             return power
-        def _convert_single_texture(texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+
+        def _convert_single_texture(
+            texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+        ) -> Dict:
             """
             Convert a single texture file to Bedrock format with validation and optimization.
             If output_dir is provided, saves the converted texture to disk.
@@ -1116,7 +1239,9 @@ class AssetConverterAgent:
             try:
                 # Check if file exists or generate fallback
                 if not Path(texture_path).exists():
-                    logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
+                    logger.warning(
+                        f"Texture file not found: {texture_path}. Generating fallback texture."
+                    )
                     img = agent._generate_fallback_texture(usage)
                     original_dimensions = img.size
                     is_valid_png = False
@@ -1126,13 +1251,15 @@ class AssetConverterAgent:
                     try:
                         img = Image.open(texture_path)
                         original_dimensions = img.size
-                        is_valid_png = img.format == 'PNG'
+                        is_valid_png = img.format == "PNG"
                         # Ensure RGBA conversion for consistency
                         img = img.convert("RGBA")
                         optimizations_applied = ["Converted to RGBA"] if not is_valid_png else []
                         base_name = Path(texture_path).stem
                     except Exception as open_error:
-                        logger.warning(f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture.")
+                        logger.warning(
+                            f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture."
+                        )
                         img = agent._generate_fallback_texture(usage)
                         original_dimensions = img.size
                         is_valid_png = False
@@ -1143,13 +1270,15 @@ class AssetConverterAgent:
                 resized = False
 
                 # Safely get constraints, providing defaults if not set
-                max_res = agent.texture_constraints.get('max_resolution', 1024)
-                must_be_power_of_2 = agent.texture_constraints.get('must_be_power_of_2', True)
+                max_res = agent.texture_constraints.get("max_resolution", 1024)
+                must_be_power_of_2 = agent.texture_constraints.get("must_be_power_of_2", True)
 
                 new_width, new_height = width, height
 
                 # Determine if resizing is needed due to power-of-two requirement or exceeding max resolution
-                needs_pot_resize = must_be_power_of_2 and (not _is_power_of_2(width) or not _is_power_of_2(height))
+                needs_pot_resize = must_be_power_of_2 and (
+                    not _is_power_of_2(width) or not _is_power_of_2(height)
+                )
 
                 if needs_pot_resize:
                     new_width = _next_power_of_2(width)
@@ -1160,7 +1289,7 @@ class AssetConverterAgent:
                 if new_width > max_res or new_height > max_res:
                     new_width = min(new_width, max_res)
                     new_height = min(new_height, max_res)
-                    resized = True # Marked as resized if capping occurs
+                    resized = True  # Marked as resized if capping occurs
 
                 # If capping or initial PoT resize occurred, and must_be_power_of_2 is true,
                 # ensure the capped dimensions are also power of two. This might require further shrinking.
@@ -1179,7 +1308,9 @@ class AssetConverterAgent:
                     else:
                         # Downscaling - use LANCZOS for better quality
                         img = img.resize((new_width, new_height), Image.LANCZOS)
-                    optimizations_applied.append(f"Resized from {original_dimensions} to {(new_width, new_height)}")
+                    optimizations_applied.append(
+                        f"Resized from {original_dimensions} to {(new_width, new_height)}"
+                    )
                 else:
                     new_width, new_height = img.size
                     resized = False
@@ -1190,33 +1321,41 @@ class AssetConverterAgent:
 
                 # MCMETA parsing logic
                 animation_data = None
-                texture_path_obj = Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
+                texture_path_obj = (
+                    Path(texture_path)
+                    if Path(texture_path).exists()
+                    else Path(f"fallback_{usage}.png")
+                )
                 mcmeta_path_str = str(texture_path_obj) + ".mcmeta"
                 mcmeta_path = Path(mcmeta_path_str)
 
                 if mcmeta_path.exists() and mcmeta_path.is_file():
                     try:
-                        with open(mcmeta_path, 'r') as f:
+                        with open(mcmeta_path, "r") as f:
                             mcmeta_content = json.load(f)
                         if "animation" in mcmeta_content:
                             animation_data = mcmeta_content["animation"]
                             optimizations_applied.append("Parsed .mcmeta animation data")
                             logger.info(f"Found and parsed animation data for {texture_path}")
                     except json.JSONDecodeError:
-                        logger.warning(f"Could not parse .mcmeta file for {texture_path} due to JSON error.")
+                        logger.warning(
+                            f"Could not parse .mcmeta file for {texture_path} due to JSON error."
+                        )
                     except Exception as e:
-                        logger.warning(f"Error reading or processing .mcmeta file for {texture_path}: {e}")
+                        logger.warning(
+                            f"Error reading or processing .mcmeta file for {texture_path}: {e}"
+                        )
 
                 # Determine Bedrock path structure
-                if usage == 'block':
+                if usage == "block":
                     converted_path = f"textures/blocks/{base_name}.png"
-                elif usage == 'item':
+                elif usage == "item":
                     converted_path = f"textures/items/{base_name}.png"
-                elif usage == 'entity':
+                elif usage == "entity":
                     converted_path = f"textures/entity/{base_name}.png"
-                elif usage == 'particle':
+                elif usage == "particle":
                     converted_path = f"textures/particle/{base_name}.png"
-                elif usage == 'ui':
+                elif usage == "ui":
                     converted_path = f"textures/ui/{base_name}.png"
                 else:
                     converted_path = f"textures/other/{base_name}.png"
@@ -1230,27 +1369,30 @@ class AssetConverterAgent:
                     actual_output_path.parent.mkdir(parents=True, exist_ok=True)
 
                     # Save with optimization
-                    img.save(actual_output_path, 'PNG', optimize=True)
+                    img.save(actual_output_path, "PNG", optimize=True)
                     logger.info(f"Saved converted texture to {actual_output_path}")
 
                 return {
-                    'success': True,
-                    'original_path': str(texture_path),
-                    'converted_path': str(actual_output_path) if actual_output_path else converted_path,
-                    'relative_path': converted_path,
-                    'original_dimensions': original_dimensions,
-                    'converted_dimensions': (new_width, new_height),
-                    'format': 'png',
-                    'resized': resized,
-                    'optimizations_applied': optimizations_applied,
-                    'bedrock_reference': f"{usage}_{base_name}",
-                    'animation_data': animation_data,
-                    'was_valid_png': is_valid_png,
-                    'was_fallback': not Path(texture_path).exists()
+                    "success": True,
+                    "original_path": str(texture_path),
+                    "converted_path": str(actual_output_path)
+                    if actual_output_path
+                    else converted_path,
+                    "relative_path": converted_path,
+                    "original_dimensions": original_dimensions,
+                    "converted_dimensions": (new_width, new_height),
+                    "format": "png",
+                    "resized": resized,
+                    "optimizations_applied": optimizations_applied,
+                    "bedrock_reference": f"{usage}_{base_name}",
+                    "animation_data": animation_data,
+                    "was_valid_png": is_valid_png,
+                    "was_fallback": not Path(texture_path).exists(),
                 }
             except Exception as e:
                 logger.error(f"Texture conversion error for {texture_path}: {e}", exc_info=True)
-                return {'success': False, 'original_path': str(texture_path), 'error': str(e)}
+                return {"success": False, "original_path": str(texture_path), "error": str(e)}
+
         def _generate_texture_pack_structure(textures: List[Dict]) -> Dict:
             # Basic manifest structure (can be expanded later with more dynamic UUIDs etc.)
             manifest = {
@@ -1258,15 +1400,17 @@ class AssetConverterAgent:
                 "header": {
                     "name": "Converted Resource Pack",
                     "description": "Assets converted from Java mod",
-                    "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e", # Placeholder UUID
+                    "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e",  # Placeholder UUID
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 16, 0] # Example min engine version
+                    "min_engine_version": [1, 16, 0],  # Example min engine version
                 },
-                "modules": [{
-                    "type": "resources",
-                    "uuid": "0d28590c-1797-4555-9a19-5ee98def104e", # Placeholder UUID
-                    "version": [1, 0, 0]
-                }]
+                "modules": [
+                    {
+                        "type": "resources",
+                        "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",  # Placeholder UUID
+                        "version": [1, 0, 0],
+                    }
+                ],
             }
 
             item_texture_data = {}
@@ -1274,11 +1418,11 @@ class AssetConverterAgent:
             flipbook_entries = []
 
             for t_data in textures:
-                if not t_data.get('success'):
+                if not t_data.get("success"):
                     continue
 
-                bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
-                converted_path = t_data['converted_path'] # e.g. "textures/blocks/stone.png"
+                bedrock_ref = t_data.get("bedrock_reference", Path(t_data["converted_path"]).stem)
+                converted_path = t_data["converted_path"]  # e.g. "textures/blocks/stone.png"
 
                 texture_entry = {"textures": converted_path}
 
@@ -1291,12 +1435,11 @@ class AssetConverterAgent:
                 elif bedrock_ref.startswith("entity_") or "/entity/" in converted_path:
                     # Entities often use terrain_texture.json for their texture references in models
                     terrain_texture_data[bedrock_ref] = texture_entry
-                else: # Default to terrain_texture for other types or if unclear
+                else:  # Default to terrain_texture for other types or if unclear
                     terrain_texture_data[bedrock_ref] = texture_entry
 
-
-                if t_data.get('animation_data'):
-                    anim_data = t_data['animation_data']
+                if t_data.get("animation_data"):
+                    anim_data = t_data["animation_data"]
                     # Ensure frame list is integers if it's a simple list
                     frames_list = anim_data.get("frames", [])
                     if frames_list and all(isinstance(f, dict) for f in frames_list):
@@ -1306,18 +1449,30 @@ class AssetConverterAgent:
                         # A more complex conversion would be needed for that.
                         # Or, if only 'index' is used in those dicts, extract them.
                         try:
-                            processed_frames = [int(f['index']) for f in frames_list if isinstance(f, dict) and 'index' in f]
+                            processed_frames = [
+                                int(f["index"])
+                                for f in frames_list
+                                if isinstance(f, dict) and "index" in f
+                            ]
                             if not processed_frames or len(processed_frames) != len(frames_list):
-                                 logger.warning(f"Complex frame definitions in {converted_path} not fully supported for simple flipbook. Using raw list or empty.")
-                                 processed_frames = [] # Fallback or log error
+                                logger.warning(
+                                    f"Complex frame definitions in {converted_path} not fully supported for simple flipbook. Using raw list or empty."
+                                )
+                                processed_frames = []  # Fallback or log error
                         except (TypeError, ValueError):
                             processed_frames = []
-                            logger.warning(f"Could not parse frame indices for {converted_path}. Defaulting to empty frame list for flipbook.")
+                            logger.warning(
+                                f"Could not parse frame indices for {converted_path}. Defaulting to empty frame list for flipbook."
+                            )
 
-                    elif frames_list and all(isinstance(f, (int, float)) for f in frames_list): # list of numbers
+                    elif frames_list and all(
+                        isinstance(f, (int, float)) for f in frames_list
+                    ):  # list of numbers
                         processed_frames = [int(f) for f in frames_list]
-                    else: # Default to a single frame if frames are undefined or in unexpected format
-                        processed_frames = list(range(anim_data.get("frame_count", 1))) # frame_count is hypothetical here
+                    else:  # Default to a single frame if frames are undefined or in unexpected format
+                        processed_frames = list(
+                            range(anim_data.get("frame_count", 1))
+                        )  # frame_count is hypothetical here
 
                     # MCMETA frametime is in game ticks. Default to 1 if not specified.
                     ticks = anim_data.get("frametime", 1)
@@ -1328,7 +1483,7 @@ class AssetConverterAgent:
                         "flipbook_texture": converted_path,
                         "atlas_tile": Path(converted_path).stem,
                         "ticks_per_frame": ticks,
-                        "frames": processed_frames
+                        "frames": processed_frames,
                     }
                     if "interpolate" in anim_data:
                         entry["interpolate"] = anim_data["interpolate"]
@@ -1337,18 +1492,25 @@ class AssetConverterAgent:
 
             result = {"pack_manifest.json": manifest}
             if item_texture_data:
-                result["item_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": item_texture_data}
+                result["item_texture.json"] = {
+                    "resource_pack_name": "vanilla",
+                    "texture_data": item_texture_data,
+                }
             if terrain_texture_data:
-                result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
+                result["terrain_texture.json"] = {
+                    "resource_pack_name": "vanilla",
+                    "texture_data": terrain_texture_data,
+                }
             if flipbook_entries:
                 result["flipbook_textures.json"] = flipbook_entries
 
             return result
+
         try:
             # Parse texture_data to get output directory
             output_dir = None
             if isinstance(texture_data, str):
-                if texture_data.startswith('[') or texture_data.startswith('{'):
+                if texture_data.startswith("[") or texture_data.startswith("{"):
                     # It's JSON
                     data = json.loads(texture_data)
                     if isinstance(data, list):
@@ -1356,15 +1518,17 @@ class AssetConverterAgent:
                         textures = [{"path": path} for path in data]
                     else:
                         # Structured data
-                        textures = data.get('textures', [])
-                        output_dir = data.get('output_dir')  # Get output directory from structured data
+                        textures = data.get("textures", [])
+                        output_dir = data.get(
+                            "output_dir"
+                        )  # Get output directory from structured data
                 else:
                     # Single path
                     textures = [{"path": texture_data}]
             elif isinstance(texture_data, dict):
                 # Direct dict format
-                textures = texture_data.get('textures', [])
-                output_dir = texture_data.get('output_dir')
+                textures = texture_data.get("textures", [])
+                output_dir = texture_data.get("output_dir")
             else:
                 # Assume it's already a list
                 textures = [{"path": path} for path in texture_data]
@@ -1376,21 +1540,35 @@ class AssetConverterAgent:
             all_conversion_results = []
 
             for texture_input_data in textures:
-                texture_path = texture_input_data.get('path', '') if isinstance(texture_input_data, dict) else texture_input_data
-                metadata = texture_input_data.get('metadata', {}) if isinstance(texture_input_data, dict) else {}
-                target_usage = texture_input_data.get('usage', 'block') if isinstance(texture_input_data, dict) else 'block'
+                texture_path = (
+                    texture_input_data.get("path", "")
+                    if isinstance(texture_input_data, dict)
+                    else texture_input_data
+                )
+                metadata = (
+                    texture_input_data.get("metadata", {})
+                    if isinstance(texture_input_data, dict)
+                    else {}
+                )
+                target_usage = (
+                    texture_input_data.get("usage", "block")
+                    if isinstance(texture_input_data, dict)
+                    else "block"
+                )
 
                 # Pass output directory to conversion function
                 result = _convert_single_texture(texture_path, metadata, target_usage, output_dir)
                 all_conversion_results.append(result)
-            
-            successful_conversions = [r for r in all_conversion_results if r.get('success')]
+
+            successful_conversions = [r for r in all_conversion_results if r.get("success")]
             failed_conversions_details = []
             for r in all_conversion_results:
-                if not r.get('success'):
-                    r['fallback_suggestion'] = f"Consider using a default placeholder for {r.get('original_path', 'unknown texture')}"
+                if not r.get("success"):
+                    r["fallback_suggestion"] = (
+                        f"Consider using a default placeholder for {r.get('original_path', 'unknown texture')}"
+                    )
                     failed_conversions_details.append(r)
-            
+
             generated_pack_files = {}
             if successful_conversions:
                 generated_pack_files = _generate_texture_pack_structure(successful_conversions)
@@ -1400,7 +1578,7 @@ class AssetConverterAgent:
                 "conversion_summary": {
                     "total_requested": len(textures),
                     "successfully_converted": len(successful_conversions),
-                    "failed_conversions": len(failed_conversions_details)
+                    "failed_conversions": len(failed_conversions_details),
                 },
                 "successful_results": successful_conversions,
                 "failed_results": failed_conversions_details,
@@ -1408,20 +1586,29 @@ class AssetConverterAgent:
                 # Legacy fields for integration test compatibility
                 "converted_textures": successful_conversions,
                 "total_textures": len(textures),
-                "successful_conversions": len(successful_conversions)
+                "successful_conversions": len(successful_conversions),
             }
-            
-            logger.info(f"Texture conversion process complete. Requested: {len(textures)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}")
+
+            logger.info(
+                f"Texture conversion process complete. Requested: {len(textures)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}"
+            )
             return json.dumps(response, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Unhandled error in convert_textures: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to process texture conversion request: {str(e)}"}, indent=2)
-    
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": f"Failed to process texture conversion request: {str(e)}",
+                },
+                indent=2,
+            )
+
     @tool
     @staticmethod
     def convert_models_tool(model_data: str) -> str:
         """Convert models to Bedrock format."""
+
         def _convert_single_model(model_path: str, metadata: Dict, entity_type: str) -> Dict:
             warnings = []
             try:
@@ -1429,15 +1616,15 @@ class AssetConverterAgent:
                 if not model_p.exists():
                     raise FileNotFoundError(f"Model file not found: {model_path}")
 
-                with open(model_p, 'r') as f:
+                with open(model_p, "r") as f:
                     java_model = json.load(f)
 
                 # Basic Bedrock geo.json structure
                 bedrock_identifier = f"geometry.{entity_type}.{model_p.stem}"
                 # For texture_width/height, try to get from metadata if available, else default
                 # This metadata would ideally be populated by texture analysis of related textures
-                texture_width = metadata.get('texture_width', 16)
-                texture_height = metadata.get('texture_height', 16)
+                texture_width = metadata.get("texture_width", 16)
+                texture_height = metadata.get("texture_height", 16)
 
                 bedrock_geo = {
                     "format_version": "1.12.0",
@@ -1450,11 +1637,11 @@ class AssetConverterAgent:
                                 # Visible bounds can be roughly estimated later if needed
                                 "visible_bounds_width": 2,
                                 "visible_bounds_height": 2,
-                                "visible_bounds_offset": [0, 0.5, 0]
+                                "visible_bounds_offset": [0, 0.5, 0],
                             },
-                            "bones": []
+                            "bones": [],
                         }
-                    ]
+                    ],
                 }
 
                 # Ensure we are modifying the correct dictionary part
@@ -1466,12 +1653,20 @@ class AssetConverterAgent:
                 java_elements = java_model.get("elements", [])
                 processed_as_item_specific_type = False
 
-                if entity_type == "item" and java_parent in ["item/generated", "item/builtin/entity", "item/handheld"]:
+                if entity_type == "item" and java_parent in [
+                    "item/generated",
+                    "item/builtin/entity",
+                    "item/handheld",
+                ]:
                     processed_as_item_specific_type = True
                     if java_parent in ["item/generated", "item/builtin/entity"]:
-                        warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
+                        warnings.append(
+                            f"Handling as '{java_parent}'. Display transformations not applied."
+                        )
                     elif java_parent == "item/handheld":
-                        warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
+                        warnings.append(
+                            "Handling as 'item/handheld'. Display transformations not applied."
+                        )
 
                     texture_layers = java_model.get("textures", {})
                     layer_count = 0
@@ -1482,26 +1677,41 @@ class AssetConverterAgent:
                             # to get specific texture dimensions for texture_width/height.
                             # For now, we use the global/default texture_width/height.
 
-                            z_offset = -0.05 - (0.1 * i) # Each layer slightly behind the previous, very thin
+                            z_offset = -0.05 - (
+                                0.1 * i
+                            )  # Each layer slightly behind the previous, very thin
 
                             layer_bone = {
                                 "name": layer_texture_key,
                                 "pivot": [0.0, 0.0, 0.0],
-                                "cubes": [{
-                                    "origin": [-8.0, -8.0, z_offset],
-                                    "size": [16.0, 16.0, 0.1], # Thin quad
-                                    "uv": [0, 0] # Assumes 0,0 of the specified texture_width/height
-                                }]
+                                "cubes": [
+                                    {
+                                        "origin": [-8.0, -8.0, z_offset],
+                                        "size": [16.0, 16.0, 0.1],  # Thin quad
+                                        "uv": [
+                                            0,
+                                            0,
+                                        ],  # Assumes 0,0 of the specified texture_width/height
+                                    }
+                                ],
                             }
                             all_bones.append(layer_bone)
                             layer_count += 1
 
                     if layer_count == 0 and "particle" in texture_layers:
-                        warnings.append("No layer0/layer1 found, using 'particle' texture for a fallback quad.")
+                        warnings.append(
+                            "No layer0/layer1 found, using 'particle' texture for a fallback quad."
+                        )
                         particle_bone = {
                             "name": "particle_quad",
-                            "pivot": [0.0,0.0,0.0],
-                            "cubes": [{"origin": [-8.0,-8.0, -0.05], "size": [16.0,16.0,0.1], "uv": [0,0]}]
+                            "pivot": [0.0, 0.0, 0.0],
+                            "cubes": [
+                                {
+                                    "origin": [-8.0, -8.0, -0.05],
+                                    "size": [16.0, 16.0, 0.1],
+                                    "uv": [0, 0],
+                                }
+                            ],
                         }
                         all_bones.append(particle_bone)
                         layer_count = 1
@@ -1515,15 +1725,21 @@ class AssetConverterAgent:
                         # Centered quad from -8 to 8 in X/Y plane, so offset is 0,0,0 relative to model origin
                         geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
                     else:
-                        warnings.append(f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model.")
+                        warnings.append(
+                            f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model."
+                        )
                         geo_description["visible_bounds_width"] = 0.1
                         geo_description["visible_bounds_height"] = 0.1
-                        geo_description["visible_bounds_offset"] = [0.0,0.0,0.0]
+                        geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
 
                 if not processed_as_item_specific_type and java_elements:
                     # Standard element processing logic (from previous step)
-                    model_min_x, model_min_y, model_min_z = float('inf'), float('inf'), float('inf')
-                    model_max_x, model_max_y, model_max_z = float('-inf'), float('-inf'), float('-inf')
+                    model_min_x, model_min_y, model_min_z = float("inf"), float("inf"), float("inf")
+                    model_max_x, model_max_y, model_max_z = (
+                        float("-inf"),
+                        float("-inf"),
+                        float("-inf"),
+                    )
 
                     for i, element in enumerate(java_elements):
                         bone_name = f"element_{i}"
@@ -1543,13 +1759,25 @@ class AssetConverterAgent:
                             elif axis == "z":
                                 bone_rotation[2] = angle
                             else:
-                                warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
-                            warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
+                                warnings.append(
+                                    f"Unsupported rotation axis '{axis}' in element {i}"
+                                )
+                            warnings.append(
+                                f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock."
+                            )
 
-                        from_coords = element.get("from", [0.0,0.0,0.0])
-                        to_coords = element.get("to", [16.0,16.0,16.0])
-                        cube_origin = [from_coords[0] - 8.0, from_coords[1] - 8.0, from_coords[2] - 8.0]
-                        cube_size = [to_coords[0] - from_coords[0], to_coords[1] - from_coords[1], to_coords[2] - from_coords[2]]
+                        from_coords = element.get("from", [0.0, 0.0, 0.0])
+                        to_coords = element.get("to", [16.0, 16.0, 16.0])
+                        cube_origin = [
+                            from_coords[0] - 8.0,
+                            from_coords[1] - 8.0,
+                            from_coords[2] - 8.0,
+                        ]
+                        cube_size = [
+                            to_coords[0] - from_coords[0],
+                            to_coords[1] - from_coords[1],
+                            to_coords[2] - from_coords[2],
+                        ]
 
                         model_min_x = min(model_min_x, cube_origin[0])
                         model_min_y = min(model_min_y, cube_origin[1])
@@ -1558,11 +1786,18 @@ class AssetConverterAgent:
                         model_max_y = max(model_max_y, cube_origin[1] + cube_size[1])
                         model_max_z = max(model_max_z, cube_origin[2] + cube_size[2])
 
-                        cube_uv = [0,0]
+                        cube_uv = [0, 0]
                         element_faces = element.get("faces")
                         if element_faces:
                             face_data = None
-                            for face_name_priority in ["north", "up", "east", "south", "west", "down"]:
+                            for face_name_priority in [
+                                "north",
+                                "up",
+                                "east",
+                                "south",
+                                "west",
+                                "down",
+                            ]:
                                 if face_name_priority in element_faces:
                                     face_data = element_faces[face_name_priority]
                                     break
@@ -1572,40 +1807,52 @@ class AssetConverterAgent:
                                 cube_uv = [face_data["uv"][0], face_data["uv"][1]]
                                 texture_variable = face_data.get("texture")
                                 if texture_variable and not texture_variable.startswith("#"):
-                                    warnings.append(f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping.")
+                                    warnings.append(
+                                        f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping."
+                                    )
 
                         new_bone = {
-                            "name": bone_name, "pivot": bone_pivot, "rotation": bone_rotation,
-                            "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}]
+                            "name": bone_name,
+                            "pivot": bone_pivot,
+                            "rotation": bone_rotation,
+                            "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}],
                         }
                         all_bones.append(new_bone)
 
-                    if java_elements: # Recalculate bounds if elements were processed
+                    if java_elements:  # Recalculate bounds if elements were processed
                         v_bounds_w = model_max_x - model_min_x
                         v_bounds_h = model_max_y - model_min_y
                         v_bounds_d = model_max_z - model_min_z
-                        geo_description["visible_bounds_width"] = round(max(v_bounds_w, v_bounds_d), 4)
+                        geo_description["visible_bounds_width"] = round(
+                            max(v_bounds_w, v_bounds_d), 4
+                        )
                         geo_description["visible_bounds_height"] = round(v_bounds_h, 4)
                         geo_description["visible_bounds_offset"] = [
                             round(model_min_x + v_bounds_w / 2.0, 4),
                             round(model_min_y + v_bounds_h / 2.0, 4),
-                            round(model_min_z + v_bounds_d / 2.0, 4)
+                            round(model_min_z + v_bounds_d / 2.0, 4),
                         ]
-                    else: # No elements, but not handled as item/generated item type
-                        warnings.append("No elements found and not a recognized item parent type. Resulting model may be empty or unexpected.")
+                    else:  # No elements, but not handled as item/generated item type
+                        warnings.append(
+                            "No elements found and not a recognized item parent type. Resulting model may be empty or unexpected."
+                        )
                         geo_description["visible_bounds_width"] = 0.125
                         geo_description["visible_bounds_height"] = 0.125
                         geo_description["visible_bounds_offset"] = [0, 0.0625, 0]
 
-                elif not processed_as_item_specific_type and not java_elements: # No item-specific handling, no elements
+                elif (
+                    not processed_as_item_specific_type and not java_elements
+                ):  # No item-specific handling, no elements
                     if java_parent:
-                        warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
+                        warnings.append(
+                            f"Model has unhandled parent '{java_parent}' and no local elements"
+                        )
                     else:
                         warnings.append("Model has no elements and no parent")
                     # Set default small bounds for an empty or placeholder model
                     geo_description["visible_bounds_width"] = 0.1
                     geo_description["visible_bounds_height"] = 0.1
-                    geo_description["visible_bounds_offset"] = [0,0,0]
+                    geo_description["visible_bounds_offset"] = [0, 0, 0]
 
                 if java_model.get("display"):
                     warnings.append("Java model 'display' transformations are not converted.")
@@ -1613,120 +1860,152 @@ class AssetConverterAgent:
                 converted_filename = f"models/{entity_type}/{model_p.stem}.geo.json"
 
                 return {
-                    'success': True,
-                    'original_path': str(model_path),
-                    'converted_path': converted_filename,
-                    'bedrock_format': 'geo.json',
-                    'bedrock_identifier': bedrock_identifier,
-                    'warnings': warnings,
-                    'converted_model_json': bedrock_geo
+                    "success": True,
+                    "original_path": str(model_path),
+                    "converted_path": converted_filename,
+                    "bedrock_format": "geo.json",
+                    "bedrock_identifier": bedrock_identifier,
+                    "warnings": warnings,
+                    "converted_model_json": bedrock_geo,
                 }
 
             except FileNotFoundError as fnf_error:
                 logger.error(f"Model conversion error for {model_path}: {fnf_error}")
-                return {'success': False, 'original_path': str(model_path), 'error': str(fnf_error), 'warnings': warnings}
+                return {
+                    "success": False,
+                    "original_path": str(model_path),
+                    "error": str(fnf_error),
+                    "warnings": warnings,
+                }
             except json.JSONDecodeError as json_error:
                 logger.error(f"Model conversion JSON error for {model_path}: {json_error}")
-                return {'success': False, 'original_path': str(model_path), 'error': f"Invalid JSON: {json_error}", 'warnings': warnings}
+                return {
+                    "success": False,
+                    "original_path": str(model_path),
+                    "error": f"Invalid JSON: {json_error}",
+                    "warnings": warnings,
+                }
             except Exception as e:
                 logger.error(f"Model conversion error for {model_path}: {e}", exc_info=True)
-                return {'success': False, 'original_path': str(model_path), 'error': str(e), 'warnings': warnings}
+                return {
+                    "success": False,
+                    "original_path": str(model_path),
+                    "error": str(e),
+                    "warnings": warnings,
+                }
+
         def _generate_model_structure(models: List[Dict]) -> Dict:
             # Ensure only successful conversions are included
-            valid_models = [m for m in models if m.get('success')]
+            valid_models = [m for m in models if m.get("success")]
             return {
                 # These keys are illustrative; the actual output is a list of file contents/paths
                 # For this structure, we just return the list of paths and identifiers as before.
                 # A higher-level packaging agent would create the actual files.
-                "geometry_files": [m['converted_path'] for m in valid_models if 'converted_path' in m],
-                "identifiers_used": [m['bedrock_identifier'] for m in valid_models if 'bedrock_identifier' in m]
+                "geometry_files": [
+                    m["converted_path"] for m in valid_models if "converted_path" in m
+                ],
+                "identifiers_used": [
+                    m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
+                ],
             }
+
         try:
             data = json.loads(model_data)
-            models = data.get('models', [])
-            
+            models = data.get("models", [])
+
             all_conversion_results = []
-            
+
             for model_input_data in models:
-                model_path = model_input_data.get('path', '')
-                metadata = model_input_data.get('metadata', {})
-                entity_type = model_input_data.get('entity_type', 'block')
-                
+                model_path = model_input_data.get("path", "")
+                metadata = model_input_data.get("metadata", {})
+                entity_type = model_input_data.get("entity_type", "block")
+
                 result = _convert_single_model(model_path, metadata, entity_type)
                 all_conversion_results.append(result)
-            
-            successful_conversions = [r for r in all_conversion_results if r.get('success')]
+
+            successful_conversions = [r for r in all_conversion_results if r.get("success")]
             failed_conversions_details = []
             for r in all_conversion_results:
-                if not r.get('success'):
-                    r['fallback_suggestion'] = f"Consider using a default placeholder for {r.get('original_path', 'unknown model')}"
+                if not r.get("success"):
+                    r["fallback_suggestion"] = (
+                        f"Consider using a default placeholder for {r.get('original_path', 'unknown model')}"
+                    )
                     failed_conversions_details.append(r)
 
             # _generate_model_structure returns a dict like {"geometry_files": [...], "identifiers_used": [...]}
             # These are not file contents but rather lists of paths/ids for reporting.
             generated_model_info = {}
             if successful_conversions:
-                 generated_model_info = _generate_model_structure(successful_conversions)
+                generated_model_info = _generate_model_structure(successful_conversions)
 
             response = {
                 "success": True,
                 "conversion_summary": {
                     "total_requested": len(models),
                     "successfully_converted": len(successful_conversions),
-                    "failed_conversions": len(failed_conversions_details)
+                    "failed_conversions": len(failed_conversions_details),
                 },
                 "successful_results": successful_conversions,
                 "failed_results": failed_conversions_details,
-                "bedrock_model_info": generated_model_info
+                "bedrock_model_info": generated_model_info,
             }
-            
-            logger.info(f"Model conversion process complete. Requested: {len(models)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}")
+
+            logger.info(
+                f"Model conversion process complete. Requested: {len(models)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}"
+            )
             return json.dumps(response, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Unhandled error in convert_models: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to process model conversion request: {str(e)}"}, indent=2)
-    
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": f"Failed to process model conversion request: {str(e)}",
+                },
+                indent=2,
+            )
+
     @tool
     @staticmethod
     def convert_audio_tool(audio_data: str) -> str:
         """Convert audio files to Bedrock format."""
         agent = AssetConverterAgent.get_instance()
+
         def _convert_single_audio(audio_path: str, metadata: Dict, audio_type: str) -> Dict:
             """Convert a single audio file to Bedrock-compatible format"""
             try:
                 audio_path_obj = Path(audio_path)
-                
+
                 # Check if file exists
                 if not audio_path_obj.exists():
                     raise FileNotFoundError(f"Audio file not found: {audio_path}")
-                
+
                 # Get file extension
                 file_ext = audio_path_obj.suffix.lower()
-                
+
                 # Check if format is supported
-                if file_ext not in agent.audio_formats['input']:
+                if file_ext not in agent.audio_formats["input"]:
                     return {
-                        'success': False,
-                        'original_path': str(audio_path),
-                        'error': f"Unsupported audio format: {file_ext}"
+                        "success": False,
+                        "original_path": str(audio_path),
+                        "error": f"Unsupported audio format: {file_ext}",
                     }
-                
+
                 # Determine original format
                 original_format = file_ext[1:]  # Remove the dot
-                
+
                 # Build converted path
                 base_name = audio_path_obj.stem
                 # Convert audio_type from "block.stone" to "block/stone"
-                audio_path_parts = audio_type.replace('.', '/')
+                audio_path_parts = audio_type.replace(".", "/")
                 converted_path = f"sounds/{audio_path_parts}/{base_name}.ogg"
-                
+
                 # Initialize conversion result
                 conversion_performed = False
                 optimizations_applied = []
-                duration_seconds = metadata.get('duration_seconds')
-                
-                if original_format == 'wav':
+                duration_seconds = metadata.get("duration_seconds")
+
+                if original_format == "wav":
                     # Convert WAV to OGG
                     try:
                         audio = AudioSegment.from_wav(audio_path)
@@ -1737,15 +2016,15 @@ class AssetConverterAgent:
                         duration_seconds = audio.duration_seconds
                     except CouldntDecodeError as e:
                         return {
-                            'success': False,
-                            'original_path': str(audio_path),
-                            'error': f"Could not decode audio file: {e}"
+                            "success": False,
+                            "original_path": str(audio_path),
+                            "error": f"Could not decode audio file: {e}",
                         }
-                elif original_format == 'ogg':
+                elif original_format == "ogg":
                     # OGG files don't need conversion, just validation
                     conversion_performed = False
                     optimizations_applied.append("Validated OGG format")
-                    
+
                     # Get duration from metadata or calculate it
                     if duration_seconds is None:
                         try:
@@ -1753,9 +2032,9 @@ class AssetConverterAgent:
                             duration_seconds = audio.duration_seconds
                         except CouldntDecodeError as e:
                             return {
-                                'success': False,
-                                'original_path': str(audio_path),
-                                'error': f"Could not decode audio file: {e}"
+                                "success": False,
+                                "original_path": str(audio_path),
+                                "error": f"Could not decode audio file: {e}",
                             }
                 else:
                     # Other formats would need conversion (mp3, etc.)
@@ -1763,56 +2042,53 @@ class AssetConverterAgent:
                     optimizations_applied.append(f"Converted {original_format.upper()} to OGG")
                     # For now, assume conversion works
                     duration_seconds = 1.0  # Default duration
-                
+
                 # Generate bedrock sound event
                 bedrock_sound_event = f"{audio_type}.{base_name}"
-                
+
                 return {
-                    'success': True,
-                    'original_path': str(audio_path),
-                    'converted_path': converted_path,
-                    'original_format': original_format,
-                    'bedrock_format': 'ogg',
-                    'conversion_performed': conversion_performed,
-                    'optimizations_applied': optimizations_applied,
-                    'bedrock_sound_event': bedrock_sound_event,
-                    'duration_seconds': duration_seconds
+                    "success": True,
+                    "original_path": str(audio_path),
+                    "converted_path": converted_path,
+                    "original_format": original_format,
+                    "bedrock_format": "ogg",
+                    "conversion_performed": conversion_performed,
+                    "optimizations_applied": optimizations_applied,
+                    "bedrock_sound_event": bedrock_sound_event,
+                    "duration_seconds": duration_seconds,
                 }
-                
+
             except FileNotFoundError as e:
-                return {
-                    'success': False,
-                    'original_path': str(audio_path),
-                    'error': str(e)
-                }
+                return {"success": False, "original_path": str(audio_path), "error": str(e)}
             except Exception as e:
                 logger.error(f"Audio conversion error for {audio_path}: {e}", exc_info=True)
-                return {
-                    'success': False,
-                    'original_path': str(audio_path),
-                    'error': str(e)
-                }
+                return {"success": False, "original_path": str(audio_path), "error": str(e)}
+
         def _generate_sound_structure(sounds: List[Dict]) -> Dict:
             sound_definitions = {}
             for s_data in sounds:
-                if not s_data.get('success'):
+                if not s_data.get("success"):
                     continue
 
-                event_name = s_data.get('bedrock_sound_event')
-                converted_path = s_data.get('converted_path')
+                event_name = s_data.get("bedrock_sound_event")
+                converted_path = s_data.get("converted_path")
 
                 if not event_name or not converted_path:
-                    logger.warning(f"Skipping sound entry due to missing event name or converted path: {s_data.get('original_path')}")
+                    logger.warning(
+                        f"Skipping sound entry due to missing event name or converted path: {s_data.get('original_path')}"
+                    )
                     continue
 
                 rel_path = Path(converted_path)
                 # Path for sound_definitions.json is relative to 'sounds' folder, without extension
-                if rel_path.parts and rel_path.parts[0] == 'sounds':
-                    sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(''))
+                if rel_path.parts and rel_path.parts[0] == "sounds":
+                    sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(""))
                 else:
                     # If converted_path is not starting with "sounds/", use it as is but remove suffix
-                    sound_def_path = str(rel_path.with_suffix(''))
-                    logger.warning(f"Sound path '{converted_path}' for event '{event_name}' does not start with 'sounds/'. Using path as-is (minus suffix): '{sound_def_path}'.")
+                    sound_def_path = str(rel_path.with_suffix(""))
+                    logger.warning(
+                        f"Sound path '{converted_path}' for event '{event_name}' does not start with 'sounds/'. Using path as-is (minus suffix): '{sound_def_path}'."
+                    )
 
                 if event_name not in sound_definitions:
                     sound_definitions[event_name] = {"sounds": []}
@@ -1824,25 +2100,28 @@ class AssetConverterAgent:
             if sound_definitions:
                 return {"sound_definitions.json": {"sound_definitions": sound_definitions}}
             return {}
+
         try:
             data = json.loads(audio_data)
-            audio_files = data.get('audio_files', [])
-            
+            audio_files = data.get("audio_files", [])
+
             all_conversion_results = []
-            
+
             for audio_input_data in audio_files:
-                audio_path = audio_input_data.get('path', '')
-                metadata = audio_input_data.get('metadata', {})
-                audio_type = audio_input_data.get('type', 'sound')
-                
+                audio_path = audio_input_data.get("path", "")
+                metadata = audio_input_data.get("metadata", {})
+                audio_type = audio_input_data.get("type", "sound")
+
                 result = _convert_single_audio(audio_path, metadata, audio_type)
                 all_conversion_results.append(result)
-            
-            successful_conversions = [r for r in all_conversion_results if r.get('success')]
+
+            successful_conversions = [r for r in all_conversion_results if r.get("success")]
             failed_conversions_details = []
             for r in all_conversion_results:
-                if not r.get('success'):
-                    r['fallback_suggestion'] = f"Consider using a default placeholder for {r.get('original_path', 'unknown audio file')}"
+                if not r.get("success"):
+                    r["fallback_suggestion"] = (
+                        f"Consider using a default placeholder for {r.get('original_path', 'unknown audio file')}"
+                    )
                     failed_conversions_details.append(r)
 
             generated_sound_files = {}
@@ -1854,122 +2133,136 @@ class AssetConverterAgent:
                 "conversion_summary": {
                     "total_requested": len(audio_files),
                     "successfully_converted": len(successful_conversions),
-                    "failed_conversions": len(failed_conversions_details)
+                    "failed_conversions": len(failed_conversions_details),
                 },
                 "successful_results": successful_conversions,
                 "failed_results": failed_conversions_details,
-                "bedrock_sound_files": generated_sound_files
+                "bedrock_sound_files": generated_sound_files,
             }
-            
-            logger.info(f"Audio conversion process complete. Requested: {len(audio_files)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}")
+
+            logger.info(
+                f"Audio conversion process complete. Requested: {len(audio_files)}, Succeeded: {len(successful_conversions)}, Failed: {len(failed_conversions_details)}"
+            )
             return json.dumps(response, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Unhandled error in convert_audio: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to process audio conversion request: {str(e)}"}, indent=2)
-    
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": f"Failed to process audio conversion request: {str(e)}",
+                },
+                indent=2,
+            )
+
     @tool
     @staticmethod
     def validate_bedrock_assets_tool(validation_data: str) -> str:
         """Validate assets for Bedrock compatibility."""
+
         def _validate_single_asset(asset_path: str, asset_type: str, metadata: Dict) -> Dict:
             """Validate a single asset for Bedrock compatibility"""
             is_valid = True
             warnings = []
             optimizations = []
-            
-            if asset_type == 'texture':
-                width = metadata.get('width', 16)
-                height = metadata.get('height', 16)
-                
+
+            if asset_type == "texture":
+                width = metadata.get("width", 16)
+                height = metadata.get("height", 16)
+
                 if width != height:
                     warnings.append("Non-square texture may cause rendering issues")
-                
+
                 if width > 64:
                     optimizations.append("Consider using lower resolution for better performance")
-            
-            elif asset_type == 'model':
-                vertex_count = metadata.get('vertices', 100)
-                
+
+            elif asset_type == "model":
+                vertex_count = metadata.get("vertices", 100)
+
                 if vertex_count > 1000:
                     optimizations.append("High vertex count may impact performance")
-            
-            elif asset_type == 'audio':
-                duration = metadata.get('duration_seconds', 1)
-                
+
+            elif asset_type == "audio":
+                duration = metadata.get("duration_seconds", 1)
+
                 if duration > 30:
                     optimizations.append("Long audio files may impact memory usage")
-            
+
             return {
-                'path': asset_path,
-                'type': asset_type,
-                'is_valid': is_valid,
-                'warnings': warnings,
-                'optimizations': optimizations
+                "path": asset_path,
+                "type": asset_type,
+                "is_valid": is_valid,
+                "warnings": warnings,
+                "optimizations": optimizations,
             }
+
         try:
             data = json.loads(validation_data)
-            assets = data.get('assets', [])
-            
+            assets = data.get("assets", [])
+
             validation_results = {
-                'valid_assets': [],
-                'invalid_assets': [],
-                'warnings': [],
-                'optimization_suggestions': []
+                "valid_assets": [],
+                "invalid_assets": [],
+                "warnings": [],
+                "optimization_suggestions": [],
             }
-            
+
             for asset in assets:
-                asset_path = asset.get('path', '')
-                asset_type = asset.get('type', 'unknown')
-                metadata = asset.get('metadata', {})
-                
+                asset_path = asset.get("path", "")
+                asset_type = asset.get("type", "unknown")
+                metadata = asset.get("metadata", {})
+
                 validation = _validate_single_asset(asset_path, asset_type, metadata)
-                
-                if validation['is_valid']:
-                    validation_results['valid_assets'].append(validation)
+
+                if validation["is_valid"]:
+                    validation_results["valid_assets"].append(validation)
                 else:
-                    validation_results['invalid_assets'].append(validation)
-                
-                validation_results['warnings'].extend(validation.get("warnings", []))
-                validation_results['optimization_suggestions'].extend(validation.get("optimizations", []))
-            
+                    validation_results["invalid_assets"].append(validation)
+
+                validation_results["warnings"].extend(validation.get("warnings", []))
+                validation_results["optimization_suggestions"].extend(
+                    validation.get("optimizations", [])
+                )
+
             # Generate overall quality score
             total_assets = len(assets)
-            valid_count = len(validation_results['valid_assets'])
+            valid_count = len(validation_results["valid_assets"])
             quality_score = (valid_count / total_assets * 100) if total_assets > 0 else 0
-            
+
             response = {
                 "success": True,
                 "validation_results": validation_results,
                 "quality_metrics": {
                     "total_assets": total_assets,
                     "valid_assets": valid_count,
-                    "invalid_assets": len(validation_results['invalid_assets']),
+                    "invalid_assets": len(validation_results["invalid_assets"]),
                     "quality_score": round(quality_score, 2),
-                    "warning_count": len(validation_results['warnings']),
-                    "optimization_count": len(validation_results['optimization_suggestions'])
-                }
+                    "warning_count": len(validation_results["warnings"]),
+                    "optimization_count": len(validation_results["optimization_suggestions"]),
+                },
             }
-            
+
             logger.info(f"Validated {total_assets} assets with {quality_score:.1f}% quality score")
             return json.dumps(response, indent=2)
-            
+
         except Exception as e:
             logger.error(f"Unhandled error in validate_bedrock_assets: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to validate assets: {str(e)}"}, indent=2)
+            return json.dumps(
+                {"success": False, "error": f"Failed to validate assets: {str(e)}"}, indent=2
+            )
 
     @tool
     @staticmethod
     def extract_jar_textures_tool(jar_data: str) -> str:
         """Extract and convert textures directly from Java mod JAR files.
-        
+
         This tool enables extracting textures from JAR files without requiring pre-extracted assets.
         It handles:
         - Texture extraction from JAR files
         - Java to Bedrock path mapping
         - Texture validation and optimization
         - Fallback to default textures on failure
-        
+
         Input format (JSON string):
         {
             "jar_path": "path/to/mod.jar",
@@ -1978,177 +2271,202 @@ class AssetConverterAgent:
         }
         """
         import tempfile
-        
+
         try:
             # Parse input
             data = json.loads(jar_data)
-            jar_path = data.get('jar_path')
-            output_dir = data.get('output_dir')
-            namespace = data.get('namespace')
-            
+            jar_path = data.get("jar_path")
+            output_dir = data.get("output_dir")
+            namespace = data.get("namespace")
+
             if not jar_path:
                 return json.dumps({"success": False, "error": "jar_path is required"}, indent=2)
-            
+
             if not output_dir:
                 return json.dumps({"success": False, "error": "output_dir is required"}, indent=2)
-            
+
             agent = AssetConverterAgent.get_instance()
-            
+
             # Run the full conversion pipeline
             result = agent.convert_jar_textures_to_bedrock(jar_path, output_dir, namespace)
-            
+
             # Format response
             response = {
-                "success": result['success'],
-                "extracted_count": len(result['extracted']),
-                "converted_count": len(result['converted']),
-                "failed_count": len(result['failed']),
+                "success": result["success"],
+                "extracted_count": len(result["extracted"]),
+                "converted_count": len(result["converted"]),
+                "failed_count": len(result["failed"]),
                 "converted_textures": [
                     {
-                        "original": conv.get('original'),
-                        "bedrock_path": conv.get('bedrock_path'),
-                        "used_fallback": conv.get('used_fallback', False)
+                        "original": conv.get("original"),
+                        "bedrock_path": conv.get("bedrock_path"),
+                        "used_fallback": conv.get("used_fallback", False),
                     }
-                    for conv in result['converted']
+                    for conv in result["converted"]
                 ],
-                "failed_textures": result['failed'],
-                "warnings": result['warnings'],
-                "errors": result['errors']
+                "failed_textures": result["failed"],
+                "warnings": result["warnings"],
+                "errors": result["errors"],
             }
-            
-            logger.info(f"Extracted {len(result['extracted'])} textures, converted {len(result['converted'])} to Bedrock format")
+
+            logger.info(
+                f"Extracted {len(result['extracted'])} textures, converted {len(result['converted'])} to Bedrock format"
+            )
             return json.dumps(response, indent=2)
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in jar_data: {e}")
-            return json.dumps({"success": False, "error": f"Invalid JSON input: {str(e)}"}, indent=2)
+            return json.dumps(
+                {"success": False, "error": f"Invalid JSON input: {str(e)}"}, indent=2
+            )
         except Exception as e:
             logger.error(f"Unhandled error in extract_jar_textures: {e}", exc_info=True)
-            return json.dumps({"success": False, "error": f"Failed to extract textures from JAR: {str(e)}"}, indent=2)
-    
+            return json.dumps(
+                {"success": False, "error": f"Failed to extract textures from JAR: {str(e)}"},
+                indent=2,
+            )
+
     # Helper methods
-    
+
     def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
         """Analyze a single texture for conversion needs"""
-        width = metadata.get('width', 16)
-        height = metadata.get('height', 16)
-        channels = metadata.get('channels', 'rgba')
+        width = metadata.get("width", 16)
+        height = metadata.get("height", 16)
+        channels = metadata.get("channels", "rgba")
         file_ext = Path(texture_path).suffix.lower()
-        
+
         issues = []
         needs_conversion = False
-        
+
         # Check resolution
-        if width > self.texture_constraints['max_resolution'] or height > self.texture_constraints['max_resolution']:
-            issues.append(f"Resolution {width}x{height} exceeds maximum {self.texture_constraints['max_resolution']}")
+        if (
+            width > self.texture_constraints["max_resolution"]
+            or height > self.texture_constraints["max_resolution"]
+        ):
+            issues.append(
+                f"Resolution {width}x{height} exceeds maximum {self.texture_constraints['max_resolution']}"
+            )
             needs_conversion = True
-        
+
         # Check if power of 2
-        if self.texture_constraints['must_be_power_of_2']:
+        if self.texture_constraints["must_be_power_of_2"]:
             if not self._is_power_of_2(width) or not self._is_power_of_2(height):
                 issues.append(f"Resolution {width}x{height} is not power of 2")
                 needs_conversion = True
-        
+
         # Check format
-        if file_ext != self.texture_formats['output']:
+        if file_ext != self.texture_formats["output"]:
             needs_conversion = True
-        
+
         # Check channels
-        if channels not in self.texture_constraints['supported_channels']:
+        if channels not in self.texture_constraints["supported_channels"]:
             issues.append(f"Unsupported channel format: {channels}")
             needs_conversion = True
-        
+
         return {
-            'path': texture_path,
-            'needs_conversion': needs_conversion,
-            'issues': issues,
-            'current_format': file_ext,
-            'target_format': self.texture_formats['output'],
-            'current_resolution': f"{width}x{height}",
-            'recommended_resolution': self._get_recommended_resolution(width, height)
+            "path": texture_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": file_ext,
+            "target_format": self.texture_formats["output"],
+            "current_resolution": f"{width}x{height}",
+            "recommended_resolution": self._get_recommended_resolution(width, height),
         }
-    
+
     def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
         """Analyze a single model for conversion needs"""
-        vertex_count = metadata.get('vertices', 100)
-        texture_count = metadata.get('textures', 1)
-        bone_count = metadata.get('bones', 0)
+        vertex_count = metadata.get("vertices", 100)
+        texture_count = metadata.get("textures", 1)
+        bone_count = metadata.get("bones", 0)
         file_ext = Path(model_path).suffix.lower()
-        
+
         issues = []
         needs_conversion = False
-        
+
         # Check complexity
-        if vertex_count > self.model_constraints['max_vertices']:
-            issues.append(f"Vertex count {vertex_count} exceeds maximum {self.model_constraints['max_vertices']}")
+        if vertex_count > self.model_constraints["max_vertices"]:
+            issues.append(
+                f"Vertex count {vertex_count} exceeds maximum {self.model_constraints['max_vertices']}"
+            )
             needs_conversion = True
-        
-        if texture_count > self.model_constraints['max_textures']:
-            issues.append(f"Texture count {texture_count} exceeds maximum {self.model_constraints['max_textures']}")
+
+        if texture_count > self.model_constraints["max_textures"]:
+            issues.append(
+                f"Texture count {texture_count} exceeds maximum {self.model_constraints['max_textures']}"
+            )
             needs_conversion = True
-        
-        if bone_count > self.model_constraints['supported_bones']:
-            issues.append(f"Bone count {bone_count} exceeds maximum {self.model_constraints['supported_bones']}")
+
+        if bone_count > self.model_constraints["supported_bones"]:
+            issues.append(
+                f"Bone count {bone_count} exceeds maximum {self.model_constraints['supported_bones']}"
+            )
             needs_conversion = True
-        
+
         # Check format
-        if file_ext != self.model_formats['output']:
+        if file_ext != self.model_formats["output"]:
             needs_conversion = True
-        
+
         return {
-            'path': model_path,
-            'needs_conversion': needs_conversion,
-            'issues': issues,
-            'current_format': file_ext,
-            'target_format': self.model_formats['output'],
-            'complexity': {
-                'vertices': vertex_count,
-                'textures': texture_count,
-                'bones': bone_count
-            }
+            "path": model_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": file_ext,
+            "target_format": self.model_formats["output"],
+            "complexity": {
+                "vertices": vertex_count,
+                "textures": texture_count,
+                "bones": bone_count,
+            },
         }
-    
+
     def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
         """Analyze a single audio file for conversion needs"""
-        file_size_mb = metadata.get('file_size_mb', 1)
-        sample_rate = metadata.get('sample_rate', 44100)
-        duration = metadata.get('duration_seconds', 1)
+        file_size_mb = metadata.get("file_size_mb", 1)
+        sample_rate = metadata.get("sample_rate", 44100)
+        duration = metadata.get("duration_seconds", 1)
         file_ext = Path(audio_path).suffix.lower()
-        
+
         issues = []
         needs_conversion = False
-        
+
         # Check file size
-        if file_size_mb > self.audio_constraints['max_file_size_mb']:
-            issues.append(f"File size {file_size_mb}MB exceeds maximum {self.audio_constraints['max_file_size_mb']}MB")
+        if file_size_mb > self.audio_constraints["max_file_size_mb"]:
+            issues.append(
+                f"File size {file_size_mb}MB exceeds maximum {self.audio_constraints['max_file_size_mb']}MB"
+            )
             needs_conversion = True
-        
+
         # Check sample rate
-        if sample_rate not in self.audio_constraints['sample_rates']:
-            issues.append(f"Sample rate {sample_rate} not in supported rates {self.audio_constraints['sample_rates']}")
+        if sample_rate not in self.audio_constraints["sample_rates"]:
+            issues.append(
+                f"Sample rate {sample_rate} not in supported rates {self.audio_constraints['sample_rates']}"
+            )
             needs_conversion = True
-        
+
         # Check duration
-        if duration > self.audio_constraints['max_duration_seconds']:
-            issues.append(f"Duration {duration}s exceeds maximum {self.audio_constraints['max_duration_seconds']}s")
+        if duration > self.audio_constraints["max_duration_seconds"]:
+            issues.append(
+                f"Duration {duration}s exceeds maximum {self.audio_constraints['max_duration_seconds']}s"
+            )
             needs_conversion = True
-        
+
         # Check format
-        if file_ext != self.audio_formats['output']:
+        if file_ext != self.audio_formats["output"]:
             needs_conversion = True
-        
+
         return {
-            'path': audio_path,
-            'needs_conversion': needs_conversion,
-            'issues': issues,
-            'current_format': file_ext,
-            'target_format': self.audio_formats['output'],
-            'current_specs': {
-                'file_size_mb': file_size_mb,
-                'sample_rate': sample_rate,
-                'duration': duration
-            }
+            "path": audio_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": file_ext,
+            "target_format": self.audio_formats["output"],
+            "current_specs": {
+                "file_size_mb": file_size_mb,
+                "sample_rate": sample_rate,
+                "duration": duration,
+            },
         }
+
     def _previous_power_of_2(self, n: int) -> int:
         if n <= 0:
             return 1  # Smallest power of 2, or raise error
@@ -2164,15 +2482,15 @@ class AssetConverterAgent:
             if not model_p.exists():
                 raise FileNotFoundError(f"Model file not found: {model_path}")
 
-            with open(model_p, 'r') as f:
+            with open(model_p, "r") as f:
                 java_model = json.load(f)
 
             # Basic Bedrock geo.json structure
             bedrock_identifier = f"geometry.{entity_type}.{model_p.stem}"
             # For texture_width/height, try to get from metadata if available, else default
             # This metadata would ideally be populated by texture analysis of related textures
-            texture_width = metadata.get('texture_width', 16)
-            texture_height = metadata.get('texture_height', 16)
+            texture_width = metadata.get("texture_width", 16)
+            texture_height = metadata.get("texture_height", 16)
 
             bedrock_geo = {
                 "format_version": "1.12.0",
@@ -2185,11 +2503,11 @@ class AssetConverterAgent:
                             # Visible bounds can be roughly estimated later if needed
                             "visible_bounds_width": 2,
                             "visible_bounds_height": 2,
-                            "visible_bounds_offset": [0, 0.5, 0]
+                            "visible_bounds_offset": [0, 0.5, 0],
                         },
-                        "bones": []
+                        "bones": [],
                     }
-                ]
+                ],
             }
 
             # Ensure we are modifying the correct dictionary part
@@ -2201,12 +2519,20 @@ class AssetConverterAgent:
             java_elements = java_model.get("elements", [])
             processed_as_item_specific_type = False
 
-            if entity_type == "item" and java_parent in ["item/generated", "item/builtin/entity", "item/handheld"]:
+            if entity_type == "item" and java_parent in [
+                "item/generated",
+                "item/builtin/entity",
+                "item/handheld",
+            ]:
                 processed_as_item_specific_type = True
                 if java_parent in ["item/generated", "item/builtin/entity"]:
-                    warnings.append(f"Handling as '{java_parent}'. Display transformations not applied.")
+                    warnings.append(
+                        f"Handling as '{java_parent}'. Display transformations not applied."
+                    )
                 elif java_parent == "item/handheld":
-                    warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
+                    warnings.append(
+                        "Handling as 'item/handheld'. Display transformations not applied."
+                    )
 
                 texture_layers = java_model.get("textures", {})
                 layer_count = 0
@@ -2217,26 +2543,37 @@ class AssetConverterAgent:
                         # to get specific texture dimensions for texture_width/height.
                         # For now, we use the global/default texture_width/height.
 
-                        z_offset = -0.05 - (0.1 * i) # Each layer slightly behind the previous, very thin
+                        z_offset = -0.05 - (
+                            0.1 * i
+                        )  # Each layer slightly behind the previous, very thin
 
                         layer_bone = {
                             "name": layer_texture_key,
                             "pivot": [0.0, 0.0, 0.0],
-                            "cubes": [{
-                                "origin": [-8.0, -8.0, z_offset],
-                                "size": [16.0, 16.0, 0.1], # Thin quad
-                                "uv": [0, 0] # Assumes 0,0 of the specified texture_width/height
-                            }]
+                            "cubes": [
+                                {
+                                    "origin": [-8.0, -8.0, z_offset],
+                                    "size": [16.0, 16.0, 0.1],  # Thin quad
+                                    "uv": [
+                                        0,
+                                        0,
+                                    ],  # Assumes 0,0 of the specified texture_width/height
+                                }
+                            ],
                         }
                         all_bones.append(layer_bone)
                         layer_count += 1
 
                 if layer_count == 0 and "particle" in texture_layers:
-                    warnings.append("No layer0/layer1 found, using 'particle' texture for a fallback quad.")
+                    warnings.append(
+                        "No layer0/layer1 found, using 'particle' texture for a fallback quad."
+                    )
                     particle_bone = {
                         "name": "particle_quad",
-                        "pivot": [0.0,0.0,0.0],
-                        "cubes": [{"origin": [-8.0,-8.0, -0.05], "size": [16.0,16.0,0.1], "uv": [0,0]}]
+                        "pivot": [0.0, 0.0, 0.0],
+                        "cubes": [
+                            {"origin": [-8.0, -8.0, -0.05], "size": [16.0, 16.0, 0.1], "uv": [0, 0]}
+                        ],
                     }
                     all_bones.append(particle_bone)
                     layer_count = 1
@@ -2250,15 +2587,17 @@ class AssetConverterAgent:
                     # Centered quad from -8 to 8 in X/Y plane, so offset is 0,0,0 relative to model origin
                     geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
                 else:
-                    warnings.append(f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model.")
+                    warnings.append(
+                        f"Item model '{model_p.name}' with parent '{java_parent}' defined no recognized texture layers (layerN or particle). Generating empty model."
+                    )
                     geo_description["visible_bounds_width"] = 0.1
                     geo_description["visible_bounds_height"] = 0.1
-                    geo_description["visible_bounds_offset"] = [0.0,0.0,0.0]
+                    geo_description["visible_bounds_offset"] = [0.0, 0.0, 0.0]
 
             if not processed_as_item_specific_type and java_elements:
                 # Standard element processing logic (from previous step)
-                model_min_x, model_min_y, model_min_z = float('inf'), float('inf'), float('inf')
-                model_max_x, model_max_y, model_max_z = float('-inf'), float('-inf'), float('-inf')
+                model_min_x, model_min_y, model_min_z = float("inf"), float("inf"), float("inf")
+                model_max_x, model_max_y, model_max_z = float("-inf"), float("-inf"), float("-inf")
 
                 for i, element in enumerate(java_elements):
                     bone_name = f"element_{i}"
@@ -2279,12 +2618,18 @@ class AssetConverterAgent:
                             bone_rotation[2] = angle
                         else:
                             warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
-                        warnings.append(f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock.")
+                        warnings.append(
+                            f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock."
+                        )
 
-                    from_coords = element.get("from", [0.0,0.0,0.0])
-                    to_coords = element.get("to", [16.0,16.0,16.0])
+                    from_coords = element.get("from", [0.0, 0.0, 0.0])
+                    to_coords = element.get("to", [16.0, 16.0, 16.0])
                     cube_origin = [from_coords[0] - 8.0, from_coords[1] - 8.0, from_coords[2] - 8.0]
-                    cube_size = [to_coords[0] - from_coords[0], to_coords[1] - from_coords[1], to_coords[2] - from_coords[2]]
+                    cube_size = [
+                        to_coords[0] - from_coords[0],
+                        to_coords[1] - from_coords[1],
+                        to_coords[2] - from_coords[2],
+                    ]
 
                     model_min_x = min(model_min_x, cube_origin[0])
                     model_min_y = min(model_min_y, cube_origin[1])
@@ -2293,7 +2638,7 @@ class AssetConverterAgent:
                     model_max_y = max(model_max_y, cube_origin[1] + cube_size[1])
                     model_max_z = max(model_max_z, cube_origin[2] + cube_size[2])
 
-                    cube_uv = [0,0]
+                    cube_uv = [0, 0]
                     element_faces = element.get("faces")
                     if element_faces:
                         face_data = None
@@ -2307,15 +2652,19 @@ class AssetConverterAgent:
                             cube_uv = [face_data["uv"][0], face_data["uv"][1]]
                             texture_variable = face_data.get("texture")
                             if texture_variable and not texture_variable.startswith("#"):
-                                warnings.append(f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping.")
+                                warnings.append(
+                                    f"Element {i} face uses direct texture path '{texture_variable}' - needs mapping."
+                                )
 
                     new_bone = {
-                        "name": bone_name, "pivot": bone_pivot, "rotation": bone_rotation,
-                        "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}]
+                        "name": bone_name,
+                        "pivot": bone_pivot,
+                        "rotation": bone_rotation,
+                        "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}],
                     }
                     all_bones.append(new_bone)
 
-                if java_elements: # Recalculate bounds if elements were processed
+                if java_elements:  # Recalculate bounds if elements were processed
                     v_bounds_w = model_max_x - model_min_x
                     v_bounds_h = model_max_y - model_min_y
                     v_bounds_d = model_max_z - model_min_z
@@ -2324,23 +2673,29 @@ class AssetConverterAgent:
                     geo_description["visible_bounds_offset"] = [
                         round(model_min_x + v_bounds_w / 2.0, 4),
                         round(model_min_y + v_bounds_h / 2.0, 4),
-                        round(model_min_z + v_bounds_d / 2.0, 4)
+                        round(model_min_z + v_bounds_d / 2.0, 4),
                     ]
-                else: # No elements, but not handled as item/generated item type
-                    warnings.append("No elements found and not a recognized item parent type. Resulting model may be empty or unexpected.")
+                else:  # No elements, but not handled as item/generated item type
+                    warnings.append(
+                        "No elements found and not a recognized item parent type. Resulting model may be empty or unexpected."
+                    )
                     geo_description["visible_bounds_width"] = 0.125
                     geo_description["visible_bounds_height"] = 0.125
                     geo_description["visible_bounds_offset"] = [0, 0.0625, 0]
 
-            elif not processed_as_item_specific_type and not java_elements: # No item-specific handling, no elements
+            elif (
+                not processed_as_item_specific_type and not java_elements
+            ):  # No item-specific handling, no elements
                 if java_parent:
-                    warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
+                    warnings.append(
+                        f"Model has unhandled parent '{java_parent}' and no local elements"
+                    )
                 else:
                     warnings.append("Model has no elements and no parent")
                 # Set default small bounds for an empty or placeholder model
                 geo_description["visible_bounds_width"] = 0.1
                 geo_description["visible_bounds_height"] = 0.1
-                geo_description["visible_bounds_offset"] = [0,0,0]
+                geo_description["visible_bounds_offset"] = [0, 0, 0]
 
             if java_model.get("display"):
                 warnings.append("Java model 'display' transformations are not converted.")
@@ -2348,60 +2703,75 @@ class AssetConverterAgent:
             converted_filename = f"models/{entity_type}/{model_p.stem}.geo.json"
 
             return {
-                'success': True,
-                'original_path': str(model_path),
-                'converted_path': converted_filename,
-                'bedrock_format': 'geo.json',
-                'bedrock_identifier': bedrock_identifier,
-                'warnings': warnings,
-                'converted_model_json': bedrock_geo
+                "success": True,
+                "original_path": str(model_path),
+                "converted_path": converted_filename,
+                "bedrock_format": "geo.json",
+                "bedrock_identifier": bedrock_identifier,
+                "warnings": warnings,
+                "converted_model_json": bedrock_geo,
             }
 
         except FileNotFoundError as fnf_error:
             logger.error(f"Model conversion error for {model_path}: {fnf_error}")
-            return {'success': False, 'original_path': str(model_path), 'error': str(fnf_error), 'warnings': warnings}
+            return {
+                "success": False,
+                "original_path": str(model_path),
+                "error": str(fnf_error),
+                "warnings": warnings,
+            }
         except json.JSONDecodeError as json_error:
             logger.error(f"Model conversion JSON error for {model_path}: {json_error}")
-            return {'success': False, 'original_path': str(model_path), 'error': f"Invalid JSON: {json_error}", 'warnings': warnings}
+            return {
+                "success": False,
+                "original_path": str(model_path),
+                "error": f"Invalid JSON: {json_error}",
+                "warnings": warnings,
+            }
         except Exception as e:
             logger.error(f"Model conversion error for {model_path}: {e}", exc_info=True)
-            return {'success': False, 'original_path': str(model_path), 'error': str(e), 'warnings': warnings}
-    
+            return {
+                "success": False,
+                "original_path": str(model_path),
+                "error": str(e),
+                "warnings": warnings,
+            }
+
     def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
         """Convert a single audio file to Bedrock-compatible format"""
         try:
             audio_path_obj = Path(audio_path)
-            
+
             # Check if file exists
             if not audio_path_obj.exists():
                 raise FileNotFoundError(f"Audio file not found: {audio_path}")
-            
+
             # Get file extension
             file_ext = audio_path_obj.suffix.lower()
-            
+
             # Check if format is supported
-            if file_ext not in self.audio_formats['input']:
+            if file_ext not in self.audio_formats["input"]:
                 return {
-                    'success': False,
-                    'original_path': str(audio_path),
-                    'error': f"Unsupported audio format: {file_ext}"
+                    "success": False,
+                    "original_path": str(audio_path),
+                    "error": f"Unsupported audio format: {file_ext}",
                 }
-            
+
             # Determine original format
             original_format = file_ext[1:]  # Remove the dot
-            
+
             # Build converted path
             base_name = audio_path_obj.stem
             # Convert audio_type from "block.stone" to "block/stone"
-            audio_path_parts = audio_type.replace('.', '/')
+            audio_path_parts = audio_type.replace(".", "/")
             converted_path = f"sounds/{audio_path_parts}/{base_name}.ogg"
-            
+
             # Initialize conversion result
             conversion_performed = False
             optimizations_applied = []
-            duration_seconds = metadata.get('duration_seconds')
-            
-            if original_format == 'wav':
+            duration_seconds = metadata.get("duration_seconds")
+
+            if original_format == "wav":
                 # Convert WAV to OGG
                 try:
                     audio = AudioSegment.from_wav(audio_path)
@@ -2412,15 +2782,15 @@ class AssetConverterAgent:
                     duration_seconds = audio.duration_seconds
                 except CouldntDecodeError as e:
                     return {
-                        'success': False,
-                        'original_path': str(audio_path),
-                        'error': f"Could not decode audio file: {e}"
+                        "success": False,
+                        "original_path": str(audio_path),
+                        "error": f"Could not decode audio file: {e}",
                     }
-            elif original_format == 'ogg':
+            elif original_format == "ogg":
                 # OGG files don't need conversion, just validation
                 conversion_performed = False
                 optimizations_applied.append("Validated OGG format")
-                
+
                 # Get duration from metadata or calculate it
                 if duration_seconds is None:
                     try:
@@ -2428,9 +2798,9 @@ class AssetConverterAgent:
                         duration_seconds = audio.duration_seconds
                     except CouldntDecodeError as e:
                         return {
-                            'success': False,
-                            'original_path': str(audio_path),
-                            'error': f"Could not decode audio file: {e}"
+                            "success": False,
+                            "original_path": str(audio_path),
+                            "error": f"Could not decode audio file: {e}",
                         }
             else:
                 # Other formats would need conversion (mp3, etc.)
@@ -2438,191 +2808,198 @@ class AssetConverterAgent:
                 optimizations_applied.append(f"Converted {original_format.upper()} to OGG")
                 # For now, assume conversion works
                 duration_seconds = 1.0  # Default duration
-            
+
             # Generate bedrock sound event
             bedrock_sound_event = f"{audio_type}.{base_name}"
-            
+
             return {
-                'success': True,
-                'original_path': str(audio_path),
-                'converted_path': converted_path,
-                'original_format': original_format,
-                'bedrock_format': 'ogg',
-                'conversion_performed': conversion_performed,
-                'optimizations_applied': optimizations_applied,
-                'bedrock_sound_event': bedrock_sound_event,
-                'duration_seconds': duration_seconds
+                "success": True,
+                "original_path": str(audio_path),
+                "converted_path": converted_path,
+                "original_format": original_format,
+                "bedrock_format": "ogg",
+                "conversion_performed": conversion_performed,
+                "optimizations_applied": optimizations_applied,
+                "bedrock_sound_event": bedrock_sound_event,
+                "duration_seconds": duration_seconds,
             }
-            
+
         except FileNotFoundError as e:
-            return {
-                'success': False,
-                'original_path': str(audio_path),
-                'error': str(e)
-            }
+            return {"success": False, "original_path": str(audio_path), "error": str(e)}
         except Exception as e:
             logger.error(f"Audio conversion error for {audio_path}: {e}", exc_info=True)
-            return {
-                'success': False,
-                'original_path': str(audio_path),
-                'error': str(e)
-            }
-    
+            return {"success": False, "original_path": str(audio_path), "error": str(e)}
+
     def _validate_single_asset(self, asset_path: str, asset_type: str, metadata: Dict) -> Dict:
         """Validate a single asset for Bedrock compatibility"""
         is_valid = True
         warnings = []
         optimizations = []
-        
-        if asset_type == 'texture':
-            width = metadata.get('width', 16)
-            height = metadata.get('height', 16)
-            
+
+        if asset_type == "texture":
+            width = metadata.get("width", 16)
+            height = metadata.get("height", 16)
+
             if width != height:
                 warnings.append("Non-square texture may cause rendering issues")
-            
+
             if width > 64:
                 optimizations.append("Consider using lower resolution for better performance")
-        
-        elif asset_type == 'model':
-            vertex_count = metadata.get('vertices', 100)
-            
+
+        elif asset_type == "model":
+            vertex_count = metadata.get("vertices", 100)
+
             if vertex_count > 1000:
                 optimizations.append("High vertex count may impact performance")
-        
-        elif asset_type == 'audio':
-            duration = metadata.get('duration_seconds', 1)
-            
+
+        elif asset_type == "audio":
+            duration = metadata.get("duration_seconds", 1)
+
             if duration > 30:
                 optimizations.append("Long audio files may impact memory usage")
-        
+
         return {
-            'path': asset_path,
-            'type': asset_type,
-            'is_valid': is_valid,
-            'warnings': warnings,
-            'optimizations': optimizations
+            "path": asset_path,
+            "type": asset_type,
+            "is_valid": is_valid,
+            "warnings": warnings,
+            "optimizations": optimizations,
         }
 
-    def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)) -> Image.Image:
+    def _generate_fallback_texture(
+        self, usage: str = "block", size: tuple = (16, 16)
+    ) -> Image.Image:
         """Generate a fallback texture for edge cases"""
         # Create a simple colored texture based on usage type
         colors = {
-            'block': (128, 128, 128, 255),    # Gray for blocks
-            'item': (200, 200, 100, 255),     # Yellowish for items
-            'entity': (150, 100, 100, 255),   # Reddish for entities
-            'particle': (200, 200, 255, 255), # Light blue for particles
-            'ui': (100, 200, 100, 255),       # Green for UI
-            'other': (128, 128, 128, 255)     # Default gray
+            "block": (128, 128, 128, 255),  # Gray for blocks
+            "item": (200, 200, 100, 255),  # Yellowish for items
+            "entity": (150, 100, 100, 255),  # Reddish for entities
+            "particle": (200, 200, 255, 255),  # Light blue for particles
+            "ui": (100, 200, 100, 255),  # Green for UI
+            "other": (128, 128, 128, 255),  # Default gray
         }
-        
-        color = colors.get(usage, colors['other'])
-        img = Image.new('RGBA', size, color)
-        
+
+        color = colors.get(usage, colors["other"])
+        img = Image.new("RGBA", size, color)
+
         # Add a simple pattern to make it identifiable
         for x in range(0, size[0], 4):
             for y in range(0, size[1], 4):
                 if (x + y) % 8 == 0:
-                    img.putpixel((x, y), (min(255, color[0] + 50), min(255, color[1] + 50), min(255, color[2] + 50), 255))
-        
+                    img.putpixel(
+                        (x, y),
+                        (
+                            min(255, color[0] + 50),
+                            min(255, color[1] + 50),
+                            min(255, color[2] + 50),
+                            255,
+                        ),
+                    )
+
         return img
 
     def detect_texture_atlas(self, texture_path: str) -> Dict:
         """
         Detect if a texture is a texture atlas (combined multiple textures).
-        
+
         Args:
             texture_path: Path to the texture file
-            
+
         Returns:
             Dict with atlas detection results
         """
         try:
             path = Path(texture_path)
             if not path.exists():
-                return {'is_atlas': False, 'error': 'File not found'}
-            
+                return {"is_atlas": False, "error": "File not found"}
+
             img = Image.open(texture_path)
             width, height = img.size
-            
+
             # Common atlas indicators
             is_atlas = False
             atlas_type = None
             tile_size = 16  # Default tile size
-            
+
             # Check for common atlas patterns
             # 1. Square textures that are multiples of 16x16
             if width == height and width > 16:
                 # Could be an atlas if it's a large square
                 if width >= 64:  # At least 4x4 tiles
                     is_atlas = True
-                    atlas_type = 'grid'
+                    atlas_type = "grid"
                     tile_size = 16
-            
+
             # 2. Check for common atlas sizes (256x256, 512x512, etc.)
             common_atlas_sizes = [256, 512, 1024]
             if width in common_atlas_sizes or height in common_atlas_sizes:
                 is_atlas = True
-                atlas_type = 'grid'
-            
+                atlas_type = "grid"
+
             # 3. Check for non-square but multiple-of-16 dimensions
             if width != height and (width % 16 == 0 or height % 16 == 0):
                 if width >= 64 or height >= 64:
                     is_atlas = True
-                    atlas_type = 'strip'  # Horizontal or vertical strip
-            
+                    atlas_type = "strip"  # Horizontal or vertical strip
+
             # Calculate grid dimensions
             tiles_x = width // tile_size if tile_size > 0 else 1
             tiles_y = height // tile_size if tile_size > 0 else 1
-            
+
             return {
-                'is_atlas': is_atlas,
-                'atlas_type': atlas_type,
-                'width': width,
-                'height': height,
-                'tile_size': tile_size,
-                'tiles_x': tiles_x,
-                'tiles_y': tiles_y,
-                'total_tiles': tiles_x * tiles_y if is_atlas else 1
+                "is_atlas": is_atlas,
+                "atlas_type": atlas_type,
+                "width": width,
+                "height": height,
+                "tile_size": tile_size,
+                "tiles_x": tiles_x,
+                "tiles_y": tiles_y,
+                "total_tiles": tiles_x * tiles_y if is_atlas else 1,
             }
-            
+
         except Exception as e:
             logger.error(f"Error detecting texture atlas: {e}")
-            return {'is_atlas': False, 'error': str(e)}
+            return {"is_atlas": False, "error": str(e)}
 
-    def extract_texture_atlas(self, atlas_path: str, output_dir: str, 
-                              tile_size: int = 16, naming_pattern: str = "tile_{x}_{y}") -> Dict:
+    def extract_texture_atlas(
+        self,
+        atlas_path: str,
+        output_dir: str,
+        tile_size: int = 16,
+        naming_pattern: str = "tile_{x}_{y}",
+    ) -> Dict:
         """
         Extract individual textures from a texture atlas.
-        
+
         Args:
             atlas_path: Path to the atlas texture file
             output_dir: Directory to save extracted textures
             tile_size: Size of each tile (default 16x16)
             naming_pattern: Pattern for naming extracted files
-            
+
         Returns:
             Dict with extraction results
         """
         try:
             path = Path(atlas_path)
             if not path.exists():
-                return {'success': False, 'error': 'Atlas file not found'}
-            
+                return {"success": False, "error": "Atlas file not found"}
+
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
-            
+
             img = Image.open(atlas_path)
             width, height = img.size
-            
+
             # Ensure RGBA mode
             img = img.convert("RGBA")
-            
+
             tiles_x = width // tile_size
             tiles_y = height // tile_size
-            
+
             extracted_tiles = []
-            
+
             for y in range(tiles_y):
                 for x in range(tiles_x):
                     # Calculate crop box
@@ -2630,167 +3007,163 @@ class AssetConverterAgent:
                     upper = y * tile_size
                     right = left + tile_size
                     lower = upper + tile_size
-                    
+
                     # Crop the tile
                     tile = img.crop((left, upper, right, lower))
-                    
+
                     # Check if tile is not empty (has non-transparent pixels)
                     tile_data = list(tile.getdata())
                     has_content = any(pixel[3] > 0 for pixel in tile_data)
-                    
+
                     if has_content:
                         # Generate filename
                         tile_name = naming_pattern.format(x=x, y=y, index=y * tiles_x + x)
                         tile_filename = f"{tile_name}.png"
                         tile_path = output_path / tile_filename
-                        
+
                         # Save the tile
-                        tile.save(tile_path, 'PNG', optimize=True)
-                        
-                        extracted_tiles.append({
-                            'path': str(tile_path),
-                            'name': tile_name,
-                            'grid_x': x,
-                            'grid_y': y,
-                            'index': y * tiles_x + x,
-                            'size': tile_size
-                        })
-            
+                        tile.save(tile_path, "PNG", optimize=True)
+
+                        extracted_tiles.append(
+                            {
+                                "path": str(tile_path),
+                                "name": tile_name,
+                                "grid_x": x,
+                                "grid_y": y,
+                                "index": y * tiles_x + x,
+                                "size": tile_size,
+                            }
+                        )
+
             return {
-                'success': True,
-                'atlas_path': atlas_path,
-                'output_dir': str(output_path),
-                'total_tiles': tiles_x * tiles_y,
-                'extracted_count': len(extracted_tiles),
-                'extracted_tiles': extracted_tiles,
-                'tile_size': tile_size
+                "success": True,
+                "atlas_path": atlas_path,
+                "output_dir": str(output_path),
+                "total_tiles": tiles_x * tiles_y,
+                "extracted_count": len(extracted_tiles),
+                "extracted_tiles": extracted_tiles,
+                "tile_size": tile_size,
             }
-            
+
         except Exception as e:
             logger.error(f"Error extracting texture atlas: {e}")
-            return {'success': False, 'error': str(e)}
+            return {"success": False, "error": str(e)}
 
     def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
         """
         Parse .mcmeta file for texture atlas animation or configuration data.
-        
+
         Args:
             mcmeta_path: Path to the .mcmeta file
-            
+
         Returns:
             Dict with parsed metadata
         """
         try:
             path = Path(mcmeta_path)
             if not path.exists():
-                return {'success': False, 'error': 'Mcmeta file not found'}
-            
-            with open(path, 'r') as f:
+                return {"success": False, "error": "Mcmeta file not found"}
+
+            with open(path, "r") as f:
                 metadata = json.load(f)
-            
+
             result = {
-                'success': True,
-                'path': mcmeta_path,
-                'animation': None,
-                'villager': None,
-                'custom': {}
+                "success": True,
+                "path": mcmeta_path,
+                "animation": None,
+                "villager": None,
+                "custom": {},
             }
-            
+
             # Parse animation data
-            if 'animation' in metadata:
-                anim = metadata['animation']
-                result['animation'] = {
-                    'interpolate': anim.get('interpolate', False),
-                    'width': anim.get('width'),
-                    'height': anim.get('height'),
-                    'frametime': anim.get('frametime', 1),
-                    'frames': anim.get('frames', [])
+            if "animation" in metadata:
+                anim = metadata["animation"]
+                result["animation"] = {
+                    "interpolate": anim.get("interpolate", False),
+                    "width": anim.get("width"),
+                    "height": anim.get("height"),
+                    "frametime": anim.get("frametime", 1),
+                    "frames": anim.get("frames", []),
                 }
-            
+
             # Parse villager metadata (for entity textures)
-            if 'villager' in metadata:
-                result['villager'] = metadata['villager']
-            
+            if "villager" in metadata:
+                result["villager"] = metadata["villager"]
+
             # Store any other custom metadata
             for key, value in metadata.items():
-                if key not in ['animation', 'villager']:
-                    result['custom'][key] = value
-            
+                if key not in ["animation", "villager"]:
+                    result["custom"][key] = value
+
             return result
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in mcmeta file: {e}")
-            return {'success': False, 'error': f'Invalid JSON: {e}'}
+            return {"success": False, "error": f"Invalid JSON: {e}"}
         except Exception as e:
             logger.error(f"Error parsing mcmeta file: {e}")
-            return {'success': False, 'error': str(e)}
+            return {"success": False, "error": str(e)}
 
-    def convert_atlas_to_bedrock(self, atlas_path: str, output_dir: str, 
-                                  texture_names: List[str] = None) -> Dict:
+    def convert_atlas_to_bedrock(
+        self, atlas_path: str, output_dir: str, texture_names: List[str] = None
+    ) -> Dict:
         """
         Convert a texture atlas to individual Bedrock-compatible textures.
-        
+
         Args:
             atlas_path: Path to the atlas texture
             output_dir: Output directory for extracted textures
             texture_names: Optional list of names for each tile
-            
+
         Returns:
             Dict with conversion results
         """
         try:
             # First detect if it's an atlas
             detection = self.detect_texture_atlas(atlas_path)
-            
-            if not detection['is_atlas']:
+
+            if not detection["is_atlas"]:
                 # Not an atlas, just convert as single texture
-                return self._convert_single_texture(atlas_path, {}, 'block', Path(output_dir))
-            
+                return self._convert_single_texture(atlas_path, {}, "block", Path(output_dir))
+
             # Extract the atlas
             extraction = self.extract_texture_atlas(
-                atlas_path, 
-                output_dir, 
-                tile_size=detection['tile_size']
+                atlas_path, output_dir, tile_size=detection["tile_size"]
             )
-            
-            if not extraction['success']:
+
+            if not extraction["success"]:
                 return extraction
-            
+
             # Convert each extracted tile
             converted_textures = []
-            for tile in extraction['extracted_tiles']:
+            for tile in extraction["extracted_tiles"]:
                 # Determine texture name
-                if texture_names and tile['index'] < len(texture_names):
-                    name = texture_names[tile['index']]
+                if texture_names and tile["index"] < len(texture_names):
+                    name = texture_names[tile["index"]]
                 else:
-                    name = tile['name']
-                
+                    name = tile["name"]
+
                 # Convert the tile
-                result = self._convert_single_texture(
-                    tile['path'], 
-                    {}, 
-                    'block', 
-                    Path(output_dir)
-                )
-                
-                if result['success']:
-                    result['texture_name'] = name
+                result = self._convert_single_texture(tile["path"], {}, "block", Path(output_dir))
+
+                if result["success"]:
+                    result["texture_name"] = name
                     converted_textures.append(result)
-            
+
             return {
-                'success': True,
-                'atlas_path': atlas_path,
-                'output_dir': output_dir,
-                'total_extracted': extraction['extracted_count'],
-                'total_converted': len(converted_textures),
-                'converted_textures': converted_textures,
-                'atlas_info': detection
+                "success": True,
+                "atlas_path": atlas_path,
+                "output_dir": output_dir,
+                "total_extracted": extraction["extracted_count"],
+                "total_converted": len(converted_textures),
+                "converted_textures": converted_textures,
+                "atlas_info": detection,
             }
-            
+
         except Exception as e:
             logger.error(f"Error converting texture atlas: {e}")
-            return {'success': False, 'error': str(e)}
-        
+            return {"success": False, "error": str(e)}
+
     def clear_cache(self):
         """Clear the conversion cache"""
         self._conversion_cache.clear()
@@ -2800,8 +3173,9 @@ class AssetConverterAgent:
     # JAR Texture Extraction Methods (Issue #650)
     # =========================================================================
 
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str,
-                                   texture_types: Optional[List[str]] = None) -> Dict:
+    def extract_textures_from_jar(
+        self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None
+    ) -> Dict:
         """
         Extract texture files from a Java mod JAR file.
 
@@ -2817,17 +3191,21 @@ class AssetConverterAgent:
         if texture_types is None:
             # Include both singular and plural forms for Minecraft texture directories
             texture_types = [
-                'blocks', 'block',   # Block textures
-                'items', 'item',     # Item textures  
-                'entity', 'mob',     # Entity textures
-                'armor', 'particle'  # Other textures
+                "blocks",
+                "block",  # Block textures
+                "items",
+                "item",  # Item textures
+                "entity",
+                "mob",  # Entity textures
+                "armor",
+                "particle",  # Other textures
             ]
 
         try:
             jar_path_obj = Path(jar_path)
             if not jar_path_obj.exists():
                 logger.error(f"JAR file not found: {jar_path}")
-                return {'success': False, 'error': f'JAR file not found: {jar_path}'}
+                return {"success": False, "error": f"JAR file not found: {jar_path}"}
 
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
@@ -2835,18 +3213,20 @@ class AssetConverterAgent:
             extracted_textures = []
             errors = []
 
-            with zipfile.ZipFile(jar_path, 'r') as jar:
+            with zipfile.ZipFile(jar_path, "r") as jar:
                 # Find all texture files in assets/*/textures/...
                 # Use prefix matching to handle both "block" and "blocks" directories
-                texture_prefixes = [f'assets/{mod_id}/textures/{ttype}/'
-                                   for mod_id in self._get_mod_ids_from_jar(jar)
-                                   for ttype in texture_types]
+                texture_prefixes = [
+                    f"assets/{mod_id}/textures/{ttype}/"
+                    for mod_id in self._get_mod_ids_from_jar(jar)
+                    for ttype in texture_types
+                ]
 
                 for file_info in jar.filelist:
                     file_path = file_info.filename
 
                     # Check if it's a texture file
-                    if not file_path.endswith(('.png', '.jpg', '.jpeg', '.tga')):
+                    if not file_path.endswith((".png", ".jpg", ".jpeg", ".tga")):
                         continue
 
                     # Check if it matches our texture prefixes (starts with any pattern)
@@ -2858,28 +3238,37 @@ class AssetConverterAgent:
                             texture_data = jar.read(file_path)
 
                             # Determine output path based on relative location
-                            relative_path = file_path.split('textures/')[-1]
-                            mod_path_parts = file_path.split('/')
-                            if len(mod_path_parts) >= 2 and mod_path_parts[0] == 'assets':
+                            relative_path = file_path.split("textures/")[-1]
+                            mod_path_parts = file_path.split("/")
+                            if len(mod_path_parts) >= 2 and mod_path_parts[0] == "assets":
                                 namespace = mod_path_parts[1]
                             else:
-                                namespace = 'minecraft'
+                                namespace = "minecraft"
 
                             # Save to output directory
-                            output_subdir = output_path / namespace / 'textures' / relative_path.rsplit('/', 1)[0]
+                            output_subdir = (
+                                output_path
+                                / namespace
+                                / "textures"
+                                / relative_path.rsplit("/", 1)[0]
+                            )
                             output_subdir.mkdir(parents=True, exist_ok=True)
 
-                            output_file = output_path / namespace / 'textures' / relative_path
+                            output_file = output_path / namespace / "textures" / relative_path
                             output_file.write_bytes(texture_data)
 
-                            extracted_textures.append({
-                                'original_path': file_path,
-                                'saved_path': str(output_file),
-                                'namespace': namespace,
-                                'relative_path': relative_path,
-                                'type': relative_path.rsplit('/', 1)[0] if '/' in relative_path else 'root',
-                                'filename': file_path.rsplit('/', 1)[-1]
-                            })
+                            extracted_textures.append(
+                                {
+                                    "original_path": file_path,
+                                    "saved_path": str(output_file),
+                                    "namespace": namespace,
+                                    "relative_path": relative_path,
+                                    "type": relative_path.rsplit("/", 1)[0]
+                                    if "/" in relative_path
+                                    else "root",
+                                    "filename": file_path.rsplit("/", 1)[-1],
+                                }
+                            )
 
                             logger.debug(f"Extracted texture: {file_path}")
 
@@ -2894,17 +3283,17 @@ class AssetConverterAgent:
                 extracted_textures.extend(alt_textures)
 
             return {
-                'success': len(extracted_textures) > 0,
-                'jar_path': jar_path,
-                'output_dir': str(output_path),
-                'extracted_count': len(extracted_textures),
-                'extracted_textures': extracted_textures,
-                'errors': errors
+                "success": len(extracted_textures) > 0,
+                "jar_path": jar_path,
+                "output_dir": str(output_path),
+                "extracted_count": len(extracted_textures),
+                "extracted_textures": extracted_textures,
+                "errors": errors,
             }
 
         except Exception as e:
             logger.error(f"Error extracting textures from JAR: {e}")
-            return {'success': False, 'error': str(e)}
+            return {"success": False, "error": str(e)}
 
     def _get_mod_ids_from_jar(self, jar: zipfile.ZipFile) -> List[str]:
         """Extract mod IDs/namespaces from JAR assets directory."""
@@ -2912,27 +3301,28 @@ class AssetConverterAgent:
         try:
             for file_path in jar.namelist():
                 # Match assets/modid/...
-                parts = file_path.split('/')
-                if len(parts) >= 2 and parts[0] == 'assets':
+                parts = file_path.split("/")
+                if len(parts) >= 2 and parts[0] == "assets":
                     mod_ids.add(parts[1])
         except Exception as e:
             logger.warning(f"Error reading mod IDs from JAR: {e}")
 
         # Always include 'minecraft' as fallback
-        return list(mod_ids) if mod_ids else ['minecraft']
+        return list(mod_ids) if mod_ids else ["minecraft"]
 
-    def _extract_textures_from_alt_locations(self, jar: zipfile.ZipFile,
-                                             output_path: Path) -> List[Dict]:
+    def _extract_textures_from_alt_locations(
+        self, jar: zipfile.ZipFile, output_path: Path
+    ) -> List[Dict]:
         """Extract textures from alternative locations in JAR."""
         extracted = []
-        alt_patterns = ['textures/', 'assets/textures/', '/textures/']
+        alt_patterns = ["textures/", "assets/textures/", "/textures/"]
 
         try:
             for file_info in jar.filelist:
                 file_path = file_info.filename
 
                 # Only process PNG files
-                if not file_path.endswith('.png'):
+                if not file_path.endswith(".png"):
                     continue
 
                 # Check for alternative patterns
@@ -2943,32 +3333,38 @@ class AssetConverterAgent:
                         texture_data = jar.read(file_path)
 
                         # Determine namespace
-                        if 'assets/' in file_path:
-                            namespace = file_path.split('assets/')[-1].split('/')[0]
+                        if "assets/" in file_path:
+                            namespace = file_path.split("assets/")[-1].split("/")[0]
                         else:
-                            namespace = 'minecraft'
+                            namespace = "minecraft"
 
                         # Determine relative path
-                        if 'textures/' in file_path:
-                            relative_path = file_path.split('textures/')[-1]
+                        if "textures/" in file_path:
+                            relative_path = file_path.split("textures/")[-1]
                         else:
-                            relative_path = file_path.lstrip('/')
+                            relative_path = file_path.lstrip("/")
 
                         # Save
-                        output_subdir = output_path / namespace / 'textures' / relative_path.rsplit('/', 1)[0]
+                        output_subdir = (
+                            output_path / namespace / "textures" / relative_path.rsplit("/", 1)[0]
+                        )
                         output_subdir.mkdir(parents=True, exist_ok=True)
-                        output_file = output_path / namespace / 'textures' / relative_path
+                        output_file = output_path / namespace / "textures" / relative_path
 
                         output_file.write_bytes(texture_data)
 
-                        extracted.append({
-                            'original_path': file_path,
-                            'saved_path': str(output_file),
-                            'namespace': namespace,
-                            'relative_path': relative_path,
-                            'type': relative_path.rsplit('/', 1)[0] if '/' in relative_path else 'root',
-                            'filename': file_path.rsplit('/', 1)[-1]
-                        })
+                        extracted.append(
+                            {
+                                "original_path": file_path,
+                                "saved_path": str(output_file),
+                                "namespace": namespace,
+                                "relative_path": relative_path,
+                                "type": relative_path.rsplit("/", 1)[0]
+                                if "/" in relative_path
+                                else "root",
+                                "filename": file_path.rsplit("/", 1)[-1],
+                            }
+                        )
 
                     except Exception as e:
                         logger.warning(f"Failed to extract alternative texture {file_path}: {e}")
@@ -2978,7 +3374,7 @@ class AssetConverterAgent:
 
         return extracted
 
-    def convert_java_texture_path(self, java_path: str, bedrock_type: str = 'blocks') -> str:
+    def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
         """
         Convert Java texture path to Bedrock texture path.
 
@@ -2990,21 +3386,21 @@ class AssetConverterAgent:
             Bedrock texture path (e.g., 'textures/blocks/grass_block_side')
         """
         # Parse Java path
-        parts = java_path.replace('\\', '/').split('/')
+        parts = java_path.replace("\\", "/").split("/")
 
         # Find textures index
         try:
-            textures_idx = parts.index('textures')
+            textures_idx = parts.index("textures")
         except ValueError:
             # Try alternative structure
             textures_idx = -1
 
         if textures_idx >= 0:
             # Extract relative path after textures/
-            relative_parts = parts[textures_idx + 1:]
+            relative_parts = parts[textures_idx + 1 :]
         else:
             # Try to find the PNG file and use remaining parts
-            relative_parts = [p for p in parts if p.endswith('.png')]
+            relative_parts = [p for p in parts if p.endswith(".png")]
             if relative_parts:
                 # Use filename only
                 relative_parts = [relative_parts[0]]
@@ -3014,10 +3410,10 @@ class AssetConverterAgent:
         # Extract filename without extension
         if relative_parts:
             filename = relative_parts[-1]
-            if filename.endswith('.png'):
+            if filename.endswith(".png"):
                 filename = filename[:-4]
         else:
-            filename = 'unknown'
+            filename = "unknown"
 
         # Build Bedrock path
         bedrock_path = f"textures/{bedrock_type}/{filename}"
@@ -3036,55 +3432,64 @@ class AssetConverterAgent:
             Dict with validation results including success, issues, and metadata
         """
         result = {
-            'success': False,
-            'valid': False,
-            'path': texture_path,
-            'issues': [],
-            'metadata': {}
+            "success": False,
+            "valid": False,
+            "path": texture_path,
+            "issues": [],
+            "metadata": {},
         }
 
         try:
             path_obj = Path(texture_path)
 
             if not path_obj.exists():
-                result['issues'].append('Texture file does not exist')
+                result["issues"].append("Texture file does not exist")
                 return result
 
             # Open and validate image
             with Image.open(texture_path) as img:
                 width, height = img.size
-                result['metadata']['original_dimensions'] = (width, height)
-                result['metadata']['format'] = img.format
-                result['metadata']['mode'] = img.mode
+                result["metadata"]["original_dimensions"] = (width, height)
+                result["metadata"]["format"] = img.format
+                result["metadata"]["mode"] = img.mode
 
                 # Check dimensions
                 if width == 0 or height == 0:
-                    result['issues'].append('Invalid image dimensions (zero)')
-                elif width > self.texture_constraints['max_resolution'] or height > self.texture_constraints['max_resolution']:
-                    result['issues'].append(f"Dimensions {width}x{height} exceed maximum {self.texture_constraints['max_resolution']}")
+                    result["issues"].append("Invalid image dimensions (zero)")
+                elif (
+                    width > self.texture_constraints["max_resolution"]
+                    or height > self.texture_constraints["max_resolution"]
+                ):
+                    result["issues"].append(
+                        f"Dimensions {width}x{height} exceed maximum {self.texture_constraints['max_resolution']}"
+                    )
 
                 # Check power of 2
-                if self.texture_constraints.get('must_be_power_of_2', True):
+                if self.texture_constraints.get("must_be_power_of_2", True):
                     if not self._is_power_of_2(width):
-                        result['issues'].append(f"Width {width} is not a power of 2")
+                        result["issues"].append(f"Width {width} is not a power of 2")
                     if not self._is_power_of_2(height):
-                        result['issues'].append(f"Height {height} is not a power of 2")
+                        result["issues"].append(f"Height {height} is not a power of 2")
 
                 # Check mode
-                if img.mode not in self.texture_constraints.get('supported_channels', ['RGB', 'RGBA']):
-                    result['issues'].append(f"Unsupported color mode: {img.mode} (expected RGB or RGBA)")
+                if img.mode not in self.texture_constraints.get(
+                    "supported_channels", ["RGB", "RGBA"]
+                ):
+                    result["issues"].append(
+                        f"Unsupported color mode: {img.mode} (expected RGB or RGBA)"
+                    )
 
-                result['valid'] = len(result['issues']) == 0
-                result['success'] = True
+                result["valid"] = len(result["issues"]) == 0
+                result["success"] = True
 
         except Exception as e:
-            result['issues'].append(f"Error validating texture: {str(e)}")
+            result["issues"].append(f"Error validating texture: {str(e)}")
 
         return result
 
-    def generate_fallback_for_jar(self, output_path: str,
-                                   block_name: str,
-                                   texture_type: str = 'blocks') -> Dict:
+    def generate_fallback_for_jar(
+        self, output_path: str, block_name: str, texture_type: str = "blocks"
+    ) -> Dict:
         """
         Generate fallback texture when JAR extraction fails.
 
@@ -3104,89 +3509,97 @@ class AssetConverterAgent:
             img = self._generate_fallback_texture(texture_type)
 
             # Resize to appropriate size (16x16 for blocks, 16x16 for items)
-            if texture_type == 'blocks':
+            if texture_type == "blocks":
                 img = img.resize((16, 16), Image.LANCZOS)
             else:
                 img = img.resize((16, 16), Image.LANCZOS)
 
             # Save
-            img.save(output_path, 'PNG', optimize=True)
+            img.save(output_path, "PNG", optimize=True)
 
             return {
-                'success': True,
-                'output_path': output_path,
-                'dimensions': img.size,
-                'generated': True
+                "success": True,
+                "output_path": output_path,
+                "dimensions": img.size,
+                "generated": True,
             }
 
         except Exception as e:
             logger.error(f"Error generating fallback texture: {e}")
-            return {'success': False, 'error': str(e)}
-    
+            return {"success": False, "error": str(e)}
+
     def _is_power_of_2(self, n: int) -> bool:
         """Check if a number is a power of 2"""
         return n > 0 and (n & (n - 1)) == 0
-    
+
     def _get_recommended_resolution(self, width: int, height: int) -> str:
         """Get recommended resolution for texture"""
         # Find the nearest power of 2 that's within constraints
-        max_res = self.texture_constraints['max_resolution']
-        
+        max_res = self.texture_constraints["max_resolution"]
+
         target_width = min(max_res, self._next_power_of_2(width))
         target_height = min(max_res, self._next_power_of_2(height))
-        
+
         return f"{target_width}x{target_height}"
-    
+
     def _next_power_of_2(self, n: int) -> int:
         """Get the next power of 2 greater than or equal to n"""
         power = 1
         while power < n:
             power *= 2
         return power
-    
+
     def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
         """Generate conversion recommendations based on analysis"""
         recommendations = []
-        
-        texture_count = analysis['textures']['count']
-        model_count = analysis['models']['count']
-        audio_count = analysis['audio']['count']
-        
+
+        texture_count = analysis["textures"]["count"]
+        model_count = analysis["models"]["count"]
+        audio_count = analysis["audio"]["count"]
+
         if texture_count > 0:
-            recommendations.append(f"Convert {texture_count} textures to PNG format with power-of-2 dimensions")
-        
+            recommendations.append(
+                f"Convert {texture_count} textures to PNG format with power-of-2 dimensions"
+            )
+
         if model_count > 0:
             recommendations.append(f"Convert {model_count} models to Bedrock geometry format")
-        
+
         if audio_count > 0:
             recommendations.append(f"Convert {audio_count} audio files to OGG format")
-        
-        total_issues = (len(analysis['textures']['issues']) + 
-                       len(analysis['models']['issues']) + 
-                       len(analysis['audio']['issues']))
-        
+
+        total_issues = (
+            len(analysis["textures"]["issues"])
+            + len(analysis["models"]["issues"])
+            + len(analysis["audio"]["issues"])
+        )
+
         if total_issues > 0:
             recommendations.append(f"Address {total_issues} compatibility issues")
-        
+
         return recommendations
-    
+
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         """Assess the complexity of the conversion task"""
-        total_conversions = (len(analysis['textures']['conversions_needed']) +
-                           len(analysis['models']['conversions_needed']) +
-                           len(analysis['audio']['conversions_needed']))
-        
-        total_issues = (len(analysis['textures']['issues']) +
-                       len(analysis['models']['issues']) +
-                       len(analysis['audio']['issues']))
-        
+        total_conversions = (
+            len(analysis["textures"]["conversions_needed"])
+            + len(analysis["models"]["conversions_needed"])
+            + len(analysis["audio"]["conversions_needed"])
+        )
+
+        total_issues = (
+            len(analysis["textures"]["issues"])
+            + len(analysis["models"]["issues"])
+            + len(analysis["audio"]["issues"])
+        )
+
         if total_conversions == 0 and total_issues == 0:
             return "simple"
         elif total_conversions < 5 and total_issues < 3:
             return "moderate"
         else:
             return "complex"
-    
+
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
         """Generate texture pack structure files with enhanced atlas handling"""
         manifest = {
@@ -3196,28 +3609,30 @@ class AssetConverterAgent:
                 "description": "Assets converted from Java mod",
                 "uuid": "f4aeb009-270e-4a11-8137-a916a1a3ea1e",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 16, 0]
+                "min_engine_version": [1, 16, 0],
             },
-            "modules": [{
-                "type": "resources",
-                "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
-                "version": [1, 0, 0]
-            }]
+            "modules": [
+                {
+                    "type": "resources",
+                    "uuid": "0d28590c-1797-4555-9a19-5ee98def104e",
+                    "version": [1, 0, 0],
+                }
+            ],
         }
 
         item_texture_data = {}
         terrain_texture_data = {}
         flipbook_entries = []
-        
+
         # Track texture atlases
         texture_atlases = {}
 
         for t_data in textures:
-            if not t_data.get('success'):
+            if not t_data.get("success"):
                 continue
 
-            bedrock_ref = t_data.get('bedrock_reference', Path(t_data['converted_path']).stem)
-            converted_path = t_data['converted_path']
+            bedrock_ref = t_data.get("bedrock_reference", Path(t_data["converted_path"]).stem)
+            converted_path = t_data["converted_path"]
             texture_entry = {"textures": converted_path}
 
             # Enhanced atlas handling - group related textures
@@ -3227,10 +3642,9 @@ class AssetConverterAgent:
                 atlas_name = base_name.split("_")[0]  # Group by prefix
                 if atlas_name not in texture_atlases:
                     texture_atlases[atlas_name] = []
-                texture_atlases[atlas_name].append({
-                    "reference": bedrock_ref,
-                    "path": converted_path
-                })
+                texture_atlases[atlas_name].append(
+                    {"reference": bedrock_ref, "path": converted_path}
+                )
 
             if bedrock_ref.startswith("item_") or "/items/" in converted_path:
                 item_texture_data[bedrock_ref] = texture_entry
@@ -3241,13 +3655,17 @@ class AssetConverterAgent:
             else:
                 terrain_texture_data[bedrock_ref] = texture_entry
 
-            if t_data.get('animation_data'):
-                anim_data = t_data['animation_data']
+            if t_data.get("animation_data"):
+                anim_data = t_data["animation_data"]
                 frames_list = anim_data.get("frames", [])
-                
+
                 if frames_list and all(isinstance(f, dict) for f in frames_list):
                     try:
-                        processed_frames = [int(f['index']) for f in frames_list if isinstance(f, dict) and 'index' in f]
+                        processed_frames = [
+                            int(f["index"])
+                            for f in frames_list
+                            if isinstance(f, dict) and "index" in f
+                        ]
                         if not processed_frames:
                             processed_frames = []
                     except (TypeError, ValueError):
@@ -3265,7 +3683,7 @@ class AssetConverterAgent:
                     "flipbook_texture": converted_path,
                     "atlas_tile": Path(converted_path).stem,
                     "ticks_per_frame": ticks,
-                    "frames": processed_frames
+                    "frames": processed_frames,
                 }
                 if "interpolate" in anim_data:
                     entry["interpolate"] = anim_data["interpolate"]
@@ -3274,12 +3692,18 @@ class AssetConverterAgent:
 
         result = {"pack_manifest.json": manifest}
         if item_texture_data:
-            result["item_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": item_texture_data}
+            result["item_texture.json"] = {
+                "resource_pack_name": "vanilla",
+                "texture_data": item_texture_data,
+            }
         if terrain_texture_data:
-            result["terrain_texture.json"] = {"resource_pack_name": "vanilla", "texture_data": terrain_texture_data}
+            result["terrain_texture.json"] = {
+                "resource_pack_name": "vanilla",
+                "texture_data": terrain_texture_data,
+            }
         if flipbook_entries:
             result["flipbook_textures.json"] = flipbook_entries
-            
+
         # Add texture atlas information if any were detected
         if texture_atlases:
             result["texture_atlases.json"] = texture_atlases
@@ -3288,36 +3712,42 @@ class AssetConverterAgent:
 
     def _generate_model_structure(self, models: List[Dict]) -> Dict:
         # Ensure only successful conversions are included
-        valid_models = [m for m in models if m.get('success')]
+        valid_models = [m for m in models if m.get("success")]
         return {
             # These keys are illustrative; the actual output is a list of file contents/paths
             # For this structure, we just return the list of paths and identifiers as before.
             # A higher-level packaging agent would create the actual files.
-            "geometry_files": [m['converted_path'] for m in valid_models if 'converted_path' in m],
-            "identifiers_used": [m['bedrock_identifier'] for m in valid_models if 'bedrock_identifier' in m]
+            "geometry_files": [m["converted_path"] for m in valid_models if "converted_path" in m],
+            "identifiers_used": [
+                m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
+            ],
         }
 
     def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
         sound_definitions = {}
         for s_data in sounds:
-            if not s_data.get('success'):
+            if not s_data.get("success"):
                 continue
 
-            event_name = s_data.get('bedrock_sound_event')
-            converted_path = s_data.get('converted_path')
+            event_name = s_data.get("bedrock_sound_event")
+            converted_path = s_data.get("converted_path")
 
             if not event_name or not converted_path:
-                logger.warning(f"Skipping sound entry due to missing event name or converted path: {s_data.get('original_path')}")
+                logger.warning(
+                    f"Skipping sound entry due to missing event name or converted path: {s_data.get('original_path')}"
+                )
                 continue
 
             rel_path = Path(converted_path)
             # Path for sound_definitions.json is relative to 'sounds' folder, without extension
-            if rel_path.parts and rel_path.parts[0] == 'sounds':
-                sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(''))
+            if rel_path.parts and rel_path.parts[0] == "sounds":
+                sound_def_path = str(Path(*rel_path.parts[1:]).with_suffix(""))
             else:
                 # If converted_path is not starting with "sounds/", use it as is but remove suffix
-                sound_def_path = str(rel_path.with_suffix(''))
-                logger.warning(f"Sound path '{converted_path}' for event '{event_name}' does not start with 'sounds/'. Using path as-is (minus suffix): '{sound_def_path}'.")
+                sound_def_path = str(rel_path.with_suffix(""))
+                logger.warning(
+                    f"Sound path '{converted_path}' for event '{event_name}' does not start with 'sounds/'. Using path as-is (minus suffix): '{sound_def_path}'."
+                )
 
             if event_name not in sound_definitions:
                 sound_definitions[event_name] = {"sounds": []}
@@ -3330,12 +3760,13 @@ class AssetConverterAgent:
             return {"sound_definitions.json": {"sound_definitions": sound_definitions}}
         return {}
 
-
     # =========================================================================
     # TEXTURE EXTRACTION FROM JAR FILES
     # =========================================================================
 
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    def extract_textures_from_jar(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         """
         Extract all textures from a Java mod JAR file.
 
@@ -3355,39 +3786,36 @@ class AssetConverterAgent:
             jar_path_obj = Path(jar_path)
             if not jar_path_obj.exists():
                 return {
-                    'success': False,
-                    'error': f"JAR file not found: {jar_path}",
-                    'extracted_textures': []
+                    "success": False,
+                    "error": f"JAR file not found: {jar_path}",
+                    "extracted_textures": [],
                 }
 
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
 
-            with zipfile.ZipFile(jar_path, 'r') as jar:
+            with zipfile.ZipFile(jar_path, "r") as jar:
                 # Get list of all files in the JAR
                 file_list = jar.namelist()
 
                 # Find texture files (PNG in assets/*/textures/)
                 texture_files = [
-                    f for f in file_list
-                    if f.startswith('assets/') and
-                    '/textures/' in f and
-                    f.endswith('.png')
+                    f
+                    for f in file_list
+                    if f.startswith("assets/") and "/textures/" in f and f.endswith(".png")
                 ]
 
                 # Filter by namespace if provided
                 if namespace:
                     texture_files = [
-                        f for f in texture_files
-                        if f.startswith(f'assets/{namespace}/')
+                        f for f in texture_files if f.startswith(f"assets/{namespace}/")
                     ]
 
                 # Also look for mcmeta animation files
                 mcmeta_files = [
-                    f for f in file_list
-                    if f.startswith('assets/') and
-                    '/textures/' in f and
-                    f.endswith('.png.mcmeta')
+                    f
+                    for f in file_list
+                    if f.startswith("assets/") and "/textures/" in f and f.endswith(".png.mcmeta")
                 ]
 
                 for texture_file in texture_files:
@@ -3405,46 +3833,48 @@ class AssetConverterAgent:
 
                         # Save texture
                         output_file = output_path / bedrock_path
-                        with open(output_file, 'wb') as f:
+                        with open(output_file, "wb") as f:
                             f.write(texture_data)
 
-                        extracted_textures.append({
-                            'original_path': texture_file,
-                            'bedrock_path': bedrock_path,
-                            'output_path': str(output_file),
-                            'success': True
-                        })
+                        extracted_textures.append(
+                            {
+                                "original_path": texture_file,
+                                "bedrock_path": bedrock_path,
+                                "output_path": str(output_file),
+                                "success": True,
+                            }
+                        )
 
                         # Check for associated mcmeta file
-                        mcmeta_path = texture_file + '.mcmeta'
+                        mcmeta_path = texture_file + ".mcmeta"
                         if mcmeta_path in mcmeta_files:
                             mcmeta_data = jar.read(mcmeta_path)
-                            mcmeta_output = output_file.with_suffix('.png.mcmeta')
-                            with open(mcmeta_output, 'wb') as f:
+                            mcmeta_output = output_file.with_suffix(".png.mcmeta")
+                            with open(mcmeta_output, "wb") as f:
                                 f.write(mcmeta_data)
 
                     except Exception as e:
                         errors.append(f"Failed to extract {texture_file}: {str(e)}")
 
             return {
-                'success': len(extracted_textures) > 0,
-                'extracted_textures': extracted_textures,
-                'errors': errors,
-                'warnings': warnings,
-                'count': len(extracted_textures)
+                "success": len(extracted_textures) > 0,
+                "extracted_textures": extracted_textures,
+                "errors": errors,
+                "warnings": warnings,
+                "count": len(extracted_textures),
             }
 
         except zipfile.BadZipFile:
             return {
-                'success': False,
-                'error': f"Invalid JAR file: {jar_path}",
-                'extracted_textures': []
+                "success": False,
+                "error": f"Invalid JAR file: {jar_path}",
+                "extracted_textures": [],
             }
         except Exception as e:
             return {
-                'success': False,
-                'error': f"Failed to extract textures: {str(e)}",
-                'extracted_textures': []
+                "success": False,
+                "error": f"Failed to extract textures: {str(e)}",
+                "extracted_textures": [],
             }
 
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
@@ -3461,9 +3891,9 @@ class AssetConverterAgent:
             Bedrock texture path
         """
         # Parse: assets/namespace/textures/type/name.png
-        parts = java_path.split('/')
+        parts = java_path.split("/")
 
-        if len(parts) >= 5 and parts[0] == 'assets' and parts[2] == 'textures':
+        if len(parts) >= 5 and parts[0] == "assets" and parts[2] == "textures":
             texture_type = parts[3]  # block, item, entity, etc.
             texture_name = parts[4]  # name.png
 
@@ -3486,19 +3916,19 @@ class AssetConverterAgent:
             Bedrock texture type
         """
         type_mapping = {
-            'block': 'blocks',
-            'item': 'items',
-            'entity': 'entity',
-            'blockentity': 'entity',
-            'particle': 'particle',
-            'armor': 'armor',
-            'misc': 'misc',
-            'environment': 'environment',
-            'gui': 'gui',
-            'painting': 'painting'
+            "block": "blocks",
+            "item": "items",
+            "entity": "entity",
+            "blockentity": "entity",
+            "particle": "particle",
+            "armor": "armor",
+            "misc": "misc",
+            "environment": "environment",
+            "gui": "gui",
+            "painting": "painting",
         }
 
-        return type_mapping.get(java_type.lower(), 'misc')
+        return type_mapping.get(java_type.lower(), "misc")
 
     def _map_bedrock_texture_to_java(self, bedrock_path: str, namespace: str) -> str:
         """
@@ -3514,9 +3944,9 @@ class AssetConverterAgent:
         Returns:
             Java texture path
         """
-        parts = bedrock_path.split('/')
+        parts = bedrock_path.split("/")
 
-        if len(parts) >= 3 and parts[0] == 'textures':
+        if len(parts) >= 3 and parts[0] == "textures":
             bedrock_type = parts[1]  # blocks, items, entity, etc.
             texture_name = parts[2]
 
@@ -3538,17 +3968,17 @@ class AssetConverterAgent:
             Java texture type
         """
         type_mapping = {
-            'blocks': 'block',
-            'items': 'item',
-            'entity': 'entity',
-            'particle': 'particle',
-            'armor': 'armor',
-            'misc': 'misc',
-            'environment': 'environment',
-            'gui': 'gui'
+            "blocks": "block",
+            "items": "item",
+            "entity": "entity",
+            "particle": "particle",
+            "armor": "armor",
+            "misc": "misc",
+            "environment": "environment",
+            "gui": "gui",
         }
 
-        return type_mapping.get(bedrock_type.lower(), 'misc')
+        return type_mapping.get(bedrock_type.lower(), "misc")
 
     # =========================================================================
     # TEXTURE VALIDATION
@@ -3565,20 +3995,15 @@ class AssetConverterAgent:
         Returns:
             Dict with validation results
         """
-        result = {
-            'valid': True,
-            'errors': [],
-            'warnings': [],
-            'properties': {}
-        }
+        result = {"valid": True, "errors": [], "warnings": [], "properties": {}}
 
         try:
             path = Path(texture_path)
 
             # Check if file exists
             if not path.exists():
-                result['valid'] = False
-                result['errors'].append(f"Texture file not found: {texture_path}")
+                result["valid"] = False
+                result["errors"].append(f"Texture file not found: {texture_path}")
                 return result
 
             # Open and analyze image
@@ -3586,54 +4011,54 @@ class AssetConverterAgent:
                 width, height = img.size
 
                 # Store properties
-                result['properties'] = {
-                    'width': width,
-                    'height': height,
-                    'format': img.format,
-                    'mode': img.mode,
-                    'size_bytes': path.stat().st_size
+                result["properties"] = {
+                    "width": width,
+                    "height": height,
+                    "format": img.format,
+                    "mode": img.mode,
+                    "size_bytes": path.stat().st_size,
                 }
 
                 # Validate dimensions
                 if width != height:
-                    result['warnings'].append(f"Non-square texture: {width}x{height}")
+                    result["warnings"].append(f"Non-square texture: {width}x{height}")
 
                 # Check power of 2
                 if not self._is_power_of_2(width):
-                    result['warnings'].append(f"Width {width} is not a power of 2")
-                    if self.texture_constraints.get('must_be_power_of_2', True):
-                        result['valid'] = False
-                        result['errors'].append(f"Width must be power of 2 for Bedrock")
+                    result["warnings"].append(f"Width {width} is not a power of 2")
+                    if self.texture_constraints.get("must_be_power_of_2", True):
+                        result["valid"] = False
+                        result["errors"].append(f"Width must be power of 2 for Bedrock")
 
                 if not self._is_power_of_2(height):
-                    result['warnings'].append(f"Height {height} is not a power of 2")
-                    if self.texture_constraints.get('must_be_power_of_2', True):
-                        result['valid'] = False
-                        result['errors'].append(f"Height must be power of 2 for Bedrock")
+                    result["warnings"].append(f"Height {height} is not a power of 2")
+                    if self.texture_constraints.get("must_be_power_of_2", True):
+                        result["valid"] = False
+                        result["errors"].append(f"Height must be power of 2 for Bedrock")
 
                 # Check max resolution
-                max_res = self.texture_constraints.get('max_resolution', 1024)
+                max_res = self.texture_constraints.get("max_resolution", 1024)
                 if width > max_res or height > max_res:
-                    result['valid'] = False
-                    result['errors'].append(
+                    result["valid"] = False
+                    result["errors"].append(
                         f"Texture exceeds maximum resolution {max_res}: {width}x{height}"
                     )
 
                 # Check format
-                if img.format != 'PNG':
-                    result['warnings'].append(f"Non-PNG format: {img.format}")
-                    if self.texture_constraints.get('must_be_png', False):
-                        result['valid'] = False
-                        result['errors'].append("Texture must be PNG format for Bedrock")
+                if img.format != "PNG":
+                    result["warnings"].append(f"Non-PNG format: {img.format}")
+                    if self.texture_constraints.get("must_be_png", False):
+                        result["valid"] = False
+                        result["errors"].append("Texture must be PNG format for Bedrock")
 
                 # Check color mode
-                if img.mode not in ['RGB', 'RGBA']:
-                    result['valid'] = False
-                    result['errors'].append(f"Unsupported color mode: {img.mode}")
+                if img.mode not in ["RGB", "RGBA"]:
+                    result["valid"] = False
+                    result["errors"].append(f"Unsupported color mode: {img.mode}")
 
         except Exception as e:
-            result['valid'] = False
-            result['errors'].append(f"Failed to validate texture: {str(e)}")
+            result["valid"] = False
+            result["errors"].append(f"Failed to validate texture: {str(e)}")
 
         return result
 
@@ -3655,32 +4080,31 @@ class AssetConverterAgent:
 
         for texture_path in texture_paths:
             validation = self.validate_texture(texture_path, metadata)
-            results.append({
-                'path': texture_path,
-                'validation': validation
-            })
+            results.append({"path": texture_path, "validation": validation})
 
-            if validation['valid']:
+            if validation["valid"]:
                 valid_count += 1
             else:
                 invalid_count += 1
 
-            if validation['warnings']:
+            if validation["warnings"]:
                 warning_count += 1
 
         return {
-            'total': len(texture_paths),
-            'valid': valid_count,
-            'invalid': invalid_count,
-            'warnings': warning_count,
-            'results': results
+            "total": len(texture_paths),
+            "valid": valid_count,
+            "invalid": invalid_count,
+            "warnings": warning_count,
+            "results": results,
         }
 
     # =========================================================================
     # TEXTURE ATLAS EXTRACTION FOR MODS
     # =========================================================================
 
-    def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
+    def extract_texture_atlas_from_jar(
+        self, jar_path: str, atlas_type: str, output_dir: str
+    ) -> Dict:
         """
         Extract and convert a texture atlas from a mod JAR.
 
@@ -3696,30 +4120,30 @@ class AssetConverterAgent:
         errors = []
 
         try:
-            jar = zipfile.ZipFile(jar_path, 'r')
+            jar = zipfile.ZipFile(jar_path, "r")
             file_list = jar.namelist()
 
             # Find atlas files
             atlas_patterns = {
-                'terrain': 'assets/minecraft/textures/terrain.png',
-                'items': 'assets/minecraft/textures/items.png',
-                'entity': 'assets/minecraft/textures/entity.png'
+                "terrain": "assets/minecraft/textures/terrain.png",
+                "items": "assets/minecraft/textures/items.png",
+                "entity": "assets/minecraft/textures/entity.png",
             }
 
             atlas_path = atlas_patterns.get(atlas_type.lower())
             if not atlas_path:
                 return {
-                    'success': False,
-                    'error': f"Unknown atlas type: {atlas_type}",
-                    'extracted_tiles': []
+                    "success": False,
+                    "error": f"Unknown atlas type: {atlas_type}",
+                    "extracted_tiles": [],
                 }
 
             # Check if atlas exists in JAR
             if atlas_path not in file_list:
                 # Try alternative patterns
                 alt_patterns = [
-                    f'assets/minecraft/textures/{atlas_type}.png',
-                    f'assets/vanilla/textures/{atlas_type}.png'
+                    f"assets/minecraft/textures/{atlas_type}.png",
+                    f"assets/vanilla/textures/{atlas_type}.png",
                 ]
                 for pattern in alt_patterns:
                     if pattern in file_list:
@@ -3727,9 +4151,9 @@ class AssetConverterAgent:
                         break
                 else:
                     return {
-                        'success': False,
-                        'error': f"Atlas not found in JAR: {atlas_type}",
-                        'extracted_tiles': []
+                        "success": False,
+                        "error": f"Atlas not found in JAR: {atlas_type}",
+                        "extracted_tiles": [],
                     }
 
             # Read atlas image
@@ -3737,7 +4161,8 @@ class AssetConverterAgent:
 
             # Save temporarily to process
             import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_atlas:
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_atlas:
                 temp_atlas.write(atlas_data)
                 temp_atlas_path = temp_atlas.name
 
@@ -3753,13 +4178,14 @@ class AssetConverterAgent:
 
         except Exception as e:
             return {
-                'success': False,
-                'error': f"Failed to extract atlas: {str(e)}",
-                'extracted_tiles': []
+                "success": False,
+                "error": f"Failed to extract atlas: {str(e)}",
+                "extracted_tiles": [],
             }
 
-    def convert_jar_textures_to_bedrock(self, jar_path: str, output_dir: str,
-                                         namespace: str = None) -> Dict:
+    def convert_jar_textures_to_bedrock(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         """
         Complete pipeline to extract textures from JAR and convert to Bedrock format.
 
@@ -3772,77 +4198,79 @@ class AssetConverterAgent:
             Dict with conversion results
         """
         results = {
-            'success': False,
-            'extracted': [],
-            'converted': [],
-            'failed': [],
-            'warnings': [],
-            'errors': []
+            "success": False,
+            "extracted": [],
+            "converted": [],
+            "failed": [],
+            "warnings": [],
+            "errors": [],
         }
 
         try:
             # Step 1: Extract textures from JAR
             extract_result = self.extract_textures_from_jar(jar_path, output_dir, namespace)
 
-            if not extract_result['success']:
-                results['errors'].append(f"Failed to extract textures: {extract_result.get('error', 'Unknown error')}")
+            if not extract_result["success"]:
+                results["errors"].append(
+                    f"Failed to extract textures: {extract_result.get('error', 'Unknown error')}"
+                )
                 return results
 
-            results['extracted'] = extract_result['extracted_textures']
+            results["extracted"] = extract_result["extracted_textures"]
 
             # Step 2: Convert each texture to Bedrock format
-            for texture_info in extract_result['extracted_textures']:
-                texture_path = texture_info['output_path']
+            for texture_info in extract_result["extracted_textures"]:
+                texture_path = texture_info["output_path"]
 
                 try:
                     # Validate texture
                     validation = self.validate_texture(texture_path)
 
-                    if not validation['valid']:
-                        results['failed'].append({
-                            'path': texture_path,
-                            'errors': validation['errors']
-                        })
-                        results['warnings'].extend(validation['warnings'])
+                    if not validation["valid"]:
+                        results["failed"].append(
+                            {"path": texture_path, "errors": validation["errors"]}
+                        )
+                        results["warnings"].extend(validation["warnings"])
                         continue
 
                     # Convert texture (resize to power of 2 if needed)
                     conversion_result = self._convert_single_texture(
                         texture_path,
                         {},
-                        'block',  # Default usage
-                        None  # Don't save again, already saved
+                        "block",  # Default usage
+                        None,  # Don't save again, already saved
                     )
 
-                    if conversion_result.get('success'):
-                        results['converted'].append({
-                            'original': texture_info['original_path'],
-                            'converted': texture_path,
-                            'bedrock_path': texture_info['bedrock_path']
-                        })
+                    if conversion_result.get("success"):
+                        results["converted"].append(
+                            {
+                                "original": texture_info["original_path"],
+                                "converted": texture_path,
+                                "bedrock_path": texture_info["bedrock_path"],
+                            }
+                        )
                     else:
                         # Generate fallback texture
-                        fallback = self._generate_fallback_texture('block')
+                        fallback = self._generate_fallback_texture("block")
                         fallback_path = Path(texture_path)
-                        fallback.save(fallback_path, 'PNG')
+                        fallback.save(fallback_path, "PNG")
 
-                        results['converted'].append({
-                            'original': texture_info['original_path'],
-                            'converted': texture_path,
-                            'bedrock_path': texture_info['bedrock_path'],
-                            'used_fallback': True
-                        })
-                        results['warnings'].append(f"Used fallback texture for {texture_path}")
+                        results["converted"].append(
+                            {
+                                "original": texture_info["original_path"],
+                                "converted": texture_path,
+                                "bedrock_path": texture_info["bedrock_path"],
+                                "used_fallback": True,
+                            }
+                        )
+                        results["warnings"].append(f"Used fallback texture for {texture_path}")
 
                 except Exception as e:
-                    results['failed'].append({
-                        'path': texture_path,
-                        'errors': [str(e)]
-                    })
+                    results["failed"].append({"path": texture_path, "errors": [str(e)]})
 
-            results['success'] = len(results['converted']) > 0
+            results["success"] = len(results["converted"]) > 0
 
         except Exception as e:
-            results['errors'].append(f"Conversion pipeline failed: {str(e)}")
+            results["errors"].append(f"Conversion pipeline failed: {str(e)}")
 
         return results

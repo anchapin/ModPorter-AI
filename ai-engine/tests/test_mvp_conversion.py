@@ -39,47 +39,57 @@ sys.path.insert(0, str(tests_root))
 
 # Mock the problematic pydub import before importing agents
 import sys
+
+
 class MockAudioSegment:
     pass
+
+
 class MockCouldntDecodeError(Exception):
     pass
 
-pydub_mock = type(sys)('pydub')
-pydub_mock.AudioSegment = MockAudioSegment
-pydub_mock.exceptions = type(sys)('pydub.exceptions')
-pydub_mock.exceptions.CouldntDecodeError = MockCouldntDecodeError
-pydub_mock.utils = type(sys)('pydub.utils')
 
-sys.modules['pydub'] = pydub_mock
-sys.modules['pydub.exceptions'] = pydub_mock.exceptions
-sys.modules['pydub.utils'] = pydub_mock.utils
+pydub_mock = type(sys)("pydub")
+pydub_mock.AudioSegment = MockAudioSegment
+pydub_mock.exceptions = type(sys)("pydub.exceptions")
+pydub_mock.exceptions.CouldntDecodeError = MockCouldntDecodeError
+pydub_mock.utils = type(sys)("pydub.utils")
+
+sys.modules["pydub"] = pydub_mock
+sys.modules["pydub.exceptions"] = pydub_mock.exceptions
+sys.modules["pydub.utils"] = pydub_mock.utils
+
 
 # Mock crewai
 def tool(func):
     return func
-sys.modules['crewai'] = type(sys)('crewai')
-sys.modules['crewai'].Agent = type('Agent', (), {})
-sys.modules['crewai'].Crew = type('Crew', (), {})
-sys.modules['crewai'].Task = type('Task', (), {})
-sys.modules['crewai'].LLM = type('LLM', (), {})
-sys.modules['crewai.tools'] = type(sys)('crewai.tools')
-sys.modules['crewai.tools'].tool = tool
-sys.modules['crewai.tools'].BaseTool = type('BaseTool', (), {})
+
+
+sys.modules["crewai"] = type(sys)("crewai")
+sys.modules["crewai"].Agent = type("Agent", (), {})
+sys.modules["crewai"].Crew = type("Crew", (), {})
+sys.modules["crewai"].Task = type("Task", (), {})
+sys.modules["crewai"].LLM = type("LLM", (), {})
+sys.modules["crewai.tools"] = type(sys)("crewai.tools")
+sys.modules["crewai.tools"].tool = tool
+sys.modules["crewai.tools"].BaseTool = type("BaseTool", (), {})
 
 # Mock models.smart_assumptions
-sys.modules['models'] = type(sys)('models')
-sys.modules['models.smart_assumptions'] = type(sys)('models.smart_assumptions')
-sys.modules['models.smart_assumptions'].SmartAssumptionEngine = type('SmartAssumptionEngine', (), {})
-sys.modules['models.smart_assumptions'].AssumptionResult = type('AssumptionResult', (), {})
-sys.modules['models.smart_assumptions'].FeatureContext = type('FeatureContext', (), {})
+sys.modules["models"] = type(sys)("models")
+sys.modules["models.smart_assumptions"] = type(sys)("models.smart_assumptions")
+sys.modules["models.smart_assumptions"].SmartAssumptionEngine = type(
+    "SmartAssumptionEngine", (), {}
+)
+sys.modules["models.smart_assumptions"].AssumptionResult = type("AssumptionResult", (), {})
+sys.modules["models.smart_assumptions"].FeatureContext = type("FeatureContext", (), {})
 
 # Mock models.validation
-sys.modules['models.validation'] = type(sys)('models.validation')
-sys.modules['models.validation'].ManifestValidationResult = type('ManifestValidationResult', (), {})
-sys.modules['models.validation'].SemanticAnalysisResult = type('SemanticAnalysisResult', (), {})
-sys.modules['models.validation'].BehaviorPredictionResult = type('BehaviorPredictionResult', (), {})
-sys.modules['models.validation'].AssetValidationResult = type('AssetValidationResult', (), {})
-sys.modules['models.validation'].ValidationReport = type('ValidationReport', (), {})
+sys.modules["models.validation"] = type(sys)("models.validation")
+sys.modules["models.validation"].ManifestValidationResult = type("ManifestValidationResult", (), {})
+sys.modules["models.validation"].SemanticAnalysisResult = type("SemanticAnalysisResult", (), {})
+sys.modules["models.validation"].BehaviorPredictionResult = type("BehaviorPredictionResult", (), {})
+sys.modules["models.validation"].AssetValidationResult = type("AssetValidationResult", (), {})
+sys.modules["models.validation"].ValidationReport = type("ValidationReport", (), {})
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
@@ -159,9 +169,9 @@ class TestMVPEndToEndConversion:
         - All Bedrock specifications are met
         - Conversion completes in <30 seconds
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Simple Block Conversion (Happy Path)")
-        print("="*70)
+        print("=" * 70)
 
         start_time = time.time()
 
@@ -175,12 +185,14 @@ class TestMVPEndToEndConversion:
         print(f"  Texture path: {analysis_result['texture_path']}")
 
         # Verify analysis results
-        assert analysis_result['success'], f"Analysis failed: {analysis_result.get('errors', [])}"
-        assert 'simple_copper:polished_copper' in analysis_result['registry_name'], \
+        assert analysis_result["success"], f"Analysis failed: {analysis_result.get('errors', [])}"
+        assert "simple_copper:polished_copper" in analysis_result["registry_name"], (
             f"Unexpected registry name: {analysis_result['registry_name']}"
-        assert analysis_result['texture_path'] is not None, "Texture path not found"
-        assert 'polished_copper.png' in analysis_result['texture_path'], \
+        )
+        assert analysis_result["texture_path"] is not None, "Texture path not found"
+        assert "polished_copper.png" in analysis_result["texture_path"], (
             f"Unexpected texture path: {analysis_result['texture_path']}"
+        )
 
         # Step 2: Build Bedrock add-on
         print("\n[Step 2/4] Building Bedrock add-on...")
@@ -188,22 +200,22 @@ class TestMVPEndToEndConversion:
 
         with tempfile.TemporaryDirectory() as build_dir:
             build_result = self.bedrock_builder.build_block_addon_mvp(
-                registry_name=analysis_result['registry_name'],
-                texture_path=analysis_result['texture_path'],
+                registry_name=analysis_result["registry_name"],
+                texture_path=analysis_result["texture_path"],
                 jar_path=simple_copper_block_jar,
-                output_dir=build_dir
+                output_dir=build_dir,
             )
 
             build_time = time.time() - build_start
             print(f"  ✓ Build completed in {build_time:.2f}s")
 
             # Verify build results
-            assert build_result['success'], f"Build failed: {build_result.get('errors', [])}"
-            assert 'behavior_pack_dir' in build_result, "Missing behavior_pack_dir in result"
-            assert 'resource_pack_dir' in build_result, "Missing resource_pack_dir in result"
+            assert build_result["success"], f"Build failed: {build_result.get('errors', [])}"
+            assert "behavior_pack_dir" in build_result, "Missing behavior_pack_dir in result"
+            assert "resource_pack_dir" in build_result, "Missing resource_pack_dir in result"
 
-            bp_path = Path(build_result['behavior_pack_dir'])
-            rp_path = Path(build_result['resource_pack_dir'])
+            bp_path = Path(build_result["behavior_pack_dir"])
+            rp_path = Path(build_result["resource_pack_dir"])
 
             # Verify directory structure
             assert bp_path.exists(), "Behavior pack directory doesn't exist"
@@ -228,16 +240,16 @@ class TestMVPEndToEndConversion:
             assert len(texture_files) > 0, "No texture files found in resource pack"
 
             # Verify manifest content
-            with open(bp_manifest, 'r') as f:
+            with open(bp_manifest, "r") as f:
                 bp_manifest_data = json.load(f)
-                assert 'format_version' in bp_manifest_data, "Missing format_version in BP manifest"
-                assert 'header' in bp_manifest_data, "Missing header in BP manifest"
-                assert 'uuid' in bp_manifest_data['header'], "Missing UUID in BP manifest"
+                assert "format_version" in bp_manifest_data, "Missing format_version in BP manifest"
+                assert "header" in bp_manifest_data, "Missing header in BP manifest"
+                assert "uuid" in bp_manifest_data["header"], "Missing UUID in BP manifest"
 
-            with open(rp_manifest, 'r') as f:
+            with open(rp_manifest, "r") as f:
                 rp_manifest_data = json.load(f)
-                assert 'format_version' in rp_manifest_data, "Missing format_version in RP manifest"
-                assert 'header' in rp_manifest_data, "Missing header in RP manifest"
+                assert "format_version" in rp_manifest_data, "Missing format_version in RP manifest"
+                assert "header" in rp_manifest_data, "Missing header in RP manifest"
 
             # Step 3: Package .mcaddon
             print("\n[Step 3/4] Packaging .mcaddon file...")
@@ -245,21 +257,21 @@ class TestMVPEndToEndConversion:
 
             mcaddon_path = self.temp_path / "simple_copper_polished_copper.mcaddon"
             package_result = self.packaging_agent.build_mcaddon_mvp(
-                temp_dir=build_dir,
-                output_path=str(mcaddon_path),
-                mod_name="simple_copper"
+                temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="simple_copper"
             )
 
             package_time = time.time() - package_start
             print(f"  ✓ Package completed in {package_time:.2f}s")
 
             # Verify package results
-            assert package_result['success'], f"Packaging failed: {package_result.get('error', 'Unknown error')}"
+            assert package_result["success"], (
+                f"Packaging failed: {package_result.get('error', 'Unknown error')}"
+            )
             assert mcaddon_path.exists(), f".mcaddon file not created at {mcaddon_path}"
 
             # Step 4: Validate .mcaddon structure
             print("\n[Step 4/4] Validating .mcaddon file...")
-            validation = package_result.get('validation', {})
+            validation = package_result.get("validation", {})
 
             print(f"  File size: {package_result['file_size']:,} bytes")
             print(f"  File count: {validation.get('file_count', 0)}")
@@ -268,45 +280,52 @@ class TestMVPEndToEndConversion:
             print(f"  Has resource pack: {validation.get('has_resource_pack', False)}")
             print(f"  Manifest count: {validation.get('manifest_count', 0)}")
 
-            assert validation.get('is_valid_zip', False), "Generated .mcaddon is not a valid ZIP file"
-            assert validation.get('has_behavior_pack', False), "Missing behavior_packs/ in .mcaddon"
-            assert validation.get('has_resource_pack', False), "Missing resource_packs/ in .mcaddon"
-            assert validation.get('manifest_count', 0) >= 2, "Expected at least 2 manifest files"
+            assert validation.get("is_valid_zip", False), (
+                "Generated .mcaddon is not a valid ZIP file"
+            )
+            assert validation.get("has_behavior_pack", False), "Missing behavior_packs/ in .mcaddon"
+            assert validation.get("has_resource_pack", False), "Missing resource_packs/ in .mcaddon"
+            assert validation.get("manifest_count", 0) >= 2, "Expected at least 2 manifest files"
 
             # Verify internal structure
-            with zipfile.ZipFile(mcaddon_path, 'r') as zf:
+            with zipfile.ZipFile(mcaddon_path, "r") as zf:
                 file_list = zf.namelist()
 
                 # Check for correct Bedrock structure
-                assert any('behavior_packs/' in f for f in file_list), \
+                assert any("behavior_packs/" in f for f in file_list), (
                     "Missing behavior_packs/ directory in .mcaddon"
-                assert any('resource_packs/' in f for f in file_list), \
+                )
+                assert any("resource_packs/" in f for f in file_list), (
                     "Missing resource_packs/ directory in .mcaddon"
+                )
 
                 # Check no legacy incorrect structure
-                has_legacy_bp = any(f.startswith('behavior_pack/') for f in file_list)
-                has_legacy_rp = any(f.startswith('resource_pack/') for f in file_list)
-                assert not (has_legacy_bp or has_legacy_rp), \
+                has_legacy_bp = any(f.startswith("behavior_pack/") for f in file_list)
+                has_legacy_rp = any(f.startswith("resource_pack/") for f in file_list)
+                assert not (has_legacy_bp or has_legacy_rp), (
                     "Found legacy incorrect folder structure (singular instead of plural)"
+                )
 
                 # Extract and verify block definition
-                block_files = [f for f in file_list if f.endswith('.json') and 'blocks' in f]
+                block_files = [f for f in file_list if f.endswith(".json") and "blocks" in f]
                 assert len(block_files) > 0, "No block definition JSON files found"
 
                 # Verify a block definition file
                 block_file = block_files[0]
                 with zf.open(block_file) as bf:
                     block_data = json.load(bf)
-                    assert 'format_version' in block_data, "Block JSON missing format_version"
-                    assert 'minecraft:block' in block_data, "Block JSON missing minecraft:block"
+                    assert "format_version" in block_data, "Block JSON missing format_version"
+                    assert "minecraft:block" in block_data, "Block JSON missing minecraft:block"
 
         total_time = time.time() - start_time
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ TEST PASSED: Simple Block Conversion")
         print(f"Total time: {total_time:.2f}s")
-        print(f"Analysis: {analysis_time:.2f}s, Build: {build_time:.2f}s, Package: {package_time:.2f}s")
-        print("="*70)
+        print(
+            f"Analysis: {analysis_time:.2f}s, Build: {build_time:.2f}s, Package: {package_time:.2f}s"
+        )
+        print("=" * 70)
 
         # Performance assertion
         assert total_time < 30.0, f"Conversion took {total_time:.2f}s, expected <30s"
@@ -325,9 +344,9 @@ class TestMVPEndToEndConversion:
         - Package still creates valid .mcaddon
         - Warning is properly documented
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Missing Texture Fallback")
-        print("="*70)
+        print("=" * 70)
 
         # Create JAR without texture
         generator = JarGenerator(self.temp_dir)
@@ -337,34 +356,37 @@ class TestMVPEndToEndConversion:
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(jar_path)
 
         print(f"  Analysis result: {analysis_result}")
-        assert analysis_result['success'], "Analysis should succeed even without texture"
-        assert 'warnings' in analysis_result or 'texture_path' not in analysis_result or not analysis_result['texture_path'], \
-            "Expected warning about missing texture"
+        assert analysis_result["success"], "Analysis should succeed even without texture"
+        assert (
+            "warnings" in analysis_result
+            or "texture_path" not in analysis_result
+            or not analysis_result["texture_path"]
+        ), "Expected warning about missing texture"
 
         # Build should still work with fallback
         with tempfile.TemporaryDirectory() as build_dir:
             # Build will use default texture path or None
-            texture_path = analysis_result.get('texture_path')
+            texture_path = analysis_result.get("texture_path")
 
             build_result = self.bedrock_builder.build_block_addon_mvp(
-                registry_name=analysis_result['registry_name'],
+                registry_name=analysis_result["registry_name"],
                 texture_path=texture_path,
                 jar_path=jar_path,
-                output_dir=build_dir
+                output_dir=build_dir,
             )
 
             # Should succeed with fallback or handle gracefully
-            assert build_result['success'], f"Build failed with missing texture: {build_result.get('errors', [])}"
+            assert build_result["success"], (
+                f"Build failed with missing texture: {build_result.get('errors', [])}"
+            )
 
             # Package should still work
             mcaddon_path = self.temp_path / "no_texture_mod.mcaddon"
             package_result = self.packaging_agent.build_mcaddon_mvp(
-                temp_dir=build_dir,
-                output_path=str(mcaddon_path),
-                mod_name="no_texture_mod"
+                temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="no_texture_mod"
             )
 
-            assert package_result['success'], "Packaging should succeed even without texture"
+            assert package_result["success"], "Packaging should succeed even without texture"
 
         print("✅ TEST PASSED: Missing Texture Fallback")
 
@@ -381,9 +403,9 @@ class TestMVPEndToEndConversion:
         - No crashes or exceptions
         - Error message is descriptive
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Malformed JAR Error Handling")
-        print("="*70)
+        print("=" * 70)
 
         # Create a file that's not a valid JAR
         fake_jar = self.temp_path / "fake.jar"
@@ -393,20 +415,22 @@ class TestMVPEndToEndConversion:
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(fake_jar))
 
         print(f"  Analysis result: {analysis_result}")
-        assert not analysis_result['success'], "Analysis should fail for malformed JAR"
-        assert len(analysis_result.get('errors', [])) > 0, "Expected error message"
+        assert not analysis_result["success"], "Analysis should fail for malformed JAR"
+        assert len(analysis_result.get("errors", [])) > 0, "Expected error message"
 
         # Test empty JAR
         empty_jar = self.temp_path / "empty.jar"
-        with zipfile.ZipFile(empty_jar, 'w') as zf:
+        with zipfile.ZipFile(empty_jar, "w") as zf:
             pass  # Create empty JAR
 
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
         print(f"  Empty JAR result: {analysis_result}")
 
         # Empty JAR should be handled gracefully
-        assert analysis_result['success'], "Empty JAR should be handled gracefully"
-        assert 'unknown' in analysis_result['registry_name'], "Empty JAR should use default registry name"
+        assert analysis_result["success"], "Empty JAR should be handled gracefully"
+        assert "unknown" in analysis_result["registry_name"], (
+            "Empty JAR should use default registry name"
+        )
 
         print("✅ TEST PASSED: Malformed JAR Error Handling")
 
@@ -428,9 +452,9 @@ class TestMVPEndToEndConversion:
         - Each has appropriate properties
         - .mcaddon contains all blocks
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Multiple Block Types")
-        print("="*70)
+        print("=" * 70)
 
         # Create test suite with different block types
         mod_suite = create_test_mod_suite(self.temp_dir)
@@ -444,44 +468,48 @@ class TestMVPEndToEndConversion:
 
             # Analyze
             analysis_result = self.java_analyzer.analyze_jar_for_mvp(jar_path)
-            assert analysis_result['success'], f"Analysis failed for {mod_name}"
+            assert analysis_result["success"], f"Analysis failed for {mod_name}"
 
             # Build
             with tempfile.TemporaryDirectory() as build_dir:
                 build_result = self.bedrock_builder.build_block_addon_mvp(
-                    registry_name=analysis_result['registry_name'],
-                    texture_path=analysis_result['texture_path'],
+                    registry_name=analysis_result["registry_name"],
+                    texture_path=analysis_result["texture_path"],
                     jar_path=jar_path,
-                    output_dir=build_dir
+                    output_dir=build_dir,
                 )
 
-                assert build_result['success'], f"Build failed for {mod_name}"
+                assert build_result["success"], f"Build failed for {mod_name}"
 
                 # Package
                 mcaddon_path = self.temp_path / f"{mod_name}.mcaddon"
                 package_result = self.packaging_agent.build_mcaddon_mvp(
-                    temp_dir=build_dir,
-                    output_path=str(mcaddon_path),
-                    mod_name=mod_name
+                    temp_dir=build_dir, output_path=str(mcaddon_path), mod_name=mod_name
                 )
 
-                assert package_result['success'], f"Packaging failed for {mod_name}"
+                assert package_result["success"], f"Packaging failed for {mod_name}"
 
                 conversion_time = time.time() - start_time
 
-                results.append({
-                    'mod_name': mod_name,
-                    'conversion_time': conversion_time,
-                    'file_size': package_result['file_size']
-                })
+                results.append(
+                    {
+                        "mod_name": mod_name,
+                        "conversion_time": conversion_time,
+                        "file_size": package_result["file_size"],
+                    }
+                )
 
-                print(f"    ✓ Converted in {conversion_time:.2f}s ({package_result['file_size']:,} bytes)")
+                print(
+                    f"    ✓ Converted in {conversion_time:.2f}s ({package_result['file_size']:,} bytes)"
+                )
 
         # Verify all mods converted
-        assert len(results) == len(mod_suite), f"Expected {len(mod_suite)} conversions, got {len(results)}"
+        assert len(results) == len(mod_suite), (
+            f"Expected {len(mod_suite)} conversions, got {len(results)}"
+        )
 
         # Verify performance
-        avg_time = sum(r['conversion_time'] for r in results) / len(results)
+        avg_time = sum(r["conversion_time"] for r in results) / len(results)
         print(f"\n  Average conversion time: {avg_time:.2f}s")
 
         assert avg_time < 30.0, f"Average conversion time {avg_time:.2f}s exceeds 30s threshold"
@@ -517,41 +545,41 @@ class TestMVPEndToEndConversion:
 
         Document any deviations from expected behavior.
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Manual Bedrock Testing Documentation")
-        print("="*70)
+        print("=" * 70)
 
         # Run conversion
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
-        assert analysis_result['success']
+        assert analysis_result["success"]
 
         with tempfile.TemporaryDirectory() as build_dir:
             build_result = self.bedrock_builder.build_block_addon_mvp(
-                registry_name=analysis_result['registry_name'],
-                texture_path=analysis_result['texture_path'],
+                registry_name=analysis_result["registry_name"],
+                texture_path=analysis_result["texture_path"],
                 jar_path=simple_copper_block_jar,
-                output_dir=build_dir
+                output_dir=build_dir,
             )
 
-            assert build_result['success']
+            assert build_result["success"]
 
             mcaddon_path = self.temp_path / "simple_copper_polished_copper.mcaddon"
             package_result = self.packaging_agent.build_mcaddon_mvp(
-                temp_dir=build_dir,
-                output_path=str(mcaddon_path),
-                mod_name="simple_copper"
+                temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="simple_copper"
             )
 
-            assert package_result['success']
+            assert package_result["success"]
 
-            print("\n" + "="*70)
+            print("\n" + "=" * 70)
             print("MANUAL TESTING INSTRUCTIONS")
-            print("="*70)
+            print("=" * 70)
             print(f"\n1. .mcaddon file generated at:")
             print(f"   {mcaddon_path}")
             print(f"\n2. File size: {package_result['file_size']:,} bytes")
             print(f"\n3. Copy this file to a Bedrock Edition device:")
-            print(f"   - Windows 10: %localappdata%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\development_behavior_packs")
+            print(
+                f"   - Windows 10: %localappdata%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\development_behavior_packs"
+            )
             print(f"   - Or import through Minecraft: Settings → Behavior Packs → Import")
             print(f"\n4. Expected block properties:")
             print(f"   - Registry name: {analysis_result['registry_name']}")
@@ -565,11 +593,11 @@ class TestMVPEndToEndConversion:
             print(f"   ✓ Can be broken with pickaxe")
             print(f"\n6. Document any issues in:")
             print(f"   tests/fixtures/test_validation_report.md")
-            print("="*70)
+            print("=" * 70)
 
             # Also extract and display the block definition for reference
-            with zipfile.ZipFile(mcaddon_path, 'r') as zf:
-                block_files = [f for f in zf.namelist() if 'blocks/' in f and f.endswith('.json')]
+            with zipfile.ZipFile(mcaddon_path, "r") as zf:
+                block_files = [f for f in zf.namelist() if "blocks/" in f and f.endswith(".json")]
 
                 if block_files:
                     print("\nGENERATED BLOCK DEFINITION:")
@@ -597,9 +625,9 @@ class TestMVPEndToEndConversion:
 
         This ensures the conversion is fast enough for practical use.
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Performance Benchmarks")
-        print("="*70)
+        print("=" * 70)
 
         iterations = 3
         times = []
@@ -609,30 +637,28 @@ class TestMVPEndToEndConversion:
 
             # Full pipeline
             analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
-            assert analysis_result['success']
+            assert analysis_result["success"]
 
             with tempfile.TemporaryDirectory() as build_dir:
                 build_result = self.bedrock_builder.build_block_addon_mvp(
-                    registry_name=analysis_result['registry_name'],
-                    texture_path=analysis_result['texture_path'],
+                    registry_name=analysis_result["registry_name"],
+                    texture_path=analysis_result["texture_path"],
                     jar_path=simple_copper_block_jar,
-                    output_dir=build_dir
+                    output_dir=build_dir,
                 )
 
-                assert build_result['success']
+                assert build_result["success"]
 
                 mcaddon_path = self.temp_path / f"bench_{i}.mcaddon"
                 package_result = self.packaging_agent.build_mcaddon_mvp(
-                    temp_dir=build_dir,
-                    output_path=str(mcaddon_path),
-                    mod_name="benchmark"
+                    temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="benchmark"
                 )
 
-                assert package_result['success']
+                assert package_result["success"]
 
             total_time = time.time() - start_time
             times.append(total_time)
-            print(f"  Iteration {i+1}: {total_time:.2f}s")
+            print(f"  Iteration {i + 1}: {total_time:.2f}s")
 
         avg_time = sum(times) / len(times)
         min_time = min(times)
@@ -666,57 +692,55 @@ class TestMVPEndToEndConversion:
 
         Coverage target: >80% for conversion pipeline
         """
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Conversion Pipeline Coverage")
-        print("="*70)
+        print("=" * 70)
 
         # Track which components are exercised
         covered_components = {
-            'JavaAnalyzerAgent.analyze_jar_for_mvp': False,
-            'BedrockBuilderAgent.build_block_addon_mvp': False,
-            'PackagingAgent.build_mcaddon_mvp': False,
-            'error_handling': False,
-            'edge_cases': False
+            "JavaAnalyzerAgent.analyze_jar_for_mvp": False,
+            "BedrockBuilderAgent.build_block_addon_mvp": False,
+            "PackagingAgent.build_mcaddon_mvp": False,
+            "error_handling": False,
+            "edge_cases": False,
         }
 
         # Exercise main pipeline
         try:
             analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
-            covered_components['JavaAnalyzerAgent.analyze_jar_for_mvp'] = True
+            covered_components["JavaAnalyzerAgent.analyze_jar_for_mvp"] = True
 
             with tempfile.TemporaryDirectory() as build_dir:
                 build_result = self.bedrock_builder.build_block_addon_mvp(
-                    registry_name=analysis_result['registry_name'],
-                    texture_path=analysis_result['texture_path'],
+                    registry_name=analysis_result["registry_name"],
+                    texture_path=analysis_result["texture_path"],
                     jar_path=simple_copper_block_jar,
-                    output_dir=build_dir
+                    output_dir=build_dir,
                 )
-                covered_components['BedrockBuilderAgent.build_block_addon_mvp'] = True
+                covered_components["BedrockBuilderAgent.build_block_addon_mvp"] = True
 
                 mcaddon_path = self.temp_path / "coverage_test.mcaddon"
                 package_result = self.packaging_agent.build_mcaddon_mvp(
-                    temp_dir=build_dir,
-                    output_path=str(mcaddon_path),
-                    mod_name="coverage"
+                    temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="coverage"
                 )
-                covered_components['PackagingAgent.build_mcaddon_mvp'] = True
+                covered_components["PackagingAgent.build_mcaddon_mvp"] = True
 
         except Exception as e:
-            covered_components['error_handling'] = True
+            covered_components["error_handling"] = True
             print(f"  Error handling exercised: {e}")
 
         # Exercise error handling
         try:
             self.java_analyzer.analyze_jar_for_mvp("/nonexistent/file.jar")
         except:
-            covered_components['error_handling'] = True
+            covered_components["error_handling"] = True
 
         # Exercise edge cases (empty JAR)
         empty_jar = self.temp_path / "empty.jar"
-        with zipfile.ZipFile(empty_jar, 'w') as zf:
+        with zipfile.ZipFile(empty_jar, "w") as zf:
             pass
         self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
-        covered_components['edge_cases'] = True
+        covered_components["edge_cases"] = True
 
         # Calculate coverage
         covered_count = sum(1 for v in covered_components.values() if v)
@@ -758,30 +782,30 @@ class TestMVPEdgeCases:
         """Test handling of nonexistent file."""
         result = self.java_analyzer.analyze_jar_for_mvp("/nonexistent/file.jar")
 
-        assert not result['success']
-        assert len(result.get('errors', [])) > 0
+        assert not result["success"]
+        assert len(result.get("errors", [])) > 0
 
     def test_corrupted_zip_file(self, setup):
         """Test handling of corrupted ZIP file."""
         corrupted = self.temp_path / "corrupted.jar"
-        corrupted.write_bytes(b'\x00\x00\x00\x00invalid zip file')
+        corrupted.write_bytes(b"\x00\x00\x00\x00invalid zip file")
 
         result = self.java_analyzer.analyze_jar_for_mvp(str(corrupted))
 
-        assert not result['success']
+        assert not result["success"]
 
     def test_jar_with_no_metadata(self, setup):
         """Test JAR with no mod metadata files."""
         # Create JAR with only assets
         jar_path = self.temp_path / "no_metadata.jar"
-        with zipfile.ZipFile(jar_path, 'w') as zf:
-            zf.writestr('assets/test/textures/block/test.png', b'fake_png_data')
+        with zipfile.ZipFile(jar_path, "w") as zf:
+            zf.writestr("assets/test/textures/block/test.png", b"fake_png_data")
 
         result = self.java_analyzer.analyze_jar_for_mvp(str(jar_path))
 
         # Should use default registry name
-        assert result['success']
-        assert 'unknown' in result['registry_name']
+        assert result["success"]
+        assert "unknown" in result["registry_name"]
 
     def test_special_characters_in_registry_name(self, setup):
         """Test handling of special characters in registry name."""
@@ -792,10 +816,10 @@ class TestMVPEdgeCases:
 
         result = self.java_analyzer.analyze_jar_for_mvp(jar_path)
 
-        assert result['success']
+        assert result["success"]
         # Registry name should be sanitized
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run tests with verbose output
-    pytest.main([__file__, '-v', '-s', '--tb=short'])
+    pytest.main([__file__, "-v", "-s", "--tb=short"])

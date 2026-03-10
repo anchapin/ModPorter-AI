@@ -5,8 +5,8 @@ from unittest.mock import patch
 # Adjust the import path based on your project structure
 from validation import ValidationFramework, MAGIC_AVAILABLE
 
-class TestValidationFramework(unittest.TestCase):
 
+class TestValidationFramework(unittest.TestCase):
     def setUp(self):
         self.framework = ValidationFramework()
 
@@ -88,9 +88,7 @@ class TestValidationFramework(unittest.TestCase):
         filename = "valid_mod.jar"
 
         if MAGIC_AVAILABLE:
-            with patch(
-                "magic.from_buffer", return_value="application/java-archive"
-            ) as mock_magic:
+            with patch("magic.from_buffer", return_value="application/java-archive") as mock_magic:
                 result = self.framework.validate_upload(mock_file, filename)
                 mock_magic.assert_called_once()
                 self.assertTrue(result.is_valid)

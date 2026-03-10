@@ -19,6 +19,7 @@ class KnowledgeBaseAgent:
         """
         return [SearchTool()]
 
+
 # Example usage (optional, for testing):
 # if __name__ == "__main__":
 #     agent = KnowledgeBaseAgent()

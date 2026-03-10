@@ -13,7 +13,7 @@ async def sample_conversion_job(db_session: AsyncSession):
         file_id=str(uuid.uuid4()),
         original_filename="test_mod.jar",
         target_version="1.20.0",
-        options={}
+        options={},
     )
     yield job
     # Cleanup handled by fixture rollback
@@ -30,7 +30,7 @@ class TestBehaviorFilesCRUD:
             conversion_id=str(sample_conversion_job.id),
             file_path="behaviors/entities/test_entity.json",
             file_type="entity_behavior",
-            content='{"minecraft:entity": {"description": {"identifier": "test:entity"}}}'
+            content='{"minecraft:entity": {"description": {"identifier": "test:entity"}}}',
         )
 
         assert behavior_file.id is not None
@@ -49,7 +49,7 @@ class TestBehaviorFilesCRUD:
             conversion_id=str(sample_conversion_job.id),
             file_path="behaviors/blocks/test_block.json",
             file_type="block_behavior",
-            content='{"minecraft:block": {"description": {"identifier": "test:block"}}}'
+            content='{"minecraft:block": {"description": {"identifier": "test:block"}}}',
         )
 
         # Retrieve it
@@ -61,33 +61,33 @@ class TestBehaviorFilesCRUD:
         assert retrieved_file.file_type == "block_behavior"
         assert "test:block" in retrieved_file.content
 
-    async def test_get_behavior_files_by_conversion(self, db_session: AsyncSession, sample_conversion_job):
+    async def test_get_behavior_files_by_conversion(
+        self, db_session: AsyncSession, sample_conversion_job
+    ):
         """Test retrieving all behavior files for a conversion."""
         # Create multiple behavior files
         files_data = [
             {
                 "file_path": "behaviors/entities/zombie.json",
                 "file_type": "entity_behavior",
-                "content": '{"minecraft:entity": {"description": {"identifier": "test:zombie"}}}'
+                "content": '{"minecraft:entity": {"description": {"identifier": "test:zombie"}}}',
             },
             {
                 "file_path": "behaviors/blocks/stone.json",
                 "file_type": "block_behavior",
-                "content": '{"minecraft:block": {"description": {"identifier": "test:stone"}}}'
+                "content": '{"minecraft:block": {"description": {"identifier": "test:stone"}}}',
             },
             {
                 "file_path": "scripts/main.js",
                 "file_type": "script",
-                "content": 'console.log("Hello World");'
-            }
+                "content": 'console.log("Hello World");',
+            },
         ]
 
         created_files = []
         for file_data in files_data:
             behavior_file = await crud.create_behavior_file(
-                db_session,
-                conversion_id=str(sample_conversion_job.id),
-                **file_data
+                db_session, conversion_id=str(sample_conversion_job.id), **file_data
             )
             created_files.append(behavior_file)
 
@@ -108,7 +108,9 @@ class TestBehaviorFilesCRUD:
         assert file_types["behaviors/blocks/stone.json"] == "block_behavior"
         assert file_types["scripts/main.js"] == "script"
 
-    async def test_update_behavior_file_content(self, db_session: AsyncSession, sample_conversion_job):
+    async def test_update_behavior_file_content(
+        self, db_session: AsyncSession, sample_conversion_job
+    ):
         """Test updating behavior file content."""
         # Create a behavior file
         behavior_file = await crud.create_behavior_file(
@@ -116,13 +118,15 @@ class TestBehaviorFilesCRUD:
             conversion_id=str(sample_conversion_job.id),
             file_path="recipes/test_recipe.json",
             file_type="recipe",
-            content='{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_old"}}}'
+            content='{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_old"}}}',
         )
 
         original_updated_at = behavior_file.updated_at
 
         # Update the content
-        new_content = '{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_new"}}}'
+        new_content = (
+            '{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_new"}}}'
+        )
         updated_file = await crud.update_behavior_file_content(
             db_session, str(behavior_file.id), new_content
         )
@@ -132,7 +136,9 @@ class TestBehaviorFilesCRUD:
         assert "test:recipe_new" in updated_file.content
         assert updated_file.updated_at > original_updated_at
 
-    async def test_get_behavior_files_by_type(self, db_session: AsyncSession, sample_conversion_job):
+    async def test_get_behavior_files_by_type(
+        self, db_session: AsyncSession, sample_conversion_job
+    ):
         """Test retrieving behavior files by type."""
         # Create files of different types
         entity_files = [
@@ -156,7 +162,7 @@ class TestBehaviorFilesCRUD:
                 conversion_id=str(sample_conversion_job.id),
                 file_path=file_path,
                 file_type=file_type,
-                content=f'{{"identifier": "test:{identifier}"}}'
+                content=f'{{"identifier": "test:{identifier}"}}',
             )
 
         # Test getting entity behaviors
@@ -188,7 +194,7 @@ class TestBehaviorFilesCRUD:
             conversion_id=str(sample_conversion_job.id),
             file_path="temp/test_file.json",
             file_type="script",
-            content='{"temp": "file"}'
+            content='{"temp": "file"}',
         )
 
         file_id = str(behavior_file.id)
@@ -220,7 +226,7 @@ class TestBehaviorFilesCRUD:
                 conversion_id=invalid_id,
                 file_path="invalid/test.json",
                 file_type="test",
-                content="test"
+                content="test",
             )
 
     async def test_invalid_file_id_format(self, db_session: AsyncSession):

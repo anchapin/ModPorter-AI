@@ -142,9 +142,7 @@ class TestV1ConversionIntegration:
         assert "detail" in data
         assert "invalid file type" in data["detail"]
 
-    def test_v1_convert_missing_file_id(
-        self, client
-    ):  # Renamed from test_v1_convert_no_file
+    def test_v1_convert_missing_file_id(self, client):  # Renamed from test_v1_convert_no_file
         """Test v1 conversion endpoint with missing file_id in JSON payload."""
         conversion_payload = {
             # "file_id": "some-id", # Missing
@@ -154,16 +152,12 @@ class TestV1ConversionIntegration:
         response = client.post("/api/v1/convert", json=conversion_payload)
         assert response.status_code == 422  # Expect 422 due to Pydantic validation
 
-    def test_v1_upload_large_file(
-        self, client
-    ):  # Renamed from test_v1_convert_large_file
+    def test_v1_upload_large_file(self, client):  # Renamed from test_v1_convert_large_file
         """Test v1 upload endpoint with oversized file."""
         # Create a large file that has proper JAR header so it passes MIME type check
         # Use 501 MB to exceed the 500 MB limit
         jar_header = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
-        large_content = jar_header + b"X" * (
-            501 * 1024 * 1024 - len(jar_header)
-        )  # 501 MB
+        large_content = jar_header + b"X" * (501 * 1024 * 1024 - len(jar_header))  # 501 MB
 
         response = client.post(
             "/api/v1/upload",  # Changed to /upload

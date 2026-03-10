@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+
 def test_security_headers_presence(client: TestClient):
     """
     Test that security headers are present in the response.

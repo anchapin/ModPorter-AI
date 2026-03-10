@@ -21,6 +21,7 @@ try:
     from agents.logic_translator import LogicTranslatorAgent
     from engines.javascript_validator import JavaScriptValidator, Severity
     from engines.translation_warnings import TranslationWarningDetector, ImpactLevel
+
     MODULES_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Could not import required modules: {e}")
@@ -28,6 +29,7 @@ except ImportError as e:
 
 
 # ========== Test Fixtures ==========
+
 
 @pytest.fixture
 def sample_java_block_class():
@@ -64,6 +66,7 @@ public class CopperBlock extends Block {
 }
 """
 
+
 @pytest.fixture
 def sample_bedrock_javascript():
     """Sample Bedrock JavaScript for testing"""
@@ -87,6 +90,7 @@ world.beforeEvents.tick.subscribe((event) => {
     // Block tick logic would go here
 });
 """
+
 
 @pytest.fixture
 def sample_machinery_java():
@@ -121,6 +125,7 @@ public class OreProcessor extends BlockEntity {
 
 # ========== JavaScript Validator Tests ==========
 
+
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
 class TestJavaScriptValidator:
     """Test JavaScript validation functionality"""
@@ -132,8 +137,8 @@ class TestJavaScriptValidator:
     def test_validator_initialization(self, validator):
         """Test validator initializes correctly"""
         assert validator is not None
-        assert hasattr(validator, 'validate')
-        assert hasattr(validator, '_load_bedrock_apis')
+        assert hasattr(validator, "validate")
+        assert hasattr(validator, "_load_bedrock_apis")
 
     def test_valid_javascript(self, validator):
         """Test validation of valid JavaScript"""
@@ -163,7 +168,7 @@ world.afterEvents.blockPlace.subscribe((event) => {
         assert result.is_valid  # Based on current js validator
         assert result.score < 0.8
         assert len(result.issues) > 0
-        assert any('brace' in err.message.lower() for err in result.issues)
+        assert any("brace" in err.message.lower() for err in result.issues)
 
     def test_api_warnings(self, validator):
         """Test detection of API usage warnings"""
@@ -180,7 +185,7 @@ world.afterEvents.playerJoin.subscribe((event) => {
         result = validator.validate(js_with_unsupported_api)
 
         assert len(result.api_warnings) > 0
-        assert any('getHealth' in warn.message for warn in result.api_warnings)
+        assert any("getHealth" in warn.message for warn in result.api_warnings)
 
     def test_security_warnings(self, validator):
         """Test detection of security issues"""
@@ -194,7 +199,7 @@ world.afterEvents.chatSend.subscribe((event) => {
         result = validator.validate(js_with_eval)
 
         assert len(result.security_warnings) > 0
-        assert any('eval' in warn.message.lower() for warn in result.security_warnings)
+        assert any("eval" in warn.message.lower() for warn in result.security_warnings)
 
     def test_performance_warnings(self, validator):
         """Test detection of performance issues"""
@@ -210,8 +215,10 @@ world.beforeEvents.tick.subscribe((event) => {
 
         result = validator.validate(js_with_heavy_tick)
 
-        assert any('tick' in warn.message.lower() and 'loop' in warn.message.lower()
-                   for warn in result.issues)
+        assert any(
+            "tick" in warn.message.lower() and "loop" in warn.message.lower()
+            for warn in result.issues
+        )
 
     def test_score_calculation(self, validator):
         """Test score calculation"""
@@ -245,14 +252,15 @@ world.afterEvents.blockPlace.subscribe((event) => {
         result = validator.validate(js_with_issues)
 
         stats = result.statistics
-        assert 'total_issues' in stats
-        assert 'error_count' in stats
-        assert 'warning_count' in stats
-        assert 'by_category' in stats
-        assert stats['total_issues'] > 0
+        assert "total_issues" in stats
+        assert "error_count" in stats
+        assert "warning_count" in stats
+        assert "by_category" in stats
+        assert stats["total_issues"] > 0
 
 
 # ========== Translation Warning Detector Tests ==========
+
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
 class TestTranslationWarningDetector:
@@ -265,7 +273,7 @@ class TestTranslationWarningDetector:
     def test_detector_initialization(self, detector):
         """Test detector initializes correctly"""
         assert detector is not None
-        assert hasattr(detector, 'analyze_java_code')
+        assert hasattr(detector, "analyze_java_code")
 
     def test_custom_dimension_warning(self, detector, sample_java_block_class):
         """Test detection of custom dimension features"""
@@ -277,9 +285,12 @@ public class CustomDimension extends Dimension {
 
         report = detector.analyze_java_code(java_with_dimension)
 
-        assert any('dimension' in w.java_feature.lower() for w in report.warnings)
-        assert any(w.impact == ImpactLevel.CRITICAL for w in report.warnings
-                   if 'dimension' in w.java_feature.lower())
+        assert any("dimension" in w.java_feature.lower() for w in report.warnings)
+        assert any(
+            w.impact == ImpactLevel.CRITICAL
+            for w in report.warnings
+            if "dimension" in w.java_feature.lower()
+        )
 
     def test_custom_gui_warning(self, detector, sample_java_block_class):
         """Test detection of custom GUI features"""
@@ -297,15 +308,16 @@ public class CustomScreen extends Screen {
 
         report = detector.analyze_java_code(java_with_gui)
 
-        assert any('gui' in w.java_feature.lower() for w in report.warnings)
+        assert any("gui" in w.java_feature.lower() for w in report.warnings)
 
     def test_complex_machinery_warning(self, detector, sample_machinery_java):
         """Test detection of complex machinery features"""
         report = detector.analyze_java_code(sample_machinery_java)
 
-        assert any('machinery' in w.java_feature.lower()
-                   or 'tile entity' in w.java_feature.lower()
-                   for w in report.warnings)
+        assert any(
+            "machinery" in w.java_feature.lower() or "tile entity" in w.java_feature.lower()
+            for w in report.warnings
+        )
 
     def test_reflection_warning(self, detector):
         """Test detection of reflection usage"""
@@ -321,7 +333,10 @@ public class Example {
 
         report = detector.analyze_java_code(java_with_reflection)
 
-        assert any('reflection' in w.java_feature.lower() or 'field' in w.java_feature.lower() for w in report.warnings)
+        assert any(
+            "reflection" in w.java_feature.lower() or "field" in w.java_feature.lower()
+            for w in report.warnings
+        )
 
     def test_inheritance_warning(self, detector):
         """Test detection of class inheritance"""
@@ -335,19 +350,19 @@ public class CustomBlock extends Block {
 
         report = detector.analyze_java_code(java_with_inheritance)
 
-        assert any('inheritance' in w.java_feature.lower() for w in report.warnings)
+        assert any("inheritance" in w.java_feature.lower() for w in report.warnings)
 
     def test_warning_report_structure(self, detector, sample_java_block_class):
         """Test warning report structure"""
         report = detector.analyze_java_code(sample_java_block_class)
 
-        assert hasattr(report, 'warnings')
-        assert hasattr(report, 'critical_count')
-        assert hasattr(report, 'high_count')
-        assert hasattr(report, 'medium_count')
-        assert hasattr(report, 'low_count')
-        assert hasattr(report, 'overall_assessment')
-        assert hasattr(report, 'recommendations')
+        assert hasattr(report, "warnings")
+        assert hasattr(report, "critical_count")
+        assert hasattr(report, "high_count")
+        assert hasattr(report, "medium_count")
+        assert hasattr(report, "low_count")
+        assert hasattr(report, "overall_assessment")
+        assert hasattr(report, "recommendations")
 
     def test_warning_deduplication(self, detector):
         """Test that duplicate warnings are removed"""
@@ -365,8 +380,7 @@ public class Test {
 
         report = detector.analyze_java_code(java_with_duplicate_patterns)
 
-        dimension_warnings = [w for w in report.warnings
-                            if 'dimension' in w.java_feature.lower()]
+        dimension_warnings = [w for w in report.warnings if "dimension" in w.java_feature.lower()]
         assert len(dimension_warnings) <= 2  # Should not duplicate
 
     def test_format_warning_for_user(self, detector, sample_java_block_class):
@@ -376,12 +390,13 @@ public class Test {
         if report.warnings:
             formatted = detector.format_warning_for_user(report.warnings[0])
 
-            assert 'What this means:' in formatted
-            assert 'Technical Details:' in formatted
-            assert 'Possible Workarounds:' in formatted
+            assert "What this means:" in formatted
+            assert "Technical Details:" in formatted
+            assert "Possible Workarounds:" in formatted
 
 
 # ========== Integration Tests ==========
+
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
 class TestLogicTranslationIntegration:
@@ -396,66 +411,58 @@ class TestLogicTranslationIntegration:
         tools = agent.get_tools()
         tool_names = [t.name for t in tools]
 
-        assert 'validate_javascript_comprehensive_tool' in tool_names
+        assert "validate_javascript_comprehensive_tool" in tool_names
 
     def test_analyze_warnings_tool_exists(self, agent):
         """Test that warning analysis tool is available"""
         tools = agent.get_tools()
         tool_names = [t.name for t in tools]
 
-        assert 'analyze_translation_warnings_tool' in tool_names
+        assert "analyze_translation_warnings_tool" in tool_names
 
     def test_generate_report_tool_exists(self, agent):
         """Test that report generation tool is available"""
         tools = agent.get_tools()
         tool_names = [t.name for t in tools]
 
-        assert 'generate_user_facing_report_tool' in tool_names
+        assert "generate_user_facing_report_tool" in tool_names
 
     def test_validate_javascript_comprehensive(self, agent, sample_bedrock_javascript):
         """Test comprehensive JavaScript validation tool"""
-        input_data = json.dumps({
-            "javascript_code": sample_bedrock_javascript,
-            "context": {"feature_type": "block"}
-        })
+        input_data = json.dumps(
+            {"javascript_code": sample_bedrock_javascript, "context": {"feature_type": "block"}}
+        )
 
-        if hasattr(agent.validate_javascript_comprehensive_tool, 'func'):
+        if hasattr(agent.validate_javascript_comprehensive_tool, "func"):
             result = json.loads(agent.validate_javascript_comprehensive_tool.func(input_data))
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success')
-        assert 'validation_result' in result
-        assert 'issues' in result
-        assert 'breakdown' in result
+        assert result.get("success")
+        assert "validation_result" in result
+        assert "issues" in result
+        assert "breakdown" in result
 
     def test_analyze_translation_warnings(self, agent, sample_java_block_class):
         """Test translation warning analysis tool"""
-        input_data = json.dumps({
-            "java_code": sample_java_block_class,
-            "feature_type": "block"
-        })
+        input_data = json.dumps({"java_code": sample_java_block_class, "feature_type": "block"})
 
-        if hasattr(agent.analyze_translation_warnings_tool, 'func'):
+        if hasattr(agent.analyze_translation_warnings_tool, "func"):
             result = json.loads(agent.analyze_translation_warnings_tool.func(input_data))
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success')
-        assert 'warning_report' in result
-        assert 'warnings' in result['warning_report']
-        assert 'overall_assessment' in result['warning_report']
+        assert result.get("success")
+        assert "warning_report" in result
+        assert "warnings" in result["warning_report"]
+        assert "overall_assessment" in result["warning_report"]
 
     def test_generate_user_facing_report(self, agent):
         """Test user-facing report generation tool"""
         # Create mock data
         mock_validation = {
             "score": 0.85,
-            "statistics": {
-                "total_issues": 2,
-                "error_count": 0,
-                "warning_count": 2
-            }
+            "statistics": {"total_issues": 2, "error_count": 0, "warning_count": 2},
         }
 
         mock_warnings = {
@@ -463,41 +470,39 @@ class TestLogicTranslationIntegration:
             "high_count": 1,
             "medium_count": 1,
             "low_count": 0,
-            "overall_assessment": "Some functionality lost or degraded."
+            "overall_assessment": "Some functionality lost or degraded.",
         }
 
-        input_data = json.dumps({
-            "validation_result": mock_validation,
-            "warning_report": mock_warnings,
-            "translation_metadata": {
-                "original_class": "CopperBlock",
-                "translated_lines": 45
+        input_data = json.dumps(
+            {
+                "validation_result": mock_validation,
+                "warning_report": mock_warnings,
+                "translation_metadata": {"original_class": "CopperBlock", "translated_lines": 45},
             }
-        })
+        )
 
-        if hasattr(agent.generate_user_facing_report_tool, 'func'):
+        if hasattr(agent.generate_user_facing_report_tool, "func"):
             result = json.loads(agent.generate_user_facing_report_tool.func(input_data))
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
 
-        assert result.get('success')
-        assert 'user_report' in result
-        assert 'sections' in result['user_report']
+        assert result.get("success")
+        assert "user_report" in result
+        assert "sections" in result["user_report"]
 
-    def test_comprehensive_validation_method(self, agent, sample_java_block_class,
-                                        sample_bedrock_javascript):
+    def test_comprehensive_validation_method(
+        self, agent, sample_java_block_class, sample_bedrock_javascript
+    ):
         """Test the comprehensive validation method"""
         result = agent.validate_translation_with_comprehensive_checks(
-            sample_java_block_class,
-            sample_bedrock_javascript,
-            feature_type="block"
+            sample_java_block_class, sample_bedrock_javascript, feature_type="block"
         )
 
-        assert result.get('success')
-        assert 'validation' in result
-        assert 'warnings' in result
-        assert 'overall_score' in result
-        assert 0.0 <= result['overall_score'] <= 1.0
+        assert result.get("success")
+        assert "validation" in result
+        assert "warnings" in result
+        assert "overall_score" in result
+        assert 0.0 <= result["overall_score"] <= 1.0
 
     def test_translation_with_critical_issues(self, agent):
         """Test handling of translations with critical issues"""
@@ -510,14 +515,12 @@ public class CustomDimension extends DimensionType {
         bedrock_translation = "// Placeholder translation"
 
         result = agent.validate_translation_with_comprehensive_checks(
-            java_with_critical,
-            bedrock_translation,
-            feature_type="dimension"
+            java_with_critical, bedrock_translation, feature_type="dimension"
         )
 
-        assert 'warnings' in result
-        assert result['warnings']['critical_count'] > 0
-        assert result['overall_score'] < 0.5
+        assert "warnings" in result
+        assert result["warnings"]["critical_count"] > 0
+        assert result["overall_score"] < 0.5
 
     def test_translation_with_perfect_quality(self, agent, sample_bedrock_javascript):
         """Test handling of high-quality translations"""
@@ -538,27 +541,26 @@ world.afterEvents.blockPlace.subscribe((event) => {
 """
 
         result = agent.validate_translation_with_comprehensive_checks(
-            simple_java,
-            clean_bedrock,
-            feature_type="block"
+            simple_java, clean_bedrock, feature_type="block"
         )
 
-        assert result['overall_score'] > 0.8
-        assert result['warnings']['critical_count'] == 0
+        assert result["overall_score"] > 0.8
+        assert result["warnings"]["critical_count"] == 0
 
     def test_api_mapping_coverage(self, agent):
         """Test that API mappings are comprehensive"""
         # Check that key APIs are mapped
-        assert 'player.getHealth()' in agent.api_mappings
-        assert 'world.getBlockAt(' in agent.api_mappings
-        assert 'entity.getHealth()' in agent.api_mappings
+        assert "player.getHealth()" in agent.api_mappings
+        assert "world.getBlockAt(" in agent.api_mappings
+        assert "entity.getHealth()" in agent.api_mappings
 
         # Check mappings are valid
-        assert isinstance(agent.api_mappings['player.getHealth()'], str)
-        assert len(agent.api_mappings['player.getHealth()']) > 0
+        assert isinstance(agent.api_mappings["player.getHealth()"], str)
+        assert len(agent.api_mappings["player.getHealth()"]) > 0
 
 
 # ========== Performance and Benchmark Tests ==========
+
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
 class TestTranslationPerformance:
@@ -581,6 +583,7 @@ world.afterEvents.blockPlace.subscribe((e) => {
 """
 
         import time
+
         start = time.time()
         result = validator.validate(small_js)
         elapsed = time.time() - start
@@ -591,10 +594,10 @@ world.afterEvents.blockPlace.subscribe((e) => {
     def test_validation_performance_large_file(self, validator):
         """Test validation performance on large file"""
         # Generate large JavaScript file
-        large_js = "\n".join([f"function func{i}() {{ return {i}; }}"
-                                   for i in range(500)])
+        large_js = "\n".join([f"function func{i}() {{ return {i}; }}" for i in range(500)])
 
         import time
+
         start = time.time()
         result = validator.validate(large_js)
         elapsed = time.time() - start
@@ -604,16 +607,21 @@ world.afterEvents.blockPlace.subscribe((e) => {
 
     def test_warning_detection_performance(self, detector):
         """Test warning detection performance"""
-        large_java = "\n".join([
-            f"""
+        large_java = "\n".join(
+            [
+                f"""
 public class Class{i} extends Block {{
     public Class{i}() {{
         super(Properties.of(Material.STONE));
     }}
 }}
-""" for i in range(100)])
+"""
+                for i in range(100)
+            ]
+        )
 
         import time
+
         start = time.time()
         report = detector.analyze_java_code(large_java)
         elapsed = time.time() - start
@@ -623,6 +631,7 @@ public class Class{i} extends Block {{
 
 
 # ========== Edge Cases and Error Handling ==========
+
 
 @pytest.mark.skipif(not MODULES_AVAILABLE, reason="Required modules not available")
 class TestEdgeCases:
@@ -671,28 +680,28 @@ class TestEdgeCases:
         """Test handling of malformed JSON input"""
         invalid_json = "{ invalid json }"
 
-        if hasattr(agent.validate_javascript_comprehensive_tool, 'func'):
+        if hasattr(agent.validate_javascript_comprehensive_tool, "func"):
             result = json.loads(agent.validate_javascript_comprehensive_tool.func(invalid_json))
-            assert not result.get('success')
-            assert 'error' in result
+            assert not result.get("success")
+            assert "error" in result
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
-
 
     def test_missing_required_fields(self, agent):
         """Test handling of missing required fields"""
-        incomplete_data = json.dumps({
-            # Missing javascript_code field
-            "context": {"feature_type": "block"}
-        })
+        incomplete_data = json.dumps(
+            {
+                # Missing javascript_code field
+                "context": {"feature_type": "block"}
+            }
+        )
 
-        if hasattr(agent.validate_javascript_comprehensive_tool, 'func'):
+        if hasattr(agent.validate_javascript_comprehensive_tool, "func"):
             result = json.loads(agent.validate_javascript_comprehensive_tool.func(incomplete_data))
             # Should handle gracefully (empty code is valid)
-            assert result.get('success')
+            assert result.get("success")
         else:
             pytest.skip("Testing tool invocation directly requires func attribute")
-
 
     def test_unicode_in_code(self, validator):
         """Test handling of Unicode characters in code"""
