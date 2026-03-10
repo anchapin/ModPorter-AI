@@ -1,0 +1,26 @@
+{
+  "ignore": [
+    "storybook",
+    "@storybook/*",
+    "eslint",
+    "@eslint/*",
+    "typescript",
+    "@typescript-eslint/*",
+    "prettier",
+    "@playwright/test",
+    "playwright",
+    "@stryker-mutator/*",
+    "stryker-mutator",
+    "vitest",
+    "@vitest/*",
+    "jsdom",
+    "@testing-library/*",
+    "msw"
+  ],
+  "skip-empty": true,
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+}

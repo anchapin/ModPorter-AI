@@ -2,10 +2,10 @@
 httpx==0.28.1
 
 # Core Framework (updated for CI fix)
-fastapi==0.129.0
-uvicorn[standard]==0.40.0
+fastapi==0.135.1
+uvicorn[standard]==0.41.0
 pydantic==2.12.5
-pydantic-settings==2.13.0
+pydantic-settings==2.13.1
 python-dateutil==2.9.0.post0
 
 # Database
@@ -33,17 +33,6 @@ prometheus_client>=0.17.0
 sentry-sdk[fastapi]>=2.0.0
 structlog>=24.0.0
 
-# Distributed Tracing (OpenTelemetry)
-opentelemetry-api>=1.24.0
-opentelemetry-sdk>=1.24.0
-opentelemetry-exporter-otlp>=1.24.0
-# Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
-opentelemetry-exporter-jaeger==1.21.0
-opentelemetry-instrumentation-fastapi>=0.45b0
-opentelemetry-instrumentation-httpx>=0.45b0
-opentelemetry-instrumentation-redis>=0.45b0
-opentelemetry-resource-detector-aws>=1.3.0
-
 # Testing
 pytest>=8.2
 pytest-asyncio==1.3.0
@@ -51,8 +40,27 @@ pytest-cov==7.0.0
 pytest-timeout==2.4.0
 
 # Code Quality
-ruff==0.15.1
-black==26.1.0
+ruff==0.15.5
+black==26.3.0
 
 # Utilities
-python-dotenv==1.2.1
+python-dotenv==1.2.2
+
+# Distributed Tracing - OpenTelemetry
+# Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
+opentelemetry-api>=1.24.0
+opentelemetry-sdk>=1.24.0
+opentelemetry-exporter-otlp>=1.24.0
+opentelemetry-exporter-jaeger==1.21.0
+opentelemetry-instrumentation-fastapi>=0.45b0
+opentelemetry-instrumentation-httpx>=0.45b0
+opentelemetry-instrumentation-redis>=0.45b0
+
+# Optional Secrets Management Dependencies
+# Install only what you need:
+# - AWS Secrets Manager: pip install boto3
+# - HashiCorp Vault: pip install hvac
+# - Doppler: pip install requests
+# boto3>=1.34.0
+# hvac>=2.1.0
+# requests>=2.31.0
