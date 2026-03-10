@@ -207,9 +207,10 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
-    # Use Python base image only when dependencies changed, otherwise use runner's Python
+    # Use Python base image only when dependencies changed and prepare-base-images has an image
+    # When dependencies haven't changed, use the default python image
     container:
-      image: ${{ needs.prepare-base-images.outputs.python-image }}
+      image: ${{ coalesce(needs.prepare-base-images.outputs.python-image, 'python:3.11-slim') }}
       options: --name test-container-${{ matrix.test-suite }} --user root
 
     services:
@@ -707,6 +708,8 @@ jobs:
         echo "✅ Dependencies installed successfully"
 
     - name: Run optimized test
+      env:
+        VITE_API_BASE_URL: http://localhost:8000
       run: |
         cd frontend
         echo "🚀 Running ${{ matrix.test-type }} tests..."

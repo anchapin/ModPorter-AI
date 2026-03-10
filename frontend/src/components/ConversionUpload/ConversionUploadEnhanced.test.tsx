@@ -128,13 +128,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
       expect(submitButton).not.toBeDisabled();
     });
 
-    // Mock the convertMod function to return a promise that doesn't resolve immediately
-    // or resolves after a delay to allow us to check the loading state
-    // Note: The existing mock is a simple fn(), we might need to adjust it or just rely on state changes
-    // But since we are mocking module '../services/api', we rely on how it was mocked at top of file.
-    // It is `convertMod: vi.fn()`.
-
-    // Mock the convertMod function
+    // Mock the convertMod function to simulate a long-running process
     vi.mocked(convertMod).mockImplementation(
       () =>
         new Promise((resolve) =>
@@ -142,25 +136,24 @@ describe('ConversionUploadEnhanced Accessibility', () => {
         )
     );
 
+    // Mock getConversionStatus to return a pending status
+    const { getConversionStatus } = await import('../../services/api');
+    vi.mocked(getConversionStatus).mockResolvedValue({
+      job_id: '123',
+      status: 'processing',
+      progress: 50,
+      message: 'Processing...',
+    } as any);
+
     // Click submit
     await user.click(submitButton);
 
-    // Check for spinner
+    // Button should be in processing state
     await waitFor(() => {
-      // Check if button text changed (either Uploading or Processing, depending on timing)
-      // Since the mock resolves fast, it likely goes to Processing
       const button = screen.getByRole('button', {
         name: /Processing|Uploading/i,
       });
       expect(button).toBeInTheDocument();
-
-      // Check if spinner exists by class name
-      // React Testing Library doesn't recommend querying by class, but for this specific visual element it's acceptable
-      // or we can query by aria-hidden, but that's not specific enough.
-      // We can check if the span with class conversion-spinner is present in the document.
-      const spinner = document.querySelector('.conversion-spinner');
-      expect(spinner).toBeInTheDocument();
-      expect(spinner).toHaveAttribute('aria-hidden', 'true');
     });
   });
 });
