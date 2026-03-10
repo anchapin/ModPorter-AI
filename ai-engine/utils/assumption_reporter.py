@@ -15,6 +15,7 @@ from datetime import datetime
 # Import from the smart_assumptions module
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.smart_assumptions import (
     SmartAssumption,
@@ -24,7 +25,7 @@ from models.smart_assumptions import (
     ConversionPlanComponent,
     AssumptionReport,
     AppliedAssumptionReportItem,
-    SmartAssumptionEngine
+    SmartAssumptionEngine,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class ReportFormat(Enum):
     """Supported report output formats"""
+
     JSON = "json"
     MARKDOWN = "markdown"
     HTML = "html"
@@ -41,6 +43,7 @@ class ReportFormat(Enum):
 @dataclass
 class AssumptionSummaryStats:
     """Summary statistics for assumptions applied"""
+
     total_assumptions: int = 0
     high_impact_count: int = 0
     medium_impact_count: int = 0
@@ -49,11 +52,12 @@ class AssumptionSummaryStats:
     features_with_assumptions: int = 0
     features_without_assumptions: int = 0
     conflicts_resolved: int = 0
-    
+
 
 @dataclass
 class DetailedAssumptionReport:
     """Comprehensive report with all assumption details"""
+
     job_id: str
     timestamp: str
     summary: AssumptionSummaryStats
@@ -66,53 +70,53 @@ class DetailedAssumptionReport:
 class AssumptionReporter:
     """
     Generates comprehensive reports about smart assumptions applied during conversion.
-    
+
     Provides multiple output formats for different use cases:
     - JSON for API responses and programmatic access
     - Markdown for documentation and GitHub
     - HTML for web UI display
     - Text for console output and logs
     """
-    
+
     def __init__(self, engine: Optional[SmartAssumptionEngine] = None):
         """Initialize reporter with optional SmartAssumptionEngine"""
         self.engine = engine or SmartAssumptionEngine()
-    
+
     def generate_report(
         self,
         job_id: str,
         conversion_results: List[ConversionPlanComponent],
         features_analyzed: List[FeatureContext],
-        include_raw_data: bool = False
+        include_raw_data: bool = False,
     ) -> DetailedAssumptionReport:
         """
         Generate a comprehensive assumption report.
-        
+
         Args:
             job_id: Unique identifier for the conversion job
             conversion_results: List of conversion plan components with assumptions
             features_analyzed: All features that were analyzed
             include_raw_data: Whether to include raw assumption data
-            
+
         Returns:
             DetailedAssumptionReport with all information
         """
         # Calculate summary statistics
         summary = self._calculate_summary(conversion_results, features_analyzed)
-        
+
         # Generate assumption report items
         assumptions_applied = self._generate_report_items(conversion_results)
-        
+
         # Identify features without assumptions
         features_without = self._identify_features_without_assumptions(
             conversion_results, features_analyzed
         )
-        
+
         # Generate recommendations
         recommendations = self._generate_recommendations(
             assumptions_applied, summary, features_without
         )
-        
+
         # Build raw data if requested
         raw_data = None
         if include_raw_data:
@@ -123,7 +127,7 @@ class AssumptionReporter:
                         "inconvertible_aspect": a.inconvertible_aspect,
                         "bedrock_workaround": a.bedrock_workaround,
                         "impact": a.impact.value,
-                        "description": a.description
+                        "description": a.description,
                     }
                     for a in self.engine.get_assumption_table()
                 ],
@@ -135,12 +139,13 @@ class AssumptionReporter:
                         "bedrock_equivalent": c.bedrock_equivalent,
                         "impact_level": c.impact_level,
                         "user_explanation": c.user_explanation,
-                        "technical_notes": c.technical_notes
+                        "technical_notes": c.technical_notes,
                     }
-                    for c in conversion_results if c
-                ]
+                    for c in conversion_results
+                    if c
+                ],
             }
-        
+
         return DetailedAssumptionReport(
             job_id=job_id,
             timestamp=datetime.utcnow().isoformat() + "Z",
@@ -148,145 +153,144 @@ class AssumptionReporter:
             assumptions_applied=assumptions_applied,
             features_without_assumptions=features_without,
             recommendations=recommendations,
-            raw_data=raw_data
+            raw_data=raw_data,
         )
-    
+
     def _calculate_summary(
         self,
         conversion_results: List[ConversionPlanComponent],
-        features_analyzed: List[FeatureContext]
+        features_analyzed: List[FeatureContext],
     ) -> AssumptionSummaryStats:
         """Calculate summary statistics from conversion results"""
         stats = AssumptionSummaryStats()
         stats.features_analyzed = len(features_analyzed)
-        
+
         for component in conversion_results:
             if component is None:
                 continue
-                
+
             stats.total_assumptions += 1
             stats.features_with_assumptions += 1
-            
+
             if component.impact_level == AssumptionImpact.HIGH.value:
                 stats.high_impact_count += 1
             elif component.impact_level == AssumptionImpact.MEDIUM.value:
                 stats.medium_impact_count += 1
             else:
                 stats.low_impact_count += 1
-        
-        stats.features_without_assumptions = stats.features_analyzed - stats.features_with_assumptions
-        
+
+        stats.features_without_assumptions = (
+            stats.features_analyzed - stats.features_with_assumptions
+        )
+
         return stats
-    
+
     def _generate_report_items(
-        self,
-        conversion_results: List[ConversionPlanComponent]
+        self, conversion_results: List[ConversionPlanComponent]
     ) -> List[AppliedAssumptionReportItem]:
         """Generate report items from conversion components"""
         items = []
-        
+
         for component in conversion_results:
             if component is None:
                 continue
-                
+
             item = AppliedAssumptionReportItem(
                 original_feature=f"{component.original_feature_type} ({component.original_feature_id})",
                 assumption_type=component.assumption_type or "unknown",
                 bedrock_equivalent=component.bedrock_equivalent,
                 impact_level=component.impact_level,
-                user_explanation=component.user_explanation
+                user_explanation=component.user_explanation,
             )
             items.append(item)
-        
+
         return items
-    
+
     def _identify_features_without_assumptions(
         self,
         conversion_results: List[ConversionPlanComponent],
-        features_analyzed: List[FeatureContext]
+        features_analyzed: List[FeatureContext],
     ) -> List[Dict[str, Any]]:
         """Find features that didn't require smart assumptions"""
-        features_with_assumptions = {
-            c.original_feature_id for c in conversion_results if c
-        }
-        
+        features_with_assumptions = {c.original_feature_id for c in conversion_results if c}
+
         features_without = []
         for feature in features_analyzed:
             if feature.feature_id not in features_with_assumptions:
-                features_without.append({
-                    "feature_id": feature.feature_id,
-                    "feature_type": feature.feature_type,
-                    "name": feature.name,
-                    "status": "directly_convertible"
-                })
-        
+                features_without.append(
+                    {
+                        "feature_id": feature.feature_id,
+                        "feature_type": feature.feature_type,
+                        "name": feature.name,
+                        "status": "directly_convertible",
+                    }
+                )
+
         return features_without
-    
+
     def _generate_recommendations(
         self,
         assumptions: List[AppliedAssumptionReportItem],
         summary: AssumptionSummaryStats,
-        features_without: List[Dict[str, Any]]
+        features_without: List[Dict[str, Any]],
     ) -> List[str]:
         """Generate actionable recommendations based on assumptions applied"""
         recommendations = []
-        
+
         # High impact warnings
         if summary.high_impact_count > 0:
             recommendations.append(
                 f"⚠️ {summary.high_impact_count} feature(s) have HIGH impact changes. "
                 "Review these carefully as significant functionality may be altered."
             )
-        
+
         # Specific recommendations based on assumption types
         assumption_types = {a.assumption_type for a in assumptions}
-        
+
         if "dimension_to_structure" in assumption_types:
             recommendations.append(
                 "🗺️ Custom dimensions converted to structures may have limited exploration scope. "
                 "Consider manually expanding the structure area if needed."
             )
-        
+
         if "machinery_simplification" in assumption_types:
             recommendations.append(
                 "⚙️ Complex machinery has been simplified. Original processing logic is lost. "
                 "Consider using command blocks or behavior packs for advanced functionality."
             )
-        
+
         if "gui_to_book_interface" in assumption_types:
             recommendations.append(
                 "📖 Custom GUIs converted to books lose interactivity. "
                 "Players will need to use commands or signs for input."
             )
-        
+
         # Positive feedback
         if summary.features_without_assumptions > 0:
             recommendations.append(
                 f"✅ {summary.features_without_assumptions} feature(s) converted directly without assumptions. "
                 "These should work as expected in Bedrock Edition."
             )
-        
+
         # General advice
         if summary.total_assumptions > 3:
             recommendations.append(
                 "📋 This conversion has multiple smart assumptions. "
                 "We recommend testing thoroughly in a creative world before using in survival."
             )
-        
+
         return recommendations
-    
+
     def format_report(
-        self,
-        report: DetailedAssumptionReport,
-        format: ReportFormat = ReportFormat.JSON
+        self, report: DetailedAssumptionReport, format: ReportFormat = ReportFormat.JSON
     ) -> str:
         """
         Format a report in the specified output format.
-        
+
         Args:
             report: The report to format
             format: Output format (JSON, MARKDOWN, HTML, TEXT)
-            
+
         Returns:
             Formatted report string
         """
@@ -298,36 +302,39 @@ class AssumptionReporter:
             return self._format_html(report)
         else:
             return self._format_text(report)
-    
+
     def _format_json(self, report: DetailedAssumptionReport) -> str:
         """Format report as JSON"""
-        return json.dumps({
-            "job_id": report.job_id,
-            "timestamp": report.timestamp,
-            "summary": {
-                "total_assumptions": report.summary.total_assumptions,
-                "high_impact_count": report.summary.high_impact_count,
-                "medium_impact_count": report.summary.medium_impact_count,
-                "low_impact_count": report.summary.low_impact_count,
-                "features_analyzed": report.summary.features_analyzed,
-                "features_with_assumptions": report.summary.features_with_assumptions,
-                "features_without_assumptions": report.summary.features_without_assumptions,
-                "conflicts_resolved": report.summary.conflicts_resolved
+        return json.dumps(
+            {
+                "job_id": report.job_id,
+                "timestamp": report.timestamp,
+                "summary": {
+                    "total_assumptions": report.summary.total_assumptions,
+                    "high_impact_count": report.summary.high_impact_count,
+                    "medium_impact_count": report.summary.medium_impact_count,
+                    "low_impact_count": report.summary.low_impact_count,
+                    "features_analyzed": report.summary.features_analyzed,
+                    "features_with_assumptions": report.summary.features_with_assumptions,
+                    "features_without_assumptions": report.summary.features_without_assumptions,
+                    "conflicts_resolved": report.summary.conflicts_resolved,
+                },
+                "assumptions_applied": [
+                    {
+                        "original_feature": a.original_feature,
+                        "assumption_type": a.assumption_type,
+                        "bedrock_equivalent": a.bedrock_equivalent,
+                        "impact_level": a.impact_level,
+                        "user_explanation": a.user_explanation,
+                    }
+                    for a in report.assumptions_applied
+                ],
+                "features_without_assumptions": report.features_without_assumptions,
+                "recommendations": report.recommendations,
             },
-            "assumptions_applied": [
-                {
-                    "original_feature": a.original_feature,
-                    "assumption_type": a.assumption_type,
-                    "bedrock_equivalent": a.bedrock_equivalent,
-                    "impact_level": a.impact_level,
-                    "user_explanation": a.user_explanation
-                }
-                for a in report.assumptions_applied
-            ],
-            "features_without_assumptions": report.features_without_assumptions,
-            "recommendations": report.recommendations
-        }, indent=2)
-    
+            indent=2,
+        )
+
     def _format_markdown(self, report: DetailedAssumptionReport) -> str:
         """Format report as Markdown"""
         lines = [
@@ -347,9 +354,9 @@ class AssumptionReporter:
             f"| Features Analyzed | {report.summary.features_analyzed} |",
             f"",
             f"## Assumptions Applied",
-            f""
+            f"",
         ]
-        
+
         if not report.assumptions_applied:
             lines.append("*No smart assumptions were required for this conversion.*")
         else:
@@ -357,34 +364,33 @@ class AssumptionReporter:
                 impact_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(
                     assumption.impact_level, "⚪"
                 )
-                lines.extend([
-                    f"### {i}. {assumption.original_feature}",
-                    f"",
-                    f"**Impact:** {impact_emoji} {assumption.impact_level.upper()}",
-                    f"",
-                    f"**Assumption Type:** `{assumption.assumption_type}`",
-                    f"",
-                    f"**Bedrock Equivalent:** {assumption.bedrock_equivalent}",
-                    f"",
-                    f"**Explanation:** {assumption.user_explanation}",
-                    f""
-                ])
-        
+                lines.extend(
+                    [
+                        f"### {i}. {assumption.original_feature}",
+                        f"",
+                        f"**Impact:** {impact_emoji} {assumption.impact_level.upper()}",
+                        f"",
+                        f"**Assumption Type:** `{assumption.assumption_type}`",
+                        f"",
+                        f"**Bedrock Equivalent:** {assumption.bedrock_equivalent}",
+                        f"",
+                        f"**Explanation:** {assumption.user_explanation}",
+                        f"",
+                    ]
+                )
+
         if report.recommendations:
-            lines.extend([
-                f"## Recommendations",
-                f""
-            ])
+            lines.extend([f"## Recommendations", f""])
             for rec in report.recommendations:
                 lines.append(f"- {rec}")
             lines.append("")
-        
+
         return "\n".join(lines)
-    
+
     def _format_html(self, report: DetailedAssumptionReport) -> str:
         """Format report as HTML"""
         impact_colors = {"high": "#ef4444", "medium": "#f59e0b", "low": "#22c55e"}
-        
+
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -433,7 +439,7 @@ class AssumptionReporter:
     
     <h2>Assumptions Applied</h2>
 """
-        
+
         if not report.assumptions_applied:
             html += "<p><em>No smart assumptions were required for this conversion.</em></p>"
         else:
@@ -448,23 +454,23 @@ class AssumptionReporter:
         <p><strong>Explanation:</strong> {assumption.user_explanation}</p>
     </div>
 """
-        
+
         if report.recommendations:
             html += f"""
     <div class="recommendations">
         <h2>Recommendations</h2>
         <ul>
-            {''.join(f'<li>{rec}</li>' for rec in report.recommendations)}
+            {"".join(f"<li>{rec}</li>" for rec in report.recommendations)}
         </ul>
     </div>
 """
-        
+
         html += """
 </body>
 </html>"""
-        
+
         return html
-    
+
     def _format_text(self, report: DetailedAssumptionReport) -> str:
         """Format report as plain text"""
         lines = [
@@ -488,33 +494,37 @@ class AssumptionReporter:
             "ASSUMPTIONS APPLIED",
             "-" * 60,
         ]
-        
+
         if not report.assumptions_applied:
             lines.append("No smart assumptions were required for this conversion.")
         else:
             for i, assumption in enumerate(report.assumptions_applied, 1):
-                lines.extend([
-                    "",
-                    f"{i}. {assumption.original_feature}",
-                    f"   Impact: [{assumption.impact_level.upper()}]",
-                    f"   Type: {assumption.assumption_type}",
-                    f"   Bedrock Equivalent: {assumption.bedrock_equivalent}",
-                    f"   Explanation: {assumption.user_explanation}",
-                ])
-        
+                lines.extend(
+                    [
+                        "",
+                        f"{i}. {assumption.original_feature}",
+                        f"   Impact: [{assumption.impact_level.upper()}]",
+                        f"   Type: {assumption.assumption_type}",
+                        f"   Bedrock Equivalent: {assumption.bedrock_equivalent}",
+                        f"   Explanation: {assumption.user_explanation}",
+                    ]
+                )
+
         if report.recommendations:
-            lines.extend([
-                "",
-                "-" * 60,
-                "RECOMMENDATIONS",
-                "-" * 60,
-            ])
+            lines.extend(
+                [
+                    "",
+                    "-" * 60,
+                    "RECOMMENDATIONS",
+                    "-" * 60,
+                ]
+            )
             for rec in report.recommendations:
                 lines.append(f"• {rec}")
-        
+
         lines.append("")
         lines.append("=" * 60)
-        
+
         return "\n".join(lines)
 
 
@@ -522,17 +532,17 @@ def create_quick_report(
     job_id: str,
     conversion_results: List[ConversionPlanComponent],
     features_analyzed: List[FeatureContext],
-    format: ReportFormat = ReportFormat.JSON
+    format: ReportFormat = ReportFormat.JSON,
 ) -> str:
     """
     Convenience function to quickly generate a formatted report.
-    
+
     Args:
         job_id: Unique identifier for the conversion job
         conversion_results: List of conversion plan components
         features_analyzed: All features that were analyzed
         format: Output format
-        
+
     Returns:
         Formatted report string
     """

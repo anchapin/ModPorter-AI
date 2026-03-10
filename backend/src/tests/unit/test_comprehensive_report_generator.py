@@ -22,7 +22,7 @@ from src.schemas.report_types import (
     calculate_quality_score,
     FeatureAnalysisItem,
     ImpactLevel,
-    ConversionStatus
+    ConversionStatus,
 )
 
 # Temporarily skip all tests in this file due to import issues
@@ -55,7 +55,7 @@ def sample_conversion_result():
                 "assumptions_used": ["block_assumption_1"],
                 "impact_assessment": "Low impact conversion",
                 "visual_comparison": {"before": "Java block", "after": "Bedrock block"},
-                "technical_notes": "Direct translation possible"
+                "technical_notes": "Direct translation possible",
             },
             {
                 "feature_name": "EntityAI",
@@ -65,8 +65,8 @@ def sample_conversion_result():
                 "compatibility_score": 70.0,
                 "assumptions_used": ["ai_assumption_1", "ai_assumption_2"],
                 "impact_assessment": "Medium impact - behavior simplified",
-                "technical_notes": "Complex AI logic simplified for Bedrock"
-            }
+                "technical_notes": "Complex AI logic simplified for Bedrock",
+            },
         ],
         "assumptions_detail_data": [
             {
@@ -77,7 +77,7 @@ def sample_conversion_result():
                 "user_explanation": "Custom material mapped to closest Bedrock equivalent",
                 "technical_details": "Material properties approximated",
                 "confidence_score": 0.9,
-                "alternatives_considered": ["minecraft:dirt", "minecraft:cobblestone"]
+                "alternatives_considered": ["minecraft:dirt", "minecraft:cobblestone"],
             },
             {
                 "original_feature": "Entity AI Pathfinding",
@@ -87,8 +87,8 @@ def sample_conversion_result():
                 "user_explanation": "Complex pathfinding simplified for compatibility",
                 "technical_details": "Advanced algorithms replaced with basic navigation",
                 "confidence_score": 0.7,
-                "alternatives_considered": ["no_pathfinding", "custom_pathfinding"]
-            }
+                "alternatives_considered": ["no_pathfinding", "custom_pathfinding"],
+            },
         ],
         "developer_logs_data": {
             "code_translation_details": [
@@ -96,7 +96,7 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Successfully translated CustomBlock.java",
-                    "details": {"source": "CustomBlock.java", "target": "custom_block.json"}
+                    "details": {"source": "CustomBlock.java", "target": "custom_block.json"},
                 }
             ],
             "api_mapping_issues": [
@@ -104,7 +104,7 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "WARNING",
                     "message": "Java API has no direct Bedrock equivalent",
-                    "details": {"java_api": "getCustomProperty", "bedrock_equivalent": "none"}
+                    "details": {"java_api": "getCustomProperty", "bedrock_equivalent": "none"},
                 }
             ],
             "file_processing_log": [
@@ -112,16 +112,16 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Processed texture file successfully",
-                    "details": {"file": "block_texture.png", "status": "converted"}
+                    "details": {"file": "block_texture.png", "status": "converted"},
                 }
             ],
             "performance_metrics": {
                 "total_time_seconds": 45.2,
                 "memory_peak_mb": 128,
-                "cpu_usage_avg_percentage": 30.5
+                "cpu_usage_avg_percentage": 30.5,
             },
-            "error_details": []
-        }
+            "error_details": [],
+        },
     }
 
 
@@ -167,7 +167,7 @@ class TestQualityScore:
             partially_converted_features=0,
             failed_features=0,
             assumptions_applied_count=0,
-            processing_time_seconds=30.0
+            processing_time_seconds=30.0,
         )
 
         score = calculate_quality_score(summary)
@@ -182,7 +182,7 @@ class TestQualityScore:
             partially_converted_features=2,
             failed_features=1,
             assumptions_applied_count=3,
-            processing_time_seconds=45.0
+            processing_time_seconds=45.0,
         )
 
         score = calculate_quality_score(summary)
@@ -198,7 +198,7 @@ class TestQualityScore:
             partially_converted_features=0,
             failed_features=0,
             assumptions_applied_count=0,
-            processing_time_seconds=10.0
+            processing_time_seconds=10.0,
         )
 
         score = calculate_quality_score(summary)
@@ -237,7 +237,7 @@ class TestSummaryReportGeneration:
             partially_converted_features=1,
             failed_features=0,
             assumptions_applied_count=2,
-            processing_time_seconds=30.0
+            processing_time_seconds=30.0,
         )
 
         actions = report_generator._generate_recommended_actions(summary)
@@ -252,7 +252,7 @@ class TestSummaryReportGeneration:
             partially_converted_features=2,
             failed_features=5,
             assumptions_applied_count=15,
-            processing_time_seconds=600.0
+            processing_time_seconds=600.0,
         )
 
         actions = report_generator._generate_recommended_actions(summary)
@@ -291,26 +291,17 @@ class TestFeatureAnalysisGeneration:
     def test_calculate_compatibility_score(self, report_generator):
         """Test compatibility score calculation."""
         # Test successful feature
-        feature_data = {
-            "status": "Success",
-            "assumptions_used": []
-        }
+        feature_data = {"status": "Success", "assumptions_used": []}
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 100.0
 
         # Test feature with assumptions
-        feature_data = {
-            "status": "Success",
-            "assumptions_used": ["assumption1", "assumption2"]
-        }
+        feature_data = {"status": "Success", "assumptions_used": ["assumption1", "assumption2"]}
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 90.0  # 100 - (2 * 5)
 
         # Test failed feature
-        feature_data = {
-            "status": "Failed",
-            "assumptions_used": []
-        }
+        feature_data = {"status": "Failed", "assumptions_used": []}
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 0.0
 
@@ -384,7 +375,7 @@ class TestDeveloperLogGeneration:
         log_data = {
             "performance_metrics": {
                 "memory_peak_mb": 600,  # High memory usage
-                "total_time_seconds": 400  # Long processing time
+                "total_time_seconds": 400,  # Long processing time
             },
             "api_mapping_issues": [
                 {"issue": "mapping1"},
@@ -392,8 +383,8 @@ class TestDeveloperLogGeneration:
                 {"issue": "mapping3"},
                 {"issue": "mapping4"},
                 {"issue": "mapping5"},
-                {"issue": "mapping6"}  # Many API issues
-            ]
+                {"issue": "mapping6"},  # Many API issues
+            ],
         }
 
         optimizations = report_generator._identify_optimizations(log_data)
@@ -478,7 +469,7 @@ class TestEdgeCases:
             "converted_features": 0,
             "features_data": [],
             "assumptions_detail_data": [],
-            "developer_logs_data": {}
+            "developer_logs_data": {},
         }
 
         report = report_generator.create_interactive_report(empty_result, "empty_job")
@@ -489,9 +480,7 @@ class TestEdgeCases:
 
     def test_missing_fields(self, report_generator):
         """Test handling of missing fields in conversion result."""
-        minimal_result = {
-            "job_id": "minimal_job"
-        }
+        minimal_result = {"job_id": "minimal_job"}
 
         # Should not raise exception
         report = report_generator.create_interactive_report(minimal_result, "minimal_job")
@@ -504,7 +493,7 @@ class TestEdgeCases:
         invalid_result = {
             "job_id": "invalid_job",
             "total_features": "not_a_number",  # Invalid type
-            "features_data": "not_a_list",     # Invalid type
+            "features_data": "not_a_list",  # Invalid type
         }
 
         # Should handle gracefully
@@ -521,7 +510,7 @@ class TestEdgeCases:
 class TestReportGenerationIntegration:
     """Integration tests for complete report generation workflow."""
 
-    @patch('time.time')
+    @patch("time.time")
     def test_full_workflow_integration(self, mock_time, report_generator, sample_conversion_result):
         """Test complete workflow from conversion result to interactive report."""
         mock_time.return_value = 1234567890

@@ -66,7 +66,7 @@ class TestQAValidatorAgent:
         assert "best_practices" in agent.validation_categories
 
         # Verify weights sum to 1.0
-        total_weight = sum(cat['weight'] for cat in agent.validation_categories.values())
+        total_weight = sum(cat["weight"] for cat in agent.validation_categories.values())
         assert total_weight == 1.0
 
 
@@ -80,7 +80,7 @@ class TestValidationWithMockAddon:
         mcaddon_path = Path(temp_dir) / "test_addon.mcaddon"
 
         # Create a valid ZIP file with basic structure
-        with zipfile.ZipFile(mcaddon_path, 'w') as zf:
+        with zipfile.ZipFile(mcaddon_path, "w") as zf:
             # Add behavior pack manifest
             manifest = {
                 "format_version": 2,
@@ -89,15 +89,15 @@ class TestValidationWithMockAddon:
                     "description": "Test description",
                     "uuid": "12345678-1234-1234-1234-123456789abc",
                     "version": [1, 0, 0],
-                    "min_engine_version": [1, 19, 0]
+                    "min_engine_version": [1, 19, 0],
                 },
                 "modules": [
                     {
                         "type": "data",
                         "uuid": "87654321-4321-4321-4321-cba987654321",
-                        "version": [1, 0, 0]
+                        "version": [1, 0, 0],
                     }
-                ]
+                ],
             }
             zf.writestr("behavior_packs/test_bp/manifest.json", json.dumps(manifest))
 
@@ -105,13 +105,9 @@ class TestValidationWithMockAddon:
             block = {
                 "format_version": "1.20.10",
                 "minecraft:block": {
-                    "description": {
-                        "identifier": "test:test_block"
-                    },
-                    "components": {
-                        "minecraft:destroy_time": 3.0
-                    }
-                }
+                    "description": {"identifier": "test:test_block"},
+                    "components": {"minecraft:destroy_time": 3.0},
+                },
             }
             zf.writestr("behavior_packs/test_bp/blocks/test_block.json", json.dumps(block))
 

@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
+
 class TestPerformanceAPI:
     """Test cases for the performance benchmarking API endpoints."""
 
@@ -11,24 +12,26 @@ class TestPerformanceAPI:
         mock_benchmark_reports.clear()
         # Reset scenarios to default state
         mock_scenarios.clear()
-        mock_scenarios.update({
-            "baseline_idle_001": {
-                "scenario_id": "baseline_idle_001",
-                "scenario_name": "Idle Performance",
-                "description": "Test scenario",
-                "type": "baseline",
-                "duration_seconds": 300,
-                "parameters": {"load_level": "none"},
-                "thresholds": {"cpu": 5, "memory": 50}
+        mock_scenarios.update(
+            {
+                "baseline_idle_001": {
+                    "scenario_id": "baseline_idle_001",
+                    "scenario_name": "Idle Performance",
+                    "description": "Test scenario",
+                    "type": "baseline",
+                    "duration_seconds": 300,
+                    "parameters": {"load_level": "none"},
+                    "thresholds": {"cpu": 5, "memory": 50},
+                }
             }
-        })
+        )
 
     def test_run_benchmark_success(self, client):
         """Test successful benchmark run creation."""
         request_data = {
             "scenario_id": "baseline_idle_001",
             "device_type": "desktop",
-            "conversion_id": "test_conversion_123"
+            "conversion_id": "test_conversion_123",
         }
 
         response = client.post("/performance/run", json=request_data)
@@ -47,10 +50,7 @@ class TestPerformanceAPI:
 
     def test_run_benchmark_invalid_scenario(self, client):
         """Test benchmark run with invalid scenario ID."""
-        request_data = {
-            "scenario_id": "nonexistent_scenario",
-            "device_type": "desktop"
-        }
+        request_data = {"scenario_id": "nonexistent_scenario", "device_type": "desktop"}
 
         response = client.post("/performance/run", json=request_data)
 
@@ -65,7 +65,7 @@ class TestPerformanceAPI:
             "status": "running",
             "scenario_id": "baseline_idle_001",
             "progress": 50.0,
-            "current_stage": "collecting_baseline"
+            "current_stage": "collecting_baseline",
         }
 
         response = client.get(f"/performance/status/{run_id}")
@@ -88,10 +88,7 @@ class TestPerformanceAPI:
         """Test successful benchmark report retrieval."""
         # Create a mock completed run
         run_id = "test_run_123"
-        mock_benchmark_runs[run_id] = {
-            "status": "completed",
-            "scenario_id": "baseline_idle_001"
-        }
+        mock_benchmark_runs[run_id] = {"status": "completed", "scenario_id": "baseline_idle_001"}
 
         # Create mock report data
         mock_benchmark_reports[run_id] = {
@@ -105,7 +102,7 @@ class TestPerformanceAPI:
                 "network_score": 85.0,
                 "status": "completed",
                 "device_type": "desktop",
-                "created_at": "2023-01-01T10:00:00Z"
+                "created_at": "2023-01-01T10:00:00Z",
             },
             "metrics": [
                 {
@@ -116,15 +113,15 @@ class TestPerformanceAPI:
                     "java_value": 60.0,
                     "bedrock_value": 50.0,
                     "unit": "percent",
-                    "improvement_percentage": -16.67
+                    "improvement_percentage": -16.67,
                 }
             ],
             "analysis": {
                 "identified_issues": ["No issues"],
-                "optimization_suggestions": ["All good"]
+                "optimization_suggestions": ["All good"],
             },
             "comparison_results": {"cpu": {"improvement": -16.67}},
-            "report_text": "Test report"
+            "report_text": "Test report",
         }
 
         response = client.get(f"/performance/report/{run_id}")
@@ -139,10 +136,7 @@ class TestPerformanceAPI:
     def test_get_benchmark_report_not_completed(self, client):
         """Test benchmark report for non-completed run."""
         run_id = "test_run_123"
-        mock_benchmark_runs[run_id] = {
-            "status": "running",
-            "scenario_id": "baseline_idle_001"
-        }
+        mock_benchmark_runs[run_id] = {"status": "running", "scenario_id": "baseline_idle_001"}
 
         response = client.get(f"/performance/report/{run_id}")
 
@@ -171,7 +165,7 @@ class TestPerformanceAPI:
             "type": "custom",
             "duration_seconds": 600,
             "parameters": {"custom_param": "value"},
-            "thresholds": {"cpu": 70, "memory": 80}
+            "thresholds": {"cpu": 70, "memory": 80},
         }
 
         response = client.post("/performance/scenarios", json=request_data)
@@ -196,22 +190,32 @@ class TestPerformanceAPI:
             "status": "completed",
             "scenario_id": "baseline_idle_001",
             "device_type": "desktop",
-            "created_at": "2023-01-01T10:00:00"
+            "created_at": "2023-01-01T10:00:00",
         }
 
         mock_benchmark_runs[run_id2] = {
             "status": "completed",
             "scenario_id": "baseline_idle_001",
             "device_type": "mobile",
-            "created_at": "2023-01-01T11:00:00"
+            "created_at": "2023-01-01T11:00:00",
         }
 
         mock_benchmark_reports[run_id1] = {
-            "benchmark": {"overall_score": 85.0, "cpu_score": 80.0, "memory_score": 90.0, "network_score": 85.0}
+            "benchmark": {
+                "overall_score": 85.0,
+                "cpu_score": 80.0,
+                "memory_score": 90.0,
+                "network_score": 85.0,
+            }
         }
 
         mock_benchmark_reports[run_id2] = {
-            "benchmark": {"overall_score": 78.0, "cpu_score": 75.0, "memory_score": 82.0, "network_score": 78.0}
+            "benchmark": {
+                "overall_score": 78.0,
+                "cpu_score": 75.0,
+                "memory_score": 82.0,
+                "network_score": 78.0,
+            }
         }
 
         response = client.get("/performance/history")
@@ -236,10 +240,15 @@ class TestPerformanceAPI:
             mock_benchmark_runs[run_id] = {
                 "status": "completed",
                 "scenario_id": "baseline_idle_001",
-                "created_at": f"2023-01-0{i+1}T10:00:00"
+                "created_at": f"2023-01-0{i + 1}T10:00:00",
             }
             mock_benchmark_reports[run_id] = {
-                "benchmark": {"overall_score": 80.0 + i, "cpu_score": 80.0, "memory_score": 90.0, "network_score": 85.0}
+                "benchmark": {
+                    "overall_score": 80.0 + i,
+                    "cpu_score": 80.0,
+                    "memory_score": 90.0,
+                    "network_score": 85.0,
+                }
             }
 
         # Test with limit and offset
@@ -258,7 +267,7 @@ class TestPerformanceAPI:
         # Add a non-completed run
         mock_benchmark_runs["test_run_1"] = {
             "status": "running",
-            "scenario_id": "baseline_idle_001"
+            "scenario_id": "baseline_idle_001",
         }
 
         response = client.get("/performance/history")
@@ -267,13 +276,10 @@ class TestPerformanceAPI:
         data = response.json()
         assert len(data) == 0  # No completed runs
 
-    @patch('src.api.performance.simulate_benchmark_execution')
+    @patch("src.api.performance.simulate_benchmark_execution")
     def test_run_benchmark_background_task(self, mock_simulate, client):
         """Test that benchmark run properly triggers background task."""
-        request_data = {
-            "scenario_id": "baseline_idle_001",
-            "device_type": "desktop"
-        }
+        request_data = {"scenario_id": "baseline_idle_001", "device_type": "desktop"}
 
         response = client.post("/performance/run", json=request_data)
 
@@ -294,8 +300,8 @@ class TestPerformanceAPI:
         """Test custom scenario creation with validation errors."""
         request_data = {
             "scenario_name": "",  # Empty name should fail validation
-            "description": "",    # Empty description should also fail validation
-            "type": "custom"
+            "description": "",  # Empty description should also fail validation
+            "type": "custom",
         }
 
         response = client.post("/performance/scenarios", json=request_data)

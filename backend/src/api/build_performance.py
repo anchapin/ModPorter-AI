@@ -39,7 +39,7 @@ router = APIRouter()
 async def start_performance_tracking(request: BuildPerformanceStartRequest):
     """
     Start tracking performance for a new build.
-    
+
     This endpoint initializes performance tracking for a conversion build.
     Returns a build_id that should be used for subsequent API calls.
     """
@@ -50,7 +50,7 @@ async def start_performance_tracking(request: BuildPerformanceStartRequest):
             target_version=request.target_version,
             mod_size_bytes=request.mod_size_bytes,
         )
-        
+
         return BuildPerformanceStartResponse(
             build_id=build.build_id,
             conversion_id=build.conversion_id,
@@ -65,7 +65,7 @@ async def start_performance_tracking(request: BuildPerformanceStartRequest):
 async def update_stage(build_id: str, request: BuildStageUpdateRequest):
     """
     Update a build stage status.
-    
+
     Use this to mark a stage as running, completed, or failed.
     """
     service = get_build_performance_service()
@@ -76,10 +76,10 @@ async def update_stage(build_id: str, request: BuildStageUpdateRequest):
         error_message=request.error_message,
         metadata=request.metadata,
     )
-    
+
     if not build:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     response = service.get_response(build_id)
     return response
 
@@ -91,10 +91,10 @@ async def start_stage(build_id: str, stage_name: str):
     """
     service = get_build_performance_service()
     build = service.start_stage(build_id=build_id, stage_name=stage_name)
-    
+
     if not build:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     response = service.get_response(build_id)
     return response
 
@@ -116,10 +116,10 @@ async def complete_stage(
         status=status,
         error_message=error_message,
     )
-    
+
     if not build:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     response = service.get_response(build_id)
     return response
 
@@ -128,7 +128,7 @@ async def complete_stage(
 async def end_performance_tracking(build_id: str, request: BuildPerformanceEndRequest):
     """
     End tracking for a build.
-    
+
     This should be called when the build completes (success or failure).
     """
     service = get_build_performance_service()
@@ -138,10 +138,10 @@ async def end_performance_tracking(build_id: str, request: BuildPerformanceEndRe
         error_message=request.error_message,
         performance_score=request.performance_score,
     )
-    
+
     if not build:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     response = service.get_response(build_id)
     return response
 
@@ -152,10 +152,10 @@ async def get_build_performance_endpoint(build_id: str):
     Get complete performance data for a build.
     """
     response = get_build_performance(build_id)
-    
+
     if not response:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     return response
 
 
@@ -163,7 +163,7 @@ async def get_build_performance_endpoint(build_id: str):
 async def get_build_snapshot(build_id: str):
     """
     Get a snapshot of current build performance.
-    
+
     This provides real-time performance data including:
     - Current stage
     - Progress percentage
@@ -172,10 +172,10 @@ async def get_build_snapshot(build_id: str):
     - Current resource usage
     """
     snapshot = get_build_performance_snapshot(build_id)
-    
+
     if not snapshot:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found or completed")
-    
+
     return snapshot
 
 
@@ -183,7 +183,7 @@ async def get_build_snapshot(build_id: str):
 async def get_build_summary(build_id: str):
     """
     Get a summary of build performance.
-    
+
     This provides a quick overview including:
     - Total duration
     - Stage count
@@ -192,10 +192,10 @@ async def get_build_summary(build_id: str):
     """
     service = get_build_performance_service()
     summary = service.get_summary(build_id)
-    
+
     if not summary:
         raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-    
+
     return summary
 
 
@@ -206,7 +206,7 @@ async def get_performance_stats(
 ):
     """
     Get aggregate performance statistics.
-    
+
     Provides overall performance metrics including:
     - Total/completed/failed build counts
     - Average, median, P95, P99 duration
@@ -220,7 +220,7 @@ async def get_performance_stats(
 async def get_available_stages():
     """
     Get list of available build stage names.
-    
+
     These are the standardized stage names that can be used when tracking builds.
     """
     return [
@@ -247,7 +247,7 @@ async def list_builds(
     """
     service = get_build_performance_service()
     stats = service.get_stats(conversion_id=conversion_id, limit=limit)
-    
+
     # Note: This is a simplified implementation
     # Full implementation would need persistent storage
     return []

@@ -28,7 +28,10 @@
     "format:backend": "cd backend && source .venv/bin/activate && python -m ruff format src/ tests/ && python -m ruff check --fix src/ tests/",
     "fix-ci": "python scripts/fix-failing-ci-checks",
     "storybook": "cd frontend && pnpm run storybook",
-    "build-storybook": "cd frontend && pnpm run build-storybook"
+    "build-storybook": "cd frontend && pnpm run build-storybook",
+    "setup-ai-commits": "bash scripts/setup-ai-commits.sh",
+    "prepare": "husky install",
+    "commit": "cz commit"
   },
   "keywords": [
     "minecraft",
@@ -41,9 +44,12 @@
   "author": "ModPorter AI Team",
   "license": "MIT",
   "devDependencies": {
+    "@commitlint/cli": "^19.2.1",
+    "@commitlint/config-conventional": "^19.2.1",
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "concurrently": "^9.2.1",
+    "husky": "^9.0.11",
     "prettier": "^3.8.1"
   },
   "overrides": {

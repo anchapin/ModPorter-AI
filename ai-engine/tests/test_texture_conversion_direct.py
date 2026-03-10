@@ -2,6 +2,7 @@
 Direct unit tests for texture conversion logic without CrewAI dependency.
 Tests the actual AssetConverterAgent class methods directly.
 """
+
 import json
 import os
 import sys
@@ -9,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from PIL import Image
 
@@ -17,8 +18,8 @@ from PIL import Image
 def create_test_texture(path: Path, size=(64, 64), color=(128, 128, 128, 255)):
     """Helper to create test texture files"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new('RGBA', size, color)
-    img.save(path, 'PNG')
+    img = Image.new("RGBA", size, color)
+    img.save(path, "PNG")
 
 
 def test_convert_single_texture():
@@ -34,16 +35,18 @@ def test_convert_single_texture():
 
         # Import just the class we need, avoiding the tool decorators
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "asset_converter",
-            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py")
+            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py"),
         )
         module = importlib.util.module_from_spec(spec)
 
         # Mock the crewai import before loading
         import unittest.mock as mock
-        sys.modules['crewai'] = mock.MagicMock()
-        sys.modules['crewai.tools'] = mock.MagicMock()
+
+        sys.modules["crewai"] = mock.MagicMock()
+        sys.modules["crewai.tools"] = mock.MagicMock()
 
         # Now load the module
         spec.loader.exec_module(module)
@@ -52,12 +55,7 @@ def test_convert_single_texture():
         agent = module.AssetConverterAgent()
 
         # Test conversion with output directory
-        result = agent._convert_single_texture(
-            str(test_file),
-            {},
-            "block",
-            output_dir
-        )
+        result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
 
         print(f"\n=== Test: _convert_single_texture ===")
         print(f"Success: {result['success']}")
@@ -66,19 +64,19 @@ def test_convert_single_texture():
         print(f"Relative path: {result['relative_path']}")
         print(f"Actual output: {result['converted_path']}")
 
-        assert result['success'] is True
-        assert result['original_dimensions'] == (32, 32)
-        assert result['converted_dimensions'] == (32, 32)
-        assert 'textures/blocks/test_block.png' in result['relative_path']
+        assert result["success"] is True
+        assert result["original_dimensions"] == (32, 32)
+        assert result["converted_dimensions"] == (32, 32)
+        assert "textures/blocks/test_block.png" in result["relative_path"]
 
         # Verify file was saved
-        output_file = Path(result['converted_path'])
+        output_file = Path(result["converted_path"])
         assert output_file.exists(), f"Output file not created: {output_file}"
 
         # Verify it's a valid PNG
         img = Image.open(output_file)
-        assert img.format == 'PNG'
-        assert img.mode == 'RGBA'
+        assert img.format == "PNG"
+        assert img.mode == "RGBA"
         assert img.size == (32, 32)
 
         print(f"✓ File saved successfully: {output_file.name}")
@@ -106,15 +104,17 @@ def test_convert_textures_method():
 
         # Import the module with mocked crewai
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "asset_converter",
-            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py")
+            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py"),
         )
         module = importlib.util.module_from_spec(spec)
 
         import unittest.mock as mock
-        sys.modules['crewai'] = mock.MagicMock()
-        sys.modules['crewai.tools'] = mock.MagicMock()
+
+        sys.modules["crewai"] = mock.MagicMock()
+        sys.modules["crewai.tools"] = mock.MagicMock()
 
         spec.loader.exec_module(module)
         agent = module.AssetConverterAgent()
@@ -126,7 +126,7 @@ def test_convert_textures_method():
                 {"path": str(input_dir / "dirt.png"), "usage": "block"},
                 {"path": str(input_dir / "custom.png"), "usage": "item"},
             ],
-            "output_dir": str(output_dir)
+            "output_dir": str(output_dir),
         }
 
         # Convert textures
@@ -138,26 +138,28 @@ def test_convert_textures_method():
         print(f"Successful: {result['successful_conversions']}")
         print(f"Failed: {result['failed_conversions']}")
 
-        assert result['total_textures'] == 3
-        assert result['successful_conversions'] == 3
-        assert result['failed_conversions'] == 0
-        assert len(result['errors']) == 0
+        assert result["total_textures"] == 3
+        assert result["successful_conversions"] == 3
+        assert result["failed_conversions"] == 0
+        assert len(result["errors"]) == 0
 
         # Verify output files
-        for converted in result['converted_textures']:
-            output_path = Path(converted['converted_path'])
+        for converted in result["converted_textures"]:
+            output_path = Path(converted["converted_path"])
             assert output_path.exists(), f"Output file not created: {output_path}"
 
             img = Image.open(output_path)
             print(f"✓ {output_path.name}: {img.size} {img.mode}")
 
-            assert img.format == 'PNG'
-            assert img.mode == 'RGBA'
+            assert img.format == "PNG"
+            assert img.mode == "RGBA"
 
         # Verify custom.png was resized to power of 2
-        custom_result = next(r for r in result['converted_textures'] if 'custom' in r['converted_path'])
-        assert custom_result['resized'] is True
-        assert tuple(custom_result['dimensions']) == (64, 64)  # 33 -> 64, 45 -> 64
+        custom_result = next(
+            r for r in result["converted_textures"] if "custom" in r["converted_path"]
+        )
+        assert custom_result["resized"] is True
+        assert tuple(custom_result["dimensions"]) == (64, 64)  # 33 -> 64, 45 -> 64
         print(f"✓ Power-of-2 resize verified: {custom_result['dimensions']}")
 
         print("\n=== Test Passed ===\n")
@@ -171,45 +173,42 @@ def test_fallback_texture():
 
         # Import the module with mocked crewai
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "asset_converter",
-            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py")
+            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py"),
         )
         module = importlib.util.module_from_spec(spec)
 
         import unittest.mock as mock
-        sys.modules['crewai'] = mock.MagicMock()
-        sys.modules['crewai.tools'] = mock.MagicMock()
+
+        sys.modules["crewai"] = mock.MagicMock()
+        sys.modules["crewai.tools"] = mock.MagicMock()
 
         spec.loader.exec_module(module)
         agent = module.AssetConverterAgent()
 
         # Try to convert non-existent file
-        result = agent._convert_single_texture(
-            "/nonexistent/file.png",
-            {},
-            "block",
-            output_dir
-        )
+        result = agent._convert_single_texture("/nonexistent/file.png", {}, "block", output_dir)
 
         print(f"\n=== Test: Fallback Texture ===")
         print(f"Success: {result['success']}")
         print(f"Was fallback: {result['was_fallback']}")
         print(f"Optimizations: {result['optimizations_applied']}")
 
-        assert result['success'] is True
-        assert result['was_fallback'] is True
-        assert any('fallback' in opt.lower() for opt in result['optimizations_applied'])
+        assert result["success"] is True
+        assert result["was_fallback"] is True
+        assert any("fallback" in opt.lower() for opt in result["optimizations_applied"])
 
         # Verify fallback was saved
-        output_path = Path(result['converted_path'])
+        output_path = Path(result["converted_path"])
         assert output_path.exists(), f"Fallback file not created: {output_path}"
 
         img = Image.open(output_path)
         print(f"✓ Fallback created: {img.size} {img.mode}")
 
-        assert img.format == 'PNG'
-        assert img.mode == 'RGBA'
+        assert img.format == "PNG"
+        assert img.mode == "RGBA"
         assert img.size == (16, 16)  # Default fallback size
 
         print("\n=== Test Passed ===\n")
@@ -224,21 +223,23 @@ def test_power_of_2_constraints():
 
         # Import the module with mocked crewai
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "asset_converter",
-            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py")
+            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py"),
         )
         module = importlib.util.module_from_spec(spec)
 
         import unittest.mock as mock
-        sys.modules['crewai'] = mock.MagicMock()
-        sys.modules['crewai.tools'] = mock.MagicMock()
+
+        sys.modules["crewai"] = mock.MagicMock()
+        sys.modules["crewai.tools"] = mock.MagicMock()
 
         spec.loader.exec_module(module)
         agent = module.AssetConverterAgent()
 
         test_cases = [
-            (17, 17, 32, 32),   # Round up to next power of 2
+            (17, 17, 32, 32),  # Round up to next power of 2
             (33, 65, 64, 128),  # Different dimensions
             (100, 100, 128, 128),  # Round up
             (1024, 1024, 1024, 1024),  # Already at max
@@ -253,14 +254,17 @@ def test_power_of_2_constraints():
 
             result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
 
-            actual_size = result['converted_dimensions']
-            print(f"Input: {width}x{height} → Output: {actual_size[0]}x{actual_size[1]} (Expected: {expected_width}x{expected_height})")
+            actual_size = result["converted_dimensions"]
+            print(
+                f"Input: {width}x{height} → Output: {actual_size[0]}x{actual_size[1]} (Expected: {expected_width}x{expected_height})"
+            )
 
-            assert actual_size == (expected_width, expected_height), \
+            assert actual_size == (expected_width, expected_height), (
                 f"Expected {expected_width}x{expected_height}, got {actual_size}"
+            )
 
             # Verify file was saved with correct dimensions
-            output_file = Path(result['converted_path'])
+            output_file = Path(result["converted_path"])
             img = Image.open(output_file)
             assert img.size == (expected_width, expected_height)
 
@@ -278,15 +282,17 @@ def test_performance():
 
         # Import the module with mocked crewai
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "asset_converter",
-            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py")
+            os.path.join(os.path.dirname(__file__), "..", "agents", "asset_converter.py"),
         )
         module = importlib.util.module_from_spec(spec)
 
         import unittest.mock as mock
-        sys.modules['crewai'] = mock.MagicMock()
-        sys.modules['crewai.tools'] = mock.MagicMock()
+
+        sys.modules["crewai"] = mock.MagicMock()
+        sys.modules["crewai.tools"] = mock.MagicMock()
 
         spec.loader.exec_module(module)
         agent = module.AssetConverterAgent()
@@ -305,7 +311,7 @@ def test_performance():
 
         for texture_path in textures:
             result = agent._convert_single_texture(texture_path, {}, "block", output_dir)
-            assert result['success']
+            assert result["success"]
 
         end_time = time.time()
         total_time = end_time - start_time
@@ -328,7 +334,7 @@ def test_performance():
         print("\n=== Test Passed ===\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("Direct Texture Conversion Tests")
     print("=" * 60)

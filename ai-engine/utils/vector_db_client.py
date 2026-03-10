@@ -70,9 +70,7 @@ class VectorDBClient:
             logger.info("OpenAI unavailable, using local embedding generator")
             return LocalEmbeddingGenerator()
 
-    async def index_document(
-        self, document_content: str, document_source: str
-    ) -> bool:
+    async def index_document(self, document_content: str, document_source: str) -> bool:
         """
         Calculates a hash for the document content, generates an embedding,
         and sends it to the backend to be indexed.
@@ -99,11 +97,15 @@ class VectorDBClient:
                 result = self.embedding_generator.generate_embedding(document_content)
 
                 if result is None:
-                    logger.error(f"Failed to generate embedding for document source '{document_source}'.")
+                    logger.error(
+                        f"Failed to generate embedding for document source '{document_source}'."
+                    )
                     return False
 
                 # Cache the embedding for future use
-                self._cache.put(document_content, self.embedding_generator.model_name, result.embedding)
+                self._cache.put(
+                    document_content, self.embedding_generator.model_name, result.embedding
+                )
                 actual_vector = result.embedding.tolist()
 
             expected_dimension = self.embedding_generator.dimensions
@@ -124,12 +126,12 @@ class VectorDBClient:
             # e.g. /api/v1/embeddings/
             response = await self.client.post("/embeddings/", json=payload)
 
-            if response.status_code == 201: # HTTP 201 Created
+            if response.status_code == 201:  # HTTP 201 Created
                 logger.info(
                     f"Successfully indexed document from source '{document_source}' with hash '{content_hash}'."
                 )
                 return True
-            elif response.status_code == 200: # Handle if backend returns 200 OK on existing hash
+            elif response.status_code == 200:  # Handle if backend returns 200 OK on existing hash
                 logger.info(
                     f"Document from source '{document_source}' with hash '{content_hash}' likely already exists or was updated."
                 )
@@ -192,27 +194,31 @@ class VectorDBClient:
                 payload["document_source_filter"] = document_source_filter
 
             response = await self.client.post("/embeddings/search/", json=payload)
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
             return response.json().get("results", [])
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error during search for '{query_text[:100]}...': {e.response.status_code} - {e.response.text}")
+            logger.error(
+                f"HTTP error during search for '{query_text[:100]}...': {e.response.status_code} - {e.response.text}"
+            )
         except httpx.RequestError as e:
             logger.error(f"Request error during search for '{query_text[:100]}...': {e}")
         except Exception as e:
-            logger.error(f"An unexpected error occurred during search for '{query_text[:100]}...': {e}")
+            logger.error(
+                f"An unexpected error occurred during search for '{query_text[:100]}...': {e}"
+            )
         return []
 
     async def get_embedding(self, text: str) -> Optional[List[float]]:
         """
         Generate an embedding for the given text.
-        
+
         This method provides direct access to embedding generation functionality,
         supporting both OpenAI and local embedding models.
-        
+
         Args:
             text: The text content to generate an embedding for.
-            
+
         Returns:
             A list of floats representing the embedding vector, or None if
             embedding generation failed.
@@ -223,18 +229,20 @@ class VectorDBClient:
             if cached is not None:
                 logger.debug("Using cached embedding")
                 return cached.tolist()
-            
+
             # Generate embedding using the configured provider
             result = self.embedding_generator.generate_embedding(text)
-            
+
             if result is None:
                 logger.error(f"Failed to generate embedding for text: {text[:50]}...")
                 return None
-            
+
             # Cache the embedding
             self._cache.put(text, self.embedding_generator.model_name, result.embedding)
-            
-            logger.info(f"Generated embedding of dimension {len(result.embedding)} using {self.embedding_generator.model_name}")
+
+            logger.info(
+                f"Generated embedding of dimension {len(result.embedding)} using {self.embedding_generator.model_name}"
+            )
             return result.embedding.tolist()
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
@@ -247,6 +255,7 @@ class VectorDBClient:
         # For example: if hasattr(self.embedding_generator, 'close') and asyncio.iscoroutinefunction(self.embedding_generator.close):
         #    await self.embedding_generator.close()
         logger.info("VectorDBClient closed.")
+
 
 # Example usage (primarily for testing this client directly)
 async def main():
@@ -274,11 +283,14 @@ async def main():
     if search_results:
         print(f"Found {len(search_results)} search results for '{search_query}':")
         for i, result in enumerate(search_results):
-            print(f"  Result {i+1}: Source: {result.get('document_source')}, Score: {result.get('similarity_score'):.4f}, Content: '{result.get('content','')[:100]}...'")
+            print(
+                f"  Result {i + 1}: Source: {result.get('document_source')}, Score: {result.get('similarity_score'):.4f}, Content: '{result.get('content', '')[:100]}...'"
+            )
     else:
         print(f"No search results found for '{search_query}' or an error occurred.")
 
     await client.close()
+
 
 if __name__ == "__main__":
     # This is a simple way to run the async main function.

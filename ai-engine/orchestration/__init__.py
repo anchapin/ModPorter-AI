@@ -11,11 +11,11 @@ from .worker_pool import WorkerPool
 from .strategy_selector import OrchestrationStrategy, StrategySelector
 
 __all__ = [
-    'TaskGraph',
-    'TaskNode', 
-    'TaskStatus',
-    'ParallelOrchestrator',
-    'WorkerPool',
-    'OrchestrationStrategy',
-    'StrategySelector'
+    "TaskGraph",
+    "TaskNode",
+    "TaskStatus",
+    "ParallelOrchestrator",
+    "WorkerPool",
+    "OrchestrationStrategy",
+    "StrategySelector",
 ]
