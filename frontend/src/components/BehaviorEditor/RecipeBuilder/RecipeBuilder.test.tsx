@@ -11,8 +11,7 @@ import {
   act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
-import { vi, describe, test, expect, beforeEach } from 'vitest';
+import { vi, describe, beforeEach, test, expect } from 'vitest';
 import { RecipeBuilder, Recipe, RecipeItem } from './RecipeBuilder';
 
 const mockAvailableItems: RecipeItem[] = [
@@ -59,10 +58,10 @@ describe('RecipeBuilder Component', () => {
       );
 
       expect(screen.getByText('Recipe Builder')).toBeInTheDocument();
-      // Component uses InputLabel with sx id, check for form control differently
-      expect(screen.getAllByText('Recipe Type').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Recipe Identifier').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Recipe Name').length).toBeGreaterThan(0);
+      // Use getByText for InputLabel since htmlFor is not set
+      expect(screen.getByText('Recipe Type')).toBeInTheDocument();
+      expect(screen.getByLabelText('Recipe Identifier')).toBeInTheDocument();
+      expect(screen.getByLabelText('Recipe Name')).toBeInTheDocument();
     });
 
     test('renders with initial recipe data', () => {
@@ -95,7 +94,7 @@ describe('RecipeBuilder Component', () => {
   });
 
   describe('Recipe Type Selection', () => {
-    test('displays all recipe types', async () => {
+    test('displays all recipe types', () => {
       render(
         <RecipeBuilder
           initialRecipe={mockRecipe}
@@ -105,9 +104,11 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Component renders - verify select element exists
-      const selects = document.querySelectorAll('.MuiSelect-select');
-      expect(selects.length).toBeGreaterThan(0);
+      // Use getByText for InputLabel since htmlFor is not set
+      expect(screen.getByText('Recipe Type')).toBeInTheDocument();
+
+      // Just verify recipe type text is present (dropdown options testing requires full DOM)
+      expect(screen.getByText('Shaped Crafting')).toBeInTheDocument();
     });
 
     test('changes recipe type when selected', async () => {
@@ -120,8 +121,8 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Component renders, verify initial state
-      expect(screen.getByText('Recipe Builder')).toBeInTheDocument();
+      // Just verify the component renders with the initial recipe type
+      expect(screen.getByText('Recipe Type')).toBeInTheDocument();
     });
   });
 
@@ -226,7 +227,10 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Verify component renders with item library
+      // Just verify the recipe grid is rendered
+      expect(screen.getByText('Shaped Recipe Pattern')).toBeInTheDocument();
+      
+      // Verify items are displayed
       expect(screen.getByText('Oak Planks')).toBeInTheDocument();
     });
   });
@@ -256,8 +260,9 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Just verify the button exists, state may vary
-      expect(screen.getByRole('button', { name: /undo/i })).toBeInTheDocument();
+      // Just verify the undo button exists
+      const undoButton = screen.getByRole('button', { name: /undo/i });
+      expect(undoButton).toBeInTheDocument();
     });
 
     test('undo button is enabled after changes', async () => {
@@ -356,8 +361,9 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Component renders in readOnly mode - verify key elements exist
-      expect(screen.getByText('Recipe Builder')).toBeInTheDocument();
+      // Use getByText for InputLabel since htmlFor is not set
+      expect(screen.getByText('Recipe Type')).toBeInTheDocument();
+      expect(screen.getByLabelText('Recipe Name')).toBeDisabled();
     });
 
     test('disables undo/redo buttons when readOnly is true', () => {
@@ -371,14 +377,16 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Verify buttons exist in readOnly mode
-      expect(screen.getByRole('button', { name: /undo/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /redo/i })).toBeInTheDocument();
+      const undoButton = screen.getByRole('button', { name: /undo/i });
+      const redoButton = screen.getByRole('button', { name: /redo/i });
+
+      expect(undoButton).toBeDisabled();
+      expect(redoButton).toBeDisabled();
     });
   });
 
   describe('Recipe Saving', () => {
-    test('calls onRecipeSave when save button is clicked', () => {
+    test('calls onRecipeSave when save button is clicked', async () => {
       render(
         <RecipeBuilder
           initialRecipe={mockRecipe}
@@ -388,14 +396,17 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Verify save button exists
       const saveButton = screen.getByRole('button', { name: /save recipe/i });
+      
+      // Just verify save button exists
       expect(saveButton).toBeInTheDocument();
     });
   });
 
   describe('Unsaved Changes Indicator', () => {
     test('shows unsaved changes indicator when recipe is modified', async () => {
+      const user = userEvent.setup();
+
       render(
         <RecipeBuilder
           initialRecipe={mockRecipe}
@@ -405,8 +416,13 @@ describe('RecipeBuilder Component', () => {
         />
       );
 
-      // Component renders with mockRecipe that has name and identifier
-      expect(screen.getByText('Recipe Builder')).toBeInTheDocument();
+      await act(async () => {
+        await user.type(screen.getByLabelText('Recipe Name'), ' Modified');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+      });
     });
   });
 });
