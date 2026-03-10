@@ -86,7 +86,7 @@ export const ConversionHistoryItem = memo(
         <div className="item-actions">
           {item.status === 'completed' && !showConfirm && (
             <button
-              className="download-btn"
+              className="download-btn focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:outline-none"
               onClick={() => onDownload(item.job_id, item.original_filename)}
               title="Download converted file"
               aria-label={`Download ${item.original_filename}`}
@@ -102,7 +102,7 @@ export const ConversionHistoryItem = memo(
               aria-label="Confirm deletion"
             >
               <button
-                className="confirm-yes-btn"
+                className="confirm-yes-btn focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
                 onClick={() => onDelete(item.job_id)}
                 aria-label="Confirm deletion"
                 title="Confirm deletion"
@@ -110,7 +110,7 @@ export const ConversionHistoryItem = memo(
                 ✓
               </button>
               <button
-                className="confirm-no-btn"
+                className="confirm-no-btn focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
                 onClick={() => setShowConfirm(false)}
                 aria-label="Cancel deletion"
                 title="Cancel deletion"
@@ -121,7 +121,7 @@ export const ConversionHistoryItem = memo(
             </div>
           ) : (
             <button
-              className="delete-btn"
+              className="delete-btn focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:outline-none"
               onClick={() => setShowConfirm(true)}
               title="Remove from history"
               aria-label={`Remove ${item.original_filename} from history`}

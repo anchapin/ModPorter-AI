@@ -215,14 +215,14 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                     Delete {selectedItems.size} items?
                   </span>
                   <button
-                    className="delete-selected-btn"
+                    className="delete-selected-btn focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
                     onClick={deleteSelected}
                     aria-label="Yes, delete selected items"
                   >
                     Yes
                   </button>
                   <button
-                    className="cancel-btn"
+                    className="cancel-btn focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
                     onClick={() => setConfirmDelete(false)}
                     aria-label="Cancel delete"
                     autoFocus
@@ -232,7 +232,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                 </div>
               ) : (
                 <button
-                  className="delete-selected-btn"
+                  className="delete-selected-btn focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
                   onClick={() => setConfirmDelete(true)}
                   title={`Delete ${selectedItems.size} selected items`}
                   aria-label={`Delete ${selectedItems.size} selected items`}
@@ -249,14 +249,14 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
               >
                 <span className="confirm-text">Clear all?</span>
                 <button
-                  className="clear-all-btn"
+                  className="clear-all-btn focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:outline-none"
                   onClick={clearAllHistory}
                   aria-label="Yes, clear all history"
                 >
                   Yes
                 </button>
                 <button
-                  className="cancel-btn"
+                  className="cancel-btn focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
                   onClick={() => setConfirmClear(false)}
                   aria-label="Cancel clear all"
                   autoFocus
@@ -266,7 +266,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
               </div>
             ) : (
               <button
-                className="clear-all-btn"
+                className="clear-all-btn focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:outline-none"
                 onClick={() => setConfirmClear(true)}
                 title="Clear all history"
                 aria-label="Clear all history"
@@ -295,7 +295,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
           </p>
           {onStartNewConversion && (
             <button
-              className="start-new-btn"
+              className="start-new-btn focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
               onClick={onStartNewConversion}
               aria-label="Start a new conversion"
             >
