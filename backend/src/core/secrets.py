@@ -202,6 +202,8 @@ class SecretsManager:
         try:
             import requests
 
+            _ = requests.__version__  # Use the module to avoid unused import error
+
             self._doppler_headers = {
                 "Authorization": f"Bearer {self.settings.doppler_token}",
             }

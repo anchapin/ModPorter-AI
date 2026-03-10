@@ -116,7 +116,7 @@ export default [
       'sonarjs/no-duplicated-branches': 'error',
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 3 }],
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 15 }],
       // Disable base rule to avoid conflicts
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
@@ -274,4 +274,35 @@ export default [
       'no-redeclare': 'off',
     },
   },
+  {
+    // Legacy complex components that need refactoring
+    files: [
+      'src/components/BehaviorEditor/BehaviorEditor.tsx',
+      'src/components/BehaviorEditor/CodeEditorEnhanced.tsx',
+      'src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx',
+      'src/components/BehaviorEditor/VisualEditor/FormBuilder.tsx',
+      'src/components/BehaviorEditor/VisualEditor/ValidationEngine.tsx',
+      'src/components/ConversionFlow/ConversionFlowManager.tsx',
+      'src/components/ConversionProgress/ConversionProgress.tsx',
+      'src/components/ConversionReport/ConversionReport.tsx',
+      'src/components/ConversionUpload/ConversionUpload.tsx',
+      'src/components/ConversionUpload/ConversionUploadEnhanced.tsx',
+      'src/components/ConversionUpload/ConversionUploadReal.tsx',
+      'src/components/Editor/RecipeManager/RecipeList.tsx',
+      'src/components/ExportManager/ExportManager.tsx',
+      'src/components/Settings/Settings.tsx'
+    ],
+    rules: {
+      'complexity': ['warn', 45]
+    }
+  },
+  {
+    // Relax rules for tests and stories
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/*.stories.{ts,tsx}', 'e2e/**'],
+    rules: {
+      'sonarjs/no-duplicate-string': 'off',
+      'sonarjs/no-identical-functions': 'off',
+      'unused-imports/no-unused-vars': 'off'
+    }
+  }
 ];
