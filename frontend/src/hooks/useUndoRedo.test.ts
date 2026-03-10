@@ -6,20 +6,23 @@ import { renderHook, act } from '@testing-library/react';
 import { useUndoRedo } from './useUndoRedo';
 
 describe('useUndoRedo Hook', () => {
+  // Disable debounce for all tests to simplify testing
+  const defaultOptions = { enableDebounce: false };
+  
   describe('Basic Functionality', () => {
     test('initializes with provided state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
       expect(result.current.state).toBe('initial');
     });
 
     test('canUndo and canRedo are initially false', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
       expect(result.current.canUndo).toBe(false);
       expect(result.current.canRedo).toBe(false);
     });
 
     test('updates state when updateState is called', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('new state', 'Test update');
@@ -31,7 +34,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Undo Functionality', () => {
     test('canUndo is true after state update', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('new state', 'Test update');
@@ -41,7 +44,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('undo reverts to previous state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update 1');
@@ -58,16 +61,16 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('undo returns null when no history', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
-      const undoResult = act(() => result.current.undo());
+      const undoResult = result.current.undo();
 
       expect(undoResult).toBe(null);
       expect(result.current.state).toBe('initial');
     });
 
     test('canUndo is false after undoing to initial state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('new state', 'Update');
@@ -83,7 +86,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Redo Functionality', () => {
     test('canRedo is true after undo', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update');
@@ -94,7 +97,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('redo restores undone state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update 1');
@@ -112,15 +115,15 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('redo returns null when no redo history', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
-      const redoResult = act(() => result.current.redo());
+      const redoResult = result.current.redo();
 
       expect(redoResult).toBe(null);
     });
 
     test('canRedo is false after redoing all changes', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update');
@@ -140,7 +143,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('History Management', () => {
     test('clearHistory resets to current state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update 1');
@@ -160,7 +163,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('getHistory returns current state', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('second', 'Update');
@@ -176,7 +179,7 @@ describe('useUndoRedo Hook', () => {
 
     test('maxHistory limits history size', () => {
       const { result } = renderHook(() =>
-        useUndoRedo('initial', { maxHistory: 3 })
+        useUndoRedo('initial', { maxHistory: 3, enableDebounce: false })
       );
 
       act(() => {
@@ -193,7 +196,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Function Update Support', () => {
     test('supports function-based state updates', () => {
-      const { result } = renderHook(() => useUndoRedo(0));
+      const { result } = renderHook(() => useUndoRedo(0, defaultOptions));
 
       act(() => {
         result.current.updateState((prev: number) => prev + 1, 'Increment');
@@ -203,7 +206,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('function updates access previous state', () => {
-      const { result } = renderHook(() => useUndoRedo({ count: 0 }));
+      const { result } = renderHook(() => useUndoRedo({ count: 0 }, defaultOptions));
 
       act(() => {
         result.current.updateState(
@@ -218,7 +221,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Debounce Option', () => {
     test('debounces updates when enabled', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       const { result } = renderHook(() =>
         useUndoRedo('initial', { debounceMs: 100, enableDebounce: true })
       );
@@ -236,13 +239,13 @@ describe('useUndoRedo Hook', () => {
       expect(result.current.canUndo).toBe(false);
 
       act(() => {
-        jest.advanceTimersByTime(100);
+        vi.advanceTimersByTime(100);
       });
 
       // After debounce, canUndo should be true
       expect(result.current.canUndo).toBe(true);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     test('no debounce when disabled', () => {
@@ -261,7 +264,7 @@ describe('useUndoRedo Hook', () => {
   describe('Complex State Types', () => {
     test('works with objects', () => {
       const { result } = renderHook(() =>
-        useUndoRedo({ name: 'test', value: 0 })
+        useUndoRedo({ name: 'test', value: 0 }, defaultOptions)
       );
 
       act(() => {
@@ -272,7 +275,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('works with arrays', () => {
-      const { result } = renderHook(() => useUndoRedo([1, 2, 3]));
+      const { result } = renderHook(() => useUndoRedo([1, 2, 3], defaultOptions));
 
       act(() => {
         result.current.updateState([1, 2, 3, 4], 'Add item');
@@ -283,7 +286,7 @@ describe('useUndoRedo Hook', () => {
 
     test('handles nested object updates', () => {
       const { result } = renderHook(() =>
-        useUndoRedo({ nested: { value: 0 } })
+        useUndoRedo({ nested: { value: 0 } }, defaultOptions)
       );
 
       act(() => {
@@ -296,7 +299,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Edge Cases', () => {
     test('handles rapid undo/redo operations', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('1', 'Update 1');
@@ -317,7 +320,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('handles update with same value as previous', () => {
-      const { result } = renderHook(() => useUndoRedo('initial'));
+      const { result } = renderHook(() => useUndoRedo('initial', defaultOptions));
 
       act(() => {
         result.current.updateState('initial', 'Same value');
