@@ -9,3 +9,16 @@ from .performance_models import (
     ScenarioDefinition as ScenarioDefinition,
     CustomScenarioRequest as CustomScenarioRequest,
 )
+from .build_performance_models import (
+    BuildStageTiming as BuildStageTiming,
+    BuildStageUpdateRequest as BuildStageUpdateRequest,
+    BuildResourceUsage as BuildResourceUsage,
+    BuildPerformanceMetrics as BuildPerformanceMetrics,
+    BuildPerformanceSnapshot as BuildPerformanceSnapshot,
+    BuildPerformanceStartRequest as BuildPerformanceStartRequest,
+    BuildPerformanceStartResponse as BuildPerformanceStartResponse,
+    BuildPerformanceEndRequest as BuildPerformanceEndRequest,
+    BuildPerformanceResponse as BuildPerformanceResponse,
+    BuildPerformanceSummary as BuildPerformanceSummary,
+    BuildPerformanceStats as BuildPerformanceStats,
+)
