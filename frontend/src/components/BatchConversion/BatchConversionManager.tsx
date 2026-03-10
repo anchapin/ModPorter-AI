@@ -227,7 +227,11 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           <div className="file-list-header">
             <span>{items.length} file(s) queued</span>
             {!isConverting && (
-              <button className="clear-button" onClick={clearAll}>
+              <button
+                className="clear-button"
+                onClick={clearAll}
+                aria-label="Clear all queued files"
+              >
                 Clear All
               </button>
             )}
@@ -261,6 +265,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                   <button
                     className="remove-button"
                     onClick={() => removeItem(item.id)}
+                    aria-label={`Remove ${item.filename} from queue`}
                   >
                     ✕
                   </button>
@@ -292,6 +297,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                 <button
                   className="start-button primary"
                   onClick={startBatchConversion}
+                  aria-label="Start batch conversion"
                 >
                   Start Batch ({pendingCount})
                 </button>
@@ -307,6 +313,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                 <button
                   className="download-button secondary"
                   onClick={downloadAll}
+                  aria-label="Download all completed conversions"
                 >
                   Download All ({completedCount})
                 </button>

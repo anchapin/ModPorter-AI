@@ -58,12 +58,15 @@ def configure_structlog(
     log_dir = os.getenv("LOG_DIR", "/var/log/modporter")
 
     # Configure processors based on format
+    # Order matters: context merging -> logger info -> level -> timestamper -> exception handling -> renderer
     processors = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
         TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
     ]
 
     if debug_mode:
@@ -72,10 +75,6 @@ def configure_structlog(
         processors.append(JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer(colors=False))
-
-    # Add exception info processor
-    processors.append(structlog.processors.StackInfoRenderer())
-    processors.append(structlog.processors.format_exc_info)
 
     # Configure structlog
     structlog.configure(
