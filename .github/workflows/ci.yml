@@ -207,10 +207,9 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
-    # Use Python base image only when dependencies changed and prepare-base-images has an image
-    # When dependencies haven't changed, use the default python image
+    # Use Python base image only when dependencies changed, otherwise use runner's Python
     container:
-      image: ${{ coalesce(needs.prepare-base-images.outputs.python-image, 'python:3.11-slim') }}
+      image: ${{ needs.prepare-base-images.outputs.python-image }}
       options: --name test-container-${{ matrix.test-suite }} --user root
 
     services:
