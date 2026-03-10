@@ -41,7 +41,7 @@ class TestQueryMetrics:
         
         metrics.add_execution(0.2, (2,))
         assert metrics.count == 2
-        assert metrics.total_time == 0.3
+        assert metrics.total_time == pytest.approx(0.3)
         assert metrics.min_time == 0.1
         assert metrics.max_time == 0.2
     
