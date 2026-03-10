@@ -10,7 +10,6 @@ Issue: #514 - Set up data collection for RL training (RL Pipeline Phase 1)
 
 import json
 import logging
-import os
 import sqlite3
 import hashlib
 from datetime import datetime

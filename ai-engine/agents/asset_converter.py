@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 import logging
 import json
 import zipfile
-import io
 from pathlib import Path
 from PIL import Image
 
@@ -2270,7 +2269,6 @@ class AssetConverterAgent:
             "namespace": "mod_namespace"  // optional
         }
         """
-        import tempfile
 
         try:
             # Parse input

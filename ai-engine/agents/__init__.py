@@ -5,7 +5,7 @@ try:
     from .rag_agents import RAGAgents
 
     __all__ = ["RAGAgents"]
-except ImportError as e:
+except ImportError:
     RAGAgents = None
     __all__ = []
 

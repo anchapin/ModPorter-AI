@@ -5,7 +5,7 @@ Enhanced for Issue #547: Connect Agents for MVP Pipeline
 """
 
 from crewai import Agent, Task, Crew, Process
-from typing import Dict, List, Any, Optional, TypedDict, Literal
+from typing import Dict, List, Any, Optional, Literal
 import json
 import os
 from pathlib import Path

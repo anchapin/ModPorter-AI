@@ -10,9 +10,7 @@ This module provides a connection manager that:
 
 import logging
 from typing import Dict, Set, List
-from fastapi import WebSocket, WebSocketDisconnect
-from uuid import UUID
-import json
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 

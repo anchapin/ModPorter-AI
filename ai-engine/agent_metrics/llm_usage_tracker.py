@@ -8,7 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-import json
 
 
 # Pricing per 1K tokens (as of 2024, adjust as needed)

@@ -13,8 +13,7 @@ import asyncio
 import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional, AsyncIterator
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 import httpx
@@ -22,7 +21,6 @@ import httpx
 from services.ai_engine_client import (
     AIEngineClient,
     get_ai_engine_client,
-    close_ai_engine_client,
     AIEngineError,
 )
 from services.cache import CacheService

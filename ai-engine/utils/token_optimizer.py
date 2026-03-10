@@ -7,12 +7,10 @@ Issue: #385 - LLM token optimization (Phase 3)
 
 import json
 import hashlib
-import time
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from collections import OrderedDict
 from datetime import datetime, timedelta
-import re
 
 
 # Token pricing (approximate, in dollars per 1M tokens)

@@ -6,20 +6,18 @@ Provides endpoints for visualizing rate limiting metrics and statistics.
 Issue: #643 - Backend: Implement Rate Limiting Dashboard
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.responses import Response
 from typing import Dict, List, Optional
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from services.rate_limiter import get_rate_limiter, RateLimiter
+from services.rate_limiter import get_rate_limiter
 from services.metrics import (
-    rate_limit_hits_total,
-    rate_limit_requests_total,
     rate_limit_active_clients,
     registry,
 )
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest
 
 router = APIRouter()
 

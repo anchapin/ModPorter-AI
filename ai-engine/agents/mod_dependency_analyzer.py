@@ -8,12 +8,10 @@ download order for modpacks.
 Issue: #498 - Implement Mod Dependency Analysis & Resolution (Phase 5c)
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)

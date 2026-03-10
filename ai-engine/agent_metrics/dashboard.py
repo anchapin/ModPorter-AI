@@ -4,7 +4,7 @@ Metrics Dashboard for aggregating and exporting metrics
 
 import json
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import logging
 
 from .performance_monitor import performance_tracker

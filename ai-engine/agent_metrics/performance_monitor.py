@@ -9,8 +9,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
-import json
-import os
 
 
 @dataclass
@@ -310,7 +308,7 @@ class PerformanceMonitor:
         for callback in self._alert_callbacks:
             try:
                 callback(alert_type, data)
-            except Exception as e:
+            except Exception:
                 # Don't let alert callback errors affect operation
                 pass
 

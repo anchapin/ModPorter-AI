@@ -8,12 +8,10 @@ suggestions, and creates final mod load order lists.
 Issue: #499 - Implement Modpack Conflict Detection & Load Order (Phase 5d)
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -299,7 +297,6 @@ class ModpackConflictDetector:
         ]
 
         # Forge-specific mods
-        forge_mods = ["forge", "minecraftforge"]
 
         # Quilt-specific
         quilt_mods = ["quilt", "quilt-loader"]

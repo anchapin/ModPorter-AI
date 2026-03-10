@@ -8,9 +8,11 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactCompiler from 'eslint-plugin-react-compiler';
+import boundaries from 'eslint-plugin-boundaries';
+import * as importX from 'eslint-plugin-import-x';
 
 export default [
-  { ignores: ['dist', 'coverage'] },
+  { ignores: ['dist', 'coverage', 'node_modules'] },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -34,11 +36,48 @@ export default [
       'react-refresh': reactRefresh,
       react,
       'react-compiler': reactCompiler,
+      boundaries,
+      'import-x': importX,
     },
     settings: {
       react: {
         version: '19.2',
       },
+      'import-x/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+        },
+      },
+      'boundaries/elements': [
+        {
+          type: 'components',
+          pattern: 'src/components/**',
+        },
+        {
+          type: 'hooks',
+          pattern: 'src/hooks/**',
+        },
+        {
+          type: 'services',
+          pattern: 'src/services/**',
+        },
+        {
+          type: 'contexts',
+          pattern: 'src/contexts/**',
+        },
+        {
+          type: 'pages',
+          pattern: 'src/pages/**',
+        },
+        {
+          type: 'utils',
+          pattern: 'src/utils/**',
+        },
+        {
+          type: 'types',
+          pattern: 'src/types/**',
+        },
+      ],
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -136,6 +175,34 @@ export default [
       'react-compiler/react-compiler': 'warn',
       // Warn about deprecated React APIs
       'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
+      // Cyclomatic complexity threshold
+      'complexity': ['warn', 45],
+      // Module boundary enforcement rules
+      'boundaries/element-types': [
+        'error',
+        {
+          default: 'allow',
+          message: '${from.type} is not allowed to import ${to.type}',
+          rules: [
+            {
+              from: 'components',
+              disallow: ['pages'],
+            },
+            {
+              from: 'hooks',
+              disallow: ['components', 'pages'],
+            },
+            {
+              from: 'services',
+              disallow: ['components', 'hooks', 'pages', 'contexts'],
+            },
+            {
+              from: 'utils',
+              disallow: ['components', 'hooks', 'pages', 'services', 'contexts'],
+            },
+          ],
+        },
+      ],
       // New React 19 rules would go here when eslint-plugin-react releases them
     },
   },

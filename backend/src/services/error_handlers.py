@@ -418,7 +418,6 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 def register_exception_handlers(app):
     """Register all exception handlers with the FastAPI app"""
-    from fastapi import FastAPI
     from fastapi.exceptions import RequestValidationError
 
     app.add_exception_handler(ModPorterException, modporter_exception_handler)

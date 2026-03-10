@@ -3,8 +3,7 @@ Logic Translator Agent for Java to JavaScript code conversion
 Enhanced for Issue #546: Block Generation from Java block analysis
 """
 
-from typing import List, Dict, Any, Optional
-import os
+from typing import List, Dict, Any
 
 import json
 from crewai.tools import tool

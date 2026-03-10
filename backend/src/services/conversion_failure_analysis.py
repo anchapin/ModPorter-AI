@@ -10,12 +10,11 @@ Issue: #455 - Comprehensive Error Handling (Phase 3)
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
-import json
 import traceback
 
-from .structured_logging import correlation_id_var, set_correlation_id, get_correlation_id
+from .structured_logging import set_correlation_id, get_correlation_id
 
 logger = logging.getLogger(__name__)
 

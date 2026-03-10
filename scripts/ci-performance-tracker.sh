@@ -204,6 +204,42 @@ EOF
     log_success "Generated PR report: $report_file"
 }
 
+# Update history for trend tracking
+update_history() {
+    local summary_file="$PERF_DATA_DIR/summary.json"
+    local history_file="$PERF_DATA_DIR/history.json"
+    
+    if [ ! -f "$summary_file" ]; then
+        log_error "No metrics summary found to add to history"
+        return 1
+    fi
+    
+    # Initialize history file if it doesn't exist
+    if [ ! -f "$history_file" ]; then
+        echo "[]" > "$history_file"
+    fi
+    
+    # Append current summary to history (limit to last 50 runs)
+    local temp_history=$(mktemp)
+    jq ". += [$(cat "$summary_file")] | .[-50:]" "$history_file" > "$temp_history"
+    mv "$temp_history" "$history_file"
+    
+    log_success "History updated: $history_file"
+    
+    # Generate trend report
+    local trend_report="$PERF_DATA_DIR/trend-report.md"
+    cat > "$trend_report" << 'EOF'
+## 📈 Build Performance Trends (Last 10 runs)
+
+| Run # | Date | Duration | Steps | Avg Step |
+|-------|------|----------|-------|----------|
+EOF
+    
+    jq -r '.[] | "| \(.run_number) | \(.timestamp | split("T")[0]) | \(.total_duration_seconds)s | \(.steps_count) | \(.average_step_duration)s |"' "$history_file" | tail -n 10 >> "$trend_report"
+    
+    log_success "Trend report generated: $trend_report"
+}
+
 # Display help
 show_help() {
     cat << 'EOF'
@@ -217,6 +253,7 @@ Commands:
   record <name> <start> <end>  Record a step timing
   aggregate         Aggregate all metrics
   compare           Compare with baseline
+  history           Update history and generate trend report
   report            Generate PR report
   upload            Upload metrics artifact
   help              Show this message
@@ -226,6 +263,7 @@ Examples:
   ci-performance-tracker.sh record "Install Dependencies" 1678000000 1678000060
   ci-performance-tracker.sh aggregate
   ci-performance-tracker.sh compare
+  ci-performance-tracker.sh history
   ci-performance-tracker.sh report
 
 EOF
@@ -248,6 +286,9 @@ main() {
             ;;
         compare)
             compare_metrics
+            ;;
+        history)
+            update_history
             ;;
         report)
             generate_pr_report

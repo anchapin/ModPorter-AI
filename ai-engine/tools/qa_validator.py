@@ -11,7 +11,6 @@ Validation Rules:
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
@@ -334,7 +333,6 @@ class QAValidator:
                     block = json.load(f)
 
                 # Check for required block fields
-                required = ["format_version"]
                 has_block_definition = "minecraft:block" in block
 
                 if not has_block_definition:

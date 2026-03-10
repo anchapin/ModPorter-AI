@@ -10,9 +10,7 @@ import functools
 import logging
 import time
 from typing import Callable, Optional, Type, Tuple, Any
-from datetime import datetime
 
-from .metrics import record_conversion_job
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import structlog
 
-from services.structured_logging import set_correlation_id, clear_correlation_id, get_correlation_id
+from services.structured_logging import set_correlation_id, clear_correlation_id
 
 logger = structlog.get_logger(__name__)
 
@@ -75,9 +75,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         log.info(
             "request_started",
-            event="request",
-            path=request.url.path,
-            method=request.method,
+            # event is already part of the message or can be added as a separate field if needed
+            log_event="request",
         )
 
         try:
@@ -88,14 +87,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.time() - start_time) * 1000
 
             # Add response details to log
-            log.bind(
-                status_code=response.status_code,
-                duration_ms=round(duration_ms, 2),
-            ).info(
+            log.info(
                 "request_completed",
-                event="request",
-                path=request.url.path,
-                method=request.method,
+                log_event="request",
                 status_code=response.status_code,
                 duration_ms=round(duration_ms, 2),
             )

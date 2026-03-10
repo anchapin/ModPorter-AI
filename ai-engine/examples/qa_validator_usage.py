@@ -7,7 +7,6 @@ Bedrock .mcaddon files.
 """
 
 import sys
-import json
 from pathlib import Path
 
 # Add parent directory to path for imports

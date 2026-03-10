@@ -8,9 +8,7 @@ API Documentation: https://docs.modrinth.app/api-v2/
 import os
 import httpx
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 import logging
-import hashlib
 
 logger = logging.getLogger(__name__)
 

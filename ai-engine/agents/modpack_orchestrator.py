@@ -8,7 +8,6 @@ Issues: #496, #497, #498, #499 - Modpack Support (Phase 5a-d)
 Parent Issue: #478 - Implement Modpack Support (Phase 5)
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -18,12 +17,10 @@ from typing import Any, Dict, List, Optional, Union
 from .curseforge_parser import CurseForgeManifestParser, CurseForgeParserAgent
 from .modrinth_parser import ModrinthPackParser, ModrinthParserAgent
 from .mod_dependency_analyzer import (
-    ModDependencyAnalyzer,
     DependencyAnalysisResult,
     mod_dependency_analyzer,
 )
 from .modpack_conflict_detector import (
-    ModpackConflictDetector,
     ConflictDetectionResult,
     modpack_conflict_detector,
 )

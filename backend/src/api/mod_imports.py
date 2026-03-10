@@ -12,13 +12,13 @@ import httpx
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from db.base import get_db
 
 # Import services
-from services.curseforge_service import CurseForgeService, curseforge_service
-from services.modrinth_service import ModrinthService, modrinth_service
+from services.curseforge_service import curseforge_service
+from services.modrinth_service import modrinth_service
 
 # Configure logger
 logger = logging.getLogger(__name__)

@@ -252,6 +252,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Initialize performance tracking
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
+
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -339,6 +344,18 @@ jobs:
     - name: Install system dependencies
       run: |
         echo "🔧 Checking system dependencies..."
+        # Check if jq is available
+        if ! command -v jq &> /dev/null; then
+          echo "jq not found, attempting to install..."
+          if [ -w /var/lib/apt/lists ]; then
+            apt-get update -qq
+            apt-get install -y -qq jq
+          else
+            echo "⚠️ Cannot install jq (no write permissions to /var/lib/apt/lists)"
+          fi
+        else
+          echo "✅ jq is already available"
+        fi
         # Check if nc (netcat) is available
         if ! command -v nc &> /dev/null; then
           echo "netcat not found, attempting to install..."
@@ -529,26 +546,21 @@ jobs:
             ;;
         esac
         
+    - name: Record test metrics
+      if: always()
+      run: |
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
+        STEP_END=$(date +%s)
+        ./scripts/ci-performance-tracker.sh record "Integration Tests: ${{ matrix.test-suite }}" $STEP_START $STEP_END
       env:
-        REDIS_URL: redis://redis:6379
-        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
-        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
-        LOG_LEVEL: INFO
-        # Z.AI Configuration (Primary LLM backend)
-        USE_Z_AI: "${{ secrets.Z_AI_API_KEY != '' && 'true' || 'false' }}"
-        Z_AI_API_KEY: "${{ secrets.Z_AI_API_KEY }}"
-        Z_AI_MODEL: "${{ vars.Z_AI_MODEL || 'glm-4-plus' }}"
-        Z_AI_BASE_URL: "${{ vars.Z_AI_BASE_URL || 'https://api.z.ai/v1' }}"
-        Z_AI_MAX_RETRIES: "${{ vars.Z_AI_MAX_RETRIES || '3' }}"
-        Z_AI_TIMEOUT: "${{ vars.Z_AI_TIMEOUT || '300' }}"
-        Z_AI_TEMPERATURE: "${{ vars.Z_AI_TEMPERATURE || '0.1' }}"
-        Z_AI_MAX_TOKENS: "${{ vars.Z_AI_MAX_TOKENS || '4000' }}"
-        # Ollama Configuration (Fallback)
-        USE_OLLAMA: "${{ secrets.Z_AI_API_KEY == '' && 'true' || 'false' }}"
-        OLLAMA_MODEL: "llama3.2"
-        OLLAMA_BASE_URL: "http://localhost:11434"
-        TESTING: "true"
+        STEP_START: ${{ env.STEP_START }}
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: perf-metrics-integration-${{ matrix.test-suite }}
+        path: .github/perf-metrics/*.json
 
     # Cache management removed - not using Docker buildx cache
 
@@ -685,6 +697,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Initialize performance tracking
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
+
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
@@ -765,6 +782,17 @@ jobs:
             echo "Linting completed ✅"
             ;;
         esac
+        STEP_END=$(date +%s)
+        ./scripts/ci-performance-tracker.sh record "Frontend Tests: ${{ matrix.test-type }}" $STEP_START $STEP_END
+      env:
+        STEP_START: ${{ env.STEP_START }}
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: perf-metrics-frontend-${{ matrix.test-type }}
+        path: .github/perf-metrics/*.json
 
   # Mutation Testing - Python (ai-engine and backend)
   mutation-testing-python:
@@ -780,6 +808,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+
+    - name: Initialize performance tracking
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v6
@@ -850,7 +883,17 @@ jobs:
         # Real threshold enforcement happens in mutation-testing-summary job
         # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
-        exit 0
+        STEP_END=$(date +%s)
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python: ${{ matrix.project }}" $STEP_START $STEP_END
+      env:
+        STEP_START: ${{ env.STEP_START }}
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: perf-metrics-mutation-python-${{ matrix.project }}
+        path: .github/perf-metrics/*.json
 
   # Mutation Testing - JavaScript/TypeScript (frontend)
   mutation-testing-frontend:
@@ -862,6 +905,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+
+    - name: Initialize performance tracking
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
@@ -929,6 +977,17 @@ jobs:
         else
           echo "⚠️ No mutation report found - skipping threshold check"
         fi
+        STEP_END=$(date +%s)
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
+      env:
+        STEP_START: ${{ env.STEP_START }}
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: perf-metrics-mutation-frontend
+        path: .github/perf-metrics/*.json
 
   # Mutation Testing Summary
   mutation-testing-summary:

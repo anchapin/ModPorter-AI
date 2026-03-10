@@ -7,9 +7,8 @@ Provides endpoints for starting, updating, and retrieving build performance metr
 Issue: #691 - Build performance tracking
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from typing import List, Optional
-from datetime import datetime, timezone
 
 from models import (
     BuildPerformanceStartRequest,
@@ -25,7 +24,6 @@ from services.build_performance_service import (
     get_build_performance_service,
     BuildStages,
     start_build_performance_tracking,
-    update_build_stage,
     end_build_performance_tracking,
     get_build_performance,
     get_build_performance_snapshot,
@@ -246,7 +244,7 @@ async def list_builds(
     List all builds with optional filtering.
     """
     service = get_build_performance_service()
-    stats = service.get_stats(conversion_id=conversion_id, limit=limit)
+    service.get_stats(conversion_id=conversion_id, limit=limit)
 
     # Note: This is a simplified implementation
     # Full implementation would need persistent storage

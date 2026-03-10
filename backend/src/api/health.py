@@ -12,7 +12,7 @@ Readiness Pillar: Debugging & Observability
 import time
 from datetime import datetime
 from typing import Dict, Any, List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 import logging
 

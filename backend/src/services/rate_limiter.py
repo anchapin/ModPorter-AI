@@ -8,16 +8,13 @@ Issue: #456 - Performance Optimization - Rate limiting for API endpoints
 """
 
 import time
-import uuid
 from typing import Dict, Optional, Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 from collections import defaultdict
 import logging
-import hashlib
 
 import redis.asyncio as aioredis
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, JSONResponse
 
