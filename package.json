@@ -20,7 +20,7 @@
     "lint": "pnpm run lint:frontend && pnpm run lint:backend && pnpm run lint:duplicates",
     "lint:frontend": "cd frontend && pnpm run lint",
     "lint:backend": "cd backend && . .venv/bin/activate && python -m ruff check src/ tests/",
-    "lint:duplicates": "jscpd . --ignore \"**/node_modules/**,**/dist/**,**/coverage/**,**/.venv/**,**/venv_test/**,**/venv_muttest/**,**/mutants/**,**/.worktrees/**,**/pnpm-lock.yaml\"",
+    "lint:duplicates": "jscpd . --threshold 5 --ignore \"**/node_modules/**,**/dist/**,**/coverage/**,**/.venv/**,**/venv_test/**,**/venv_muttest/**,**/mutants/**,**/.worktrees/**,**/pnpm-lock.yaml\"",
     "format": "pnpm run format:frontend && pnpm run format:backend",
     "format:check": "pnpm run format:check:frontend && pnpm run format:check:backend",
     "format:check:frontend": "cd frontend && pnpm prettier --check .",

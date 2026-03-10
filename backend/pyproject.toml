@@ -87,11 +87,9 @@ ignore = [
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
-    "F401",  # imported but unused (legacy code has many unused imports)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
     "F601",  # duplicate dictionary key (legacy code has intentional overrides)
     "F811",  # redefinition of function (legacy code has intentional overrides)
-    "F841",  # unused variables (legacy code has many unused variables)
     "Q003",  # unnecessary escape on inner quote character
     "Q004",  # unnecessary escape on inner quote character
     "E702",  # multiple statements on one line (semicolon)
@@ -135,7 +133,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401", "E712"]  # Allow imports not at top, unused imports, and == True/False in tests
+"tests/*" = ["E402", "F401", "F841", "E712"]  # Allow imports not at top, unused imports/variables, and == True/False in tests
 "__init__.py" = ["E402"]
 "src/api/performance.py" = ["F821", "F841"]  # Undefined name and unused variable
 "src/services/rate_limiter.py" = ["F841"]

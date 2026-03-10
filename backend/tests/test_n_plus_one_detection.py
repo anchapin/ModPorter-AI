@@ -267,10 +267,10 @@ class TestQueryMonitorStack:
         """Test nested contexts"""
         stack = QueryMonitorStack()
         
-        context1 = stack.push("outer")
+        stack.push("outer")
         stack.increment_query_count()
         
-        context2 = stack.push("inner")
+        stack.push("inner")
         stack.increment_query_count()
         stack.increment_query_count()
         

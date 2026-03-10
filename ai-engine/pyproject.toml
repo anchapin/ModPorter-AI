@@ -78,7 +78,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
+"tests/*" = ["E402", "F401", "F841"]  # Allow imports not at top, unused imports, and unused variables in tests
 "__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
 "__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
 "agents/asset_converter.py" = ["F811", "F841", "C901"]  # Allow duplicate function definitions and unused variables in legacy code

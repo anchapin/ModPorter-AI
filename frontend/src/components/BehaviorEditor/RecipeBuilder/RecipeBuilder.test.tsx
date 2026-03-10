@@ -6,7 +6,6 @@ import React from 'react';
 import {
   render,
   screen,
-  _fireEvent,
   waitFor,
   act,
 } from '@testing-library/react';
