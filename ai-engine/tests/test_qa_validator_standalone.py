@@ -12,10 +12,10 @@ import importlib.util
 
 # Load qa_validator directly
 # Tests are run from ai-engine directory, so the path should be relative to it
-spec = importlib.util.spec_from_file_location("qa_validator", "agents/qa_validator.py")
+spec = importlib.util.spec_from_file_location("qa_validator", str(Path(__file__).parent.parent / "agents" / "qa_validator.py"))
 if spec is None:
     # Fallback to root directory if run from root
-    spec = importlib.util.spec_from_file_location("qa_validator", "ai-engine/agents/qa_validator.py")
+    spec = importlib.util.spec_from_file_location("qa_validator", str(Path(__file__).parent.parent / "ai-engine" / "agents" / "qa_validator.py"))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
