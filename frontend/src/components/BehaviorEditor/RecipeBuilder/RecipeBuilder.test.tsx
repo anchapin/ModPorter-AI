@@ -3,12 +3,7 @@
  */
 
 import React from 'react';
-import {
-  render,
-  screen,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, beforeEach, test, expect } from 'vitest';
 import { RecipeBuilder, Recipe, RecipeItem } from './RecipeBuilder';
@@ -228,7 +223,7 @@ describe('RecipeBuilder Component', () => {
 
       // Just verify the recipe grid is rendered
       expect(screen.getByText('Shaped Recipe Pattern')).toBeInTheDocument();
-      
+
       // Verify items are displayed
       expect(screen.getByText('Oak Planks')).toBeInTheDocument();
     });
@@ -396,7 +391,7 @@ describe('RecipeBuilder Component', () => {
       );
 
       const saveButton = screen.getByRole('button', { name: /save recipe/i });
-      
+
       // Just verify save button exists
       expect(saveButton).toBeInTheDocument();
     });
