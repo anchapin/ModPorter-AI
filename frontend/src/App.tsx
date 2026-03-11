@@ -36,7 +36,7 @@ function App() {
   console.log('App component is rendering...');
 
   // Track page views automatically
-  usePageViewTracking(true);
+  // usePageViewTracking(true); // Must be inside Router
 
   return (
     <ErrorBoundary>
