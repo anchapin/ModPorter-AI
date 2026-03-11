@@ -1124,10 +1124,14 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:analyze
+      run: |
+        cd frontend
+        pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: |
+        cd frontend
+        node ../scripts/generate-bundle-report.cjs dist
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v4
