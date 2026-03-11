@@ -504,7 +504,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               <h3>{getStatusMessage()}</h3>
               <button
                 type="button"
-                className="browse-button"
+                className="browse-button focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
                 onClick={resetConversionState}
               >
                 Start New Conversion
@@ -522,7 +522,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               </div>
               <button
                 type="button"
-                className="remove-file"
+                className="remove-file focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!isProcessing && !isCompleted) setSelectedFile(null);
@@ -539,7 +539,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               <h3>Drag & drop your modpack here</h3>
               <button
                 type="button"
-                className="browse-button"
+                className="browse-button focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
                 onClick={(e) => {
                   e.stopPropagation();
                   open();
@@ -567,7 +567,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               value={modUrl}
               onChange={handleUrlChange}
               placeholder="https://www.curseforge.com/minecraft/mc-mods/your-mod or https://modrinth.com/mod/your-mod"
-              className="url-input"
+              className="url-input focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
               disabled={!!selectedFile || isProcessing || isCompleted}
             />
             <div className="supported-sites">
@@ -619,7 +619,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
             <>
               <button
                 type="submit"
-                className="convert-button"
+                className="convert-button focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none focus-visible:ring-offset-2"
                 disabled={isProcessing || (!selectedFile && !modUrl)}
               >
                 {isProcessing && (
@@ -638,7 +638,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
               {isProcessing && (
                 <button
                   type="button"
-                  className="cancel-button"
+                  className="cancel-button focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
                   onClick={handleCancel}
                 >
                   Cancel
@@ -650,7 +650,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
           {isCompleted && (
             <button
               type="button"
-              className="download-button"
+              className="download-button focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none focus-visible:ring-offset-2"
               onClick={handleDownload}
             >
               Download Converted Mod
