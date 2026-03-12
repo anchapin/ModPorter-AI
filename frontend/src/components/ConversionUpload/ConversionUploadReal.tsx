@@ -529,7 +529,7 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
               Enable Smart Assumptions
               <button
                 type="button"
-                className="info-button"
+                className="info-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-1"
                 onClick={() =>
                   setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo)
                 }
