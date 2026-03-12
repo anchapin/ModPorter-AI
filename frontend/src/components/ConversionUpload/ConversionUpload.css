@@ -352,6 +352,12 @@
     border-color 0.15s ease-in-out;
 }
 
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
 .checkbox-label input[type='checkbox']:checked + .checkmark {
   background-color: #1a73e8;
   border-color: #1a73e8;
