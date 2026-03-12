@@ -257,6 +257,11 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    - name: Install lsb-release in container
+      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+      run: |
+        apt-get update -qq && apt-get install -y -qq lsb-release
+
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -1124,7 +1129,7 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:analyze
+      run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
       run: node ../scripts/generate-bundle-report.cjs frontend/dist
@@ -1184,7 +1189,7 @@ jobs:
       run: |
         echo "=== Scanning Backend Dependencies ==="
         cd backend
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --skip-editable || true
       continue-on-error: true
 
     - name: Scan Python dependencies (AI Engine)
@@ -1192,7 +1197,7 @@ jobs:
       run: |
         echo "=== Scanning AI Engine Dependencies ==="
         cd ai-engine
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --skip-editable || true
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)

@@ -369,6 +369,11 @@
   transform: rotate(45deg);
 }
 
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .checkbox-label .info-button {
   background-color: #e9ecef;
   color: #495057;

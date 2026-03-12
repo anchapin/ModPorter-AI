@@ -6,7 +6,7 @@ describe('API Service - Feedback', () => {
   beforeEach(() => {
     // Reset all mocks to ensure clean state
     vi.restoreAllMocks();
-    
+
     // Set up a fresh mock for each test
     global.fetch = vi.fn();
   });
