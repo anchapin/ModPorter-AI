@@ -826,7 +826,7 @@ jobs:
             ;;
         esac
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Frontend Tests: ${{ matrix.test-type }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Frontend Tests - ${{ matrix.test-type }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
