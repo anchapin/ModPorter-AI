@@ -6,7 +6,7 @@ module.exports = {
       severity: 'error',
       comment: 'Circular dependencies are not allowed',
       from: {},
-      to: { circular: true }
+      to: { circular: true },
     },
     {
       name: 'no-orphans',
@@ -19,21 +19,21 @@ module.exports = {
           'src/vite-env.d.ts',
           '**/*.test.ts',
           '**/*.test.tsx',
-          '**/*.stories.tsx'
-        ]
+          '**/*.stories.tsx',
+        ],
       },
       to: {
-        numberOfDependentsLessThan: 1
-      }
-    }
+        numberOfDependentsLessThan: 1,
+      },
+    },
   ],
   options: {
     doNotFollow: {
-      path: 'node_modules'
+      path: 'node_modules',
     },
     tsPreCompilationDeps: true,
     tsConfig: {
-      fileName: 'tsconfig.app.json'
-    }
-  }
+      fileName: 'tsconfig.app.json',
+    },
+  },
 };
