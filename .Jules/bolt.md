@@ -14,3 +14,7 @@
 ## 2026-03-05 - [React Initial State Optimization]
 **Learning:** Initializing state from `localStorage` inside a `useEffect` hook causes a double render and a visible layout shift because the component first renders with empty/loading state, and then immediately re-renders after the effect reads the data.
 **Action:** Always use lazy initialization (`useState(() => { return readFromLocalStorage(); })`) for state derived from synchronous storage APIs to ensure the component renders with data on the very first paint, avoiding layout shifts and flashes of loading states.
+
+## 2025-06-25 - [Dashboard Stats Iteration Optimization]
+**Learning:** When calculating multiple aggregate statistics from an array (e.g., counting `completed`, `failed`, `processing` statuses from a conversion history array), using multiple `.filter().length` calls incurs an O(3N) time complexity and unnecessary intermediate array allocations.
+**Action:** Always use a single O(N) pass (like a `for...of` loop or `.reduce()`) when extracting multiple aggregate metrics from an array to avoid redundant iterations and memory allocations.

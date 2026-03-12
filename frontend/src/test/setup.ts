@@ -203,7 +203,7 @@ global.fetch = mockFetch;
 // Mock WebSocket for testing - supports both absolute and relative URLs
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
-  
+
   url: string;
   readyState: number = 0; // CONNECTING
   onopen: ((event: any) => void) | null = null;
@@ -214,16 +214,16 @@ class MockWebSocket {
   constructor(url: string | URL) {
     // Handle both string and URL objects
     const urlStr = url.toString();
-    
+
     // If relative URL, prepend a dummy host for jsdom compatibility
     if (urlStr.startsWith('/')) {
       this.url = 'ws://localhost' + urlStr;
     } else {
       this.url = urlStr;
     }
-    
+
     MockWebSocket.instances.push(this);
-    
+
     // Simulate async connection - but check if already closed first
     setTimeout(() => {
       this.readyState = 1; // OPEN
