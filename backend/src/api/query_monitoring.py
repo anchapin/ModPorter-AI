@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/query-monitor", tags=["query-monitoring"])
 async def get_report() -> Dict[str, Any]:
     """
     Get comprehensive query performance report.
-    
+
     Returns:
         - summary: Overall statistics
         - n_plus_one_candidates: Detected N+1 queries
@@ -45,7 +45,7 @@ async def get_report() -> Dict[str, Any]:
 async def get_n_plus_one_candidates() -> Dict[str, Any]:
     """
     Get queries that appear to have N+1 problems.
-    
+
     Returns a list of queries executed multiple times with different parameters.
     """
     try:
@@ -85,14 +85,16 @@ async def get_most_executed() -> Dict[str, Any]:
             "queries": report["most_executed_queries"],
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch most executed queries: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch most executed queries: {str(e)}"
+        )
 
 
 @router.post("/reset", summary="Reset Monitoring Data")
 async def reset_monitor() -> Dict[str, str]:
     """
     Clear all accumulated query monitoring data.
-    
+
     This is useful when starting a new monitoring session.
     """
     try:
