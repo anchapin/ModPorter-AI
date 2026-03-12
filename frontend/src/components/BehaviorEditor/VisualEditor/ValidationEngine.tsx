@@ -194,10 +194,22 @@ export class ValidationEngine {
     info: number;
     fields: string[];
   } {
+    // ⚡ Bolt optimization: Combined O(3N) array.filter().length passes into a single
+    // O(N) reduce pass. Eliminates the creation of 3 intermediate arrays per validation cycle.
+    const counts = errors.reduce(
+      (acc, e) => {
+        if (e.severity === 'error') acc.errors++;
+        else if (e.severity === 'warning') acc.warnings++;
+        else if (e.severity === 'info') acc.info++;
+        return acc;
+      },
+      { errors: 0, warnings: 0, info: 0 }
+    );
+
     const summary = {
-      errors: errors.filter((e) => e.severity === 'error').length,
-      warnings: errors.filter((e) => e.severity === 'warning').length,
-      info: errors.filter((e) => e.severity === 'info').length,
+      errors: counts.errors,
+      warnings: counts.warnings,
+      info: counts.info,
       fields: [...new Set(errors.map((e) => e.field))],
     };
 
