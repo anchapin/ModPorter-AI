@@ -257,6 +257,17 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    - name: Install system dependencies (for setup-python)
+      run: |
+        if ! command -v lsb_release &> /dev/null; then
+          if command -v sudo &> /dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq lsb-release
+          else
+            apt-get update -qq && apt-get install -y -qq lsb-release
+          fi
+        fi
+      if: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image == '' }}
+
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -755,7 +766,7 @@ jobs:
       with:
         node-version: '20.19.0'
         cache: 'pnpm'
-        cache-dependency-path: 'frontend/pnpm-lock.yaml'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Install dependencies (optimized)
       run: |
@@ -857,6 +868,16 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    - name: Install system dependencies (for setup-python)
+      run: |
+        if ! command -v lsb_release &> /dev/null; then
+          if command -v sudo &> /dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq lsb-release
+          else
+            apt-get update -qq && apt-get install -y -qq lsb-release
+          fi
+        fi
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v6
       with:
@@ -894,10 +915,10 @@ jobs:
         
         # Run mutation tests
         # Using || true to prevent step failure from blocking threshold check
-        mutmut run || true
+        PYTHONPATH=$GITHUB_WORKSPACE mutmut run || true
         
         # Show results - || true to prevent exit code 1 from unchecked mutations
-        mutmut results || true
+        PYTHONPATH=$GITHUB_WORKSPACE mutmut results || true
 
     - name: Check mutation testing threshold
       run: |
@@ -1124,10 +1145,10 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:analyze
+      run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v4
