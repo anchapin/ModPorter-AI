@@ -258,7 +258,14 @@ jobs:
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Install system dependencies (for setup-python)
-      run: apt-get update -qq && apt-get install -y -qq lsb-release
+      run: |
+        if ! command -v lsb_release &> /dev/null; then
+          if command -v sudo &> /dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq lsb-release
+          else
+            apt-get update -qq && apt-get install -y -qq lsb-release
+          fi
+        fi
       if: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image == '' }}
 
     # Conditional Python setup - only if not using container
@@ -862,7 +869,14 @@ jobs:
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Install system dependencies (for setup-python)
-      run: apt-get update -qq && apt-get install -y -qq lsb-release
+      run: |
+        if ! command -v lsb_release &> /dev/null; then
+          if command -v sudo &> /dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq lsb-release
+          else
+            apt-get update -qq && apt-get install -y -qq lsb-release
+          fi
+        fi
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v6
@@ -1137,7 +1151,7 @@ jobs:
       run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v7
