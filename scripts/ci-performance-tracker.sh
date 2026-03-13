@@ -42,7 +42,7 @@ record_step() {
     local duration=$((step_end - step_start))
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
-    local step_file="$PERF_DATA_DIR/step-${step_name//\//-}.json"
+    local step_file="$PERF_DATA_DIR/step-${step_name//[:\/ ]/-}.json"
     
     cat > "$step_file" << EOF
 {

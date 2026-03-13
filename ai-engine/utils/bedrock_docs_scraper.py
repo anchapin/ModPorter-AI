@@ -165,7 +165,6 @@ class BedrockDocsScraper:
         try:
             response = await self.client.get(robots_url, timeout=10.0)
             if response.status_code == 200:
-
                 # Parse robots.txt
                 robots_parser = robotparser.RobotFileParser()
                 robots_parser.set_url(robots_url)
