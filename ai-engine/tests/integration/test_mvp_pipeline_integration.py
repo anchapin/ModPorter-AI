@@ -12,10 +12,27 @@ import sys
 from pathlib import Path
 
 # Add the ai-engine and root directories to the path
-ai_engine_root = Path(__file__).parent.parent.parent
-project_root = ai_engine_root.parent
+# Find the actual ai-engine root by looking for its known structure or stepping up until we find `modporter`
+current_dir = Path(__file__).resolve().parent
+while current_dir.name and current_dir.name not in ('ai-engine', 'ModPorter-AI'):
+    if (current_dir / 'modporter').exists():
+        break
+    current_dir = current_dir.parent
+
+if current_dir.name == 'ai-engine':
+    ai_engine_root = current_dir
+    project_root = ai_engine_root.parent
+elif (current_dir / 'ai-engine').exists():
+    project_root = current_dir
+    ai_engine_root = project_root / 'ai-engine'
+else:
+    # Fallback to the original logic
+    ai_engine_root = Path(__file__).parent.parent.parent
+    project_root = ai_engine_root.parent
+
 sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
+
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent

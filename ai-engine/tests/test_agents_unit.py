@@ -472,7 +472,7 @@ class TestMockedDependencies:
             ]
         }
 
-    @patch("utils.rate_limiter.create_rate_limited_llm")
+    @patch("agents.logic_translator.SmartAssumptionEngine")
     def test_agent_with_mocked_llm(self, mock_llm, mock_llm_response):
         """Test agent behavior with mocked LLM"""
         mock_llm_instance = Mock()

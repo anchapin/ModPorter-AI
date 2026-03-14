@@ -194,10 +194,20 @@ export class ValidationEngine {
     info: number;
     fields: string[];
   } {
+    // ⚡ Bolt optimization: Use a single reduce pass instead of multiple .filter().length calls
+    // This reduces array allocations and improves time complexity.
+    const counts = errors.reduce(
+      (acc, err) => {
+        if (err.severity === 'error') acc.errors++;
+        else if (err.severity === 'warning') acc.warnings++;
+        else if (err.severity === 'info') acc.info++;
+        return acc;
+      },
+      { errors: 0, warnings: 0, info: 0 }
+    );
+
     const summary = {
-      errors: errors.filter((e) => e.severity === 'error').length,
-      warnings: errors.filter((e) => e.severity === 'warning').length,
-      info: errors.filter((e) => e.severity === 'info').length,
+      ...counts,
       fields: [...new Set(errors.map((e) => e.field))],
     };
 
