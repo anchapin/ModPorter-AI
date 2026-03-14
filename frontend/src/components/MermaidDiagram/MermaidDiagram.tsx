@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 import styles from './MermaidDiagram.module.css';
+import { generateSecureId } from '../../utils/idGenerator';
 
 interface MermaidDiagramProps {
   chart: string;
@@ -15,7 +16,7 @@ interface MermaidDiagramProps {
 
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   chart,
-  id = `mermaid-${crypto.randomUUID()}`,
+  id = generateSecureId(`mermaid`),
   className = '',
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
