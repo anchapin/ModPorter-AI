@@ -42,7 +42,12 @@ record_step() {
     local duration=$((step_end - step_start))
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
-    local step_file="$PERF_DATA_DIR/step-${step_name//\//-}.json"
+    # Replace slashes, spaces, and colons with hyphens to create a valid filename
+    local safe_step_name="${step_name//\//-}"
+    safe_step_name="${safe_step_name// /-}"
+    safe_step_name="${safe_step_name//:/-}"
+
+    local step_file="$PERF_DATA_DIR/step-${safe_step_name}.json"
     
     cat > "$step_file" << EOF
 {
@@ -99,8 +104,11 @@ EOF
     local steps_json="["
     local first=true
     
+    # Check if there are any files matching the pattern
+    local found_files=false
     for step_file in "$PERF_DATA_DIR"/step-*.json; do
         if [ -f "$step_file" ]; then
+            found_files=true
             if [ "$first" = true ]; then
                 first=false
             else
@@ -116,6 +124,12 @@ EOF
     done
     steps_json+="]"
     
+    if [ "$found_files" = false ]; then
+        log_error "No performance metric files found in $PERF_DATA_DIR"
+        # We can still create a basic summary even if no steps were recorded
+        steps_json="[]"
+    fi
+
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     local workflow_name="${GITHUB_WORKFLOW:-CI}"
     
