@@ -55,7 +55,7 @@ const generateSessionId = (): string => {
   const stored = sessionStorage.getItem('analytics_session_id');
   if (stored) return stored;
 
-  const newSessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const newSessionId = `sess_${Date.now()}_${crypto.randomUUID()}`;
   sessionStorage.setItem('analytics_session_id', newSessionId);
   return newSessionId;
 };
@@ -66,7 +66,7 @@ const getUserId = (): string | undefined => {
   // In the future, this could be tied to actual user accounts
   let userId = localStorage.getItem('analytics_user_id');
   if (!userId) {
-    userId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    userId = `anon_${Date.now()}_${crypto.randomUUID()}`;
     localStorage.setItem('analytics_user_id', userId);
   }
   return userId;

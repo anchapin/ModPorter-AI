@@ -52,7 +52,7 @@ describe('MermaidDiagram', () => {
     const id = diagramContainer?.getAttribute('id');
 
     expect(id).toBeDefined();
-    expect(id).toMatch(/^mermaid-[a-z0-9]{9}$/);
+    expect(id).toMatch(/^mermaid-.+$/);
   });
 
   test('initializes mermaid with correct configuration', async () => {

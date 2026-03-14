@@ -15,7 +15,7 @@ interface MermaidDiagramProps {
 
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   chart,
-  id = `mermaid-${Math.random().toString(36).substr(2, 9)}`,
+  id = `mermaid-${crypto.randomUUID()}`,
   className = '',
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
