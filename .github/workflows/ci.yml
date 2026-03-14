@@ -832,6 +832,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
@@ -1021,12 +1022,13 @@ jobs:
           echo "⚠️ No mutation report found - skipping threshold check"
         fi
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END || true
       env:
         STEP_START: ${{ env.STEP_START }}
 
     - name: Upload performance metrics
       if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-frontend
@@ -1127,11 +1129,12 @@ jobs:
       run: pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: node ../scripts/generate-bundle-report.cjs frontend/dist || true
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v4
       if: always()
+      continue-on-error: true
       with:
         name: bundle-report
         path: frontend/dist/bundle-report.json
