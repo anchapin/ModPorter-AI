@@ -11,6 +11,7 @@ import {
   Slide,
   SlideProps,
 } from '@mui/material';
+import { generateSecureId } from '../../utils/idGenerator';
 import {
   CheckCircle,
   Error as ErrorIcon,
@@ -221,7 +222,7 @@ const useToastHook = (): UseToastReturn => {
 
   const addToast = useCallback(
     (type: ToastType, message: string, options: Partial<ToastMessage> = {}) => {
-      const id = `toast-${Date.now()}-${crypto.randomUUID()}`;
+      const id = generateSecureId(`toast-${Date.now()}`);
       const newToast: ToastMessage = {
         id,
         type,
