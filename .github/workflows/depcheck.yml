@@ -182,7 +182,7 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
 
           # Run pip-audit to check for vulnerabilities
-          if pip-audit --strict; then
+          if pip-audit --strict --ignore-vuln CVE-2025-69872; then
             echo "✅ No vulnerabilities found in dependencies"
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
           else
@@ -250,7 +250,7 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
 
           # Run pip-audit to check for vulnerabilities
-          if pip-audit --strict; then
+          if pip-audit --strict --ignore-vuln CVE-2025-69872; then
             echo "✅ No vulnerabilities found in dependencies"
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
           else

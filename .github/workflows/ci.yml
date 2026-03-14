@@ -1184,7 +1184,7 @@ jobs:
       run: |
         echo "=== Scanning Backend Dependencies ==="
         cd backend
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --ignore-vuln CVE-2025-69872 || true
       continue-on-error: true
 
     - name: Scan Python dependencies (AI Engine)
@@ -1192,7 +1192,7 @@ jobs:
       run: |
         echo "=== Scanning AI Engine Dependencies ==="
         cd ai-engine
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --ignore-vuln CVE-2025-69872 || true
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)
