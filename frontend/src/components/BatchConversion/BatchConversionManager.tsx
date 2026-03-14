@@ -50,7 +50,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
         })
         .map((file) => ({
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `${Date.now()}-${crypto.randomUUID()}`,
           filename: file.name,
           file,
           status: 'pending' as const,
