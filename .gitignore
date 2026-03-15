@@ -168,5 +168,3 @@ AGENTS.MD
 ai-engine/tests/test_smart_assumptions.py
 
 .worktrees/
-.stryker-tmp/
-frontend/.stryker-tmp/
