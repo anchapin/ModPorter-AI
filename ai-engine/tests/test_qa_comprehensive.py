@@ -11,7 +11,8 @@ from pathlib import Path
 import importlib.util
 
 # Load qa_validator directly
-spec = importlib.util.spec_from_file_location("qa_validator", str(Path(__file__).parent.parent / "agents/qa_validator.py"))
+QA_VALIDATOR_PATH = Path(__file__).parent.parent / "agents" / "qa_validator.py"
+spec = importlib.util.spec_from_file_location("qa_validator", str(QA_VALIDATOR_PATH))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies

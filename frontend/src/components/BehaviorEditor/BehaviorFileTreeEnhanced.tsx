@@ -536,7 +536,11 @@ export const BehaviorFileTreeEnhanced: React.FC<
             ),
             endAdornment: searchQuery && (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <IconButton
+                  size="small"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                >
                   <span aria-hidden="true">✕</span>
                 </IconButton>
               </InputAdornment>
