@@ -551,7 +551,7 @@ jobs:
       run: |
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Integration Tests: ${{ matrix.test-suite }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Integration Tests - ${{ matrix.test-suite }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -826,7 +826,7 @@ jobs:
             ;;
         esac
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Frontend Tests: ${{ matrix.test-type }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Frontend Tests - ${{ matrix.test-type }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -930,7 +930,7 @@ jobs:
         # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python: ${{ matrix.project }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python - ${{ matrix.project }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
