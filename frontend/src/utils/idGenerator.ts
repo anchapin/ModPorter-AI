@@ -13,7 +13,9 @@ export const generateSecureId = (prefix: string = ''): string => {
     return prefix ? `${prefix}-${uuid}` : uuid;
   }
 
-  console.warn('crypto.randomUUID() is not available. Falling back to insecure Math.random() ID generation.');
+  console.warn(
+    'crypto.randomUUID() is not available. Falling back to insecure Math.random() ID generation.'
+  );
   const insecureRandom = Math.random().toString(36).substring(2, 11);
   return prefix ? `${prefix}-${insecureRandom}` : insecureRandom;
 };

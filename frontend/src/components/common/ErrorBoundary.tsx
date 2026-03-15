@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { generateSecureId } from '../../utils/idGenerator';
 import {
   Box,
   Typography,
@@ -9,7 +10,6 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import { generateSecureId } from '../../utils/idGenerator';
 import {
   Error as ErrorIcon,
   Refresh,
