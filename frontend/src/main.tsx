@@ -42,7 +42,10 @@ if (sentryDsn) {
   console.log('Sentry error tracking initialized');
 }
 
-Sentry.addCaptureConsoleIntegration();
+// @ts-ignore - Sentry 10+ removed this global API; usually configured during init
+if (Sentry.captureConsoleIntegration) {
+  Sentry.captureConsoleIntegration();
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
