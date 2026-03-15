@@ -112,7 +112,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
       : import.meta.env.VITE_API_URL
         ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
         : '/api/v1';
-  
+
   // Extract base URL (without /api/v1) and convert to WebSocket protocol
   const wsBaseUrl = API_BASE_URL.replace(/\/api\/v1$/, '').replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
 

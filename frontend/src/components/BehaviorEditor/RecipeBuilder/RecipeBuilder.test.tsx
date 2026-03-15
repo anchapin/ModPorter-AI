@@ -228,7 +228,7 @@ describe('RecipeBuilder Component', () => {
 
       // Just verify the recipe grid is rendered
       expect(screen.getByText('Shaped Recipe Pattern')).toBeInTheDocument();
-      
+
       // Verify items are displayed
       expect(screen.getByText('Oak Planks')).toBeInTheDocument();
     });
@@ -396,7 +396,7 @@ describe('RecipeBuilder Component', () => {
       );
 
       const saveButton = screen.getByRole('button', { name: /save recipe/i });
-      
+
       // Just verify save button exists
       expect(saveButton).toBeInTheDocument();
     });
