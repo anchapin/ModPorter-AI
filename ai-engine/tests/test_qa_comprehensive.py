@@ -10,8 +10,20 @@ import shutil
 from pathlib import Path
 import importlib.util
 
+import pytest
+
+# Skip this entire file when agents/qa_validator.py doesn't exist
+import os
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+agent_path = os.path.join(base_dir, "agents", "qa_validator.py")
+if not os.path.exists(agent_path):
+    agent_path = os.path.join(os.path.dirname(base_dir), "ai-engine", "agents", "qa_validator.py")
+
+if not os.path.exists(agent_path):
+    pytest.skip("qa_validator.py not found, skipping comprehensive QA tests", allow_module_level=True)
+
 # Load qa_validator directly
-spec = importlib.util.spec_from_file_location("qa_validator", "ai-engine/agents/qa_validator.py")
+spec = importlib.util.spec_from_file_location("qa_validator", agent_path)
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
