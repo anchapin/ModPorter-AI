@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { generateSecureId } from '../../utils/idGenerator';
 import {
   Box,
   Typography,
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<
     return {
       hasError: true,
       error,
-      errorId: `err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      errorId: generateSecureId(`err-${Date.now()}`),
     };
   }
 

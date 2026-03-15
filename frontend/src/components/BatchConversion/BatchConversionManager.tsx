@@ -14,6 +14,7 @@ import {
   triggerDownload,
 } from '../../services/api';
 import './BatchConversionManager.css';
+import { generateSecureId } from '../../utils/idGenerator';
 
 export interface BatchConversionItem {
   id: string;
@@ -50,7 +51,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
         })
         .map((file) => ({
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: generateSecureId(`${Date.now()}`),
           filename: file.name,
           file,
           status: 'pending' as const,

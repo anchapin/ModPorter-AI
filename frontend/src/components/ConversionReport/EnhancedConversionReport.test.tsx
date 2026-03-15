@@ -291,7 +291,7 @@ describe('FeatureAnalysis Component', () => {
     // Just verify the feature cards are rendered with expand buttons
     const expandButtons = screen.getAllByText('▶');
     expect(expandButtons.length).toBeGreaterThan(0);
-    
+
     // Verify CustomBlock feature is rendered
     const featureNames = screen.getAllByText('CustomBlock');
     expect(featureNames.length).toBeGreaterThan(0);
@@ -528,7 +528,7 @@ describe('EnhancedConversionReport Component', () => {
 
     const exportJsonButton = screen.getByText('📥 Export JSON');
     expect(exportJsonButton).toBeInTheDocument();
-    
+
     // The actual export behavior requires DOM APIs - just verify button exists
   });
 
@@ -575,7 +575,7 @@ describe('EnhancedConversionReport Component', () => {
 
     const shareButton = screen.getByText('🔗 Share Link');
     expect(shareButton).toBeInTheDocument();
-    
+
     // Just verify clicking doesn't crash (actual share behavior varies by environment)
     fireEvent.click(shareButton);
   });

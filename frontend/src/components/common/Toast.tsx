@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { generateSecureId } from '../../utils/idGenerator';
 import {
   Snackbar,
   Alert,
@@ -221,7 +222,7 @@ const useToastHook = (): UseToastReturn => {
 
   const addToast = useCallback(
     (type: ToastType, message: string, options: Partial<ToastMessage> = {}) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = generateSecureId(`toast-${Date.now()}`);
       const newToast: ToastMessage = {
         id,
         type,
