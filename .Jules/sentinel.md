@@ -6,3 +6,8 @@
 **Vulnerability:** Using `Math.random().toString(36).substr(2, 9)` to generate identifiers in the frontend application.
 **Learning:** This approach uses an insecure random number generator (`Math.random()`) which produces predictable values and could lead to identifier collisions. While not always directly exploitable for privilege escalation in all frontend contexts, predictable identifiers can cause unexpected state behavior, allow session correlation, or permit brute-forcing of component/session states.
 **Prevention:** Always use standard, cryptographically secure ID generation like `crypto.randomUUID()` when creating unique identifiers (session IDs, toast IDs, DOM element IDs, etc.) to ensure randomness and global uniqueness.
+
+## 2024-03-15 - [CI Path Resolution Breakage]
+**Vulnerability:** CI Scripts writing to files with colons (`:`) in their names.
+**Learning:** GitHub Actions artifact uploading fails and causes the pipeline to crash if artifact paths contain restricted file system characters like colons, preventing CI metrics processing and artifact aggregation.
+**Prevention:** Always sanitize strings used in artifact generation with tools like `sed -e 's/[^A-Za-z0-9_.-]/-/g'` to ensure filenames conform to NTFS/FAT limitations in GitHub runners.
