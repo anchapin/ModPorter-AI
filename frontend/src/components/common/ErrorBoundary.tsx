@@ -15,6 +15,7 @@ import {
   BugReport,
   ExpandMore,
 } from '@mui/icons-material';
+import { generateSecureId } from '../../utils/cryptoId';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<
     return {
       hasError: true,
       error,
-      errorId: `err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      errorId: generateSecureId('err'),
     };
   }
 

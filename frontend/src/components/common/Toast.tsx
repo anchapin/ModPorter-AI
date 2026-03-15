@@ -18,6 +18,7 @@ import {
   Info,
   Close,
 } from '@mui/icons-material';
+import { generateSecureId } from '../../utils/cryptoId';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -221,7 +222,7 @@ const useToastHook = (): UseToastReturn => {
 
   const addToast = useCallback(
     (type: ToastType, message: string, options: Partial<ToastMessage> = {}) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = generateSecureId('toast');
       const newToast: ToastMessage = {
         id,
         type,
