@@ -11,7 +11,9 @@ from pathlib import Path
 import importlib.util
 
 # Load qa_validator directly
-QA_VALIDATOR_PATH = Path(__file__).parent.parent / "agents" / "qa_validator.py"
+import os
+# Use absolute path resolution to avoid issues when pytest is run from different directories
+QA_VALIDATOR_PATH = Path(os.path.abspath(__file__)).parent.parent / "agents" / "qa_validator.py"
 spec = importlib.util.spec_from_file_location("qa_validator", str(QA_VALIDATOR_PATH))
 qa_module = importlib.util.module_from_spec(spec)
 
