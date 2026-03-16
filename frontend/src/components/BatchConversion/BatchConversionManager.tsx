@@ -50,7 +50,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
         })
         .map((file) => ({
-          id: crypto.randomUUID(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           filename: file.name,
           file,
           status: 'pending' as const,
@@ -191,19 +191,16 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     }
   }, [items]);
 
-  // ⚡ Bolt optimization: Use a single O(N) loop to calculate status counts
-  // instead of multiple .filter().length calls to avoid unnecessary intermediate
-  // array allocations and O(3N) time complexity.
-  let pendingCount = 0;
-  let completedCount = 0;
-  let failedCount = 0;
-
-  for (let i = 0; i < items.length; i++) {
-    const status = items[i].status;
-    if (status === 'pending') pendingCount++;
-    else if (status === 'completed') completedCount++;
-    else if (status === 'failed') failedCount++;
-  }
+  // ⚡ Bolt optimization: Single pass instead of multiple filter().length calls to avoid O(3N) time complexity and intermediate array allocations
+  const { pendingCount, completedCount, failedCount } = items.reduce(
+    (acc, item) => {
+      if (item.status === 'pending') acc.pendingCount++;
+      else if (item.status === 'completed') acc.completedCount++;
+      else if (item.status === 'failed') acc.failedCount++;
+      return acc;
+    },
+    { pendingCount: 0, completedCount: 0, failedCount: 0 }
+  );
 
   return (
     <div className="batch-conversion-manager">
@@ -271,9 +268,8 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                   <button
                     className="remove-button"
                     onClick={() => removeItem(item.id)}
-                    aria-label="Remove item"
                   >
-                    <span aria-hidden="true">✕</span>
+                    ✕
                   </button>
                 )}
               </div>
