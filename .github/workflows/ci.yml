@@ -313,7 +313,7 @@ jobs:
         python -m pip install --upgrade --no-cache-dir pip setuptools wheel
         
         # Install common requirements first (likely cached)
-        pip install --no-deps pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock
+        pip install pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock
         
         # Install requirements with parallel downloads
         pip install --upgrade --force-reinstall --no-cache-dir \
@@ -328,15 +328,15 @@ jobs:
           "ai-engine"|"integration")
             echo "Installing AI Engine dependencies..."
             cd ai-engine
-            pip install --no-deps -r requirements.txt
-            pip install --no-deps -r requirements-dev.txt
-            pip install --no-deps -e .
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
+            pip install -e .
             ;;
           "backend")
             echo "Installing Backend dependencies..."
             cd backend
-            pip install --no-deps -r requirements.txt
-            pip install --no-deps -r requirements-dev.txt
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
             ;;
         esac
 

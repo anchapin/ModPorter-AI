@@ -9,9 +9,12 @@ import tempfile
 import shutil
 from pathlib import Path
 import importlib.util
+import os
 
 # Load qa_validator directly
-spec = importlib.util.spec_from_file_location("qa_validator", str(Path(__file__).parent.parent / "agents/qa_validator.py"))
+base_dir = Path(__file__).resolve().parent.parent
+qa_validator_path = base_dir / "agents" / "qa_validator.py"
+spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
