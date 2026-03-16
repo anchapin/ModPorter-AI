@@ -259,10 +259,9 @@ jobs:
 
     # Install lsb-release if running inside a container, as actions/setup-python requires it
     - name: Install lsb-release (container)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
       run: |
         if ! command -v lsb_release &> /dev/null; then
-          apt-get update -qq && apt-get install -y -qq lsb-release
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
         fi
 
     # Conditional Python setup - only if not using container
