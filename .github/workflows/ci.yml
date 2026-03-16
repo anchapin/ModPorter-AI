@@ -1130,7 +1130,7 @@ jobs:
       run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v7
