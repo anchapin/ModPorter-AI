@@ -147,7 +147,7 @@ async def track_event(
     except Exception as e:
         logger.error(f"Failed to track analytics event: {e}")
         # Don't fail the request if analytics fails
-        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to track event")
 
 
 @router.get("/events", response_model=List[AnalyticsEventResponse])
@@ -221,7 +221,7 @@ async def get_events(
 
     except Exception as e:
         logger.error(f"Failed to query analytics events: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to query events: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to query events")
 
 
 @router.get("/stats", response_model=AnalyticsStatsResponse)
@@ -282,7 +282,7 @@ async def get_analytics_stats(
 
     except Exception as e:
         logger.error(f"Failed to get analytics stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get stats")
 
 
 # Convenience endpoint for tracking common events
@@ -320,7 +320,7 @@ async def track_page_view(
 
     except Exception as e:
         logger.error(f"Failed to track page view: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to track page view: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to track page view")
 
 
 @router.post("/events/conversion")
@@ -379,7 +379,7 @@ async def track_conversion_event(
 
     except Exception as e:
         logger.error(f"Failed to track conversion event: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to track event")
 
 
 @router.get("/events/types")
