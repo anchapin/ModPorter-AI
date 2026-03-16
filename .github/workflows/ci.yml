@@ -1142,7 +1142,7 @@ jobs:
       run: cd frontend && pnpm prettier --check .
 
     - name: Check duplicates
-      run: pnpm run lint:duplicates
+      run: cd frontend && pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
       run: cd frontend && pnpm build:analyze
