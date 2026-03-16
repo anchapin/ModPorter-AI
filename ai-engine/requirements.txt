@@ -8,8 +8,8 @@ python-multipart>=0.0.6
 # If running locally, use Python 3.12 virtual environment.
 crewai>=0.11.0,<0.60.0
 langchain>=0.3.0,<0.4.0
-langchain-openai>=0.2.0,<0.3.0
-langchain-ollama>=0.1.0,<0.2.0
+langchain-openai>=0.2.0,<0.4.0
+langchain-ollama>=0.1.0,<0.3.0
 openai>=1.0.0,<2.0.0
 sentence-transformers>=2.2.0,<3.0.0
 

@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm install -g pnpm && pnpm install --prod && pnpm store prune
+RUN npm install -g pnpm && pnpm install --prod --ignore-scripts && pnpm store prune
 
 # Create app user
 RUN adduser --disabled-password --gecos '' appuser && \
