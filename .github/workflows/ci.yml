@@ -551,7 +551,7 @@ jobs:
       run: |
         echo "✅ Test suite completed: ${{ matrix.test-suite }}"
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Integration Tests: ${{ matrix.test-suite }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Integration Tests- ${{ matrix.test-suite }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -826,7 +826,7 @@ jobs:
             ;;
         esac
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Frontend Tests: ${{ matrix.test-type }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Frontend Tests- ${{ matrix.test-type }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -930,7 +930,7 @@ jobs:
         # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python: ${{ matrix.project }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -1024,7 +1024,7 @@ jobs:
           echo "⚠️ No mutation report found - skipping threshold check"
         fi
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
+        ../scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -1121,13 +1121,13 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Check frontend format
-      run: pnpm format:check:frontend
+      run: cd frontend && pnpm prettier --check .
 
     - name: Check duplicates
-      run: pnpm run lint:duplicates
+      run: cd frontend && pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:analyze
+      run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
       run: node ../scripts/generate-bundle-report.cjs frontend/dist
@@ -1229,18 +1229,18 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Scan npm dependencies (Frontend)
+    - name: Scan pnpm dependencies (Frontend)
       if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
       run: |
-        echo "=== Scanning Frontend npm Dependencies ==="
+        echo "=== Scanning Frontend pnpm Dependencies ==="
         cd frontend
-        npm audit --audit-level=high || true
+        pnpm audit --audit-level=high || true
       continue-on-error: true
 
-    - name: Scan npm dependencies (Root workspace)
+    - name: Scan pnpm dependencies (Root workspace)
       run: |
-        echo "=== Scanning Root npm Workspace Dependencies ==="
-        npm audit --audit-level=high || true
+        echo "=== Scanning Root pnpm Workspace Dependencies ==="
+        pnpm audit --audit-level=high || true
       continue-on-error: true
 
   # Performance tracking and optimization monitoring
