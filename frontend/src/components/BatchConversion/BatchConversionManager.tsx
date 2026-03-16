@@ -191,9 +191,16 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     }
   }, [items]);
 
-  const pendingCount = items.filter((i) => i.status === 'pending').length;
-  const completedCount = items.filter((i) => i.status === 'completed').length;
-  const failedCount = items.filter((i) => i.status === 'failed').length;
+  // ⚡ Bolt optimization: Single pass instead of multiple filter().length calls to avoid O(3N) time complexity and intermediate array allocations
+  const { pendingCount, completedCount, failedCount } = items.reduce(
+    (acc, item) => {
+      if (item.status === 'pending') acc.pendingCount++;
+      else if (item.status === 'completed') acc.completedCount++;
+      else if (item.status === 'failed') acc.failedCount++;
+      return acc;
+    },
+    { pendingCount: 0, completedCount: 0, failedCount: 0 }
+  );
 
   return (
     <div className="batch-conversion-manager">
