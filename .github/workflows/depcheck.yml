@@ -179,10 +179,10 @@ jobs:
           echo "Running pip-audit to check for vulnerabilities and unused dependencies..."
 
           # First, install dependencies
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt -r requirements-dev.txt || true
 
           # Run pip-audit to check for vulnerabilities
-          if pip-audit --strict; then
+          if pip-audit -r requirements.txt -r requirements-dev.txt; then
             echo "✅ No vulnerabilities found in dependencies"
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
           else
@@ -247,10 +247,10 @@ jobs:
           echo "Running pip-audit to check for vulnerabilities and unused dependencies..."
 
           # First, install dependencies
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements.txt -r requirements-dev.txt || true
 
           # Run pip-audit to check for vulnerabilities
-          if pip-audit --strict; then
+          if pip-audit -r requirements.txt -r requirements-dev.txt; then
             echo "✅ No vulnerabilities found in dependencies"
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
           else

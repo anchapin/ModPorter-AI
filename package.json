@@ -10,6 +10,7 @@
     "dev:backend": "cd backend && . .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
     "build": "pnpm run build:frontend",
     "build:frontend": "cd frontend && pnpm run build",
+    "build:analyze": "cd frontend && pnpm run build:analyze",
     "test": "pnpm run test:frontend && pnpm run test:backend",
     "test:frontend": "cd frontend && pnpm run test",
     "test:backend": "cd backend && . .venv/bin/activate && python -m pytest",

@@ -349,7 +349,7 @@ jobs:
           echo "jq not found, attempting to install..."
           if [ -w /var/lib/apt/lists ]; then
             apt-get update -qq
-            apt-get install -y -qq jq
+            apt-get install -y -qq jq lsb-release
           else
             echo "⚠️ Cannot install jq (no write permissions to /var/lib/apt/lists)"
           fi
@@ -381,9 +381,6 @@ jobs:
         else
           echo "✅ curl is already available"
         fi
-
-    # Install Ollama for AI model testing
-    # Install Ollama for AI model testing
     - name: Install Ollama
       run: |
         echo "🔧 Installing zstd (required for Ollama extraction)..."
@@ -754,8 +751,21 @@ jobs:
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
-        cache: 'pnpm'
-        cache-dependency-path: 'frontend/pnpm-lock.yaml'
+
+    - name: Get pnpm store directory
+      id: pnpm-store
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
+          ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies (optimized)
       run: |
