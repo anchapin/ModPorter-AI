@@ -89,13 +89,20 @@ export const Dashboard: React.FC = () => {
     const history = storedHistory ? JSON.parse(storedHistory) : [];
 
     const total = history.length;
-    const stats = history.reduce((acc: Record<string, number>, item: any) => {
-      acc[item.status] = (acc[item.status] || 0) + 1;
-      return acc;
-    }, {});
-    const completed = stats.completed || 0;
-    const failed = stats.failed || 0;
-    const processing = stats.processing || 0;
+
+    // ⚡ Bolt optimization: Use a single O(N) loop to calculate status counts
+    // instead of multiple .filter().length calls to avoid unnecessary intermediate
+    // array allocations and O(3N) time complexity.
+    let completed = 0;
+    let failed = 0;
+    let processing = 0;
+
+    for (let i = 0; i < total; i++) {
+      const status = history[i].status;
+      if (status === 'completed') completed++;
+      else if (status === 'failed') failed++;
+      else if (status === 'processing') processing++;
+    }
 
     const actualSuccessRate =
       total > 0 ? Math.round((completed / total) * 100) : 0;

@@ -41,7 +41,7 @@ def load_scenarios_from_files():
                         )
                         scenarios[scenario_id] = scenario_data
                 except Exception as e:
-                    print(f"Error loading scenario from {filepath}: {e}")
+                    pass
 
     if not scenarios:
         scenarios = {
@@ -72,7 +72,6 @@ mock_scenarios = load_scenarios_from_files()
 
 
 def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str = "desktop"):
-    print(f"Starting benchmark run {run_id} for scenario {scenario_id} on {device_type}...")
 
     mock_benchmark_runs[run_id].update(
         {
@@ -196,10 +195,7 @@ Recommendations: {analysis["optimization_suggestions"][0]}
             "report_text": report_text,
         }
 
-        print(f"Benchmark run {run_id} completed successfully.")
-
     except Exception as e:
-        print(f"Benchmark run {run_id} failed: {e}")
         mock_benchmark_runs[run_id].update({"status": "failed", "error": str(e)})
 
 
