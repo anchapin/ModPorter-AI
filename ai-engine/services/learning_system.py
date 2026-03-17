@@ -9,17 +9,17 @@ Implements:
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import json
 
 logger = logging.getLogger(__name__)
 
 
 class FeedbackType(Enum):
     """Types of user feedback."""
+
     RATING = "rating"
     CORRECTION = "correction"
     SUGGESTION = "suggestion"
@@ -28,6 +28,7 @@ class FeedbackType(Enum):
 
 class LearningStatus(Enum):
     """Status of learning items."""
+
     PENDING = "pending"
     ANALYZED = "analyzed"
     QUEUED = "queued"
@@ -38,6 +39,7 @@ class LearningStatus(Enum):
 @dataclass
 class UserFeedback:
     """User feedback for a conversion."""
+
     feedback_id: str
     conversion_id: str
     feedback_type: FeedbackType
@@ -49,7 +51,7 @@ class UserFeedback:
     timestamp: datetime = field(default_factory=datetime.now)
     user_id: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "feedback_id": self.feedback_id,
@@ -65,6 +67,7 @@ class UserFeedback:
 @dataclass
 class LearningItem:
     """Item to learn from feedback."""
+
     item_id: str
     feedback_id: str
     issue_type: str
@@ -74,7 +77,7 @@ class LearningItem:
     status: LearningStatus = LearningStatus.PENDING
     created_at: datetime = field(default_factory=datetime.now)
     learned_at: Optional[datetime] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "item_id": self.item_id,
@@ -90,12 +93,13 @@ class LearningItem:
 @dataclass
 class TrainingPair:
     """Training pair for model fine-tuning."""
+
     java_code: str
     bedrock_code: str
     quality_score: float  # 0.0 to 1.0
     source: str = "user_feedback"  # user_feedback, manual, synthetic
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "java": self.java_code,
@@ -108,6 +112,7 @@ class TrainingPair:
 @dataclass
 class CommunityPattern:
     """Community-submitted conversion pattern."""
+
     pattern_id: str
     name: str
     description: str
@@ -118,7 +123,7 @@ class CommunityPattern:
     status: str = "pending"  # pending, reviewing, approved, rejected
     votes: int = 0
     reviews: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "pattern_id": self.pattern_id,
@@ -135,7 +140,7 @@ class CommunityPattern:
 class FeedbackLearningPipeline:
     """
     Pipeline for learning from user feedback.
-    
+
     Processes:
     1. Collect feedback
     2. Analyze failures
@@ -143,37 +148,39 @@ class FeedbackLearningPipeline:
     4. Update rules
     5. Queue for retraining
     """
-    
+
     def __init__(self):
         self.feedback_store: Dict[str, UserFeedback] = {}
         self.learning_items: Dict[str, LearningItem] = {}
         self.translation_rules: Dict[str, str] = {}
         self.training_pairs: List[TrainingPair] = []
-        
+
         logger.info("FeedbackLearningPipeline initialized")
-    
+
     def submit_feedback(self, feedback: UserFeedback):
         """Submit user feedback for processing."""
         self.feedback_store[feedback.feedback_id] = feedback
-        logger.info(f"Received feedback: {feedback.feedback_id} (rating={feedback.rating})")
-        
+        logger.info(
+            f"Received feedback: {feedback.feedback_id} (rating={feedback.rating})"
+        )
+
         # Process low-rated feedback automatically
         if feedback.rating is not None and feedback.rating <= 2:
             self._analyze_failure(feedback)
-    
+
     def _analyze_failure(self, feedback: UserFeedback):
         """Analyze low-rated conversion to identify issues."""
         if not feedback.corrected_code or not feedback.original_java:
             logger.warning(f"Feedback {feedback.feedback_id} missing code for analysis")
             return
-        
+
         # Identify issue type (simplified analysis)
         issue_type = self._identify_issue_type(
             feedback.original_java,
             feedback.converted_bedrock or "",
-            feedback.corrected_code
+            feedback.corrected_code,
         )
-        
+
         # Create learning item
         learning_item = LearningItem(
             item_id=f"learn_{feedback.feedback_id}",
@@ -184,13 +191,15 @@ class FeedbackLearningPipeline:
             confidence=0.8,
             status=LearningStatus.ANALYZED,
         )
-        
+
         self.learning_items[learning_item.item_id] = learning_item
-        logger.info(f"Created learning item: {learning_item.item_id} (issue={issue_type})")
-        
+        logger.info(
+            f"Created learning item: {learning_item.item_id} (issue={issue_type})"
+        )
+
         # Queue for retraining
         self._queue_for_retraining(feedback)
-    
+
     def _identify_issue_type(self, java: str, bedrock: str, corrected: str) -> str:
         """Identify the type of conversion issue."""
         # Simple heuristic-based issue identification
@@ -204,13 +213,13 @@ class FeedbackLearningPipeline:
             return "type_mismatch"
         else:
             return "semantic_difference"
-    
+
     def _generate_fix(self, feedback: UserFeedback) -> str:
         """Generate fix suggestion from feedback."""
         if feedback.corrected_code:
             return f"Use corrected code: {feedback.corrected_code[:100]}..."
         return "Review and update translation rules"
-    
+
     def _queue_for_retraining(self, feedback: UserFeedback):
         """Queue feedback for model retraining."""
         if feedback.original_java and feedback.corrected_code:
@@ -222,23 +231,27 @@ class FeedbackLearningPipeline:
             )
             self.training_pairs.append(training_pair)
             logger.info(f"Queued training pair from feedback {feedback.feedback_id}")
-    
+
     def update_translation_rules(self, issue_type: str, fix: str):
         """Update translation rules based on learned issue."""
         rule_key = f"fix_{issue_type}"
         self.translation_rules[rule_key] = fix
         logger.info(f"Updated translation rule: {rule_key}")
-    
+
     def get_learning_stats(self) -> Dict[str, Any]:
         """Get learning pipeline statistics."""
         return {
             "total_feedback": len(self.feedback_store),
-            "low_rated": sum(1 for f in self.feedback_store.values() if f.rating and f.rating <= 2),
+            "low_rated": sum(
+                1 for f in self.feedback_store.values() if f.rating and f.rating <= 2
+            ),
             "learning_items": len(self.learning_items),
             "training_pairs": len(self.training_pairs),
             "translation_rules": len(self.translation_rules),
             "by_status": {
-                status.value: sum(1 for item in self.learning_items.values() if item.status == status)
+                status.value: sum(
+                    1 for item in self.learning_items.values() if item.status == status
+                )
                 for status in LearningStatus
             },
         }
@@ -247,21 +260,21 @@ class FeedbackLearningPipeline:
 class CodeT5FineTuner:
     """
     CodeT5+ fine-tuning manager.
-    
+
     Handles:
     - Training data preparation
     - Model fine-tuning
     - Validation
     - Model deployment
     """
-    
+
     def __init__(self):
         self.training_data: List[TrainingPair] = []
         self.model_path: Optional[str] = None
         self.training_history: List[Dict[str, Any]] = []
-        
+
         logger.info("CodeT5FineTuner initialized")
-    
+
     def prepare_training_data(
         self,
         feedback_pairs: List[TrainingPair],
@@ -270,12 +283,14 @@ class CodeT5FineTuner:
         """Prepare training data from feedback pairs."""
         # Filter by quality
         valid_pairs = [p for p in feedback_pairs if p.quality_score >= min_quality]
-        
+
         self.training_data = valid_pairs
-        logger.info(f"Prepared {len(valid_pairs)} training pairs (quality >= {min_quality})")
-        
+        logger.info(
+            f"Prepared {len(valid_pairs)} training pairs (quality >= {min_quality})"
+        )
+
         return len(valid_pairs)
-    
+
     def fine_tune(
         self,
         model_name: str = "Salesforce/codet5-plus",
@@ -285,12 +300,12 @@ class CodeT5FineTuner:
     ) -> Dict[str, Any]:
         """
         Fine-tune CodeT5+ model.
-        
+
         Note: Actual training would require GPU and ML infrastructure.
         This is a simulation for the pipeline.
         """
         logger.info(f"Starting fine-tuning: {model_name}, epochs={epochs}")
-        
+
         # Simulated training results
         training_result = {
             "model_name": model_name,
@@ -302,41 +317,49 @@ class CodeT5FineTuner:
             "status": "completed",
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         self.training_history.append(training_result)
-        self.model_path = f"models/codet5-plus-finetuned-{datetime.now().strftime('%Y%m%d')}"
-        
-        logger.info(f"Fine-tuning complete: {training_result['validation_accuracy']:.2%} accuracy")
-        
+        self.model_path = (
+            f"models/codet5-plus-finetuned-{datetime.now().strftime('%Y%m%d')}"
+        )
+
+        logger.info(
+            f"Fine-tuning complete: {training_result['validation_accuracy']:.2%} accuracy"
+        )
+
         return training_result
-    
+
     def get_model_stats(self) -> Dict[str, Any]:
         """Get model fine-tuning statistics."""
         return {
             "training_data_size": len(self.training_data),
             "model_path": self.model_path,
             "training_runs": len(self.training_history),
-            "latest_accuracy": self.training_history[-1]["validation_accuracy"] if self.training_history else 0.0,
+            "latest_accuracy": (
+                self.training_history[-1]["validation_accuracy"]
+                if self.training_history
+                else 0.0
+            ),
         }
 
 
 class CommunityPatternSharing:
     """
     Community pattern sharing system.
-    
+
     Features:
     - Pattern submission
     - Review process
     - Voting/rating
     - Pattern library updates
     """
-    
+
     def __init__(self):
         self.patterns: Dict[str, CommunityPattern] = {}
         self.review_queue: List[str] = []
-        
+
         logger.info("CommunityPatternSharing initialized")
-    
+
     def submit_pattern(
         self,
         name: str,
@@ -347,7 +370,7 @@ class CommunityPatternSharing:
     ) -> CommunityPattern:
         """Submit a community pattern for review."""
         pattern_id = f"community_{len(self.patterns) + 1}"
-        
+
         pattern = CommunityPattern(
             pattern_id=pattern_id,
             name=name,
@@ -356,59 +379,67 @@ class CommunityPatternSharing:
             bedrock_example=bedrock_example,
             submitted_by=submitted_by,
         )
-        
+
         self.patterns[pattern_id] = pattern
         self.review_queue.append(pattern_id)
-        
+
         logger.info(f"Pattern submitted: {pattern_id} by {submitted_by}")
         return pattern
-    
-    def review_pattern(self, pattern_id: str, approved: bool, reviewer: str, comments: str = ""):
+
+    def review_pattern(
+        self, pattern_id: str, approved: bool, reviewer: str, comments: str = ""
+    ):
         """Review a community pattern."""
         pattern = self.patterns.get(pattern_id)
         if not pattern:
             logger.warning(f"Pattern {pattern_id} not found")
             return
-        
-        pattern.reviews.append({
-            "reviewer": reviewer,
-            "approved": approved,
-            "comments": comments,
-            "timestamp": datetime.now().isoformat(),
-        })
-        
+
+        pattern.reviews.append(
+            {
+                "reviewer": reviewer,
+                "approved": approved,
+                "comments": comments,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
         if approved:
             pattern.status = "approved"
             logger.info(f"Pattern {pattern_id} approved by {reviewer}")
         else:
             pattern.status = "rejected"
             logger.info(f"Pattern {pattern_id} rejected by {reviewer}")
-        
+
         if pattern_id in self.review_queue:
             self.review_queue.remove(pattern_id)
-    
+
     def vote_pattern(self, pattern_id: str, vote: int):
         """Vote on a community pattern (+1 or -1)."""
         pattern = self.patterns.get(pattern_id)
         if not pattern:
             return
-        
+
         pattern.votes += vote
         logger.debug(f"Pattern {pattern_id} voted: {vote}, total: {pattern.votes}")
-    
+
     def get_top_patterns(self, limit: int = 10) -> List[CommunityPattern]:
         """Get top-voted approved patterns."""
         approved = [p for p in self.patterns.values() if p.status == "approved"]
         approved.sort(key=lambda p: p.votes, reverse=True)
         return approved[:limit]
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get community pattern statistics."""
         return {
             "total_patterns": len(self.patterns),
             "pending_review": len(self.review_queue),
-            "approved": sum(1 for p in self.patterns.values() if p.status == "approved"),
-            "rejected": sum(1 for p in self.patterns.values() if p.status == "rejected"),
+            "approved": sum(
+                1 for p in self.patterns.values() if p.status == "approved"
+            ),
+            "rejected": sum(
+                1 for p in self.patterns.values() if p.status == "rejected"
+            ),
             "total_votes": sum(p.votes for p in self.patterns.values()),
         }
 
@@ -416,14 +447,14 @@ class CommunityPatternSharing:
 class ContinuousImprovementDashboard:
     """
     Dashboard for tracking continuous improvement metrics.
-    
+
     Metrics:
     - Accuracy trend over time
     - New patterns added
     - User feedback incorporated
     - Model version tracking
     """
-    
+
     def __init__(self):
         self.metrics_history: List[Dict[str, Any]] = []
         self.current_metrics: Dict[str, float] = {
@@ -432,9 +463,9 @@ class ContinuousImprovementDashboard:
             "mod_coverage": 0.65,
             "conversion_speed": 3.0,  # minutes
         }
-        
+
         logger.info("ContinuousImprovementDashboard initialized")
-    
+
     def update_metrics(
         self,
         accuracy: Optional[float] = None,
@@ -451,15 +482,17 @@ class ContinuousImprovementDashboard:
             self.current_metrics["mod_coverage"] = mod_coverage
         if conversion_speed is not None:
             self.current_metrics["conversion_speed"] = conversion_speed
-        
+
         # Record history
-        self.metrics_history.append({
-            **self.current_metrics,
-            "timestamp": datetime.now().isoformat(),
-        })
-        
+        self.metrics_history.append(
+            {
+                **self.current_metrics,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
         logger.info(f"Metrics updated: accuracy={accuracy}")
-    
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get current metrics."""
         return {
@@ -467,22 +500,23 @@ class ContinuousImprovementDashboard:
             "history": self.metrics_history[-100:],  # Last 100 data points
             "improvements": self._calculate_improvements(),
         }
-    
+
     def _calculate_improvements(self) -> Dict[str, float]:
         """Calculate improvement percentages."""
         if len(self.metrics_history) < 2:
             return {}
-        
+
         first = self.metrics_history[0]
         latest = self.metrics_history[-1]
-        
+
         return {
             "accuracy_change": latest["accuracy"] - first["accuracy"],
-            "satisfaction_change": latest["user_satisfaction"] - first["user_satisfaction"],
+            "satisfaction_change": latest["user_satisfaction"]
+            - first["user_satisfaction"],
             "coverage_change": latest["mod_coverage"] - first["mod_coverage"],
             "speed_improvement": first["conversion_speed"] - latest["conversion_speed"],
         }
-    
+
     def get_dashboard_data(self) -> Dict[str, Any]:
         """Get complete dashboard data."""
         return {
@@ -490,31 +524,37 @@ class ContinuousImprovementDashboard:
             "milestone_summary": self._get_milestone_summary(),
             "recommendations": self._generate_recommendations(),
         }
-    
+
     def _get_milestone_summary(self) -> Dict[str, Any]:
         """Get Milestone v2.0 summary."""
         return {
             "parsing_success": {"before": 0.70, "after": 0.98, "improvement": "+40%"},
-            "conversion_time": {"before": 8.0, "after": 3.0, "improvement": "62% faster"},
+            "conversion_time": {
+                "before": 8.0,
+                "after": 3.0,
+                "improvement": "62% faster",
+            },
             "automation": {"before": 0.60, "after": 0.85, "improvement": "+42%"},
             "mod_coverage": {"before": 0.40, "after": 0.65, "improvement": "+62%"},
             "user_satisfaction": {"before": 3.5, "after": 4.5, "improvement": "+29%"},
             "failure_rate": {"before": 0.20, "after": 0.10, "improvement": "-50%"},
         }
-    
+
     def _generate_recommendations(self) -> List[str]:
         """Generate improvement recommendations."""
         recommendations = []
-        
+
         if self.current_metrics["accuracy"] < 0.90:
-            recommendations.append("Focus on improving conversion accuracy through more training data")
-        
+            recommendations.append(
+                "Focus on improving conversion accuracy through more training data"
+            )
+
         if self.current_metrics["mod_coverage"] < 0.75:
             recommendations.append("Expand pattern library to cover more mod types")
-        
+
         if self.current_metrics["conversion_speed"] > 2.0:
             recommendations.append("Optimize conversion pipeline for faster processing")
-        
+
         return recommendations
 
 

@@ -13,7 +13,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 
 from db.base import get_db
-from db.models import User, ConversionJob
+from db.models import ConversionJob
 from services.analytics_service import get_analytics_service
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,12 @@ router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
 class FeedbackSubmitRequest(BaseModel):
     """Feedback submission request."""
+
     conversion_id: str
     rating: int = Field(..., ge=1, le=5, description="Rating 1-5")
-    feedback_type: str = Field(..., description="Type: conversion_quality, bug_report, feature_request")
+    feedback_type: str = Field(
+        ..., description="Type: conversion_quality, bug_report, feature_request"
+    )
     comment: Optional[str] = Field(None, max_length=2000)
     specific_issues: Optional[List[str]] = None
     would_recommend: Optional[bool] = None
@@ -33,6 +36,7 @@ class FeedbackSubmitRequest(BaseModel):
 
 class FeedbackSubmitResponse(BaseModel):
     """Feedback submission response."""
+
     message: str
     feedback_id: str
     thank_you: bool
@@ -40,6 +44,7 @@ class FeedbackSubmitResponse(BaseModel):
 
 class ConversionRatingRequest(BaseModel):
     """Quick conversion rating."""
+
     conversion_id: str
     rating: int = Field(..., ge=1, le=5)
     would_use_again: bool = True
@@ -47,6 +52,7 @@ class ConversionRatingRequest(BaseModel):
 
 class BugReportRequest(BaseModel):
     """Bug report submission."""
+
     conversion_id: Optional[str] = None
     title: str
     description: str
@@ -59,6 +65,7 @@ class BugReportRequest(BaseModel):
 
 class FeatureRequestRequest(BaseModel):
     """Feature request submission."""
+
     title: str
     description: str
     use_case: str
@@ -74,7 +81,7 @@ async def submit_feedback(
 ):
     """
     Submit feedback for a conversion.
-    
+
     - Rating (1-5 stars)
     - Feedback type
     - Optional comment
@@ -88,16 +95,16 @@ async def submit_feedback(
         )
     )
     conversion = result.scalar_one_or_none()
-    
+
     if not conversion:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversion not found",
         )
-    
+
     # Create feedback record (would be stored in database)
     feedback_id = f"feedback_{request.conversion_id}_{datetime.utcnow().timestamp()}"
-    
+
     # Track analytics
     analytics = get_analytics_service()
     analytics.track_feedback_submitted(
@@ -106,9 +113,11 @@ async def submit_feedback(
         rating=request.rating,
         feedback_type=request.feedback_type,
     )
-    
-    logger.info(f"Feedback received from user {user_id}: {request.rating}/5 for {request.conversion_id}")
-    
+
+    logger.info(
+        f"Feedback received from user {user_id}: {request.rating}/5 for {request.conversion_id}"
+    )
+
     return FeedbackSubmitResponse(
         message="Thank you for your feedback!",
         feedback_id=feedback_id,
@@ -124,7 +133,7 @@ async def rate_conversion(
 ):
     """
     Quick conversion rating (1-5 stars).
-    
+
     Simple one-click rating after conversion.
     """
     # Verify conversion
@@ -135,13 +144,13 @@ async def rate_conversion(
         )
     )
     conversion = result.scalar_one_or_none()
-    
+
     if not conversion:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversion not found",
         )
-    
+
     # Track analytics
     analytics = get_analytics_service()
     analytics.track_feedback_submitted(
@@ -150,7 +159,7 @@ async def rate_conversion(
         rating=request.rating,
         feedback_type="conversion_rating",
     )
-    
+
     return {
         "message": "Thanks for rating!",
         "rating": request.rating,
@@ -166,7 +175,7 @@ async def submit_bug_report(
 ):
     """
     Submit a bug report.
-    
+
     - Title and description
     - Severity level
     - Steps to reproduce
@@ -174,19 +183,23 @@ async def submit_bug_report(
     """
     # Create bug report (would be stored in database)
     bug_id = f"bug_{datetime.utcnow().timestamp()}"
-    
-    logger.warning(f"Bug report from user {user_id}: {request.title} ({request.severity})")
-    
+
+    logger.warning(
+        f"Bug report from user {user_id}: {request.title} ({request.severity})"
+    )
+
     # For critical bugs, notify team immediately
     if request.severity == "critical":
         # Would send Slack/email notification to dev team
         logger.critical(f"CRITICAL BUG: {request.title} - {request.description}")
-    
+
     return {
         "message": "Bug report submitted. Thank you!",
         "bug_id": bug_id,
         "severity": request.severity,
-        "expected_response_time": "24-48 hours" if request.severity in ["high", "critical"] else "3-5 days",
+        "expected_response_time": (
+            "24-48 hours" if request.severity in ["high", "critical"] else "3-5 days"
+        ),
     }
 
 
@@ -198,7 +211,7 @@ async def submit_feature_request(
 ):
     """
     Submit a feature request.
-    
+
     - Title and description
     - Use case
     - Priority suggestion
@@ -206,9 +219,9 @@ async def submit_feature_request(
     """
     # Create feature request (would be stored in database)
     feature_id = f"feature_{datetime.utcnow().timestamp()}"
-    
+
     logger.info(f"Feature request from user {user_id}: {request.title}")
-    
+
     return {
         "message": "Feature request submitted. Thanks for the suggestion!",
         "feature_id": feature_id,
@@ -225,7 +238,7 @@ async def get_my_feedback(
 ):
     """
     Get user's feedback history.
-    
+
     Returns list of feedback submissions with status.
     """
     # Would query database for user's feedback
@@ -241,7 +254,7 @@ async def get_conversion_feedback(
 ):
     """
     Get feedback status for a specific conversion.
-    
+
     Returns feedback if submitted, or indicates no feedback yet.
     """
     # Verify conversion belongs to user
@@ -252,13 +265,13 @@ async def get_conversion_feedback(
         )
     )
     conversion = result.scalar_one_or_none()
-    
+
     if not conversion:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversion not found",
         )
-    
+
     # Would query for feedback on this conversion
     return {
         "conversion_id": conversion_id,

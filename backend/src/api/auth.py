@@ -13,7 +13,6 @@ Endpoints:
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -33,7 +32,6 @@ from security.auth import (
     generate_reset_token,
     generate_api_key,
     hash_api_key,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,14 +54,16 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-    def validate_password(cls, v):
+    def validate_password(self, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):
-            raise ValueError("Password must contain both uppercase and lowercase letters")
+            raise ValueError(
+                "Password must contain both uppercase and lowercase letters"
+            )
         if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in v):
             raise ValueError("Password must contain at least one special character")
         return v
@@ -116,14 +116,16 @@ class PasswordResetConfirmRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-    def validate_password(cls, v):
+    def validate_password(self, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):
-            raise ValueError("Password must contain both uppercase and lowercase letters")
+            raise ValueError(
+                "Password must contain both uppercase and lowercase letters"
+            )
         if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in v):
             raise ValueError("Password must contain at least one special character")
         return v
@@ -178,7 +180,9 @@ async def get_current_user(
 # ============================================
 
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(
     request_data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
@@ -208,8 +212,12 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    logger.info(f"Email verification token for {request_data.email}: {verification_token}")
-    logger.info(f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}")
+    logger.info(
+        f"Email verification token for {request_data.email}: {verification_token}"
+    )
+    logger.info(
+        f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}"
+    )
 
     return RegisterResponse(
         message="User registered. Please check email for verification link.",
@@ -346,7 +354,9 @@ async def forgot_password(
         await db.commit()
 
         logger.info(f"Password reset token for {request_data.email}: {reset_token}")
-        logger.info(f"Reset URL: http://localhost:8080/api/v1/auth/reset-password/{reset_token}")
+        logger.info(
+            f"Reset URL: http://localhost:8080/api/v1/auth/reset-password/{reset_token}"
+        )
 
     return MessageResponse(
         message="If the email is registered, a password reset link has been sent."

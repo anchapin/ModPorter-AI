@@ -54,7 +54,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(
     user_id: str,
     expires_delta: Optional[timedelta] = None,
-    extra_claims: Optional[dict] = None
+    extra_claims: Optional[dict] = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -87,8 +87,7 @@ def create_access_token(
 
 
 def create_refresh_token(
-    user_id: str,
-    expires_delta: Optional[timedelta] = None
+    user_id: str, expires_delta: Optional[timedelta] = None
 ) -> str:
     """
     Create a JWT refresh token.
@@ -207,4 +206,5 @@ def hash_api_key(api_key: str) -> str:
         Hashed API key using SHA-256
     """
     import hashlib
+
     return hashlib.sha256(api_key.encode()).hexdigest()
