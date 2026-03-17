@@ -1389,10 +1389,11 @@ async def create_addon_asset_endpoint(
             session=db, addon_id=addon_id, file=file, asset_type=asset_type
         )
     except ValueError as e:  # Catch errors like Addon not found from CRUD (though checked above)
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to create addon asset: {e}", exc_info=True)
+        raise HTTPException(status_code=404, detail="Addon not found")
     except Exception as e:
         logger.error(f"Failed to create addon asset: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to create addon asset: {str(e)}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
     return db_asset
 
 
@@ -1453,7 +1454,7 @@ async def update_addon_asset_endpoint(
         updated_asset = await crud.update_addon_asset(session=db, asset_id=asset_id, file=file)
     except Exception as e:
         logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to update addon asset: {str(e)}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     if not updated_asset:  # Should be caught by prior check or raise exception in CRUD
         raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
@@ -1506,7 +1507,7 @@ async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_
         )
     except Exception as e:
         logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to export addon: {str(e)}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     # Sanitize addon name for filename
     safe_filename = "".join(c if c.isalnum() else "_" for c in addon_details.name)

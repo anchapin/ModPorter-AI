@@ -317,7 +317,7 @@ async def get_agent_performance():
     except Exception as e:
         logger.error(f"Failed to get agent performance: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve agent performance: {str(e)}"
+            status_code=500, detail="An internal server error occurred"
         )
 
 
@@ -384,7 +384,7 @@ async def get_specific_agent_performance(agent_type: str):
         logger.error(f"Failed to get performance for agent {agent_type}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to retrieve performance for agent {agent_type}: {str(e)}",
+            detail="An internal server error occurred",
         )
 
 
