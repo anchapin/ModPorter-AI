@@ -56,7 +56,7 @@ jobs:
             frontend:
               - 'frontend/**'
               - 'frontend/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ai-engine:
               - 'ai-engine/**'
               - 'ai-engine/requirements*.txt'
@@ -66,7 +66,7 @@ jobs:
             dependencies:
               - '**/requirements*.txt'
               - '**/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ruff:
               - '**/*.py'
               - '**/pyproject.toml'
@@ -710,7 +710,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -795,10 +795,12 @@ jobs:
         case "${{ matrix.test-type }}" in
           "unit")
             # Run tests with coverage in CI mode
+            cd frontend
             pnpm run test:ci
             ;;
           "build")
             # Build with production optimizations
+            cd frontend
             NODE_ENV=production pnpm run build
             echo "Build size analysis:"
             du -sh dist/* 2>/dev/null || echo "Build completed"
@@ -807,6 +809,7 @@ jobs:
             # Force reinstall of potentially corrupted packages from stale cache
             cd ..
             rm -rf node_modules
+            cd frontend
             pnpm install --frozen-lockfile
             cd frontend
             # Run linting
@@ -995,14 +998,13 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies
       run: |
-        cd frontend
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
@@ -1131,7 +1133,7 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-pnpm-store-
@@ -1238,7 +1240,7 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-pnpm-store-
