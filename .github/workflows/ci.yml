@@ -55,7 +55,7 @@ jobs:
             frontend:
               - 'frontend/**'
               - 'frontend/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ai-engine:
               - 'ai-engine/**'
               - 'ai-engine/requirements*.txt'
@@ -65,7 +65,7 @@ jobs:
             dependencies:
               - '**/requirements*.txt'
               - '**/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ruff:
               - '**/*.py'
               - '**/pyproject.toml'
@@ -691,7 +691,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -755,7 +755,7 @@ jobs:
       with:
         node-version: '20.19.0'
         cache: 'pnpm'
-        cache-dependency-path: 'frontend/pnpm-lock.yaml'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Install dependencies (optimized)
       run: |
