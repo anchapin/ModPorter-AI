@@ -325,11 +325,11 @@ async def trigger_asset_conversion(
         else:
             error_msg = result.get("error", "Conversion failed")
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
-            raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
+            raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
-        raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
 
 # Batch conversion endpoint for conversion jobs

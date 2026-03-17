@@ -33,6 +33,34 @@ h1 {
   line-height: 1.1;
 }
 
+/* Form elements focus-visible styles for accessibility */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #646cff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(100, 108, 255, 0.3);
+}
+
+/* Ensure focus is visible for keyboard navigation */
+*:focus {
+  outline: 3px solid #646cff;
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users - they get focus ring on click */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 3px solid #646cff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(100, 108, 255, 0.3);
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;

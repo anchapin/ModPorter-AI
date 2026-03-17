@@ -6,6 +6,9 @@ from db.base import get_db
 from db import behavior_templates_crud
 import uuid
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -256,9 +259,10 @@ async def create_behavior_template(
             created_by=user_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(f"Validation error in template creation: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid request data")
     except Exception:
-        raise HTTPException(status_code=500, detail="Failed to create template")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     return BehaviorTemplateResponse(
         id=str(template.id),
@@ -314,9 +318,10 @@ async def update_behavior_template(
             db, template_id=template_id, updates=request.dict(exclude_unset=True)
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(f"Validation error in template update: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid request data")
     except Exception:
-        raise HTTPException(status_code=500, detail="Failed to update template")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     return BehaviorTemplateResponse(
         id=str(updated_template.id),

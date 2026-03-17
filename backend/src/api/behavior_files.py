@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -240,9 +243,10 @@ async def create_behavior_file(
             content=request.content,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(f"Validation error in behavior file creation: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid request data")
     except Exception:
-        raise HTTPException(status_code=500, detail="Failed to create behavior file")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),

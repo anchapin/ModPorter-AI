@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import AI Engine components with fallback for testing
 try:
@@ -131,12 +134,11 @@ async def create_comparison(
         )
     except HTTPException:  # Re-raise HTTPExceptions from validation
         raise
-    except Exception:
-        # Log the exception e here if logging is set up
-        # logger.error(f"Comparison engine failed: {e}", exc_info=True)
-        logger.error(f"Comparison engine failed: {str(e)}", exc_info=True)
+    except Exception as e:
+        # Log the exception with full details internally
+        logger.error("Comparison engine failed", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Comparison engine failed: Please try again.")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     # Map AI Engine models to SQLAlchemy DB models
     db_comparison_result = ComparisonResultDb(
@@ -166,13 +168,12 @@ async def create_comparison(
         # Refresh related feature_mappings if their IDs are needed immediately, though often not.
         # for fm in db_comparison_result.feature_mappings:
         # await session.refresh(fm)
-    except Exception:
+    except Exception as e:
         await session.rollback()
-        # Log the exception e here
-        # logger.error(f"Database error during comparison creation: {e}", exc_info=True)
-        logger.error(f"Database error: {str(e)}", exc_info=True)
+        # Log the exception with full details internally
+        logger.error("Database error during comparison creation", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Database error: Please try again.")
+        raise HTTPException(status_code=500, detail="An internal server error occurred")
 
     return ComparisonResponse(
         message="Comparison successfully created",
