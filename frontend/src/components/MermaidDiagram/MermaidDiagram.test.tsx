@@ -52,7 +52,8 @@ describe('MermaidDiagram', () => {
     const id = diagramContainer?.getAttribute('id');
 
     expect(id).toBeDefined();
-    expect(id).toMatch(/^mermaid-[a-z0-9-]+$/);
+    // UUID format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (with 'mermaid-' prefix)
+    expect(id).toMatch(/^mermaid-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 
   test('initializes mermaid with correct configuration', async () => {
