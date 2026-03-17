@@ -372,39 +372,28 @@ export class RecipeValidation {
     return conflicts;
   }
 
+  private extractIngredientIds(pattern: Recipe['pattern']): string[] {
+    return (
+      pattern?.flat().reduce((acc: string[], slot) => {
+        if (slot.item?.id) acc.push(slot.item.id);
+        return acc;
+      }, []).sort() || []
+    );
+  }
+
   private recipesAreIdentical(recipe1: Recipe, recipe2: Recipe): boolean {
     if (recipe1.type !== recipe2.type) return false;
     if (recipe1.result.id !== recipe2.result.id) return false;
 
-    const ingredients1 =
-      recipe1.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
-    const ingredients2 =
-      recipe2.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
+    const ingredients1 = this.extractIngredientIds(recipe1.pattern);
+    const ingredients2 = this.extractIngredientIds(recipe2.pattern);
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }
 
   private hasSameIngredients(recipe1: Recipe, recipe2: Recipe): boolean {
-    const ingredients1 =
-      recipe1.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
-    const ingredients2 =
-      recipe2.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
+    const ingredients1 = this.extractIngredientIds(recipe1.pattern);
+    const ingredients2 = this.extractIngredientIds(recipe2.pattern);
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }

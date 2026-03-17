@@ -1,13 +1,14 @@
 # Current Tasks
 
 ## In Progress
-- None
+- 🔄 Fix issue #843: Accessibility - Add :focus-visible CSS styling to form elements and buttons
+- 🔄 Fix issue #842: Security - Remove exception details from HTTP error responses
 
 ## Pending
-- None
+- ⏳ Test keyboard navigation across UI
 
 ## Completed
-- None
+- ✅ Parallel issue workflow initialized
 
 ---
 *Last updated: 2025-11-10*

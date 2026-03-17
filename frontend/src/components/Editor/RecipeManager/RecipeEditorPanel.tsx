@@ -51,10 +51,11 @@ export const RecipeEditorPanel: React.FC = () => {
   const handleTagsChange = (value: string) => {
     setTags(value);
     if (selectedRecipe) {
-      const tagsArray = value
-        .split(',')
-        .map((t) => t.trim())
-        .filter((t) => t);
+      const tagsArray = value.split(',').reduce((acc: string[], t) => {
+        const trimmed = t.trim();
+        if (trimmed) acc.push(trimmed);
+        return acc;
+      }, []);
       const updatedData = { ...selectedRecipe.data, tags: tagsArray };
       updateRecipe(selectedRecipe.id, updatedData);
     }
