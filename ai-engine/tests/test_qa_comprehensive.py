@@ -10,12 +10,8 @@ import shutil
 from pathlib import Path
 import importlib.util
 
-import os
-
 # Load qa_validator directly
-script_dir = Path(os.path.abspath(__file__)).parent
-qa_validator_path = script_dir.parent / "agents" / "qa_validator.py"
-spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
+spec = importlib.util.spec_from_file_location("qa_validator", "ai-engine/agents/qa_validator.py")
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies

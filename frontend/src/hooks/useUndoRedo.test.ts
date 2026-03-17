@@ -146,9 +146,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('History Management', () => {
     test('clearHistory resets to current state', () => {
-      const { result } = renderHook(() =>
-        useUndoRedo('initial', { enableDebounce: false })
-      );
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('second', 'Update 1');
@@ -168,9 +166,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('getHistory returns current state', () => {
-      const { result } = renderHook(() =>
-        useUndoRedo('initial', { enableDebounce: false })
-      );
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('second', 'Update');
@@ -306,9 +302,7 @@ describe('useUndoRedo Hook', () => {
 
   describe('Edge Cases', () => {
     test('handles rapid undo/redo operations', () => {
-      const { result } = renderHook(() =>
-        useUndoRedo('initial', { enableDebounce: false })
-      );
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('1', 'Update 1');
@@ -329,9 +323,7 @@ describe('useUndoRedo Hook', () => {
     });
 
     test('handles update with same value as previous', () => {
-      const { result } = renderHook(() =>
-        useUndoRedo('initial', { enableDebounce: false })
-      );
+      const { result } = renderHook(() => useUndoRedo('initial', { enableDebounce: false }));
 
       act(() => {
         result.current.updateState('initial', 'Same value');

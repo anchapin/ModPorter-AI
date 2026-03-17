@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "pnpm",
-  "reporters": ["html", "json", "clear-text"],
+  "reporters": ["html", "json", "cleartext"],
   "vitest": {
     "configFile": "vite.config.ts",
     "enableFindRelatedTests": true
