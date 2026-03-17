@@ -265,8 +265,10 @@ async def create_behavior_template(
             created_by=user_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+        logger.error(f"Validation error creating behavior template: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Invalid behavior template data")
+    except Exception as e:
+        logger.error(f"Failed to create behavior template: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create template")
 
     return BehaviorTemplateResponse(
@@ -325,8 +327,10 @@ async def update_behavior_template(
             db, template_id=template_id, updates=request.dict(exclude_unset=True)
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+        logger.error(f"Validation error updating behavior template: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Invalid behavior template data")
+    except Exception as e:
+        logger.error(f"Failed to update behavior template: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update template")
 
     return BehaviorTemplateResponse(
