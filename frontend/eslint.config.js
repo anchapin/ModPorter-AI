@@ -196,7 +196,7 @@ export default [
       // Warn about deprecated React APIs
       'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
       // Cyclomatic complexity threshold
-      complexity: ['warn', 20],
+      'complexity': ['warn', 20],
       // Module boundary enforcement rules
       'boundaries/element-types': [
         'error',
@@ -218,13 +218,7 @@ export default [
             },
             {
               from: 'utils',
-              disallow: [
-                'components',
-                'hooks',
-                'pages',
-                'services',
-                'contexts',
-              ],
+              disallow: ['components', 'hooks', 'pages', 'services', 'contexts'],
             },
           ],
         },
@@ -296,24 +290,19 @@ export default [
       'src/components/ConversionUpload/ConversionUploadReal.tsx',
       'src/components/Editor/RecipeManager/RecipeList.tsx',
       'src/components/ExportManager/ExportManager.tsx',
-      'src/components/Settings/Settings.tsx',
+      'src/components/Settings/Settings.tsx'
     ],
     rules: {
-      complexity: ['warn', 45],
-    },
+      'complexity': ['warn', 45]
+    }
   },
   {
     // Relax rules for tests and stories
-    files: [
-      '**/*.test.{ts,tsx}',
-      '**/*.spec.{ts,tsx}',
-      '**/*.stories.{ts,tsx}',
-      'e2e/**',
-    ],
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/*.stories.{ts,tsx}', 'e2e/**'],
     rules: {
       'sonarjs/no-duplicate-string': 'off',
       'sonarjs/no-identical-functions': 'off',
-      'unused-imports/no-unused-vars': 'off',
-    },
-  },
+      'unused-imports/no-unused-vars': 'off'
+    }
+  }
 ];

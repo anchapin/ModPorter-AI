@@ -91,7 +91,7 @@ export const ConversionHistoryItem = memo(
               title="Download converted file"
               aria-label={`Download ${item.original_filename}`}
             >
-              ⬇️ Download
+              <span aria-hidden="true">⬇️</span> Download
             </button>
           )}
 
@@ -107,7 +107,7 @@ export const ConversionHistoryItem = memo(
                 aria-label="Confirm deletion"
                 title="Confirm deletion"
               >
-                ✓
+                <span aria-hidden="true">✓</span>
               </button>
               <button
                 className="confirm-no-btn"
@@ -116,7 +116,7 @@ export const ConversionHistoryItem = memo(
                 title="Cancel deletion"
                 autoFocus
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (
@@ -126,7 +126,7 @@ export const ConversionHistoryItem = memo(
               title="Remove from history"
               aria-label={`Remove ${item.original_filename} from history`}
             >
-              🗑️
+              <span aria-hidden="true">🗑️</span>
             </button>
           )}
         </div>

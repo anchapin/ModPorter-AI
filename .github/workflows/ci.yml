@@ -871,6 +871,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         
+        # Install the root modporter package required by tests
+        pip install -e .
+
         if [ "${{ matrix.project }}" = "ai-engine" ]; then
           cd ai-engine
           pip install -e ".[dev]"
@@ -1124,7 +1127,7 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:frontend
+      run: pnpm build:analyze
 
     - name: Generate bundle size report
       run: node ../scripts/generate-bundle-report.cjs frontend/dist
@@ -1178,6 +1181,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pip-audit
+        # Install the root modporter package to avoid 'Multiple top-level packages discovered' error
+        pip install -e .
 
     - name: Scan Python dependencies (Backend)
       if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
