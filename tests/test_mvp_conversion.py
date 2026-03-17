@@ -748,15 +748,15 @@ class TestMVPEndToEndConversion:
             assert structural.get('status') in ['pass', 'partial'], \
                 f"Structural validation failed: {structural.get('errors', [])}"
 
-            # Manifest validation should pass
-            manifest = validation_result['validations'].get('manifest', {})
-            assert manifest.get('status') in ['pass', 'partial'], \
-                f"Manifest validation failed: {manifest.get('errors', [])}"
+            # Best practices validation should pass (formerly called manifest validation)
+            best_practices = validation_result['validations'].get('best_practices', {})
+            assert best_practices.get('status') in ['pass', 'partial'], \
+                f"Best practices validation failed: {best_practices.get('errors', [])}"
 
-            # Content validation should pass (as documented in docstring)
-            content = validation_result['validations'].get('content', {})
-            assert content.get('status') in ['pass', 'partial'], \
-                f"Content validation failed: {content.get('errors', [])}"
+            # Asset validity validation should pass
+            asset_validity = validation_result['validations'].get('asset_validity', {})
+            assert asset_validity.get('status') in ['pass', 'partial'], \
+                f"Asset validity validation failed: {asset_validity.get('errors', [])}"
 
             print("\n✅ TEST PASSED: QA Validator Integration")
 

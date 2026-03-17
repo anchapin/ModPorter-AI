@@ -33,7 +33,7 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Step 3: Run CLI conversion
             result = subprocess.run([
-                "python", "-m", "modporter.cli",
+                "python", "-m", "modporter.cli", "convert",
                 str(fixture_path),
                 "-o", temp_dir
             ], capture_output=True, text=True, cwd=project_root)
@@ -75,7 +75,7 @@ class TestCLIIntegration:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Run CLI conversion with invalid file
                 result = subprocess.run([
-                    "python", "-m", "modporter.cli",
+                    "python", "-m", "modporter.cli", "convert",
                     temp_jar_path,
                     "-o", temp_dir
                 ], capture_output=True, text=True, cwd=project_root)
@@ -98,7 +98,7 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Run CLI conversion
             result = subprocess.run([
-                "python", "-m", "modporter.cli",
+                "python", "-m", "modporter.cli", "convert",
                 str(fixture_path),
                 "-o", temp_dir
             ], capture_output=True, text=True, cwd=project_root)

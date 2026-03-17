@@ -3,14 +3,24 @@ Test suite for A/B testing infrastructure
 """
 
 import pytest
-import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
-from db import crud
+import os
+
+# Skip all tests in this module if DATABASE_URL is not set
+# These tests require a PostgreSQL database to be running
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+pytestmark = pytest.mark.skipif(
+    not DATABASE_URL,
+    reason="Database not available - requires DATABASE_URL environment variable"
+)
 
 
 @pytest.mark.asyncio
-async def test_experiment_lifecycle(db_session: AsyncSession):
+async def test_experiment_lifecycle(db_session):
     """Test the full lifecycle of an experiment"""
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from db import crud
+    
     # Create experiment
     experiment = await crud.create_experiment(
         db_session,
@@ -54,8 +64,10 @@ async def test_experiment_lifecycle(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_experiment_variant_lifecycle(db_session: AsyncSession):
+async def test_experiment_variant_lifecycle(db_session):
     """Test the full lifecycle of an experiment variant"""
+    from db import crud
+    
     # Create experiment first
     experiment = await crud.create_experiment(
         db_session,
@@ -65,7 +77,7 @@ async def test_experiment_variant_lifecycle(db_session: AsyncSession):
     )
     
     # Create variant
-    variant = await crud.create_experiment_variant(
+    variant = await crud.create_experiments_variant(
         db_session,
         experiment_id=experiment.id,
         name="Test Variant",
@@ -115,8 +127,11 @@ async def test_experiment_variant_lifecycle(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_experiment_results(db_session: AsyncSession):
+async def test_experiment_results(db_session):
     """Test recording and retrieving experiment results"""
+    import uuid
+    from db import crud
+    
     # Create experiment and variant first
     experiment = await crud.create_experiment(
         db_session,
@@ -125,7 +140,7 @@ async def test_experiment_results(db_session: AsyncSession):
         status="active"
     )
     
-    variant = await crud.create_experiment_variant(
+    variant = await crud.create_experiments_variant(
         db_session,
         experiment_id=experiment.id,
         name="Results Test Variant",
@@ -176,8 +191,10 @@ async def test_experiment_results(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_control_variant_uniqueness(db_session: AsyncSession):
+async def test_control_variant_uniqueness(db_session):
     """Test that only one control variant exists per experiment"""
+    from db import crud
+    
     # Create experiment
     experiment = await crud.create_experiment(
         db_session,
@@ -187,7 +204,7 @@ async def test_control_variant_uniqueness(db_session: AsyncSession):
     )
     
     # Create first control variant
-    control_variant1 = await crud.create_experiment_variant(
+    control_variant1 = await crud.create_experiments_variant(
         db_session,
         experiment_id=experiment.id,
         name="Control Variant 1",
@@ -195,7 +212,7 @@ async def test_control_variant_uniqueness(db_session: AsyncSession):
     )
     
     # Create second control variant - this should make the first one not control
-    control_variant2 = await crud.create_experiment_variant(
+    control_variant2 = await crud.create_experiments_variant(
         db_session,
         experiment_id=experiment.id,
         name="Control Variant 2",
