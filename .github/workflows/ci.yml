@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           base: main
@@ -557,7 +557,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-integration-${{ matrix.test-suite }}
         path: .github/perf-metrics/*.json
@@ -565,7 +565,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -593,7 +593,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -795,7 +795,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -832,7 +832,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
         path: .github/perf-metrics/*.json
@@ -871,9 +871,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         
-        # Install the root modporter package required by tests
-        pip install -e .
-
         if [ "${{ matrix.project }}" = "ai-engine" ]; then
           cd ai-engine
           pip install -e ".[dev]"
@@ -936,7 +933,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-python-${{ matrix.project }}
         path: .github/perf-metrics/*.json
@@ -1030,7 +1027,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-frontend
         path: .github/perf-metrics/*.json
@@ -1133,7 +1130,7 @@ jobs:
       run: node ../scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bundle-report
@@ -1181,8 +1178,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pip-audit
-        # Install the root modporter package to avoid 'Multiple top-level packages discovered' error
-        pip install -e .
 
     - name: Scan Python dependencies (Backend)
       if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
@@ -1254,7 +1249,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Download all performance metrics
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         pattern: perf-metrics-*
         path: .github/perf-metrics
@@ -1287,7 +1282,7 @@ jobs:
         fi
 
     - name: Upload performance summary
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: ci-performance-summary
         path: |
