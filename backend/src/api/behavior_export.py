@@ -224,7 +224,7 @@ async def export_behavior_pack(
                 exported_at=datetime.utcnow().isoformat(),
             )
 
-        except Exception as e:
+        except Exception:
             raise HTTPException(status_code=500, detail="Failed to create MCADDON")
 
 

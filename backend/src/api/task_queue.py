@@ -94,7 +94,7 @@ async def create_task(request: TaskEnqueueRequest):
             retry_count=task.retry_count,
             max_retries=task.max_retries,
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to enqueue task")
 
 

@@ -314,9 +314,7 @@ async def get_agent_performance():
         raise
     except Exception as e:
         logger.error(f"Failed to get agent performance: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve agent performance"
-        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve agent performance")
 
 
 @router.get("/ai/performance/agents/{agent_type}")

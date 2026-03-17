@@ -386,7 +386,7 @@ async def create_event_system(
 
         return event_system
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to create event system")
 
 
@@ -448,7 +448,7 @@ async def test_event_system(
             ],
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Event system test failed")
 
 
@@ -471,7 +471,7 @@ async def generate_event_system_functions(
 
         return {"message": "Event system function generation started"}
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to start generation")
 
 
@@ -482,7 +482,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
     try:
         # This would contain the actual function generation logic
         # For now, it's a placeholder
-        print(f"Generating functions for event system: {system_id}")
+        pass
 
         # In a full implementation, this would:
         # 1. Parse the event system configuration
@@ -490,8 +490,8 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
         # 3. Create proper function directory structure
         # 4. Store generated functions as behavior files
 
-    except Exception as e:
-        print(f"Background function generation failed: {e}")
+    except Exception:
+        pass
 
 
 @router.get("/events/systems/{system_id}/debug", summary="Get debug information for event system")
@@ -519,5 +519,5 @@ async def get_event_system_debug(
             },
         }
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to get debug info")

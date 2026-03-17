@@ -133,9 +133,7 @@ ignore = [
     # flake8-simplify rules we don't want (duplicate code patterns via SIM)
     "SIM108",  # Use ternary operator (if/else is clearer in some cases)
     "SIM115",  # Use context handler for opening files (disagree)
-    # flake8-2020 rules
-    "T200",  # str(...) on f-string (disagree with this being an error)
-]
+    ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402", "F401", "F841", "E712"]  # Allow imports not at top, unused imports/variables, and == True/False in tests

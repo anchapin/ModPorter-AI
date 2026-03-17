@@ -166,12 +166,12 @@ async def generate_embeddings(
 
         return embeddings
 
-    except ImportError as e:
+    except ImportError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Embedding generator not available",
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error generating embeddings",

@@ -441,15 +441,9 @@ def analyze_dependencies(
 
 def print_report(report: DependencyReport, verbose: bool = False) -> None:
     """Print a dependency analysis report."""
-    print("\n" + "=" * 60)
-    print("DEPENDENCY ANALYSIS REPORT")
-    print("=" * 60)
 
-    print(f"\nFiles scanned: {report.files_scanned}")
-    print(f"Packages scanned: {report.packages_scanned}")
 
     if report.unused_imports:
-        print(f"\n--- Unused Imports ({len(report.unused_imports)}) ---")
         # Group by file
         by_file: dict[str, list[UnusedImport]] = {}
         for imp in report.unused_imports:
@@ -458,20 +452,17 @@ def print_report(report: DependencyReport, verbose: bool = False) -> None:
             by_file[imp.file_path].append(imp)
 
         for file_path, imports in sorted(by_file.items()):
-            print(f"\n{file_path}:")
             for imp in imports:
-                print(f"  Line {imp.line_number}: {imp.import_statement}")
+                pass
     else:
-        print("\n--- Unused Imports: None found ---")
+        pass
 
     if report.unused_packages:
-        print(f"\n--- Unused Packages ({len(report.unused_packages)}) ---")
         for pkg in report.unused_packages:
-            print(f"  {pkg.package_name} (from {pkg.source_file})")
+            pass
     else:
-        print("\n--- Unused Packages: None found ---")
+        pass
 
-    print("\n" + "=" * 60)
 
 
 def main():
@@ -548,13 +539,11 @@ def main():
         }
         with open(args.output, "w") as f:
             json.dump(report_dict, f, indent=2)
-        print(f"\nJSON report written to: {args.output}")
 
     # Exit with error code if there are findings
     if report.unused_imports or report.unused_packages:
         sys.exit(1)
     else:
-        print("\n✓ No unused dependencies found!")
         sys.exit(0)
 
 

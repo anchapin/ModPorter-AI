@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/query-monitor", tags=["query-monitoring"])
 async def get_report() -> Dict[str, Any]:
     """
     Get comprehensive query performance report.
-    
+
     Returns:
         - summary: Overall statistics
         - n_plus_one_candidates: Detected N+1 queries
@@ -37,7 +37,7 @@ async def get_report() -> Dict[str, Any]:
     """
     try:
         return get_query_report()
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to generate report")
 
 
@@ -45,7 +45,7 @@ async def get_report() -> Dict[str, Any]:
 async def get_n_plus_one_candidates() -> Dict[str, Any]:
     """
     Get queries that appear to have N+1 problems.
-    
+
     Returns a list of queries executed multiple times with different parameters.
     """
     try:
@@ -54,7 +54,7 @@ async def get_n_plus_one_candidates() -> Dict[str, Any]:
             "count": len(report["n_plus_one_candidates"]),
             "candidates": report["n_plus_one_candidates"],
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch N+1 candidates")
 
 
@@ -69,7 +69,7 @@ async def get_slowest_queries() -> Dict[str, Any]:
             "count": len(report["slowest_queries"]),
             "queries": report["slowest_queries"],
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch slowest queries")
 
 
@@ -84,7 +84,7 @@ async def get_most_executed() -> Dict[str, Any]:
             "count": len(report["most_executed_queries"]),
             "queries": report["most_executed_queries"],
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch most executed queries")
 
 
@@ -92,13 +92,13 @@ async def get_most_executed() -> Dict[str, Any]:
 async def reset_monitor() -> Dict[str, str]:
     """
     Clear all accumulated query monitoring data.
-    
+
     This is useful when starting a new monitoring session.
     """
     try:
         reset_query_monitor()
         return {"status": "success", "message": "Query monitor reset"}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to reset monitor")
 
 
@@ -108,7 +108,7 @@ async def enable_monitor() -> Dict[str, str]:
     try:
         enable_query_monitoring()
         return {"status": "success", "message": "Query monitoring enabled"}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to enable monitor")
 
 
@@ -118,7 +118,7 @@ async def disable_monitor() -> Dict[str, str]:
     try:
         disable_query_monitoring()
         return {"status": "success", "message": "Query monitoring disabled"}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to disable monitor")
 
 
@@ -128,5 +128,5 @@ async def get_summary() -> Dict[str, Any]:
     try:
         report = get_query_report()
         return report["summary"]
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch summary")
