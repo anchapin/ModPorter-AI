@@ -94,9 +94,10 @@ export const BehaviorFileTreeEnhanced: React.FC<
         setFilteredTreeData(data);
 
         // Auto-expand root level directories
-        const rootDirs = data
-          .filter((node) => node.type === 'directory')
-          .map((node) => node.path);
+        const rootDirs = data.reduce((acc: string[], node) => {
+          if (node.type === 'directory') acc.push(node.path);
+          return acc;
+        }, []);
         setExpandedFolders(new Set(rootDirs));
       } catch (err) {
         console.error('Error fetching behavior file tree:', err);
@@ -118,9 +119,10 @@ export const BehaviorFileTreeEnhanced: React.FC<
     if (!searchQuery.trim()) {
       setFilteredTreeData(treeData);
       // Restore expanded folders
-      const rootDirs = treeData
-        .filter((node) => node.type === 'directory')
-        .map((node) => node.path);
+      const rootDirs = treeData.reduce((acc: string[], node) => {
+        if (node.type === 'directory') acc.push(node.path);
+        return acc;
+      }, []);
       setExpandedFolders(new Set(rootDirs));
       return;
     }

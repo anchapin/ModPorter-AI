@@ -44,9 +44,10 @@ export const BehaviorFileTree: React.FC<BehaviorFileTreeProps> = ({
         setTreeData(data);
 
         // Auto-expand root level directories
-        const rootDirs = data
-          .filter((node) => node.type === 'directory')
-          .map((node) => node.path);
+        const rootDirs = data.reduce((acc: string[], node) => {
+          if (node.type === 'directory') acc.push(node.path);
+          return acc;
+        }, []);
         setExpandedFolders(new Set(rootDirs));
       } catch (err) {
         console.error('Error fetching behavior file tree:', err);

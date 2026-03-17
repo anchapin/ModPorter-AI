@@ -8,6 +8,7 @@ Issue: #455 - Comprehensive Error Handling (Phase 3)
 """
 
 import logging
+import os
 import traceback
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, Request, status
@@ -18,6 +19,9 @@ from datetime import datetime
 import uuid
 
 from .structured_logging import correlation_id_var, set_correlation_id
+
+# Check if running in debug mode
+DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -287,7 +291,13 @@ def _categorize_error(error: Exception) -> str:
 def create_error_response(
     error: Exception, request: Request, include_traceback: bool = False
 ) -> ErrorResponse:
-    """Create a structured error response"""
+    """Create a structured error response
+    
+    NOTE: Sensitive error details are NEVER included in HTTP responses.
+    - Stack traces are logged server-side only, never sent to clients
+    - Exception messages are sanitized to generic user messages
+    - Internal details are sanitized unless DEBUG_MODE is enabled
+    """
     error_id = str(uuid.uuid4())[:8]
     timestamp = datetime.utcnow().isoformat()
 
@@ -302,19 +312,22 @@ def create_error_response(
         error_category = _categorize_error(error)
         user_message = error.user_message
         message = error.message
-        details = error.details
+        # Only include error details in debug mode
+        details = error.details if DEBUG_MODE else {}
     elif isinstance(error, HTTPException):
         error_type = "http_error"
         error_category = _categorize_error(error)
         user_message = error.detail
         message = str(error.detail)
-        details = {"status_code": error.status_code}
+        # Only include status code in production
+        details = {"status_code": error.status_code} if DEBUG_MODE else {}
     elif isinstance(error, RequestValidationError):
         error_type = "validation_error"
         error_category = "validation_error"
         user_message = "Invalid request data. Please check your input."
         message = str(error)
-        details = {"errors": error.errors()}
+        # In production, don't expose validation error details
+        details = {"errors": error.errors()} if DEBUG_MODE else {}
     else:
         error_type = "internal_error"
         error_category = _categorize_error(error)
@@ -324,8 +337,8 @@ def create_error_response(
         message = str(error)
         details = {}
 
-    # Add traceback in development
-    if include_traceback:
+    # Add traceback only in debug mode (NEVER in production)
+    if include_traceback and DEBUG_MODE:
         details["traceback"] = traceback.format_exc()
 
     return ErrorResponse(
@@ -400,11 +413,18 @@ async def validation_exception_handler(
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handler for all other exceptions"""
-    error_response = create_error_response(exc, request, include_traceback=True)
+    """Handler for all other exceptions
+    
+    Full error details are logged server-side with traceback for debugging.
+    Clients only receive a generic error message without sensitive information.
+    """
+    # Always log the full exception with traceback (server-side only)
     logger.error(
-        f"[{error_response.error_id}] Unhandled exception: {error_response.message}", exc_info=True
+        f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True
     )
+
+    # Create sanitized error response (no traceback exposed to clients)
+    error_response = create_error_response(exc, request, include_traceback=False)
 
     # Record unhandled exception metric
     _record_error_metric(

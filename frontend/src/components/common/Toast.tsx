@@ -221,7 +221,7 @@ const useToastHook = (): UseToastReturn => {
 
   const addToast = useCallback(
     (type: ToastType, message: string, options: Partial<ToastMessage> = {}) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `toast-${crypto.randomUUID()}`;
       const newToast: ToastMessage = {
         id,
         type,
