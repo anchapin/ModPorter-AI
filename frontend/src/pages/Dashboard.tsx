@@ -88,25 +88,27 @@ export const Dashboard: React.FC = () => {
     const storedHistory = localStorage.getItem('modporter_conversion_history');
     const history = storedHistory ? JSON.parse(storedHistory) : [];
 
-    const total = history.length;
-    const completed = history.filter(
-      (item: any) => item.status === 'completed'
-    ).length;
-    const failed = history.filter(
-      (item: any) => item.status === 'failed'
-    ).length;
-    const processing = history.filter(
-      (item: any) => item.status === 'processing'
-    ).length;
+    // ⚡ Performance optimization: Use single reduce pass instead of multiple filters
+    // Reduces O(3N) filter operations to O(N) single pass
+    const counts = history.reduce(
+      (acc, item: any) => {
+        if (item.status === 'completed') acc.completed++;
+        else if (item.status === 'failed') acc.failed++;
+        else if (item.status === 'processing') acc.processing++;
+        return acc;
+      },
+      { completed: 0, failed: 0, processing: 0 }
+    );
 
+    const total = history.length;
     const actualSuccessRate =
-      total > 0 ? Math.round((completed / total) * 100) : 0;
+      total > 0 ? Math.round((counts.completed / total) * 100) : 0;
 
     return {
       total,
-      completed,
-      failed,
-      processing,
+      completed: counts.completed,
+      failed: counts.failed,
+      processing: counts.processing,
       successRate: actualSuccessRate,
     };
   };
