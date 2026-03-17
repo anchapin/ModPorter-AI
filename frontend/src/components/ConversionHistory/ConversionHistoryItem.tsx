@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
+import React, { memo, useState } from 'react';
 import { ConversionHistoryItem as IConversionHistoryItem } from './types';
 import {
   formatDate,
@@ -25,16 +25,6 @@ export const ConversionHistoryItem = memo(
     onDownload,
   }: ConversionHistoryItemProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
-    const deleteBtnRef = useRef<HTMLButtonElement>(null);
-    const prevShowConfirmRef = useRef(showConfirm);
-
-    useEffect(() => {
-      // If we just transitioned from showing the confirm to hiding it, focus the delete button
-      if (prevShowConfirmRef.current && !showConfirm) {
-        deleteBtnRef.current?.focus();
-      }
-      prevShowConfirmRef.current = showConfirm;
-    }, [showConfirm]);
 
     return (
       <div className={`history-item ${isSelected ? 'selected' : ''}`}>
@@ -44,7 +34,6 @@ export const ConversionHistoryItem = memo(
             checked={isSelected}
             onChange={() => onToggle(item.job_id)}
             aria-label={`Select ${item.original_filename}`}
-            className="focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none rounded"
           />
         </div>
 
@@ -97,12 +86,12 @@ export const ConversionHistoryItem = memo(
         <div className="item-actions">
           {item.status === 'completed' && !showConfirm && (
             <button
-              className="download-btn focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="download-btn"
               onClick={() => onDownload(item.job_id, item.original_filename)}
               title="Download converted file"
               aria-label={`Download ${item.original_filename}`}
             >
-              <span aria-hidden="true">⬇️</span> Download
+              ⬇️ Download
             </button>
           )}
 
@@ -113,32 +102,31 @@ export const ConversionHistoryItem = memo(
               aria-label="Confirm deletion"
             >
               <button
-                className="confirm-yes-btn focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="confirm-yes-btn"
                 onClick={() => onDelete(item.job_id)}
                 aria-label="Confirm deletion"
                 title="Confirm deletion"
               >
-                <span aria-hidden="true">✓</span>
+                ✓
               </button>
               <button
-                className="confirm-no-btn focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="confirm-no-btn"
                 onClick={() => setShowConfirm(false)}
                 aria-label="Cancel deletion"
                 title="Cancel deletion"
                 autoFocus
               >
-                <span aria-hidden="true">✕</span>
+                ✕
               </button>
             </div>
           ) : (
             <button
-              ref={deleteBtnRef}
-              className="delete-btn focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="delete-btn"
               onClick={() => setShowConfirm(true)}
               title="Remove from history"
               aria-label={`Remove ${item.original_filename} from history`}
             >
-              <span aria-hidden="true">🗑️</span>
+              🗑️
             </button>
           )}
         </div>
