@@ -257,6 +257,13 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    # Install lsb-release for setup-python to work in slim containers
+    - name: Install lsb-release
+      run: |
+        if command -v apt-get >/dev/null; then
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
+        fi
+
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -327,6 +334,7 @@ jobs:
         case "${{ matrix.test-suite }}" in
           "ai-engine"|"integration")
             echo "Installing AI Engine dependencies..."
+            pip install --no-deps -e .
             cd ai-engine
             pip install --no-deps -r requirements.txt
             pip install --no-deps -r requirements-dev.txt
@@ -857,6 +865,12 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    - name: Install lsb-release
+      run: |
+        if command -v apt-get >/dev/null; then
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
+        fi
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v6
       with:
@@ -872,6 +886,7 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         
         if [ "${{ matrix.project }}" = "ai-engine" ]; then
+          pip install -e .
           cd ai-engine
           pip install -e ".[dev]"
           pip install structlog
@@ -1021,7 +1036,7 @@ jobs:
           echo "⚠️ No mutation report found - skipping threshold check"
         fi
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
+        ../scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -1124,10 +1139,12 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: pnpm build:frontend
+      run: |
+        cd frontend
+        pnpm build:analyze
 
     - name: Generate bundle size report
-      run: node ../scripts/generate-bundle-report.cjs frontend/dist
+      run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
       uses: actions/upload-artifact@v4
@@ -1136,6 +1153,12 @@ jobs:
         name: bundle-report
         path: frontend/dist/bundle-report.json
         retention-days: 30
+
+    - name: Install lsb-release
+      run: |
+        if command -v apt-get >/dev/null; then
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
+        fi
 
     - name: Set up Python
       uses: actions/setup-python@v6
@@ -1167,6 +1190,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+
+    # Install lsb-release
+    - name: Install lsb-release
+      run: |
+        if command -v apt-get >/dev/null; then
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
+        fi
 
     # Python dependency vulnerability scanning (pip-audit)
     - name: Set up Python
