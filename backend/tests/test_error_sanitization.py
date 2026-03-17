@@ -58,9 +58,7 @@ class TestErrorResponseSanitization:
     def test_modporter_exception_with_details_in_debug(self, mock_request):
         """ModPorter exceptions should include details in DEBUG mode."""
         with patch.dict(os.environ, {"DEBUG": "true"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             exc = eh.ModPorterException(
                 message="Database connection failed",
@@ -76,16 +74,12 @@ class TestErrorResponseSanitization:
     def test_http_exception_sanitized_in_production(self, mock_request):
         """HTTP exception details should be sanitized in production."""
         with patch.dict(os.environ, {"DEBUG": "false"}):
-            import importlib
-            import src.services.error_handlers as eh
-            importlib.reload(eh)
-            
             exc = HTTPException(
                 status_code=500,
                 detail="Database query failed: connection timeout"
             )
             
-            response = eh.create_error_response(exc, mock_request)
+            response = create_error_response(exc, mock_request)
             
             # Details should not include status code in production
             assert response.details == {}
@@ -93,9 +87,7 @@ class TestErrorResponseSanitization:
     def test_validation_error_sanitized_in_production(self, mock_request):
         """Validation errors should not expose error details in production."""
         with patch.dict(os.environ, {"DEBUG": "false"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             # Create a mock RequestValidationError instead
             validation_error = RequestValidationError([])
@@ -108,9 +100,7 @@ class TestErrorResponseSanitization:
     def test_traceback_never_in_production(self, mock_request):
         """Tracebacks should NEVER be included in production responses."""
         with patch.dict(os.environ, {"DEBUG": "false"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             exc = Exception("Something went wrong")
             
@@ -123,9 +113,7 @@ class TestErrorResponseSanitization:
     def test_traceback_in_debug_only(self, mock_request):
         """Tracebacks should only appear in DEBUG mode."""
         with patch.dict(os.environ, {"DEBUG": "true"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             try:
                 raise ValueError("Something went wrong internally")
@@ -145,9 +133,7 @@ class TestGenericExceptionHandler:
         exc = Exception("Database connection timeout: host=db.internal port=5432")
         
         with patch.dict(os.environ, {"DEBUG": "false"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             with patch.object(eh.logger, 'error') as mock_logger_error:
                 await eh.generic_exception_handler(mock_request, exc)
@@ -164,9 +150,7 @@ class TestGenericExceptionHandler:
         exc = Exception("Database error: Invalid credentials on db.internal:5432")
         
         with patch.dict(os.environ, {"DEBUG": "false"}):
-            import importlib
             import src.services.error_handlers as eh
-            importlib.reload(eh)
             
             with patch.object(eh.logger, 'error'):  # Suppress log output
                 response = await eh.generic_exception_handler(mock_request, exc)
@@ -184,16 +168,17 @@ class TestConversionException:
 
     def test_conversion_exception_user_message_safe(self, mock_request):
         """Conversion exceptions should have safe user messages."""
-        exc = ConversionException(
-            message="Failed to parse YAML: invalid syntax at line 42",
-            user_message="Conversion failed. Please check your mod file."
-        )
-        
-        response = create_error_response(exc, mock_request)
-        
-        assert response.user_message == "Conversion failed. Please check your mod file."
-        assert "YAML" not in response.user_message
-        assert "line 42" not in response.user_message
+        with patch.dict(os.environ, {"DEBUG": "false"}):
+            exc = ConversionException(
+                message="Failed to parse YAML: invalid syntax at line 42",
+                user_message="Conversion failed. Please check your mod file."
+            )
+            
+            response = create_error_response(exc, mock_request)
+            
+            assert response.user_message == "Conversion failed. Please check your mod file."
+            assert "YAML" not in response.user_message
+            assert "line 42" not in response.user_message
 
 
 class TestHTTPExceptionMessages:
