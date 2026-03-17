@@ -121,10 +121,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
     def _should_exclude(self, path: str) -> bool:
         """Check if the path should be excluded from logging."""
-        for exclude_path in self.exclude_paths:
-            if path.startswith(exclude_path):
-                return True
-        return False
+        return any(path.startswith(exclude_path) for exclude_path in self.exclude_paths)
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):

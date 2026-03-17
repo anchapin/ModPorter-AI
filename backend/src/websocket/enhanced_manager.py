@@ -22,6 +22,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Any
 
 from fastapi import WebSocket
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -242,17 +243,13 @@ class EnhancedConnectionManager:
 
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped WebSocket connection manager")
 

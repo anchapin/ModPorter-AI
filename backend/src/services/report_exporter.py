@@ -318,8 +318,7 @@ class PDFExporter:
 
             return pdf_bytes
 
-        except Exception as e:
-            print(f"PDF export failed: {e}")
+        except Exception:
             return None
 
     def export_to_pdf_base64(self, report: InteractiveReport) -> Optional[str]:
