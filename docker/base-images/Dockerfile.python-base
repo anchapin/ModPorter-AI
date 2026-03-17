@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
 
-# Upgrade pip and install build tools
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+# Upgrade pip, install build tools and uv for extremely fast and robust dependency resolution
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel uv
 
 # Copy requirements from both services
 COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
@@ -33,20 +33,19 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 # Install all Python dependencies in separate stages to avoid conflicts
 # This is the time-consuming step that we want to cache
 # First install ai-engine dependencies
-RUN pip install --no-cache-dir \
+RUN uv pip install --system --no-cache \
     -r /tmp/ai-engine-requirements.txt
 
 # Then install backend dependencies (will handle conflicts automatically)
-RUN pip install --no-cache-dir \
+RUN uv pip install --system --no-cache \
     -r /tmp/ai-engine-requirements-dev.txt \
     -r /tmp/backend-requirements.txt
 
 # Finally add common development dependencies
-RUN pip install --no-cache-dir \
+RUN uv pip install --system --no-cache \
     pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock \
     ruff black isort mypy \
-    alembic \
-    && pip cache purge
+    alembic
 
 # Production stage - smaller final image with libmagic support
 FROM python:3.11-slim
