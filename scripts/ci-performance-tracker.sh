@@ -65,35 +65,9 @@ aggregate_metrics() {
     local summary_file="$PERF_DATA_DIR/summary.json"
     local total_duration=0
     local job_count=0
+    local steps_data="[]"
     
     log_info "Aggregating performance metrics..."
-    
-    # Ensure the directory exists
-    mkdir -p "$PERF_DATA_DIR"
-    
-    # Check if any step files exist
-    local step_files=("$PERF_DATA_DIR"/step-*.json)
-    if [ ! -f "${step_files[0]}" ]; then
-        log_info "No performance metrics found to aggregate"
-        # Create empty summary file
-        cat > "$summary_file" << EOF
-{
-  "workflow": "${GITHUB_WORKFLOW:-CI}",
-  "run_id": "${GITHUB_RUN_ID:-0}",
-  "run_number": "${GITHUB_RUN_NUMBER:-0}",
-  "branch": "${GITHUB_REF_NAME:-unknown}",
-  "commit": "${GITHUB_SHA:-unknown}",
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "total_duration_seconds": 0,
-  "steps_count": 0,
-  "average_step_duration": 0,
-  "steps": []
-}
-EOF
-        log_success "Created empty metrics summary (no step data found)"
-        cat "$summary_file"
-        return 0
-    fi
     
     # Collect all step metrics
     local steps_json="["
@@ -252,11 +226,6 @@ update_history() {
     
     log_success "History updated: $history_file"
     
-    # Commit history to repo if on main branch
-    if [ "$GITHUB_REF_NAME" = "main" ] && [ -n "$GITHUB_TOKEN" ]; then
-        commit_history_to_repo
-    fi
-    
     # Generate trend report
     local trend_report="$PERF_DATA_DIR/trend-report.md"
     cat > "$trend_report" << 'EOF'
@@ -268,54 +237,7 @@ EOF
     
     jq -r '.[] | "| \(.run_number) | \(.timestamp | split("T")[0]) | \(.total_duration_seconds)s | \(.steps_count) | \(.average_step_duration)s |"' "$history_file" | tail -n 10 >> "$trend_report"
     
-    # Add trend analysis
-    cat >> "$trend_report" << 'EOF'
-
-### Trend Analysis
-EOF
-    
-    # Calculate trend for total duration
-    local count=$(jq 'length' "$history_file")
-    if [ "$count" -ge 2 ]; then
-        local recent_avg=$(jq -s 'map(.total_duration_seconds) | add / length' "$history_file")
-        local older_runs=$(jq ".[0:$count/2 | length] | map(.total_duration_seconds) | add / length" "$history_file")
-        local trend_pct=$(( (recent_avg - older_runs) * 100 / older_runs ))
-        
-        if [ "$trend_pct" -gt 5 ]; then
-            echo "⚠️ **Performance trending upward** (+${trend_pct}%)" >> "$trend_report"
-        elif [ "$trend_pct" -lt -5 ]; then
-            echo "✅ **Performance trending downward** (${trend_pct}%)" >> "$trend_report"
-        else
-            echo "➡️ **Performance stable**" >> "$trend_report"
-        fi
-    fi
-    
     log_success "Trend report generated: $trend_report"
-}
-
-# Commit history to repository
-commit_history_to_repo() {
-    local history_file="$PERF_DATA_DIR/history.json"
-    local commit_msg="ci: Update build performance history"
-    
-    git config --local user.email "github-actions[bot]@users.noreply.github.com"
-    git config --local user.name "github-actions[bot]"
-    
-    git add "$history_file"
-    
-    if git diff --cached --quiet; then
-        log_info "No changes to history file"
-        return 0
-    fi
-    
-    if git commit -m "$commit_msg"; then
-        local branch="${GITHUB_REF_NAME:-main}"
-        if git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:$branch" 2>/dev/null; then
-            log_success "Performance history committed and pushed"
-        else
-            log_info "Could not push history (may need write permissions)"
-        fi
-    fi
 }
 
 # Display help
