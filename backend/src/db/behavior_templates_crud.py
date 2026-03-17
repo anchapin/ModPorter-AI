@@ -52,7 +52,9 @@ async def get_behavior_template(
     except ValueError:
         raise ValueError(f"Invalid template ID format: {template_id}")
 
-    stmt = select(models.BehaviorTemplate).where(models.BehaviorTemplate.id == template_uuid)
+    stmt = select(models.BehaviorTemplate).where(
+        models.BehaviorTemplate.id == template_uuid
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -99,7 +101,8 @@ async def get_behavior_templates(
         stmt.offset(skip)
         .limit(limit)
         .order_by(
-            models.BehaviorTemplate.is_public.desc(), models.BehaviorTemplate.updated_at.desc()
+            models.BehaviorTemplate.is_public.desc(),
+            models.BehaviorTemplate.updated_at.desc(),
         )
     )
 
@@ -173,7 +176,9 @@ async def delete_behavior_template(
     if not existing_template:
         return False
 
-    stmt = delete(models.BehaviorTemplate).where(models.BehaviorTemplate.id == template_uuid)
+    stmt = delete(models.BehaviorTemplate).where(
+        models.BehaviorTemplate.id == template_uuid
+    )
     result = await session.execute(stmt)
 
     if commit:

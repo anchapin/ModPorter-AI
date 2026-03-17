@@ -6,7 +6,9 @@ import os
 import datetime
 from typing import Dict, Any, List
 
-from models import addon_models as pydantic_addon_models  # For type hinting with Pydantic models
+from models import (
+    addon_models as pydantic_addon_models,
+)  # For type hinting with Pydantic models
 
 
 def _sanitize_filename(filename: str) -> str:
@@ -34,14 +36,17 @@ PACK_VERSION = [1, 0, 0]
 
 
 def generate_bp_manifest(
-    addon_pydantic: pydantic_addon_models.AddonDetails, module_uuid: str, header_uuid: str
+    addon_pydantic: pydantic_addon_models.AddonDetails,
+    module_uuid: str,
+    header_uuid: str,
 ) -> Dict[str, Any]:
     """Generates the behavior pack manifest.json content."""
     return {
         "format_version": MANIFEST_VERSION,
         "header": {
             "name": f"{addon_pydantic.name} Behavior Pack",
-            "description": addon_pydantic.description or f"Behavior pack for {addon_pydantic.name}",
+            "description": addon_pydantic.description
+            or f"Behavior pack for {addon_pydantic.name}",
             "uuid": header_uuid,
             "version": PACK_VERSION,
             "min_engine_version": MIN_ENGINE_VERSION_BP,
@@ -64,14 +69,17 @@ def generate_bp_manifest(
 
 
 def generate_rp_manifest(
-    addon_pydantic: pydantic_addon_models.AddonDetails, module_uuid: str, header_uuid: str
+    addon_pydantic: pydantic_addon_models.AddonDetails,
+    module_uuid: str,
+    header_uuid: str,
 ) -> Dict[str, Any]:
     """Generates the resource pack manifest.json content."""
     return {
         "format_version": MANIFEST_VERSION,
         "header": {
             "name": f"{addon_pydantic.name} Resource Pack",
-            "description": addon_pydantic.description or f"Resource pack for {addon_pydantic.name}",
+            "description": addon_pydantic.description
+            or f"Resource pack for {addon_pydantic.name}",
             "uuid": header_uuid,
             "version": PACK_VERSION,
             "min_engine_version": MIN_ENGINE_VERSION_RP,
@@ -104,7 +112,9 @@ def generate_block_behavior_json(
         # This is highly dependent on how properties are structured and map to Bedrock components
         # For example, if 'luminance' is a property:
         if "luminance" in block_pydantic.properties:
-            components["minecraft:block_light_emission"] = block_pydantic.properties["luminance"]
+            components["minecraft:block_light_emission"] = block_pydantic.properties[
+                "luminance"
+            ]
         if "friction" in block_pydantic.properties:
             components["minecraft:friction"] = block_pydantic.properties["friction"]
         # Add more property mappings here
@@ -230,7 +240,9 @@ def generate_terrain_texture_json(
 
             # Simplification: use original_filename without extension as key,
             # and assume it's placed in 'textures/blocks/' or 'textures/items/'
-            texture_folder = "blocks"  # Default, can be based on asset.type or a property
+            texture_folder = (
+                "blocks"  # Default, can be based on asset.type or a property
+            )
             if "item" in asset.type:  # very basic heuristic
                 texture_folder = "items"
 
@@ -261,7 +273,9 @@ def generate_recipe_json(recipe: pydantic_addon_models.AddonRecipe) -> Dict[str,
     return recipe.data
 
 
-def generate_sounds_json(sound_assets: List[pydantic_addon_models.AddonAsset]) -> Dict[str, Any]:
+def generate_sounds_json(
+    sound_assets: List[pydantic_addon_models.AddonAsset],
+) -> Dict[str, Any]:
     """
     Generates the sounds.json file for the resource pack.
     This defines sound definitions that can be referenced in behavior pack.
@@ -304,7 +318,9 @@ def create_mcaddon_zip(
     zip_buffer = io.BytesIO()
 
     # Sanitize addon name for folder names
-    sanitized_addon_name = "".join(c if c.isalnum() else "_" for c in addon_pydantic.name)
+    sanitized_addon_name = "".join(
+        c if c.isalnum() else "_" for c in addon_pydantic.name
+    )
     if not sanitized_addon_name:
         sanitized_addon_name = "MyAddon"
 
@@ -319,8 +335,12 @@ def create_mcaddon_zip(
         rp_module_uuid = str(uuid.uuid4())
 
         # Behavior Pack (BP)
-        bp_manifest_content = generate_bp_manifest(addon_pydantic, bp_module_uuid, bp_header_uuid)
-        zf.writestr(f"{bp_folder_name}/manifest.json", json.dumps(bp_manifest_content, indent=2))
+        bp_manifest_content = generate_bp_manifest(
+            addon_pydantic, bp_module_uuid, bp_header_uuid
+        )
+        zf.writestr(
+            f"{bp_folder_name}/manifest.json", json.dumps(bp_manifest_content, indent=2)
+        )
 
         for block in addon_pydantic.blocks:
             block_behavior_content = generate_block_behavior_json(block)
@@ -345,16 +365,25 @@ def create_mcaddon_zip(
             )  # Fallback to recipe UUID
             recipe_filename = recipe_identifier.split(":")[-1] + ".json"
             zf.writestr(
-                f"{bp_folder_name}/recipes/{recipe_filename}", json.dumps(recipe_content, indent=2)
+                f"{bp_folder_name}/recipes/{recipe_filename}",
+                json.dumps(recipe_content, indent=2),
             )
 
         # Resource Pack (RP)
-        rp_manifest_content = generate_rp_manifest(addon_pydantic, rp_module_uuid, rp_header_uuid)
-        zf.writestr(f"{rp_folder_name}/manifest.json", json.dumps(rp_manifest_content, indent=2))
+        rp_manifest_content = generate_rp_manifest(
+            addon_pydantic, rp_module_uuid, rp_header_uuid
+        )
+        zf.writestr(
+            f"{rp_folder_name}/manifest.json", json.dumps(rp_manifest_content, indent=2)
+        )
 
         if addon_pydantic.blocks:  # Only create blocks.json if there are blocks
-            rp_blocks_content = generate_rp_block_definitions_json(addon_pydantic.blocks)
-            zf.writestr(f"{rp_folder_name}/blocks.json", json.dumps(rp_blocks_content, indent=2))
+            rp_blocks_content = generate_rp_block_definitions_json(
+                addon_pydantic.blocks
+            )
+            zf.writestr(
+                f"{rp_folder_name}/blocks.json", json.dumps(rp_blocks_content, indent=2)
+            )
 
         # Asset handling
         texture_assets = [
@@ -371,7 +400,9 @@ def create_mcaddon_zip(
             for asset in texture_assets:
                 # asset.path in DB is like "{asset_id_uuid}_{file.filename}" relative to "{addon_id}" folder
                 # Full disk path: backend/addon_assets/{addon_id}/{asset.path}
-                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                asset_disk_path = os.path.join(
+                    asset_base_path, str(addon_pydantic.id), asset.path
+                )
 
                 # Determine path within ZIP for RP
                 # Example: if original_filename is "my_block.png", place in "textures/blocks/my_block.png"
@@ -385,9 +416,13 @@ def create_mcaddon_zip(
                     zip_texture_path_parts = ["textures", "misc"]
 
                 if asset.original_filename:
-                    zip_texture_path_parts.append(_sanitize_filename(asset.original_filename))
+                    zip_texture_path_parts.append(
+                        _sanitize_filename(asset.original_filename)
+                    )
                 else:  # Fallback if original_filename is somehow missing
-                    zip_texture_path_parts.append(_sanitize_filename(os.path.basename(asset.path)))
+                    zip_texture_path_parts.append(
+                        _sanitize_filename(os.path.basename(asset.path))
+                    )
 
                 zip_path = os.path.join(rp_folder_name, *zip_texture_path_parts)
 
@@ -398,11 +433,15 @@ def create_mcaddon_zip(
                     pass
 
         # Handle sound assets (.ogg, .wav files)
-        sound_assets = [asset for asset in addon_pydantic.assets if asset.type == "sound"]
+        sound_assets = [
+            asset for asset in addon_pydantic.assets if asset.type == "sound"
+        ]
         if sound_assets:
             for asset in sound_assets:
                 # Sound assets go to RP/sounds/ folder
-                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                asset_disk_path = os.path.join(
+                    asset_base_path, str(addon_pydantic.id), asset.path
+                )
 
                 # Determine path within ZIP for RP
                 safe_filename = (
@@ -419,14 +458,20 @@ def create_mcaddon_zip(
 
             # Generate sounds.json for sound definitions
             sounds_json = generate_sounds_json(sound_assets)
-            zf.writestr(f"{rp_folder_name}/sounds.json", json.dumps(sounds_json, indent=2))
+            zf.writestr(
+                f"{rp_folder_name}/sounds.json", json.dumps(sounds_json, indent=2)
+            )
 
         # Handle 3D model assets (.geo.json, .json models)
-        model_assets = [asset for asset in addon_pydantic.assets if asset.type == "model"]
+        model_assets = [
+            asset for asset in addon_pydantic.assets if asset.type == "model"
+        ]
         if model_assets:
             for asset in model_assets:
                 # Model assets go to RP/models/ folder
-                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                asset_disk_path = os.path.join(
+                    asset_base_path, str(addon_pydantic.id), asset.path
+                )
 
                 # Determine path within ZIP for RP
                 safe_filename = (
@@ -442,10 +487,14 @@ def create_mcaddon_zip(
                     pass
 
         # Handle entity/creeper geometry assets
-        entity_assets = [asset for asset in addon_pydantic.assets if asset.type == "entity"]
+        entity_assets = [
+            asset for asset in addon_pydantic.assets if asset.type == "entity"
+        ]
         if entity_assets:
             for asset in entity_assets:
-                asset_disk_path = os.path.join(asset_base_path, str(addon_pydantic.id), asset.path)
+                asset_disk_path = os.path.join(
+                    asset_base_path, str(addon_pydantic.id), asset.path
+                )
 
                 safe_filename = (
                     _sanitize_filename(asset.original_filename)
@@ -480,13 +529,19 @@ if __name__ == "__main__":
                 id=mock_block_id,
                 addon_id=mock_addon_id,
                 identifier="custom:magic_brick",
-                properties={"luminance": 10, "friction": 0.8, "rp_texture_name": "magic_brick_tex"},
+                properties={
+                    "luminance": 10,
+                    "friction": 0.8,
+                    "rp_texture_name": "magic_brick_tex",
+                },
                 created_at=datetime.datetime.now(),
                 updated_at=datetime.datetime.now(),
                 behavior=pydantic_addon_models.AddonBehavior(
                     id=uuid.uuid4(),
                     block_id=mock_block_id,
-                    data={"minecraft:on_interact": {"event": "explode", "target": "self"}},
+                    data={
+                        "minecraft:on_interact": {"event": "explode", "target": "self"}
+                    },
                     created_at=datetime.datetime.now(),
                     updated_at=datetime.datetime.now(),
                 ),
@@ -511,8 +566,12 @@ if __name__ == "__main__":
     rp_manifest_uuid_module = str(uuid.uuid4())
     rp_manifest_uuid_header = str(uuid.uuid4())
 
-    bp_manifest = generate_bp_manifest(mock_addon, bp_manifest_uuid_module, bp_manifest_uuid_header)
-    rp_manifest = generate_rp_manifest(mock_addon, rp_manifest_uuid_module, rp_manifest_uuid_header)
+    bp_manifest = generate_bp_manifest(
+        mock_addon, bp_manifest_uuid_module, bp_manifest_uuid_header
+    )
+    rp_manifest = generate_rp_manifest(
+        mock_addon, rp_manifest_uuid_module, rp_manifest_uuid_header
+    )
 
     mock_block_instance = mock_addon.blocks[0]  # Get the block from the list
     block_behavior_content = generate_block_behavior_json(mock_block_instance)
@@ -527,7 +586,9 @@ if __name__ == "__main__":
     mock_addon_asset_dir = os.path.join(mock_asset_base_path, str(mock_addon.id))
     os.makedirs(mock_addon_asset_dir, exist_ok=True)
 
-    mock_asset_on_disk_path = os.path.join(mock_addon_asset_dir, mock_addon.assets[0].path)
+    mock_asset_on_disk_path = os.path.join(
+        mock_addon_asset_dir, mock_addon.assets[0].path
+    )
     with open(mock_asset_on_disk_path, "w") as f:
         f.write("dummy texture content")
 

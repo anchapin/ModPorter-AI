@@ -209,7 +209,9 @@ class EnhancedConnectionManager:
         health_config: Optional[HealthConfig] = None,
     ):
         # Maps conversion_id to connection info
-        self._connections: Dict[str, Dict[WebSocket, ConnectionInfo]] = defaultdict(dict)
+        self._connections: Dict[str, Dict[WebSocket, ConnectionInfo]] = defaultdict(
+            dict
+        )
 
         # Weak references for cleanup
         self._weak_refs: weakref.WeakSet = weakref.WeakSet()
@@ -296,7 +298,9 @@ class EnhancedConnectionManager:
 
         return info
 
-    def disconnect(self, websocket: WebSocket, conversion_id: str) -> Optional[ConnectionInfo]:
+    def disconnect(
+        self, websocket: WebSocket, conversion_id: str
+    ) -> Optional[ConnectionInfo]:
         """
         Remove a WebSocket connection.
 
@@ -362,7 +366,10 @@ class EnhancedConnectionManager:
 
         elif message_type == MessageType.SUBSCRIBE.value:
             # Already subscribed via connect
-            return {"type": MessageType.CONNECTED.value, "data": {"conversion_id": conversion_id}}
+            return {
+                "type": MessageType.CONNECTED.value,
+                "data": {"conversion_id": conversion_id},
+            }
 
         elif message_type == MessageType.UNSUBSCRIBE.value:
             self.disconnect(websocket, conversion_id)
@@ -504,7 +511,9 @@ class EnhancedConnectionManager:
             return {"healthy": False, "reason": "No connections"}
 
         now = datetime.utcnow()
-        stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
+        stale_threshold = timedelta(
+            seconds=self._health_config.stale_connection_seconds
+        )
         issues = []
         healthy_count = 0
 
@@ -513,7 +522,9 @@ class EnhancedConnectionManager:
 
             if age > stale_threshold:
                 info.state = ConnectionState.STALE
-                issues.append(f"Client {info.client_id} is stale ({age.seconds}s inactive)")
+                issues.append(
+                    f"Client {info.client_id} is stale ({age.seconds}s inactive)"
+                )
             else:
                 healthy_count += 1
 
@@ -524,7 +535,9 @@ class EnhancedConnectionManager:
             "issues": issues,
         }
 
-    async def _send_message(self, websocket: WebSocket, message: Dict[str, Any]) -> None:
+    async def _send_message(
+        self, websocket: WebSocket, message: Dict[str, Any]
+    ) -> None:
         """Send a JSON message over WebSocket."""
         await websocket.send_json(message)
 
@@ -548,7 +561,9 @@ class EnhancedConnectionManager:
 
                 # Send heartbeat to all connections
                 for conversion_id in list(self._connections.keys()):
-                    for websocket, info in list(self._connections[conversion_id].items()):
+                    for websocket, info in list(
+                        self._connections[conversion_id].items()
+                    ):
                         try:
                             await self._send_message(websocket, heartbeat_msg)
                             info.last_heartbeat = now
@@ -568,7 +583,9 @@ class EnhancedConnectionManager:
                 await asyncio.sleep(60)  # Check every minute
 
                 now = datetime.utcnow()
-                stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
+                stale_threshold = timedelta(
+                    seconds=self._health_config.stale_connection_seconds
+                )
 
                 to_disconnect = []
 

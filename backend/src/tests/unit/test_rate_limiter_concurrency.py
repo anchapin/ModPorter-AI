@@ -83,7 +83,9 @@ async def test_concurrent_requests_isolation():
         await asyncio.sleep(0.01)
         # We need to implement the override_config parameter first
         try:
-            _, meta = await limiter.check_rate_limit(mock_req2, override_config=override_config)
+            _, meta = await limiter.check_rate_limit(
+                mock_req2, override_config=override_config
+            )
             return meta["limit_minute"]
         except TypeError:
             return -1

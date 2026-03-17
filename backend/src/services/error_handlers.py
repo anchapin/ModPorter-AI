@@ -126,7 +126,9 @@ class ValidationException(ModPorterException):
 class NotFoundException(ModPorterException):
     """Exception raised when a resource is not found"""
 
-    def __init__(self, resource: str, resource_id: str, user_message: Optional[str] = None):
+    def __init__(
+        self, resource: str, resource_id: str, user_message: Optional[str] = None
+    ):
         super().__init__(
             message=f"{resource} not found: {resource_id}",
             user_message=user_message or f"Requested {resource} not found.",
@@ -292,7 +294,7 @@ def create_error_response(
     error: Exception, request: Request, include_traceback: bool = False
 ) -> ErrorResponse:
     """Create a structured error response
-    
+
     NOTE: Sensitive error details are NEVER included in HTTP responses.
     - Stack traces are logged server-side only, never sent to clients
     - Exception messages are sanitized to generic user messages
@@ -364,7 +366,9 @@ def _record_error_metric(error_category: str, error_type: str, source: str = "ap
             pass  # Don't let metrics errors affect normal flow
 
 
-async def modporter_exception_handler(request: Request, exc: ModPorterException) -> JSONResponse:
+async def modporter_exception_handler(
+    request: Request, exc: ModPorterException
+) -> JSONResponse:
     """Handler for ModPorter-specific exceptions"""
     error_response = create_error_response(exc, request)
     logger.error(
@@ -378,21 +382,29 @@ async def modporter_exception_handler(request: Request, exc: ModPorterException)
         source="api",
     )
 
-    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
+    return JSONResponse(
+        status_code=exc.status_code, content=error_response.model_dump()
+    )
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handler for HTTP exceptions"""
     error_response = create_error_response(exc, request)
-    logger.warning(f"[{error_response.error_id}] HTTP {exc.status_code}: {error_response.message}")
+    logger.warning(
+        f"[{error_response.error_id}] HTTP {exc.status_code}: {error_response.message}"
+    )
 
     # Only record 4xx/5xx errors as metrics
     if exc.status_code >= 400:
         _record_error_metric(
-            error_category=error_response.error_category, error_type="HTTPException", source="api"
+            error_category=error_response.error_category,
+            error_type="HTTPException",
+            source="api",
         )
 
-    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
+    return JSONResponse(
+        status_code=exc.status_code, content=error_response.model_dump()
+    )
 
 
 async def validation_exception_handler(
@@ -400,21 +412,26 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Handler for validation exceptions"""
     error_response = create_error_response(exc, request)
-    logger.warning(f"[{error_response.error_id}] Validation error: {error_response.message}")
+    logger.warning(
+        f"[{error_response.error_id}] Validation error: {error_response.message}"
+    )
 
     # Record validation error metric
     _record_error_metric(
-        error_category="validation_error", error_type="RequestValidationError", source="api"
+        error_category="validation_error",
+        error_type="RequestValidationError",
+        source="api",
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response.model_dump()
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=error_response.model_dump(),
     )
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for all other exceptions
-    
+
     Full error details are logged server-side with traceback for debugging.
     Clients only receive a generic error message without sensitive information.
     """
@@ -428,11 +445,14 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
     # Record unhandled exception metric
     _record_error_metric(
-        error_category=error_response.error_category, error_type=type(exc).__name__, source="api"
+        error_category=error_response.error_category,
+        error_type=type(exc).__name__,
+        source="api",
     )
 
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response.model_dump()
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=error_response.model_dump(),
     )
 
 

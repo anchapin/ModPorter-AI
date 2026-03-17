@@ -191,20 +191,30 @@ MOCK_CONVERSION_RESULT_FAILURE = {
 
 
 class ConversionReportGenerator:
-    def generate_summary_report(self, conversion_result: Dict[str, Any]) -> SummaryReport:
+    def generate_summary_report(
+        self, conversion_result: Dict[str, Any]
+    ) -> SummaryReport:
         return SummaryReport(
             overall_success_rate=conversion_result.get("overall_success_rate", 0.0),
             total_features=conversion_result.get("total_features", 0),
             converted_features=conversion_result.get("converted_features", 0),
-            partially_converted_features=conversion_result.get("partially_converted_features", 0),
+            partially_converted_features=conversion_result.get(
+                "partially_converted_features", 0
+            ),
             failed_features=conversion_result.get("failed_features", 0),
-            assumptions_applied_count=conversion_result.get("assumptions_applied_count", 0),
-            processing_time_seconds=conversion_result.get("processing_time_seconds", 0.0),
+            assumptions_applied_count=conversion_result.get(
+                "assumptions_applied_count", 0
+            ),
+            processing_time_seconds=conversion_result.get(
+                "processing_time_seconds", 0.0
+            ),
             download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {}),
         )
 
-    def generate_feature_analysis(self, features_data: List[Dict[str, Any]]) -> FeatureAnalysis:
+    def generate_feature_analysis(
+        self, features_data: List[Dict[str, Any]]
+    ) -> FeatureAnalysis:
         feature_details: List[FeatureConversionDetail] = []
         for fd in features_data:
             detail = FeatureConversionDetail(
@@ -267,14 +277,18 @@ class ConversionReportGenerator:
                 }
             )
 
-        return AssumptionsReport(assumptions=assumption_details, what_changed=what_changed)
+        return AssumptionsReport(
+            assumptions=assumption_details, what_changed=what_changed
+        )
 
     def generate_developer_log(self, dev_logs_data: Dict[str, Any]) -> DeveloperLog:
         return DeveloperLog(
             code_translation_details=[
                 LogEntry(**log) for log in dev_logs_data.get("code_translation", [])
             ],
-            api_mapping_issues=[LogEntry(**log) for log in dev_logs_data.get("api_mapping", [])],
+            api_mapping_issues=[
+                LogEntry(**log) for log in dev_logs_data.get("api_mapping", [])
+            ],
             file_processing_log=[
                 LogEntry(**log) for log in dev_logs_data.get("file_processing", [])
             ],
@@ -282,7 +296,9 @@ class ConversionReportGenerator:
             error_summary=dev_logs_data.get("errors", []),
         )
 
-    def _map_mod_statuses(self, mods_data: List[Dict[str, Any]]) -> List[ModConversionStatus]:
+    def _map_mod_statuses(
+        self, mods_data: List[Dict[str, Any]]
+    ) -> List[ModConversionStatus]:
         statuses: List[ModConversionStatus] = []
         for mod_data in mods_data:
             status = ModConversionStatus(
@@ -290,10 +306,14 @@ class ConversionReportGenerator:
                 version=mod_data.get("version", "N/A"),
                 status=mod_data.get("status", "Unknown"),
                 warnings=mod_data.get("warnings"),
-                errors=mod_data.get("errors"),  # Assuming 'reason' for failed mods can be an error
+                errors=mod_data.get(
+                    "errors"
+                ),  # Assuming 'reason' for failed mods can be an error
             )
             if mod_data.get("status") == "Failed" and mod_data.get("reason"):
-                status["errors"] = [mod_data["reason"]]  # Populate errors for failed mods
+                status["errors"] = [
+                    mod_data["reason"]
+                ]  # Populate errors for failed mods
             statuses.append(status)
         return statuses
 
@@ -326,7 +346,9 @@ class ConversionReportGenerator:
         converted_mods_list = self._map_mod_statuses(
             conversion_result.get("converted_mods_data", [])
         )
-        failed_mods_list = self._map_mod_statuses(conversion_result.get("failed_mods_data", []))
+        failed_mods_list = self._map_mod_statuses(
+            conversion_result.get("failed_mods_data", [])
+        )
 
         # For the detailed, structured assumptions report
         assumptions_report_obj = self.generate_assumptions_report(
@@ -337,7 +359,9 @@ class ConversionReportGenerator:
         # This is what the existing frontend component might expect for 'smartAssumptionsApplied'
         # smart_assumptions_prd_list = self._map_smart_assumptions_prd(conversion_result.get("smart_assumptions_data", []))
 
-        dev_log = self.generate_developer_log(conversion_result.get("developer_logs_data", {}))
+        dev_log = self.generate_developer_log(
+            conversion_result.get("developer_logs_data", {})
+        )
         feature_analysis_obj = self.generate_feature_analysis(
             conversion_result.get("features_data", [])
         )
@@ -364,14 +388,18 @@ class ConversionReportGenerator:
         converted_mods_list = self._map_mod_statuses(
             conversion_result.get("converted_mods_data", [])
         )
-        failed_mods_list = self._map_mod_statuses(conversion_result.get("failed_mods_data", []))
+        failed_mods_list = self._map_mod_statuses(
+            conversion_result.get("failed_mods_data", [])
+        )
 
         # This uses the simpler SmartAssumption structure from PRD for the top-level
         smart_assumptions_list_for_prd = self._map_smart_assumptions_prd(
             conversion_result.get("smart_assumptions_data", [])
         )
 
-        dev_log = self.generate_developer_log(conversion_result.get("developer_logs_data", {}))
+        dev_log = self.generate_developer_log(
+            conversion_result.get("developer_logs_data", {})
+        )
 
         return FullConversionReport(
             summary=summary,

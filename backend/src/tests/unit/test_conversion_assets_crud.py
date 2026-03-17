@@ -99,7 +99,9 @@ class TestCreateAsset:
         mock_session.flush = AsyncMock()
 
         # Execute
-        result = await crud.create_asset(mock_session, commit=False, **sample_asset_data)
+        result = await crud.create_asset(
+            mock_session, commit=False, **sample_asset_data
+        )
 
         # Verify
         assert isinstance(result, models.Asset)
@@ -112,7 +114,9 @@ class TestGetAsset:
     """Tests for get_asset function"""
 
     @patch("db.crud.select")
-    async def test_get_asset_success(self, mock_select, mock_session, sample_asset_model):
+    async def test_get_asset_success(
+        self, mock_select, mock_session, sample_asset_model
+    ):
         """Test successful asset retrieval"""
         # Setup
         mock_result = MagicMock()
@@ -150,7 +154,9 @@ class TestListAssetsForConversion:
     """Tests for list_assets_for_conversion function"""
 
     @patch("db.crud.select")
-    async def test_list_assets_success(self, mock_select, mock_session, sample_conversion_id):
+    async def test_list_assets_success(
+        self, mock_select, mock_session, sample_conversion_id
+    ):
         """Test successful asset listing"""
         # Setup
         mock_assets = [MagicMock(), MagicMock()]
@@ -161,7 +167,9 @@ class TestListAssetsForConversion:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Execute
-        result = await crud.list_assets_for_conversion(mock_session, sample_conversion_id)
+        result = await crud.list_assets_for_conversion(
+            mock_session, sample_conversion_id
+        )
 
         # Verify
         assert result == mock_assets
@@ -173,7 +181,9 @@ class TestListAssetsForConversion:
             await crud.list_assets_for_conversion(mock_session, "invalid-uuid")
 
     @patch("db.crud.select")
-    async def test_list_assets_with_filters(self, mock_select, mock_session, sample_conversion_id):
+    async def test_list_assets_with_filters(
+        self, mock_select, mock_session, sample_conversion_id
+    ):
         """Test asset listing with type and status filters"""
         # Setup
         mock_scalars = MagicMock()
@@ -251,14 +261,18 @@ class TestUpdateAssetMetadata:
     async def test_update_metadata_invalid_id(self, mock_session):
         """Test metadata update with invalid ID"""
         with pytest.raises(ValueError, match="Invalid asset ID format"):
-            await crud.update_asset_metadata(mock_session, "invalid-uuid", {"key": "value"})
+            await crud.update_asset_metadata(
+                mock_session, "invalid-uuid", {"key": "value"}
+            )
 
 
 class TestDeleteAsset:
     """Tests for delete_asset function"""
 
     @patch("db.crud.delete")
-    async def test_delete_asset_success(self, mock_delete, mock_session, sample_asset_model):
+    async def test_delete_asset_success(
+        self, mock_delete, mock_session, sample_asset_model
+    ):
         """Test successful asset deletion"""
         # Setup
         asset_id = str(sample_asset_model.id)
@@ -325,7 +339,9 @@ class TestAssetCRUDIntegration:
             sample_asset_model.status = "processing"
             mock_update.return_value = sample_asset_model
 
-            result = await crud.update_asset_status(mock_session, asset_id, "processing")
+            result = await crud.update_asset_status(
+                mock_session, asset_id, "processing"
+            )
             assert result.status == "processing"
 
             # Set to converted
@@ -333,7 +349,10 @@ class TestAssetCRUDIntegration:
             sample_asset_model.converted_path = "/path/to/converted.png"
 
             result = await crud.update_asset_status(
-                mock_session, asset_id, "converted", converted_path="/path/to/converted.png"
+                mock_session,
+                asset_id,
+                "converted",
+                converted_path="/path/to/converted.png",
             )
             assert result.status == "converted"
             assert result.converted_path == "/path/to/converted.png"

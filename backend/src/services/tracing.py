@@ -167,7 +167,9 @@ def init_tracing(app=None) -> None:
             processor = _setup_jaeger_exporter()
             if processor:
                 _tracer_provider.add_span_processor(processor)
-                logger.info(f"Jaeger exporter configured: {get_jaeger_host()}:{get_jaeger_port()}")
+                logger.info(
+                    f"Jaeger exporter configured: {get_jaeger_host()}:{get_jaeger_port()}"
+                )
 
         if exporter_type in ("otlp", "all"):
             processor = _setup_otlp_exporter()
@@ -177,7 +179,9 @@ def init_tracing(app=None) -> None:
 
         # Always add console exporter for development
         if os.getenv("TRACING_CONSOLE", "false").lower() == "true":
-            _tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+            _tracer_provider.add_span_processor(
+                BatchSpanProcessor(ConsoleSpanExporter())
+            )
             logger.info("Console exporter enabled")
 
         # Set global tracer provider

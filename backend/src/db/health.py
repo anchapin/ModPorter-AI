@@ -153,7 +153,9 @@ class DatabaseHealthChecker:
                     )
 
                 # Get current version
-                result = await conn.execute(text("SELECT version_num FROM alembic_version"))
+                result = await conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                )
                 version = result.fetchone()
 
                 if version:
@@ -193,7 +195,9 @@ class DatabaseHealthChecker:
                 checked_in=pool.checkedin() if hasattr(pool, "checkedin") else 0,
                 checked_out=pool.checkedout() if hasattr(pool, "checkedout") else 0,
                 overflow=pool.overflow() if hasattr(pool, "overflow") else 0,
-                invalid=pool.invalidatedcount() if hasattr(pool, "invalidatedcount") else 0,
+                invalid=(
+                    pool.invalidatedcount() if hasattr(pool, "invalidatedcount") else 0
+                ),
             )
 
         except Exception as e:
@@ -220,7 +224,9 @@ class DatabaseHealthChecker:
                 f"{metrics.query_text[:100]}..."
             )
 
-    def get_slow_queries(self, threshold_ms: Optional[float] = None) -> List[QueryMetrics]:
+    def get_slow_queries(
+        self, threshold_ms: Optional[float] = None
+    ) -> List[QueryMetrics]:
         """
         Get queries that exceeded the slow query threshold.
 

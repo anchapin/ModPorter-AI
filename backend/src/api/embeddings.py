@@ -1,6 +1,7 @@
 from typing import List
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -56,7 +57,9 @@ async def create_or_get_embedding(
         existing_response = DocumentEmbeddingResponse.model_validate(
             existing_embedding
         )  # pydantic v2
-        return JSONResponse(content=existing_response.model_dump(), status_code=status.HTTP_200_OK)
+        return JSONResponse(
+            content=existing_response.model_dump(), status_code=status.HTTP_200_OK
+        )
 
     db_embedding = await crud.create_document_embedding(
         db=db,
@@ -64,9 +67,7 @@ async def create_or_get_embedding(
         document_source=embedding_data.document_source,
         content_hash=embedding_data.content_hash,
     )
-    return (
-        db_embedding  # Will be automatically converted to DocumentEmbeddingResponse with 201 status
-    )
+    return db_embedding  # Will be automatically converted to DocumentEmbeddingResponse with 201 status
 
 
 @router.post("/embeddings/search/", response_model=List[DocumentEmbeddingResponse])
@@ -131,13 +132,17 @@ async def generate_embeddings(
 
     # Add ai-engine to path for embedding generator
     ai_engine_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "ai-engine",
     )
     if ai_engine_path not in sys.path:
         sys.path.insert(0, ai_engine_path)
 
     try:
-        from utils.embedding_generator import LocalEmbeddingGenerator, OpenAIEmbeddingGenerator
+        from utils.embedding_generator import (
+            LocalEmbeddingGenerator,
+            OpenAIEmbeddingGenerator,
+        )
 
         # Determine provider
         provider = request.provider or "auto"

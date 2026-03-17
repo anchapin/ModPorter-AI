@@ -42,7 +42,9 @@ def start_qa_task(
     Returns:
         A dictionary containing the task ID and status, or an error message.
     """
-    logger.info(f"API: Received request to start QA task for conversion_id: {conversion_id}")
+    logger.info(
+        f"API: Received request to start QA task for conversion_id: {conversion_id}"
+    )
 
     if not _validate_conversion_id(conversion_id):
         logger.warning(f"API: Invalid conversion_id format: {conversion_id}")
@@ -66,7 +68,9 @@ def start_qa_task(
         "report_id": None,  # Link to a generated QA report
     }
 
-    logger.info(f"API: QA task {task_id} created for conversion {conversion_id}. Status: pending.")
+    logger.info(
+        f"API: QA task {task_id} created for conversion {conversion_id}. Status: pending."
+    )
     # In a real system, this would likely trigger an async background job (e.g., Celery task)
     # that runs the QAAgent's pipeline.
 
@@ -100,11 +104,15 @@ def get_qa_status(task_id: str) -> Dict[str, Any]:
     if task_info["status"] == "pending":  # Simulate it starting
         if random.random() < 0.3:  # 30% chance to "start"
             task_info["status"] = "running"
-            task_info["started_at"] = "simulated_start_time"  # Replace with actual datetime
+            task_info["started_at"] = (
+                "simulated_start_time"  # Replace with actual datetime
+            )
             logger.info(f"API: Task {task_id} status changed to running (simulated).")
 
     if task_info["status"] == "running":
-        task_info["progress"] = min(task_info.get("progress", 0) + random.randint(5, 15), 100)
+        task_info["progress"] = min(
+            task_info.get("progress", 0) + random.randint(5, 15), 100
+        )
         if task_info["progress"] == 100:
             if random.random() < 0.8:  # 80% chance of success
                 task_info["status"] = "completed"
@@ -116,14 +124,18 @@ def get_qa_status(task_id: str) -> Dict[str, Any]:
                 }
                 task_info["report_id"] = f"report_{task_id}"  # Mock report ID
                 task_info["completed_at"] = "simulated_complete_time"
-                logger.info(f"API: Task {task_id} status changed to completed (simulated).")
+                logger.info(
+                    f"API: Task {task_id} status changed to completed (simulated)."
+                )
             else:
                 task_info["status"] = "failed"
                 task_info["results_summary"] = {
                     "error_type": "Simulated critical failure during testing."
                 }
                 task_info["completed_at"] = "simulated_fail_time"
-                logger.info(f"API: Task {task_id} status changed to failed (simulated).")
+                logger.info(
+                    f"API: Task {task_id} status changed to failed (simulated)."
+                )
 
     logger.info(
         f"API: Returning status for task {task_id}: {task_info['status']}, Progress: {task_info['progress']}%"
@@ -173,9 +185,20 @@ def get_qa_report(task_id: str, report_format: str = "json") -> Dict[str, Any]:
         ),
         "summary": task_info.get("results_summary", {}),
         "functional_tests": {"passed": 30, "failed": 2, "details": [...]},
-        "performance_tests": {"cpu_avg": "25%", "memory_peak": "300MB", "details": [...]},
-        "compatibility_tests": {"versions_tested": ["1.19", "1.20"], "issues": 0, "details": [...]},
-        "recommendations": ["Consider optimizing texture sizes.", "Review logic for X feature."],
+        "performance_tests": {
+            "cpu_avg": "25%",
+            "memory_peak": "300MB",
+            "details": [...],
+        },
+        "compatibility_tests": {
+            "versions_tested": ["1.19", "1.20"],
+            "issues": 0,
+            "details": [...],
+        },
+        "recommendations": [
+            "Consider optimizing texture sizes.",
+            "Review logic for X feature.",
+        ],
         "severity_ratings": {"critical": 0, "major": 1, "minor": 1, "cosmetic": 0},
     }
 
@@ -193,7 +216,10 @@ def get_qa_report(task_id: str, report_format: str = "json") -> Dict[str, Any]:
         logger.warning(
             f"API: Unsupported report format '{report_format}' requested for task {task_id}."
         )
-        return {"success": False, "error": f"Unsupported report format: {report_format}"}
+        return {
+            "success": False,
+            "error": f"Unsupported report format: {report_format}",
+        }
 
 
 def list_qa_tasks(
@@ -255,7 +281,10 @@ if __name__ == "__main__":
         # Test get_qa_status (pending -> running -> completed/failed)
         for _ in range(5):  # Simulate polling
             status_response = get_qa_status(task_id)
-            if status_response.get("task_info", {}).get("status") in ["completed", "failed"]:
+            if status_response.get("task_info", {}).get("status") in [
+                "completed",
+                "failed",
+            ]:
                 break
             if (
                 status_response.get("task_info", {}).get("status") == "running"

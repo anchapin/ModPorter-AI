@@ -196,7 +196,10 @@ class ModrinthService:
 
         # Find the file with matching hash or return first file
         for file_info in version.get("files", []):
-            if file_hash is None or file_info.get("hashes", {}).get("sha1") == file_hash:
+            if (
+                file_hash is None
+                or file_info.get("hashes", {}).get("sha1") == file_hash
+            ):
                 return file_info.get("url", "")
 
         return ""

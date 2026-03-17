@@ -255,7 +255,9 @@ class TestFullWorkflowIntegration:
 
         max_attempts = 10
         for attempt in range(max_attempts):
-            status_response = client.get(f"/api/v1/convert/{job_id}/status")  # Changed path
+            status_response = client.get(
+                f"/api/v1/convert/{job_id}/status"
+            )  # Changed path
             assert status_response.status_code == 200
             status_data = status_response.json()
             status = status_data["status"]
@@ -263,13 +265,17 @@ class TestFullWorkflowIntegration:
                 break
             time.sleep(1)
 
-        final_status_response = client.get(f"/api/v1/convert/{job_id}/status")  # Changed path
+        final_status_response = client.get(
+            f"/api/v1/convert/{job_id}/status"
+        )  # Changed path
         assert final_status_response.status_code == 200
         final_status = final_status_response.json()["status"]
         assert final_status in ["queued", "processing", "completed", "failed"]
 
         if final_status == "completed":
-            result_response = client.get(f"/api/v1/convert/{job_id}/download")  # Changed path
+            result_response = client.get(
+                f"/api/v1/convert/{job_id}/download"
+            )  # Changed path
             assert result_response.status_code in [
                 200,
                 400,

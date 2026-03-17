@@ -124,7 +124,9 @@ class ProgressHandler:
             logger.error(f"Failed to broadcast progress for {conversion_id}: {e}")
 
     @staticmethod
-    async def broadcast_agent_start(conversion_id: str, agent: str, message: Optional[str] = None):
+    async def broadcast_agent_start(
+        conversion_id: str, agent: str, message: Optional[str] = None
+    ):
         """
         Broadcast that an agent has started processing.
 
@@ -189,7 +191,9 @@ class ProgressHandler:
         )
 
     @staticmethod
-    async def broadcast_agent_failed(conversion_id: str, agent: str, error_message: str):
+    async def broadcast_agent_failed(
+        conversion_id: str, agent: str, error_message: str
+    ):
         """
         Broadcast that an agent has failed.
 
@@ -231,7 +235,9 @@ class ProgressHandler:
             await manager.broadcast(msg.model_dump(), conversion_id)
             logger.info(f"Conversion complete broadcast for {conversion_id}")
         except Exception as e:
-            logger.error(f"Failed to broadcast conversion complete for {conversion_id}: {e}")
+            logger.error(
+                f"Failed to broadcast conversion complete for {conversion_id}: {e}"
+            )
 
     @staticmethod
     async def broadcast_conversion_failed(conversion_id: str, error_message: str):
@@ -257,4 +263,6 @@ class ProgressHandler:
             await manager.broadcast(msg.model_dump(), conversion_id)
             logger.error(f"Conversion failed broadcast for {conversion_id}")
         except Exception as e:
-            logger.error(f"Failed to broadcast conversion failed for {conversion_id}: {e}")
+            logger.error(
+                f"Failed to broadcast conversion failed for {conversion_id}: {e}"
+            )

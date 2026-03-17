@@ -88,7 +88,10 @@ class TestPerformanceAPI:
         """Test successful benchmark report retrieval."""
         # Create a mock completed run
         run_id = "test_run_123"
-        mock_benchmark_runs[run_id] = {"status": "completed", "scenario_id": "baseline_idle_001"}
+        mock_benchmark_runs[run_id] = {
+            "status": "completed",
+            "scenario_id": "baseline_idle_001",
+        }
 
         # Create mock report data
         mock_benchmark_reports[run_id] = {
@@ -136,7 +139,10 @@ class TestPerformanceAPI:
     def test_get_benchmark_report_not_completed(self, client):
         """Test benchmark report for non-completed run."""
         run_id = "test_run_123"
-        mock_benchmark_runs[run_id] = {"status": "running", "scenario_id": "baseline_idle_001"}
+        mock_benchmark_runs[run_id] = {
+            "status": "running",
+            "scenario_id": "baseline_idle_001",
+        }
 
         response = client.get(f"/performance/report/{run_id}")
 

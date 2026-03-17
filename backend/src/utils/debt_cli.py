@@ -202,7 +202,9 @@ def summary(path: str):
 
     if summary_data["by_category"]:
         click.echo("By Category:")
-        for category, count in sorted(summary_data["by_category"].items(), key=lambda x: -x[1]):
+        for category, count in sorted(
+            summary_data["by_category"].items(), key=lambda x: -x[1]
+        ):
             click.echo(f"  {category.replace('_', ' ').title():20} {count:3}")
         click.echo()
 

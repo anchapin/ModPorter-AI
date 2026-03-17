@@ -18,9 +18,7 @@ class DocumentEmbeddingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {
-        "from_attributes": True  # For Pydantic V2, replaces orm_mode
-    }
+    model_config = {"from_attributes": True}  # For Pydantic V2, replaces orm_mode
 
 
 class EmbeddingSearchQuery(BaseModel):

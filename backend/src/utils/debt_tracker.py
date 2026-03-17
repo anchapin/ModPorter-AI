@@ -224,7 +224,9 @@ class DebtTracker:
         Returns:
             List of critical debt items.
         """
-        return [item for item in self.debt_items if item.severity == DebtSeverity.CRITICAL]
+        return [
+            item for item in self.debt_items if item.severity == DebtSeverity.CRITICAL
+        ]
 
     def filter_by_issue(self, issue_number: int) -> list[DebtItem]:
         """Get all debt items for a specific issue.
@@ -322,7 +324,9 @@ class DebtTracker:
 
         if summary["by_category"]:
             lines.append("- **By Category**:\n")
-            for category, count in sorted(summary["by_category"].items(), key=lambda x: -x[1]):
+            for category, count in sorted(
+                summary["by_category"].items(), key=lambda x: -x[1]
+            ):
                 lines.append(f"  - {category.replace('_', ' ').title()}: {count}\n")
 
         lines.append("\n## Issues by GitHub Issue Number\n")

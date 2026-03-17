@@ -52,11 +52,17 @@ async def test_cache_mod_analysis_success(cache_service: CacheService):
         "date_obj": datetime.now(),
     }
 
-    await cache_service.cache_mod_analysis(MOD_HASH, ANALYSIS_DATA, ttl_seconds=DEFAULT_TTL)
+    await cache_service.cache_mod_analysis(
+        MOD_HASH, ANALYSIS_DATA, ttl_seconds=DEFAULT_TTL
+    )
     expected_key = f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}{MOD_HASH}"
     # Use the service's own serializer method for expected value
-    expected_value = json.dumps(ANALYSIS_DATA, default=cache_service._json_encoder_default)
-    cache_service._client.set.assert_called_once_with(expected_key, expected_value, ex=DEFAULT_TTL)
+    expected_value = json.dumps(
+        ANALYSIS_DATA, default=cache_service._json_encoder_default
+    )
+    cache_service._client.set.assert_called_once_with(
+        expected_key, expected_value, ex=DEFAULT_TTL
+    )
 
 
 @pytest.mark.asyncio
@@ -73,7 +79,9 @@ async def test_get_mod_analysis_hit(cache_service: CacheService):
 
     expected_key = f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}{MOD_HASH}"
     # Use the service's own serializer method for stored value consistency
-    stored_value = json.dumps(ANALYSIS_DATA, default=cache_service._json_encoder_default)
+    stored_value = json.dumps(
+        ANALYSIS_DATA, default=cache_service._json_encoder_default
+    )
     cache_service._client.get.return_value = stored_value
 
     result = await cache_service.get_mod_analysis(MOD_HASH)
@@ -120,8 +128,12 @@ async def test_cache_conversion_result_success(cache_service: CacheService):
         MOD_HASH, CONVERSION_RESULT, ttl_seconds=DEFAULT_TTL
     )
     expected_key = f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}{MOD_HASH}"
-    expected_value = json.dumps(CONVERSION_RESULT, default=cache_service._json_encoder_default)
-    cache_service._client.set.assert_called_once_with(expected_key, expected_value, ex=DEFAULT_TTL)
+    expected_value = json.dumps(
+        CONVERSION_RESULT, default=cache_service._json_encoder_default
+    )
+    cache_service._client.set.assert_called_once_with(
+        expected_key, expected_value, ex=DEFAULT_TTL
+    )
 
 
 @pytest.mark.asyncio
@@ -137,7 +149,9 @@ async def test_get_conversion_result_hit(cache_service: CacheService):
     }
 
     expected_key = f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}{MOD_HASH}"
-    stored_value = json.dumps(CONVERSION_RESULT, default=cache_service._json_encoder_default)
+    stored_value = json.dumps(
+        CONVERSION_RESULT, default=cache_service._json_encoder_default
+    )
     cache_service._client.get.return_value = stored_value
 
     result = await cache_service.get_conversion_result(MOD_HASH)
@@ -163,10 +177,14 @@ async def test_get_conversion_result_miss(cache_service: CacheService):
 # Tests for asset_conversion
 @pytest.mark.asyncio
 async def test_cache_asset_conversion_success(cache_service: CacheService):
-    await cache_service.cache_asset_conversion(ASSET_HASH, ASSET_DATA, ttl_seconds=DEFAULT_TTL)
+    await cache_service.cache_asset_conversion(
+        ASSET_HASH, ASSET_DATA, ttl_seconds=DEFAULT_TTL
+    )
     expected_key = f"{cache_service.CACHE_ASSET_CONVERSION_PREFIX}{ASSET_HASH}"
     encoded_asset = base64.b64encode(ASSET_DATA).decode("utf-8")
-    cache_service._client.set.assert_called_once_with(expected_key, encoded_asset, ex=DEFAULT_TTL)
+    cache_service._client.set.assert_called_once_with(
+        expected_key, encoded_asset, ex=DEFAULT_TTL
+    )
 
 
 @pytest.mark.asyncio
@@ -195,7 +213,9 @@ async def test_get_asset_conversion_miss(cache_service: CacheService):
 # Test for invalidate_cache
 @pytest.mark.asyncio
 async def test_invalidate_cache_success(cache_service: CacheService):
-    cache_key_to_invalidate = f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}some_specific_hash"
+    cache_key_to_invalidate = (
+        f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}some_specific_hash"
+    )
     await cache_service.invalidate_cache(cache_key_to_invalidate)
     cache_service._client.delete.assert_called_once_with(cache_key_to_invalidate)
 
@@ -223,9 +243,15 @@ async def test_get_cache_stats_basic(cache_service: CacheService):
     assert stats.misses == 5
 
     assert cache_service._client.keys.call_count == 3
-    cache_service._client.keys.assert_any_call(f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}*")
-    cache_service._client.keys.assert_any_call(f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}*")
-    cache_service._client.keys.assert_any_call(f"{cache_service.CACHE_ASSET_CONVERSION_PREFIX}*")
+    cache_service._client.keys.assert_any_call(
+        f"{cache_service.CACHE_MOD_ANALYSIS_PREFIX}*"
+    )
+    cache_service._client.keys.assert_any_call(
+        f"{cache_service.CACHE_CONVERSION_RESULT_PREFIX}*"
+    )
+    cache_service._client.keys.assert_any_call(
+        f"{cache_service.CACHE_ASSET_CONVERSION_PREFIX}*"
+    )
 
     cache_service._client.info.assert_called_once_with("memory")
 

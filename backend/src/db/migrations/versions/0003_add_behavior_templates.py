@@ -44,8 +44,12 @@ def upgrade():
             nullable=False,
             server_default=sa.text("'[]'::jsonb"),
         ),
-        sa.Column("is_public", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column("version", sa.String(20), nullable=False, server_default=sa.text("'1.0.0'")),
+        sa.Column(
+            "is_public", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
+        sa.Column(
+            "version", sa.String(20), nullable=False, server_default=sa.text("'1.0.0'")
+        ),
         sa.Column(
             "created_by",
             postgresql.UUID(as_uuid=True),
@@ -68,12 +72,21 @@ def upgrade():
     )
 
     # Create indexes for performance
-    op.create_index("ix_behavior_templates_category", "behavior_templates", ["category"])
-    op.create_index("ix_behavior_templates_template_type", "behavior_templates", ["template_type"])
-    op.create_index("ix_behavior_templates_is_public", "behavior_templates", ["is_public"])
+    op.create_index(
+        "ix_behavior_templates_category", "behavior_templates", ["category"]
+    )
+    op.create_index(
+        "ix_behavior_templates_template_type", "behavior_templates", ["template_type"]
+    )
+    op.create_index(
+        "ix_behavior_templates_is_public", "behavior_templates", ["is_public"]
+    )
     op.create_index("ix_behavior_templates_name", "behavior_templates", ["name"])
     op.create_index(
-        "ix_behavior_templates_tags", "behavior_templates", ["tags"], postgresql_using="gin"
+        "ix_behavior_templates_tags",
+        "behavior_templates",
+        ["tags"],
+        postgresql_using="gin",
     )
     # ### end Alembic commands ###
 
@@ -83,7 +96,9 @@ def downgrade():
     op.drop_index("ix_behavior_templates_tags", table_name="behavior_templates")
     op.drop_index("ix_behavior_templates_name", table_name="behavior_templates")
     op.drop_index("ix_behavior_templates_is_public", table_name="behavior_templates")
-    op.drop_index("ix_behavior_templates_template_type", table_name="behavior_templates")
+    op.drop_index(
+        "ix_behavior_templates_template_type", table_name="behavior_templates"
+    )
     op.drop_index("ix_behavior_templates_category", table_name="behavior_templates")
     op.drop_table("behavior_templates")
     # ### end Alembic commands ###

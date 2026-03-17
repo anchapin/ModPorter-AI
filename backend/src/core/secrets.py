@@ -177,7 +177,9 @@ class SecretsManager:
                     self.settings.vault_token = f.read().strip()
 
         if not self.settings.vault_token:
-            raise ValueError("Vault token is required. Set VAULT_TOKEN environment variable.")
+            raise ValueError(
+                "Vault token is required. Set VAULT_TOKEN environment variable."
+            )
 
         try:
             import hvac
@@ -197,7 +199,9 @@ class SecretsManager:
     def _init_doppler(self) -> None:
         """Initialize Doppler backend."""
         if not self.settings.doppler_token:
-            raise ValueError("Doppler token is required. Set DOPPLER_TOKEN environment variable.")
+            raise ValueError(
+                "Doppler token is required. Set DOPPLER_TOKEN environment variable."
+            )
 
         try:
             import requests
@@ -259,7 +263,9 @@ class SecretsManager:
     def _get_aws_secret(self, key: str) -> Optional[str]:
         """Get secret from AWS Secrets Manager."""
         try:
-            response = self._aws_client.get_secret_value(SecretId=self.settings.aws_secret_name)
+            response = self._aws_client.get_secret_value(
+                SecretId=self.settings.aws_secret_name
+            )
             secret_dict = json.loads(response["SecretString"])
             return secret_dict.get(key)
         except Exception as e:
@@ -309,7 +315,9 @@ class SecretsManager:
 
         if backend == "aws":
             try:
-                response = self._aws_client.get_secret_value(SecretId=self.settings.aws_secret_name)
+                response = self._aws_client.get_secret_value(
+                    SecretId=self.settings.aws_secret_name
+                )
                 return json.loads(response["SecretString"])
             except Exception as e:
                 logger.error(f"AWS Secrets Manager error: {e}")

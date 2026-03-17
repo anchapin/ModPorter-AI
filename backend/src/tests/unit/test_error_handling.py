@@ -159,7 +159,12 @@ class TestRetryLogic:
 
     def test_is_retryable(self):
         """Test retryable error detection"""
-        from services.retry import is_retryable, RetryConfig, RetryableError, NonRetryableError
+        from services.retry import (
+            is_retryable,
+            RetryConfig,
+            RetryableError,
+            NonRetryableError,
+        )
 
         config = RetryConfig()
 
@@ -184,7 +189,10 @@ class TestConversionFailureAnalysis:
 
     def test_failure_severity_determination(self):
         """Test severity determination"""
-        from services.conversion_failure_analysis import determine_failure_severity, FailureSeverity
+        from services.conversion_failure_analysis import (
+            determine_failure_severity,
+            FailureSeverity,
+        )
 
         # High retry count = critical
         assert determine_failure_severity("parse_error", 3) == FailureSeverity.CRITICAL
@@ -203,20 +211,31 @@ class TestConversionFailureAnalysis:
         assert determine_failure_severity("parse_error", 1) == FailureSeverity.HIGH
 
         # Medium category = medium
-        assert determine_failure_severity("validation_error", 0) == FailureSeverity.MEDIUM
+        assert (
+            determine_failure_severity("validation_error", 0) == FailureSeverity.MEDIUM
+        )
 
         # Unknown = low
         assert determine_failure_severity("unknown_error", 0) == FailureSeverity.LOW
 
     def test_failure_source_determination(self):
         """Test failure source determination"""
-        from services.conversion_failure_analysis import determine_failure_source, FailureSource
+        from services.conversion_failure_analysis import (
+            determine_failure_source,
+            FailureSource,
+        )
 
         assert determine_failure_source("upload") == FailureSource.FILE_UPLOAD
         assert determine_failure_source("parsing") == FailureSource.FILE_PARSING
         assert determine_failure_source("analyzing") == FailureSource.MOD_ANALYSIS
-        assert determine_failure_source("asset conversion") == FailureSource.ASSET_CONVERSION
-        assert determine_failure_source("code translation") == FailureSource.CODE_TRANSLATION
+        assert (
+            determine_failure_source("asset conversion")
+            == FailureSource.ASSET_CONVERSION
+        )
+        assert (
+            determine_failure_source("code translation")
+            == FailureSource.CODE_TRANSLATION
+        )
         assert determine_failure_source("packaging") == FailureSource.PACKAGING
         assert determine_failure_source("validation") == FailureSource.VALIDATION
         assert determine_failure_source(None) == FailureSource.UNKNOWN

@@ -18,7 +18,9 @@ def test_upload_rate_limit(client: TestClient):
         # We expect a success (200) or validation error (400) because .txt is not allowed
         # But rate limit check happens before endpoint logic.
         # If rate limit is hit, we get 429.
-        assert response.status_code != 429, f"Request {i + 1} failed with 429 unexpectedly"
+        assert (
+            response.status_code != 429
+        ), f"Request {i + 1} failed with 429 unexpectedly"
 
     # The 21st request should fail with 429 Too Many Requests
     files = {"file": ("test.txt", b"dummy content", "text/plain")}
@@ -26,6 +28,6 @@ def test_upload_rate_limit(client: TestClient):
 
     # Assert that we get a 429 response
     # This assertion will fail if the rate limit is not applied correctly (i.e. default limit of 60 is used)
-    assert response.status_code == 429, (
-        f"Rate limit not enforced on upload endpoint. expected 429, got {response.status_code}"
-    )
+    assert (
+        response.status_code == 429
+    ), f"Rate limit not enforced on upload endpoint. expected 429, got {response.status_code}"

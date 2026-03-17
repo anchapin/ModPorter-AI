@@ -108,7 +108,9 @@ async def update_job_progress(
     return prog
 
 
-async def get_job_progress(session: AsyncSession, job_id: str) -> Optional[models.JobProgress]:
+async def get_job_progress(
+    session: AsyncSession, job_id: str
+) -> Optional[models.JobProgress]:
     try:
         job_uuid = uuid.UUID(job_id)
     except ValueError:
@@ -182,7 +184,9 @@ async def create_enhanced_feedback(
 async def get_feedback(
     session: AsyncSession, feedback_id: PyUUID
 ) -> Optional[models.ConversionFeedback]:
-    stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.id == feedback_id)
+    stmt = select(models.ConversionFeedback).where(
+        models.ConversionFeedback.id == feedback_id
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -190,7 +194,9 @@ async def get_feedback(
 async def get_feedback_by_job_id(
     session: AsyncSession, job_id: PyUUID
 ) -> List[models.ConversionFeedback]:
-    stmt = select(models.ConversionFeedback).where(models.ConversionFeedback.job_id == job_id)
+    stmt = select(models.ConversionFeedback).where(
+        models.ConversionFeedback.job_id == job_id
+    )
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -239,7 +245,9 @@ async def get_document_embedding_by_id(
 async def get_document_embedding_by_hash(
     db: AsyncSession, content_hash: str
 ) -> Optional[DocumentEmbedding]:
-    stmt = select(DocumentEmbedding).where(DocumentEmbedding.content_hash == content_hash)
+    stmt = select(DocumentEmbedding).where(
+        DocumentEmbedding.content_hash == content_hash
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -265,7 +273,9 @@ async def update_document_embedding(
         return db_embedding
 
     stmt = (
-        update(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id).values(**update_data)
+        update(DocumentEmbedding)
+        .where(DocumentEmbedding.id == embedding_id)
+        .values(**update_data)
     )
     await db.execute(stmt)
     await db.commit()
@@ -391,7 +401,9 @@ async def update_experiment(
         return experiment
 
     stmt = (
-        update(models.Experiment).where(models.Experiment.id == experiment_id).values(**update_data)
+        update(models.Experiment)
+        .where(models.Experiment.id == experiment_id)
+        .values(**update_data)
     )
     await session.execute(stmt)
     if commit:
@@ -465,7 +477,9 @@ async def create_experiment_variant(
 async def get_experiment_variant(
     session: AsyncSession, variant_id: PyUUID
 ) -> Optional[models.ExperimentVariant]:
-    stmt = select(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    stmt = select(models.ExperimentVariant).where(
+        models.ExperimentVariant.id == variant_id
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -542,7 +556,9 @@ async def update_experiment_variant(
         await session.commit()
 
     # Refresh the variant object
-    stmt = select(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    stmt = select(models.ExperimentVariant).where(
+        models.ExperimentVariant.id == variant_id
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -552,7 +568,9 @@ async def delete_experiment_variant(session: AsyncSession, variant_id: PyUUID) -
     if not variant:
         return False
 
-    stmt = delete(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
+    stmt = delete(models.ExperimentVariant).where(
+        models.ExperimentVariant.id == variant_id
+    )
     await session.execute(stmt)
     await session.commit()
     return True
@@ -593,7 +611,9 @@ async def create_experiment_result(
 async def get_experiment_result(
     session: AsyncSession, result_id: PyUUID
 ) -> Optional[models.ExperimentResult]:
-    stmt = select(models.ExperimentResult).where(models.ExperimentResult.id == result_id)
+    stmt = select(models.ExperimentResult).where(
+        models.ExperimentResult.id == result_id
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -611,7 +631,11 @@ async def list_experiment_results(
         stmt = stmt.where(models.ExperimentResult.variant_id == variant_id)
     if session_id:
         stmt = stmt.where(models.ExperimentResult.session_id == session_id)
-    stmt = stmt.offset(skip).limit(limit).order_by(models.ExperimentResult.created_at.desc())
+    stmt = (
+        stmt.offset(skip)
+        .limit(limit)
+        .order_by(models.ExperimentResult.created_at.desc())
+    )
     result = await session.execute(stmt)
     return result.scalars().all()
 
@@ -636,7 +660,9 @@ async def create_behavior_file(
 
     # Prevent path traversal attacks
     if ".." in file_path or file_path.startswith("/") or file_path.startswith("\\"):
-        raise ValueError("Invalid file path: path traversal detected or absolute path used")
+        raise ValueError(
+            "Invalid file path: path traversal detected or absolute path used"
+        )
 
     behavior_file = models.BehaviorFile(
         conversion_id=conversion_uuid,
@@ -653,7 +679,9 @@ async def create_behavior_file(
     return behavior_file
 
 
-async def get_behavior_file(session: AsyncSession, file_id: str) -> Optional[models.BehaviorFile]:
+async def get_behavior_file(
+    session: AsyncSession, file_id: str
+) -> Optional[models.BehaviorFile]:
     """Get a specific behavior file by ID."""
     try:
         file_uuid = uuid.UUID(file_id)
@@ -771,7 +799,9 @@ async def list_jobs(
 
 
 # Addon Asset CRUD operations
-async def get_addon_asset(session: AsyncSession, asset_id: str) -> Optional[models.AddonAsset]:
+async def get_addon_asset(
+    session: AsyncSession, asset_id: str
+) -> Optional[models.AddonAsset]:
     """Get an addon asset by ID."""
     try:
         asset_uuid = uuid.UUID(asset_id)
