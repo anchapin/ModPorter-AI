@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Tabs,
@@ -147,6 +147,18 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   // Check if form has unsaved changes
   const hasUnsavedChanges = dirtyFields.size > 0;
 
+  // ⚡ Bolt optimization: Compute error/warning counts in a single pass O(N)
+  // instead of multiple array .filter() and .some() allocations O(3N).
+  const { errorCount, warningCount } = useMemo(() => {
+    let errors = 0;
+    let warnings = 0;
+    for (let i = 0; i < validationErrors.length; i++) {
+      if (validationErrors[i].severity === 'error') errors++;
+      else if (validationErrors[i].severity === 'warning') warnings++;
+    }
+    return { errorCount: errors, warningCount: warnings };
+  }, [validationErrors]);
+
   // Render content based on layout
   const renderContent = () => {
     if (loading) {
@@ -246,20 +258,10 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
           <Box className="validation-summary">
             {validationErrors.length > 0 && (
               <Alert
-                severity={
-                  validationErrors.some((e) => e.severity === 'error')
-                    ? 'error'
-                    : 'warning'
-                }
+                severity={errorCount > 0 ? 'error' : 'warning'}
                 sx={{ mb: 2 }}
               >
-                {validationErrors.filter((e) => e.severity === 'error').length}{' '}
-                errors,
-                {
-                  validationErrors.filter((e) => e.severity === 'warning')
-                    .length
-                }{' '}
-                warnings
+                {errorCount} errors, {warningCount} warnings
               </Alert>
             )}
           </Box>
