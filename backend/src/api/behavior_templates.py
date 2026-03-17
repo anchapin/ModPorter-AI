@@ -258,7 +258,7 @@ async def create_behavior_template(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to create template")
+        raise HTTPException(status_code=500, detail=f"Failed to create template: {str(e)}")
 
     return BehaviorTemplateResponse(
         id=str(template.id),
@@ -316,7 +316,7 @@ async def update_behavior_template(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to update template")
+        raise HTTPException(status_code=500, detail=f"Failed to update template: {str(e)}")
 
     return BehaviorTemplateResponse(
         id=str(updated_template.id),
@@ -394,7 +394,7 @@ async def apply_behavior_template(
             db, template_id=template_id, conversion_id=conversion_id, file_path=file_path
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to apply template")
+        raise HTTPException(status_code=500, detail=f"Failed to apply template: {str(e)}")
 
     return {
         "template_id": template_id,

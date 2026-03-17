@@ -33,11 +33,9 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 # Install all Python dependencies in separate stages to avoid conflicts
 # This is the time-consuming step that we want to cache
 # First install ai-engine dependencies
+# Note: pip handles conflicts better when installed together or with explicit flags
 RUN pip install --no-cache-dir \
-    -r /tmp/ai-engine-requirements.txt
-
-# Then install backend dependencies (will handle conflicts automatically)
-RUN pip install --no-cache-dir \
+    -r /tmp/ai-engine-requirements.txt \
     -r /tmp/ai-engine-requirements-dev.txt \
     -r /tmp/backend-requirements.txt
 
