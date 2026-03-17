@@ -246,7 +246,6 @@ if __name__ == "__main__":
     # Test start_qa_task
     conv_id = str(uuid4())  # Generate a mock conversion ID
     start_response = start_qa_task(conv_id, user_config={"custom_param": "value123"})
-    print(f"Start QA Task Response: {start_response}")
 
     task_id = None
     if start_response.get("success"):
@@ -256,34 +255,20 @@ if __name__ == "__main__":
         # Test get_qa_status (pending -> running -> completed/failed)
         for _ in range(5):  # Simulate polling
             status_response = get_qa_status(task_id)
-            print(
-                f"Get QA Status Response: Task: {task_id}, Status: {status_response.get('task_info', {}).get('status')}, Progress: {status_response.get('task_info', {}).get('progress')}%"
-            )
             if status_response.get("task_info", {}).get("status") in ["completed", "failed"]:
                 break
             if (
                 status_response.get("task_info", {}).get("status") == "running"
                 and status_response.get("task_info", {}).get("progress", 0) < 100
-            ):
-                print("   Task is running, polling again...")
-            elif status_response.get("task_info", {}).get("status") == "pending":
-                print("   Task is pending, polling again...")
+            ) or status_response.get("task_info", {}).get("status") == "pending":
+                pass
 
         # Test get_qa_report
         report_response_json = get_qa_report(task_id, report_format="json")
-        print(
-            f"Get QA Report (JSON) Response: {report_response_json.get('report', {}).get('report_id', 'N/A')}"
-        )
 
         report_response_html = get_qa_report(task_id, report_format="html_summary")
-        print(
-            f"Get QA Report (HTML) Response: {report_response_html.get('html_content', 'N/A')[:50]}..."
-        )  # Print snippet
 
         report_response_unsupported = get_qa_report(task_id, report_format="xml")
-        print(
-            f"Get QA Report (Unsupported) Response: {report_response_unsupported.get('error', 'N/A')}"
-        )
 
     # Test list_qa_tasks
     # Create a few more tasks for listing
@@ -297,16 +282,11 @@ if __name__ == "__main__":
         mock_qa_tasks[tid]["results_summary"] = {"total_tests": 10, "passed": 8}
 
     list_all_response = list_qa_tasks()
-    print(f"List QA Tasks (All) Response: Found {list_all_response.get('count')} tasks.")
     # for t in list_all_response.get('tasks', []): print(f"  - Task {t['task_id'][-12:]}, Status: {t['status']}")
 
     list_completed_response = list_qa_tasks(status="completed")
-    print(
-        f"List QA Tasks (Completed) Response: Found {list_completed_response.get('count')} tasks."
-    )
     for t in list_completed_response.get("tasks", []):
-        print(f"  - Task {t['task_id'][-12:]}, Status: {t['status']}")
+        pass
 
     # Test with invalid conversion ID
     invalid_conv_id_response = start_qa_task("invalid-id-format")
-    print(f"Start QA Task (Invalid Conv ID) Response: {invalid_conv_id_response}")

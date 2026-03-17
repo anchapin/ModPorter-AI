@@ -55,8 +55,8 @@ async def start_performance_tracking(request: BuildPerformanceStartRequest):
             message=f"Performance tracking started for build {build.build_id}",
             started_at=build.created_at,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start tracking: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to start tracking")
 
 
 @router.post("/{build_id}/stage", response_model=BuildPerformanceResponse)

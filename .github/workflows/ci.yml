@@ -257,6 +257,13 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    # Install lsb-release if running inside a container, as actions/setup-python requires it
+    - name: Install lsb-release (container)
+      run: |
+        if ! command -v lsb_release &> /dev/null; then
+          apt-get update -qq && apt-get install -y -qq lsb-release || true
+        fi
+
     # Conditional Python setup - only if not using container
     - name: Set up Python 3.11 (fallback)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -896,6 +903,7 @@ jobs:
         fi
 
     - name: Run mutation testing
+      timeout-minutes: 5
       run: |
         cd ${{ matrix.project }}
         
@@ -996,6 +1004,7 @@ jobs:
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
+      timeout-minutes: 10
       run: |
         cd frontend
         
@@ -1195,7 +1204,7 @@ jobs:
       run: |
         echo "=== Scanning Backend Dependencies ==="
         cd backend
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --skip-editable --no-deps || true
       continue-on-error: true
 
     - name: Scan Python dependencies (AI Engine)
@@ -1203,7 +1212,7 @@ jobs:
       run: |
         echo "=== Scanning AI Engine Dependencies ==="
         cd ai-engine
-        pip-audit -r requirements.txt || true
+        pip-audit -r requirements.txt --skip-editable --no-deps || true
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)

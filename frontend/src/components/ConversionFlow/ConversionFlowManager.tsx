@@ -205,8 +205,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
               className="reset-button"
               onClick={resetFlow}
               title="Cancel and start over"
+              aria-label="Cancel conversion"
             >
-              ✕
+              <span aria-hidden="true">✕</span>
             </button>
           </div>
 

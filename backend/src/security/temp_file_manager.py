@@ -17,7 +17,7 @@ import shutil
 import tempfile
 import threading
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -439,10 +439,8 @@ class SecureTempFileManager:
 
         for entry in self._base_dir.rglob("*"):
             if entry.is_file():
-                try:
+                with suppress(Exception):
                     total_size += entry.stat().st_size
-                except Exception:
-                    pass
 
         return total_size
 

@@ -92,9 +92,11 @@ class ValidationFramework:
         else:
             # Fallback: Basic file type detection based on file headers
             # This is a simplified version for Windows without libmagic
-            if file_chunk.startswith(b"PK\x03\x04"):
-                mime_type = "application/zip"
-            elif file_chunk.startswith(b"PK\x05\x06") or file_chunk.startswith(b"PK\x07\x08"):
+            if (
+                file_chunk.startswith(b"PK\x03\x04")
+                or file_chunk.startswith(b"PK\x05\x06")
+                or file_chunk.startswith(b"PK\x07\x08")
+            ):
                 mime_type = "application/zip"
             else:
                 # For unknown file types, we should be more restrictive
@@ -102,8 +104,6 @@ class ValidationFramework:
                 mime_type = "application/x-unknown"
 
         # Debug logging to see what MIME type is detected
-        print(f"DEBUG: File '{filename}' detected MIME type: '{mime_type}'")
-        print(f"DEBUG: Allowed MIME types: {self.ALLOWED_MIME_TYPES}")
 
         if mime_type not in self.ALLOWED_MIME_TYPES:
             return ValidationResult(
