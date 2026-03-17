@@ -172,11 +172,16 @@ class TestGenericExceptionHandler:
                 response = await eh.generic_exception_handler(mock_request, exc)
             
             # Response content should not contain sensitive details
+            import json
             content = response.body.decode() if hasattr(response.body, 'decode') else str(response.body)
+            response_data = json.loads(content)
+            
+            # Ensure no sensitive details are in the response
             assert "db.internal" not in content
             assert "5432" not in content
             assert "Invalid credentials" not in content
-            assert "db.internal" not in content
+            # Message field should not be present in client response
+            assert "message" not in response_data
 
 
 class TestConversionException:
@@ -184,16 +189,21 @@ class TestConversionException:
 
     def test_conversion_exception_user_message_safe(self, mock_request):
         """Conversion exceptions should have safe user messages."""
-        exc = ConversionException(
-            message="Failed to parse YAML: invalid syntax at line 42",
-            user_message="Conversion failed. Please check your mod file."
-        )
-        
-        response = create_error_response(exc, mock_request)
-        
-        assert response.user_message == "Conversion failed. Please check your mod file."
-        assert "YAML" not in response.user_message
-        assert "line 42" not in response.user_message
+        with patch.dict(os.environ, {"DEBUG": "false"}):
+            import importlib
+            import src.services.error_handlers as eh
+            importlib.reload(eh)
+            
+            exc = eh.ConversionException(
+                message="Failed to parse YAML: invalid syntax at line 42",
+                user_message="Conversion failed. Please check your mod file."
+            )
+            
+            response = eh.create_error_response(exc, mock_request)
+            
+            assert response.user_message == "Conversion failed. Please check your mod file."
+            assert "YAML" not in response.user_message
+            assert "line 42" not in response.user_message
 
 
 class TestHTTPExceptionMessages:

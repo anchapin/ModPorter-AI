@@ -36,18 +36,30 @@ except ImportError:
 
 
 class ErrorResponse(BaseModel):
-    """Structured error response model"""
+    """Internal error response model - for server-side logging only"""
 
     error_id: str
     error_type: str
-    error_category: str  # New: parse_error, asset_error, logic_error, etc.
-    message: str
+    error_category: str
+    message: str  # Internal message (logged server-side)
     user_message: str
     timestamp: str
     path: Optional[str] = None
     method: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
-    correlation_id: Optional[str] = None  # New: correlation ID for tracing
+    correlation_id: Optional[str] = None
+
+
+class ClientErrorResponse(BaseModel):
+    """Client-facing error response - sensitive fields are excluded"""
+
+    error_id: str
+    error_type: str
+    error_category: str
+    user_message: str
+    timestamp: str
+    correlation_id: Optional[str] = None
+    # Note: message and details are NEVER included in client responses
 
 
 class ModPorterException(Exception):
@@ -378,7 +390,16 @@ async def modporter_exception_handler(request: Request, exc: ModPorterException)
         source="api",
     )
 
-    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
+    # Send sanitized response to client (excludes message and details)
+    client_response = ClientErrorResponse(
+        error_id=error_response.error_id,
+        error_type=error_response.error_type,
+        error_category=error_response.error_category,
+        user_message=error_response.user_message,
+        timestamp=error_response.timestamp,
+        correlation_id=error_response.correlation_id,
+    )
+    return JSONResponse(status_code=exc.status_code, content=client_response.model_dump())
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
@@ -392,7 +413,16 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             error_category=error_response.error_category, error_type="HTTPException", source="api"
         )
 
-    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
+    # Send sanitized response to client
+    client_response = ClientErrorResponse(
+        error_id=error_response.error_id,
+        error_type=error_response.error_type,
+        error_category=error_response.error_category,
+        user_message=error_response.user_message,
+        timestamp=error_response.timestamp,
+        correlation_id=error_response.correlation_id,
+    )
+    return JSONResponse(status_code=exc.status_code, content=client_response.model_dump())
 
 
 async def validation_exception_handler(
@@ -407,8 +437,17 @@ async def validation_exception_handler(
         error_category="validation_error", error_type="RequestValidationError", source="api"
     )
 
+    # Send sanitized response to client
+    client_response = ClientErrorResponse(
+        error_id=error_response.error_id,
+        error_type=error_response.error_type,
+        error_category=error_response.error_category,
+        user_message=error_response.user_message,
+        timestamp=error_response.timestamp,
+        correlation_id=error_response.correlation_id,
+    )
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response.model_dump()
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=client_response.model_dump()
     )
 
 
@@ -431,8 +470,17 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         error_category=error_response.error_category, error_type=type(exc).__name__, source="api"
     )
 
+    # Send sanitized response to client (NO internal message or details)
+    client_response = ClientErrorResponse(
+        error_id=error_response.error_id,
+        error_type=error_response.error_type,
+        error_category=error_response.error_category,
+        user_message=error_response.user_message,
+        timestamp=error_response.timestamp,
+        correlation_id=error_response.correlation_id,
+    )
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response.model_dump()
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=client_response.model_dump()
     )
 
 
