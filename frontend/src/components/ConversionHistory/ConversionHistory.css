@@ -162,6 +162,13 @@
   transform: translateY(-1px);
 }
 
+/* Accessibility: Focus-visible for header action buttons */
+.delete-selected-btn:focus-visible,
+.clear-all-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 /* Error Message */
 .error-message {
   background: #ffebee;
@@ -271,6 +278,12 @@
   height: 16px;
   cursor: pointer;
   accent-color: #2196f3;
+}
+
+/* Accessibility: Focus-visible for checkboxes */
+.item-checkbox input[type='checkbox']:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 .item-icon {
@@ -457,6 +470,13 @@
   background: #bdbdbd;
   color: white;
   transform: translateY(-1px);
+}
+
+/* Accessibility: Focus-visible for confirmation buttons */
+.confirm-yes-btn:focus-visible,
+.confirm-no-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Responsive Design */

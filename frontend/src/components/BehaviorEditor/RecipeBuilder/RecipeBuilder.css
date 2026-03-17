@@ -37,6 +37,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Accessibility: Focus-visible for recipe slots */
+.recipe-slot:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 .slot-content {
   display: flex;
   flex-direction: column;
@@ -126,6 +133,12 @@
 
 .item-card.selected {
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+/* Accessibility: Focus-visible for item cards */
+.item-card:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 .item-content {

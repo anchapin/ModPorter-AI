@@ -235,17 +235,10 @@ export const Dashboard: React.FC = () => {
                     Conversion Complete!
                   </h3>
                   <button
+                    className="dashboard-new-conversion-btn"
                     onClick={() => {
                       setShowReport(false);
                       setCurrentJobId(null);
-                    }}
-                    style={{
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
                     }}
                   >
                     Start New Conversion
