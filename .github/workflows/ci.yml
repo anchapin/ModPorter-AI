@@ -99,8 +99,25 @@ jobs:
           echo "📦 Dependencies changed, proceeding with image build"
         fi
 
+    - name: Initialize performance tracking
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Record prepare-base-images timings
+      if: steps.check-deps.outputs.dependencies-changed == 'true'
+      run: |
+        STEP_START="${{ env.STEP_START }}"
+        if [ -n "$STEP_START" ]; then
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "prepare-base-images - disk-cleanup" $STEP_START $STEP_END
+          echo "STEP_START=$STEP_END" >> $GITHUB_ENV
+        fi
+
     - name: Free up disk space
       if: steps.check-deps.outputs.dependencies-changed == 'true'
+      id: step-disk-cleanup
       run: |
         echo "🧹 Cleaning up disk space before Docker build"
         echo "Initial disk usage:"
@@ -174,6 +191,7 @@ jobs:
 
     - name: Build and push Python base image
       if: steps.check-deps.outputs.dependencies-changed == 'true' && steps.check-cache.outputs.should-build == 'true'
+      id: step-build-image
       uses: docker/build-push-action@v7
       with:
         context: .
@@ -183,6 +201,16 @@ jobs:
         cache-from: type=gha,scope=python-base-${{ env.CACHE_VERSION }}
         cache-to: type=gha,mode=max,scope=python-base-${{ env.CACHE_VERSION }}
         platforms: linux/amd64
+
+    - name: Record Python image build timing
+      if: steps.check-deps.outputs.dependencies-changed == 'true' && steps.check-cache.outputs.should-build == 'true'
+      run: |
+        STEP_START="${{ env.STEP_START }}"
+        if [ -n "$STEP_START" ]; then
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "prepare-base-images - build-python-image" $STEP_START $STEP_END
+          echo "STEP_START=$STEP_END" >> $GITHUB_ENV
+        fi
 
   integration-tests:
     name: Integration Tests
@@ -656,7 +684,22 @@ jobs:
       node-image: ${{ steps.image-tags.outputs.node-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
+    - name: Initialize performance tracking
+      run: |
+        ./scripts/ci-performance-tracker.sh init
+        echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Record disk cleanup timing
+      run: |
+        STEP_START="${{ env.STEP_START }}"
+        if [ -n "$STEP_START" ]; then
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "prepare-node-base - disk-cleanup" $STEP_START $STEP_END
+          echo "STEP_START=$STEP_END" >> $GITHUB_ENV
+        fi
+
     - name: Free up disk space
+      id: step-node-disk-cleanup
       run: |
         echo "🧹 Cleaning up disk space before Docker build"
         echo "Initial disk usage:"
@@ -709,6 +752,15 @@ jobs:
         else
           echo "should-build=true" >> $GITHUB_OUTPUT
           echo "🏗️ Node base image needs to be built"
+        fi
+
+    - name: Record prepare-node-base timing
+      run: |
+        STEP_START="${{ env.STEP_START }}"
+        if [ -n "$STEP_START" ]; then
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "prepare-node-base - total" $STEP_START $STEP_END
+          echo "STEP_START=$STEP_END" >> $GITHUB_ENV
         fi
 
   # Frontend tests run only when frontend code changes
