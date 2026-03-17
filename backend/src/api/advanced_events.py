@@ -387,7 +387,7 @@ async def create_event_system(
         return event_system
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to create event system")
+        raise HTTPException(status_code=500, detail=f"Failed to create event system: {str(e)}")
 
 
 @router.get(
@@ -449,7 +449,7 @@ async def test_event_system(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Event system test failed")
+        raise HTTPException(status_code=500, detail=f"Event system test failed: {str(e)}")
 
 
 @router.post(
@@ -472,7 +472,7 @@ async def generate_event_system_functions(
         return {"message": "Event system function generation started"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to start generation")
+        raise HTTPException(status_code=500, detail=f"Failed to start generation: {str(e)}")
 
 
 async def generate_event_functions_background(system_id: str, db: AsyncSession):
@@ -520,4 +520,4 @@ async def get_event_system_debug(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to get debug info")
+        raise HTTPException(status_code=500, detail=f"Failed to get debug info: {str(e)}")

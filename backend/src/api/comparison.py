@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import AI Engine components with fallback for testing
 try:
@@ -132,8 +135,7 @@ async def create_comparison(
     except HTTPException:  # Re-raise HTTPExceptions from validation
         raise
     except Exception as e:
-        # Log the exception e here if logging is set up
-        # logger.error(f"Comparison engine failed: {e}", exc_info=True)
+        logger.error(f"Comparison engine failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Comparison engine failed")
 
     # Map AI Engine models to SQLAlchemy DB models
@@ -166,8 +168,7 @@ async def create_comparison(
         # await session.refresh(fm)
     except Exception as e:
         await session.rollback()
-        # Log the exception e here
-        # logger.error(f"Database error during comparison creation: {e}", exc_info=True)
+        logger.error(f"Database error during comparison creation: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Database error")
 
     return ComparisonResponse(
