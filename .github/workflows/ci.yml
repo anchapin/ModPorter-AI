@@ -795,12 +795,10 @@ jobs:
         case "${{ matrix.test-type }}" in
           "unit")
             # Run tests with coverage in CI mode
-            cd frontend
             pnpm run test:ci
             ;;
           "build")
             # Build with production optimizations
-            cd frontend
             NODE_ENV=production pnpm run build
             echo "Build size analysis:"
             du -sh dist/* 2>/dev/null || echo "Build completed"
@@ -809,7 +807,6 @@ jobs:
             # Force reinstall of potentially corrupted packages from stale cache
             cd ..
             rm -rf node_modules
-            cd frontend
             pnpm install --frozen-lockfile
             cd frontend
             # Run linting
