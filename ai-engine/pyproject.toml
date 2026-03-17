@@ -16,8 +16,8 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901), flake8-unused-imports (F401), flake8-duplicate (F601)
-select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901", "F401", "F601"]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
