@@ -95,7 +95,9 @@ async def create_task(request: TaskEnqueueRequest):
             max_retries=task.max_retries,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to enqueue task: {str(e)}")
+        logger.error(f"Failed to enqueue task: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to enqueue task: Please try again.")
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

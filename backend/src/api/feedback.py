@@ -279,7 +279,9 @@ async def trigger_rl_training():
         raise
     except Exception as e:
         logger.error(f"RL training failed with error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"RL training failed: {str(e)}")
+        logger.error(f"RL training failed: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="RL training failed: Please try again.")
 
 
 @router.get("/ai/performance/agents")
@@ -441,4 +443,6 @@ async def compare_agent_performance(agent_types: List[str]):
         raise
     except Exception as e:
         logger.error(f"Failed to compare agents {agent_types}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to compare agents: {str(e)}")
+        logger.error(f"Failed to compare agents: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to compare agents: Please try again.")
