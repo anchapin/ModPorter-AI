@@ -15,7 +15,7 @@ on:
     paths:
       - '**/requirements*.txt'
       - '**/package.json'
-      - 'pnpm-lock.yaml'
+      - '**/package-lock.json'
       - 'docker/base-images/**'
 
 env:
