@@ -114,7 +114,7 @@ jobs:
     - name: Install frontend dependencies
       run: |
         cd frontend
-        npm install --frozen-lockfile
+        pnpm install --frozen-lockfile
 
     # Install system dependencies for health checks
     - name: Install system dependencies
