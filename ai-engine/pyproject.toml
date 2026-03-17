@@ -29,6 +29,7 @@ ignore = [
     "Q001",  # bad quote marks in multiline strings
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
+    "N818",  # Exception name should end with Error (legacy code style)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
     "F601",  # duplicate dictionary key (legacy code has intentional overrides)

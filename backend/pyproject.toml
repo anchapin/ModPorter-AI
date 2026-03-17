@@ -144,6 +144,8 @@ ignore = [
     "T201",  # print statements (legacy debug code)
     "F841",  # unused variable (common in exception handling)
     "F401",  # unused import (common with optional dependencies)
+    "N818",  # Exception name should end with Error (legacy code style)
+    "E712",  # avoid equality comparisons to True (legacy code style)
 ]
 
 [tool.ruff.lint.per-file-ignores]
