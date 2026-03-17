@@ -65,9 +65,35 @@ aggregate_metrics() {
     local summary_file="$PERF_DATA_DIR/summary.json"
     local total_duration=0
     local job_count=0
-    local steps_data="[]"
     
     log_info "Aggregating performance metrics..."
+    
+    # Ensure the directory exists
+    mkdir -p "$PERF_DATA_DIR"
+    
+    # Check if any step files exist
+    local step_files=("$PERF_DATA_DIR"/step-*.json)
+    if [ ! -f "${step_files[0]}" ]; then
+        log_info "No performance metrics found to aggregate"
+        # Create empty summary file
+        cat > "$summary_file" << EOF
+{
+  "workflow": "${GITHUB_WORKFLOW:-CI}",
+  "run_id": "${GITHUB_RUN_ID:-0}",
+  "run_number": "${GITHUB_RUN_NUMBER:-0}",
+  "branch": "${GITHUB_REF_NAME:-unknown}",
+  "commit": "${GITHUB_SHA:-unknown}",
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "total_duration_seconds": 0,
+  "steps_count": 0,
+  "average_step_duration": 0,
+  "steps": []
+}
+EOF
+        log_success "Created empty metrics summary (no step data found)"
+        cat "$summary_file"
+        return 0
+    fi
     
     # Collect all step metrics
     local steps_json="["
