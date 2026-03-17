@@ -20,8 +20,13 @@ import uuid
 
 from .structured_logging import correlation_id_var, set_correlation_id
 
-# Check if running in debug mode
-DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
+# Check if running in debug mode (use function for dynamic checking)
+def is_debug_mode() -> bool:
+    """Check if debug mode is enabled."""
+    return os.getenv("DEBUG", "false").lower() == "true"
+
+# For backwards compatibility, also provide the constant (deprecated)
+DEBUG_MODE = is_debug_mode()
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -147,6 +152,9 @@ ERROR_CATEGORIES = {
     "rate_limit_error": "Too many requests. Please wait and try again.",
     "timeout_error": "Operation timed out. Please try again.",
     "unknown_error": "An unexpected error occurred. Please try again later.",
+    # Additional error types
+    "conversion_error": "Conversion failed. Please check your mod file.",
+    "http_error": "An error occurred while processing your request.",
 }
 
 
@@ -266,6 +274,10 @@ def _categorize_error(error: Exception) -> str:
         return "validation_error"
     if isinstance(error, RateLimitException):
         return "rate_limit_error"
+    # Import ConversionError here to avoid circular imports
+    from .error_handler import ConversionError
+    if isinstance(error, ConversionError):
+        return "conversion_error"
 
     # Check error message patterns
     if "parse" in error_type.lower() or "parse" in error_msg:
@@ -276,7 +288,7 @@ def _categorize_error(error: Exception) -> str:
         return "logic_error"
     if "package" in error_type.lower() or "packag" in error_msg:
         return "package_error"
-    if "valid" in error_type.lower() or "valid" in error_msg:
+    if "valid" in error_type.lower() or "validation" in error_msg or "invalid" in error_msg:
         return "validation_error"
     if "network" in error_type.lower() or "connection" in error_msg:
         return "network_error"
@@ -313,32 +325,33 @@ def create_error_response(
         user_message = error.user_message
         message = error.message
         # Only include error details in debug mode
-        details = error.details if DEBUG_MODE else {}
+        details = error.details if is_debug_mode() else {}
     elif isinstance(error, HTTPException):
         error_type = "http_error"
         error_category = _categorize_error(error)
         user_message = error.detail
         message = str(error.detail)
         # Only include status code in production
-        details = {"status_code": error.status_code} if DEBUG_MODE else {}
+        details = {"status_code": error.status_code} if is_debug_mode() else {}
     elif isinstance(error, RequestValidationError):
         error_type = "validation_error"
         error_category = "validation_error"
         user_message = "Invalid request data. Please check your input."
         message = str(error)
         # In production, don't expose validation error details
-        details = {"errors": error.errors()} if DEBUG_MODE else {}
+        details = {"errors": error.errors()} if is_debug_mode() else {}
     else:
         error_type = "internal_error"
         error_category = _categorize_error(error)
         user_message = ERROR_CATEGORIES.get(
             error_category, "An unexpected error occurred. Please try again later."
         )
-        message = str(error)
+        # Only expose message in debug mode - never expose raw exception to clients
+        message = str(error) if is_debug_mode() else "An internal server error occurred"
         details = {}
 
     # Add traceback only in debug mode (NEVER in production)
-    if include_traceback and DEBUG_MODE:
+    if include_traceback and is_debug_mode():
         details["traceback"] = traceback.format_exc()
 
     return ErrorResponse(
