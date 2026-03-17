@@ -382,6 +382,17 @@ jobs:
           echo "✅ curl is already available"
         fi
 
+        # Check if lsb_release is available for Python testing frameworks
+        if ! command -v lsb_release &> /dev/null; then
+          echo "lsb_release not found, attempting to install..."
+          if [ -w /var/lib/apt/lists ]; then
+            apt-get update -qq
+            apt-get install -y -qq lsb-release
+          else
+            echo "⚠️ Cannot install lsb-release (no write permissions to /var/lib/apt/lists)"
+          fi
+        fi
+
     # Install Ollama for AI model testing
     # Install Ollama for AI model testing
     - name: Install Ollama
