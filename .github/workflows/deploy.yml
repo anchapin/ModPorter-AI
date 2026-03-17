@@ -230,6 +230,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Record build start time
+      id: build-start
+      run: |
+        echo "BUILD_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "build_start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Build started"
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
 
@@ -269,6 +276,44 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Record build metrics
+      id: build-metrics
+      run: |
+        BUILD_END=$(date +%s)
+        BUILD_START=${{ steps.build-start.outputs.BUILD_START || 0 }}
+        
+        if [ "$BUILD_START" != "0" ] && [ -n "$BUILD_START" ]; then
+          BUILD_DURATION=$((BUILD_END - BUILD_START))
+          echo "Docker build duration: ${BUILD_DURATION}s"
+        else
+          BUILD_DURATION=0
+        fi
+        
+        # Create performance metrics JSON
+        cat > build-performance.json << EOF
+        {
+          "workflow": "deploy",
+          "run_id": "${{ github.run_id }}",
+          "run_number": "${{ github.run_number }}",
+          "branch": "${{ github.ref_name }}",
+          "commit": "${{ github.sha }}",
+          "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "job": "build",
+          "duration_seconds": ${BUILD_DURATION},
+          "images_built": ["frontend", "backend", "ai-engine"]
+        }
+        EOF
+        
+        echo "Build performance metrics saved"
+        cat build-performance.json
+
+    - name: Upload build metrics
+      uses: actions/upload-artifact@v4
+      with:
+        name: deploy-build-metrics
+        path: build-performance.json
+        retention-days: 30
+
   deploy:
     needs: [build]
     runs-on: ubuntu-latest
@@ -278,6 +323,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+
+    - name: Record deploy start time
+      id: deploy-start
+      run: |
+        echo "DEPLOY_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "deploy_start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Deploy started"
 
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.9.1
@@ -329,6 +381,43 @@ jobs:
         curl -f http://${{ secrets.SERVER_HOST }}/api/v1/health
         curl -f http://${{ secrets.SERVER_HOST }}:8001/api/v1/health
         curl -f http://${{ secrets.SERVER_HOST }}/health
+
+    - name: Record deploy metrics
+      run: |
+        DEPLOY_END=$(date +%s)
+        DEPLOY_START=${{ steps.deploy-start.outputs.DEPLOY_START || 0 }}
+        
+        if [ "$DEPLOY_START" != "0" ] && [ -n "$DEPLOY_START" ]; then
+          DEPLOY_DURATION=$((DEPLOY_END - DEPLOY_START))
+          echo "Deploy duration: ${DEPLOY_DURATION}s"
+        else
+          DEPLOY_DURATION=0
+        fi
+        
+        # Create deploy metrics JSON
+        cat > deploy-performance.json << EOF
+        {
+          "workflow": "deploy",
+          "run_id": "${{ github.run_id }}",
+          "run_number": "${{ github.run_number }}",
+          "branch": "${{ github.ref_name }}",
+          "commit": "${{ github.sha }}",
+          "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "job": "deploy",
+          "duration_seconds": ${DEPLOY_DURATION},
+          "status": "${{ job.status }}"
+        }
+        EOF
+        
+        echo "Deploy performance metrics saved"
+        cat deploy-performance.json
+
+    - name: Upload deploy metrics
+      uses: actions/upload-artifact@v4
+      with:
+        name: deploy-metrics
+        path: deploy-performance.json
+        retention-days: 30
 
     - name: Notify deployment status
       uses: 8398a7/action-slack@v3

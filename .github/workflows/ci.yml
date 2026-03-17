@@ -41,10 +41,17 @@ jobs:
       dependencies: ${{ steps.changes.outputs.dependencies }}
       ruff: ${{ steps.changes.outputs.ruff }}
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: dorny/paths-filter@v3
+    - name: Record job start time
+      id: job-start
+      run: |
+        echo "JOB_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "job_start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Job started at $(date)"
+
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - uses: dorny/paths-filter@v3
         id: changes
         with:
           base: main
@@ -1129,6 +1136,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Record job start time
+      id: job-start
+      run: |
+        # Record start time for performance tracking
+        echo "JOB_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "JOB_START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Performance monitoring started"
+
     - name: Calculate performance metrics
       id: metrics
       run: |
@@ -1267,3 +1282,44 @@ jobs:
         echo "- Current optimization level: v2"
         echo "- Base images: Managed automatically"
         echo "- Cache retention: 7 days for test artifacts"
+
+    - name: Record performance metrics
+      id: record-metrics
+      run: |
+        # Calculate final metrics
+        JOB_END=$(date +%s)
+        JOB_START=${{ steps.job-start.outputs.JOB_START || 0 }}
+        
+        if [ "$JOB_START" != "0" ] && [ -n "$JOB_START" ]; then
+          DURATION=$((JOB_END - JOB_START))
+          echo "Performance monitoring duration: ${DURATION}s"
+        else
+          DURATION=0
+          echo "Could not calculate duration"
+        fi
+        
+        # Create performance metrics JSON
+        cat > performance-metrics.json << EOF
+        {
+          "workflow": "ci",
+          "run_id": "${{ github.run_id }}",
+          "run_number": "${{ github.run_number }}",
+          "branch": "${{ github.ref_name }}",
+          "commit": "${{ github.sha }}",
+          "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "job": "performance-monitoring",
+          "duration_seconds": ${DURATION},
+          "base_images_built": ${{ needs.prepare-base-images.outputs.should-build == 'true' && 'true' || 'false' }},
+          "dependencies_changed": ${{ needs.changes.outputs.dependencies == 'true' && 'true' || 'false' }}
+        }
+        EOF
+        
+        echo "Performance metrics saved"
+        cat performance-metrics.json
+
+    - name: Upload performance metrics
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-performance-metrics
+        path: performance-metrics.json
+        retention-days: 30

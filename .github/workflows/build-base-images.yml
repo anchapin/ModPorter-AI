@@ -30,6 +30,13 @@ jobs:
       packages: write
     
     steps:
+    - name: Record job start time
+      id: job-start
+      run: |
+        echo "JOB_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "job_start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Base image build started"
+
     - name: Free up disk space
       run: |
         echo "🧹 Cleaning up disk space before Docker build"
@@ -112,6 +119,40 @@ jobs:
           DOCKER_BUILDKIT=1
         no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
 
+    - name: Record Python base image build metrics
+      if: always()
+      run: |
+        JOB_END=$(date +%s)
+        JOB_START=${{ steps.job-start.outputs.JOB_START || 0 }}
+        
+        if [ "$JOB_START" != "0" ] && [ -n "$JOB_START" ]; then
+          DURATION=$((JOB_END - JOB_START))
+          echo "Python base image build duration: ${DURATION}s"
+        else
+          DURATION=0
+        fi
+        
+        cat > python-base-metrics.json << EOF
+        {
+          "workflow": "build-base-images",
+          "run_id": "${{ github.run_id }}",
+          "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "job": "build-python-base",
+          "duration_seconds": ${DURATION},
+          "image_built": ${{ steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true' }}
+        }
+        EOF
+        
+        echo "Python base image metrics saved"
+
+    - name: Upload Python base image metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-base-metrics
+        path: python-base-metrics.json
+        retention-days: 30
+
   build-node-base:
     runs-on: ubuntu-latest
     permissions:
@@ -119,6 +160,13 @@ jobs:
       packages: write
     
     steps:
+    - name: Record job start time
+      id: job-start
+      run: |
+        echo "JOB_START=$(date +%s)" >> $GITHUB_OUTPUT
+        echo "job_start_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+        echo "⏱️ Node base image build started"
+
     - name: Free up disk space
       run: |
         echo "🧹 Cleaning up disk space before Docker build"
@@ -197,3 +245,37 @@ jobs:
           BUILDKIT_INLINE_CACHE=1
           DOCKER_BUILDKIT=1
         no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
+
+    - name: Record Node base image build metrics
+      if: always()
+      run: |
+        JOB_END=$(date +%s)
+        JOB_START=${{ steps.job-start.outputs.JOB_START || 0 }}
+        
+        if [ "$JOB_START" != "0" ] && [ -n "$JOB_START" ]; then
+          DURATION=$((JOB_END - JOB_START))
+          echo "Node base image build duration: ${DURATION}s"
+        else
+          DURATION=0
+        fi
+        
+        cat > node-base-metrics.json << EOF
+        {
+          "workflow": "build-base-images",
+          "run_id": "${{ github.run_id }}",
+          "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "job": "build-node-base",
+          "duration_seconds": ${DURATION},
+          "image_built": ${{ steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true' }}
+        }
+        EOF
+        
+        echo "Node base image metrics saved"
+
+    - name: Upload Node base image metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: node-base-metrics
+        path: node-base-metrics.json
+        retention-days: 30
