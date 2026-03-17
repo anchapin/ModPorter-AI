@@ -137,10 +137,10 @@ async def create_comparison(
     except Exception:
         # Log the exception e here if logging is set up
         # logger.error(f"Comparison engine failed: {e}", exc_info=True)
-        logger.error(f"Comparison engine failed: {str(e)}", exc_info=True)
+        logger.error("Comparison engine failed", exc_info=True)
 
         raise HTTPException(
-            status_code=500, detail="Comparison engine failed: Please try again."
+            status_code=500, detail="An internal error occurred"
         )
 
     # Map AI Engine models to SQLAlchemy DB models
@@ -175,9 +175,9 @@ async def create_comparison(
         await session.rollback()
         # Log the exception e here
         # logger.error(f"Database error during comparison creation: {e}", exc_info=True)
-        logger.error(f"Database error: {str(e)}", exc_info=True)
+        logger.error("Database error", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Database error: Please try again.")
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     return ComparisonResponse(
         message="Comparison successfully created",

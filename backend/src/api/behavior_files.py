@@ -250,11 +250,11 @@ async def create_behavior_file(
             content=request.content,
         )
     except ValueError as e:
-        logger.error(f"Validation error creating behavior file: {str(e)}", exc_info=True)
+        logger.error("Validation error creating behavior file", exc_info=True)
         raise HTTPException(status_code=400, detail="Invalid behavior file data")
     except Exception as e:
-        logger.error(f"Failed to create behavior file: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create behavior file")
+        logger.error("Failed to create behavior file", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),

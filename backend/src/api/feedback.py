@@ -304,10 +304,10 @@ async def trigger_rl_training():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"RL training failed: {str(e)}", exc_info=True)
+        logger.error("RL training failed", exc_info=True)
 
         raise HTTPException(
-            status_code=500, detail="RL training failed: Please try again."
+            status_code=500, detail="An internal error occurred"
         )
 
 
@@ -487,9 +487,9 @@ async def compare_agent_performance(agent_types: List[str]):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to compare agents {agent_types}: {e}", exc_info=True)
-        logger.error(f"Failed to compare agents: {str(e)}", exc_info=True)
+        logger.error(f"Failed to compare agents {agent_types}", exc_info=True)
+        logger.error("Failed to compare agents", exc_info=True)
 
         raise HTTPException(
-            status_code=500, detail="Failed to compare agents: Please try again."
+            status_code=500, detail="An internal error occurred"
         )
