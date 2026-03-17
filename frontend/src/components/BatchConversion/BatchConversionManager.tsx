@@ -261,8 +261,9 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                   <button
                     className="remove-button"
                     onClick={() => removeItem(item.id)}
+                    aria-label="Remove item"
                   >
-                    ✕
+                    <span aria-hidden="true">✕</span>
                   </button>
                 )}
               </div>

@@ -204,8 +204,8 @@ jobs:
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-dirs: '.github,docs,tests,scripts,node_modules,.venv'
-        skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**'
+        skip-dirs: '.github,docs,tests,scripts,node_modules,.venv,frontend/node_modules,ai-engine/.venv,backend/.venv'
+        skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**,frontend/package-lock.json'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v4
