@@ -514,7 +514,6 @@ if __name__ == "__main__":
     bp_manifest = generate_bp_manifest(mock_addon, bp_manifest_uuid_module, bp_manifest_uuid_header)
     rp_manifest = generate_rp_manifest(mock_addon, rp_manifest_uuid_module, rp_manifest_uuid_header)
 
-
     mock_block_instance = mock_addon.blocks[0]  # Get the block from the list
     block_behavior_content = generate_block_behavior_json(mock_block_instance)
 
@@ -531,7 +530,6 @@ if __name__ == "__main__":
     mock_asset_on_disk_path = os.path.join(mock_addon_asset_dir, mock_addon.assets[0].path)
     with open(mock_asset_on_disk_path, "w") as f:
         f.write("dummy texture content")
-
 
     try:
         zip_bytes_io = create_mcaddon_zip(mock_addon, mock_asset_base_path)

@@ -195,7 +195,6 @@ Recommendations: {analysis["optimization_suggestions"][0]}
             "report_text": report_text,
         }
 
-
     except Exception as e:
         mock_benchmark_runs[run_id].update({"status": "failed", "error": str(e)})
 

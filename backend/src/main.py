@@ -822,7 +822,6 @@ async def call_ai_engine_conversion(job_id: str):
                 "conversion_options": conversion_options,
             }
 
-
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
@@ -831,7 +830,6 @@ async def call_ai_engine_conversion(job_id: str):
                     raise Exception(
                         f"AI Engine failed to start conversion: {response.status_code} - {response.text}"
                     )
-
 
                 # Poll AI Engine for status updates
                 while True:
@@ -961,7 +959,6 @@ async def start_conversion(
     # Write to Redis
     await cache.set_job_status(str(job.id), mirror.model_dump())
     await cache.set_progress(str(job.id), 0)
-
 
     # Try AI Engine first, fallback to simulation if it fails
     background_tasks.add_task(try_ai_engine_or_fallback, str(job.id))

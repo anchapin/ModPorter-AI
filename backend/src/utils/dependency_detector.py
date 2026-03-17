@@ -442,7 +442,6 @@ def analyze_dependencies(
 def print_report(report: DependencyReport, verbose: bool = False) -> None:
     """Print a dependency analysis report."""
 
-
     if report.unused_imports:
         # Group by file
         by_file: dict[str, list[UnusedImport]] = {}
@@ -462,7 +461,6 @@ def print_report(report: DependencyReport, verbose: bool = False) -> None:
             pass
     else:
         pass
-
 
 
 def main():

@@ -241,7 +241,12 @@ class ValidationAgent:
                     errors.append(f"Missing required header field: {field}")
             if "version" in header:
                 version = header["version"]
-                if isinstance(version, list) and len(version) == 3 or isinstance(version, str) and "." in version:
+                if (
+                    isinstance(version, list)
+                    and len(version) == 3
+                    or isinstance(version, str)
+                    and "." in version
+                ):
                     schema_compliance = True
 
         if "modules" in manifest_data:
@@ -396,9 +401,7 @@ async def process_validation_task(
             validation_jobs[job_id].status = ValidationJobStatus.COMPLETED
             validation_jobs[job_id].message = ValidationMessages.JOB_COMPLETED
 
-
     except Exception as e:
-
         with _validation_jobs_lock:
             validation_jobs[job_id].status = ValidationJobStatus.FAILED
             validation_jobs[job_id].message = f"{ValidationMessages.JOB_FAILED}: {str(e)}"

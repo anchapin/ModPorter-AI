@@ -325,9 +325,7 @@ class TestTrackQueryContext:
                 context["query_count"] = 5
 
         # Warning should be logged
-        assert (
-            True
-        )  # May vary by implementation
+        assert True  # May vary by implementation
 
 
 class TestIntegration:
