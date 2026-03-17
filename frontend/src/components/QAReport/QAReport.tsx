@@ -6,7 +6,7 @@ import './QAReport.css'; // Import the CSS file
 const generateSecureRandom = (): number => {
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
-  return array[0] / (0xFFFFFFFF + 1);
+  return array[0] / (0xffffffff + 1);
 };
 
 // Generate a secure random number in a range [min, max)

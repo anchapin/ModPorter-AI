@@ -374,10 +374,13 @@ export class RecipeValidation {
 
   private extractIngredientIds(pattern: Recipe['pattern']): string[] {
     return (
-      pattern?.flat().reduce((acc: string[], slot) => {
-        if (slot.item?.id) acc.push(slot.item.id);
-        return acc;
-      }, []).sort() || []
+      pattern
+        ?.flat()
+        .reduce((acc: string[], slot) => {
+          if (slot.item?.id) acc.push(slot.item.id);
+          return acc;
+        }, [])
+        .sort() || []
     );
   }
 
