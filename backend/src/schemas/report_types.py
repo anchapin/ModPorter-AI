@@ -164,12 +164,19 @@ class AssumptionsReport:
         if self.what_changed is None:
             self.what_changed = []
 
-    def add_what_changed(self, category: str, original: str, converted: str, reason: str = ""):
+    def add_what_changed(
+        self, category: str, original: str, converted: str, reason: str = ""
+    ):
         """Add an entry to the What Changed section."""
         if self.what_changed is None:
             self.what_changed = []
         self.what_changed.append(
-            {"category": category, "original": original, "converted": converted, "reason": reason}
+            {
+                "category": category,
+                "original": original,
+                "converted": converted,
+                "reason": reason,
+            }
         )
 
 
@@ -259,7 +266,9 @@ class InteractiveReport:
                 "conversion_patterns": self.feature_analysis.conversion_patterns,
             },
             "assumptions_report": {
-                "assumptions": [a.to_dict() for a in self.assumptions_report.assumptions],
+                "assumptions": [
+                    a.to_dict() for a in self.assumptions_report.assumptions
+                ],
                 "total_assumptions_count": self.assumptions_report.total_assumptions_count,
                 "impact_distribution": self.assumptions_report.impact_distribution,
                 "category_breakdown": {
@@ -333,7 +342,9 @@ class LogEntry(TypedDict):
 
 
 # Utility functions
-def create_report_metadata(job_id: str, report_id: Optional[str] = None) -> ReportMetadata:
+def create_report_metadata(
+    job_id: str, report_id: Optional[str] = None
+) -> ReportMetadata:
     """Create report metadata with current timestamp."""
     if report_id is None:
         report_id = f"report_{job_id}_{int(datetime.now().timestamp())}"

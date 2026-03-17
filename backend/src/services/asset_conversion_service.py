@@ -78,7 +78,11 @@ class AssetConversionService:
                     )
 
                     logger.error(f"Asset {asset_id} conversion failed: {error_message}")
-                    return {"success": False, "asset_id": asset_id, "error": error_message}
+                    return {
+                        "success": False,
+                        "asset_id": asset_id,
+                        "error": error_message,
+                    }
 
             except Exception as e:
                 # Update asset with error
@@ -182,7 +186,9 @@ class AssetConversionService:
         try:
             # Generate output path
             output_filename = f"{asset_id}_converted_{original_filename}"
-            output_path = os.path.join(CONVERSION_ASSETS_DIR, "converted", output_filename)
+            output_path = os.path.join(
+                CONVERSION_ASSETS_DIR, "converted", output_filename
+            )
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             # Prepare request for AI Engine
@@ -195,7 +201,9 @@ class AssetConversionService:
             }
 
             async def _do_request(c):
-                return await c.post(f"{self.ai_engine_url}/api/v1/convert/asset", json=request_data)
+                return await c.post(
+                    f"{self.ai_engine_url}/api/v1/convert/asset", json=request_data
+                )
 
             if client:
                 response = await _do_request(client)
@@ -211,9 +219,13 @@ class AssetConversionService:
                     "metadata": result.get("metadata", {}),
                 }
             else:
-                error_msg = f"AI Engine returned {response.status_code}: {response.text}"
+                error_msg = (
+                    f"AI Engine returned {response.status_code}: {response.text}"
+                )
                 logger.error(f"AI Engine error for asset {asset_id}: {error_msg}")
-                return await self._fallback_conversion(asset_type, input_path, output_path)
+                return await self._fallback_conversion(
+                    asset_type, input_path, output_path
+                )
 
         except Exception as e:
             logger.error(f"Error calling AI Engine for asset {asset_id}: {e}")
@@ -276,7 +288,9 @@ class AssetConversionService:
         except Exception as e:
             return {"success": False, "error": f"Texture conversion failed: {str(e)}"}
 
-    async def _fallback_sound_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
+    async def _fallback_sound_conversion(
+        self, input_path: str, output_path: str
+    ) -> Dict[str, Any]:
         """Simple sound conversion fallback"""
         try:
             import shutil
@@ -292,7 +306,9 @@ class AssetConversionService:
         except Exception as e:
             return {"success": False, "error": f"Sound conversion failed: {str(e)}"}
 
-    async def _fallback_model_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
+    async def _fallback_model_conversion(
+        self, input_path: str, output_path: str
+    ) -> Dict[str, Any]:
         """Simple model conversion fallback"""
         try:
             import shutil
@@ -308,7 +324,9 @@ class AssetConversionService:
         except Exception as e:
             return {"success": False, "error": f"Model conversion failed: {str(e)}"}
 
-    async def _fallback_copy_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
+    async def _fallback_copy_conversion(
+        self, input_path: str, output_path: str
+    ) -> Dict[str, Any]:
         """Simple copy fallback for unknown asset types"""
         try:
             import shutil

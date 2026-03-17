@@ -101,7 +101,9 @@ class QueryMonitor:
         normalized = " ".join(normalized.split())
         return normalized
 
-    def record_query(self, sql: str, execution_time: float, params: Optional[Tuple] = None):
+    def record_query(
+        self, sql: str, execution_time: float, params: Optional[Tuple] = None
+    ):
         """Record a query execution"""
         if not self.enabled:
             return
@@ -139,10 +141,14 @@ class QueryMonitor:
             )
             return sorted_queries[:limit]
 
-    def get_most_executed_queries(self, limit: int = 10) -> List[Tuple[str, QueryMetrics]]:
+    def get_most_executed_queries(
+        self, limit: int = 10
+    ) -> List[Tuple[str, QueryMetrics]]:
         """Get most frequently executed queries"""
         with self.lock:
-            sorted_queries = sorted(self.queries.items(), key=lambda x: x[1].count, reverse=True)
+            sorted_queries = sorted(
+                self.queries.items(), key=lambda x: x[1].count, reverse=True
+            )
             return sorted_queries[:limit]
 
     def reset(self):
@@ -254,12 +260,16 @@ def setup_query_monitoring(engine: Engine, enabled: bool = True):
     _query_monitor.enabled = enabled
 
     @event.listens_for(engine, "before_cursor_execute")
-    def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    def receive_before_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ):
         """Track query start time"""
         context._query_start_time = time.time()
 
     @event.listens_for(engine, "after_cursor_execute")
-    def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    def receive_after_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ):
         """Record query metrics"""
         if not hasattr(context, "_query_start_time"):
             return
@@ -297,7 +307,9 @@ def track_query_context(name: str, warn_threshold: int = 10):
                 f"(warn threshold: {warn_threshold})"
             )
         else:
-            logger.debug(f"Operation '{name}' executed {query_count} queries in {elapsed:.2f}s")
+            logger.debug(
+                f"Operation '{name}' executed {query_count} queries in {elapsed:.2f}s"
+            )
 
         _query_stack.pop()
 

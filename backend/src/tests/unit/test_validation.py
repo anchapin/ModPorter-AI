@@ -19,7 +19,9 @@ class TestValidationFramework(unittest.TestCase):
 
         if MAGIC_AVAILABLE:
             # Mock magic.from_buffer to return a valid MIME type
-            with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+            with patch(
+                "magic.from_buffer", return_value="application/zip"
+            ) as mock_magic:
                 result = self.framework.validate_upload(mock_file, filename)
                 mock_magic.assert_called_once()
                 self.assertTrue(result.is_valid)
@@ -70,7 +72,9 @@ class TestValidationFramework(unittest.TestCase):
         filename = "actually_a_zip.txt"
 
         if MAGIC_AVAILABLE:
-            with patch("magic.from_buffer", return_value="application/zip") as mock_magic:
+            with patch(
+                "magic.from_buffer", return_value="application/zip"
+            ) as mock_magic:
                 result = self.framework.validate_upload(mock_file, filename)
                 mock_magic.assert_called_once()
                 self.assertTrue(result.is_valid)
@@ -88,7 +92,9 @@ class TestValidationFramework(unittest.TestCase):
         filename = "valid_mod.jar"
 
         if MAGIC_AVAILABLE:
-            with patch("magic.from_buffer", return_value="application/java-archive") as mock_magic:
+            with patch(
+                "magic.from_buffer", return_value="application/java-archive"
+            ) as mock_magic:
                 result = self.framework.validate_upload(mock_file, filename)
                 mock_magic.assert_called_once()
                 self.assertTrue(result.is_valid)
@@ -106,7 +112,9 @@ class TestValidationFramework(unittest.TestCase):
         filename = "another_mod.jar"
 
         if MAGIC_AVAILABLE:
-            with patch("magic.from_buffer", return_value="application/x-jar") as mock_magic:
+            with patch(
+                "magic.from_buffer", return_value="application/x-jar"
+            ) as mock_magic:
                 result = self.framework.validate_upload(mock_file, filename)
                 mock_magic.assert_called_once()
                 self.assertTrue(result.is_valid)

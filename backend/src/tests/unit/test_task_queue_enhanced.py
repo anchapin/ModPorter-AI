@@ -80,7 +80,9 @@ class TestRetryPolicy:
 
     def test_should_retry_with_retryable_errors(self):
         """Test retry decision with specific retryable errors."""
-        policy = RetryPolicy(max_retries=3, retryable_errors=["TimeoutError", "ConnectionError"])
+        policy = RetryPolicy(
+            max_retries=3, retryable_errors=["TimeoutError", "ConnectionError"]
+        )
 
         assert policy.should_retry("TimeoutError", 0) is True
         assert policy.should_retry("ConnectionError", 1) is True
@@ -222,7 +224,9 @@ class TestQueueHealth:
 
     def test_to_dict(self):
         """Test health serialization."""
-        health = QueueHealth(total_queued=10, total_processing=2, avg_processing_time_seconds=5.5)
+        health = QueueHealth(
+            total_queued=10, total_processing=2, avg_processing_time_seconds=5.5
+        )
 
         data = health.to_dict()
 

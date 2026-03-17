@@ -64,7 +64,9 @@ except ImportError:
                         confidence_score=0.75,
                     )
                 ],
-                assumptions_applied=[{"id": "TEST_ASSUMPTION", "description": "Test assumption"}],
+                assumptions_applied=[
+                    {"id": "TEST_ASSUMPTION", "description": "Test assumption"}
+                ],
                 confidence_scores={"overall": 0.8},
             )
 
@@ -75,7 +77,6 @@ except ImportError:
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-
 
 # Adjust these imports based on your actual database setup location
 # from db.declarative_base import Base # Base is not directly used here, models are
@@ -92,7 +93,9 @@ router = APIRouter()
 class CreateComparisonRequest(BaseModel):
     conversion_id: str = Field(..., description="UUID of the conversion job")
     java_mod_path: str = Field(..., description="Path to the original Java mod")
-    bedrock_addon_path: str = Field(..., description="Path to the converted Bedrock add-on")
+    bedrock_addon_path: str = Field(
+        ..., description="Path to the converted Bedrock add-on"
+    )
 
 
 class ComparisonResponse(BaseModel):
@@ -136,7 +139,9 @@ async def create_comparison(
         # logger.error(f"Comparison engine failed: {e}", exc_info=True)
         logger.error(f"Comparison engine failed: {str(e)}", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Comparison engine failed: Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Comparison engine failed: Please try again."
+        )
 
     # Map AI Engine models to SQLAlchemy DB models
     db_comparison_result = ComparisonResultDb(
@@ -207,7 +212,9 @@ async def get_comparison_result(
     try:
         comparison_uuid = uuid.UUID(comparison_id_str)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid comparison_id format. Must be a UUID.")
+        raise HTTPException(
+            status_code=400, detail="Invalid comparison_id format. Must be a UUID."
+        )
 
     stmt = (
         select(ComparisonResultDb)
@@ -245,6 +252,8 @@ async def get_comparison_result(
         asset_diff=db_comparison.asset_diff,
         assumptions_applied=db_comparison.assumptions_applied,
         confidence_scores=db_comparison.confidence_scores,
-        created_at=(db_comparison.created_at.isoformat() if db_comparison.created_at else None),
+        created_at=(
+            db_comparison.created_at.isoformat() if db_comparison.created_at else None
+        ),
         feature_mappings=feature_mappings_list,
     )

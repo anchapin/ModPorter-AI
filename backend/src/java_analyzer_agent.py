@@ -52,7 +52,9 @@ class JavaAnalyzerAgent:
                 # Handle empty JARs gracefully
                 if not file_list:
                     logger.warning(f"Empty JAR file: {jar_path}")
-                    result["success"] = True  # Consider empty JAR as successfully analyzed
+                    result["success"] = (
+                        True  # Consider empty JAR as successfully analyzed
+                    )
                     result["registry_name"] = (
                         "unknown:copper_block"  # Default fallback for empty JARs
                     )
@@ -79,7 +81,9 @@ class JavaAnalyzerAgent:
                     if not texture_path:
                         result["errors"].append("Could not find block texture in JAR")
                     if not registry_name or registry_name == "unknown:block":
-                        result["errors"].append("Could not determine block registry name")
+                        result["errors"].append(
+                            "Could not determine block registry name"
+                        )
 
                 return result
 
@@ -106,7 +110,9 @@ class JavaAnalyzerAgent:
                 return file_path
         return None
 
-    def _extract_registry_name_from_jar(self, jar: zipfile.ZipFile, file_list: List[str]) -> str:
+    def _extract_registry_name_from_jar(
+        self, jar: zipfile.ZipFile, file_list: List[str]
+    ) -> str:
         """
         Extract registry name from Java source files or class names using javalang.
         Uses multiple strategies:
@@ -280,7 +286,9 @@ class JavaAnalyzerAgent:
         if name.endswith("Block") and len(name) > 5:
             name = name[:-5]  # Remove 'Block' from the end
         elif name.startswith("Block") and len(name) > 5 and name[5].isupper():
-            name = name[5:]  # Remove 'Block' from the start if it's a prefix like BlockOfCopper
+            name = name[
+                5:
+            ]  # Remove 'Block' from the start if it's a prefix like BlockOfCopper
 
         # Convert CamelCase to snake_case
         import re

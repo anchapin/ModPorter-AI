@@ -52,7 +52,9 @@ def sample_addon_asset_model():
 class TestGetAddonAsset:
     """Tests for get_addon_asset function"""
 
-    async def test_get_addon_asset_success(self, mock_session, sample_addon_asset_model):
+    async def test_get_addon_asset_success(
+        self, mock_session, sample_addon_asset_model
+    ):
         """Test successful addon asset retrieval"""
         # Setup - mock the execute method directly
         mock_result = MagicMock()
@@ -60,7 +62,9 @@ class TestGetAddonAsset:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Execute
-        result = await crud.get_addon_asset(mock_session, str(sample_addon_asset_model.id))
+        result = await crud.get_addon_asset(
+            mock_session, str(sample_addon_asset_model.id)
+        )
 
         # Verify
         assert result == sample_addon_asset_model
@@ -122,7 +126,9 @@ class TestCreateAddonAsset:
         mock_session.refresh = AsyncMock()
 
         # Execute - this should raise ValueError due to path traversal
-        with pytest.raises(ValueError, match="Invalid file path: path traversal detected"):
+        with pytest.raises(
+            ValueError, match="Invalid file path: path traversal detected"
+        ):
             await crud.create_addon_asset(
                 mock_session,
                 addon_id=sample_addon_id,
@@ -168,7 +174,9 @@ class TestCreateAddonAsset:
 class TestUpdateAddonAsset:
     """Tests for update_addon_asset function"""
 
-    async def test_update_addon_asset_success(self, mock_session, sample_addon_asset_model):
+    async def test_update_addon_asset_success(
+        self, mock_session, sample_addon_asset_model
+    ):
         """Test successful addon asset update"""
         # Setup
         asset_id = str(sample_addon_asset_model.id)
@@ -201,7 +209,9 @@ class TestUpdateAddonAsset:
 
         with patch("db.crud.get_addon_asset", return_value=sample_addon_asset_model):
             # Execute - this should raise ValueError due to path traversal
-            with pytest.raises(ValueError, match="Invalid file path: path traversal detected"):
+            with pytest.raises(
+                ValueError, match="Invalid file path: path traversal detected"
+            ):
                 await crud.update_addon_asset(
                     mock_session,
                     asset_id=asset_id,
@@ -224,7 +234,9 @@ class TestUpdateAddonAsset:
                 mock_session, asset_id="invalid-uuid", asset_type="texture"
             )
 
-    async def test_update_addon_asset_no_commit(self, mock_session, sample_addon_asset_model):
+    async def test_update_addon_asset_no_commit(
+        self, mock_session, sample_addon_asset_model
+    ):
         """Test addon asset update without committing"""
         asset_id = str(sample_addon_asset_model.id)
 
@@ -247,7 +259,9 @@ class TestUpdateAddonAsset:
 class TestDeleteAddonAsset:
     """Tests for delete_addon_asset function"""
 
-    async def test_delete_addon_asset_success(self, mock_session, sample_addon_asset_model):
+    async def test_delete_addon_asset_success(
+        self, mock_session, sample_addon_asset_model
+    ):
         """Test successful addon asset deletion"""
         asset_id = str(sample_addon_asset_model.id)
 
@@ -312,7 +326,9 @@ class TestListAddonAssets:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Execute
-        result = await crud.list_addon_assets(mock_session, sample_addon_id, asset_type="texture")
+        result = await crud.list_addon_assets(
+            mock_session, sample_addon_id, asset_type="texture"
+        )
 
         # Verify
         assert result == []
@@ -334,7 +350,10 @@ class TestAddonAssetCRUDIntegration:
             mock_create.return_value = mock_asset
 
             created_asset = await crud.create_addon_asset(
-                mock_session, addon_id=sample_addon_id, file=sample_file, asset_type="texture"
+                mock_session,
+                addon_id=sample_addon_id,
+                file=sample_file,
+                asset_type="texture",
             )
             assert created_asset == mock_asset
 
@@ -342,7 +361,9 @@ class TestAddonAssetCRUDIntegration:
         with patch("db.crud.get_addon_asset") as mock_get:
             mock_get.return_value = mock_asset
 
-            retrieved_asset = await crud.get_addon_asset(mock_session, str(mock_asset.id))
+            retrieved_asset = await crud.get_addon_asset(
+                mock_session, str(mock_asset.id)
+            )
             assert retrieved_asset == mock_asset
 
     async def test_addon_asset_update_workflow(

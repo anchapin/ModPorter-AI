@@ -22,7 +22,9 @@ def parse_json_file(file_path: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def find_pack_folder(pack_root_path: str, pack_type_suffix: str = "BP") -> Optional[str]:
+def find_pack_folder(
+    pack_root_path: str, pack_type_suffix: str = "BP"
+) -> Optional[str]:
     """Finds a behavior or resource pack folder by common naming conventions."""
     for item in os.listdir(pack_root_path):
         item_path = os.path.join(pack_root_path, item)
@@ -66,7 +68,9 @@ def transform_pack_to_addon_data(
                 .replace(" Behavior Pack", "")
                 .replace(" BP", "")
             )
-            addon_description = bp_manifest["header"].get("description", addon_description)
+            addon_description = bp_manifest["header"].get(
+                "description", addon_description
+            )
     elif rp_path:  # Or from RP manifest
         rp_manifest = parse_json_file(os.path.join(rp_path, "manifest.json"))
         if rp_manifest and isinstance(rp_manifest.get("header"), dict):
@@ -76,7 +80,9 @@ def transform_pack_to_addon_data(
                 .replace(" Resource Pack", "")
                 .replace(" RP", "")
             )
-            addon_description = rp_manifest["header"].get("description", addon_description)
+            addon_description = rp_manifest["header"].get(
+                "description", addon_description
+            )
 
     blocks: List[pydantic_addon_models.AddonBlockCreate] = []
     # assets list (old) removed here
@@ -92,8 +98,12 @@ def transform_pack_to_addon_data(
                 if block_file_name.endswith(".json"):
                     block_json_path = os.path.join(bp_blocks_path, block_file_name)
                     block_data_bp = parse_json_file(block_json_path)
-                    if block_data_bp and isinstance(block_data_bp.get("minecraft:block"), dict):
-                        description = block_data_bp["minecraft:block"].get("description", {})
+                    if block_data_bp and isinstance(
+                        block_data_bp.get("minecraft:block"), dict
+                    ):
+                        description = block_data_bp["minecraft:block"].get(
+                            "description", {}
+                        )
                         identifier = description.get("identifier")
                         if not identifier:
                             continue  # Skip block if no identifier
@@ -113,11 +123,13 @@ def transform_pack_to_addon_data(
                         block_create = pydantic_addon_models.AddonBlockCreate(
                             identifier=identifier,
                             properties=properties_for_db,
-                            behavior=pydantic_addon_models.AddonBehaviorCreate(
-                                data=behavior_data_for_db
-                            )
-                            if behavior_data_for_db
-                            else None,
+                            behavior=(
+                                pydantic_addon_models.AddonBehaviorCreate(
+                                    data=behavior_data_for_db
+                                )
+                                if behavior_data_for_db
+                                else None
+                            ),
                         )
                         blocks.append(block_create)
 
@@ -129,7 +141,9 @@ def transform_pack_to_addon_data(
                     recipe_json_path = os.path.join(bp_recipes_path, recipe_file_name)
                     recipe_data = parse_json_file(recipe_json_path)
                     if recipe_data:
-                        recipes.append(pydantic_addon_models.AddonRecipeCreate(data=recipe_data))
+                        recipes.append(
+                            pydantic_addon_models.AddonRecipeCreate(data=recipe_data)
+                        )
 
     # 2. Parse Resource Pack (Assets, client-side block definitions)
     if rp_path:

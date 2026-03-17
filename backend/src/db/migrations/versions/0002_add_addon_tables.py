@@ -30,7 +30,9 @@ def upgrade():
         ),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
-        sa.Column("user_id", sa.String(), nullable=False),  # Assuming user_id is a string for now
+        sa.Column(
+            "user_id", sa.String(), nullable=False
+        ),  # Assuming user_id is a string for now
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

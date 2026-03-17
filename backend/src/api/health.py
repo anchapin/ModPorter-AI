@@ -27,7 +27,9 @@ router = APIRouter(tags=["health"])
 class HealthStatus(BaseModel):
     """Health check response model"""
 
-    status: str = Field(..., description="Overall health status: healthy, degraded, or unhealthy")
+    status: str = Field(
+        ..., description="Overall health status: healthy, degraded, or unhealthy"
+    )
     timestamp: str = Field(..., description="ISO timestamp of the health check")
     checks: Dict[str, Any] = Field(..., description="Individual check results")
 
@@ -157,7 +159,11 @@ async def readiness_check():
         timestamp=datetime.utcnow().isoformat(),
         checks={
             "dependencies": {
-                c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
+                c.name: {
+                    "status": c.status,
+                    "latency_ms": c.latency_ms,
+                    "message": c.message,
+                }
                 for c in checks
             }
         },
@@ -181,7 +187,12 @@ async def liveness_check():
     return HealthStatus(
         status="healthy",
         timestamp=datetime.utcnow().isoformat(),
-        checks={"application": {"status": "running", "message": "Application process is running"}},
+        checks={
+            "application": {
+                "status": "running",
+                "message": "Application process is running",
+            }
+        },
     )
 
 

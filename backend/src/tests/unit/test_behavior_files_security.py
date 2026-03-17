@@ -93,14 +93,19 @@ class TestBehaviorFilesSecurity:
             "db.crud.get_behavior_files_by_conversion",
             side_effect=AsyncMock(return_value=[malicious_file]),
         )
-        mocker.patch("db.crud.get_job", side_effect=AsyncMock(return_value=sample_conversion_job))
         mocker.patch(
-            "db.crud.get_addon_details", side_effect=AsyncMock(return_value=None), create=True
+            "db.crud.get_job", side_effect=AsyncMock(return_value=sample_conversion_job)
+        )
+        mocker.patch(
+            "db.crud.get_addon_details",
+            side_effect=AsyncMock(return_value=None),
+            create=True,
         )
 
         # Mock CacheService.set_export_data
         mock_set = mocker.patch(
-            "services.cache.CacheService.set_export_data", side_effect=AsyncMock(return_value=True)
+            "services.cache.CacheService.set_export_data",
+            side_effect=AsyncMock(return_value=True),
         )
 
         # Execute export

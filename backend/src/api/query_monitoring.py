@@ -85,7 +85,9 @@ async def get_most_executed() -> Dict[str, Any]:
             "queries": report["most_executed_queries"],
         }
     except Exception:
-        raise HTTPException(status_code=500, detail="Failed to fetch most executed queries")
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch most executed queries"
+        )
 
 
 @router.post("/reset", summary="Reset Monitoring Data")

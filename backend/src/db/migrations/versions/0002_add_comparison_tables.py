@@ -23,7 +23,9 @@ def upgrade():
         "comparison_results",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("conversion_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("structural_diff", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column(
+            "structural_diff", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
         sa.Column("code_diff", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("asset_diff", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column(
@@ -31,7 +33,9 @@ def upgrade():
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=True,
         ),
-        sa.Column("confidence_scores", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column(
+            "confidence_scores", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
         sa.Column(
             "created_at",
             sa.TIMESTAMP(timezone=True),

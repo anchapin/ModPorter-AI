@@ -177,7 +177,9 @@ class ConversionService:
             )
 
             # Transfer file to AI Engine (via shared volume in Docker)
-            logger.info(f"Transferring file to AI Engine for conversion {conversion_id}")
+            logger.info(
+                f"Transferring file to AI Engine for conversion {conversion_id}"
+            )
             try:
                 ai_engine_mod_path = await self._transfer_file_to_ai_engine(
                     file_path=file_path,
@@ -186,7 +188,9 @@ class ConversionService:
                 logger.info(f"File transferred to {ai_engine_mod_path}")
             except Exception as e:
                 logger.error(f"Failed to transfer file to AI Engine: {e}")
-                await self._handle_error(conversion_id, f"File transfer failed: {str(e)}")
+                await self._handle_error(
+                    conversion_id, f"File transfer failed: {str(e)}"
+                )
                 raise
 
             # Start conversion on AI Engine
@@ -207,7 +211,9 @@ class ConversionService:
                 raise
             except Exception as e:
                 logger.error(f"Failed to start conversion: {e}")
-                await self._handle_error(conversion_id, f"Failed to start conversion: {str(e)}")
+                await self._handle_error(
+                    conversion_id, f"Failed to start conversion: {str(e)}"
+                )
                 raise
 
             # Poll for status updates
@@ -321,7 +327,9 @@ class ConversionService:
                     details={"current_stage": current_stage},
                 )
 
-                logger.debug(f"Conversion {conversion_id} progress: {progress}% - {message}")
+                logger.debug(
+                    f"Conversion {conversion_id} progress: {progress}% - {message}"
+                )
 
                 # Stop polling on terminal states
                 if ai_status in ("completed", "failed", "cancelled"):
@@ -437,7 +445,9 @@ async def process_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
             options=options,
         )
 
-        logger.info(f"Conversion task completed: {conversion_id}, status: {result.get('status')}")
+        logger.info(
+            f"Conversion task completed: {conversion_id}, status: {result.get('status')}"
+        )
         return result
 
     except Exception as e:

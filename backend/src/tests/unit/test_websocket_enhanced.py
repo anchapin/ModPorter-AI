@@ -118,7 +118,9 @@ class TestHealthConfig:
 
     def test_custom_config(self):
         """Test custom health configuration."""
-        config = HealthConfig(heartbeat_interval_seconds=15.0, stale_connection_seconds=60.0)
+        config = HealthConfig(
+            heartbeat_interval_seconds=15.0, stale_connection_seconds=60.0
+        )
 
         assert config.heartbeat_interval_seconds == 15.0
         assert config.stale_connection_seconds == 60.0
@@ -170,7 +172,9 @@ class TestRateLimiter:
         """Test getting wait time for blocked clients."""
         limiter = RateLimiter(
             RateLimitConfig(
-                max_messages_per_second=2, max_messages_per_minute=10, cooldown_seconds=2.0
+                max_messages_per_second=2,
+                max_messages_per_minute=10,
+                cooldown_seconds=2.0,
             )
         )
 
@@ -341,7 +345,9 @@ class TestConnectionLifecycle:
         assert info.state == ConnectionState.CONNECTED
 
         # Activity
-        await manager.handle_message(websocket, "conversion-123", {"type": MessageType.PING.value})
+        await manager.handle_message(
+            websocket, "conversion-123", {"type": MessageType.PING.value}
+        )
         assert info.messages_received == 1
 
         # Broadcast
@@ -363,7 +369,11 @@ class TestMessageProtocol:
         # All messages should have type and optional data/timestamp
         message = {
             "type": MessageType.AGENT_PROGRESS.value,
-            "data": {"agent": "JavaAnalyzerAgent", "status": "in_progress", "progress": 50},
+            "data": {
+                "agent": "JavaAnalyzerAgent",
+                "status": "in_progress",
+                "progress": 50,
+            },
             "timestamp": datetime.utcnow().isoformat(),
         }
 

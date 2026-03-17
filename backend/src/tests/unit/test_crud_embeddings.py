@@ -37,12 +37,16 @@ async def test_create_document_embedding(test_db_session: AsyncSession):
     )
     assert created is not None
     assert created.id is not None
-    assert all(pytest.approx(a) == b for a, b in zip(created.embedding, SAMPLE_EMBEDDING_1))
+    assert all(
+        pytest.approx(a) == b for a, b in zip(created.embedding, SAMPLE_EMBEDDING_1)
+    )
     assert created.document_source == SAMPLE_SOURCE_1
     assert created.content_hash == SAMPLE_HASH_1
 
     # Fetch it back
-    fetched = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
+    fetched = await crud.get_document_embedding_by_id(
+        db=test_db_session, embedding_id=created.id
+    )
     assert fetched is not None
     assert fetched.id == created.id
     assert all(
@@ -75,7 +79,9 @@ async def test_get_document_embedding_by_hash(test_db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_get_document_embedding_by_id_not_found(test_db_session: AsyncSession):
-    not_found = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=uuid4())
+    not_found = await crud.get_document_embedding_by_id(
+        db=test_db_session, embedding_id=uuid4()
+    )
     assert not_found is None
 
 
@@ -101,16 +107,20 @@ async def test_update_document_embedding(test_db_session: AsyncSession):
     assert updated.id == created.id
     assert updated.document_source == updated_source
     assert all(
-        pytest.approx(a) == b for a, b in zip(updated.embedding, updated_embedding_vector)
+        pytest.approx(a) == b
+        for a, b in zip(updated.embedding, updated_embedding_vector)
     )  # Comparison might fail
     assert updated.content_hash == SAMPLE_HASH_1  # Hash should not change on update
 
     # Fetch again to verify
-    fetched = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
+    fetched = await crud.get_document_embedding_by_id(
+        db=test_db_session, embedding_id=created.id
+    )
     assert fetched is not None
     assert fetched.document_source == updated_source
     assert all(
-        pytest.approx(a) == b for a, b in zip(fetched.embedding, updated_embedding_vector)
+        pytest.approx(a) == b
+        for a, b in zip(fetched.embedding, updated_embedding_vector)
     )  # Comparison might fail
 
 
@@ -133,7 +143,9 @@ async def test_update_document_embedding_no_changes(test_db_session: AsyncSessio
         content_hash=SAMPLE_HASH_1,
     )
     # Call update with no actual change parameters (both None)
-    updated = await crud.update_document_embedding(db=test_db_session, embedding_id=created.id)
+    updated = await crud.update_document_embedding(
+        db=test_db_session, embedding_id=created.id
+    )
     assert updated is not None
     assert updated.id == created.id
     assert updated.embedding == SAMPLE_EMBEDDING_1
@@ -149,16 +161,22 @@ async def test_delete_document_embedding(test_db_session: AsyncSession):
         content_hash=SAMPLE_HASH_1,
     )
 
-    deleted = await crud.delete_document_embedding(db=test_db_session, embedding_id=created.id)
+    deleted = await crud.delete_document_embedding(
+        db=test_db_session, embedding_id=created.id
+    )
     assert deleted is True
 
-    not_found = await crud.get_document_embedding_by_id(db=test_db_session, embedding_id=created.id)
+    not_found = await crud.get_document_embedding_by_id(
+        db=test_db_session, embedding_id=created.id
+    )
     assert not_found is None
 
 
 @pytest.mark.asyncio
 async def test_delete_document_embedding_not_found(test_db_session: AsyncSession):
-    deleted = await crud.delete_document_embedding(db=test_db_session, embedding_id=uuid4())
+    deleted = await crud.delete_document_embedding(
+        db=test_db_session, embedding_id=uuid4()
+    )
     assert deleted is False
 
 
@@ -166,19 +184,30 @@ async def test_delete_document_embedding_not_found(test_db_session: AsyncSession
     reason="VECTOR type and l2_distance operator not supported on SQLite. Requires PostgreSQL for full test."
 )
 @pytest.mark.asyncio
-async def test_find_similar_embeddings_sqlite_placeholder(test_db_session: AsyncSession):
+async def test_find_similar_embeddings_sqlite_placeholder(
+    test_db_session: AsyncSession,
+):
     # This test will be skipped when run against SQLite.
     # Its purpose here is to outline the structure.
     # A real test would require a PostgreSQL test database with pgvector.
 
     await crud.create_document_embedding(
-        db=test_db_session, embedding=[0.1, 0.1], document_source="doc1", content_hash="h1"
+        db=test_db_session,
+        embedding=[0.1, 0.1],
+        document_source="doc1",
+        content_hash="h1",
     )  # Simplified dimension for placeholder
     await crud.create_document_embedding(
-        db=test_db_session, embedding=[0.2, 0.2], document_source="doc2", content_hash="h2"
+        db=test_db_session,
+        embedding=[0.2, 0.2],
+        document_source="doc2",
+        content_hash="h2",
     )
     await crud.create_document_embedding(
-        db=test_db_session, embedding=[0.9, 0.9], document_source="doc3", content_hash="h3"
+        db=test_db_session,
+        embedding=[0.9, 0.9],
+        document_source="doc3",
+        content_hash="h3",
     )
 
     query_embedding = [0.15, 0.15]
@@ -200,7 +229,9 @@ async def test_find_similar_embeddings_sqlite_placeholder(test_db_session: Async
         # The test is marked skip, so this code block might not even be hit if pytest skips it early.
         # If not skipped early, we can assert that the error is what we expect (e.g., OperationalError from SQLite)
         # For now, the skip decorator handles this.
-        print(f"find_similar_embeddings failed as expected on SQLite (or was skipped): {e}")
+        print(
+            f"find_similar_embeddings failed as expected on SQLite (or was skipped): {e}"
+        )
         pass
 
 
@@ -229,7 +260,8 @@ import asyncio
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line(
-        "markers", "pgvector: marks tests as requiring PostgreSQL with pgvector extension"
+        "markers",
+        "pgvector: marks tests as requiring PostgreSQL with pgvector extension",
     )
 
 
@@ -267,7 +299,9 @@ def sample_similar_embeddings():
 
 
 @pytest.fixture
-async def populated_embeddings_db(test_db_session: AsyncSession, sample_similar_embeddings):
+async def populated_embeddings_db(
+    test_db_session: AsyncSession, sample_similar_embeddings
+):
     """Populate database with embeddings for similarity testing."""
     vectors = sample_similar_embeddings
 
@@ -298,7 +332,9 @@ async def populated_embeddings_db(test_db_session: AsyncSession, sample_similar_
 @pytest.mark.pgvector
 @pytest.mark.asyncio
 async def test_find_similar_embeddings_basic(
-    test_db_session: AsyncSession, sample_similar_embeddings, pgvector_extension_available
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available,
 ):
     """Test basic similarity search returns correct results ordered by distance."""
     if not pgvector_extension_available:
@@ -345,7 +381,9 @@ async def test_find_similar_embeddings_basic(
 @pytest.mark.pgvector
 @pytest.mark.asyncio
 async def test_find_similar_embeddings_limit(
-    test_db_session: AsyncSession, sample_similar_embeddings, pgvector_extension_available
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available,
 ):
     """Test that limit parameter is respected."""
     if not pgvector_extension_available:
@@ -434,7 +472,9 @@ async def test_find_similar_embeddings_high_dimension(
 @pytest.mark.pgvector
 @pytest.mark.asyncio
 async def test_find_similar_embeddings_returns_metadata(
-    test_db_session: AsyncSession, sample_similar_embeddings, pgvector_extension_available
+    test_db_session: AsyncSession,
+    sample_similar_embeddings,
+    pgvector_extension_available,
 ):
     """Test that similarity search returns complete embedding metadata."""
     if not pgvector_extension_available:

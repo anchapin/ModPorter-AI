@@ -77,7 +77,9 @@ class TestFileUploadEndpoint:
         file_data = ("test.txt", io.BytesIO(file_content), "text/plain")
 
         response = client.post("/api/v1/upload", files={"file": file_data})
-        assert response.status_code == 415  # FastAPI returns 415 for unsupported media types
+        assert (
+            response.status_code == 415
+        )  # FastAPI returns 415 for unsupported media types
 
         data = response.json()
         assert "File type .txt not supported" in data["detail"]
@@ -97,7 +99,12 @@ class TestConversionEndpoints:
     @patch("fastapi.BackgroundTasks.add_task")
     @pytest.mark.asyncio
     async def test_start_conversion(
-        self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient
+        self,
+        mock_add_task,
+        mock_get_job,
+        mock_update_job,
+        mock_create_job,
+        client: TestClient,
     ):
         """Test starting a conversion job."""
         # Mock the database calls
@@ -136,7 +143,12 @@ class TestConversionEndpoints:
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
     def test_get_conversion_status(
-        self, mock_add_task, mock_get_job, mock_update_job, mock_create_job, client: TestClient
+        self,
+        mock_add_task,
+        mock_get_job,
+        mock_update_job,
+        mock_create_job,
+        client: TestClient,
     ):
         """Test getting conversion job status."""
         # Mock database calls
@@ -288,7 +300,9 @@ class TestConversionRequestValidation:
         response = client.post("/api/v1/convert", json=request_data)
         assert response.status_code == 200
 
-    def test_conversion_request_missing_file_id(self, client: TestClient):  # Renamed test
+    def test_conversion_request_missing_file_id(
+        self, client: TestClient
+    ):  # Renamed test
         """Test conversion request with missing file_id."""
         request_data = {"original_filename": "test-mod.jar", "target_version": "1.20.0"}
         # This will likely fail due to Pydantic model validation on backend if file_id is mandatory

@@ -87,7 +87,9 @@ class TrainingDataResponse(BaseModel):
 
 
 @router.post("/feedback", response_model=FeedbackResponse)
-async def submit_feedback(feedback: FeedbackRequest, db: AsyncSession = Depends(get_db)):
+async def submit_feedback(
+    feedback: FeedbackRequest, db: AsyncSession = Depends(get_db)
+):
     """Submit feedback for a conversion job."""
     logger.info(f"Receiving feedback for job {feedback.job_id}")
 
@@ -117,7 +119,9 @@ async def submit_feedback(feedback: FeedbackRequest, db: AsyncSession = Depends(
     for field in rating_fields:
         value = getattr(feedback, field, None)
         if value is not None and (value < 1 or value > 5):
-            raise HTTPException(status_code=400, detail=f"{field} must be between 1 and 5")
+            raise HTTPException(
+                status_code=400, detail=f"{field} must be between 1 and 5"
+            )
 
     # Check if job exists
     try:
@@ -125,7 +129,8 @@ async def submit_feedback(feedback: FeedbackRequest, db: AsyncSession = Depends(
         if not job:
             logger.warning(f"Job not found: {feedback.job_id}")
             raise HTTPException(
-                status_code=404, detail=f"Conversion job with ID '{feedback.job_id}' not found"
+                status_code=404,
+                detail=f"Conversion job with ID '{feedback.job_id}' not found",
             )
     except Exception as e:
         logger.error(f"Database error checking job {feedback.job_id}: {e}")
@@ -199,21 +204,25 @@ async def get_training_data(
             "id": str(feedback.id),
             "job_id": str(feedback.job_id),
             "input_file_path": job.input_data.get("file_path", "") if job else "",
-            "output_file_path": f"conversion_outputs/{feedback.job_id}_converted.mcaddon"
-            if job
-            else "",
+            "output_file_path": (
+                f"conversion_outputs/{feedback.job_id}_converted.mcaddon" if job else ""
+            ),
             "feedback": {
                 "feedback_type": feedback.feedback_type,
                 "user_id": feedback.user_id,
                 "comment": feedback.comment,
                 "quality_rating": getattr(feedback, "quality_rating", None),
                 "specific_issues": getattr(feedback, "specific_issues", None),
-                "suggested_improvements": getattr(feedback, "suggested_improvements", None),
+                "suggested_improvements": getattr(
+                    feedback, "suggested_improvements", None
+                ),
                 "conversion_accuracy": getattr(feedback, "conversion_accuracy", None),
                 "visual_quality": getattr(feedback, "visual_quality", None),
                 "performance_rating": getattr(feedback, "performance_rating", None),
                 "ease_of_use": getattr(feedback, "ease_of_use", None),
-                "agent_specific_feedback": getattr(feedback, "agent_specific_feedback", None),
+                "agent_specific_feedback": getattr(
+                    feedback, "agent_specific_feedback", None
+                ),
                 "created_at": feedback.created_at.isoformat(),
             },
         }
@@ -231,7 +240,12 @@ async def get_training_data(
 
         training_data.append(feedback_dict)
 
-    return {"data": training_data, "total": len(training_data), "skip": skip, "limit": limit}
+    return {
+        "data": training_data,
+        "total": len(training_data),
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.post("/ai/training/trigger")
@@ -248,19 +262,28 @@ async def trigger_rl_training():
             sys.path.append(ai_engine_path)
 
         try:
-            from training_manager import fetch_training_data_from_backend, train_model_with_feedback
+            from training_manager import (
+                fetch_training_data_from_backend,
+                train_model_with_feedback,
+            )
         except ImportError as ie:
             logger.error(f"Failed to import RL training components: {ie}")
-            raise HTTPException(status_code=503, detail="RL training system is not available")
+            raise HTTPException(
+                status_code=503, detail="RL training system is not available"
+            )
 
         # Fetch training data
         backend_url = os.getenv("MODPORTER_BACKEND_URL", "http://localhost:8000")
         logger.info(f"Fetching training data from {backend_url}")
 
-        training_data = await fetch_training_data_from_backend(backend_url, skip=0, limit=50)
+        training_data = await fetch_training_data_from_backend(
+            backend_url, skip=0, limit=50
+        )
 
         if training_data:
-            logger.info(f"Found {len(training_data)} training items, starting RL training")
+            logger.info(
+                f"Found {len(training_data)} training items, starting RL training"
+            )
             # Run RL training
             result = await train_model_with_feedback(training_data)
             logger.info("RL training completed successfully")
@@ -273,7 +296,10 @@ async def trigger_rl_training():
             }
         else:
             logger.warning("No training data available for RL training")
-            return {"status": "warning", "message": "No training data available for RL training"}
+            return {
+                "status": "warning",
+                "message": "No training data available for RL training",
+            }
 
     except HTTPException:
         raise
@@ -281,7 +307,9 @@ async def trigger_rl_training():
         logger.error(f"RL training failed with error: {e}", exc_info=True)
         logger.error(f"RL training failed: {str(e)}", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="RL training failed: Please try again.")
+        raise HTTPException(
+            status_code=500, detail="RL training failed: Please try again."
+        )
 
 
 @router.get("/ai/performance/agents")
@@ -308,7 +336,9 @@ async def get_agent_performance():
         optimizer = create_agent_optimizer()
         system_metrics = optimizer.get_system_wide_metrics()
 
-        logger.info(f"Retrieved metrics for {system_metrics.get('total_agents', 0)} agents")
+        logger.info(
+            f"Retrieved metrics for {system_metrics.get('total_agents', 0)} agents"
+        )
 
         return {"status": "success", "metrics": system_metrics}
 
@@ -317,7 +347,8 @@ async def get_agent_performance():
     except Exception as e:
         logger.error(f"Failed to get agent performance: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail="Failed to retrieve agent performance. Please try again."
+            status_code=500,
+            detail="Failed to retrieve agent performance. Please try again.",
         )
 
 
@@ -367,11 +398,19 @@ async def get_specific_agent_performance(agent_type: str):
             logger.info(f"Found performance data for {agent_type}")
 
             # Convert to dict safely
-            metrics_dict = latest_metrics.__dict__ if hasattr(latest_metrics, "__dict__") else {}
+            metrics_dict = (
+                latest_metrics.__dict__ if hasattr(latest_metrics, "__dict__") else {}
+            )
 
-            return {"status": "success", "agent_type": agent_type, "metrics": metrics_dict}
+            return {
+                "status": "success",
+                "agent_type": agent_type,
+                "metrics": metrics_dict,
+            }
         else:
-            logger.warning(f"No performance data available for agent type: {agent_type}")
+            logger.warning(
+                f"No performance data available for agent type: {agent_type}"
+            )
             return {
                 "status": "warning",
                 "message": f"No performance data available for agent type: {agent_type}",
@@ -381,7 +420,9 @@ async def get_specific_agent_performance(agent_type: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get performance for agent {agent_type}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to get performance for agent {agent_type}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve performance for agent {agent_type}. Please try again.",
@@ -397,7 +438,8 @@ async def compare_agent_performance(agent_types: List[str]):
         # Validate input
         if not agent_types or len(agent_types) < 2:
             raise HTTPException(
-                status_code=400, detail="At least 2 agent types are required for comparison"
+                status_code=400,
+                detail="At least 2 agent types are required for comparison",
             )
 
         valid_agent_types = [
@@ -407,7 +449,9 @@ async def compare_agent_performance(agent_types: List[str]):
             "conversion_planner",
             "qa_validator",
         ]
-        invalid_agents = [agent for agent in agent_types if agent not in valid_agent_types]
+        invalid_agents = [
+            agent for agent in agent_types if agent not in valid_agent_types
+        ]
         if invalid_agents:
             raise HTTPException(
                 status_code=400,
@@ -435,7 +479,9 @@ async def compare_agent_performance(agent_types: List[str]):
         logger.info(f"Generated comparison report for {len(agent_types)} agents")
 
         # Convert to dict safely
-        report_dict = comparison_report.__dict__ if hasattr(comparison_report, "__dict__") else {}
+        report_dict = (
+            comparison_report.__dict__ if hasattr(comparison_report, "__dict__") else {}
+        )
 
         return {"status": "success", "comparison_report": report_dict}
 
@@ -445,4 +491,6 @@ async def compare_agent_performance(agent_types: List[str]):
         logger.error(f"Failed to compare agents {agent_types}: {e}", exc_info=True)
         logger.error(f"Failed to compare agents: {str(e)}", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Failed to compare agents: Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to compare agents: Please try again."
+        )

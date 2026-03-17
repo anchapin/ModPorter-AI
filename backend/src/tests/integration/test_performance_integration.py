@@ -102,7 +102,9 @@ class TestPerformanceIntegration:
             "thresholds": {"cpu": 60, "memory": 100},
         }
 
-        scenario_response = self.client.post("/performance/scenarios", json=custom_scenario)
+        scenario_response = self.client.post(
+            "/performance/scenarios", json=custom_scenario
+        )
         assert scenario_response.status_code == 201
 
         scenario_data = scenario_response.json()
@@ -186,7 +188,10 @@ class TestPerformanceIntegration:
     def test_api_error_handling(self):
         """Test API error handling for various scenarios."""
         # Test 1: Invalid scenario ID
-        invalid_run_request = {"scenario_id": "nonexistent_scenario", "device_type": "desktop"}
+        invalid_run_request = {
+            "scenario_id": "nonexistent_scenario",
+            "device_type": "desktop",
+        }
 
         response = self.client.post("/performance/run", json=invalid_run_request)
         assert response.status_code == 404

@@ -17,7 +17,9 @@ class TestChunkedUploadValidation:
         data = {"chunk_number": 1, "total_chunks": 1}
         files = {"chunk": ("chunk.bin", b"some data", "application/octet-stream")}
 
-        response = client.post(f"/api/v1/uploads/{invalid_uuid}/chunk", data=data, files=files)
+        response = client.post(
+            f"/api/v1/uploads/{invalid_uuid}/chunk", data=data, files=files
+        )
 
         # FastAPI validation should return 422 Unprocessable Entity
         # Note: Depending on router ordering and strictness, it might return 404 if it tries to match path params first
@@ -54,7 +56,9 @@ class TestChunkedUploadValidation:
         data = {"chunk_number": 1, "total_chunks": 1}
         files = {"chunk": ("chunk.bin", b"some data", "application/octet-stream")}
 
-        response = client.post(f"/api/v1/uploads/{valid_uuid}/chunk", data=data, files=files)
+        response = client.post(
+            f"/api/v1/uploads/{valid_uuid}/chunk", data=data, files=files
+        )
 
         # Should be 404 because session doesn't exist in cache
         assert response.status_code == 404

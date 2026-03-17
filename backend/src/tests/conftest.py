@@ -64,8 +64,12 @@ def pytest_sessionstart(session):
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
                     if not db_url.startswith("sqlite"):
-                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
-                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
+                        await conn.execute(
+                            text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+                        )
+                        await conn.execute(
+                            text('CREATE EXTENSION IF NOT EXISTS "vector"')
+                        )
                     await conn.run_sync(Base.metadata.create_all)
 
             # Create a new event loop for this operation
@@ -115,6 +119,7 @@ def client():
         # Import dependencies
         from src.main import app
         from db.base import get_db
+
         # from db import models
 
         # Create a fresh session maker per test to avoid connection sharing

@@ -75,7 +75,9 @@ class BuildPerformanceService:
         self._active_builds: Dict[str, BuildPerformanceMetrics] = {}
         self._lock = threading.Lock()
 
-    def start_tracking(self, request: BuildPerformanceStartRequest) -> BuildPerformanceMetrics:
+    def start_tracking(
+        self, request: BuildPerformanceStartRequest
+    ) -> BuildPerformanceMetrics:
         """
         Start tracking performance for a new build.
 
@@ -191,7 +193,9 @@ class BuildPerformanceService:
         Returns:
             Updated BuildPerformanceMetrics or None
         """
-        return self.update_stage(build_id, stage_name, status="running", metadata=metadata)
+        return self.update_stage(
+            build_id, stage_name, status="running", metadata=metadata
+        )
 
     def complete_stage(
         self,
@@ -215,7 +219,11 @@ class BuildPerformanceService:
             Updated BuildPerformanceMetrics or None
         """
         return self.update_stage(
-            build_id, stage_name, status=status, error_message=error_message, metadata=metadata
+            build_id,
+            stage_name,
+            status=status,
+            error_message=error_message,
+            metadata=metadata,
         )
 
     def end_tracking(
@@ -280,7 +288,9 @@ class BuildPerformanceService:
             if METRICS_AVAILABLE:
                 try:
                     duration_seconds = (
-                        build.total_duration_ms / 1000 if build.total_duration_ms else None
+                        build.total_duration_ms / 1000
+                        if build.total_duration_ms
+                        else None
                     )
                     metrics.record_build_performance(
                         status=request.status,
@@ -440,14 +450,20 @@ class BuildPerformanceService:
         failed_builds = [b for b in builds if b.status == "failed"]
 
         # Calculate duration stats
-        durations = [b.total_duration_ms for b in builds if b.total_duration_ms is not None]
+        durations = [
+            b.total_duration_ms for b in builds if b.total_duration_ms is not None
+        ]
 
         stats = BuildPerformanceStats(
             total_builds=len(builds),
             completed_builds=len(completed_builds),
             failed_builds=len(failed_builds),
             period_start=min(b.created_at for b in builds) if builds else None,
-            period_end=max(b.completed_at for b in builds if b.completed_at) if builds else None,
+            period_end=(
+                max(b.completed_at for b in builds if b.completed_at)
+                if builds
+                else None
+            ),
         )
 
         if durations:
@@ -458,7 +474,11 @@ class BuildPerformanceService:
             stats.p99_duration_ms = durations_sorted[int(len(durations_sorted) * 0.99)]
 
         # Calculate average performance score
-        scores = [b.performance_score for b in completed_builds if b.performance_score is not None]
+        scores = [
+            b.performance_score
+            for b in completed_builds
+            if b.performance_score is not None
+        ]
         if scores:
             stats.average_performance_score = sum(scores) / len(scores)
 
@@ -500,7 +520,10 @@ class BuildPerformanceService:
 
         # Factor 2: Duration efficiency (30%) - based on expected max duration
         max_expected_duration_ms = 600000  # 10 minutes
-        if build.total_duration_ms and build.total_duration_ms < max_expected_duration_ms:
+        if (
+            build.total_duration_ms
+            and build.total_duration_ms < max_expected_duration_ms
+        ):
             duration_score = 1 - (build.total_duration_ms / max_expected_duration_ms)
         else:
             duration_score = 0
@@ -598,7 +621,9 @@ class BuildPerformanceService:
                 }
                 for s in build.stages
             ],
-            resource_usage=build.resource_usage.model_dump() if build.resource_usage else None,
+            resource_usage=(
+                build.resource_usage.model_dump() if build.resource_usage else None
+            ),
             metadata=build.metadata,
             created_at=build.created_at,
             completed_at=build.completed_at,
@@ -653,7 +678,9 @@ class BuildPerformanceService:
             yield
             self.complete_stage(build_id, stage_name, status="completed")
         except Exception as e:
-            self.complete_stage(build_id, stage_name, status="failed", error_message=str(e))
+            self.complete_stage(
+                build_id, stage_name, status="failed", error_message=str(e)
+            )
             raise
 
 

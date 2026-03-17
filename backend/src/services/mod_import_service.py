@@ -215,7 +215,9 @@ class ModImportService:
                 return []
 
         elif platform == ModPlatform.MODRINTH:
-            return await self.modrinth.get_project_versions(mod_id, game_version, loader)
+            return await self.modrinth.get_project_versions(
+                mod_id, game_version, loader
+            )
 
         return []
 

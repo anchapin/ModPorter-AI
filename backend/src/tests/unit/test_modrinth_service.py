@@ -354,7 +354,9 @@ class TestModrinthURLParsing:
         """Test parsing resourcepack URL."""
         service = ModrinthService()
 
-        result = service.parse_modrinth_url("https://modrinth.com/resourcepack/test-pack")
+        result = service.parse_modrinth_url(
+            "https://modrinth.com/resourcepack/test-pack"
+        )
 
         assert result is not None
         assert result["slug"] == "test-pack"
@@ -384,7 +386,9 @@ class TestModrinthURLParsing:
         """Test parsing URL with query parameters."""
         service = ModrinthService()
 
-        result = service.parse_modrinth_url("https://modrinth.com/mod/test-mod?param=value")
+        result = service.parse_modrinth_url(
+            "https://modrinth.com/mod/test-mod?param=value"
+        )
 
         assert result is not None
         assert result["slug"] == "test-mod"
@@ -401,7 +405,9 @@ class TestModrinthURLParsing:
         """Test parsing CurseForge URL (should return None)."""
         service = ModrinthService()
 
-        result = service.parse_modrinth_url("https://curseforge.com/minecraft/mods/test-mod")
+        result = service.parse_modrinth_url(
+            "https://curseforge.com/minecraft/mods/test-mod"
+        )
 
         assert result is None
 
@@ -518,7 +524,9 @@ class TestModrinthServiceEdgeCases:
             mock_instance.__aexit__ = AsyncMock(return_value=None)
             mock_client.return_value = mock_instance
 
-            result = await service.get_file_download_url("version1", file_hash="wrong_hash")
+            result = await service.get_file_download_url(
+                "version1", file_hash="wrong_hash"
+            )
 
             # Should return empty string when hash doesn't match
             assert result == ""
@@ -579,9 +587,13 @@ class TestModrinthServiceIntegration:
             def get_side_effect(*args, **kwargs):
                 call_count[0] += 1
                 if call_count[0] == 1:
-                    return MagicMock(json=lambda: mock_search_response, raise_for_status=Mock())
+                    return MagicMock(
+                        json=lambda: mock_search_response, raise_for_status=Mock()
+                    )
                 else:
-                    return MagicMock(json=lambda: mock_project_response, raise_for_status=Mock())
+                    return MagicMock(
+                        json=lambda: mock_project_response, raise_for_status=Mock()
+                    )
 
             mock_instance.get = AsyncMock(side_effect=get_side_effect)
             mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)

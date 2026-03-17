@@ -61,9 +61,11 @@ class FeatureFlag:
         """Convert flag to dictionary representation."""
         return {
             "name": self.name,
-            "flag_type": self.flag_type.value
-            if isinstance(self.flag_type, Enum)
-            else self.flag_type,
+            "flag_type": (
+                self.flag_type.value
+                if isinstance(self.flag_type, Enum)
+                else self.flag_type
+            ),
             "default_value": self.default_value,
             "description": self.description,
             "enabled": self.enabled,
@@ -137,7 +139,9 @@ class FeatureFlagManager:
                     enabled=is_enabled,
                     description=f"Loaded from environment variable {key}",
                 )
-                logger.debug(f"Loaded feature flag '{flag_name}' from environment: {is_enabled}")
+                logger.debug(
+                    f"Loaded feature flag '{flag_name}' from environment: {is_enabled}"
+                )
 
     def _load_from_file(self, config_file: str) -> None:
         """Load feature flags from a JSON configuration file."""
@@ -157,7 +161,9 @@ class FeatureFlagManager:
         except json.JSONDecodeError as e:
             logger.error(f"Error parsing feature flag config file: {e}")
 
-    def _compute_percentage_hash(self, flag_name: str, user_id: Optional[str] = None) -> float:
+    def _compute_percentage_hash(
+        self, flag_name: str, user_id: Optional[str] = None
+    ) -> float:
         """
         Compute a deterministic hash for percentage-based flags.
 
@@ -273,7 +279,9 @@ class FeatureFlagManager:
             return hash_value < rollout_percentage
 
         elif flag.flag_type == FeatureFlagType.VARIANT:
-            logger.warning(f"Use get_variant() for VARIANT type flags, not is_enabled()")
+            logger.warning(
+                f"Use get_variant() for VARIANT type flags, not is_enabled()"
+            )
             return flag.enabled
 
         return flag.enabled
@@ -362,7 +370,9 @@ class FeatureFlagManager:
             flag.percentage = max(0.0, min(100.0, percentage))
             logger.info(f"Set feature flag '{name}' percentage to {flag.percentage}%")
             return True
-        logger.warning(f"Cannot set percentage for flag '{name}': not found or wrong type")
+        logger.warning(
+            f"Cannot set percentage for flag '{name}': not found or wrong type"
+        )
         return False
 
     def set_user_context(self, user_id: Optional[str]) -> None:
@@ -399,7 +409,11 @@ class FeatureFlagManager:
         Returns:
             Dictionary containing all feature flag configurations
         """
-        return {"feature_flags": {name: flag.to_dict() for name, flag in self._flags.items()}}
+        return {
+            "feature_flags": {
+                name: flag.to_dict() for name, flag in self._flags.items()
+            }
+        }
 
     def save_config(self, config_file: Optional[str] = None) -> bool:
         """
@@ -595,7 +609,9 @@ DEFAULT_FLAGS = {
 }
 
 
-def initialize_default_flags(manager: Optional[FeatureFlagManager] = None) -> FeatureFlagManager:
+def initialize_default_flags(
+    manager: Optional[FeatureFlagManager] = None,
+) -> FeatureFlagManager:
     """
     Initialize the feature flag manager with default flags.
 

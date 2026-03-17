@@ -94,7 +94,9 @@ CONVERSION_RETRY_POLICY = RetryPolicy(
     max_delay_seconds=600.0,  # 10 minutes
     retryable_errors=["TimeoutError", "ConnectionError", "ResourceLimitError"],
 )
-QUICK_RETRY_POLICY = RetryPolicy(max_retries=2, initial_delay_seconds=0.5, max_delay_seconds=5.0)
+QUICK_RETRY_POLICY = RetryPolicy(
+    max_retries=2, initial_delay_seconds=0.5, max_delay_seconds=5.0
+)
 
 
 @dataclass
@@ -128,13 +130,17 @@ class Task:
             "priority": self.priority.value,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "result": self.result,
             "error": self.error,
             "error_type": self.error_type,
             "retry_count": self.retry_count,
             "max_retries": self.max_retries,
-            "next_retry_at": self.next_retry_at.isoformat() if self.next_retry_at else None,
+            "next_retry_at": (
+                self.next_retry_at.isoformat() if self.next_retry_at else None
+            ),
             "timeout_seconds": self.timeout_seconds,
         }
 
@@ -148,20 +154,26 @@ class Task:
             status=TaskStatus(data["status"]),
             priority=TaskPriority(data["priority"]),
             created_at=datetime.fromisoformat(data["created_at"]),
-            started_at=datetime.fromisoformat(data["started_at"])
-            if data.get("started_at")
-            else None,
-            completed_at=datetime.fromisoformat(data["completed_at"])
-            if data.get("completed_at")
-            else None,
+            started_at=(
+                datetime.fromisoformat(data["started_at"])
+                if data.get("started_at")
+                else None
+            ),
+            completed_at=(
+                datetime.fromisoformat(data["completed_at"])
+                if data.get("completed_at")
+                else None
+            ),
             result=data.get("result"),
             error=data.get("error"),
             error_type=data.get("error_type"),
             retry_count=data.get("retry_count", 0),
             max_retries=data.get("max_retries", 3),
-            next_retry_at=datetime.fromisoformat(data["next_retry_at"])
-            if data.get("next_retry_at")
-            else None,
+            next_retry_at=(
+                datetime.fromisoformat(data["next_retry_at"])
+                if data.get("next_retry_at")
+                else None
+            ),
             timeout_seconds=data.get("timeout_seconds", 300),
         )
 
@@ -344,7 +356,9 @@ class AsyncTaskQueue:
 
             # Get oldest task (lowest score = oldest timestamp)
             now = time.time()
-            task_ids = await redis.zrangebyscore(queue_name, min=0, max=now, start=0, num=1)
+            task_ids = await redis.zrangebyscore(
+                queue_name, min=0, max=now, start=0, num=1
+            )
 
             if task_ids:
                 task_id = task_ids[0]
@@ -367,7 +381,9 @@ class AsyncTaskQueue:
 
                     # Add to processing set
                     await redis.sadd(self._processing_set, task_id)
-                    await redis.set(f"task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+                    await redis.set(
+                        f"task:{task.id}", json.dumps(task.to_dict()), ex=86400
+                    )
 
                     # Update metrics
                     await self._increment_metric("tasks_dequeued")
@@ -377,7 +393,9 @@ class AsyncTaskQueue:
 
         return None
 
-    async def complete(self, task_id: str, result: Optional[Dict[str, Any]] = None) -> None:
+    async def complete(
+        self, task_id: str, result: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Mark a task as completed"""
         redis = await self._get_redis()
 
@@ -405,7 +423,11 @@ class AsyncTaskQueue:
             logger.info(f"Task {task_id} completed")
 
     async def fail(
-        self, task_id: str, error: str, error_type: Optional[str] = None, retry: bool = True
+        self,
+        task_id: str,
+        error: str,
+        error_type: Optional[str] = None,
+        retry: bool = True,
     ) -> bool:
         """
         Mark a task as failed.
@@ -540,7 +562,9 @@ class AsyncTaskQueue:
         """
         redis = await self._get_redis()
 
-        task_ids = await redis.zrange(self._dead_letter_queue, start=offset, end=offset + limit - 1)
+        task_ids = await redis.zrange(
+            self._dead_letter_queue, start=offset, end=offset + limit - 1
+        )
 
         tasks = []
         for task_id in task_ids:
@@ -705,7 +729,9 @@ class AsyncTaskQueue:
                 issues.append(f"Dead letter queue has {health.total_dead_letter} tasks")
 
             if health.total_processing > 20:
-                issues.append(f"High number of processing tasks: {health.total_processing}")
+                issues.append(
+                    f"High number of processing tasks: {health.total_processing}"
+                )
 
             health.issues = issues
             health.healthy = len(issues) == 0

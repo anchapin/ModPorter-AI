@@ -5,7 +5,6 @@ Removes str(e) from HTTPException details and adds proper logging.
 """
 
 import re
-import os
 from pathlib import Path
 
 

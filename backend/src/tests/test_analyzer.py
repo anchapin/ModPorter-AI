@@ -37,7 +37,8 @@ class TestJavaAnalyzerMVP:
 
                 # Add a block texture
                 zf.writestr(
-                    "assets/simple_copper/textures/block/polished_copper.png", b"fake_png_data"
+                    "assets/simple_copper/textures/block/polished_copper.png",
+                    b"fake_png_data",
                 )
 
                 # Add a block class
@@ -54,7 +55,11 @@ class TestJavaAnalyzerMVP:
         with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
             with zipfile.ZipFile(jar_file.name, "w") as zf:
                 # Add fabric.mod.json
-                fabric_mod = {"schemaVersion": 1, "id": "copper_mod", "version": "1.0.0"}
+                fabric_mod = {
+                    "schemaVersion": 1,
+                    "id": "copper_mod",
+                    "version": "1.0.0",
+                }
                 zf.writestr("fabric.mod.json", json.dumps(fabric_mod))
 
                 # Add Java source with @Register annotation
@@ -72,11 +77,14 @@ public class PolishedCopperBlock extends Block {
     }
 }
 """
-                zf.writestr("com/example/PolishedCopperBlock.java", java_source.encode("utf-8"))
+                zf.writestr(
+                    "com/example/PolishedCopperBlock.java", java_source.encode("utf-8")
+                )
 
                 # Add texture
                 zf.writestr(
-                    "assets/copper_mod/textures/block/polished_copper.png", b"fake_png_data"
+                    "assets/copper_mod/textures/block/polished_copper.png",
+                    b"fake_png_data",
                 )
 
             yield jar_file.name
@@ -89,7 +97,11 @@ public class PolishedCopperBlock extends Block {
         with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
             with zipfile.ZipFile(jar_file.name, "w") as zf:
                 # Add metadata only
-                fabric_mod = {"schemaVersion": 1, "id": "no_texture_mod", "version": "1.0.0"}
+                fabric_mod = {
+                    "schemaVersion": 1,
+                    "id": "no_texture_mod",
+                    "version": "1.0.0",
+                }
                 zf.writestr("fabric.mod.json", json.dumps(fabric_mod))
                 zf.writestr("com/example/SomeBlock.class", b"fake_class_data")
 
@@ -104,13 +116,18 @@ public class PolishedCopperBlock extends Block {
             with zipfile.ZipFile(jar_file.name, "w") as zf:
                 # Add mcmod.info
                 mcmod_info = [
-                    {"modid": "copper_extras", "name": "Copper Extras", "version": "1.0.0"}
+                    {
+                        "modid": "copper_extras",
+                        "name": "Copper Extras",
+                        "version": "1.0.0",
+                    }
                 ]
                 zf.writestr("mcmod.info", json.dumps(mcmod_info))
 
                 # Add texture and class
                 zf.writestr(
-                    "assets/copper_extras/textures/block/copper_ingot_block.png", b"fake_png_data"
+                    "assets/copper_extras/textures/block/copper_ingot_block.png",
+                    b"fake_png_data",
                 )
                 zf.writestr("com/example/CopperIngotBlock.class", b"fake_class_data")
 
@@ -124,7 +141,10 @@ public class PolishedCopperBlock extends Block {
 
         assert result["success"] is True
         assert result["registry_name"] == "simple_copper:polished_copper"
-        assert result["texture_path"] == "assets/simple_copper/textures/block/polished_copper.png"
+        assert (
+            result["texture_path"]
+            == "assets/simple_copper/textures/block/polished_copper.png"
+        )
         assert len(result["errors"]) == 0
 
     def test_analyze_jar_with_java_source(self, analyzer, jar_with_java_source):
@@ -133,7 +153,10 @@ public class PolishedCopperBlock extends Block {
 
         assert result["success"] is True
         assert result["registry_name"] == "copper_mod:polished_copper"
-        assert result["texture_path"] == "assets/copper_mod/textures/block/polished_copper.png"
+        assert (
+            result["texture_path"]
+            == "assets/copper_mod/textures/block/polished_copper.png"
+        )
         assert len(result["errors"]) == 0
 
     def test_analyze_jar_for_mvp_missing_texture(self, analyzer, jar_without_texture):
@@ -145,14 +168,17 @@ public class PolishedCopperBlock extends Block {
         assert result["texture_path"] is None
         assert "Could not find block texture in JAR" in result["errors"]
 
-    def test_analyze_jar_for_mvp_forge_metadata(self, analyzer, jar_with_forge_metadata):
+    def test_analyze_jar_for_mvp_forge_metadata(
+        self, analyzer, jar_with_forge_metadata
+    ):
         """Test MVP analysis with Forge-style metadata."""
         result = analyzer.analyze_jar_for_mvp(jar_with_forge_metadata)
 
         assert result["success"] is True
         assert result["registry_name"] == "copper_extras:copper_ingot"
         assert (
-            result["texture_path"] == "assets/copper_extras/textures/block/copper_ingot_block.png"
+            result["texture_path"]
+            == "assets/copper_extras/textures/block/copper_ingot_block.png"
         )
 
     def test_analyze_jar_with_mods_toml(self, analyzer):
@@ -256,7 +282,9 @@ authors="Test Author"
 
         for class_name, expected in test_cases:
             result = analyzer._class_name_to_registry_name(class_name)
-            assert result == expected, f"Expected {expected}, got {result} for {class_name}"
+            assert (
+                result == expected
+            ), f"Expected {expected}, got {result} for {class_name}"
 
     def test_invalid_jar_file(self, analyzer):
         """Test handling of invalid JAR files."""
@@ -294,7 +322,8 @@ authors="Test Author"
             assert result["success"] is True
             assert result["registry_name"] == "simple_copper:polished_copper"
             assert (
-                result["texture_path"] == "assets/simple_copper/textures/block/polished_copper.png"
+                result["texture_path"]
+                == "assets/simple_copper/textures/block/polished_copper.png"
             )
             assert len(result["errors"]) == 0
         else:

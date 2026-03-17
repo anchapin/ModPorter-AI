@@ -22,10 +22,13 @@ class BuildStageTiming(BaseModel):
     end_time: Optional[datetime] = Field(None, description="When the stage ended")
     duration_ms: Optional[float] = Field(None, description="Duration in milliseconds")
     status: str = Field(
-        default="pending", description="Stage status: pending, running, completed, failed"
+        default="pending",
+        description="Stage status: pending, running, completed, failed",
     )
     error_message: Optional[str] = Field(None, description="Error message if failed")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional stage metadata")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional stage metadata"
+    )
 
     def complete(self, status: str = "completed", error_message: Optional[str] = None):
         """Mark the stage as complete."""
@@ -56,35 +59,52 @@ class BuildPerformanceMetrics(BaseModel):
     conversion_id: str = Field(..., description="Associated conversion ID")
 
     # Timing
-    stages: List[BuildStageTiming] = Field(default_factory=list, description="Build stage timings")
+    stages: List[BuildStageTiming] = Field(
+        default_factory=list, description="Build stage timings"
+    )
     total_duration_ms: Optional[float] = Field(
         None, description="Total build duration in milliseconds"
     )
 
     # Resource usage
-    resource_usage: Optional[BuildResourceUsage] = Field(None, description="Resource usage metrics")
+    resource_usage: Optional[BuildResourceUsage] = Field(
+        None, description="Resource usage metrics"
+    )
 
     # Build details
     build_type: str = Field(
         default="conversion", description="Type of build: conversion, benchmark, test"
     )
-    target_version: str = Field(default="1.20.0", description="Target Minecraft version")
-    mod_size_bytes: Optional[int] = Field(None, description="Size of the mod file in bytes")
+    target_version: str = Field(
+        default="1.20.0", description="Target Minecraft version"
+    )
+    mod_size_bytes: Optional[int] = Field(
+        None, description="Size of the mod file in bytes"
+    )
 
     # Status
     status: str = Field(
-        default="pending", description="Build status: pending, running, completed, failed"
+        default="pending",
+        description="Build status: pending, running, completed, failed",
     )
-    error_message: Optional[str] = Field(None, description="Error message if build failed")
+    error_message: Optional[str] = Field(
+        None, description="Error message if build failed"
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = Field(None)
 
     # Performance scores
-    performance_score: Optional[float] = Field(None, description="Overall performance score 0-100")
-    build_efficiency: Optional[float] = Field(None, description="Build efficiency percentage")
+    performance_score: Optional[float] = Field(
+        None, description="Overall performance score 0-100"
+    )
+    build_efficiency: Optional[float] = Field(
+        None, description="Build efficiency percentage"
+    )
 
     # Additional data
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
 
 class BuildPerformanceSnapshot(BaseModel):
@@ -133,7 +153,9 @@ class BuildStageUpdateRequest(BaseModel):
 class BuildPerformanceEndRequest(BaseModel):
     """Request to end build performance tracking."""
 
-    status: str = Field(default="completed", description="Final status: completed, failed")
+    status: str = Field(
+        default="completed", description="Final status: completed, failed"
+    )
     error_message: Optional[str] = None
     performance_score: Optional[float] = None
 

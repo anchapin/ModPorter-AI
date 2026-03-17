@@ -73,8 +73,12 @@ class ScenarioDefinition(BaseModel):
 
 
 class CustomScenarioRequest(BaseModel):
-    scenario_name: str = Field(..., min_length=1, description="Scenario name cannot be empty")
-    description: str = Field(..., min_length=1, description="Description cannot be empty")
+    scenario_name: str = Field(
+        ..., min_length=1, description="Scenario name cannot be empty"
+    )
+    description: str = Field(
+        ..., min_length=1, description="Description cannot be empty"
+    )
     type: str
     duration_seconds: int = 300
     parameters: Dict[str, Any] = {}

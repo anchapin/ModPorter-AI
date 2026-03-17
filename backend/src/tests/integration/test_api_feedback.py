@@ -11,7 +11,10 @@ def test_submit_feedback_invalid_job_id(client):
     }
     response = client.post("/api/v1/feedback", json=feedback_payload)
     assert response.status_code == 404
-    assert f"Conversion job with ID '{invalid_job_id}' not found" in response.json()["detail"]
+    assert (
+        f"Conversion job with ID '{invalid_job_id}' not found"
+        in response.json()["detail"]
+    )
 
 
 def test_submit_feedback_missing_fields(client):

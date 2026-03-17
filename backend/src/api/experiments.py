@@ -114,7 +114,9 @@ class ExperimentResultResponse(BaseModel):
 
 
 @router.post("/experiments", response_model=ExperimentResponse)
-async def create_experiment(experiment: ExperimentCreate, db: AsyncSession = Depends(get_db)):
+async def create_experiment(
+    experiment: ExperimentCreate, db: AsyncSession = Depends(get_db)
+):
     """Create a new A/B testing experiment."""
     logger.info(f"Creating new experiment: {experiment.name}")
 
@@ -170,7 +172,9 @@ async def list_experiments(
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
 
     try:
-        experiments = await crud.list_experiments(db, status=status, skip=skip, limit=limit)
+        experiments = await crud.list_experiments(
+            db, status=status, skip=skip, limit=limit
+        )
 
         return [
             ExperimentResponse(
@@ -311,9 +315,13 @@ async def delete_experiment(experiment_id: str, db: AsyncSession = Depends(get_d
         raise HTTPException(status_code=500, detail="Error deleting experiment")
 
 
-@router.post("/experiments/{experiment_id}/variants", response_model=ExperimentVariantResponse)
+@router.post(
+    "/experiments/{experiment_id}/variants", response_model=ExperimentVariantResponse
+)
 async def create_experiment_variant(
-    experiment_id: str, variant: ExperimentVariantCreate, db: AsyncSession = Depends(get_db)
+    experiment_id: str,
+    variant: ExperimentVariantCreate,
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new variant for an A/B testing experiment."""
     logger.info(f"Creating variant for experiment {experiment_id}: {variant.name}")
@@ -355,8 +363,13 @@ async def create_experiment_variant(
         raise HTTPException(status_code=500, detail="Error creating experiment variant")
 
 
-@router.get("/experiments/{experiment_id}/variants", response_model=List[ExperimentVariantResponse])
-async def list_experiment_variants(experiment_id: str, db: AsyncSession = Depends(get_db)):
+@router.get(
+    "/experiments/{experiment_id}/variants",
+    response_model=List[ExperimentVariantResponse],
+)
+async def list_experiment_variants(
+    experiment_id: str, db: AsyncSession = Depends(get_db)
+):
     """List all variants for an A/B testing experiment."""
     logger.info(f"Listing variants for experiment: {experiment_id}")
 
@@ -394,7 +407,8 @@ async def list_experiment_variants(experiment_id: str, db: AsyncSession = Depend
 
 
 @router.get(
-    "/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
 )
 async def get_experiment_variant(
     experiment_id: str, variant_id: str, db: AsyncSession = Depends(get_db)
@@ -420,7 +434,9 @@ async def get_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         return ExperimentVariantResponse(
             id=str(db_variant.id),
@@ -435,12 +451,15 @@ async def get_experiment_variant(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting variant {variant_id} for experiment {experiment_id}: {e}")
+        logger.error(
+            f"Error getting variant {variant_id} for experiment {experiment_id}: {e}"
+        )
         raise HTTPException(status_code=500, detail="Error getting experiment variant")
 
 
 @router.put(
-    "/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
 )
 async def update_experiment_variant(
     experiment_id: str,
@@ -469,7 +488,9 @@ async def update_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         updated_variant = await crud.update_experiment_variant(
             db,
@@ -493,7 +514,9 @@ async def update_experiment_variant(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating variant {variant_id} for experiment {experiment_id}: {e}")
+        logger.error(
+            f"Error updating variant {variant_id} for experiment {experiment_id}: {e}"
+        )
         raise HTTPException(status_code=500, detail="Error updating experiment variant")
 
 
@@ -522,7 +545,9 @@ async def delete_experiment_variant(
 
         # Verify the variant belongs to the experiment
         if db_variant.experiment_id != experiment_uuid:
-            raise HTTPException(status_code=404, detail="Variant not found in this experiment")
+            raise HTTPException(
+                status_code=404, detail="Variant not found in this experiment"
+            )
 
         await crud.delete_experiment_variant(db, variant_uuid)
 
@@ -530,7 +555,9 @@ async def delete_experiment_variant(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting variant {variant_id} from experiment {experiment_id}: {e}")
+        logger.error(
+            f"Error deleting variant {variant_id} from experiment {experiment_id}: {e}"
+        )
         raise HTTPException(status_code=500, detail="Error deleting experiment variant")
 
 
@@ -548,13 +575,19 @@ async def create_experiment_result(
         raise HTTPException(status_code=400, detail="Invalid ID format")
 
     # Validate KPI values
-    if result.kpi_quality is not None and (result.kpi_quality < 0 or result.kpi_quality > 100):
-        raise HTTPException(status_code=400, detail="kpi_quality must be between 0 and 100")
+    if result.kpi_quality is not None and (
+        result.kpi_quality < 0 or result.kpi_quality > 100
+    ):
+        raise HTTPException(
+            status_code=400, detail="kpi_quality must be between 0 and 100"
+        )
 
     if result.user_feedback_score is not None and (
         result.user_feedback_score < 1 or result.user_feedback_score > 5
     ):
-        raise HTTPException(status_code=400, detail="user_feedback_score must be between 1 and 5")
+        raise HTTPException(
+            status_code=400, detail="user_feedback_score must be between 1 and 5"
+        )
 
     try:
         # Check if variant exists
