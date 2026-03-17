@@ -28,11 +28,12 @@ env:
   REGISTRY: ghcr.io
   CACHE_VERSION: v2
   PYTHON_VERSION: '3.11'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Check if we need to run tests based on changed files
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       backend: ${{ steps.changes.outputs.backend }}
       frontend: ${{ steps.changes.outputs.frontend }}
@@ -75,7 +76,7 @@ jobs:
   # Pre-build base images if dependencies changed
   prepare-base-images:
     name: Prepare Base Images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: changes
     # Always run to provide outputs for dependent jobs
     permissions:
@@ -186,7 +187,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes, prepare-base-images]
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 30
@@ -584,7 +585,7 @@ jobs:
   # Ruff linter for Python
   ruff-lint:
     name: Ruff Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     if: ${{ needs.changes.outputs.ruff == 'true' }}
     timeout-minutes: 10
@@ -606,7 +607,7 @@ jobs:
   # Check for large files in the repository
   large-file-check:
     name: Large File Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
@@ -649,7 +650,7 @@ jobs:
   # Prepare Node.js base image for frontend
   prepare-node-base:
     name: Prepare Node Base Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
     permissions:
@@ -717,7 +718,7 @@ jobs:
   # Frontend tests run only when frontend code changes
   frontend-tests:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes, prepare-node-base]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 10
@@ -840,7 +841,7 @@ jobs:
   # Mutation Testing - Python (ai-engine and backend)
   mutation-testing-python:
     name: Mutation Testing - Python
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes, prepare-base-images]
     if: ${{ needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 20
@@ -941,7 +942,7 @@ jobs:
   # Mutation Testing - JavaScript/TypeScript (frontend)
   mutation-testing-frontend:
     name: Mutation Testing - Frontend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes, prepare-node-base]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 20
@@ -1035,7 +1036,7 @@ jobs:
   # Mutation Testing Summary
   mutation-testing-summary:
     name: Mutation Testing Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [mutation-testing-python, mutation-testing-frontend]
     if: always()
     steps:
@@ -1081,7 +1082,7 @@ jobs:
   # Format check - runs Prettier on all code
   format-check:
     name: Format Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 5
@@ -1156,7 +1157,7 @@ jobs:
   # Dependency vulnerability scanning
   vulnerability-scan:
     name: Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [changes]
     if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
     timeout-minutes: 15
@@ -1241,7 +1242,7 @@ jobs:
   # Performance tracking and optimization monitoring
   performance-monitoring:
     name: Performance & Cache Monitoring
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
     needs: [integration-tests, frontend-tests, mutation-testing-python, mutation-testing-frontend, prepare-base-images, prepare-node-base]
     steps:

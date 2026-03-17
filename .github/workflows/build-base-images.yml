@@ -24,7 +24,7 @@ env:
 
 jobs:
   build-python-base:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
@@ -113,7 +113,7 @@ jobs:
         no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
 
   build-node-base:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
