@@ -370,6 +370,16 @@
   transform: rotate(45deg);
 }
 
+/* Accessibility: focus-visible for custom checkboxes */
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark::after {
+  outline: none;
+}
+
 .checkbox-label .info-button {
   background-color: #e9ecef;
   color: #495057;
@@ -391,6 +401,11 @@
 
 .checkbox-label .info-button:hover {
   background-color: #ced4da;
+}
+
+.checkbox-label .info-button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 .info-panel {
@@ -686,6 +701,20 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Accessibility: focus-visible for buttons */
+.convert-button:focus-visible,
+.upload-button:focus-visible,
+.download-button:focus-visible,
+.cancel-button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.file-preview .remove-file:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Spinner for button */

@@ -126,6 +126,11 @@
   border-color: #bdbdbd;
 }
 
+.cancel-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 /* Action Buttons */
 .delete-selected-btn,
 .clear-all-btn {
@@ -160,6 +165,12 @@
   background: #c2185b;
   color: white;
   transform: translateY(-1px);
+}
+
+.delete-selected-btn:focus-visible,
+.clear-all-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Error Message */
@@ -271,6 +282,11 @@
   height: 16px;
   cursor: pointer;
   accent-color: #2196f3;
+}
+
+.item-checkbox input[type='checkbox']:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 .item-icon {
@@ -393,6 +409,11 @@
   box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
+.download-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .delete-btn {
   background: #fce4ec;
   color: #c2185b;
@@ -404,6 +425,11 @@
   color: white;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(233, 30, 99, 0.3);
+}
+
+.delete-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Inline Confirmation Buttons */
@@ -450,6 +476,12 @@
   background: #bdbdbd;
   color: white;
   transform: translateY(-1px);
+}
+
+.confirm-yes-btn:focus-visible,
+.confirm-no-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Responsive Design */
