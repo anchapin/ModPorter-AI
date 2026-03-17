@@ -32,17 +32,15 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 
 # Install all Python dependencies in separate stages to avoid conflicts
 # This is the time-consuming step that we want to cache
-# First install ai-engine dependencies
+# Provide more resolver context or relaxed bounds if deep dependency tree fails
+# We'll use legacy-resolver or combine requirements to avoid deep resolution loops
+# But wait, pip in latest versions handles this with backtracking, we can just upgrade pip and use the fast resolver.
+# Actually we can just combine them to resolve everything once.
+# By combining them, we can ensure that dependencies are resolved together and prevent backtracking issues.
 RUN pip install --no-cache-dir \
-    -r /tmp/ai-engine-requirements.txt
-
-# Then install backend dependencies (will handle conflicts automatically)
-RUN pip install --no-cache-dir \
+    -r /tmp/backend-requirements.txt \
+    -r /tmp/ai-engine-requirements.txt \
     -r /tmp/ai-engine-requirements-dev.txt \
-    -r /tmp/backend-requirements.txt
-
-# Finally add common development dependencies
-RUN pip install --no-cache-dir \
     pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock \
     ruff black isort mypy \
     alembic \
