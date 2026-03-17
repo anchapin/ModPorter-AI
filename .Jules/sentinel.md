@@ -5,3 +5,7 @@
 **Vulnerability:** Information Exposure Through an Error Message (CWE-209). FastAPI HTTPExceptions in `backend/src/api/comparison.py` were directly exposing raw exception messages (`str(e)`) to the client, potentially leaking sensitive backend details and stack traces.
 **Learning:** Exception handling in public APIs must sanitize error details. Direct passing of `str(e)` in `detail=...` reveals internal logic, which is an anti-pattern.
 **Prevention:** Always log the actual error detail locally with `logger.error(..., exc_info=True)` and return a generic, safe error message (e.g., "An unexpected error occurred during comparison") to the client.
+## $(date +%Y-%m-%d) - Pip Resolution Exhaustion via Deprecated Dependencies
+**Vulnerability:** Dependency exhaustion (DoS) during build due to conflicting unbounded constraints on `opentelemetry` vs `opentelemetry-exporter-jaeger`.
+**Learning:** `pip`'s dependency resolver will backtrack forever if a deprecated specific-version package (`opentelemetry-exporter-jaeger==1.21.0`) fundamentally conflicts with an unbounded peer (`opentelemetry-api>=1.24.0`).
+**Prevention:** Remove obsolete/deprecated components completely rather than pinning them to ancient versions while newer core SDKs move forward, preventing build-time lockups.

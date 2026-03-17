@@ -6,10 +6,10 @@ python-multipart>=0.0.6
 # AI Framework
 # Note: crewai requires Python 3.10-3.13. Use Docker container for development (Python 3.12).
 # If running locally, use Python 3.12 virtual environment.
-crewai>=0.11.0
-langchain>=0.3.0
-langchain-openai>=0.2.0
-langchain-ollama>=0.1.0
+crewai>=0.28.8
+langchain>=0.3.0,<0.4.0,<0.4.0,<0.4.0
+langchain-openai>=0.2.0,<0.3.0,<0.3.0,<0.3.0
+langchain-ollama>=0.2.0
 openai>=1.0.0
 sentence-transformers>=2.2.0
 
@@ -56,7 +56,6 @@ structlog>=24.0.0
 opentelemetry-api>=1.24.0
 opentelemetry-sdk>=1.24.0
 opentelemetry-exporter-otlp>=1.24.0
-opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-instrumentation-fastapi>=0.45b0
 opentelemetry-instrumentation-httpx>=0.45b0
 opentelemetry-instrumentation-redis>=0.45b0
