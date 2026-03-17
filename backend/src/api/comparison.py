@@ -131,7 +131,7 @@ async def create_comparison(
         )
     except HTTPException:  # Re-raise HTTPExceptions from validation
         raise
-    except Exception as e:
+    except Exception:
         # Log the exception e here if logging is set up
         # logger.error(f"Comparison engine failed: {e}", exc_info=True)
         logger.error(f"Comparison engine failed: {str(e)}", exc_info=True)
@@ -166,7 +166,7 @@ async def create_comparison(
         # Refresh related feature_mappings if their IDs are needed immediately, though often not.
         # for fm in db_comparison_result.feature_mappings:
         # await session.refresh(fm)
-    except Exception as e:
+    except Exception:
         await session.rollback()
         # Log the exception e here
         # logger.error(f"Database error during comparison creation: {e}", exc_info=True)

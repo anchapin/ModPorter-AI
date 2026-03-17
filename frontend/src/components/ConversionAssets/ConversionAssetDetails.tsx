@@ -109,8 +109,12 @@ export const ConversionAssetDetails: React.FC<ConversionAssetDetailsProps> = ({
       <div className="asset-details-modal">
         <div className="asset-details-header">
           <h2>Asset Details</h2>
-          <button onClick={onClose} className="close-button">
-            ✕
+          <button
+            onClick={onClose}
+            className="close-button"
+            aria-label="Close details"
+          >
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
 

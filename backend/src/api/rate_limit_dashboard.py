@@ -148,7 +148,7 @@ async def get_rate_limit_dashboard():
     endpoints = list(
         set(
             k.replace("total_", "").replace("allowed_", "").replace("blocked_", "")
-            for k in metrics.keys()
+            for k in metrics
             if k.startswith(("total_", "allowed_", "blocked_"))
         )
     )
@@ -236,7 +236,7 @@ async def get_rate_limit_summary():
     endpoints = list(
         set(
             k.replace("total_", "").replace("allowed_", "").replace("blocked_", "")
-            for k in metrics.keys()
+            for k in metrics
             if k.startswith(("total_", "allowed_", "blocked_"))
         )
     )
@@ -266,7 +266,7 @@ async def get_endpoint_stats():
 
     endpoints = set(
         k.replace("total_", "").replace("allowed_", "").replace("blocked_", "")
-        for k in metrics.keys()
+        for k in metrics
         if k.startswith(("total_", "allowed_", "blocked_"))
     )
     endpoints = [e for e in endpoints if e and e != "unknown"]

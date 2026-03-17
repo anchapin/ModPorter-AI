@@ -558,10 +558,7 @@ class FileSecurityScanner:
             return True
 
         # Check for suspicious patterns
-        if "../" in path or "..\\" in path:
-            return True
-
-        return False
+        return bool("../" in path or "..\\" in path)
 
     def _is_nested_archive(self, filename: str) -> bool:
         """Check if a file is a nested archive."""

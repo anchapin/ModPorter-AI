@@ -13,7 +13,7 @@ import psutil
 import threading
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from collections import defaultdict
 
 from models import (
@@ -350,10 +350,8 @@ class BuildPerformanceService:
 
         # Capture resource usage
         resource_usage = None
-        try:
+        with suppress(Exception):
             resource_usage = self._capture_resource_usage()
-        except Exception:
-            pass
 
         return BuildPerformanceSnapshot(
             build_id=build_id,

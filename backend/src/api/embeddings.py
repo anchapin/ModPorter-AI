@@ -1,9 +1,6 @@
-import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-
-logger = logging.getLogger(__name__)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -169,17 +166,15 @@ async def generate_embeddings(
 
         return embeddings
 
-    except ImportError as e:
-        logger.error(f"Embedding generator not available: {e}", exc_info=True)
+    except ImportError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Embedding generator not available",
         )
-    except Exception as e:
-        logger.error(f"Error generating embeddings: {e}", exc_info=True)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An internal server error occurred",
+            detail="Error generating embeddings",
         )
 
 

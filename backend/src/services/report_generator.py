@@ -386,26 +386,22 @@ class ConversionReportGenerator:
 if __name__ == "__main__":
     generator = ConversionReportGenerator()
 
-    print("--- Generating Success Report (Interactive Style) ---")
     interactive_report_success = generator.create_interactive_report(
         MOCK_CONVERSION_RESULT_SUCCESS, "job_123_success"
     )
     # import json
     # print(json.dumps(interactive_report_success, indent=2)) # Requires TypedDicts to be serializable or use a custom encoder
 
-    print("\n--- Generating Success Report (PRD JSON Style) ---")
     prd_style_report_success = generator.create_full_conversion_report_prd_style(
         MOCK_CONVERSION_RESULT_SUCCESS
     )
     # print(json.dumps(prd_style_report_success, indent=2))
 
-    print("\n--- Generating Failure Report (Interactive Style) ---")
     interactive_report_failure = generator.create_interactive_report(
         MOCK_CONVERSION_RESULT_FAILURE, "job_456_failure"
     )
     # print(json.dumps(interactive_report_failure, indent=2))
 
-    print("\n--- Generating Failure Report (PRD JSON Style) ---")
     prd_style_report_failure = generator.create_full_conversion_report_prd_style(
         MOCK_CONVERSION_RESULT_FAILURE
     )
@@ -413,26 +409,21 @@ if __name__ == "__main__":
 
     # Test individual components
     summary_data = generator.generate_summary_report(MOCK_CONVERSION_RESULT_SUCCESS)
-    print(f"\nSummary Success Rate: {summary_data['overall_success_rate']}%")
 
     feature_analysis_data = generator.generate_feature_analysis(
         MOCK_CONVERSION_RESULT_SUCCESS["features_data"]
     )
     if feature_analysis_data["per_feature_status"]:
-        print(f"First feature status: {feature_analysis_data['per_feature_status'][0]['status']}")
+        pass
 
     assumptions_report_data = generator.generate_assumptions_report(
         MOCK_CONVERSION_RESULT_SUCCESS["assumptions_detail_data"]
     )
     if assumptions_report_data["assumptions"]:
-        print(
-            f"First assumption impact: {assumptions_report_data['assumptions'][0]['impact_level']}"
-        )
+        pass
 
     dev_log_data = generator.generate_developer_log(
         MOCK_CONVERSION_RESULT_SUCCESS["developer_logs_data"]
     )
     if dev_log_data["code_translation_details"]:
-        print(
-            f"First code translation log: {dev_log_data['code_translation_details'][0]['message']}"
-        )
+        pass

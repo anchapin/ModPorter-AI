@@ -224,10 +224,8 @@ async def export_behavior_pack(
                 exported_at=datetime.utcnow().isoformat(),
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create MCADDON: {str(e)}", exc_info=True)
-
-            raise HTTPException(status_code=500, detail="Failed to create MCADDON: Please try again.")
+        except Exception:
+            raise HTTPException(status_code=500, detail="Failed to create MCADDON")
 
 
 @router.get(

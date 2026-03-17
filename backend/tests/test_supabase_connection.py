@@ -39,7 +39,6 @@ async def test_supabase_connection():
         async with engine.connect() as connection:
             result = await connection.execute(text("SELECT 1"))
             assert result.scalar_one() == 1
-        print("Successfully connected to Supabase and executed a query.")
     except Exception as e:
         pytest.fail(f"Failed to connect to Supabase or execute query: {e}")
     finally:
@@ -71,7 +70,6 @@ async def test_database_connection_logic():
             assert result.scalar_one() == 1
 
         await engine.dispose()
-        print("Successfully tested database connection logic.")
 
     except Exception as e:
         pytest.fail(f"Failed to test database connection logic: {e}")
