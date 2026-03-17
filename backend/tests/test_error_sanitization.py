@@ -40,6 +40,7 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "false"}):
             # Reload module to pick up environment change
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             exc = ModPorterException(
                 message="Database connection failed",
@@ -49,6 +50,17 @@ class TestErrorResponseSanitization:
 
             response = eh.create_error_response(exc, mock_request)
 
+=======
+            
+            exc = ModPorterException(
+                message="Database connection failed",
+                user_message="An error occurred",
+                details={"host": "db.internal", "port": 5432}
+            )
+            
+            response = eh.create_error_response(exc, mock_request)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             # User message should be present but not the details
             assert response.user_message == "An error occurred"
             assert response.details == {}  # No internal details exposed
@@ -60,6 +72,7 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "true"}):
             import importlib
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             importlib.reload(eh)
 
@@ -71,6 +84,18 @@ class TestErrorResponseSanitization:
 
             response = eh.create_error_response(exc, mock_request)
 
+=======
+            importlib.reload(eh)
+            
+            exc = eh.ModPorterException(
+                message="Database connection failed",
+                user_message="An error occurred",
+                details={"host": "db.internal", "port": 5432}
+            )
+            
+            response = eh.create_error_response(exc, mock_request)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             # In debug mode, details should be included
             assert response.details == {"host": "db.internal", "port": 5432}
 
@@ -79,6 +104,7 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "false"}):
             import importlib
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             importlib.reload(eh)
 
@@ -86,6 +112,17 @@ class TestErrorResponseSanitization:
 
             response = eh.create_error_response(exc, mock_request)
 
+=======
+            importlib.reload(eh)
+            
+            exc = HTTPException(
+                status_code=500,
+                detail="Database query failed: connection timeout"
+            )
+            
+            response = eh.create_error_response(exc, mock_request)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             # Details should not include status code in production
             assert response.details == {}
 
@@ -94,6 +131,7 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "false"}):
             import importlib
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             importlib.reload(eh)
 
@@ -101,6 +139,14 @@ class TestErrorResponseSanitization:
             validation_error = RequestValidationError([])
             response = eh.create_error_response(validation_error, mock_request)
 
+=======
+            importlib.reload(eh)
+            
+            # Create a mock RequestValidationError instead
+            validation_error = RequestValidationError([])
+            response = eh.create_error_response(validation_error, mock_request)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             # Generic message without error details
             assert response.user_message == "Invalid request data. Please check your input."
             assert response.details == {}  # No error details exposed in production
@@ -110,6 +156,7 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "false"}):
             import importlib
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             importlib.reload(eh)
 
@@ -118,6 +165,15 @@ class TestErrorResponseSanitization:
             # Even if include_traceback=True, it shouldn't appear in production
             response = eh.create_error_response(exc, mock_request, include_traceback=True)
 
+=======
+            importlib.reload(eh)
+            
+            exc = Exception("Something went wrong")
+            
+            # Even if include_traceback=True, it shouldn't appear in production
+            response = eh.create_error_response(exc, mock_request, include_traceback=True)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             assert "traceback" not in response.details
             assert "Traceback" not in str(response.details)
 
@@ -126,14 +182,23 @@ class TestErrorResponseSanitization:
         with patch.dict(os.environ, {"DEBUG": "true"}):
             import importlib
             import src.services.error_handlers as eh
+<<<<<<< HEAD
 
             importlib.reload(eh)
 
+=======
+            importlib.reload(eh)
+            
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             try:
                 raise ValueError("Something went wrong internally")
             except ValueError as exc:
                 response = eh.create_error_response(exc, mock_request, include_traceback=True)
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
                 assert "traceback" in response.details
                 assert "ValueError" in response.details["traceback"]
 
@@ -145,6 +210,7 @@ class TestGenericExceptionHandler:
     async def test_generic_exception_logged_fully(self, mock_request):
         """Generic exceptions should be fully logged server-side."""
         exc = Exception("Database connection timeout: host=db.internal port=5432")
+<<<<<<< HEAD
 
         with patch.dict(os.environ, {"DEBUG": "false"}):
             import importlib
@@ -155,16 +221,32 @@ class TestGenericExceptionHandler:
             with patch.object(eh.logger, "error") as mock_logger_error:
                 await eh.generic_exception_handler(mock_request, exc)
 
+=======
+        
+        with patch.dict(os.environ, {"DEBUG": "false"}):
+            import importlib
+            import src.services.error_handlers as eh
+            importlib.reload(eh)
+            
+            with patch.object(eh.logger, 'error') as mock_logger_error:
+                await eh.generic_exception_handler(mock_request, exc)
+                
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
                 # Logger should have recorded the full exception
                 mock_logger_error.assert_called_once()
                 args, kwargs = mock_logger_error.call_args
                 assert "Database connection timeout" in str(args)
+<<<<<<< HEAD
                 assert kwargs.get("exc_info") == True
+=======
+                assert kwargs.get('exc_info') == True
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
 
     @pytest.mark.asyncio
     async def test_generic_exception_response_sanitized(self, mock_request):
         """Generic exception response should not expose internal details."""
         exc = Exception("Database error: Invalid credentials on db.internal:5432")
+<<<<<<< HEAD
 
         with patch.dict(os.environ, {"DEBUG": "false"}):
             import importlib
@@ -179,6 +261,19 @@ class TestGenericExceptionHandler:
             content = (
                 response.body.decode() if hasattr(response.body, "decode") else str(response.body)
             )
+=======
+        
+        with patch.dict(os.environ, {"DEBUG": "false"}):
+            import importlib
+            import src.services.error_handlers as eh
+            importlib.reload(eh)
+            
+            with patch.object(eh.logger, 'error'):  # Suppress log output
+                response = await eh.generic_exception_handler(mock_request, exc)
+            
+            # Response content should not contain sensitive details
+            content = response.body.decode() if hasattr(response.body, 'decode') else str(response.body)
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
             assert "db.internal" not in content
             assert "5432" not in content
             assert "Invalid credentials" not in content
@@ -192,11 +287,19 @@ class TestConversionException:
         """Conversion exceptions should have safe user messages."""
         exc = ConversionException(
             message="Failed to parse YAML: invalid syntax at line 42",
+<<<<<<< HEAD
             user_message="Conversion failed. Please check your mod file.",
         )
 
         response = create_error_response(exc, mock_request)
 
+=======
+            user_message="Conversion failed. Please check your mod file."
+        )
+        
+        response = create_error_response(exc, mock_request)
+        
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
         assert response.user_message == "Conversion failed. Please check your mod file."
         assert "YAML" not in response.user_message
         assert "line 42" not in response.user_message
@@ -207,10 +310,20 @@ class TestHTTPExceptionMessages:
 
     def test_safe_error_messages_preserved(self, mock_request):
         """Safe, generic error messages should be preserved."""
+<<<<<<< HEAD
         exc = HTTPException(status_code=400, detail="Invalid request format")
 
         response = create_error_response(exc, mock_request)
 
+=======
+        exc = HTTPException(
+            status_code=400,
+            detail="Invalid request format"
+        )
+        
+        response = create_error_response(exc, mock_request)
+        
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
         # Generic message is safe and should be included
         assert response.user_message == "Invalid request format"
 
@@ -227,7 +340,11 @@ class TestCorrelationID:
         """Error responses should include correlation ID for tracing."""
         exc = Exception("Test error")
         response = create_error_response(exc, mock_request)
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 67a0ddb (fix: optimize array filter chains to use reduce operations)
         assert response.correlation_id is not None
         assert len(response.correlation_id) > 0
 

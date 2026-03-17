@@ -256,9 +256,13 @@ async def create_behavior_template(
             created_by=user_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create template: {str(e)}")
+        logger.error(f"Failed to create template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to create template: Please try again.")
 
     return BehaviorTemplateResponse(
         id=str(template.id),
@@ -314,9 +318,13 @@ async def update_behavior_template(
             db, template_id=template_id, updates=request.dict(exclude_unset=True)
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update template: {str(e)}")
+        logger.error(f"Failed to update template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to update template: Please try again.")
 
     return BehaviorTemplateResponse(
         id=str(updated_template.id),
@@ -394,7 +402,9 @@ async def apply_behavior_template(
             db, template_id=template_id, conversion_id=conversion_id, file_path=file_path
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to apply template: {str(e)}")
+        logger.error(f"Failed to apply template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to apply template: Please try again.")
 
     return {
         "template_id": template_id,
