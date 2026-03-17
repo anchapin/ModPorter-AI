@@ -41,16 +41,16 @@ pytest-timeout==2.4.0
 
 # Code Quality
 ruff==0.15.5
-black==26.3.1
+black==26.3.0
 
 # Utilities
 python-dotenv==1.2.2
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
-opentelemetry-api>=1.24.0
-opentelemetry-sdk>=1.24.0
-opentelemetry-exporter-otlp>=1.24.0
+opentelemetry-api>=1.24.0,<1.30.0
+opentelemetry-sdk>=1.24.0,<1.30.0
+opentelemetry-exporter-otlp>=1.24.0,<1.30.0
 opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-instrumentation-fastapi>=0.45b0
 opentelemetry-instrumentation-httpx>=0.45b0
