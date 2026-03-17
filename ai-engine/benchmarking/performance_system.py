@@ -1,5 +1,14 @@
 import json  # Added for potential debugging and for __main__
+import logging
 from .metrics_collector import PerformanceMetricsCollector as ExternalPerformanceMetricsCollector
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Note: The above import assumes metrics_collector.py is in the same directory (benchmarking)
 # If it's ai_engine.src.benchmarking.metrics_collector, the import path might need adjustment
 # based on how Python resolves modules in this project structure.
@@ -12,7 +21,7 @@ class BenchmarkExecutor:
 
     def run_benchmark(self, scenario):
         # Placeholder for benchmark execution logic
-        print(f"Running benchmark for scenario: {scenario.get('scenario')}")
+        logger.info(f"Running benchmark for scenario: {scenario.get('scenario')}")
         # Simulate collecting some metrics
         return {"cpu_usage": 50, "memory_usage": 256}
 
@@ -34,20 +43,20 @@ class LoadTestGenerator:
         entity_count = parameters.get("entity_count")
         stress_type = scenario.get("type", "general")
 
-        print(
+        logger.info(
             f"Generating load for scenario: '{scenario_name}' (Type: {stress_type}, Level: {load_level})"
         )
 
         load_details = {"load_level": load_level}
 
         if entity_count is not None:
-            print(
+            logger.info(
                 f"  Simulating {entity_count} entities of type '{parameters.get('entity_type', 'generic')}'"
             )
             if parameters.get("enable_ai", False):
-                print("    Entity AI enabled.")
+                logger.info("    Entity AI enabled.")
             if parameters.get("start_interactions", False):
-                print("    Simulating entity interactions.")
+                logger.info("    Simulating entity interactions.")
             load_details["entity_simulation"] = {
                 "count": entity_count,
                 "type": parameters.get("entity_type", "generic"),
@@ -56,24 +65,24 @@ class LoadTestGenerator:
             }
 
         if load_level == "none":
-            print("  No active load generation requested for this baseline scenario.")
+            logger.info("  No active load generation requested for this baseline scenario.")
             load_details["status"] = "No active load generated (baseline)."
         elif load_level == "high":
-            print(
+            logger.info(
                 "  Simulating high resource utilization (e.g., complex calculations, frequent I/O)."
             )
             load_details["status"] = "High load simulation initiated."
         else:  # moderate or other
-            print("  Simulating moderate resource utilization.")
+            logger.info("  Simulating moderate resource utilization.")
             load_details["status"] = "Moderate load simulation initiated."
 
-        print("Load generation simulation complete.")
+        logger.info("Load generation simulation complete.")
         return {"load_generated": True, "details": load_details}
 
 
 class PerformanceAnalyzer:
     def __init__(self):
-        print("PerformanceAnalyzer initialized.")
+        logger.info("PerformanceAnalyzer initialized.")
         # Define some basic thresholds (these could be configurable later)
         self.thresholds = {
             "max_cpu_usage_percent": 80.0,
@@ -90,7 +99,7 @@ class PerformanceAnalyzer:
     def analyze(
         self, bedrock_metrics_set, comparison_results=None, scenario=None
     ):  # Added scenario
-        print("\nAnalyzing Bedrock performance metrics...")
+        logger.info("\nAnalyzing Bedrock performance metrics...")
         analysis_summary = {"identified_issues": [], "optimization_suggestions": []}
 
         # --- Direct Metric Analysis for Bedrock ---
@@ -219,13 +228,13 @@ class PerformanceAnalyzer:
                 "Performance appears within acceptable limits relative to thresholds and Java version (if compared)."
             )
 
-        # print(f"Analysis summary: {json.dumps(analysis_summary, indent=2)}")
+        # logger.info(f"Analysis summary: {json.dumps(analysis_summary, indent=2)}")
         return analysis_summary
 
 
 class PerformanceComparator:
     def __init__(self):
-        print("PerformanceComparator initialized.")
+        logger.info("PerformanceComparator initialized.")
 
     def compare(self, java_metrics_set, bedrock_metrics_set):
         # java_metrics_set and bedrock_metrics_set are expected to be structured like:
@@ -237,7 +246,7 @@ class PerformanceComparator:
         #     "load_time": {...},  // Placeholder metrics
         #     "response_time": {...} // Placeholder metrics
         # }
-        print("\nComparing Java and Bedrock performance metrics...")
+        logger.info("\nComparing Java and Bedrock performance metrics...")
         comparison_results = {}
 
         # Define categories to iterate through, matching keys from collect_all_metrics_for_target
@@ -291,7 +300,7 @@ class PerformanceComparator:
                 if isinstance(bedrock_value, str) and "not_implemented" in bedrock_value:
                     comparison_results[category][metric_key]["bedrock_value"] = "Not Implemented"
 
-        # print(f"Comparison results: {json.dumps(comparison_results, indent=2)}") # Requires import json
+        # logger.info(f"Comparison results: {json.dumps(comparison_results, indent=2)}") # Requires import json
         return comparison_results
 
 
@@ -344,7 +353,7 @@ class BenchmarkReporter:
             report += "  No comparison data generated.\n"
 
         report += "\n-------------------- End of Report --------------------\n"
-        # print(f"Generating report: {report}") # Printing is handled by the caller
+        # logger.info(f"Generating report: {report}") # Printing is handled by the caller
         return report
 
 
@@ -357,29 +366,29 @@ class PerformanceBenchmarkingSystem:
         self.analyzer = PerformanceAnalyzer()
         self.comparator = PerformanceComparator()
         self.reporter = BenchmarkReporter()
-        print("PerformanceBenchmarkingSystem initialized with ExternalPerformanceMetricsCollector.")
+        logger.info("PerformanceBenchmarkingSystem initialized with ExternalPerformanceMetricsCollector.")
 
     def run_full_benchmark(
         self, scenario, java_process_keyword="java", bedrock_process_keyword="bedrock_server"
     ):
         scenario_name = scenario.get("scenario_name", scenario.get("scenario", "Unknown Scenario"))
-        print(f"\nStarting full benchmark for scenario: {scenario_name}")
+        logger.info(f"\nStarting full benchmark for scenario: {scenario_name}")
 
         # Simulate load generation
         self.load_generator.generate_load(scenario)
 
         # Collect metrics using the external collector
-        print("\nCollecting Java metrics...")
+        logger.info("\nCollecting Java metrics...")
         java_metrics = self.metrics_collector.collect_all_metrics_for_target(
             target_name="java", process_keyword=java_process_keyword
         )
-        # print(f"Java metrics collected: {json.dumps(java_metrics, indent=2)}")
+        # logger.info(f"Java metrics collected: {json.dumps(java_metrics, indent=2)}")
 
-        print("\nCollecting Bedrock metrics...")
+        logger.info("\nCollecting Bedrock metrics...")
         bedrock_metrics = self.metrics_collector.collect_all_metrics_for_target(
             target_name="bedrock", process_keyword=bedrock_process_keyword
         )
-        # print(f"Bedrock metrics collected: {json.dumps(bedrock_metrics, indent=2)}")
+        # logger.info(f"Bedrock metrics collected: {json.dumps(bedrock_metrics, indent=2)}")
 
         # Compare metrics
         # The 'compare' method now expects the direct metric sets from collect_all_metrics_for_target
@@ -388,7 +397,7 @@ class PerformanceBenchmarkingSystem:
         # Analyze Bedrock metrics (or a combined set as per requirements)
         # The analyzer might need to be adapted based on what metrics it should focus on.
         # For now, let's assume it analyzes Bedrock's 'cpu' and 'memory' sections.
-        print("\nAnalyzing Bedrock performance...")
+        logger.info("\nAnalyzing Bedrock performance...")
         # Pass bedrock_metrics, comparison results, and scenario to the analyzer
         analysis = self.analyzer.analyze(
             bedrock_metrics, comparison_results=comparison, scenario=scenario
@@ -396,11 +405,11 @@ class PerformanceBenchmarkingSystem:
 
         # Generate report
         # The reporter might need scenario details for context.
-        print("\nGenerating performance report...")
+        logger.info("\nGenerating performance report...")
         report = self.reporter.generate_report(
             analysis, comparison, scenario
         )  # Added scenario to reporter
-        print(report)
+        logger.info(report)
         return report
 
 
@@ -434,7 +443,7 @@ if __name__ == "__main__":
         },
     }
 
-    print("--- Running PerformanceBenchmarkingSystem with example scenario ---")
+    logger.info("--- Running PerformanceBenchmarkingSystem with example scenario ---")
     pbs = PerformanceBenchmarkingSystem()
 
     # For testing, let's assume 'python' is our "Java" process and also for "Bedrock"
@@ -457,14 +466,14 @@ if __name__ == "__main__":
                 found_python = True
                 break
         if not found_python:
-            print(
+            logger.info(
                 "NOTE: No 'python' process detected. Process-specific metrics for 'java_keyword' might be empty or error out."
             )
             # java_keyword = None # Optionally set to None if you prefer system-wide for the test
     except ImportError:
-        print("psutil not installed, process-specific metrics will likely fail or be empty.")
+        logger.info("psutil not installed, process-specific metrics will likely fail or be empty.")
     except psutil.Error:  # More specific psutil errors could be caught if needed
-        print("Error accessing process list with psutil.")
+        logger.info("Error accessing process list with psutil.")
 
     final_report = pbs.run_full_benchmark(
         example_scenario_high_entity,
@@ -472,8 +481,8 @@ if __name__ == "__main__":
         bedrock_process_keyword=bedrock_keyword,
     )
 
-    print("\n--- Main test finished. Final Report (also printed above by the system): ---")
+    logger.info("\n--- Main test finished. Final Report (also printed above by the system): ---")
     # The report is already printed by run_full_benchmark, but printing it again here
     # just to show it can be captured and used.
-    # print(final_report)
-    print("--- End of __main__ test run ---")
+    # logger.info(final_report)
+    logger.info("--- End of __main__ test run ---")

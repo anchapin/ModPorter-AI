@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
 Enhanced Test Mod Generator for ModPorter AI
 Creates comprehensive test mods covering entities, GUIs, complex logic, and more.
@@ -955,16 +959,16 @@ if __name__ == "__main__":
     output_dir = Path(__file__).parent / "test_mods"
     test_suite = create_curated_test_suite(str(output_dir))
     
-    print("="*60)
-    print("CURATED TEST SAMPLE REPOSITORY CREATED")
-    print("="*60)
+    logger.info("="*60)
+    logger.info("CURATED TEST SAMPLE REPOSITORY CREATED")
+    logger.info("="*60)
     
     for category, mods in test_suite.items():
-        print(f"\n{category.upper()} ({len(mods)} mods):")
+        logger.info(f"\n{category.upper()} ({len(mods)} mods):")
         for mod_path in mods:
             size = mod_path.stat().st_size if mod_path.exists() else 0
-            print(f"  ✅ {mod_path.name} ({size} bytes)")
+            logger.info(f"  ✅ {mod_path.name} ({size} bytes)")
     
     total_mods = sum(len(mods) for mods in test_suite.values())
-    print(f"\n🎯 Total: {total_mods} comprehensive test mods created")
-    print("Ready for ModPorter AI conversion testing!")
+    logger.info(f"\n🎯 Total: {total_mods} comprehensive test mods created")
+    logger.info("Ready for ModPorter AI conversion testing!")
