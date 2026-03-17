@@ -748,15 +748,15 @@ class TestMVPEndToEndConversion:
             assert structural.get('status') in ['pass', 'partial'], \
                 f"Structural validation failed: {structural.get('errors', [])}"
 
-            # Manifest validation should pass
-            manifest = validation_result['validations'].get('manifest', {})
-            assert manifest.get('status') in ['pass', 'partial'], \
-                f"Manifest validation failed: {manifest.get('errors', [])}"
+            # Best practices validation should pass (covers manifest.json)
+            best_practices = validation_result['validations'].get('best_practices', {})
+            assert best_practices.get('status') in ['pass', 'partial'], \
+                f"Best practices validation failed: {best_practices.get('errors', [])}"
 
-            # Content validation should pass (as documented in docstring)
-            content = validation_result['validations'].get('content', {})
-            assert content.get('status') in ['pass', 'partial'], \
-                f"Content validation failed: {content.get('errors', [])}"
+            # Semantic accuracy validation should pass (content validation)
+            semantic_accuracy = validation_result['validations'].get('semantic_accuracy', {})
+            assert semantic_accuracy.get('status') in ['pass', 'partial'], \
+                f"Semantic accuracy validation failed: {semantic_accuracy.get('errors', [])}"
 
             print("\n✅ TEST PASSED: QA Validator Integration")
 

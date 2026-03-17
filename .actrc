@@ -1,0 +1,14 @@
+# Act CLI configuration for local GitHub Actions execution
+# See https://github.com/nektos/act
+
+# Default container image to use for running workflows
+# Using ubuntu-latest image
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
+
+# Secrets for local testing (these are typically empty for local CI)
+-s DOCKER_HUB_USERNAME=
+-s DOCKER_HUB_ACCESS_TOKEN=
+-s GITHUB_TOKEN=test_token
+
+# Environment variables
+--env=SKIP_DOCKER_BUILD=false

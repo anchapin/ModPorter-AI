@@ -822,6 +822,7 @@ async def call_ai_engine_conversion(job_id: str):
                 "conversion_options": conversion_options,
             }
 
+
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
@@ -830,6 +831,7 @@ async def call_ai_engine_conversion(job_id: str):
                     raise Exception(
                         f"AI Engine failed to start conversion: {response.status_code} - {response.text}"
                     )
+
 
                 # Poll AI Engine for status updates
                 while True:
@@ -959,6 +961,7 @@ async def start_conversion(
     # Write to Redis
     await cache.set_job_status(str(job.id), mirror.model_dump())
     await cache.set_progress(str(job.id), 0)
+
 
     # Try AI Engine first, fallback to simulation if it fails
     background_tasks.add_task(try_ai_engine_or_fallback, str(job.id))
@@ -1367,10 +1370,11 @@ async def create_addon_asset_endpoint(
             session=db, addon_id=addon_id, file=file, asset_type=asset_type
         )
     except ValueError as e:  # Catch errors like Addon not found from CRUD (though checked above)
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to create addon asset: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=404, detail="Failed to create addon asset: Resource not found")
     except Exception as e:
         logger.error(f"Failed to create addon asset: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create addon asset")
+        raise HTTPException(status_code=500, detail="Failed to create addon asset: Please try again.")
     return db_asset
 
 
@@ -1431,7 +1435,7 @@ async def update_addon_asset_endpoint(
         updated_asset = await crud.update_addon_asset(session=db, asset_id=asset_id, file=file)
     except Exception as e:
         logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to update addon asset")
+        raise HTTPException(status_code=500, detail="Failed to update addon asset. Please try again.")
 
     if not updated_asset:  # Should be caught by prior check or raise exception in CRUD
         raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
@@ -1484,7 +1488,7 @@ async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_
         )
     except Exception as e:
         logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to export addon")
+        raise HTTPException(status_code=500, detail="Failed to export addon. Please try again.")
 
     # Sanitize addon name for filename
     safe_filename = "".join(c if c.isalnum() else "_" for c in addon_details.name)

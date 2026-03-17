@@ -30,5 +30,6 @@ def test_python_path():
     print(f"Files in current dir: {os.listdir('.')}")
 
     # Verify test directory structure exists for CI compatibility
-    assert os.path.exists("integration"), "integration directory should exist"
+    # Run from project root, so look in tests/ directory
+    assert os.path.exists("tests/integration"), "tests/integration directory should exist"
     print("✅ Test directory structure verified")

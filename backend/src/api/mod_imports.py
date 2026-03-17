@@ -296,7 +296,9 @@ async def search_mods(
 
     except Exception as e:
         logger.error(f"Search error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to search mods")
+        logger.error(f"Failed to search mods: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to search mods: Please try again.")
 
 
 @router.get("/{platform}/mod/{mod_id}", response_model=ModInfo)
@@ -324,7 +326,9 @@ async def get_mod_info(
 
     except Exception as e:
         logger.error(f"Get mod info error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get mod info")
+        logger.error(f"Failed to get mod info: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to get mod info: Please try again.")
 
 
 @router.get("/{platform}/mod/{mod_id}/files", response_model=List[ModFile])
@@ -363,7 +367,9 @@ async def get_mod_files(
 
     except Exception as e:
         logger.error(f"Get mod files error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get mod files")
+        logger.error(f"Failed to get mod files: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to get mod files: Please try again.")
 
 
 @router.post("/import", response_model=ImportResponse)
@@ -486,7 +492,9 @@ async def get_categories(platform: str):
 
     except Exception as e:
         logger.error(f"Get categories error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get categories")
+        logger.error(f"Failed to get categories: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to get categories: Please try again.")
 
 
 @router.get("/loaders")
@@ -499,4 +507,6 @@ async def get_loaders():
         return loaders
     except Exception as e:
         logger.error(f"Get loaders error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get loaders")
+        logger.error(f"Failed to get loaders: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to get loaders: Please try again.")

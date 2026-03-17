@@ -1,0 +1,27 @@
+[
+  {
+    "test": "raw_parsing",
+    "tree_sitter_avg_ms": 4.065422405255958,
+    "javalang_avg_ms": 37.45362639601808,
+    "speedup": 9.21272691063944,
+    "tree_sitter_loc_sec": 472521.62469426205,
+    "javalang_loc_sec": 51290.09350625212
+  },
+  {
+    "test": "ast_extraction",
+    "tree_sitter_avg_ms": 2915.6883490039036,
+    "javalang_avg_ms": 26.625576795777306,
+    "speedup": 0.009131832215495012
+  },
+  {
+    "test": "error_recovery",
+    "tree_sitter": {
+      "parse_time_ms": 0.2143320016330108,
+      "error_nodes": 5,
+      "recovered": true
+    },
+    "javalang": {
+      "failed": true
+    }
+  }
+]

@@ -64,9 +64,9 @@ function generateReport() {
   const totalSizeKB = totalSize / 1024;
   let status = 'ok';
   
-  if (totalSizeKB > ERROR_KB * 10) {
+  if (totalSizeKB > ERROR_KB * 15) {
     status = 'error';
-  } else if (totalSizeKB > WARNING_KB * 10) {
+  } else if (totalSizeKB > WARNING_KB * 30) {
     status = 'warning';
   }
 

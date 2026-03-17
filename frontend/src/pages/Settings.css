@@ -69,9 +69,10 @@
   transition: border-color 0.2s;
 }
 
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
+.form-group input:focus-visible,
+.form-group select:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
   border-color: #007bff;
 }
 
