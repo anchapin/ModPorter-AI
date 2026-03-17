@@ -83,9 +83,7 @@ class RetryPolicy:
         """Determine if a task should be retried based on error and retry count."""
         if retry_count >= self.max_retries:
             return False
-        if self.retryable_errors and error_type not in self.retryable_errors:
-            return False
-        return True
+        return not (self.retryable_errors and error_type not in self.retryable_errors)
 
 
 # Default retry policies

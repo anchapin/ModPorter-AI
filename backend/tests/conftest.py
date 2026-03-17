@@ -32,9 +32,7 @@ _db_initialized = False
 def pytest_sessionstart(session):
     """Initialize database once at the start of the test session."""
     global _db_initialized
-    print("pytest_sessionstart called")
     if not _db_initialized:
-        print("Initializing test database...")
         try:
             # Run database initialization synchronously
             import asyncio
@@ -47,33 +45,25 @@ def pytest_sessionstart(session):
                 # import db.models
                 from sqlalchemy import text
 
-                print(f"Database URL: {test_engine.url}")
-                print("Available models:")
-                for table_name in Base.metadata.tables.keys():
-                    print(f"  - {table_name}")
+                for table_name in Base.metadata.tables:
+                    pass
 
                 async with test_engine.begin() as conn:
-                    print("Connection established")
                     # Check if we're using SQLite
                     if "sqlite" in str(test_engine.url).lower():
-                        print("Using SQLite - skipping extensions")
                         # SQLite doesn't support extensions, so we skip them
                         await conn.run_sync(Base.metadata.create_all)
-                        print("Tables created successfully")
 
                         # Verify tables were created
                         result = await conn.execute(
                             text("SELECT name FROM sqlite_master WHERE type='table'")
                         )
                         tables = [row[0] for row in result.fetchall()]
-                        print(f"Created tables: {tables}")
                     else:
-                        print("Using PostgreSQL - creating extensions")
                         # PostgreSQL specific extensions
                         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
                         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                         await conn.run_sync(Base.metadata.create_all)
-                        print("Extensions and tables created successfully")
 
             # Create a new event loop for this operation
             loop = asyncio.new_event_loop()
@@ -81,11 +71,9 @@ def pytest_sessionstart(session):
             try:
                 loop.run_until_complete(init_test_db())
                 _db_initialized = True
-                print("Test database initialized successfully")
             finally:
                 loop.close()
         except Exception as e:
-            print(f"⚠️ Warning: Database initialization failed: {e}")
             import traceback
 
             traceback.print_exc()
