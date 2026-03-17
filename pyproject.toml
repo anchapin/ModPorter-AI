@@ -19,6 +19,8 @@ exclude = [
 
 [tool.ruff.lint]
 # Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901)
+# Note: flake8-duplicate-strings is not yet available in Ruff
+# Duplicate detection is covered by various rules: SIM101 (duplicate-isinstance-call), RUF068 (duplicate-in-dunder-all)
 select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901"]
 ignore = [
     "E402",  # module level import not at top of file
