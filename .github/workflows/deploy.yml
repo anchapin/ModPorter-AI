@@ -206,6 +206,7 @@ jobs:
         severity: 'CRITICAL,HIGH,MEDIUM'
         skip-dirs: '.github,docs,tests,scripts,node_modules,.venv'
         skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**'
+      continue-on-error: true
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v4

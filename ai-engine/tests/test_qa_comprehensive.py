@@ -11,7 +11,12 @@ from pathlib import Path
 import importlib.util
 
 # Load qa_validator directly
-spec = importlib.util.spec_from_file_location("qa_validator", "ai-engine/agents/qa_validator.py")
+# Find absolute path relative to the current file's directory
+current_dir = Path(__file__).parent
+agents_dir = current_dir.parent / "agents"
+qa_validator_path = agents_dir / "qa_validator.py"
+
+spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
