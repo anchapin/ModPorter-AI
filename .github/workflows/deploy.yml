@@ -230,6 +230,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
+    - name: Initialize performance tracking
+      run: |
+        echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+        ./scripts/ci-performance-tracker.sh init || true
+        echo "📊 Performance tracking initialized"
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
 
@@ -269,6 +275,25 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Record build time
+      if: always()
+      run: |
+        BUILD_END=$(date +%s)
+        BUILD_START=${{ env.BUILD_START }}
+        if [ -n "$BUILD_START" ]; then
+          DURATION=$((BUILD_END - BUILD_START))
+          echo "📊 Build completed in ${DURATION}s"
+          ./scripts/ci-performance-tracker.sh record "Docker Build" "$BUILD_START" "$BUILD_END" || true
+        fi
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: perf-metrics-build
+        path: .github/perf-metrics/*.json
+        retention-days: 30
+
   deploy:
     needs: [build]
     runs-on: ubuntu-latest
@@ -278,6 +303,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
+
+    - name: Initialize deployment performance tracking
+      run: |
+        echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.9.1
@@ -337,6 +366,25 @@ jobs:
         channel: '#deployments'
         webhook_url: ${{ secrets.SLACK_WEBHOOK }}
       if: always()
+
+    - name: Record deployment time
+      if: always()
+      run: |
+        DEPLOY_END=$(date +%s)
+        DEPLOY_START=${{ env.DEPLOY_START }}
+        if [ -n "$DEPLOY_START" ]; then
+          DURATION=$((DEPLOY_END - DEPLOY_START))
+          echo "📊 Deployment completed in ${DURATION}s"
+          ./scripts/ci-performance-tracker.sh record "Server Deployment" "$DEPLOY_START" "$DEPLOY_END" || true
+        fi
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: perf-metrics-deploy
+        path: .github/perf-metrics/*.json
+        retention-days: 30
 
   rollback:
     runs-on: ubuntu-latest

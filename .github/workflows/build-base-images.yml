@@ -112,6 +112,30 @@ jobs:
           DOCKER_BUILDKIT=1
         no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
 
+    - name: Initialize performance tracking
+      if: steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
+      run: |
+        echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Record build time
+      if: always()
+      run: |
+        JOB_END=$(date +%s)
+        JOB_START=${{ env.JOB_START }}
+        if [ -n "$JOB_START" ]; then
+          DURATION=$((JOB_END - JOB_START))
+          echo "📊 Python base image build completed in ${DURATION}s"
+          ./scripts/ci-performance-tracker.sh record "Python Base Image Build" "$JOB_START" "$JOB_END" || true
+        fi
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: perf-metrics-python-base
+        path: .github/perf-metrics/*.json
+        retention-days: 30
+
   build-node-base:
     runs-on: ubuntu-latest
     permissions:
@@ -197,3 +221,27 @@ jobs:
           BUILDKIT_INLINE_CACHE=1
           DOCKER_BUILDKIT=1
         no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
+
+    - name: Initialize performance tracking
+      if: steps.check-image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
+      run: |
+        echo "JOB_START=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Record build time
+      if: always()
+      run: |
+        JOB_END=$(date +%s)
+        JOB_START=${{ env.JOB_START }}
+        if [ -n "$JOB_START" ]; then
+          DURATION=$((JOB_END - JOB_START))
+          echo "📊 Node base image build completed in ${DURATION}s"
+          ./scripts/ci-performance-tracker.sh record "Node Base Image Build" "$JOB_START" "$JOB_END" || true
+        fi
+
+    - name: Upload performance metrics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: perf-metrics-node-base
+        path: .github/perf-metrics/*.json
+        retention-days: 30
