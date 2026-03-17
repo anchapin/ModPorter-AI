@@ -4,8 +4,7 @@ from .metrics_collector import PerformanceMetricsCollector as ExternalPerformanc
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -366,7 +365,9 @@ class PerformanceBenchmarkingSystem:
         self.analyzer = PerformanceAnalyzer()
         self.comparator = PerformanceComparator()
         self.reporter = BenchmarkReporter()
-        logger.info("PerformanceBenchmarkingSystem initialized with ExternalPerformanceMetricsCollector.")
+        logger.info(
+            "PerformanceBenchmarkingSystem initialized with ExternalPerformanceMetricsCollector."
+        )
 
     def run_full_benchmark(
         self, scenario, java_process_keyword="java", bedrock_process_keyword="bedrock_server"

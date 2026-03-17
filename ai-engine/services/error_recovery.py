@@ -210,9 +210,7 @@ class RetryStrategy(RecoveryStrategy):
         # Calculate backoff delay
         base_delay = 1.0
         max_delay = 30.0
-        delay = min(
-            base_delay * (2**error.retry_count) + random.uniform(0, 1), max_delay
-        )
+        delay = min(base_delay * (2**error.retry_count) + random.uniform(0, 1), max_delay)
 
         logger.info(
             f"Retrying after {delay:.1f}s (attempt {error.retry_count + 1}/{error.max_retries})"
@@ -357,9 +355,7 @@ class AutoRecoveryEngine:
         error.severity = self.detector.get_severity(error.error_type, error.retry_count)
 
         # Get strategies for this error type
-        strategies = self.strategies.get(
-            error.error_type, self.strategies[ErrorType.UNKNOWN]
-        )
+        strategies = self.strategies.get(error.error_type, self.strategies[ErrorType.UNKNOWN])
 
         # Try each strategy in order
         for strategy in strategies:
@@ -430,9 +426,7 @@ class ConversionErrorHandler:
         self.recovery_engine = AutoRecoveryEngine()
         self.auto_recovery_enabled = auto_recovery_enabled
         self.error_log: List[ConversionError] = []
-        logger.info(
-            f"ConversionErrorHandler initialized (auto_recovery={auto_recovery_enabled})"
-        )
+        logger.info(f"ConversionErrorHandler initialized (auto_recovery={auto_recovery_enabled})")
 
     def handle_error(
         self,
@@ -472,9 +466,7 @@ class ConversionErrorHandler:
             if result.success:
                 logger.info(f"Auto-recovery successful: {result.recovery_strategy}")
             elif result.manual_intervention_required:
-                logger.warning(
-                    f"Manual intervention required for error {error.error_id}"
-                )
+                logger.warning(f"Manual intervention required for error {error.error_id}")
 
             return result
         else:
@@ -493,9 +485,7 @@ class ConversionErrorHandler:
 
         # Check recent errors
         recent_errors = self.error_log[-5:]
-        critical_count = sum(
-            1 for e in recent_errors if e.severity == ErrorSeverity.CRITICAL
-        )
+        critical_count = sum(1 for e in recent_errors if e.severity == ErrorSeverity.CRITICAL)
 
         # Stop if multiple critical errors
         return critical_count < 2

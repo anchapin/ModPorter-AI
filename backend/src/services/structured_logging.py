@@ -18,9 +18,7 @@ from structlog.processors import JSONRenderer, TimeStamper
 from structlog.stdlib import LoggerFactory
 
 # Context variable to store correlation ID across async operations
-correlation_id_var: ContextVar[Optional[str]] = ContextVar(
-    "correlation_id", default=None
-)
+correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
 
 # Context variable to store request metadata
 request_metadata_var: ContextVar[Optional[Dict[str, Any]]] = ContextVar(
@@ -310,9 +308,7 @@ class LogContext:
 
         # Bind to structlog context
         structlog.contextvars.clear_contextvars()
-        structlog.contextvars.bind_contextvars(
-            correlation_id=self.correlation_id, **self.metadata
-        )
+        structlog.contextvars.bind_contextvars(correlation_id=self.correlation_id, **self.metadata)
 
         return self
 

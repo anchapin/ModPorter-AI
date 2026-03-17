@@ -115,7 +115,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
         end_time = time.time()
         duration = end_time - start_time
 
-
         return {
             "strategy": "sequential",
             "duration_seconds": duration,
@@ -157,7 +156,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
 
         end_time = time.time()
         duration = end_time - start_time
-
 
         return {
             "strategy": "parallel_adaptive",
@@ -205,11 +203,8 @@ def run_benchmarks():
             seq_time = sequential_result["duration_seconds"]
             par_time = parallel_result["duration_seconds"]
 
-            improvement = (
-                ((seq_time - par_time) / seq_time) * 100 if seq_time > 0 else 0
-            )
+            improvement = ((seq_time - par_time) / seq_time) * 100 if seq_time > 0 else 0
             speedup = seq_time / par_time if par_time > 0 else 0
-
 
             # Check if target met (50% improvement)
             if improvement >= 50:

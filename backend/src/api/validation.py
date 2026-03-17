@@ -11,19 +11,13 @@ from .validation_constants import ValidationJobStatus, ValidationMessages
 
 class ValidationReportModel(BaseModel):
     conversion_id: str = Field(..., description="Unique conversion identifier")
-    semantic_analysis: Dict[str, Any] = Field(
-        ..., description="Semantic preservation analysis"
-    )
+    semantic_analysis: Dict[str, Any] = Field(..., description="Semantic preservation analysis")
     behavior_prediction: Dict[str, Any] = Field(
         ..., description="Behavioral difference predictions"
     )
     asset_integrity: Dict[str, Any] = Field(..., description="Asset validation results")
-    manifest_validation: Dict[str, Any] = Field(
-        ..., description="Manifest structure validation"
-    )
-    overall_confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Overall confidence score"
-    )
+    manifest_validation: Dict[str, Any] = Field(..., description="Manifest structure validation")
+    overall_confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence score")
     recommendations: List[str] = Field(
         default_factory=list, description="Improvement recommendations"
     )
@@ -39,9 +33,7 @@ class ValidationAgent:
             "manifest": 0.25,
         }
 
-    def validate_conversion(
-        self, conversion_artifacts: Dict[str, Any]
-    ) -> ValidationReportModel:
+    def validate_conversion(self, conversion_artifacts: Dict[str, Any]) -> ValidationReportModel:
         conversion_id = conversion_artifacts.get("conversion_id", str(uuid.uuid4()))
 
         semantic_analysis = self._analyze_semantic_preservation(conversion_artifacts)
@@ -68,9 +60,7 @@ class ValidationAgent:
             raw_data=conversion_artifacts,
         )
 
-    def _analyze_semantic_preservation(
-        self, artifacts: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _analyze_semantic_preservation(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         java_code = artifacts.get("java_code", "")
         bedrock_code = artifacts.get("bedrock_code", "")
 
@@ -124,16 +114,12 @@ class ValidationAgent:
         return {
             "intent_preserved": intent_preserved,
             "confidence": confidence,
-            "findings": (
-                findings if findings else ["Analysis completed with available data"]
-            ),
+            "findings": (findings if findings else ["Analysis completed with available data"]),
             "critical_issues": critical_issues,
             "warnings": warnings if warnings else ["No warnings"],
         }
 
-    def _predict_behavior_differences(
-        self, artifacts: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _predict_behavior_differences(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
         java_code = artifacts.get("java_code", "")
         bedrock_code = artifacts.get("bedrock_code", "")
 
@@ -153,10 +139,7 @@ class ValidationAgent:
         bedrock_lower = bedrock_code.lower() if bedrock_code else ""
 
         if "ai" in java_lower or "goal" in java_lower or "behavior" in java_lower:
-            if (
-                "behavior" not in bedrock_lower
-                and "minecraft:behavior" not in bedrock_lower
-            ):
+            if "behavior" not in bedrock_lower and "minecraft:behavior" not in bedrock_lower:
                 potential_issues.append("AI/behavior system differences detected")
                 compatibility_score -= 0.15
                 behavior_diff = "significant"
@@ -178,9 +161,7 @@ class ValidationAgent:
             "behavior_diff": behavior_diff,
             "confidence": min(compatibility_score + 0.1, 1.0),
             "potential_issues": (
-                potential_issues
-                if potential_issues
-                else ["No major behavior differences detected"]
+                potential_issues if potential_issues else ["No major behavior differences detected"]
             ),
             "compatibility_score": compatibility_score,
         }
@@ -295,9 +276,7 @@ class ValidationAgent:
             "schema_compliance": schema_compliance,
         }
 
-    def _calculate_weighted_confidence(
-        self, semantic, behavior, assets, manifest
-    ) -> float:
+    def _calculate_weighted_confidence(self, semantic, behavior, assets, manifest) -> float:
         semantic_conf = semantic.get("confidence", 0.5)
         behavior_conf = behavior.get("compatibility_score", 0.5)
 
@@ -324,17 +303,13 @@ class ValidationAgent:
         final_score = weighted_score - semantic_penalty - behavior_penalty
         return max(min(final_score, 1.0), 0.0)
 
-    def _generate_recommendations(
-        self, semantic, behavior, assets, manifest
-    ) -> List[str]:
+    def _generate_recommendations(self, semantic, behavior, assets, manifest) -> List[str]:
         recommendations = []
 
         if semantic.get("critical_issues"):
             recommendations.append("Review critical semantic issues in the conversion")
         if semantic.get("warnings"):
-            recommendations.append(
-                "Verify semantic preservation for complex Java features"
-            )
+            recommendations.append("Verify semantic preservation for complex Java features")
 
         if behavior.get("potential_issues"):
             recommendations.append(
@@ -359,9 +334,7 @@ class ValidationAgent:
 
 class ValidationRequest(BaseModel):
     conversion_id: str = Field(..., description="The ID of the conversion to validate.")
-    java_code_snippet: Optional[str] = Field(
-        None, description="Snippet of original Java code."
-    )
+    java_code_snippet: Optional[str] = Field(None, description="Snippet of original Java code.")
     bedrock_code_snippet: Optional[str] = Field(
         None, description="Snippet of converted Bedrock code."
     )
@@ -389,9 +362,7 @@ class ValidationReportResponse(ValidationReportModel):
     validation_job_id: str = Field(
         ..., description="The ID of the validation job that produced this report."
     )
-    retrieved_at: str = Field(
-        ..., description="Timestamp when the report was retrieved."
-    )
+    retrieved_at: str = Field(..., description="Timestamp when the report was retrieved.")
 
 
 router = APIRouter(tags=["Validation"], responses={404: {"description": "Not found"}})
@@ -438,9 +409,7 @@ async def process_validation_task(
     except Exception as e:
         with _validation_jobs_lock:
             validation_jobs[job_id].status = ValidationJobStatus.FAILED
-            validation_jobs[job_id].message = (
-                f"{ValidationMessages.JOB_FAILED}: {str(e)}"
-            )
+            validation_jobs[job_id].message = f"{ValidationMessages.JOB_FAILED}: {str(e)}"
 
 
 @router.post("/", response_model=ValidationJob, status_code=202)
@@ -452,9 +421,7 @@ async def start_validation_job(
     job_id = str(uuid.uuid4())
     conversion_id = request.conversion_id
     if not conversion_id:
-        raise HTTPException(
-            status_code=400, detail=ValidationMessages.CONVERSION_ID_REQUIRED
-        )
+        raise HTTPException(status_code=400, detail=ValidationMessages.CONVERSION_ID_REQUIRED)
 
     job = ValidationJob(
         job_id=job_id,
@@ -484,9 +451,7 @@ async def get_validation_job_status(job_id: str):
     with _validation_jobs_lock:
         job = validation_jobs.get(job_id)
         if not job:
-            raise HTTPException(
-                status_code=404, detail=ValidationMessages.JOB_NOT_FOUND
-            )
+            raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
         return job
 
 
@@ -495,9 +460,7 @@ async def get_validation_report(job_id: str):
     with _validation_jobs_lock:
         job = validation_jobs.get(job_id)
         if not job:
-            raise HTTPException(
-                status_code=404, detail=ValidationMessages.JOB_NOT_FOUND
-            )
+            raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
         if job.status != ValidationJobStatus.COMPLETED:
             raise HTTPException(
                 status_code=400,
@@ -514,8 +477,6 @@ async def get_validation_report(job_id: str):
 
     response_payload = report_data.model_dump()
     response_payload["validation_job_id"] = job_id
-    response_payload["retrieved_at"] = time.strftime(
-        "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-    )
+    response_payload["retrieved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     return ValidationReportResponse(**response_payload)

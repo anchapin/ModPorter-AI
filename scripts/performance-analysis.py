@@ -595,7 +595,6 @@ class PerformanceAnalyzer:
             }
         )
 
-
         return PerformanceReport(
             timestamp=datetime.now(),
             system_overview=system_overview,
@@ -771,7 +770,6 @@ class PerformanceAnalyzer:
 
         with open(output_path, "w") as f:
             f.write(html)
-
 
 
 async def main():

@@ -16,9 +16,7 @@ class ProgressCallback:
 
     def __init__(self):
         self._subscribers: Dict[str, Set] = {}  # job_id -> set of callbacks
-        self._progress_history: Dict[str, list] = (
-            {}
-        )  # job_id -> list of progress updates
+        self._progress_history: Dict[str, list] = {}  # job_id -> list of progress updates
 
     def subscribe(self, job_id: str, callback):
         """

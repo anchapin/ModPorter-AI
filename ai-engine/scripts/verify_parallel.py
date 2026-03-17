@@ -51,7 +51,6 @@ def test_strategy_selector():
         # Test default strategy
         strategy, config = selector.select_strategy()
 
-
         if strategy == OrchestrationStrategy.PARALLEL_ADAPTIVE:
             return True
         else:
@@ -76,11 +75,7 @@ def test_worker_pool():
 
         expected_workers = min(32, (multiprocessing.cpu_count() or 1) + 4)
 
-
-        if (
-            pool.max_workers == expected_workers
-            and pool.worker_type == WorkerType.THREAD
-        ):
+        if pool.max_workers == expected_workers and pool.worker_type == WorkerType.THREAD:
             return True
         else:
             return False
@@ -102,7 +97,6 @@ def test_enhanced_crew():
 
         # Check orchestrator is initialized
         if crew.orchestrator is not None:
-
             # Check agents are registered
             agent_count = len(crew.orchestrator.agent_executors)
 
@@ -125,7 +119,6 @@ def test_environment_variables():
 
     use_enhanced = os.getenv("USE_ENHANCED_ORCHESTRATION", "")
     default_enhanced = os.getenv("DEFAULT_ENHANCED_ORCHESTRATION", "true")
-
 
     # These should be set in .env file for production
     return True
@@ -154,7 +147,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

@@ -114,9 +114,7 @@ class SecureTempFileManager:
         """Start the background cleanup thread."""
         if self._cleanup_thread is None or not self._cleanup_thread.is_alive():
             self._stop_cleanup.clear()
-            self._cleanup_thread = threading.Thread(
-                target=self._cleanup_loop, daemon=True
-            )
+            self._cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
             self._cleanup_thread.start()
             logger.info("Started background temp file cleanup thread")
 
@@ -343,9 +341,7 @@ class SecureTempFileManager:
 
         with self._lock:
             # Find all files for this job
-            job_files = [
-                info for info in self._tracked_files.values() if info.job_id == job_id
-            ]
+            job_files = [info for info in self._tracked_files.values() if info.job_id == job_id]
 
         for info in job_files:
             if info.is_directory:
@@ -373,11 +369,7 @@ class SecureTempFileManager:
         cleaned = 0
 
         with self._lock:
-            old_files = [
-                info
-                for info in self._tracked_files.values()
-                if info.created_at < cutoff
-            ]
+            old_files = [info for info in self._tracked_files.values() if info.created_at < cutoff]
 
         for info in old_files:
             if info.is_directory:
@@ -467,9 +459,7 @@ class SecureTempFileManager:
         """
         with self._lock:
             tracked_count = len(self._tracked_files)
-            directories = sum(
-                1 for info in self._tracked_files.values() if info.is_directory
-            )
+            directories = sum(1 for info in self._tracked_files.values() if info.is_directory)
             files = tracked_count - directories
 
         total_size = self.get_total_size()

@@ -118,9 +118,9 @@ def benchmark_raw_parsing():
     ts_loc = lines / ts_avg
     jl_loc = lines / jl_avg
 
-    print(f"Tree-sitter: {ts_avg*1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
-    print(f"Javalang:    {jl_avg*1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
-    print(f"Speedup:     {jl_avg/ts_avg:.1f}x faster")
+    print(f"Tree-sitter: {ts_avg * 1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
+    print(f"Javalang:    {jl_avg * 1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
+    print(f"Speedup:     {jl_avg / ts_avg:.1f}x faster")
 
     return {
         "test": "raw_parsing",
@@ -140,9 +140,7 @@ def benchmark_ast_extraction():
 
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location(
-        "java_parser", "src/services/java_parser.py"
-    )
+    spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")
     java_parser = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(java_parser)
 
@@ -200,9 +198,9 @@ def benchmark_ast_extraction():
     ts_loc = lines / ts_avg if ts_avg > 0 else 0
     jl_loc = lines / jl_avg if jl_avg > 0 else 0
 
-    print(f"Tree-sitter: {ts_avg*1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
-    print(f"Javalang:    {jl_avg*1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
-    print(f"Speedup:     {jl_avg/ts_avg:.1f}x faster")
+    print(f"Tree-sitter: {ts_avg * 1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
+    print(f"Javalang:    {jl_avg * 1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
+    print(f"Speedup:     {jl_avg / ts_avg:.1f}x faster")
 
     return {
         "test": "ast_extraction",
@@ -262,7 +260,7 @@ public class Broken {
         return count
 
     ts_errors = count_errors(ts_tree.root_node)
-    print(f"  Parse time: {ts_duration*1000:.2f}ms")
+    print(f"  Parse time: {ts_duration * 1000:.2f}ms")
     print(f"  Error nodes: {ts_errors}")
     print(f"  Root type: {ts_tree.root_node.type}")
     print(f"  ✓ Recovered and continued parsing\n")
@@ -273,11 +271,11 @@ public class Broken {
     try:
         jl_tree = javalang.parse.parse(malformed_code)
         jl_duration = time.perf_counter() - start
-        print(f"  Parse time: {jl_duration*1000:.2f}ms")
+        print(f"  Parse time: {jl_duration * 1000:.2f}ms")
         print(f"  ✗ No error reported (unexpected)")
     except Exception as e:
         jl_duration = time.perf_counter() - start
-        print(f"  Parse time: {jl_duration*1000:.2f}ms")
+        print(f"  Parse time: {jl_duration * 1000:.2f}ms")
         print(f"  ✗ Failed with exception: {type(e).__name__}")
 
     return {

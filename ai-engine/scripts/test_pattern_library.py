@@ -89,7 +89,6 @@ def test_coverage_stats():
 
         stats = pattern_lib.get_coverage_stats()
 
-
         if stats["total_patterns"] >= 10:
             return True
         else:
@@ -117,10 +116,7 @@ def test_complex_entity_patterns():
         library = pattern_lib.get_pattern_library()
 
         # Get entity patterns
-        entity_patterns = library.get_patterns_by_category(
-            pattern_lib.PatternCategory.ENTITY
-        )
-
+        entity_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.ENTITY)
 
         boss_pattern = library.get_pattern("entity_boss")
         if boss_pattern:
@@ -161,7 +157,6 @@ def test_multiblock_patterns():
             pattern_lib.PatternCategory.MULTI_BLOCK
         )
 
-
         controller_pattern = library.get_pattern("multiblock_controller")
         if controller_pattern:
             pass
@@ -197,13 +192,8 @@ def test_dimension_patterns():
         library = pattern_lib.get_pattern_library()
 
         # Get dimension patterns
-        dimension_patterns = library.get_patterns_by_category(
-            pattern_lib.PatternCategory.DIMENSION
-        )
-        worldgen_patterns = library.get_patterns_by_category(
-            pattern_lib.PatternCategory.WORLD_GEN
-        )
-
+        dimension_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.DIMENSION)
+        worldgen_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.WORLD_GEN)
 
         dim_pattern = library.get_pattern("dimension_type")
         if dim_pattern:
@@ -249,7 +239,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

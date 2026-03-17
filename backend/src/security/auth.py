@@ -86,9 +86,7 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(
-    user_id: str, expires_delta: Optional[timedelta] = None
-) -> str:
+def create_refresh_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT refresh token.
 

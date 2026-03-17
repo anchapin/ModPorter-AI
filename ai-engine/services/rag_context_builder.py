@@ -54,7 +54,7 @@ class RAGContextBuilder:
             bedrock_code = example.get("bedrock_code", "")
 
             example_text = f"""
-Example {i+1} (similarity: {score:.2f}):
+Example {i + 1} (similarity: {score:.2f}):
 Java:
 ```java
 {java_code[:500]}...
@@ -68,7 +68,7 @@ Bedrock:
 
             # Check if adding this example would exceed limit
             if current_length + len(example_text) > self.max_context_length:
-                logger.debug(f"Stopping at example {i+1} due to length limit")
+                logger.debug(f"Stopping at example {i + 1} due to length limit")
                 break
 
             context_parts.append(example_text)
@@ -116,9 +116,7 @@ Guidelines:
             prompt_parts.append("\n\n")
 
         # Add Java code to translate
-        prompt_parts.append(
-            f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n"
-        )
+        prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")
         prompt_parts.append("Bedrock Translation:\n")
 
         return "".join(prompt_parts)
@@ -131,9 +129,6 @@ _context_builder = None
 def get_context_builder(max_context_length: int = 4000) -> RAGContextBuilder:
     """Get or create context builder singleton."""
     global _context_builder
-    if (
-        _context_builder is None
-        or _context_builder.max_context_length != max_context_length
-    ):
+    if _context_builder is None or _context_builder.max_context_length != max_context_length:
         _context_builder = RAGContextBuilder(max_context_length=max_context_length)
     return _context_builder

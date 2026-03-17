@@ -95,8 +95,7 @@ class SettingsInferenceEngine:
             # Size-based rules
             {
                 "name": "large_mod_comprehensive",
-                "condition": lambda ctx: ctx.mod_size == "large"
-                or ctx.mod_size == "very_large",
+                "condition": lambda ctx: ctx.mod_size == "large" or ctx.mod_size == "very_large",
                 "action": {"detail_level": "comprehensive"},
                 "reason": "Large mods require comprehensive detail",
             },
@@ -424,10 +423,7 @@ class UserPreferenceLearner:
 
         # Track overrides
         for key in actual_settings:
-            if (
-                key in suggested_settings
-                and actual_settings[key] != suggested_settings[key]
-            ):
+            if key in suggested_settings and actual_settings[key] != suggested_settings[key]:
                 profile["overrides"].append(
                     {
                         "setting": key,
@@ -493,9 +489,7 @@ class UserPreferenceLearner:
             if setting in settings:
                 old_value = settings[setting]
                 settings[setting] = value
-                reasoning.append(
-                    f"User prefers {setting}={value} (overrode {old_value})"
-                )
+                reasoning.append(f"User prefers {setting}={value} (overrode {old_value})")
 
         confidence = 0.7 if profile["conversion_count"] < 10 else 0.9
 
@@ -548,27 +542,21 @@ class SmartDefaultsEngine:
 
         # 2. Get pattern-based defaults (if mod features provided)
         if mod_features:
-            pattern_result = self.pattern_defaults.get_defaults_for_pattern(
-                mod_features
-            )
+            pattern_result = self.pattern_defaults.get_defaults_for_pattern(mod_features)
             if pattern_result.confidence > 0:
                 results.append(("pattern", pattern_result, 0.3))  # 30% weight
 
         # 3. Get user-personalized defaults (if user ID provided)
         if user_id:
             base_settings = inference_result.settings
-            user_result = self.user_learner.get_personalized_defaults(
-                user_id, base_settings
-            )
+            user_result = self.user_learner.get_personalized_defaults(user_id, base_settings)
             if user_result.reasoning:  # Has learned preferences
                 results.append(("user", user_result, 0.3))  # 30% weight
 
         # Combine results
         combined = self._combine_results(results)
 
-        logger.info(
-            f"Smart defaults: {len(results)} sources, confidence {combined.confidence:.0%}"
-        )
+        logger.info(f"Smart defaults: {len(results)} sources, confidence {combined.confidence:.0%}")
 
         return combined
 
@@ -601,9 +589,7 @@ class SmartDefaultsEngine:
             combined_reasoning.extend([f"[{source}] {r}" for r in result.reasoning])
 
         # Calculate combined confidence
-        weighted_confidence = (
-            sum(r[1].confidence * r[2] for r in results) / total_weight
-        )
+        weighted_confidence = sum(r[1].confidence * r[2] for r in results) / total_weight
 
         return SmartDefaultsResult(
             settings=combined_settings,
@@ -624,9 +610,7 @@ class SmartDefaultsEngine:
     ):
         """Record conversion outcome for learning."""
         # Update pattern learning
-        self.pattern_defaults.record_conversion(
-            mod_features, settings_used, success, quality_score
-        )
+        self.pattern_defaults.record_conversion(mod_features, settings_used, success, quality_score)
 
         # Update user preference learning
         if user_id:

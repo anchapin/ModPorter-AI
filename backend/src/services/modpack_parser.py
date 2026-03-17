@@ -235,10 +235,7 @@ class CurseForgeModpackParser:
         is_server_side = True
 
         # Check for server-specific indicators
-        if (
-            "server" in name.lower()
-            or "server" in str(data.get("description", "")).lower()
-        ):
+        if "server" in name.lower() or "server" in str(data.get("description", "")).lower():
             is_client_side = False
 
         # Get primary game version

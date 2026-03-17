@@ -76,10 +76,11 @@ ignore = [
     "UP045",  # use X | None instead of Optional[X]
     "UP017",  # use datetime.UTC instead of datetime.now(timezone.utc)
     "UP042",  # inherit from enum.StrEnum instead of str, Enum
+    "T201",  # print statements (legacy debug code)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401", "F841"]  # Allow imports not at top, unused imports, and unused variables in tests
+"scripts/*" = ["E402", "F401", "F841"]  # Allow imports not at top, unused imports, and unused variables in scripts
 "__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
 "__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
 "agents/asset_converter.py" = ["F811", "F841", "C901"]  # Allow duplicate function definitions and unused variables in legacy code

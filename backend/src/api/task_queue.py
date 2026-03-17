@@ -26,15 +26,11 @@ class TaskEnqueueRequest(BaseModel):
     """Request model for enqueuing a task"""
 
     name: str = Field(..., description="Task name/identifier")
-    payload: Dict[str, Any] = Field(
-        default_factory=dict, description="Task payload data"
-    )
+    payload: Dict[str, Any] = Field(default_factory=dict, description="Task payload data")
     priority: str = Field(
         default="normal", description="Task priority: low, normal, high, critical"
     )
-    max_retries: Optional[int] = Field(
-        default=None, description="Maximum retry attempts"
-    )
+    max_retries: Optional[int] = Field(default=None, description="Maximum retry attempts")
 
 
 class TaskResponse(BaseModel):
@@ -87,9 +83,7 @@ async def create_task(request: TaskEnqueueRequest):
     try:
         priority = priority_string_to_enum(request.priority)
 
-        task = await enqueue_task(
-            name=request.name, payload=request.payload, priority=priority
-        )
+        task = await enqueue_task(name=request.name, payload=request.payload, priority=priority)
 
         return TaskResponse(
             id=task.id,
@@ -160,9 +154,7 @@ async def cancel_task_endpoint(task_id: str):
 @router.get("", response_model=List[TaskResponse])
 async def list_tasks(
     status: Optional[str] = Query(None, description="Filter by status"),
-    limit: int = Query(
-        100, ge=1, le=1000, description="Maximum number of tasks to return"
-    ),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of tasks to return"),
 ):
     """
     List tasks, optionally filtered by status.

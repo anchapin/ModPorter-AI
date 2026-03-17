@@ -156,9 +156,7 @@ class BatchConversionQueue:
         self._processor_thread: Optional[threading.Thread] = None
         self._running = False
 
-        logger.info(
-            f"BatchConversionQueue initialized (max_concurrent={max_concurrent})"
-        )
+        logger.info(f"BatchConversionQueue initialized (max_concurrent={max_concurrent})")
 
     def submit_job(self, job: BatchJob) -> str:
         """Submit a batch job to the queue."""
@@ -228,9 +226,7 @@ class BatchConversionQueue:
 
             job.completed_mods = completed
             job.failed_mods = failed
-            job.current_progress = (
-                (completed / job.total_mods * 100) if job.total_mods > 0 else 0
-            )
+            job.current_progress = (completed / job.total_mods * 100) if job.total_mods > 0 else 0
 
     def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get status of a job."""
@@ -261,9 +257,7 @@ class BatchConversionQueue:
             return
 
         self._running = True
-        self._processor_thread = threading.Thread(
-            target=self._process_loop, daemon=True
-        )
+        self._processor_thread = threading.Thread(target=self._process_loop, daemon=True)
         self._processor_thread.start()
         logger.info("Batch processor started")
 
@@ -342,9 +336,7 @@ class BatchProgressTracker:
             progress["failed_mods"] = failed
             progress["current_mod"] = current_mod
             progress["progress"] = (
-                (completed / progress["total_mods"] * 100)
-                if progress["total_mods"] > 0
-                else 0
+                (completed / progress["total_mods"] * 100) if progress["total_mods"] > 0 else 0
             )
 
             # Calculate ETA

@@ -102,9 +102,7 @@ class AutomationMetricsCollector:
         self.max_history = max_history
         self.metrics: List[ConversionMetric] = []
         self._lock = None  # Would use threading.Lock in production
-        logger.info(
-            f"AutomationMetricsCollector initialized (max_history={max_history})"
-        )
+        logger.info(f"AutomationMetricsCollector initialized (max_history={max_history})")
 
     def record_conversion(self, metric: ConversionMetric):
         """Record a conversion metric."""
@@ -114,9 +112,7 @@ class AutomationMetricsCollector:
         if len(self.metrics) > self.max_history:
             self.metrics = self.metrics[-self.max_history :]
 
-        logger.debug(
-            f"Recorded conversion: {metric.conversion_id} (success={metric.success})"
-        )
+        logger.debug(f"Recorded conversion: {metric.conversion_id} (success={metric.success})")
 
     def get_metrics(
         self,
@@ -256,9 +252,7 @@ class ModeDistributionAnalyzer:
         )
         logger.info("ModeDistributionAnalyzer initialized")
 
-    def record_conversion(
-        self, mode: str, duration: float, automation_level: float, success: bool
-    ):
+    def record_conversion(self, mode: str, duration: float, automation_level: float, success: bool):
         """Record a conversion for mode analysis."""
         stats = self.mode_stats[mode]
         stats["count"] += 1
@@ -431,9 +425,7 @@ class AutomationAnalyticsDashboard:
         # Record in all trackers
         self.metrics_collector.record_conversion(metric)
         self.success_tracker.record_outcome(mode, success, user_id)
-        self.mode_analyzer.record_conversion(
-            mode, duration_seconds, automation_level, success
-        )
+        self.mode_analyzer.record_conversion(mode, duration_seconds, automation_level, success)
 
     def get_dashboard(self) -> AutomationDashboard:
         """Get current dashboard data."""
@@ -452,9 +444,7 @@ class AutomationAnalyticsDashboard:
 
         # Error rate
         if dashboard.total_conversions > 0:
-            dashboard.error_rate = (
-                dashboard.failed_conversions / dashboard.total_conversions
-            )
+            dashboard.error_rate = dashboard.failed_conversions / dashboard.total_conversions
 
         # Success trend
         dashboard.automation_trend = self.success_tracker.get_success_rate_trend()

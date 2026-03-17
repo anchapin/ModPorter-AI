@@ -97,9 +97,7 @@ class ConversionOptions(BaseModel):
 class ConversionCreateRequest(BaseModel):
     """Request model for creating a conversion (multipart form data)."""
 
-    options: Optional[ConversionOptions] = Field(
-        default=None, description="Conversion options"
-    )
+    options: Optional[ConversionOptions] = Field(default=None, description="Conversion options")
 
 
 class ConversionCreateResponse(BaseModel):
@@ -127,9 +125,7 @@ class ConversionStatusResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     result_url: Optional[str] = Field(None, description="Download URL if completed")
     error: Optional[str] = Field(None, description="Error message if failed")
-    original_filename: Optional[str] = Field(
-        None, description="Original uploaded filename"
-    )
+    original_filename: Optional[str] = Field(None, description="Original uploaded filename")
 
 
 class ConversionListResponse(BaseModel):
@@ -303,26 +299,20 @@ async def scan_uploaded_file(file_path: Path) -> SecurityScanResult:
     result = scanner.scan_file(file_path)
 
     if result.has_critical_threats:
-        logger.warning(
-            f"Critical security threat detected in {file_path}: {result.threats}"
-        )
+        logger.warning(f"Critical security threat detected in {file_path}: {result.threats}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File rejected due to security threat: {result.threats[0].message}",
         )
 
     if result.has_high_threats:
-        logger.warning(
-            f"High severity security threat detected in {file_path}: {result.threats}"
-        )
+        logger.warning(f"High severity security threat detected in {file_path}: {result.threats}")
         # Log but don't reject for high severity - could be false positives
 
     return result
 
 
-async def validate_and_scan_file(
-    file: UploadFile, file_path: Path
-) -> SecurityScanResult:
+async def validate_and_scan_file(file: UploadFile, file_path: Path) -> SecurityScanResult:
     """
     Validate and scan an uploaded file.
 
@@ -600,9 +590,7 @@ async def create_conversion(
                 target_version=conversion_options.target_version,
                 options=conversion_options.dict(),
             )
-            logger.info(
-                f"AI Engine conversion started in background for job: {conversion_id}"
-            )
+            logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
 
     except Exception as e:
         # Log but don't fail - conversion is still created, can be picked up by worker
@@ -1032,9 +1020,7 @@ async def upload_chunk(
 
     # SECURITY: Validate chunk_number is within reasonable bounds
     if chunk_number < 1 or chunk_number > 10000:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chunk number"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chunk number")
 
     # Save chunk to disk - use safe path construction to prevent path traversal
     chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)

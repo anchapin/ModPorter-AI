@@ -28,9 +28,7 @@ class BehaviorTemplateCreate(BaseModel):
         ..., description="Template configuration and default values"
     )
     tags: List[str] = Field(default=[], description="Tags for search and filtering")
-    is_public: bool = Field(
-        default=False, description="Whether template is publicly available"
-    )
+    is_public: bool = Field(default=False, description="Whether template is publicly available")
     version: str = Field(default="1.0.0", description="Template version")
 
 
@@ -41,13 +39,9 @@ class BehaviorTemplateUpdate(BaseModel):
     description: Optional[str] = Field(None, description="Template description")
     category: Optional[str] = Field(None, description="Template category")
     template_type: Optional[str] = Field(None, description="Specific template type")
-    template_data: Optional[Dict[str, Any]] = Field(
-        None, description="Template configuration"
-    )
+    template_data: Optional[Dict[str, Any]] = Field(None, description="Template configuration")
     tags: Optional[List[str]] = Field(None, description="Tags for search and filtering")
-    is_public: Optional[bool] = Field(
-        None, description="Whether template is publicly available"
-    )
+    is_public: Optional[bool] = Field(None, description="Whether template is publicly available")
     version: Optional[str] = Field(None, description="Template version")
 
 
@@ -306,9 +300,7 @@ async def update_behavior_template(
         raise HTTPException(status_code=400, detail="Invalid template ID format")
 
     # Check if template exists
-    existing_template = await behavior_templates_crud.get_behavior_template(
-        db, template_id
-    )
+    existing_template = await behavior_templates_crud.get_behavior_template(db, template_id)
     if not existing_template:
         raise HTTPException(status_code=404, detail="Template not found")
 
@@ -343,17 +335,13 @@ async def update_behavior_template(
         tags=updated_template.tags,
         is_public=updated_template.is_public,
         version=updated_template.version,
-        created_by=(
-            str(updated_template.created_by) if updated_template.created_by else None
-        ),
+        created_by=(str(updated_template.created_by) if updated_template.created_by else None),
         created_at=updated_template.created_at.isoformat(),
         updated_at=updated_template.updated_at.isoformat(),
     )
 
 
-@router.delete(
-    "/templates/{template_id}", status_code=204, summary="Delete behavior template"
-)
+@router.delete("/templates/{template_id}", status_code=204, summary="Delete behavior template")
 async def delete_behavior_template(
     template_id: str = Path(..., description="Template ID"),
     db: AsyncSession = Depends(get_db),
@@ -383,9 +371,7 @@ async def delete_behavior_template(
 async def apply_behavior_template(
     template_id: str = Path(..., description="Template ID"),
     conversion_id: str = Query(..., description="Conversion ID to apply template to"),
-    file_path: Optional[str] = Query(
-        None, description="Specific file path to apply template to"
-    ),
+    file_path: Optional[str] = Query(None, description="Specific file path to apply template to"),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """

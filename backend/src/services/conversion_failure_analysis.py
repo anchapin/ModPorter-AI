@@ -155,9 +155,7 @@ RECOVERY_SUGGESTIONS = {
 }
 
 
-def determine_failure_severity(
-    error_category: str, retry_count: int
-) -> FailureSeverity:
+def determine_failure_severity(error_category: str, retry_count: int) -> FailureSeverity:
     """Determine the severity of the failure"""
     if retry_count >= 3:
         return FailureSeverity.CRITICAL
@@ -244,9 +242,7 @@ def log_conversion_failure(
     )
 
     # Get recovery suggestions
-    suggestions = RECOVERY_SUGGESTIONS.get(
-        error_category, RECOVERY_SUGGESTIONS["unknown_error"]
-    )
+    suggestions = RECOVERY_SUGGESTIONS.get(error_category, RECOVERY_SUGGESTIONS["unknown_error"])
 
     # Create user-friendly message
     user_message = _get_user_message(error_category)
@@ -287,9 +283,7 @@ def _get_user_message(error_category: str) -> str:
         "rate_limit_error": "Too many requests. Please wait a moment before trying again.",
         "timeout_error": "The operation timed out. The mod may be too complex. Please try again.",
     }
-    return messages.get(
-        error_category, "An unexpected error occurred. Please try again."
-    )
+    return messages.get(error_category, "An unexpected error occurred. Please try again.")
 
 
 def _log_failure(failure: ConversionFailure):

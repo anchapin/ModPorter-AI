@@ -78,9 +78,7 @@ def load_scenarios_from_files():
 mock_scenarios = load_scenarios_from_files()
 
 
-def simulate_benchmark_execution(
-    run_id: str, scenario_id: str, device_type: str = "desktop"
-):
+def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str = "desktop"):
 
     mock_benchmark_runs[run_id].update(
         {
@@ -107,9 +105,7 @@ def simulate_benchmark_execution(
         ]
 
         for stage_name, progress in stages:
-            mock_benchmark_runs[run_id].update(
-                {"progress": progress, "current_stage": stage_name}
-            )
+            mock_benchmark_runs[run_id].update({"progress": progress, "current_stage": stage_name})
             time.sleep(1)
 
         benchmark_result = PerformanceBenchmark(
@@ -147,9 +143,7 @@ def simulate_benchmark_execution(
 
         analysis = {
             "identified_issues": ["No major performance issues detected"],
-            "optimization_suggestions": [
-                "Performance appears within acceptable limits"
-            ],
+            "optimization_suggestions": ["Performance appears within acceptable limits"],
         }
 
         comparison_results = {
@@ -213,9 +207,7 @@ Recommendations: {analysis["optimization_suggestions"][0]}
 
 
 @router.post("/run", response_model=BenchmarkRunResponse, status_code=202)
-async def run_benchmark_endpoint(
-    request: BenchmarkRunRequest, background_tasks: BackgroundTasks
-):
+async def run_benchmark_endpoint(request: BenchmarkRunRequest, background_tasks: BackgroundTasks):
     if request.scenario_id not in mock_scenarios:
         raise HTTPException(
             status_code=404, detail=f"Scenario ID '{request.scenario_id}' not found."
@@ -247,9 +239,7 @@ async def run_benchmark_endpoint(
 async def get_benchmark_status_endpoint(run_id: str):
     run_info = mock_benchmark_runs.get(run_id)
     if not run_info:
-        raise HTTPException(
-            status_code=404, detail=f"Benchmark run ID '{run_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Benchmark run ID '{run_id}' not found.")
 
     estimated_completion = None
     progress = run_info.get("progress", 0.0)
@@ -289,9 +279,7 @@ async def get_benchmark_status_endpoint(run_id: str):
 async def get_benchmark_report_endpoint(run_id: str):
     run_info = mock_benchmark_runs.get(run_id)
     if not run_info:
-        raise HTTPException(
-            status_code=404, detail=f"Benchmark run ID '{run_id}' not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Benchmark run ID '{run_id}' not found.")
 
     if run_info["status"] != "completed":
         return BenchmarkReportResponse(
@@ -318,9 +306,7 @@ async def get_benchmark_report_endpoint(run_id: str):
         analysis=report_data["analysis"],
         comparison_results=report_data["comparison_results"],
         report_text=report_data["report_text"],
-        optimization_suggestions=report_data["analysis"].get(
-            "optimization_suggestions", []
-        ),
+        optimization_suggestions=report_data["analysis"].get("optimization_suggestions", []),
     )
 
 
@@ -375,16 +361,10 @@ async def get_benchmark_history_endpoint(limit: int = 50, offset: int = 0):
                     "scenario_id": run_data.get("scenario_id"),
                     "device_type": run_data.get("device_type", "desktop"),
                     "created_at": run_data.get("created_at"),
-                    "overall_score": report_data.get("benchmark", {}).get(
-                        "overall_score", 0
-                    ),
+                    "overall_score": report_data.get("benchmark", {}).get("overall_score", 0),
                     "cpu_score": report_data.get("benchmark", {}).get("cpu_score", 0),
-                    "memory_score": report_data.get("benchmark", {}).get(
-                        "memory_score", 0
-                    ),
-                    "network_score": report_data.get("benchmark", {}).get(
-                        "network_score", 0
-                    ),
+                    "memory_score": report_data.get("benchmark", {}).get("memory_score", 0),
+                    "network_score": report_data.get("benchmark", {}).get("network_score", 0),
                 }
             )
 

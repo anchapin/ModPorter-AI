@@ -110,9 +110,7 @@ async def create_editor_session(
         session_id=session_id,
         java_code=conversion.input_data.get("java_code", ""),
         bedrock_code=(
-            conversion.output_data.get("bedrock_code", "")
-            if conversion.output_data
-            else ""
+            conversion.output_data.get("bedrock_code", "") if conversion.output_data else ""
         ),
         diff_view=False,
         readonly=conversion.status != "completed",

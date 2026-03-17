@@ -109,9 +109,7 @@ def _get_prometheus_metrics() -> Dict[str, float]:
                             metrics[f"allowed_{endpoint}"] = count
                         elif status == "blocked":
                             metrics[f"blocked_{endpoint}"] = count
-                        metrics[f"total_{endpoint}"] = (
-                            metrics.get(f"total_{endpoint}", 0) + count
-                        )
+                        metrics[f"total_{endpoint}"] = metrics.get(f"total_{endpoint}", 0) + count
                     except (ValueError, IndexError):
                         pass
 
@@ -137,20 +135,14 @@ async def get_rate_limit_dashboard():
         v for k, v in metrics.items() if k.startswith("total_") and k != "total_unknown"
     )
     allowed_requests = sum(
-        v
-        for k, v in metrics.items()
-        if k.startswith("allowed_") and k != "allowed_unknown"
+        v for k, v in metrics.items() if k.startswith("allowed_") and k != "allowed_unknown"
     )
     blocked_requests = sum(
-        v
-        for k, v in metrics.items()
-        if k.startswith("blocked_") and k != "blocked_unknown"
+        v for k, v in metrics.items() if k.startswith("blocked_") and k != "blocked_unknown"
     )
 
     # Calculate block rate
-    block_rate = (
-        (blocked_requests / total_requests * 100) if total_requests > 0 else 0.0
-    )
+    block_rate = (blocked_requests / total_requests * 100) if total_requests > 0 else 0.0
 
     # Get unique endpoints
     endpoints = list(
@@ -233,19 +225,13 @@ async def get_rate_limit_summary():
         v for k, v in metrics.items() if k.startswith("total_") and k != "total_unknown"
     )
     allowed_requests = sum(
-        v
-        for k, v in metrics.items()
-        if k.startswith("allowed_") and k != "allowed_unknown"
+        v for k, v in metrics.items() if k.startswith("allowed_") and k != "allowed_unknown"
     )
     blocked_requests = sum(
-        v
-        for k, v in metrics.items()
-        if k.startswith("blocked_") and k != "blocked_unknown"
+        v for k, v in metrics.items() if k.startswith("blocked_") and k != "blocked_unknown"
     )
 
-    block_rate = (
-        (blocked_requests / total_requests * 100) if total_requests > 0 else 0.0
-    )
+    block_rate = (blocked_requests / total_requests * 100) if total_requests > 0 else 0.0
 
     endpoints = list(
         set(
@@ -337,9 +323,7 @@ async def get_client_stats(limit: int = 10):
                 requests_in_hour=state.request_count,  # Simplified
                 limit_minute=config.requests_per_minute,
                 limit_hour=config.requests_per_hour,
-                remaining_minute=max(
-                    0, config.requests_per_minute - state.request_count
-                ),
+                remaining_minute=max(0, config.requests_per_minute - state.request_count),
                 remaining_hour=max(0, config.requests_per_hour - state.request_count),
             )
         )

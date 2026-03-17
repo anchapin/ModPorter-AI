@@ -144,9 +144,7 @@ class ControlFlowGraph:
         self._find_paths(self.entry_node, self.exit_node, [], paths)
         return paths
 
-    def _find_paths(
-        self, current: str, target: str, path: List[str], all_paths: List[List[str]]
-    ):
+    def _find_paths(self, current: str, target: str, path: List[str], all_paths: List[List[str]]):
         """Recursively find all paths."""
         path = path + [current]
 
@@ -202,9 +200,7 @@ class DataFlowAnalyzer:
         self._node_counter += 1
         return f"n{self._node_counter}"
 
-    def analyze_java(
-        self, source_code: str, ast: Optional[Any] = None
-    ) -> DataFlowGraph:
+    def analyze_java(self, source_code: str, ast: Optional[Any] = None) -> DataFlowGraph:
         """
         Build data flow graph from Java source code.
 
@@ -229,9 +225,7 @@ class DataFlowAnalyzer:
             self._analyze_java_line(line.strip(), line_num)
 
         # Create exit node
-        exit_node = DFGNode(
-            id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines)
-        )
+        exit_node = DFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.dfg.add_node(exit_node)
         self.dfg.exit_node = exit_node.id
 
@@ -276,9 +270,7 @@ class DataFlowAnalyzer:
     def _extract_uses(self, expression: str, line_num: int):
         """Extract variable uses from an expression."""
         # Simple tokenization (would be more sophisticated with AST)
-        tokens = (
-            expression.replace("(", " ").replace(")", " ").replace(".", " ").split()
-        )
+        tokens = expression.replace("(", " ").replace(")", " ").replace(".", " ").split()
         for token in tokens:
             token = token.strip(";,").strip()
             if token and token[0].islower() and not self._is_keyword(token):
@@ -368,9 +360,7 @@ class DataFlowAnalyzer:
             self._analyze_javascript_line(line.strip(), line_num)
 
         # Create exit node
-        exit_node = DFGNode(
-            id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines)
-        )
+        exit_node = DFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.dfg.add_node(exit_node)
         self.dfg.exit_node = exit_node.id
 
@@ -446,9 +436,7 @@ class ControlFlowAnalyzer:
                 prev_node_id = node.id
 
         # Create exit node
-        exit_node = CFGNode(
-            id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines)
-        )
+        exit_node = CFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.cfg.add_node(exit_node)
         if prev_node_id:
             self.cfg.add_edge(prev_node_id, exit_node.id)
@@ -521,9 +509,7 @@ class ControlFlowAnalyzer:
                 prev_node_id = node.id
 
         # Create exit node
-        exit_node = CFGNode(
-            id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines)
-        )
+        exit_node = CFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.cfg.add_node(exit_node)
         if prev_node_id:
             self.cfg.add_edge(prev_node_id, exit_node.id)
@@ -623,9 +609,7 @@ class SemanticEquivalenceChecker:
 
         # Determine equivalence
         equivalent = confidence >= 0.8
-        differences = self._find_differences(
-            java_dfg, bedrock_dfg, java_cfg, bedrock_cfg
-        )
+        differences = self._find_differences(java_dfg, bedrock_dfg, java_cfg, bedrock_cfg)
         warnings = self._generate_warnings(java_dfg, bedrock_dfg)
 
         result = EquivalenceResult(
@@ -642,9 +626,7 @@ class SemanticEquivalenceChecker:
         )
         return result
 
-    def _compare_dfgs(
-        self, java_dfg: DataFlowGraph, bedrock_dfg: DataFlowGraph
-    ) -> float:
+    def _compare_dfgs(self, java_dfg: DataFlowGraph, bedrock_dfg: DataFlowGraph) -> float:
         """Compare data flow graphs and return similarity score."""
         if not java_dfg.variables and not bedrock_dfg.variables:
             return 1.0
@@ -670,9 +652,7 @@ class SemanticEquivalenceChecker:
         # Weighted average
         return 0.6 * var_similarity + 0.4 * node_similarity
 
-    def _compare_cfgs(
-        self, java_cfg: ControlFlowGraph, bedrock_cfg: ControlFlowGraph
-    ) -> float:
+    def _compare_cfgs(self, java_cfg: ControlFlowGraph, bedrock_cfg: ControlFlowGraph) -> float:
         """Compare control flow graphs and return similarity score."""
         # Compare branch counts
         java_branches = len(java_cfg.branches)
@@ -684,12 +664,8 @@ class SemanticEquivalenceChecker:
         )
 
         # Compare loop counts
-        java_loops = sum(
-            1 for n in java_cfg.nodes.values() if n.node_type == NodeType.LOOP
-        )
-        bedrock_loops = sum(
-            1 for n in bedrock_cfg.nodes.values() if n.node_type == NodeType.LOOP
-        )
+        java_loops = sum(1 for n in java_cfg.nodes.values() if n.node_type == NodeType.LOOP)
+        bedrock_loops = sum(1 for n in bedrock_cfg.nodes.values() if n.node_type == NodeType.LOOP)
         loop_similarity = (
             min(java_loops, bedrock_loops) / max(java_loops, bedrock_loops)
             if max(java_loops, bedrock_loops) > 0
@@ -734,16 +710,10 @@ class SemanticEquivalenceChecker:
             )
 
         # Different loop counts
-        java_loops = sum(
-            1 for n in java_cfg.nodes.values() if n.node_type == NodeType.LOOP
-        )
-        bedrock_loops = sum(
-            1 for n in bedrock_cfg.nodes.values() if n.node_type == NodeType.LOOP
-        )
+        java_loops = sum(1 for n in java_cfg.nodes.values() if n.node_type == NodeType.LOOP)
+        bedrock_loops = sum(1 for n in bedrock_cfg.nodes.values() if n.node_type == NodeType.LOOP)
         if java_loops != bedrock_loops:
-            differences.append(
-                f"Loop count mismatch: Java={java_loops}, Bedrock={bedrock_loops}"
-            )
+            differences.append(f"Loop count mismatch: Java={java_loops}, Bedrock={bedrock_loops}")
 
         return differences
 

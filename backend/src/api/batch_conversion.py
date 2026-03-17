@@ -254,9 +254,7 @@ async def get_batch_results(
                     "filename": conversion.input_data.get("filename", "unknown"),
                     "status": conversion.status,
                     "error": (
-                        conversion.error_message
-                        if hasattr(conversion, "error_message")
-                        else None
+                        conversion.error_message if hasattr(conversion, "error_message") else None
                     ),
                 }
             )

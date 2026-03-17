@@ -178,15 +178,11 @@ class ResourceLimiter:
 
         # Check memory limit
         if usage.memory_mb > self.limits.max_memory_mb:
-            raise ResourceLimitExceeded(
-                "memory", usage.memory_mb, self.limits.max_memory_mb
-            )
+            raise ResourceLimitExceeded("memory", usage.memory_mb, self.limits.max_memory_mb)
 
         # Check disk limit
         if usage.disk_mb > self.limits.max_disk_usage_mb:
-            raise ResourceLimitExceeded(
-                "disk", usage.disk_mb, self.limits.max_disk_usage_mb
-            )
+            raise ResourceLimitExceeded("disk", usage.disk_mb, self.limits.max_disk_usage_mb)
 
         # Check processing time limit
         if usage.processing_time_seconds > self.limits.max_processing_time_seconds:
@@ -198,9 +194,7 @@ class ResourceLimiter:
 
         # Check open files limit
         if usage.open_files > self.limits.max_open_files:
-            raise ResourceLimitExceeded(
-                "open_files", usage.open_files, self.limits.max_open_files
-            )
+            raise ResourceLimitExceeded("open_files", usage.open_files, self.limits.max_open_files)
 
     def check_available_disk_space(self, path: Path, required_mb: int) -> bool:
         """
@@ -238,10 +232,7 @@ class ResourceLimiter:
         with self._lock:
             # Check concurrent operation limits
             if operation_type == "upload":
-                if (
-                    self._active_operations["uploads"]
-                    >= self.limits.max_concurrent_uploads
-                ):
+                if self._active_operations["uploads"] >= self.limits.max_concurrent_uploads:
                     raise ResourceLimitExceeded(
                         "concurrent_uploads",
                         self._active_operations["uploads"],
@@ -249,10 +240,7 @@ class ResourceLimiter:
                     )
                 self._active_operations["uploads"] += 1
             elif operation_type == "extraction":
-                if (
-                    self._active_operations["extractions"]
-                    >= self.limits.max_concurrent_extractions
-                ):
+                if self._active_operations["extractions"] >= self.limits.max_concurrent_extractions:
                     raise ResourceLimitExceeded(
                         "concurrent_extractions",
                         self._active_operations["extractions"],
@@ -368,9 +356,7 @@ class DiskSpaceMonitor:
     Monitor for disk space usage with alerts.
     """
 
-    def __init__(
-        self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 100
-    ):
+    def __init__(self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 100):
         """Initialize with thresholds."""
         self.warning_threshold_mb = warning_threshold_mb
         self.critical_threshold_mb = critical_threshold_mb

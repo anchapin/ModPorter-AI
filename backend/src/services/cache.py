@@ -17,15 +17,9 @@ class CacheService:
     CACHE_ASSET_CONVERSION_PREFIX = "cache:asset_conversion:"
 
     # Default TTL configurations (in seconds)
-    DEFAULT_TTL_MOD_ANALYSIS = int(
-        os.getenv("CACHE_TTL_MOD_ANALYSIS", "3600")
-    )  # 1 hour
-    DEFAULT_TTL_CONVERSION_RESULT = int(
-        os.getenv("CACHE_TTL_CONVERSION_RESULT", "7200")
-    )  # 2 hours
-    DEFAULT_TTL_ASSET_CONVERSION = int(
-        os.getenv("CACHE_TTL_ASSET_CONVERSION", "3600")
-    )  # 1 hour
+    DEFAULT_TTL_MOD_ANALYSIS = int(os.getenv("CACHE_TTL_MOD_ANALYSIS", "3600"))  # 1 hour
+    DEFAULT_TTL_CONVERSION_RESULT = int(os.getenv("CACHE_TTL_CONVERSION_RESULT", "7200"))  # 2 hours
+    DEFAULT_TTL_ASSET_CONVERSION = int(os.getenv("CACHE_TTL_ASSET_CONVERSION", "3600"))  # 1 hour
     DEFAULT_TTL_JOB_STATUS = int(os.getenv("CACHE_TTL_JOB_STATUS", "300"))  # 5 minutes
 
     # Cache size limits
@@ -41,9 +35,7 @@ class CacheService:
             logger.info("Redis disabled for tests")
         else:
             try:
-                self._client = aioredis.from_url(
-                    settings.redis_url, decode_responses=True
-                )
+                self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
                 self._redis_available = True
                 logger.info("Redis cache initialized successfully")
             except Exception as e:
@@ -187,15 +179,11 @@ class CacheService:
         try:
             await self._client.delete(cache_key)
         except Exception as e:
-            logger.warning(
-                f"Redis operation failed for invalidate_cache for key {cache_key}: {e}"
-            )
+            logger.warning(f"Redis operation failed for invalidate_cache for key {cache_key}: {e}")
 
     async def get_cache_stats(self) -> CacheStats:
         try:
-            mod_analysis_keys = await self._client.keys(
-                f"{self.CACHE_MOD_ANALYSIS_PREFIX}*"
-            )
+            mod_analysis_keys = await self._client.keys(f"{self.CACHE_MOD_ANALYSIS_PREFIX}*")
             conversion_result_keys = await self._client.keys(
                 f"{self.CACHE_CONVERSION_RESULT_PREFIX}*"
             )
@@ -204,9 +192,7 @@ class CacheService:
             )
 
             current_items = (
-                len(mod_analysis_keys)
-                + len(conversion_result_keys)
-                + len(asset_conversion_keys)
+                len(mod_analysis_keys) + len(conversion_result_keys) + len(asset_conversion_keys)
             )
 
             info = await self._client.info("memory")
@@ -240,9 +226,7 @@ class CacheService:
         try:
             # Store binary data as base64 string
             encoded_data = base64.b64encode(export_data).decode("utf-8")
-            await self._client.setex(
-                f"export:{conversion_id}:data", ttl_seconds, encoded_data
-            )
+            await self._client.setex(f"export:{conversion_id}:data", ttl_seconds, encoded_data)
         except Exception as e:
             logger.warning(f"Redis operation failed for set_export_data: {e}")
             self._redis_available = False

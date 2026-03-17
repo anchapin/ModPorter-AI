@@ -184,9 +184,7 @@ async def submit_bug_report(
     # Create bug report (would be stored in database)
     bug_id = f"bug_{datetime.utcnow().timestamp()}"
 
-    logger.warning(
-        f"Bug report from user {user_id}: {request.title} ({request.severity})"
-    )
+    logger.warning(f"Bug report from user {user_id}: {request.title} ({request.severity})")
 
     # For critical bugs, notify team immediately
     if request.severity == "critical":

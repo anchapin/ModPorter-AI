@@ -458,7 +458,6 @@ class PerformanceOptimizer:
             json.dump(config, f, indent=2)
 
 
-
 async def main():
     """Main function"""
     analyze_only = False

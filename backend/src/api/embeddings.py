@@ -57,9 +57,7 @@ async def create_or_get_embedding(
         existing_response = DocumentEmbeddingResponse.model_validate(
             existing_embedding
         )  # pydantic v2
-        return JSONResponse(
-            content=existing_response.model_dump(), status_code=status.HTTP_200_OK
-        )
+        return JSONResponse(content=existing_response.model_dump(), status_code=status.HTTP_200_OK)
 
     db_embedding = await crud.create_document_embedding(
         db=db,
@@ -67,7 +65,9 @@ async def create_or_get_embedding(
         document_source=embedding_data.document_source,
         content_hash=embedding_data.content_hash,
     )
-    return db_embedding  # Will be automatically converted to DocumentEmbeddingResponse with 201 status
+    return (
+        db_embedding  # Will be automatically converted to DocumentEmbeddingResponse with 201 status
+    )
 
 
 @router.post("/embeddings/search/", response_model=List[DocumentEmbeddingResponse])

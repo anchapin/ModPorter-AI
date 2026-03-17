@@ -13,9 +13,7 @@ router = APIRouter()
 class BehaviorFileCreate(BaseModel):
     """Request model for creating a behavior file"""
 
-    file_path: str = Field(
-        ..., description="Path of the behavior file within the mod structure"
-    )
+    file_path: str = Field(..., description="Path of the behavior file within the mod structure")
     file_type: str = Field(
         ...,
         description="Type of behavior file (entity_behavior, block_behavior, script, recipe)",
@@ -34,9 +32,7 @@ class BehaviorFileResponse(BaseModel):
 
     id: str = Field(..., description="Unique identifier of the behavior file")
     conversion_id: str = Field(..., description="ID of the associated conversion job")
-    file_path: str = Field(
-        ..., description="Path of the behavior file within the mod structure"
-    )
+    file_path: str = Field(..., description="Path of the behavior file within the mod structure")
     file_type: str = Field(..., description="Type of behavior file")
     content: str = Field(..., description="Text content of the behavior file")
     created_at: str = Field(..., description="Creation timestamp")
@@ -124,9 +120,7 @@ async def get_conversion_behavior_files(
         """Convert dictionary structure to tree nodes"""
         nodes = []
         for key, value in node_dict.items():
-            children = (
-                dict_to_tree_nodes(value["children"]) if value["children"] else []
-            )
+            children = dict_to_tree_nodes(value["children"]) if value["children"] else []
             node = BehaviorFileTreeNode(
                 id=value.get("id", ""),
                 name=value["name"],

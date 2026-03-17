@@ -192,10 +192,7 @@ async def resend_verification(
         )
 
     # Check if token is still valid (prevent spam)
-    if (
-        user.verification_token_expires
-        and user.verification_token_expires > datetime.utcnow()
-    ):
+    if user.verification_token_expires and user.verification_token_expires > datetime.utcnow():
         # Token still valid, don't resend
         return ResendVerificationResponse(
             message="Verification email already sent. Please check your inbox.",

@@ -45,14 +45,10 @@ class EmbeddingGenerator:
             logger.info(f"Model loaded with dimension: {self._dimension}")
 
             # Cache the model (estimate 500MB for embedding model)
-            self._cache.set(
-                self.model_name, self._model, memory_bytes=500 * 1024 * 1024
-            )
+            self._cache.set(self.model_name, self._model, memory_bytes=500 * 1024 * 1024)
 
         except ImportError:
-            logger.warning(
-                "sentence-transformers not installed. Using mock embeddings."
-            )
+            logger.warning("sentence-transformers not installed. Using mock embeddings.")
             self._model = None
 
     def generate_embedding(self, text: str) -> np.ndarray:
@@ -102,9 +98,7 @@ class EmbeddingGenerator:
             self._load_model()
 
         if self._model is not None:
-            logger.info(
-                f"Generating {len(texts)} embeddings in batches of {batch_size}"
-            )
+            logger.info(f"Generating {len(texts)} embeddings in batches of {batch_size}")
 
             embeddings = self._model.encode(
                 texts,
@@ -153,9 +147,7 @@ class EmbeddingGenerator:
 
         # For large datasets, use optimized batching
         n_texts = len(texts)
-        logger.info(
-            f"Optimized embedding generation: {n_texts} texts, batch_size={batch_size}"
-        )
+        logger.info(f"Optimized embedding generation: {n_texts} texts, batch_size={batch_size}")
 
         # Use sentence-transformers built-in optimization
         embeddings = self._model.encode(

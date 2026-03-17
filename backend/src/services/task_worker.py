@@ -20,9 +20,7 @@ class TaskWorker:
     Supports concurrent processing and graceful shutdown.
     """
 
-    def __init__(
-        self, queue: AsyncTaskQueue, num_workers: int = 3, poll_interval: float = 1.0
-    ):
+    def __init__(self, queue: AsyncTaskQueue, num_workers: int = 3, poll_interval: float = 1.0):
         self.queue = queue
         self.num_workers = num_workers
         self.poll_interval = poll_interval
@@ -76,9 +74,7 @@ class TaskWorker:
                     await asyncio.sleep(self.poll_interval)
                     continue
 
-                logger.info(
-                    f"Worker {worker_id} processing task {task.id} ({task.name})"
-                )
+                logger.info(f"Worker {worker_id} processing task {task.id} ({task.name})")
 
                 # Process the task
                 await self.process_task(task)

@@ -126,9 +126,7 @@ class ValidationException(ModPorterException):
 class NotFoundException(ModPorterException):
     """Exception raised when a resource is not found"""
 
-    def __init__(
-        self, resource: str, resource_id: str, user_message: Optional[str] = None
-    ):
+    def __init__(self, resource: str, resource_id: str, user_message: Optional[str] = None):
         super().__init__(
             message=f"{resource} not found: {resource_id}",
             user_message=user_message or f"Requested {resource} not found.",
@@ -366,9 +364,7 @@ def _record_error_metric(error_category: str, error_type: str, source: str = "ap
             pass  # Don't let metrics errors affect normal flow
 
 
-async def modporter_exception_handler(
-    request: Request, exc: ModPorterException
-) -> JSONResponse:
+async def modporter_exception_handler(request: Request, exc: ModPorterException) -> JSONResponse:
     """Handler for ModPorter-specific exceptions"""
     error_response = create_error_response(exc, request)
     logger.error(
@@ -382,17 +378,13 @@ async def modporter_exception_handler(
         source="api",
     )
 
-    return JSONResponse(
-        status_code=exc.status_code, content=error_response.model_dump()
-    )
+    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handler for HTTP exceptions"""
     error_response = create_error_response(exc, request)
-    logger.warning(
-        f"[{error_response.error_id}] HTTP {exc.status_code}: {error_response.message}"
-    )
+    logger.warning(f"[{error_response.error_id}] HTTP {exc.status_code}: {error_response.message}")
 
     # Only record 4xx/5xx errors as metrics
     if exc.status_code >= 400:
@@ -402,9 +394,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             source="api",
         )
 
-    return JSONResponse(
-        status_code=exc.status_code, content=error_response.model_dump()
-    )
+    return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
 
 
 async def validation_exception_handler(
@@ -412,9 +402,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Handler for validation exceptions"""
     error_response = create_error_response(exc, request)
-    logger.warning(
-        f"[{error_response.error_id}] Validation error: {error_response.message}"
-    )
+    logger.warning(f"[{error_response.error_id}] Validation error: {error_response.message}")
 
     # Record validation error metric
     _record_error_metric(
@@ -436,9 +424,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     Clients only receive a generic error message without sensitive information.
     """
     # Always log the full exception with traceback (server-side only)
-    logger.error(
-        f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True
-    )
+    logger.error(f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True)
 
     # Create sanitized error response (no traceback exposed to clients)
     error_response = create_error_response(exc, request, include_traceback=False)

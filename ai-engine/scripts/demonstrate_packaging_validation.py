@@ -97,7 +97,6 @@ def create_example_mcaddon(output_path: Path) -> None:
         )
 
 
-
 def create_invalid_mcaddon(output_path: Path) -> None:
     """Create an example .mcaddon file with common errors."""
 
@@ -123,7 +122,6 @@ def create_invalid_mcaddon(output_path: Path) -> None:
         zipf.writestr("behavior_pack/invalid_bp/.DS_Store", "binary data")
 
 
-
 def main():
     """Demonstrate the validation system."""
 
@@ -141,7 +139,6 @@ def main():
 
         result = validator.validate_mcaddon(valid_path)
 
-
         if result.issues:
             for issue in result.issues[:5]:  # Show first 5
                 pass
@@ -155,7 +152,6 @@ def main():
 
         result = validator.validate_mcaddon(invalid_path)
 
-
         for issue in result.issues:
             location = f" [{issue.file_path}]" if issue.file_path else ""
             if issue.suggestion:
@@ -164,7 +160,6 @@ def main():
         # Example 3: Generate report
 
         report = validator.generate_report(result)
-
 
 
 if __name__ == "__main__":

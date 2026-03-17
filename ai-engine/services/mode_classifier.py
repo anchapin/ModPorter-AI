@@ -186,9 +186,7 @@ class ModeClassifier:
         # Add recommendations
         result.recommendations = self._generate_recommendations(result)
 
-        logger.info(
-            f"Classification result: {result.mode} (confidence: {result.confidence:.0%})"
-        )
+        logger.info(f"Classification result: {result.mode} (confidence: {result.confidence:.0%})")
 
         return result
 
@@ -205,9 +203,7 @@ class ModeClassifier:
                 mode=ConversionMode.EXPERT,
                 confidence=self._calculate_confidence(features, ConversionMode.EXPERT),
                 reason="Expert-level features detected (dimension/worldgen/biome)",
-                automation_target=CLASSIFICATION_RULES[ConversionMode.EXPERT][
-                    "automation_target"
-                ],
+                automation_target=CLASSIFICATION_RULES[ConversionMode.EXPERT]["automation_target"],
             )
 
         # Check for complex features
@@ -219,9 +215,7 @@ class ModeClassifier:
                 mode=ConversionMode.COMPLEX,
                 confidence=self._calculate_confidence(features, ConversionMode.COMPLEX),
                 reason="Complex features detected (multiblock/machine/custom AI)",
-                automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX][
-                    "automation_target"
-                ],
+                automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX]["automation_target"],
             )
 
         # Check for standard features
@@ -231,9 +225,7 @@ class ModeClassifier:
         ):
             return ClassificationResult(
                 mode=ConversionMode.STANDARD,
-                confidence=self._calculate_confidence(
-                    features, ConversionMode.STANDARD
-                ),
+                confidence=self._calculate_confidence(features, ConversionMode.STANDARD),
                 reason="Standard features detected (entities/recipes)",
                 automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD][
                     "automation_target"
@@ -252,9 +244,7 @@ class ModeClassifier:
         ):
             return ClassificationResult(
                 mode=ConversionMode.STANDARD,
-                confidence=self._calculate_confidence(
-                    features, ConversionMode.STANDARD
-                ),
+                confidence=self._calculate_confidence(features, ConversionMode.STANDARD),
                 reason=f"Standard complexity ({class_count} classes, {dep_count} dependencies)",
                 automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD][
                     "automation_target"
@@ -262,17 +252,12 @@ class ModeClassifier:
             )
 
         # Complex range check (high class count without complex features)
-        if (
-            class_count
-            > CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][1]
-        ):
+        if class_count > CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][1]:
             return ClassificationResult(
                 mode=ConversionMode.COMPLEX,
                 confidence=self._calculate_confidence(features, ConversionMode.COMPLEX),
                 reason=f"High complexity ({class_count} classes)",
-                automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX][
-                    "automation_target"
-                ],
+                automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX]["automation_target"],
             )
 
         # Default to Simple
@@ -280,9 +265,7 @@ class ModeClassifier:
             mode=ConversionMode.SIMPLE,
             confidence=self._calculate_confidence(features, ConversionMode.SIMPLE),
             reason="Basic mod structure",
-            automation_target=CLASSIFICATION_RULES[ConversionMode.SIMPLE][
-                "automation_target"
-            ],
+            automation_target=CLASSIFICATION_RULES[ConversionMode.SIMPLE]["automation_target"],
         )
 
     def _calculate_confidence(self, features: ModFeatures, mode: str) -> float:
@@ -336,13 +319,9 @@ class ModeClassifier:
 
         if result.features:
             if result.features.has_custom_ai:
-                recommendations.append(
-                    "Custom AI detected: Review behavior tree conversion"
-                )
+                recommendations.append("Custom AI detected: Review behavior tree conversion")
             if result.features.has_multiblock:
-                recommendations.append(
-                    "Multi-block detected: Verify structure validation"
-                )
+                recommendations.append("Multi-block detected: Verify structure validation")
 
         return recommendations
 
@@ -411,9 +390,7 @@ class FeatureExtractor:
                 )
 
                 # Count dependencies from metadata
-                features.dependencies = self._extract_dependencies_from_jar(
-                    jar, file_list
-                )
+                features.dependencies = self._extract_dependencies_from_jar(jar, file_list)
                 features.dependency_count = len(features.dependencies)
 
         except Exception as e:
@@ -440,9 +417,7 @@ class FeatureExtractor:
         features.texture_count = len(list(root.rglob("**/textures/**/*.png")))
         features.model_count = len(list(root.rglob("**/models/**/*.json")))
         features.sound_count = len(list(root.rglob("**/sounds/**/*.ogg")))
-        features.asset_count = (
-            features.texture_count + features.model_count + features.sound_count
-        )
+        features.asset_count = features.texture_count + features.model_count + features.sound_count
 
         # Extract dependencies
         features.dependencies = self._extract_dependencies_from_dir(root)

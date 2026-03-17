@@ -127,9 +127,7 @@ def parse_mod_url(url: str) -> URLParseResult:
         )
 
     # Try Modrinth
-    mr_pattern = (
-        r"(?:https?://)?(?:www\.)?modrinth\.com/(mod|resourcepack|plugin|pack)/([^/?]+)"
-    )
+    mr_pattern = r"(?:https?://)?(?:www\.)?modrinth\.com/(mod|resourcepack|plugin|pack)/([^/?]+)"
     mr_match = re.search(mr_pattern, url, re.IGNORECASE)
     if mr_match:
         project_type = mr_match.group(1)
@@ -164,9 +162,7 @@ def parse_mod_url(url: str) -> URLParseResult:
 def transform_curseforge_mod(data: Dict[str, Any]) -> ModInfo:
     """Transform CurseForge API response to ModInfo"""
     mod_data = data.get("data", {})
-    latest_file = (
-        mod_data.get("latestFiles", [{}])[0] if mod_data.get("latestFiles") else {}
-    )
+    latest_file = mod_data.get("latestFiles", [{}])[0] if mod_data.get("latestFiles") else {}
 
     return ModInfo(
         platform="curseforge",
@@ -269,9 +265,7 @@ async def search_mods(
     logger.info(f"Searching {platform} for: {query}")
 
     if platform not in ["curseforge", "modrinth"]:
-        raise HTTPException(
-            status_code=400, detail="Platform must be 'curseforge' or 'modrinth'"
-        )
+        raise HTTPException(status_code=400, detail="Platform must be 'curseforge' or 'modrinth'")
 
     try:
         if platform == "curseforge":
@@ -307,9 +301,7 @@ async def search_mods(
         logger.error(f"Search error: {e}")
         logger.error(f"Failed to search mods: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to search mods: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to search mods: Please try again.")
 
 
 @router.get("/{platform}/mod/{mod_id}", response_model=ModInfo)
@@ -323,9 +315,7 @@ async def get_mod_info(
     logger.info(f"Getting mod info: {platform}/{mod_id}")
 
     if platform not in ["curseforge", "modrinth"]:
-        raise HTTPException(
-            status_code=400, detail="Platform must be 'curseforge' or 'modrinth'"
-        )
+        raise HTTPException(status_code=400, detail="Platform must be 'curseforge' or 'modrinth'")
 
     try:
         if platform == "curseforge":
@@ -341,9 +331,7 @@ async def get_mod_info(
         logger.error(f"Get mod info error: {e}")
         logger.error(f"Failed to get mod info: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to get mod info: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to get mod info: Please try again.")
 
 
 @router.get("/{platform}/mod/{mod_id}/files", response_model=List[ModFile])
@@ -358,16 +346,12 @@ async def get_mod_files(
     logger.info(f"Getting mod files: {platform}/{mod_id}")
 
     if platform not in ["curseforge", "modrinth"]:
-        raise HTTPException(
-            status_code=400, detail="Platform must be 'curseforge' or 'modrinth'"
-        )
+        raise HTTPException(status_code=400, detail="Platform must be 'curseforge' or 'modrinth'")
 
     try:
         if platform == "curseforge":
             cf_id = int(mod_id)
-            result = await curseforge_service.get_mod_files(
-                cf_id, game_version=game_version
-            )
+            result = await curseforge_service.get_mod_files(cf_id, game_version=game_version)
 
             files = []
             for item in result.get("data", []):
@@ -388,9 +372,7 @@ async def get_mod_files(
         logger.error(f"Get mod files error: {e}")
         logger.error(f"Failed to get mod files: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to get mod files: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to get mod files: Please try again.")
 
 
 @router.post("/import", response_model=ImportResponse)
@@ -414,9 +396,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
         # Get mod info and download
         if parse_result.platform == "curseforge":
             # Find mod by slug
-            search_results = await curseforge_service.search_mods(
-                parse_result.slug or ""
-            )
+            search_results = await curseforge_service.search_mods(parse_result.slug or "")
             if not search_results.get("data"):
                 return ImportResponse(
                     status="error",
@@ -444,9 +424,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             file_id = latest_file.get("id")
 
             # Get download URL
-            download_url = await curseforge_service.get_file_download_url(
-                mod_id, file_id
-            )
+            download_url = await curseforge_service.get_file_download_url(mod_id, file_id)
 
         else:  # modrinth
             slug = parse_result.slug
@@ -510,9 +488,7 @@ async def get_categories(platform: str):
     logger.info(f"Getting categories for: {platform}")
 
     if platform not in ["curseforge", "modrinth"]:
-        raise HTTPException(
-            status_code=400, detail="Platform must be 'curseforge' or 'modrinth'"
-        )
+        raise HTTPException(status_code=400, detail="Platform must be 'curseforge' or 'modrinth'")
 
     try:
         if platform == "curseforge":
@@ -527,9 +503,7 @@ async def get_categories(platform: str):
         logger.error(f"Get categories error: {e}")
         logger.error(f"Failed to get categories: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to get categories: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to get categories: Please try again.")
 
 
 @router.get("/loaders")
@@ -544,6 +518,4 @@ async def get_loaders():
         logger.error(f"Get loaders error: {e}")
         logger.error(f"Failed to get loaders: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to get loaders: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to get loaders: Please try again.")

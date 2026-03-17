@@ -656,7 +656,6 @@ echo "📄 Bundle analysis saved to bundle-analysis.json"
             json.dump(report, f, indent=2)
 
 
-
 async def main():
     """Main function"""
     analyze_only = False

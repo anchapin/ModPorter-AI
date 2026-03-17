@@ -28,7 +28,6 @@ def test_z_ai_direct():
         if not os.getenv("Z_AI_API_KEY"):
             return False
 
-
         # Create Z.AI LLM instance
         zai_llm = create_z_ai_llm()
 
@@ -141,7 +140,6 @@ def main():
         status = "✅ PASSED" if result else "❌ FAILED"
         if result:
             passed += 1
-
 
     if passed == len(results):
         return 0
