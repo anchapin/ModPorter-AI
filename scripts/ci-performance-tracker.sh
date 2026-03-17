@@ -42,7 +42,9 @@ record_step() {
     local duration=$((step_end - step_start))
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
-    local step_file="$PERF_DATA_DIR/step-${step_name//\//-}.json"
+    # Sanitize the step name to prevent invalid filesystem characters (e.g., colons, spaces)
+    local sanitized_step_name=$(echo "$step_name" | sed -e 's/[^A-Za-z0-9_.-]/-/g')
+    local step_file="$PERF_DATA_DIR/step-${sanitized_step_name}.json"
     
     cat > "$step_file" << EOF
 {
