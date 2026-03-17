@@ -94,10 +94,9 @@ for filename in files_to_process:
     file_path = api_dir / filename
     if file_path.exists():
         if sanitize_file(file_path):
-            print(f"✓ Sanitized {filename}")
+            pass
         else:
-            print(f"- No changes needed in {filename}")
+            pass
     else:
-        print(f"✗ File not found: {filename}")
+        pass
 
-print("\nDone!")

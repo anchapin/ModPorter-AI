@@ -92,7 +92,6 @@ class PerformanceOptimizer:
 
     async def optimize_file_processing(self, files: List[str]) -> Dict[str, Any]:
         """Optimize file processing with caching and parallel processing"""
-        print("🔄 Optimizing file processing...")
 
         results = {}
         start_time = time.time()
@@ -107,7 +106,6 @@ class PerformanceOptimizer:
 
                 if cached_result:
                     results[file_path] = cached_result
-                    print(f"✅ Using cached result for {file_path}")
                 else:
                     future = executor.submit(self._process_single_file, file_path, file_hash)
                     futures.append((file_path, future))
@@ -119,11 +117,9 @@ class PerformanceOptimizer:
                     results[file_path] = result
                     self.cache_file_result(self.get_file_hash(file_path), result)
                 except Exception as e:
-                    print(f"⚠️ Error processing {file_path}: {e}")
                     results[file_path] = {"error": str(e)}
 
         processing_time = time.time() - start_time
-        print(f"✅ File processing completed in {processing_time:.2f} seconds")
 
         return {
             "results": results,
@@ -151,7 +147,6 @@ class PerformanceOptimizer:
 
     async def optimize_memory_usage(self) -> Dict[str, Any]:
         """Implement memory usage optimizations"""
-        print("💾 Optimizing memory usage...")
 
         current_process = psutil.Process()
         initial_memory = current_process.memory_info().rss / (1024**2)  # MB
@@ -185,7 +180,6 @@ class PerformanceOptimizer:
 
     async def optimize_database_operations(self) -> Dict[str, Any]:
         """Optimize database operations for conversion pipeline"""
-        print("🗄️ Optimizing database operations...")
 
         optimizations = []
 
@@ -208,7 +202,6 @@ class PerformanceOptimizer:
 
     async def implement_parallel_conversion_steps(self) -> Dict[str, Any]:
         """Implement parallel processing for independent conversion steps"""
-        print("⚡ Implementing parallel conversion steps...")
 
         # Define independent conversion steps that can run in parallel
         independent_steps = [
@@ -254,7 +247,6 @@ class PerformanceOptimizer:
 
     async def implement_caching_layers(self) -> Dict[str, Any]:
         """Implement multi-level caching"""
-        print("📦 Implementing caching layers...")
 
         cache_implementations = []
 
@@ -283,7 +275,6 @@ class PerformanceOptimizer:
 
     async def optimize_ai_engine_integration(self) -> Dict[str, Any]:
         """Optimize AI engine performance"""
-        print("🤖 Optimizing AI engine integration...")
 
         optimizations = []
 
@@ -310,7 +301,6 @@ class PerformanceOptimizer:
 
     async def run_baseline_performance_test(self) -> Dict[str, Any]:
         """Run baseline performance test for comparison"""
-        print("📊 Running baseline performance test...")
 
         # Simulate baseline conversion process
         start_time = time.time()
@@ -328,7 +318,6 @@ class PerformanceOptimizer:
 
         for step_name, duration in conversion_steps:
             await asyncio.sleep(duration)
-            print(f"   🔄 {step_name} completed")
 
         end_time = time.time()
         end_memory = psutil.Process().memory_info().rss / (1024**2)
@@ -342,7 +331,6 @@ class PerformanceOptimizer:
 
     async def run_optimized_performance_test(self) -> Dict[str, Any]:
         """Run optimized performance test"""
-        print("⚡ Running optimized performance test...")
 
         start_time = time.time()
         start_memory = psutil.Process().memory_info().rss / (1024**2)
@@ -375,16 +363,13 @@ class PerformanceOptimizer:
     async def _mock_step(self, step_name: str, duration: float) -> Dict[str, Any]:
         """Mock conversion step with optimization"""
         await asyncio.sleep(duration)
-        print(f"   ⚡ {step_name} completed (optimized)")
         return {"step": step_name, "optimized": True, "duration": duration}
 
     async def generate_optimization_report(self) -> ConversionOptimizationResult:
         """Generate comprehensive optimization report"""
-        print("🚀 Starting conversion engine optimization analysis...\n")
 
         # Run baseline test
         baseline = await self.run_baseline_performance_test()
-        print(f"✅ Baseline test completed: {baseline['total_time']:.2f}s\n")
 
         # Apply optimizations
         optimizations = []
@@ -416,7 +401,6 @@ class PerformanceOptimizer:
 
         # Run optimized test
         optimized = await self.run_optimized_performance_test()
-        print(f"✅ Optimized test completed: {optimized['total_time']:.2f}s\n")
 
         # Calculate improvements
         time_improvement = (
@@ -473,7 +457,6 @@ class PerformanceOptimizer:
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
 
-        print(f"📄 Optimization config saved: {config_path}")
 
 
 async def main():
@@ -482,8 +465,6 @@ async def main():
 
     if len(sys.argv) > 1:
         if sys.argv[1] in ["-h", "--help"]:
-            print("Usage: python optimize-conversion-engine.py [--analyze-only]")
-            print("  --analyze-only: Only run analysis without applying optimizations")
             return
         if sys.argv[1] == "--analyze-only":
             analyze_only = True
@@ -491,10 +472,7 @@ async def main():
     optimizer = PerformanceOptimizer()
 
     if analyze_only:
-        print("🔍 Running performance analysis only...")
         baseline = await optimizer.run_baseline_performance_test()
-        print(f"\nBaseline Performance: {baseline['total_time']:.2f}s")
-        print(f"Memory Usage: {baseline['memory_increase_mb']:.1f}MB")
         return
 
     # Run full optimization
@@ -504,28 +482,11 @@ async def main():
     optimizer.save_optimization_config()
 
     # Print results
-    print("\n" + "=" * 60)
-    print("🚀 CONVERSION ENGINE OPTIMIZATION RESULTS")
-    print("=" * 60)
-    print(f"⏱️  Baseline Time: {result.baseline_time:.2f} seconds")
-    print(f"⚡ Optimized Time: {result.optimized_time:.2f} seconds")
-    print(f"📈 Performance Improvement: {result.improvement_percentage:.1f}%")
-    print(f"💾 Memory Usage (Baseline): {result.memory_usage_baseline:.1f} MB")
-    print(f"💾 Memory Usage (Optimized): {result.memory_usage_optimized:.1f} MB")
-    print(
-        f"🎯 Memory Improvement: {abs(result.memory_usage_baseline - result.memory_usage_optimized):.1f} MB"
-    )
 
-    print(f"\n🔧 Optimizations Applied:")
     for i, opt in enumerate(result.optimizations_applied, 1):
-        print(f"   {i}. {opt}")
+        pass
 
     # Recommendations
-    print(f"\n💡 Next Steps:")
-    print(f"   1. Deploy optimization config to production")
-    print(f"   2. Monitor performance improvements")
-    print(f"   3. Run performance tests regularly")
-    print(f"   4. Consider additional optimizations based on real-world usage")
 
 
 if __name__ == "__main__":

@@ -76,7 +76,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_single_block_performance(self):
         """Test performance with single block mods."""
-        print("\\n⚡ Single Block Performance Test")
 
         # Create simple mods with 1 block each
         mod_configs = [
@@ -90,8 +89,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
             # Measure performance
             perf_data = self._measure_conversion_time(Path(jar_path), iterations=3)
-
-            print(f"  📦 {mod_id}: {perf_data['avg_time']:.3f}s ± {perf_data['std_dev']:.3f}s")
 
             # Performance assertions - adjusted for CI environment
             self.assertLess(
@@ -107,7 +104,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_multi_block_scaling(self):
         """Test how performance scales with number of blocks."""
-        print("\\n📈 Multi-Block Scaling Test")
 
         block_counts = [1, 3, 5, 10, 20]
 
@@ -122,10 +118,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
             throughput = count / perf_data["avg_time"] if perf_data["avg_time"] > 0 else 0
 
-            print(
-                f"  🔢 {count:2d} blocks: {perf_data['avg_time']:.3f}s ({throughput:.1f} blocks/sec)"
-            )
-
             self.results.append(
                 {"test": "scaling", "block_count": count, "throughput": throughput, **perf_data}
             )
@@ -137,7 +129,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_mod_framework_comparison(self):
         """Compare performance across different mod frameworks."""
-        print("\\n🔧 Framework Comparison Test")
 
         frameworks = [
             (
@@ -158,13 +149,10 @@ class PerformanceBenchmarks(unittest.TestCase):
             # Measure performance
             perf_data = self._measure_conversion_time(Path(jar_path), iterations=2)
 
-            print(f"  🛠️  {framework_name:6s}: {perf_data['avg_time']:.3f}s")
-
             self.results.append({"test": "framework", "framework": framework_name, **perf_data})
 
     def test_file_size_impact(self):
         """Test how JAR file size impacts performance."""
-        print("\\n📏 File Size Impact Test")
 
         # Create mods with different complexity levels
         complexity_levels = ["simple", "medium", "complex"]
@@ -201,10 +189,6 @@ class PerformanceBenchmarks(unittest.TestCase):
                 (jar_size / 1024 / 1024) / perf_data["avg_time"] if perf_data["avg_time"] > 0 else 0
             )
 
-            print(
-                f"  📦 {complexity:7s}: {jar_size:6,} bytes → {perf_data['avg_time']:.3f}s ({throughput_mbps:.2f} MB/s)"
-            )
-
             self.results.append(
                 {
                     "test": "file_size",
@@ -217,7 +201,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_concurrent_conversions(self):
         """Test performance with multiple concurrent conversions."""
-        print("\\n🔄 Concurrent Conversion Test")
 
         # Create multiple test mods
         mod_count = 5
@@ -244,9 +227,6 @@ class PerformanceBenchmarks(unittest.TestCase):
         success_rate = sum(sequential_results) / len(sequential_results)
         avg_time_per_mod = sequential_time / mod_count
 
-        print(f"  ⏱️  Sequential: {sequential_time:.3f}s total ({avg_time_per_mod:.3f}s per mod)")
-        print(f"  ✅ Success rate: {success_rate:.1%}")
-
         self.results.append(
             {
                 "test": "concurrent",
@@ -263,14 +243,12 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_memory_efficiency(self):
         """Test memory usage patterns during conversion."""
-        print("\\n🧠 Memory Efficiency Test")
 
         try:
             import psutil
 
             process = psutil.Process()
         except ImportError:
-            print("  ⚠️  psutil not available - skipping memory test")
             return
 
         # Create a larger mod for memory testing
@@ -292,10 +270,6 @@ class PerformanceBenchmarks(unittest.TestCase):
         memory_after = process.memory_info().rss
         memory_delta = memory_after - memory_before
 
-        print(f"  💾 Memory usage: {memory_delta / 1024 / 1024:.1f} MB increase")
-        print(f"  ⏱️  Processing time: {processing_time:.3f}s")
-        print(f"  📊 Memory efficiency: {memory_delta / 1024 / processing_time:.0f} KB/s")
-
         self.results.append(
             {
                 "test": "memory",
@@ -311,7 +285,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def test_stress_test(self):
         """Stress test with many rapid conversions."""
-        print("\\n🔥 Stress Test")
 
         stress_count = 10
         times = []
@@ -339,10 +312,6 @@ class PerformanceBenchmarks(unittest.TestCase):
         avg_time = statistics.mean(times)
         success_rate = successes / stress_count
 
-        print(f"  📊 {stress_count} conversions: {total_time:.3f}s total")
-        print(f"  ⚡ Average: {avg_time:.3f}s per conversion")
-        print(f"  ✅ Success rate: {success_rate:.1%}")
-
         self.results.append(
             {
                 "test": "stress",
@@ -359,9 +328,6 @@ class PerformanceBenchmarks(unittest.TestCase):
 
     def _print_performance_summary(self):
         """Print comprehensive performance summary."""
-        print("\\n" + "=" * 80)
-        print("📊 PERFORMANCE BENCHMARK SUMMARY")
-        print("=" * 80)
 
         # Group results by test type
         test_groups = {}
@@ -373,60 +339,44 @@ class PerformanceBenchmarks(unittest.TestCase):
 
         # Print summary for each test type
         for test_type, results in test_groups.items():
-            print(f"\\n🧪 {test_type.upper()} TEST RESULTS:")
-
             if test_type == "single_block":
                 avg_times = [r["avg_time"] for r in results]
-                print(f"  ⚡ Average time: {statistics.mean(avg_times):.3f}s")
-                print(f"  📈 Range: {min(avg_times):.3f}s - {max(avg_times):.3f}s")
 
             elif test_type == "scaling":
                 throughputs = [r["throughput"] for r in results if r["throughput"] > 0]
                 if throughputs:
-                    print(f"  🚀 Max throughput: {max(throughputs):.1f} blocks/sec")
-                    print(f"  📊 Avg throughput: {statistics.mean(throughputs):.1f} blocks/sec")
+                    pass
 
             elif test_type == "framework":
                 for result in results:
-                    print(f"  🛠️  {result['framework']}: {result['avg_time']:.3f}s")
+                    pass
 
             elif test_type == "file_size":
                 for result in results:
-                    print(f"  📦 {result['complexity']}: {result['throughput_mbps']:.2f} MB/s")
+                    pass
 
             elif test_type == "concurrent":
                 result = results[0]  # Should only be one
-                print(f"  🔄 {result['mod_count']} mods: {result['avg_time_per_mod']:.3f}s each")
 
             elif test_type == "memory":
                 result = results[0]  # Should only be one
-                print(f"  💾 Memory usage: {result['memory_delta_mb']:.1f} MB")
 
             elif test_type == "stress":
                 result = results[0]  # Should only be one
-                print(
-                    f"  🔥 {result['conversion_count']} conversions: {result['success_rate']:.1%} success"
-                )
 
         # Overall performance metrics
         all_times = [r["avg_time"] for r in self.results if "avg_time" in r]
         all_success_rates = [r["success_rate"] for r in self.results if "success_rate" in r]
 
         if all_times:
-            print("\\n🎯 OVERALL METRICS:")
-            print(f"  ⚡ Fastest conversion: {min(all_times):.3f}s")
-            print(f"  🐌 Slowest conversion: {max(all_times):.3f}s")
-            print(f"  📊 Average conversion: {statistics.mean(all_times):.3f}s")
+            pass
 
         if all_success_rates:
-            print(f"  ✅ Average success rate: {statistics.mean(all_success_rates):.1%}")
-
-        print("\\n" + "=" * 80)
+            pass
 
 
 if __name__ == "__main__":
     # Run performance benchmarks
-    print("⚡ Running MVP Pipeline Performance Benchmarks...")
 
     # Create test suite with only performance tests
     suite = unittest.TestSuite()
@@ -451,7 +401,6 @@ if __name__ == "__main__":
 
     # Final summary
     if result.wasSuccessful():
-        print("\\n🎉 All Performance Benchmarks Passed!")
+        pass
     else:
-        print("\\n⚠️ Some benchmarks failed - check output above")
         exit(1)

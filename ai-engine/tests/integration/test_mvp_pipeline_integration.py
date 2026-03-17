@@ -134,7 +134,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         self.assertIsNotNone(result["texture_path"])
         self.assertIn("copper_block.png", result["texture_path"])
 
-        print(f"✅ Step 1 (JavaAnalyzer): {analysis_time:.3f}s")
         return result
 
     def test_step2_bedrock_builder_mvp(self):
@@ -176,7 +175,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
                 (resource_pack_dir / "textures" / "blocks" / "copper_block.png").exists()
             )
 
-            print(f"✅ Step 2 (BedrockBuilder): {build_time:.3f}s")
             return result, temp_dir
 
     def test_step3_packaging_agent_mvp(self):
@@ -224,12 +222,10 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         # Verify file exists
         self.assertTrue(output_path.exists())
 
-        print(f"✅ Step 3 (PackagingAgent): {package_time:.3f}s")
         return result
 
     def test_full_mvp_pipeline_integration(self):
         """Test the complete MVP pipeline integration."""
-        print("\n🧪 Testing Full MVP Pipeline Integration...")
 
         # Create test JAR
         jar_path = self._create_test_jar("integration_test", "diamond_block")
@@ -273,11 +269,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         self.assertTrue(package_result["validation"]["is_valid"])
 
         # Performance summary
-        print("📊 Pipeline Performance:")
-        print(f"  ⚡ Analysis: {analysis_time:.3f}s")
-        print(f"  🏗️  Build: {build_time:.3f}s")
-        print(f"  📦 Package: {package_time:.3f}s")
-        print(f"  🎯 Total: {total_time:.3f}s")
 
         # Performance assertions
         self.assertLess(total_time, 5.0, "Pipeline should complete in under 5 seconds")
@@ -299,7 +290,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
 
     def test_cli_integration_e2e(self):
         """Test CLI end-to-end integration."""
-        print("\n🖥️ Testing CLI End-to-End Integration...")
 
         # Create test JAR
         jar_path = self._create_test_jar("cli_test", "emerald_block")
@@ -323,14 +313,10 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         output_file = Path(result["output_file"])
         self.assertTrue(output_file.exists())
 
-        print(f"✅ CLI Integration: {cli_time:.3f}s")
-        print(f"📁 Output: {output_file.name} ({result['file_size']:,} bytes)")
-
         return result
 
     def test_multiple_mod_types_pipeline(self):
         """Test pipeline with multiple different mod types."""
-        print("\n🎮 Testing Multiple Mod Types...")
 
         mod_configs = [
             ("simple_mod", "stone_block"),
@@ -341,8 +327,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         results = []
 
         for mod_id, block_name in mod_configs:
-            print(f"  🔄 Processing {mod_id}...")
-
             # Create JAR
             jar_path = self._create_test_jar(mod_id, block_name)
 
@@ -381,8 +365,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
                 }
             )
 
-            print(f"    ✅ {mod_id}: {processing_time:.3f}s, {package_result['file_size']:,} bytes")
-
         # Verify all succeeded
         self.assertEqual(len(results), 3)
 
@@ -390,17 +372,12 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         avg_time = sum(r["processing_time"] for r in results) / len(results)
         avg_size = sum(r["file_size"] for r in results) / len(results)
 
-        print("📊 Multi-Mod Summary:")
-        print(f"  ⚡ Average time: {avg_time:.3f}s")
-        print(f"  📦 Average size: {avg_size:,.0f} bytes")
-
         self.assertLess(avg_time, 3.0, "Average processing time should be under 3 seconds")
 
         return results
 
     def test_error_handling_integration(self):
         """Test error handling throughout the pipeline."""
-        print("\n🚨 Testing Error Handling...")
 
         # Test 1: Invalid JAR path
         result = convert_mod("/nonexistent/path.jar", str(self.temp_path))
@@ -426,11 +403,8 @@ public class {mod_id.title()}Mod implements ModInitializer {{
             analysis_result["registry_name"], "unknown:copper_block"
         )  # Default fallback
 
-        print("✅ Error handling tests passed")
-
     def test_performance_benchmarks(self):
         """Test performance benchmarks for the pipeline."""
-        print("\n⚡ Running Performance Benchmarks...")
 
         # Benchmark different JAR sizes
         benchmark_configs = [
@@ -442,8 +416,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         benchmark_results = []
 
         for mod_id, block_count, description in benchmark_configs:
-            print(f"  🏃 {description}...")
-
             # Create JAR with multiple blocks
             jar_path = self.temp_path / f"{mod_id}.jar"
 
@@ -493,14 +465,9 @@ public class {mod_id.title()}Mod implements ModInitializer {{
                 }
             )
 
-            print(f"    ⏱️  {processing_time:.3f}s ({block_count / processing_time:.1f} blocks/sec)")
-
         # Performance summary
-        print("\n📊 Performance Benchmark Results:")
         for result in benchmark_results:
-            print(
-                f"  {result['description']}: {result['processing_time']:.3f}s, {result['throughput']:.1f} blocks/sec"
-            )
+            pass
 
         # Performance assertions
         fastest = min(r["processing_time"] for r in benchmark_results)
@@ -516,7 +483,6 @@ public class {mod_id.title()}Mod implements ModInitializer {{
 
 if __name__ == "__main__":
     # Run integration tests with detailed output
-    print("🧪 Running MVP Pipeline Integration Tests...\n")
 
     # Create test suite
     suite = unittest.TestSuite()
@@ -535,13 +501,7 @@ if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    print("\n🎯 Integration Test Results:")
-    print(f"  ✅ Tests passed: {result.testsRun - len(result.failures) - len(result.errors)}")
-    print(f"  ❌ Tests failed: {len(result.failures)}")
-    print(f"  🚨 Tests errored: {len(result.errors)}")
-
     if result.wasSuccessful():
-        print("\n🎉 All MVP Pipeline Integration Tests Passed!")
+        pass
     else:
-        print("\n⚠️ Some tests failed - check output above")
         exit(1)

@@ -107,9 +107,6 @@ public class Class{i} {{
 
 def test_feature_extraction():
     """Test 1: Feature extraction."""
-    print("\n" + "=" * 70)
-    print("Test 1: Feature Extraction")
-    print("=" * 70)
 
     try:
         from services.mode_classifier import FeatureExtractor
@@ -122,24 +119,16 @@ def test_feature_extraction():
         extractor = FeatureExtractor()
         features = extractor.extract_features(test_jar)
 
-        print(f"Class count: {features.class_count}")
-        print(f"Dependency count: {features.dependency_count}")
-        print(f"Dependencies: {features.dependencies}")
-        print(f"Complex features: {features.complex_features}")
-        print(f"Complexity score: {features.complexity_score:.2f}")
 
         # Cleanup
         os.unlink(test_jar)
 
         if features.class_count > 0:
-            print("✅ Feature extraction working")
             return True
         else:
-            print("⚠️ No features extracted")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -148,9 +137,6 @@ def test_feature_extraction():
 
 def test_mode_classification():
     """Test 2: Mode classification."""
-    print("\n" + "=" * 70)
-    print("Test 2: Mode Classification")
-    print("=" * 70)
 
     try:
         from services.mode_classifier import ModeClassifier, ConversionMode
@@ -168,11 +154,6 @@ def test_mode_classification():
             result = classifier.classify_mod(test_jar)
             results[mode] = result
 
-            print(f"\n{mode} Mod:")
-            print(f"  Classified as: {result.mode}")
-            print(f"  Confidence: {result.confidence:.0%}")
-            print(f"  Reason: {result.reason}")
-            print(f"  Automation target: {result.automation_target:.0%}")
 
             os.unlink(test_jar)
 
@@ -181,14 +162,11 @@ def test_mode_classification():
         expert_correct = results["Expert"].mode == ConversionMode.EXPERT
 
         if simple_correct and expert_correct:
-            print("\n✅ Mode classification working")
             return True
         else:
-            print("\n⚠️ Some classifications may be incorrect")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -197,9 +175,6 @@ def test_mode_classification():
 
 def test_confidence_scoring():
     """Test 3: Confidence scoring."""
-    print("\n" + "=" * 70)
-    print("Test 3: Confidence Scoring")
-    print("=" * 70)
 
     try:
         from services.mode_classifier import ModeClassifier
@@ -212,22 +187,16 @@ def test_confidence_scoring():
 
         result = classifier.classify_mod(test_jar)
 
-        print(f"Mode: {result.mode}")
-        print(f"Confidence: {result.confidence:.2f}")
-        print(f"Confidence in range [0, 1]: {0 <= result.confidence <= 1}")
 
         # Cleanup
         os.unlink(test_jar)
 
         if 0 <= result.confidence <= 1:
-            print("✅ Confidence scoring working")
             return True
         else:
-            print("❌ Confidence out of range")
             return False
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -236,9 +205,6 @@ def test_confidence_scoring():
 
 def test_batch_classification():
     """Test 4: Batch classification."""
-    print("\n" + "=" * 70)
-    print("Test 4: Batch Classification")
-    print("=" * 70)
 
     try:
         from services.mode_classifier import ModeClassifier
@@ -270,30 +236,21 @@ def test_batch_classification():
         correct = sum(1 for expected, result in results if expected == result.mode)
         accuracy = correct / len(results)
 
-        print(f"Total mods: {len(test_mods)}")
-        print(f"Total time: {total_time:.2f}s")
-        print(f"Average time per mod: {avg_time:.1f}ms")
-        print(f"Classification accuracy: {accuracy:.0%}")
-        print(f"Correct: {correct}/{len(results)}")
 
         # Mode distribution
         mode_counts = {}
         for _, result in results:
             mode_counts[result.mode] = mode_counts.get(result.mode, 0) + 1
 
-        print(f"\nMode distribution:")
         for mode, count in sorted(mode_counts.items()):
-            print(f"  {mode}: {count}")
+            pass
 
         if accuracy >= 0.75 and avg_time < 1000:  # 75% accuracy, <1s per mod
-            print("\n✅ Batch classification working")
             return True
         else:
-            print("\n⚠️ Performance or accuracy below target")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -302,33 +259,22 @@ def test_batch_classification():
 
 def test_mode_info():
     """Test 5: Mode information retrieval."""
-    print("\n" + "=" * 70)
-    print("Test 5: Mode Information")
-    print("=" * 70)
 
     try:
         from services.mode_classifier import get_all_modes
 
         all_modes = get_all_modes()
 
-        print(f"Total modes: {len(all_modes)}")
 
         for mode_info in all_modes:
-            print(f"\n{mode_info['mode']}:")
-            print(f"  Description: {mode_info['description']}")
-            print(f"  Automation target: {mode_info['automation_target']:.0%}")
-            print(f"  Class count range: {mode_info['class_count_range']}")
-            print(f"  Complex features: {mode_info['complex_features']}")
+            pass
 
         if len(all_modes) == 4:
-            print("\n✅ Mode information working")
             return True
         else:
-            print("\n⚠️ Unexpected number of modes")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -337,9 +283,6 @@ def test_mode_info():
 
 def main():
     """Run all test cases."""
-    print("\n" + "=" * 70)
-    print("MODE CLASSIFICATION SYSTEM TEST SUITE")
-    print("=" * 70)
 
     tests = [
         ("Feature Extraction", test_feature_extraction),
@@ -357,21 +300,16 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ {name} FAILED: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"TEST RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
 
     if failed == 0:
-        print("\n✅ ALL TESTS PASSED - Mode classification system working!")
-        print("\nPhase 2.5.1 Ready for Verification")
+        pass
     else:
-        print(f"\n⚠️ {failed} test(s) failed - review implementation")
+        pass
 
     return failed == 0
 

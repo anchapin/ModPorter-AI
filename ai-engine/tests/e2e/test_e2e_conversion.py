@@ -204,13 +204,3 @@ if __name__ == "__main__":
     results = asyncio.run(run_e2e_tests())
 
     # Print summary
-    print("\n" + "=" * 60)
-    print("END-TO-END TEST SUMMARY")
-    print("=" * 60)
-    print(f"Total Tests: {results['total_tests']}")
-    print(f"Passed: {results['passed']}")
-    print(f"Failed: {results['failed']}")
-    print(f"Pass Rate: {results['pass_rate'] * 100:.1f}%")
-    print(f"Total Duration: {results['total_duration_seconds']:.2f}s")
-    print(f"Average Duration: {results['average_duration_seconds']:.2f}s")
-    print("=" * 60)

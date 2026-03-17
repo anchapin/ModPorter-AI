@@ -18,9 +18,6 @@ sys.path.insert(0, "ai-engine")
 
 def test_pattern_matching():
     """Test 1: Pattern matching."""
-    print("\n" + "=" * 70)
-    print("Test 1: Pattern Matching")
-    print("=" * 70)
 
     try:
         # Import directly to avoid modal dependency
@@ -36,20 +33,15 @@ def test_pattern_matching():
         java_code = "public class Zombie extends Entity {}"
         matches = pattern_lib.match_java_patterns(java_code)
 
-        print(f"Java code: {java_code}")
-        print(f"Patterns matched: {len(matches)}")
         for match in matches:
-            print(f"  - {match['name']} ({match['complexity']})")
+            pass
 
         if len(matches) > 0:
-            print("✅ Pattern matching working")
             return True
         else:
-            print("⚠️ No patterns matched")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -58,9 +50,6 @@ def test_pattern_matching():
 
 def test_workaround_suggestions():
     """Test 2: Workaround suggestions."""
-    print("\n" + "=" * 70)
-    print("Test 2: Workaround Suggestions")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -75,19 +64,11 @@ def test_workaround_suggestions():
         workaround = pattern_lib.get_workaround_suggestion("Forge Energy")
 
         if workaround:
-            print(f"Feature: {workaround['feature']}")
-            print(f"Reason: {workaround['reason']}")
-            print(f"Workaround: {workaround['workaround']}")
-            print(f"Effort: {workaround['effort']}")
-            print(f"Alternatives: {len(workaround['alternatives'])}")
-            print("✅ Workaround suggestions working")
             return True
         else:
-            print("⚠️ No workaround found")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -96,9 +77,6 @@ def test_workaround_suggestions():
 
 def test_coverage_stats():
     """Test 3: Coverage statistics."""
-    print("\n" + "=" * 70)
-    print("Test 3: Coverage Statistics")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -111,20 +89,13 @@ def test_coverage_stats():
 
         stats = pattern_lib.get_coverage_stats()
 
-        print(f"Total patterns: {stats['total_patterns']}")
-        print(f"Total workarounds: {stats['total_workarounds']}")
-        print(f"By category: {stats.get('by_category', {})}")
-        print(f"By complexity: {stats.get('by_complexity', {})}")
 
         if stats["total_patterns"] >= 10:
-            print("✅ Coverage statistics working")
             return True
         else:
-            print("⚠️ Limited pattern coverage")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -133,9 +104,6 @@ def test_coverage_stats():
 
 def test_complex_entity_patterns():
     """Test 4: Complex entity patterns."""
-    print("\n" + "=" * 70)
-    print("Test 4: Complex Entity Patterns")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -153,32 +121,21 @@ def test_complex_entity_patterns():
             pattern_lib.PatternCategory.ENTITY
         )
 
-        print(f"Entity patterns found: {len(entity_patterns)}")
 
         boss_pattern = library.get_pattern("entity_boss")
         if boss_pattern:
-            print(f"\nBoss Entity Pattern:")
-            print(f"  Name: {boss_pattern.name}")
-            print(f"  Complexity: {boss_pattern.complexity.value}")
-            print(f"  Requirements: {boss_pattern.requirements}")
-            print(f"  Limitations: {boss_pattern.limitations}")
+            pass
 
         ai_pattern = library.get_pattern("entity_custom_ai")
         if ai_pattern:
-            print(f"\nCustom AI Pattern:")
-            print(f"  Name: {ai_pattern.name}")
-            print(f"  Complexity: {ai_pattern.complexity.value}")
-            print(f"  Workaround: {ai_pattern.workaround}")
+            pass
 
         if len(entity_patterns) >= 3:
-            print("\n✅ Complex entity patterns available")
             return True
         else:
-            print("\n⚠️ Limited entity patterns")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -187,9 +144,6 @@ def test_complex_entity_patterns():
 
 def test_multiblock_patterns():
     """Test 5: Multi-block structure patterns."""
-    print("\n" + "=" * 70)
-    print("Test 5: Multi-Block Structure Patterns")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -207,31 +161,21 @@ def test_multiblock_patterns():
             pattern_lib.PatternCategory.MULTI_BLOCK
         )
 
-        print(f"Multi-block patterns found: {len(multiblock_patterns)}")
 
         controller_pattern = library.get_pattern("multiblock_controller")
         if controller_pattern:
-            print(f"\nController Pattern:")
-            print(f"  Name: {controller_pattern.name}")
-            print(f"  Complexity: {controller_pattern.complexity.value}")
-            print(f"  Workaround: {controller_pattern.workaround}")
-            print(f"  Template preview: {controller_pattern.bedrock_template[:100]}...")
+            pass
 
         validator_pattern = library.get_pattern("multiblock_validator")
         if validator_pattern:
-            print(f"\nValidator Pattern:")
-            print(f"  Name: {validator_pattern.name}")
-            print(f"  Complexity: {validator_pattern.complexity.value}")
+            pass
 
         if len(multiblock_patterns) >= 2:
-            print("\n✅ Multi-block patterns available")
             return True
         else:
-            print("\n⚠️ Limited multi-block patterns")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -240,9 +184,6 @@ def test_multiblock_patterns():
 
 def test_dimension_patterns():
     """Test 6: Dimension and world patterns."""
-    print("\n" + "=" * 70)
-    print("Test 6: Dimension & World Patterns")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -263,31 +204,21 @@ def test_dimension_patterns():
             pattern_lib.PatternCategory.WORLD_GEN
         )
 
-        print(f"Dimension patterns: {len(dimension_patterns)}")
-        print(f"World gen patterns: {len(worldgen_patterns)}")
 
         dim_pattern = library.get_pattern("dimension_type")
         if dim_pattern:
-            print(f"\nDimension Type Pattern:")
-            print(f"  Name: {dim_pattern.name}")
-            print(f"  Complexity: {dim_pattern.complexity.value}")
-            print(f"  Limitations: {dim_pattern.limitations}")
+            pass
 
         biome_pattern = library.get_pattern("biome_custom")
         if biome_pattern:
-            print(f"\nBiome Pattern:")
-            print(f"  Name: {biome_pattern.name}")
-            print(f"  Complexity: {biome_pattern.complexity.value}")
+            pass
 
         if len(dimension_patterns) + len(worldgen_patterns) >= 3:
-            print("\n✅ Dimension/world patterns available")
             return True
         else:
-            print("\n⚠️ Limited dimension/world patterns")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -296,9 +227,6 @@ def test_dimension_patterns():
 
 def main():
     """Run all test cases."""
-    print("\n" + "=" * 70)
-    print("PATTERN LIBRARY TEST SUITE")
-    print("=" * 70)
 
     tests = [
         ("Pattern Matching", test_pattern_matching),
@@ -317,20 +245,16 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ {name} FAILED: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"TEST RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
 
     if failed == 0:
-        print("\n✅ ALL TESTS PASSED - Pattern library working!")
+        pass
     else:
-        print(f"\n⚠️ {failed} test(s) failed - review implementation")
+        pass
 
     return failed == 0
 

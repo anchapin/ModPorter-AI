@@ -12,6 +12,7 @@ import importlib.util
 
 # Load qa_validator directly
 import os
+
 # Use absolute path resolution to avoid issues when pytest is run from different directories
 QA_VALIDATOR_PATH = Path(os.path.abspath(__file__)).parent.parent / "agents" / "qa_validator.py"
 spec = importlib.util.spec_from_file_location("qa_validator", str(QA_VALIDATOR_PATH))
@@ -42,7 +43,6 @@ VALIDATION_RULES = qa_module.VALIDATION_RULES
 
 def test_validation_rules():
     """Test that validation rules are properly defined."""
-    print("Testing validation rules...")
 
     assert "manifest" in VALIDATION_RULES
     rules = VALIDATION_RULES["manifest"]
@@ -54,23 +54,17 @@ def test_validation_rules():
     assert "textures" in VALIDATION_RULES
     assert VALIDATION_RULES["textures"]["format"] == "PNG"
 
-    print("✓ Validation rules are properly defined")
-
 
 def test_singleton_instance():
     """Test that QAValidatorAgent uses singleton pattern."""
-    print("Testing singleton pattern...")
 
     agent1 = QAValidatorAgent.get_instance()
     agent2 = QAValidatorAgent.get_instance()
     assert agent1 is agent2
 
-    print("✓ Singleton pattern works correctly")
-
 
 def test_validation_categories():
     """Test that validation categories are defined."""
-    print("Testing validation categories...")
 
     agent = QAValidatorAgent.get_instance()
     categories = agent.validation_categories
@@ -84,8 +78,6 @@ def test_validation_categories():
     # Verify weights sum to 1.0
     total_weight = sum(cat["weight"] for cat in categories.values())
     assert total_weight == 1.0
-
-    print("✓ Validation categories are properly defined")
 
 
 def create_mock_mcaddon():
@@ -129,7 +121,6 @@ def create_mock_mcaddon():
 
 def test_validate_mcaddon_basic():
     """Test basic mcaddon validation."""
-    print("Testing basic mcaddon validation...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -158,17 +149,12 @@ def test_validate_mcaddon_basic():
             assert "status" in validation
             assert validation["checks"] >= validation["passed"]
 
-        print(
-            f"✓ Basic validation works (score: {result['overall_score']}/100, status: {result['status']})"
-        )
-
     finally:
         shutil.rmtree(temp_dir)
 
 
 def test_validate_manifest():
     """Test manifest validation."""
-    print("Testing manifest validation...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -182,17 +168,12 @@ def test_validate_manifest():
         # Valid manifest should have minimal errors
         assert len(structural_validation.get("errors", [])) == 0
 
-        print(
-            f"✓ Manifest validation passed ({structural_validation['passed']}/{structural_validation['checks']} checks)"
-        )
-
     finally:
         shutil.rmtree(temp_dir)
 
 
 def test_overall_score_range():
     """Test that overall score is in valid range."""
-    print("Testing overall score range...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -201,7 +182,6 @@ def test_overall_score_range():
         result = agent.validate_mcaddon(mcaddon_path)
 
         assert 0 <= result["overall_score"] <= 100
-        print(f"✓ Overall score in valid range: {result['overall_score']}/100")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -209,7 +189,6 @@ def test_overall_score_range():
 
 def test_status_values():
     """Test that status is valid."""
-    print("Testing status values...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -218,7 +197,6 @@ def test_status_values():
         result = agent.validate_mcaddon(mcaddon_path)
 
         assert result["status"] in ["pass", "partial", "fail", "unknown", "error"]
-        print(f"✓ Status is valid: {result['status']}")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -226,7 +204,6 @@ def test_status_values():
 
 def test_validation_cache():
     """Test that validation caching works."""
-    print("Testing validation cache...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -241,7 +218,6 @@ def test_validation_cache():
 
         # Results should be identical
         assert result1["overall_score"] == result2["overall_score"]
-        print("✓ Validation cache works correctly")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -249,19 +225,16 @@ def test_validation_cache():
 
 def test_nonexistent_file():
     """Test validation with nonexistent file."""
-    print("Testing nonexistent file handling...")
 
     agent = QAValidatorAgent.get_instance()
     result = agent.validate_mcaddon("/nonexistent/file.mcaddon")
 
     assert result["status"] in ["fail", "error"]
     assert len(result.get("issues", [])) > 0
-    print("✓ Nonexistent file handled correctly")
 
 
 def test_invalid_zip():
     """Test validation with invalid ZIP file."""
-    print("Testing invalid ZIP handling...")
 
     temp_dir = tempfile.mkdtemp()
     invalid_file = Path(temp_dir) / "invalid.mcaddon"
@@ -272,7 +245,6 @@ def test_invalid_zip():
         result = agent.validate_mcaddon(str(invalid_file))
 
         assert result["status"] in ["fail", "error"]
-        print("✓ Invalid ZIP handled correctly")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -280,7 +252,6 @@ def test_invalid_zip():
 
 def test_tools():
     """Test that tools are properly defined."""
-    print("Testing tool methods...")
 
     mcaddon_path, temp_dir = create_mock_mcaddon()
 
@@ -292,18 +263,15 @@ def test_tools():
 
         result = agent.validate_mcaddon(mcaddon_path)
         assert "overall_score" in result
-        print("✓ validate_mcaddon works")
 
         # Test validate_conversion_quality
         result_json = agent.validate_conversion_quality(json.dumps({"mcaddon_path": mcaddon_path}))
         result = json.loads(result_json)
         assert "success" in result
-        print("✓ validate_conversion_quality works")
 
         # Test generate_qa_report
         report = agent.generate_qa_report({"mcaddon_path": mcaddon_path})
         assert "report_id" in report
-        print("✓ generate_qa_report works")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -311,10 +279,6 @@ def test_tools():
 
 def run_all_tests():
     """Run all tests."""
-    print("=" * 60)
-    print("QA Validation Framework - Standalone Tests")
-    print("=" * 60)
-    print()
 
     tests = [
         test_validation_rules,
@@ -338,20 +302,12 @@ def run_all_tests():
             test_func()
             passed += 1
         except AssertionError as e:
-            print(f"✗ {test_func.__name__} failed: {e}")
             failed += 1
         except Exception as e:
-            print(f"✗ {test_func.__name__} error: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Tests passed: {passed}/{len(tests)}")
-    print(f"Tests failed: {failed}/{len(tests)}")
-    print("=" * 60)
 
     return failed == 0
 

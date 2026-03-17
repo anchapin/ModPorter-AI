@@ -545,7 +545,6 @@ class TestAddonValidator:
 
         # The validator should catch the invalid UUID and missing description
         # But first let's check what it actually returns
-        print(f"Validation result: {result}")  # Debug output
 
         # Since our implementation may be more lenient, let's check for specific errors
         has_uuid_error = any("uuid" in error.lower() for error in result.get("errors", []))

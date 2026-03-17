@@ -17,9 +17,6 @@ sys.path.insert(0, "ai-engine")
 
 def test_dfg_construction():
     """Test 1: Data Flow Graph construction."""
-    print("\n" + "=" * 70)
-    print("Test 1: Data Flow Graph Construction")
-    print("=" * 70)
 
     try:
         from services.semantic_equivalence import DataFlowAnalyzer
@@ -36,20 +33,13 @@ public class Test {
         analyzer = DataFlowAnalyzer()
         dfg = analyzer.analyze_java(java_code)
 
-        print(f"Variables found: {dfg.variables}")
-        print(f"Nodes created: {len(dfg.nodes)}")
-        print(f"Entry node: {dfg.entry_node}")
-        print(f"Exit node: {dfg.exit_node}")
 
         if dfg.variables and len(dfg.nodes) > 2:
-            print("✅ Data Flow Graph construction working")
             return True
         else:
-            print("⚠️ DFG constructed but may be incomplete")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -58,9 +48,6 @@ public class Test {
 
 def test_cfg_construction():
     """Test 2: Control Flow Graph construction."""
-    print("\n" + "=" * 70)
-    print("Test 2: Control Flow Graph Construction")
-    print("=" * 70)
 
     try:
         from services.semantic_equivalence import ControlFlowAnalyzer
@@ -81,23 +68,15 @@ public void test() {
         analyzer = ControlFlowAnalyzer()
         cfg = analyzer.analyze_java(java_code)
 
-        print(f"Nodes created: {len(cfg.nodes)}")
-        print(f"Branches found: {len(cfg.branches)}")
-        print(f"Entry node: {cfg.entry_node}")
-        print(f"Exit node: {cfg.exit_node}")
 
         paths = cfg.get_paths()
-        print(f"Paths from entry to exit: {len(paths)}")
 
         if cfg.nodes and cfg.entry_node and cfg.exit_node:
-            print("✅ Control Flow Graph construction working")
             return True
         else:
-            print("⚠️ CFG constructed but may be incomplete")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -106,9 +85,6 @@ public void test() {
 
 def test_equivalence_check():
     """Test 3: Semantic equivalence checking."""
-    print("\n" + "=" * 70)
-    print("Test 3: Semantic Equivalence Checking")
-    print("=" * 70)
 
     try:
         from services.semantic_equivalence import check_semantic_equivalence
@@ -132,22 +108,13 @@ function increment() {
 
         result = check_semantic_equivalence(java_code, bedrock_code)
 
-        print(f"Equivalent: {result.equivalent}")
-        print(f"Confidence: {result.confidence:.2f}")
-        print(f"DFG Similarity: {result.dfg_similarity:.2f}")
-        print(f"CFG Similarity: {result.cfg_similarity:.2f}")
-        print(f"Differences: {result.differences}")
-        print(f"Warnings: {result.warnings}")
 
         if result.confidence > 0.5:
-            print("✅ Semantic equivalence checking working")
             return True
         else:
-            print("⚠️ Equivalence check completed but confidence low")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -156,9 +123,6 @@ function increment() {
 
 def test_nonequivalence():
     """Test 4: Non-equivalent code detection."""
-    print("\n" + "=" * 70)
-    print("Test 4: Non-Equivalent Code Detection")
-    print("=" * 70)
 
     try:
         from services.semantic_equivalence import check_semantic_equivalence
@@ -183,20 +147,14 @@ function increment() {
 
         result = check_semantic_equivalence(java_code, bedrock_code)
 
-        print(f"Equivalent: {result.equivalent}")
-        print(f"Confidence: {result.confidence:.2f}")
-        print(f"Differences: {result.differences}")
 
         # This should detect differences
         if result.differences or result.confidence < 0.8:
-            print("✅ Non-equivalence detection working")
             return True
         else:
-            print("⚠️ Should have detected differences")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -205,9 +163,6 @@ function increment() {
 
 def test_qa_integration():
     """Test 5: QA Validator integration."""
-    print("\n" + "=" * 70)
-    print("Test 5: QA Validator Integration")
-    print("=" * 70)
 
     try:
         from services.semantic_equivalence import SemanticEquivalenceChecker
@@ -238,11 +193,6 @@ class Block {
 
         result = checker.check_equivalence(java_code, bedrock_code)
 
-        print(f"QA Check Result:")
-        print(f"  Equivalent: {result.equivalent}")
-        print(f"  Confidence: {result.confidence:.2f}")
-        print(f"  DFG Similarity: {result.dfg_similarity:.2f}")
-        print(f"  CFG Similarity: {result.cfg_similarity:.2f}")
 
         # Result can be used in QA validation
         qa_report = {
@@ -252,13 +202,10 @@ class Block {
             "warnings": result.warnings,
         }
 
-        print(f"\nQA Report: {qa_report}")
 
-        print("✅ QA integration working")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -267,9 +214,6 @@ class Block {
 
 def main():
     """Run all test cases."""
-    print("\n" + "=" * 70)
-    print("SEMANTIC EQUIVALENCE CHECKER TEST SUITE")
-    print("=" * 70)
 
     tests = [
         ("DFG Construction", test_dfg_construction),
@@ -287,20 +231,16 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ {name} FAILED: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"TEST RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
 
     if failed == 0:
-        print("\n✅ ALL TESTS PASSED - Semantic equivalence checker working!")
+        pass
     else:
-        print(f"\n⚠️ {failed} test(s) failed - review implementation")
+        pass
 
     return failed == 0
 
