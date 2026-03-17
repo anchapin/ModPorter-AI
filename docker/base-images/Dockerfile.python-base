@@ -39,6 +39,8 @@ RUN pip install --no-cache-dir \
 # Then install backend dependencies (will handle conflicts automatically)
 RUN pip install --no-cache-dir \
     -r /tmp/ai-engine-requirements-dev.txt \
+    -r /tmp/backend-requirements.txt || true
+RUN pip install --no-cache-dir \
     -r /tmp/backend-requirements.txt
 
 # Finally add common development dependencies
