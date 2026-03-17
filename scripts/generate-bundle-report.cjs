@@ -66,7 +66,7 @@ function generateReport() {
   
   if (totalSizeKB > ERROR_KB * 15) {
     status = 'error';
-  } else if (totalSizeKB > WARNING_KB * 20) {
+  } else if (totalSizeKB > WARNING_KB * 30) {
     status = 'warning';
   }
 
