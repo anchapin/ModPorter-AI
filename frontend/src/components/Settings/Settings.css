@@ -115,6 +115,12 @@
   cursor: pointer;
 }
 
+/* Accessibility: Focus-visible for checkbox */
+.setting-label input[type='checkbox']:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .label-text {
   display: flex;
   flex-direction: column;

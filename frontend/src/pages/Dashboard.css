@@ -157,6 +157,38 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
+/* Accessibility: Focus-visible for navigation tabs */
+.nav-tab:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  background: #f0f4ff;
+  color: #667eea;
+}
+
+/* Dashboard inline button */
+.dashboard-new-conversion-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dashboard-new-conversion-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.dashboard-new-conversion-btn:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.25);
+}
+
 .tab-icon {
   font-size: 1.2rem;
 }
