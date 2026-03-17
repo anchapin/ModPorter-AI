@@ -34,7 +34,7 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 # This is the time-consuming step that we want to cache
 # First install ai-engine dependencies
 RUN pip install --no-cache-dir \
-    -r /tmp/ai-engine-requirements.txt
+    -r /tmp/ai-engine-requirements.txt --use-deprecated=legacy-resolver
 
 # Then install backend dependencies (will handle conflicts automatically)
 RUN pip install --no-cache-dir \
