@@ -304,7 +304,6 @@ async def trigger_rl_training():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"RL training failed with error: {e}", exc_info=True)
         logger.error(f"RL training failed: {str(e)}", exc_info=True)
 
         raise HTTPException(
