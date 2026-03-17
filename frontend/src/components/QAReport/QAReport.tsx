@@ -2,6 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import './QAReport.css'; // Import the CSS file
 
+// Secure random number generator for mock data (replaces Math.random())
+const generateSecureRandom = (): number => {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / (0xFFFFFFFF + 1);
+};
+
+// Generate a secure random number in a range [min, max)
+const generateSecureRandomInRange = (min: number, max: number): number => {
+  return min + generateSecureRandom() * (max - min);
+};
+
+// Generate a secure random integer in a range [min, max]
+const generateSecureRandomInt = (min: number, max: number): number => {
+  return Math.floor(generateSecureRandom() * (max - min + 1)) + min;
+};
+
 // Define interfaces for the report data structures (based on API placeholders)
 interface QATestSummary {
   total_tests?: number;
@@ -68,13 +85,13 @@ const QAReport: React.FC<QAReportProps> = ({
             task_id: taskId,
             conversion_id: `conv_for_${taskId}`,
             generated_at: new Date().toISOString(),
-            overall_quality_score: Math.random() * (0.98 - 0.75) + 0.75, // Random score between 0.75 and 0.98
+            overall_quality_score: generateSecureRandomInRange(0.75, 0.98), // Random score between 0.75 and 0.98
             summary: {
               total_tests: 100,
-              passed: Math.floor(Math.random() * 20) + 75, // 75 to 95 passed
+              passed: generateSecureRandomInt(75, 95), // 75 to 95 passed
               // 'failed' would be total_tests - passed
-              performance_score: Math.random(),
-              compatibility_score: Math.random(),
+              performance_score: generateSecureRandom(),
+              compatibility_score: generateSecureRandom(),
             },
             functional_tests: {
               passed: 40,

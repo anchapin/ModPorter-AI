@@ -89,15 +89,13 @@ export const Dashboard: React.FC = () => {
     const history = storedHistory ? JSON.parse(storedHistory) : [];
 
     const total = history.length;
-    const completed = history.filter(
-      (item: any) => item.status === 'completed'
-    ).length;
-    const failed = history.filter(
-      (item: any) => item.status === 'failed'
-    ).length;
-    const processing = history.filter(
-      (item: any) => item.status === 'processing'
-    ).length;
+    const stats = history.reduce((acc: Record<string, number>, item: any) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {});
+    const completed = stats.completed || 0;
+    const failed = stats.failed || 0;
+    const processing = stats.processing || 0;
 
     const actualSuccessRate =
       total > 0 ? Math.round((completed / total) * 100) : 0;
