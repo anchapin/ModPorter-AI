@@ -37,16 +37,17 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 # But wait, pip in latest versions handles this with backtracking, we can just upgrade pip and use the fast resolver.
 # Actually we can just combine them to resolve everything once.
 # By combining them, we can ensure that dependencies are resolved together and prevent backtracking issues.
-# Note: we need to use a slightly older version of pip (e.g. 23.3) or the legacy resolver if dependencies still conflict,
-# but usually combining them works. To be safe, we'll use the legacy-resolver if backtracking takes too long.
-RUN pip install --no-cache-dir --use-deprecated=legacy-resolver \
+# Use uv to rapidly resolve and install the combined dependencies.
+# uv acts as a drop-in replacement for pip install, resolving much faster and without deep backtracking loops.
+RUN pip install --no-cache-dir uv
+
+RUN uv pip install --system --no-cache-dir \
     -r /tmp/backend-requirements.txt \
     -r /tmp/ai-engine-requirements.txt \
     -r /tmp/ai-engine-requirements-dev.txt \
     pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock \
     ruff black isort mypy \
-    alembic \
-    && pip cache purge
+    alembic
 
 # Production stage - smaller final image with libmagic support
 FROM python:3.11-slim
