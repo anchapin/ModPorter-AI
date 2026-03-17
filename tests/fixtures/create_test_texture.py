@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
 Create a real texture for the simple copper block JAR.
 """
@@ -16,13 +20,13 @@ def update_simple_copper_block_jar():
     jar_path = fixtures_dir / "simple_copper_block.jar"
     
     if not jar_path.exists():
-        print("Creating new JAR file...")
+        logger.info("Creating new JAR file...")
         create_jar_with_real_texture(jar_path)
     else:
-        print("Updating existing JAR with real texture...")
+        logger.info("Updating existing JAR with real texture...")
         update_jar_with_real_texture(jar_path)
     
-    print(f"Updated JAR with real texture: {jar_path}")
+    logger.info(f"Updated JAR with real texture: {jar_path}")
 
 
 def create_jar_with_real_texture(jar_path):

@@ -9,6 +9,9 @@ Issue: #691 - Build performance tracking
 
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 from models import (
     BuildPerformanceStartRequest,

@@ -1,10 +1,18 @@
+import logging
 import time
 import psutil  # This library might be useful for system metrics.
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class PerformanceMetricsCollector:
     def __init__(self):
-        print("PerformanceMetricsCollector initialized.")
+        logger.info("PerformanceMetricsCollector initialized.")
         # Potentially initialize connections to game clients or monitoring tools if necessary
 
     def _get_process_info(self, process_name_keyword=None):
@@ -19,12 +27,12 @@ class PerformanceMetricsCollector:
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 # These exceptions can occur if a process terminates while iterating
                 pass
-        print(f"Process with keyword '{process_name_keyword}' not found.")
+        logger.info(f"Process with keyword '{process_name_keyword}' not found.")
         return None
 
     def collect_cpu_metrics(self, process_keyword=None):
         """Collects CPU metrics, optionally for a specific process."""
-        # print(f"Collecting CPU metrics (process keyword: {process_keyword})...")
+        # logger.info(f"Collecting CPU metrics (process keyword: {process_keyword})...")
         target_process = self._get_process_info(process_keyword)
         if target_process:
             try:
@@ -38,10 +46,10 @@ class PerformanceMetricsCollector:
                     "process_num_threads": target_process.num_threads(),
                 }
             except psutil.NoSuchProcess:
-                # print(f"Process with keyword '{process_keyword}' not found during CPU metric collection.")
+                # logger.info(f"Process with keyword '{process_keyword}' not found during CPU metric collection.")
                 return {"error": f"Process {process_keyword} not found"}
             except Exception as e:
-                # print(f"Error collecting CPU metrics for process '{process_keyword}': {e}")
+                # logger.info(f"Error collecting CPU metrics for process '{process_keyword}': {e}")
                 return {"error": str(e)}
         else:
             # System-wide CPU metrics if no process specified or process not found
@@ -56,7 +64,7 @@ class PerformanceMetricsCollector:
                     time.sleep(0.1)
                     cpu_times_system = psutil.cpu_times_percent(interval=0.1)
             except Exception:
-                # print(f"Could not retrieve system CPU times percent: {e}")
+                # logger.info(f"Could not retrieve system CPU times percent: {e}")
                 pass  # Continue with what we have, or defaults
 
             return {
@@ -74,7 +82,7 @@ class PerformanceMetricsCollector:
 
     def collect_memory_metrics(self, process_keyword=None):
         """Collects memory metrics, optionally for a specific process."""
-        # print(f"Collecting memory metrics (process keyword: {process_keyword})...")
+        # logger.info(f"Collecting memory metrics (process keyword: {process_keyword})...")
         target_process = self._get_process_info(process_keyword)
         if target_process:
             try:
@@ -86,10 +94,10 @@ class PerformanceMetricsCollector:
                     "process_memory_percent": memory_percent,
                 }
             except psutil.NoSuchProcess:
-                # print(f"Process with keyword '{process_keyword}' not found for memory metrics.")
+                # logger.info(f"Process with keyword '{process_keyword}' not found for memory metrics.")
                 return {"error": f"Process {process_keyword} not found"}
             except Exception as e:
-                # print(f"Error collecting memory metrics for process '{process_keyword}': {e}")
+                # logger.info(f"Error collecting memory metrics for process '{process_keyword}': {e}")
                 return {"error": str(e)}
         else:
             # System-wide memory metrics
@@ -107,9 +115,9 @@ class PerformanceMetricsCollector:
 
     def collect_network_metrics(self, process_keyword=None):
         """Collects network metrics. Process-specific network I/O is generally not provided by psutil directly."""
-        # print(f"Collecting network metrics (process keyword: {process_keyword})...")
+        # logger.info(f"Collecting network metrics (process keyword: {process_keyword})...")
         if process_keyword:
-            # print(f"Note: Per-process network metrics for '{process_keyword}' are complex. Reporting system-wide stats.")
+            # logger.info(f"Note: Per-process network metrics for '{process_keyword}' are complex. Reporting system-wide stats.")
             pass
 
         try:
@@ -126,12 +134,12 @@ class PerformanceMetricsCollector:
                 "latency_ms": "not_implemented",  # Placeholder
             }
         except Exception as e:
-            # print(f"Error collecting network metrics: {e}")
+            # logger.info(f"Error collecting network metrics: {e}")
             return {"error": str(e)}
 
     def collect_frame_rate_metrics(self):
         """Placeholder for collecting frame rate (FPS). Requires game client integration."""
-        # print("Collecting frame rate metrics (placeholder)...")
+        # logger.info("Collecting frame rate metrics (placeholder)...")
         return {
             "fps_average": "not_implemented",
             "fps_min": "not_implemented",
@@ -140,17 +148,17 @@ class PerformanceMetricsCollector:
 
     def collect_load_time_metrics(self, feature_name="general_load"):
         """Placeholder for collecting load times. Requires specific instrumentation points."""
-        # print(f"Collecting load time metrics for '{feature_name}' (placeholder)...")
+        # logger.info(f"Collecting load time metrics for '{feature_name}' (placeholder)...")
         return {f"{feature_name}_time_seconds": "not_implemented"}
 
     def collect_response_time_metrics(self, interaction_name="general_interaction"):
         """Placeholder for collecting response times. Requires UI or API interaction hooks."""
-        # print(f"Collecting response time metrics for '{interaction_name}' (placeholder)...")
+        # logger.info(f"Collecting response time metrics for '{interaction_name}' (placeholder)...")
         return {f"{interaction_name}_response_ms": "not_implemented"}
 
     def collect_all_metrics_for_target(self, target_name="unknown", process_keyword=None):
         """Collects a standard set of metrics for a given target (e.g., 'java' or 'bedrock')."""
-        # print(f"Collecting all metrics for target: {target_name} (process keyword: {process_keyword})")
+        # logger.info(f"Collecting all metrics for target: {target_name} (process keyword: {process_keyword})")
         metrics = {
             "cpu": self.collect_cpu_metrics(process_keyword=process_keyword),
             "memory": self.collect_memory_metrics(process_keyword=process_keyword),
@@ -165,7 +173,7 @@ class PerformanceMetricsCollector:
 
     def get_system_context_metrics(self):
         """Collects general system-wide metrics for context."""
-        # print("Collecting system-wide context metrics...")
+        # logger.info("Collecting system-wide context metrics...")
         return {
             "system_cpu_overview": self.collect_cpu_metrics(),
             "system_memory_overview": self.collect_memory_metrics(),
@@ -176,27 +184,27 @@ class PerformanceMetricsCollector:
 if __name__ == "__main__":
     collector = PerformanceMetricsCollector()
 
-    print("\n--- Collecting System-Wide Context Metrics ---")
+    logger.info("\n--- Collecting System-Wide Context Metrics ---")
     system_context = collector.get_system_context_metrics()
     import json
 
-    print(json.dumps(system_context, indent=2))
+    logger.info(json.dumps(system_context, indent=2))
 
-    print(
+    logger.info(
         "\n--- Collecting Metrics for a Hypothetical 'python' Process (likely this script itself) ---"
     )
     python_metrics = collector.collect_all_metrics_for_target(
         target_name="python_script", process_keyword="python"
     )
-    print(json.dumps(python_metrics, indent=2))
+    logger.info(json.dumps(python_metrics, indent=2))
 
-    print("\n--- Collecting Metrics for a non-existent 'nonexistentproc123' Process ---")
+    logger.info("\n--- Collecting Metrics for a non-existent 'nonexistentproc123' Process ---")
     non_existent_metrics = collector.collect_all_metrics_for_target(
         target_name="nonexistent", process_keyword="nonexistentproc123"
     )
-    print(json.dumps(non_existent_metrics, indent=2))
+    logger.info(json.dumps(non_existent_metrics, indent=2))
 
-    print("\n--- Direct call examples ---")
-    print("CPU (system):", json.dumps(collector.collect_cpu_metrics(), indent=2))
-    print("Memory (system):", json.dumps(collector.collect_memory_metrics(), indent=2))
-    # print("CPU (Java):", json.dumps(collector.collect_cpu_metrics(process_keyword="java"), indent=2))
+    logger.info("\n--- Direct call examples ---")
+    logger.info("CPU (system):", json.dumps(collector.collect_cpu_metrics(), indent=2))
+    logger.info("Memory (system):", json.dumps(collector.collect_memory_metrics(), indent=2))
+    # logger.info("CPU (Java):", json.dumps(collector.collect_cpu_metrics(process_keyword="java"), indent=2))

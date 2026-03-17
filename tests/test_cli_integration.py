@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
 CLI Integration test for mod conversion workflow.
 
@@ -57,10 +61,10 @@ class TestCLIIntegration:
                 assert header.startswith(b'PK'), f"Generated file is not a valid ZIP/mcaddon format: {header}"
             
             # Log success metrics for debugging
-            print("✅ CLI Integration test passed:")
-            print(f"   - Output file: {mcaddon_file.name}")
-            print(f"   - .mcaddon size: {mcaddon_size:,} bytes")
-            print(f"   - CLI output: {result.stdout.strip()}")
+            logger.info("✅ CLI Integration test passed:")
+            logger.info(f"   - Output file: {mcaddon_file.name}")
+            logger.info(f"   - .mcaddon size: {mcaddon_size:,} bytes")
+            logger.info(f"   - CLI output: {result.stdout.strip()}")
 
     def test_cli_handles_invalid_jar_file(self, project_root):
         """

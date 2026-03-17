@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 import unittest
 import json
 from pathlib import Path
@@ -27,8 +31,8 @@ try:
     from agents.java_analyzer import JavaAnalyzerAgent
 except ImportError as e:
     ai_engine_path = setup_ai_engine_imports()
-    print(f"Failed to import JavaAnalyzerAgent from {ai_engine_path}")
-    print(f"Original error: {e}")
+    logger.info(f"Failed to import JavaAnalyzerAgent from {ai_engine_path}")
+    logger.info(f"Original error: {e}")
     # As a fallback for the tool to proceed, define a dummy agent
     class JavaAnalyzerAgent:
         def __init__(self, *args, **kwargs): pass
@@ -84,9 +88,9 @@ class TestJavaAnalyzerAgent(unittest.TestCase):
         mc_version = "1.19.4"
         jar_path = self._create_dummy_mod_jar(mod_name=mod_name, version=mod_version, mc_version=mc_version)
 
-        print(f"DEBUG: Calling analyze_mod_file for {jar_path}")
+        logger.info(f"DEBUG: Calling analyze_mod_file for {jar_path}")
         report_str = self.agent.analyze_mod_file(str(jar_path))
-        print(f"DEBUG: Received report_str: {report_str[:200]}...")
+        logger.info(f"DEBUG: Received report_str: {report_str[:200]}...")
         self.assertIsInstance(report_str, str)
         report = json.loads(report_str)
 
