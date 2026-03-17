@@ -242,7 +242,7 @@ async def create_behavior_file(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create behavior file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create behavior file")
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),
