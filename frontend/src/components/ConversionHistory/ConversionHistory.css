@@ -393,6 +393,13 @@
   box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
+/* Accessibility: Focus-visible for action buttons */
+.download-btn:focus-visible,
+.delete-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .delete-btn {
   background: #fce4ec;
   color: #c2185b;

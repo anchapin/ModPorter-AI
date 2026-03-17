@@ -370,6 +370,12 @@
   transform: rotate(45deg);
 }
 
+/* Accessibility: Focus-visible for custom checkbox */
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .checkbox-label .info-button {
   background-color: #e9ecef;
   color: #495057;
