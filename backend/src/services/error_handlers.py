@@ -292,7 +292,7 @@ def create_error_response(
     error: Exception, request: Request, include_traceback: bool = False
 ) -> ErrorResponse:
     """Create a structured error response
-
+    
     NOTE: Sensitive error details are NEVER included in HTTP responses.
     - Stack traces are logged server-side only, never sent to clients
     - Exception messages are sanitized to generic user messages
@@ -389,9 +389,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     # Only record 4xx/5xx errors as metrics
     if exc.status_code >= 400:
         _record_error_metric(
-            error_category=error_response.error_category,
-            error_type="HTTPException",
-            source="api",
+            error_category=error_response.error_category, error_type="HTTPException", source="api"
         )
 
     return JSONResponse(status_code=exc.status_code, content=error_response.model_dump())
@@ -406,39 +404,35 @@ async def validation_exception_handler(
 
     # Record validation error metric
     _record_error_metric(
-        error_category="validation_error",
-        error_type="RequestValidationError",
-        source="api",
+        error_category="validation_error", error_type="RequestValidationError", source="api"
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=error_response.model_dump(),
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response.model_dump()
     )
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for all other exceptions
-
+    
     Full error details are logged server-side with traceback for debugging.
     Clients only receive a generic error message without sensitive information.
     """
     # Always log the full exception with traceback (server-side only)
-    logger.error(f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True)
+    logger.error(
+        f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True
+    )
 
     # Create sanitized error response (no traceback exposed to clients)
     error_response = create_error_response(exc, request, include_traceback=False)
 
     # Record unhandled exception metric
     _record_error_metric(
-        error_category=error_response.error_category,
-        error_type=type(exc).__name__,
-        source="api",
+        error_category=error_response.error_category, error_type=type(exc).__name__, source="api"
     )
 
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=error_response.model_dump(),
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response.model_dump()
     )
 
 

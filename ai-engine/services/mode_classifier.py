@@ -9,7 +9,11 @@ Classifies mods into 4 conversion modes:
 """
 
 import logging
+<<<<<<< HEAD
 from typing import Dict, List, Optional, Any
+=======
+from typing import Dict, List, Optional, Any, Set, Tuple
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +25,10 @@ logger = logging.getLogger(__name__)
 
 class ConversionMode:
     """Conversion mode constants."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     SIMPLE = "Simple"
     STANDARD = "Standard"
     COMPLEX = "Complex"
@@ -31,22 +38,37 @@ class ConversionMode:
 @dataclass
 class ModFeatures:
     """Features extracted from a mod for classification."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Basic counts
     class_count: int = 0
     method_count: int = 0
     field_count: int = 0
+<<<<<<< HEAD
 
     # Dependencies
     dependencies: List[str] = field(default_factory=list)
     dependency_count: int = 0
 
+=======
+    
+    # Dependencies
+    dependencies: List[str] = field(default_factory=list)
+    dependency_count: int = 0
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Assets
     texture_count: int = 0
     model_count: int = 0
     sound_count: int = 0
     asset_count: int = 0
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Complex features (boolean flags)
     has_entities: bool = False
     has_multiblock: bool = False
@@ -58,6 +80,7 @@ class ModFeatures:
     has_gui: bool = False
     has_recipes: bool = False
     has_achievements: bool = False
+<<<<<<< HEAD
 
     # Detected complex features
     complex_features: List[str] = field(default_factory=list)
@@ -66,6 +89,16 @@ class ModFeatures:
     # Calculated metrics
     complexity_score: float = 0.0
 
+=======
+    
+    # Detected complex features
+    complex_features: List[str] = field(default_factory=list)
+    unknown_features: List[str] = field(default_factory=list)
+    
+    # Calculated metrics
+    complexity_score: float = 0.0
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "class_count": self.class_count,
@@ -79,7 +112,10 @@ class ModFeatures:
 @dataclass
 class ClassificationResult:
     """Result of mode classification."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     mode: str
     confidence: float  # 0.0 to 1.0
     reason: str
@@ -87,7 +123,11 @@ class ClassificationResult:
     automation_target: float = 0.0
     recommendations: List[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.now)
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "mode": self.mode,
@@ -133,12 +173,16 @@ CLASSIFICATION_RULES = {
 
 # Feature detection patterns
 FEATURE_PATTERNS = {
+<<<<<<< HEAD
     "multiblock": [
         "IMultiBlock",
         "MultiBlockPart",
         "TileEntityMultiBlock",
         "multiblock",
     ],
+=======
+    "multiblock": ["IMultiBlock", "MultiBlockPart", "TileEntityMultiBlock", "multiblock"],
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     "machine": ["TileEntity", "BlockEntity", "IMachine", "EnergyTile"],
     "custom_ai": ["Goal", "Task", "AI", "PathNavigate"],
     "dimension": ["DimensionType", "WorldProvider", "DimensionRegistry"],
@@ -153,12 +197,17 @@ FEATURE_PATTERNS = {
 class ModeClassifier:
     """
     Classifies Minecraft mods into conversion modes.
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Usage:
         classifier = ModeClassifier()
         result = classifier.classify_mod("/path/to/mod.jar")
         print(f"Mode: {result.mode}, Confidence: {result.confidence:.0%}")
     """
+<<<<<<< HEAD
 
     def __init__(self):
         self.feature_extractor = FeatureExtractor()
@@ -171,10 +220,25 @@ class ModeClassifier:
         Args:
             mod_path: Path to mod JAR file or directory
 
+=======
+    
+    def __init__(self):
+        self.feature_extractor = FeatureExtractor()
+        logger.info("ModeClassifier initialized")
+    
+    def classify_mod(self, mod_path: str) -> ClassificationResult:
+        """
+        Classify a mod into a conversion mode.
+        
+        Args:
+            mod_path: Path to mod JAR file or directory
+            
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             ClassificationResult with mode, confidence, and recommendations
         """
         logger.info(f"Classifying mod: {mod_path}")
+<<<<<<< HEAD
 
         # Extract features
         features = self.feature_extractor.extract_features(mod_path)
@@ -199,34 +263,70 @@ class ModeClassifier:
             f in features.complex_features
             for f in CLASSIFICATION_RULES[ConversionMode.EXPERT]["complex_features"]
         ):
+=======
+        
+        # Extract features
+        features = self.feature_extractor.extract_features(mod_path)
+        
+        # Classify based on features
+        result = self._classify_by_features(features)
+        result.features = features
+        
+        # Add recommendations
+        result.recommendations = self._generate_recommendations(result)
+        
+        logger.info(f"Classification result: {result.mode} (confidence: {result.confidence:.0%})")
+        
+        return result
+    
+    def _classify_by_features(self, features: ModFeatures) -> ClassificationResult:
+        """Classify mod based on extracted features."""
+        
+        # Check for expert features first (highest priority)
+        expert_features = set(FEATURE_PATTERNS.keys()) & set(features.complex_features)
+        if any(f in features.complex_features for f in CLASSIFICATION_RULES[ConversionMode.EXPERT]["complex_features"]):
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return ClassificationResult(
                 mode=ConversionMode.EXPERT,
                 confidence=self._calculate_confidence(features, ConversionMode.EXPERT),
                 reason="Expert-level features detected (dimension/worldgen/biome)",
                 automation_target=CLASSIFICATION_RULES[ConversionMode.EXPERT]["automation_target"],
             )
+<<<<<<< HEAD
 
         # Check for complex features
         if any(
             f in features.complex_features
             for f in CLASSIFICATION_RULES[ConversionMode.COMPLEX]["complex_features"]
         ):
+=======
+        
+        # Check for complex features
+        if any(f in features.complex_features for f in CLASSIFICATION_RULES[ConversionMode.COMPLEX]["complex_features"]):
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return ClassificationResult(
                 mode=ConversionMode.COMPLEX,
                 confidence=self._calculate_confidence(features, ConversionMode.COMPLEX),
                 reason="Complex features detected (multiblock/machine/custom AI)",
                 automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX]["automation_target"],
             )
+<<<<<<< HEAD
 
         # Check for standard features
         if any(
             f in features.complex_features
             for f in CLASSIFICATION_RULES[ConversionMode.STANDARD]["complex_features"]
         ):
+=======
+        
+        # Check for standard features
+        if any(f in features.complex_features for f in CLASSIFICATION_RULES[ConversionMode.STANDARD]["complex_features"]):
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return ClassificationResult(
                 mode=ConversionMode.STANDARD,
                 confidence=self._calculate_confidence(features, ConversionMode.STANDARD),
                 reason="Standard features detected (entities/recipes)",
+<<<<<<< HEAD
                 automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD][
                     "automation_target"
                 ],
@@ -242,15 +342,33 @@ class ModeClassifier:
             <= class_count
             <= CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][1]
         ):
+=======
+                automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD]["automation_target"],
+            )
+        
+        # Check class count and dependencies
+        class_count = features.class_count
+        dep_count = features.dependency_count
+        
+        # Standard range check
+        if (CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][0] <= class_count <= 
+            CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][1]):
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return ClassificationResult(
                 mode=ConversionMode.STANDARD,
                 confidence=self._calculate_confidence(features, ConversionMode.STANDARD),
                 reason=f"Standard complexity ({class_count} classes, {dep_count} dependencies)",
+<<<<<<< HEAD
                 automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD][
                     "automation_target"
                 ],
             )
 
+=======
+                automation_target=CLASSIFICATION_RULES[ConversionMode.STANDARD]["automation_target"],
+            )
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Complex range check (high class count without complex features)
         if class_count > CLASSIFICATION_RULES[ConversionMode.STANDARD]["class_count_range"][1]:
             return ClassificationResult(
@@ -259,7 +377,11 @@ class ModeClassifier:
                 reason=f"High complexity ({class_count} classes)",
                 automation_target=CLASSIFICATION_RULES[ConversionMode.COMPLEX]["automation_target"],
             )
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Default to Simple
         return ClassificationResult(
             mode=ConversionMode.SIMPLE,
@@ -267,12 +389,20 @@ class ModeClassifier:
             reason="Basic mod structure",
             automation_target=CLASSIFICATION_RULES[ConversionMode.SIMPLE]["automation_target"],
         )
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _calculate_confidence(self, features: ModFeatures, mode: str) -> float:
         """Calculate classification confidence score (0.0 to 1.0)."""
         confidence = 1.0
         rules = CLASSIFICATION_RULES[mode]
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check class count fit
         class_range = rules["class_count_range"]
         if class_range[0] and class_range[1]:
@@ -283,18 +413,27 @@ class ModeClassifier:
             confidence -= (distance / range_size) * 0.2
         elif class_range[0] and features.class_count < class_range[0]:
             confidence -= 0.3
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check dependency fit
         dep_range = rules["dependency_range"]
         if dep_range[0] and dep_range[1]:
             if not (dep_range[0] <= features.dependency_count <= dep_range[1]):
                 confidence -= 0.1
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Reduce confidence for missing information
         if features.class_count == 0:
             confidence -= 0.3
         if features.dependency_count == 0 and features.class_count > 0:
             confidence -= 0.1
+<<<<<<< HEAD
 
         # Reduce confidence for unknown features
         unknown_count = len(features.unknown_features)
@@ -317,17 +456,46 @@ class ModeClassifier:
         if result.mode == ConversionMode.COMPLEX:
             recommendations.append("Complex mode: Review multiblock/machine patterns")
 
+=======
+        
+        # Reduce confidence for unknown features
+        unknown_count = len(features.unknown_features)
+        confidence -= unknown_count * 0.05
+        
+        # Ensure confidence is in valid range
+        return max(0.0, min(1.0, confidence))
+    
+    def _generate_recommendations(self, result: ClassificationResult) -> List[str]:
+        """Generate recommendations based on classification."""
+        recommendations = []
+        
+        if result.confidence < 0.7:
+            recommendations.append("Low confidence - manual review recommended")
+        
+        if result.mode == ConversionMode.EXPERT:
+            recommendations.append("Expert mode: Expect significant manual work")
+            recommendations.append("Consider breaking into smaller components")
+        
+        if result.mode == ConversionMode.COMPLEX:
+            recommendations.append("Complex mode: Review multiblock/machine patterns")
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if result.features:
             if result.features.has_custom_ai:
                 recommendations.append("Custom AI detected: Review behavior tree conversion")
             if result.features.has_multiblock:
                 recommendations.append("Multi-block detected: Verify structure validation")
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return recommendations
 
 
 class FeatureExtractor:
     """Extracts features from Minecraft mods for classification."""
+<<<<<<< HEAD
 
     def __init__(self):
         logger.debug("FeatureExtractor initialized")
@@ -339,17 +507,36 @@ class FeatureExtractor:
         Args:
             mod_path: Path to mod JAR file or directory
 
+=======
+    
+    def __init__(self):
+        logger.debug("FeatureExtractor initialized")
+    
+    def extract_features(self, mod_path: str) -> ModFeatures:
+        """
+        Extract all features from a mod.
+        
+        Args:
+            mod_path: Path to mod JAR file or directory
+            
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             ModFeatures with all extracted features
         """
         features = ModFeatures()
+<<<<<<< HEAD
 
         if mod_path.endswith((".jar", ".zip")):
+=======
+        
+        if mod_path.endswith(('.jar', '.zip')):
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             self._extract_from_jar(mod_path, features)
         elif os.path.isdir(mod_path):
             self._extract_from_directory(mod_path, features)
         else:
             logger.warning(f"Unknown mod format: {mod_path}")
+<<<<<<< HEAD
 
         # Calculate complexity score
         features.complexity_score = self._calculate_complexity(features)
@@ -429,12 +616,86 @@ class FeatureExtractor:
         features.method_count += content.count("(") - content.count("import")
         features.field_count += content.count(";") - content.count("import")
 
+=======
+        
+        # Calculate complexity score
+        features.complexity_score = self._calculate_complexity(features)
+        
+        return features
+    
+    def _extract_from_jar(self, jar_path: str, features: ModFeatures):
+        """Extract features from JAR file."""
+        try:
+            with zipfile.ZipFile(jar_path, 'r') as jar:
+                file_list = jar.namelist()
+                
+                # Count Java classes
+                java_files = [f for f in file_list if f.endswith('.java')]
+                class_files = [f for f in file_list if f.endswith('.class')]
+                features.class_count = len(class_files)
+                
+                # Analyze Java files if available
+                for java_file in java_files[:50]:  # Limit for performance
+                    try:
+                        content = jar.read(java_file).decode('utf-8', errors='ignore')
+                        self._analyze_java_content(content, features)
+                    except Exception:
+                        pass
+                
+                # Count assets
+                features.texture_count = len([f for f in file_list if '/textures/' in f and f.endswith('.png')])
+                features.model_count = len([f for f in file_list if '/models/' in f and f.endswith('.json')])
+                features.sound_count = len([f for f in file_list if '/sounds/' in f and f.endswith('.ogg')])
+                features.asset_count = features.texture_count + features.model_count + features.sound_count
+                
+                # Count dependencies from metadata
+                features.dependencies = self._extract_dependencies_from_jar(jar, file_list)
+                features.dependency_count = len(features.dependencies)
+                
+        except Exception as e:
+            logger.error(f"Error extracting from JAR {jar_path}: {e}")
+    
+    def _extract_from_directory(self, dir_path: str, features: ModFeatures):
+        """Extract features from directory."""
+        root = Path(dir_path)
+        
+        # Count Java files
+        java_files = list(root.rglob('*.java'))
+        class_files = list(root.rglob('*.class'))
+        features.class_count = len(class_files)
+        
+        # Analyze Java content
+        for java_file in java_files[:50]:
+            try:
+                content = java_file.read_text(encoding='utf-8', errors='ignore')
+                self._analyze_java_content(content, features)
+            except Exception:
+                pass
+        
+        # Count assets
+        features.texture_count = len(list(root.rglob('**/textures/**/*.png')))
+        features.model_count = len(list(root.rglob('**/models/**/*.json')))
+        features.sound_count = len(list(root.rglob('**/sounds/**/*.ogg')))
+        features.asset_count = features.texture_count + features.model_count + features.sound_count
+        
+        # Extract dependencies
+        features.dependencies = self._extract_dependencies_from_dir(root)
+        features.dependency_count = len(features.dependencies)
+    
+    def _analyze_java_content(self, content: str, features: ModFeatures):
+        """Analyze Java file content for features."""
+        # Count methods and fields
+        features.method_count += content.count('(') - content.count('import')
+        features.field_count += content.count(';') - content.count('import')
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Detect complex features
         for feature_name, patterns in FEATURE_PATTERNS.items():
             for pattern in patterns:
                 if pattern in content:
                     if feature_name not in features.complex_features:
                         features.complex_features.append(feature_name)
+<<<<<<< HEAD
 
                         # Set boolean flags
                         setattr(features, f"has_{feature_name}", True)
@@ -496,22 +757,93 @@ class FeatureExtractor:
         """Calculate overall complexity score (0.0 to 1.0)."""
         score = 0.0
 
+=======
+                        
+                        # Set boolean flags
+                        setattr(features, f'has_{feature_name}', True)
+                    break
+    
+    def _extract_dependencies_from_jar(self, jar: zipfile.ZipFile, file_list: List[str]) -> List[str]:
+        """Extract dependencies from JAR metadata."""
+        dependencies = []
+        
+        # Check fabric.mod.json
+        if 'fabric.mod.json' in file_list:
+            try:
+                import json
+                content = jar.read('fabric.mod.json').decode('utf-8')
+                data = json.loads(content)
+                deps = data.get('depends', {})
+                dependencies.extend(deps.keys())
+            except Exception:
+                pass
+        
+        # Check mods.toml
+        for f in file_list:
+            if f.endswith('mods.toml'):
+                try:
+                    content = jar.read(f).decode('utf-8')
+                    # Simple parsing for dependency strings
+                    if 'modId=' in content:
+                        for line in content.split('\n'):
+                            if 'modId=' in line:
+                                mod_id = line.split('=')[1].strip('"')
+                                dependencies.append(mod_id)
+                except Exception:
+                    pass
+        
+        return list(set(dependencies))
+    
+    def _extract_dependencies_from_dir(self, root: Path) -> List[str]:
+        """Extract dependencies from directory metadata."""
+        dependencies = []
+        
+        # Check fabric.mod.json
+        fabric_mod = root / 'fabric.mod.json'
+        if fabric_mod.exists():
+            try:
+                import json
+                data = json.loads(fabric_mod.read_text())
+                deps = data.get('depends', {})
+                dependencies.extend(deps.keys())
+            except Exception:
+                pass
+        
+        return list(set(dependencies))
+    
+    def _calculate_complexity(self, features: ModFeatures) -> float:
+        """Calculate overall complexity score (0.0 to 1.0)."""
+        score = 0.0
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Class count contribution (0-0.4)
         if features.class_count > 0:
             class_score = min(features.class_count / 100, 1.0) * 0.4
             score += class_score
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Dependency contribution (0-0.2)
         if features.dependency_count > 0:
             dep_score = min(features.dependency_count / 20, 1.0) * 0.2
             score += dep_score
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Complex features contribution (0-0.4)
         complex_count = len(features.complex_features)
         if complex_count > 0:
             feature_score = min(complex_count / 5, 1.0) * 0.4
             score += feature_score
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return min(1.0, score)
 
 
@@ -519,10 +851,17 @@ class FeatureExtractor:
 def classify_mod(mod_path: str) -> ClassificationResult:
     """
     Classify a mod into a conversion mode.
+<<<<<<< HEAD
 
     Args:
         mod_path: Path to mod JAR file or directory
 
+=======
+    
+    Args:
+        mod_path: Path to mod JAR file or directory
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         ClassificationResult with mode and confidence
     """
@@ -533,16 +872,27 @@ def classify_mod(mod_path: str) -> ClassificationResult:
 def get_mode_info(mode: str) -> Dict[str, Any]:
     """
     Get information about a conversion mode.
+<<<<<<< HEAD
 
     Args:
         mode: Mode name (Simple/Standard/Complex/Expert)
 
+=======
+    
+    Args:
+        mode: Mode name (Simple/Standard/Complex/Expert)
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         Dictionary with mode information
     """
     if mode not in CLASSIFICATION_RULES:
         return {"error": f"Unknown mode: {mode}"}
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     rules = CLASSIFICATION_RULES[mode]
     return {
         "mode": mode,
@@ -556,6 +906,7 @@ def get_mode_info(mode: str) -> Dict[str, Any]:
 
 def get_all_modes() -> List[Dict[str, Any]]:
     """Get information about all conversion modes."""
+<<<<<<< HEAD
     return [
         get_mode_info(mode)
         for mode in [
@@ -565,3 +916,11 @@ def get_all_modes() -> List[Dict[str, Any]]:
             ConversionMode.EXPERT,
         ]
     ]
+=======
+    return [get_mode_info(mode) for mode in [
+        ConversionMode.SIMPLE,
+        ConversionMode.STANDARD,
+        ConversionMode.COMPLEX,
+        ConversionMode.EXPERT,
+    ]]
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
