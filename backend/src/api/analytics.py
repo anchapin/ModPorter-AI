@@ -147,9 +147,7 @@ async def track_event(
     except Exception as e:
         logger.error(f"Failed to track analytics event: {e}")
         # Don't fail the request if analytics fails
-        logger.error(f"Failed to track event: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to track event: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
 
 
 @router.get("/events", response_model=List[AnalyticsEventResponse])
@@ -223,9 +221,7 @@ async def get_events(
 
     except Exception as e:
         logger.error(f"Failed to query analytics events: {e}")
-        logger.error(f"Failed to query events: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to query events: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to query events: {str(e)}")
 
 
 @router.get("/stats", response_model=AnalyticsStatsResponse)
@@ -286,9 +282,7 @@ async def get_analytics_stats(
 
     except Exception as e:
         logger.error(f"Failed to get analytics stats: {e}")
-        logger.error(f"Failed to get stats: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to get stats: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
 
 
 # Convenience endpoint for tracking common events
@@ -326,9 +320,7 @@ async def track_page_view(
 
     except Exception as e:
         logger.error(f"Failed to track page view: {e}")
-        logger.error(f"Failed to track page view: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to track page view: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to track page view: {str(e)}")
 
 
 @router.post("/events/conversion")
@@ -387,9 +379,7 @@ async def track_conversion_event(
 
     except Exception as e:
         logger.error(f"Failed to track conversion event: {e}")
-        logger.error(f"Failed to track event: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to track event: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to track event: {str(e)}")
 
 
 @router.get("/events/types")

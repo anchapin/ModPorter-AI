@@ -160,11 +160,7 @@ EVENT_TEMPLATES = {
                 "type": EventTriggerType.CONDITION,
                 "parameters": {"entity_type": "minecraft:zombie"},
                 "conditions": [
-                    {
-                        "type": "entity_has_tag",
-                        "parameters": {"tag": "boss"},
-                        "negated": True,
-                    }
+                    {"type": "entity_has_tag", "parameters": {"tag": "boss"}, "negated": True}
                 ],
             }
         ],
@@ -206,10 +202,7 @@ EVENT_TEMPLATES = {
             },
             {
                 "type": EventActionType.COMMAND,
-                "parameters": {
-                    "command": "tell @p Found diamonds!",
-                    "permission_level": "all",
-                },
+                "parameters": {"command": "tell @p Found diamonds!", "permission_level": "all"},
                 "delay": 20,
             },
         ],
@@ -253,9 +246,7 @@ EVENT_TEMPLATES = {
 
 
 @router.get(
-    "/events/types",
-    response_model=List[Dict[str, str]],
-    summary="Get available event types",
+    "/events/types", response_model=List[Dict[str, str]], summary="Get available event types"
 )
 async def get_event_types():
     """
@@ -278,9 +269,7 @@ async def get_event_types():
 
 
 @router.get(
-    "/events/triggers",
-    response_model=List[Dict[str, str]],
-    summary="Get available trigger types",
+    "/events/triggers", response_model=List[Dict[str, str]], summary="Get available trigger types"
 )
 async def get_trigger_types():
     """
@@ -299,9 +288,7 @@ async def get_trigger_types():
 
 
 @router.get(
-    "/events/actions",
-    response_model=List[Dict[str, str]],
-    summary="Get available action types",
+    "/events/actions", response_model=List[Dict[str, str]], summary="Get available action types"
 )
 async def get_action_types():
     """
@@ -399,8 +386,8 @@ async def create_event_system(
 
         return event_system
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to create event system")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create event system: {str(e)}")
 
 
 @router.get(
@@ -409,8 +396,7 @@ async def create_event_system(
     summary="Get specific event system",
 )
 async def get_event_system(
-    system_id: str = Path(..., description="Event system ID"),
-    db: AsyncSession = Depends(get_db),
+    system_id: str = Path(..., description="Event system ID"), db: AsyncSession = Depends(get_db)
 ) -> AdvancedEventSystem:
     """
     Get a specific event system by ID.
@@ -458,15 +444,12 @@ async def test_event_system(
             warnings=warnings,
             debug_output=[
                 {"timestamp": datetime.utcnow().isoformat(), "message": "Test started"},
-                {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "message": "Test completed",
-                },
+                {"timestamp": datetime.utcnow().isoformat(), "message": "Test completed"},
             ],
         )
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Event system test failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Event system test failed: {str(e)}")
 
 
 @router.post(
@@ -488,8 +471,8 @@ async def generate_event_system_functions(
 
         return {"message": "Event system function generation started"}
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to start generation")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start generation: {str(e)}")
 
 
 async def generate_event_functions_background(system_id: str, db: AsyncSession):
@@ -499,7 +482,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
     try:
         # This would contain the actual function generation logic
         # For now, it's a placeholder
-        pass
+        print(f"Generating functions for event system: {system_id}")
 
         # In a full implementation, this would:
         # 1. Parse the event system configuration
@@ -507,17 +490,13 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
         # 3. Create proper function directory structure
         # 4. Store generated functions as behavior files
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Background function generation failed: {e}")
 
 
-@router.get(
-    "/events/systems/{system_id}/debug",
-    summary="Get debug information for event system",
-)
+@router.get("/events/systems/{system_id}/debug", summary="Get debug information for event system")
 async def get_event_system_debug(
-    system_id: str = Path(..., description="Event system ID"),
-    db: AsyncSession = Depends(get_db),
+    system_id: str = Path(..., description="Event system ID"), db: AsyncSession = Depends(get_db)
 ):
     """
     Get debug information for an event system.
@@ -540,5 +519,5 @@ async def get_event_system_debug(
             },
         }
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to get debug info")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get debug info: {str(e)}")

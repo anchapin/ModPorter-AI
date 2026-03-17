@@ -145,10 +145,7 @@ def parse_mod_url(url: str) -> URLParseResult:
     if mr_short_match:
         slug = mr_short_match.group(1)
         return URLParseResult(
-            platform="modrinth",
-            slug=slug,
-            url=f"https://modrinth.com/mod/{slug}",
-            is_valid=True,
+            platform="modrinth", slug=slug, url=f"https://modrinth.com/mod/{slug}", is_valid=True
         )
 
     return URLParseResult(
@@ -299,9 +296,7 @@ async def search_mods(
 
     except Exception as e:
         logger.error(f"Search error: {e}")
-        logger.error(f"Failed to search mods: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to search mods: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to search mods: {str(e)}")
 
 
 @router.get("/{platform}/mod/{mod_id}", response_model=ModInfo)
@@ -329,9 +324,7 @@ async def get_mod_info(
 
     except Exception as e:
         logger.error(f"Get mod info error: {e}")
-        logger.error(f"Failed to get mod info: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to get mod info: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to get mod info: {str(e)}")
 
 
 @router.get("/{platform}/mod/{mod_id}/files", response_model=List[ModFile])
@@ -370,9 +363,7 @@ async def get_mod_files(
 
     except Exception as e:
         logger.error(f"Get mod files error: {e}")
-        logger.error(f"Failed to get mod files: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to get mod files: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to get mod files: {str(e)}")
 
 
 @router.post("/import", response_model=ImportResponse)
@@ -399,9 +390,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             search_results = await curseforge_service.search_mods(parse_result.slug or "")
             if not search_results.get("data"):
                 return ImportResponse(
-                    status="error",
-                    message=f"Mod not found: {parse_result.slug}",
-                    mod_info=None,
+                    status="error", message=f"Mod not found: {parse_result.slug}", mod_info=None
                 )
 
             mod_data = search_results["data"][0]
@@ -415,9 +404,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             files_result = await curseforge_service.get_mod_files(mod_id)
             if not files_result.get("data"):
                 return ImportResponse(
-                    status="error",
-                    message="No files available for this mod",
-                    mod_info=mod_info,
+                    status="error", message="No files available for this mod", mod_info=mod_info
                 )
 
             latest_file = files_result["data"][0]
@@ -437,9 +424,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             versions = await modrinth_service.get_project_versions(slug)
             if not versions:
                 return ImportResponse(
-                    status="error",
-                    message="No versions available for this mod",
-                    mod_info=mod_info,
+                    status="error", message="No versions available for this mod", mod_info=mod_info
                 )
 
             latest_version = versions[0]
@@ -501,9 +486,7 @@ async def get_categories(platform: str):
 
     except Exception as e:
         logger.error(f"Get categories error: {e}")
-        logger.error(f"Failed to get categories: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to get categories: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to get categories: {str(e)}")
 
 
 @router.get("/loaders")
@@ -516,6 +499,4 @@ async def get_loaders():
         return loaders
     except Exception as e:
         logger.error(f"Get loaders error: {e}")
-        logger.error(f"Failed to get loaders: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to get loaders: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to get loaders: {str(e)}")

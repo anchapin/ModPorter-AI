@@ -145,9 +145,7 @@ async def create_behavioral_test(
 
     except Exception as e:
         logger.error(f"Error creating behavioral test: {e}")
-        logger.error(f"Failed to create test: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to create test: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to create test: {str(e)}")
 
 
 @router.get("/tests/{test_id}", response_model=BehavioralTestResponse)
@@ -215,11 +213,7 @@ async def get_test_scenarios(test_id: UUID):
 
     except Exception as e:
         logger.error(f"Error retrieving scenarios for test {test_id}: {e}")
-        logger.error(f"Failed to retrieve scenarios: {str(e)}", exc_info=True)
-
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve scenarios: Please try again."
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve scenarios: {str(e)}")
 
 
 @router.get("/tests/{test_id}/report")
@@ -254,9 +248,7 @@ async def get_test_report(test_id: UUID, format: str = "json"):
 
     except Exception as e:
         logger.error(f"Error generating report for test {test_id}: {e}")
-        logger.error(f"Failed to generate report: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to generate report: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
 
 
 @router.delete("/tests/{test_id}")
@@ -277,9 +269,7 @@ async def delete_behavioral_test(test_id: UUID):
 
     except Exception as e:
         logger.error(f"Error deleting test {test_id}: {e}")
-        logger.error(f"Failed to delete test: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to delete test: Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to delete test: {str(e)}")
 
 
 async def execute_behavioral_test_async(

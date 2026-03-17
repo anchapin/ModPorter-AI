@@ -361,8 +361,9 @@ async def upload_file(file: UploadFile = File(...)):
                         detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
                     )
                 buffer.write(chunk)
-    except Exception:
+    except Exception as e:
         # Log the error for debugging
+        print(f"Error saving file: {e}")
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
@@ -778,9 +779,11 @@ async def simulate_ai_conversion(job_id: str):
 
 async def call_ai_engine_conversion(job_id: str):
     """Call the actual AI Engine for conversion instead of simulation"""
+    print(f"Starting AI Engine conversion for job_id: {job_id}")
     async with AsyncSessionLocal() as session:
         job = await crud.get_job(session, job_id)
         if not job:
+            print(f"Error: Job {job_id} not found for AI Engine conversion.")
             return
 
         def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
@@ -822,6 +825,8 @@ async def call_ai_engine_conversion(job_id: str):
                 "conversion_options": conversion_options,
             }
 
+            print(f"Calling AI Engine at {AI_ENGINE_URL}/api/v1/convert with request: {ai_request}")
+
             async with httpx.AsyncClient(timeout=600.0) as client:  # 10 minute timeout
                 # Start AI Engine conversion
                 response = await client.post(f"{AI_ENGINE_URL}/api/v1/convert", json=ai_request)
@@ -831,6 +836,8 @@ async def call_ai_engine_conversion(job_id: str):
                         f"AI Engine failed to start conversion: {response.status_code} - {response.text}"
                     )
 
+                print(f"AI Engine conversion started for job {job_id}")
+
                 # Poll AI Engine for status updates
                 while True:
                     await asyncio.sleep(2)
@@ -838,15 +845,18 @@ async def call_ai_engine_conversion(job_id: str):
                     # Check if job was cancelled
                     current_job = await crud.get_job(session, job_id)
                     if current_job.status == "cancelled":
+                        print(f"Job {job_id} was cancelled. Stopping AI Engine polling.")
                         return
 
                     # Get status from AI Engine
                     status_response = await client.get(f"{AI_ENGINE_URL}/api/v1/status/{job_id}")
 
                     if status_response.status_code != 200:
+                        print(f"Failed to get AI Engine status: {status_response.status_code}")
                         continue
 
                     ai_status = status_response.json()
+                    print(f"AI Engine status for {job_id}: {ai_status}")
 
                     # Map AI Engine status to backend status
                     backend_status = ai_status["status"]
@@ -877,18 +887,23 @@ async def call_ai_engine_conversion(job_id: str):
                         break
 
                 if backend_status == "completed":
+                    print(
+                        f"Job {job_id}: AI Engine conversion COMPLETED. Output should be at: {output_path}"
+                    )
                     # Verify the file exists
                     if not os.path.exists(output_path):
-                        pass
+                        print(f"Warning: Expected output file not found at {output_path}")
                 else:
-                    pass
+                    print(f"Job {job_id}: AI Engine conversion FAILED")
 
         except Exception as e:
+            print(f"Error during AI Engine conversion for job {job_id}: {e}")
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
             conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
+            print(f"Job {job_id}: Status updated to FAILED due to error.")
 
 
 # Conversion endpoints
@@ -959,6 +974,8 @@ async def start_conversion(
     # Write to Redis
     await cache.set_job_status(str(job.id), mirror.model_dump())
     await cache.set_progress(str(job.id), 0)
+
+    print(f"Job {job.id}: Queued. Starting AI Engine conversion in background.")
 
     # Try AI Engine first, fallback to simulation if it fails
     background_tasks.add_task(try_ai_engine_or_fallback, str(job.id))
@@ -1194,6 +1211,9 @@ async def download_converted_mod(
         )
 
     if not job.result_url:  # Should be set if status is completed and file was made
+        print(
+            f"Error: Job {job_id} (status: {job.status}) has no result_url. Download cannot proceed."
+        )
         # This indicates an internal inconsistency if the job is 'completed'.
         raise HTTPException(
             status_code=404,
@@ -1206,6 +1226,7 @@ async def download_converted_mod(
     file_path = os.path.join(CONVERSION_OUTPUTS_DIR, internal_filename)
 
     if not os.path.exists(file_path):
+        print(f"Error: Converted file not found at path: {file_path} for job {job_id}")
         # This case might indicate an issue post-completion or if the file was manually removed.
         raise HTTPException(status_code=404, detail="Converted file not found on server.")
 
@@ -1242,6 +1263,7 @@ async def try_ai_engine_or_fallback(job_id: str):
         async with httpx.AsyncClient(timeout=5.0) as client:
             health_response = await client.get(f"{AI_ENGINE_URL}/api/v1/health")
             if health_response.status_code == 200:
+                print(f"AI Engine is available, using real conversion for job {job_id}")
                 await call_ai_engine_conversion(job_id)
                 return
     except Exception as e:
@@ -1367,15 +1389,10 @@ async def create_addon_asset_endpoint(
             session=db, addon_id=addon_id, file=file, asset_type=asset_type
         )
     except ValueError as e:  # Catch errors like Addon not found from CRUD (though checked above)
-        logger.error(f"Failed to create addon asset: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=404, detail="Failed to create addon asset: Resource not found"
-        )
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to create addon asset: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="Failed to create addon asset: Please try again."
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to create addon asset: {str(e)}")
     return db_asset
 
 
@@ -1436,9 +1453,7 @@ async def update_addon_asset_endpoint(
         updated_asset = await crud.update_addon_asset(session=db, asset_id=asset_id, file=file)
     except Exception as e:
         logger.error(f"Failed to update addon asset {asset_id}: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="Failed to update addon asset. Please try again."
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to update addon asset: {str(e)}")
 
     if not updated_asset:  # Should be caught by prior check or raise exception in CRUD
         raise HTTPException(status_code=404, detail="Asset not found after update attempt.")
@@ -1491,7 +1506,7 @@ async def export_addon_mcaddon(addon_id: PyUUID, db: AsyncSession = Depends(get_
         )
     except Exception as e:
         logger.error(f"Error creating .mcaddon package for addon {addon_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to export addon. Please try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to export addon: {str(e)}")
 
     # Sanitize addon name for filename
     safe_filename = "".join(c if c.isalnum() else "_" for c in addon_details.name)
