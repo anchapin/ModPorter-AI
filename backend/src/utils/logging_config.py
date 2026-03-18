@@ -10,8 +10,15 @@ Uses structlog for structured JSON logging with:
 
 import logging
 import sys
+<<<<<<< HEAD
 
 import structlog
+=======
+from typing import Any, Dict
+
+import structlog
+from structlog.types import Processor
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def setup_logging(log_level: str = "INFO", json_format: bool = True) -> None:
@@ -56,7 +63,13 @@ def setup_logging(log_level: str = "INFO", json_format: bool = True) -> None:
 
     # Configure standard library logging
     handler = logging.StreamHandler(sys.stdout)
+<<<<<<< HEAD
     handler.setFormatter(logging.Formatter("%(message)s") if json_format else None)
+=======
+    handler.setFormatter(
+        logging.Formatter("%(message)s") if json_format else None
+    )
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper()))

@@ -1,0 +1,246 @@
+# Rebase Helper Workflow
+# This workflow helps identify and resolve merge conflicts in PRs
+# It can be triggered manually to list all PRs with merge conflicts
+
+name: Rebase Helper
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'list-conflicts'
+        type: choice
+        options:
+        - list-conflicts
+        - list-all-prs
+        - check-conflicts
+      target_branch:
+        description: 'Target branch to check conflicts against'
+        required: false
+        default: 'main'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  list-prs-with-conflicts:
+    name: List PRs with merge conflicts
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'list-conflicts' || github.event.inputs.action == 'check-conflicts'
+    outputs:
+      prs_with_conflicts: ${{ steps.list_conflicts.outputs.prs_with_conflicts }}
+      conflict_count: ${{ steps.list_conflicts.outputs.conflict_count }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get all open PRs
+        id: list_prs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get all open PRs targeting main or develop
+          prs=$(gh pr list --state open --base main --base develop --json number,title,headRefName,url --limit 100)
+          echo "Open PRs:"
+          echo "$prs" | jq -r '.[] | "  #\(.number): \(.title) (\(.headRefName))"'
+          echo "prs_json=$prs" >> $GITHUB_OUTPUT
+
+      - name: Check each PR for merge conflicts
+        id: list_conflicts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+        run: |
+          TARGET_BRANCH=${TARGET_BRANCH:-main}
+          prs_json="${{ steps.list_prs.outputs.prs_json }}"
+          
+          echo "Checking for merge conflicts against branch: $TARGET_BRANCH"
+          echo "---"
+          
+          # Check each PR for conflicts
+          conflict_prs="[]"
+          conflict_count=0
+          
+          for pr in $(echo "$prs_json" | jq -r '.[] | @base64'); do
+            pr_json=$(echo "$pr" | base64 -d)
+            pr_number=$(echo "$pr_json" | jq -r '.number')
+            pr_title=$(echo "$pr_json" | jq -r '.title')
+            pr_branch=$(echo "$pr_json" | jq -r '.headRefName')
+            
+            # Check if PR has merge conflicts
+            if gh pr checks "$pr_number" --repo "$GITHUB_REPOSITORY" 2>/dev/null | grep -q "mergeable"; then
+              # Try to get mergeable status
+              mergeable=$(gh api repos/$GITHUB_REPOSITORY/pulls/$pr_number --jq '.mergeable' 2>/dev/null || echo "unknown")
+              
+              if [ "$mergeable" = "false" ]; then
+                echo "❌ PR #$pr_number: $pr_title"
+                echo "   Branch: $pr_branch"
+                echo "   URL: https://github.com/$GITHUB_REPOSITORY/pull/$pr_number"
+                echo ""
+                conflict_count=$((conflict_count + 1))
+                
+                # Add to conflict list
+                conflict_prs=$(echo "$conflict_prs" | jq --argjson pr "$pr_json" '. + [$pr]')
+              fi
+            fi
+          done
+          
+          echo "---"
+          echo "Total PRs with merge conflicts: $conflict_count"
+          
+          # Set outputs
+          echo "prs_with_conflicts=$conflict_prs" >> $GITHUB_OUTPUT
+          echo "conflict_count=$conflict_count" >> $GITHUB_OUTPUT
+
+      - name: Create summary comment
+        if: steps.list_conflicts.outputs.conflict_count > 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          conflict_count=${{ steps.list_conflicts.outputs.conflict_count }}
+          
+          echo "## Merge Conflict Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Found **$conflict_count** PR(s) with merge conflicts that need rebasing:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Note: In a full implementation, we'd parse the JSON and list each PR
+          echo "### Resolution Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. For each PR with conflicts, either:" >> $GITHUB_STEP_SUMMARY
+          echo "   - **Rebase**: Run \`git fetch origin && git rebase main\` and force push" >> $GITHUB_STEP_SUMMARY
+          echo "   - **Merge**: Run \`git fetch origin && git merge main\` and resolve conflicts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Automation Options:" >> $GITHUB_STEP_SUMMARY
+          echo "- Use [GitHub's auto-rebase](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/keeping-your-branch-up-to-date) feature" >> $GITHUB_STEP_SUMMARY
+          echo "- Use [dependabot](https://dependabot.com) for dependency updates" >> $GITHUB_STEP_SUMMARY
+          echo "- Consider using [Alex](https://github.com/alex-ai) or [Bors](https://github.com/bors-ng/bot) for automated merging" >> $GITHUB_STEP_SUMMARY
+
+  list-all-open-prs:
+    name: List all open PRs
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'list-all-prs'
+    steps:
+      - name: List all open PRs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## All Open PRs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get PRs targeting main
+          echo "### Targeting main branch:" >> $GITHUB_STEP_SUMMARY
+          gh pr list --state open --base main --json number,title,headRefName,author,url --limit 100 | \
+            jq -r '.[] | "- #\(.number): \(.title) (by @\(.author.login))"' >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get PRs targeting develop
+          echo "### Targeting develop branch:" >> $GITHUB_STEP_SUMMARY
+          gh pr list --state open --base develop --json number,title,headRefName,author,url --limit 100 | \
+            jq -r '.[] | "- #\(.number): \(.title) (by @\(.author.login))"' >> $GITHUB_STEP_SUMMARY
+
+  generate-rebase-instructions:
+    name: Generate rebase instructions
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'list-conflicts'
+    needs: list-prs-with-conflicts
+    steps:
+      - name: Generate rebase script
+        if: needs.list-prs-with-conflicts.outputs.conflict_count > 0
+        run: |
+          cat << 'EOF' > rebase_script.sh
+          #!/bin/bash
+          # Auto-generated rebase script for PRs with merge conflicts
+          # Run this script locally to rebase affected PRs
+          
+          set -e
+          
+          TARGET_BRANCH=${1:-main}
+          echo "Rebasing onto: $TARGET_BRANCH"
+          
+          # Update target branch first
+          git checkout $TARGET_BRANCH
+          git pull origin $TARGET_BRANCH
+          
+          # List of PR branches (add your PR branches here)
+          PR_BRANCHES=(
+            # Add branch names here, e.g.:
+            # "feature/your-branch"
+          )
+          
+          for branch in "${PR_BRANCHES[@]}"; do
+            echo "Rebasing: $branch"
+            git checkout "$branch"
+            if git rebase $TARGET_BRANCH; then
+              echo "✅ Rebase successful for $branch"
+              git push --force-with-lease origin "$branch"
+            else
+              echo "❌ Rebase failed for $branch"
+              git rebase --abort
+            fi
+          done
+          
+          echo "Done!"
+          EOF
+          
+          chmod +x rebase_script.sh
+          
+          echo "## Rebase Script Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "A rebase script has been generated: \`rebase_script.sh\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage:" >> $GITHUB_STEP_SUMMARY
+          echo "```bash" >> $GITHUB_STEP_SUMMARY
+          echo "./rebase_script.sh main" >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Alternative: Using GitHub CLI" >> $GITHUB_STEP_SUMMARY
+          echo "```bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Manually rebase a PR" >> $GITHUB_STEP_SUMMARY
+          echo "git fetch origin" >> $GITHUB_STEP_SUMMARY
+          echo "git checkout your-branch" >> $GITHUB_STEP_SUMMARY
+          echo "git rebase main" >> $GITHUB_STEP_SUMMARY
+          echo "git push --force-with-lease origin your-branch" >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+
+  bot-recommendations:
+    name: Provide bot recommendations
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'list-conflicts'
+    steps:
+      - name: List recommended automation tools
+        run: |
+          echo "## Automation Options for Conflict Resolution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 1. Dependabot" >> $GITHUB_STEP_SUMMARY
+          echo "Dependabot can automatically update PRs when the base branch changes." >> $GITHUB_STEP_SUMMARY
+          echo "- Enable in repository settings" >> $GITHUB_STEP_SUMMARY
+          echo "- Add \`dependabot.yml\` configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 2. GitHub Auto-Rebase" >> $GITHUB_STEP_SUMMARY
+          echo "GitHub offers rebase merging as an option:" >> $GITHUB_STEP_SUMMARY
+          echo "- Go to repository Settings > General" >> $GITHUB_STEP_SUMMARY
+          echo "- Enable 'Allow rebase merging'" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 3. Bots for Automation" >> $GITHUB_STEP_SUMMARY
+          echo "| Bot | Purpose |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| [Bors-NG](https://bors.tech) | Automated merging |" >> $GITHUB_STEP_SUMMARY
+          echo "| [Mergify](https://mergify.io) | Automated PR management |" >> $GITHUB_STEP_SUMMARY
+          echo "| [ renovate](https://github.com/renovatebot/renovate) | Automated dependency updates |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 4. Prevention Tips" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Use branch protection rules**: Require branches to be up-to-date before merging" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Enable required reviews**: Ensure PRs are reviewed before merging" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Use small, frequent PRs**: Reduces conflict likelihood" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Regularly sync branches**: Rebase frequently to avoid large conflicts" >> $GITHUB_STEP_SUMMARY

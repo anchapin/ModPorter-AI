@@ -127,9 +127,7 @@ async def get_template_categories():
 
 
 @router.get(
-    "/templates",
-    response_model=List[BehaviorTemplateResponse],
-    summary="Get behavior templates",
+    "/templates", response_model=List[BehaviorTemplateResponse], summary="Get behavior templates"
 )
 async def get_behavior_templates(
     category: Optional[str] = Query(None, description="Filter by category"),
@@ -189,8 +187,7 @@ async def get_behavior_templates(
     summary="Get specific behavior template",
 )
 async def get_behavior_template(
-    template_id: str = Path(..., description="Template ID"),
-    db: AsyncSession = Depends(get_db),
+    template_id: str = Path(..., description="Template ID"), db: AsyncSession = Depends(get_db)
 ) -> BehaviorTemplateResponse:
     """
     Get a specific behavior template by ID.
@@ -259,11 +256,13 @@ async def create_behavior_template(
             created_by=user_id,
         )
     except ValueError as e:
-        logger.error("Validation error creating behavior template", exc_info=True)
-        raise HTTPException(status_code=400, detail="Invalid behavior template data")
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
-        logger.error("Failed to create behavior template", exc_info=True)
-        raise HTTPException(status_code=500, detail="An internal error occurred")
+        logger.error(f"Failed to create template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to create template: Please try again.")
 
     return BehaviorTemplateResponse(
         id=str(template.id),
@@ -319,11 +318,13 @@ async def update_behavior_template(
             db, template_id=template_id, updates=request.dict(exclude_unset=True)
         )
     except ValueError as e:
-        logger.error("Validation error updating behavior template", exc_info=True)
-        raise HTTPException(status_code=400, detail="Invalid behavior template data")
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
-        logger.error("Failed to update behavior template", exc_info=True)
-        raise HTTPException(status_code=500, detail="An internal error occurred")
+        logger.error(f"Failed to update template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to update template: Please try again.")
 
     return BehaviorTemplateResponse(
         id=str(updated_template.id),
@@ -335,7 +336,7 @@ async def update_behavior_template(
         tags=updated_template.tags,
         is_public=updated_template.is_public,
         version=updated_template.version,
-        created_by=(str(updated_template.created_by) if updated_template.created_by else None),
+        created_by=str(updated_template.created_by) if updated_template.created_by else None,
         created_at=updated_template.created_at.isoformat(),
         updated_at=updated_template.updated_at.isoformat(),
     )
@@ -343,8 +344,7 @@ async def update_behavior_template(
 
 @router.delete("/templates/{template_id}", status_code=204, summary="Delete behavior template")
 async def delete_behavior_template(
-    template_id: str = Path(..., description="Template ID"),
-    db: AsyncSession = Depends(get_db),
+    template_id: str = Path(..., description="Template ID"), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete a behavior template.
@@ -399,13 +399,12 @@ async def apply_behavior_template(
     # Apply template logic (would implement in a service)
     try:
         result = await behavior_templates_crud.apply_behavior_template(
-            db,
-            template_id=template_id,
-            conversion_id=conversion_id,
-            file_path=file_path,
+            db, template_id=template_id, conversion_id=conversion_id, file_path=file_path
         )
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to apply template")
+    except Exception as e:
+        logger.error(f"Failed to apply template: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to apply template: Please try again.")
 
     return {
         "template_id": template_id,
@@ -464,10 +463,7 @@ async def get_predefined_templates():
                     "description": {"identifier": "custom:basic_recipe"},
                     "tags": ["crafting_table"],
                     "pattern": ["#", "X", "#"],
-                    "key": {
-                        "#": {"item": "minecraft:stick"},
-                        "X": {"item": "minecraft:planks"},
-                    },
+                    "key": {"#": {"item": "minecraft:stick"}, "X": {"item": "minecraft:planks"}},
                     "result": {"item": "custom:basic_item", "count": 4},
                 },
             },
@@ -491,10 +487,7 @@ async def get_predefined_templates():
                                 "name": "minecraft:arrow",
                                 "weight": 1,
                                 "functions": [
-                                    {
-                                        "function": "set_count",
-                                        "count": {"min": 0, "max": 2},
-                                    }
+                                    {"function": "set_count", "count": {"min": 0, "max": 2}}
                                 ],
                             }
                         ],

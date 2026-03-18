@@ -145,10 +145,7 @@ def parse_mod_url(url: str) -> URLParseResult:
     if mr_short_match:
         slug = mr_short_match.group(1)
         return URLParseResult(
-            platform="modrinth",
-            slug=slug,
-            url=f"https://modrinth.com/mod/{slug}",
-            is_valid=True,
+            platform="modrinth", slug=slug, url=f"https://modrinth.com/mod/{slug}", is_valid=True
         )
 
     return URLParseResult(
@@ -399,9 +396,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             search_results = await curseforge_service.search_mods(parse_result.slug or "")
             if not search_results.get("data"):
                 return ImportResponse(
-                    status="error",
-                    message=f"Mod not found: {parse_result.slug}",
-                    mod_info=None,
+                    status="error", message=f"Mod not found: {parse_result.slug}", mod_info=None
                 )
 
             mod_data = search_results["data"][0]
@@ -415,9 +410,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             files_result = await curseforge_service.get_mod_files(mod_id)
             if not files_result.get("data"):
                 return ImportResponse(
-                    status="error",
-                    message="No files available for this mod",
-                    mod_info=mod_info,
+                    status="error", message="No files available for this mod", mod_info=mod_info
                 )
 
             latest_file = files_result["data"][0]
@@ -437,9 +430,7 @@ async def import_mod(request: ImportRequest, db: AsyncSession = Depends(get_db))
             versions = await modrinth_service.get_project_versions(slug)
             if not versions:
                 return ImportResponse(
-                    status="error",
-                    message="No versions available for this mod",
-                    mod_info=mod_info,
+                    status="error", message="No versions available for this mod", mod_info=mod_info
                 )
 
             latest_version = versions[0]

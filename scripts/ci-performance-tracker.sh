@@ -42,8 +42,8 @@ record_step() {
     local duration=$((step_end - step_start))
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
-    local sanitized_name=$(echo "$step_name" | sed -e 's/[^A-Za-z0-9_.-]/-/g')
-    local step_file="$PERF_DATA_DIR/step-${sanitized_name}.json"
+    local safe_step_name=$(echo "$step_name" | sed -e 's/[^A-Za-z0-9_.-]/-/g')
+    local step_file="$PERF_DATA_DIR/step-${safe_step_name}.json"
     
     cat > "$step_file" << EOF
 {

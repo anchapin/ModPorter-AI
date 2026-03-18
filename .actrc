@@ -5,10 +5,10 @@
 # Using ubuntu-latest image
 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
 
-# Secrets for local testing (these are typically empty for local CI)
--s DOCKER_HUB_USERNAME=
--s DOCKER_HUB_ACCESS_TOKEN=
--s GITHUB_TOKEN=test_token
+# Use cached actions instead of fetching from GitHub (required for local execution)
+--action-offline-mode
 
-# Environment variables
---env=SKIP_DOCKER_BUILD=false
+# Secrets for local testing (set GITHUB_TOKEN via environment or pass via -s flag)
+# Usage: export GITHUB_TOKEN=your_github_token && act push
+# Or: act push -s GITHUB_TOKEN=$GITHUB_TOKEN
+-s GITHUB_TOKEN=

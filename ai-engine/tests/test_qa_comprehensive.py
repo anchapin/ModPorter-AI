@@ -9,13 +9,12 @@ import tempfile
 import shutil
 from pathlib import Path
 import importlib.util
-
-# Load qa_validator directly
 import os
 
-# Use absolute path resolution to avoid issues when pytest is run from different directories
-QA_VALIDATOR_PATH = Path(os.path.abspath(__file__)).parent.parent / "agents" / "qa_validator.py"
-spec = importlib.util.spec_from_file_location("qa_validator", str(QA_VALIDATOR_PATH))
+# Load qa_validator directly
+base_dir = Path(__file__).resolve().parent.parent
+qa_validator_path = base_dir / "agents" / "qa_validator.py"
+spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
@@ -188,12 +187,18 @@ def create_invalid_addon():
 
 def test_comprehensive_addon():
     """Test validation of a comprehensive addon."""
+    print("Testing comprehensive addon validation...")
 
     mcaddon_path, temp_dir = create_comprehensive_addon()
 
     try:
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mcaddon_path)
+
+        print(f"Overall Score: {result['overall_score']}/100")
+        print(f"Status: {result['status']}")
+        print(f"Validation Time: {result.get('validation_time', 0):.2f}s")
+        print()
 
         # Print detailed validation results
         for category, validation in result["validations"].items():
@@ -204,12 +209,20 @@ def test_comprehensive_addon():
                 if validation["status"] == "partial"
                 else "✗"
             )
+            print(
+                f"{status_icon} {category}: {validation['passed']}/{validation['checks']} checks ({validation['status']})"
+            )
             if validation.get("errors"):
                 for error in validation["errors"]:
-                    pass
+                    print(f"  ERROR: {error}")
             if validation.get("warnings"):
                 for warning in validation["warnings"][:3]:  # Limit warnings
-                    pass
+                    print(f"  WARNING: {warning}")
+
+        print()
+        print(f"Total Files: {result['stats']['total_files']}")
+        print(f"Total Size: {result['stats']['total_size_bytes'] / 1024:.1f} KB")
+        print()
 
         # Verify expected results
         assert result["overall_score"] >= 70, f"Expected score >= 70, got {result['overall_score']}"
@@ -221,12 +234,15 @@ def test_comprehensive_addon():
         assert len(result["stats"]["packs"]["behavior_packs"]) >= 1
         assert len(result["stats"]["packs"]["resource_packs"]) >= 1
 
+        print("✓ Comprehensive addon validation successful")
+
     finally:
         shutil.rmtree(temp_dir)
 
 
 def test_invalid_addon():
     """Test validation detects issues in invalid addon."""
+    print("\nTesting invalid addon detection...")
 
     mcaddon_path, temp_dir = create_invalid_addon()
 
@@ -234,15 +250,26 @@ def test_invalid_addon():
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mcaddon_path)
 
+        print(f"Overall Score: {result['overall_score']}/100")
+        print(f"Status: {result['status']}")
+        print()
+
         # Count errors and warnings
         total_errors = sum(len(v.get("errors", [])) for v in result["validations"].values())
         total_warnings = sum(len(v.get("warnings", [])) for v in result["validations"].values())
 
+        print(f"Total Errors: {total_errors}")
+        print(f"Total Warnings: {total_warnings}")
+        print()
+
         # Show some errors
         for category, validation in result["validations"].items():
             if validation.get("errors"):
+                print(f"{category} errors:")
                 for error in validation["errors"][:3]:
-                    pass
+                    print(f"  - {error}")
+
+        print()
 
         # Invalid addon should have lower score
         assert result["overall_score"] < 90, (
@@ -255,12 +282,15 @@ def test_invalid_addon():
         # Should have some errors or warnings
         assert total_errors + total_warnings > 0, "Expected at least some errors or warnings"
 
+        print("✓ Invalid addon detection successful")
+
     finally:
         shutil.rmtree(temp_dir)
 
 
 def test_validation_performance():
     """Test validation performance."""
+    print("\nTesting validation performance...")
 
     mcaddon_path, temp_dir = create_comprehensive_addon()
 
@@ -279,9 +309,16 @@ def test_validation_performance():
         result2 = agent.validate_mcaddon(mcaddon_path)
         time2 = time.time() - start
 
+        print(f"First validation: {time1:.3f}s")
+        print(f"Cached validation: {time2:.3f}s")
+        print(f"Speedup: {time1 / time2:.1f}x")
+        print()
+
         # Performance requirements
         assert time1 < 5.0, f"First validation took {time1:.2f}s, expected < 5s"
         assert time2 < 0.5, f"Cached validation took {time2:.2f}s, expected < 0.5s"
+
+        print("✓ Performance requirements met")
 
     finally:
         shutil.rmtree(temp_dir)
@@ -289,6 +326,7 @@ def test_validation_performance():
 
 def test_json_output():
     """Test that JSON output is properly formatted."""
+    print("\nTesting JSON output format...")
 
     mcaddon_path, temp_dir = create_comprehensive_addon()
 
@@ -309,12 +347,18 @@ def test_json_output():
         assert "report_id" in report
         assert "timestamp" in report
 
+        print("✓ JSON output format valid")
+
     finally:
         shutil.rmtree(temp_dir)
 
 
 def run_comprehensive_tests():
     """Run all comprehensive tests."""
+    print("=" * 70)
+    print("QA Validation Framework - Comprehensive Tests")
+    print("=" * 70)
+    print()
 
     tests = [
         test_comprehensive_addon,
@@ -331,12 +375,20 @@ def run_comprehensive_tests():
             test_func()
             passed += 1
         except AssertionError as e:
+            print(f"✗ {test_func.__name__} failed: {e}")
             failed += 1
         except Exception as e:
+            print(f"✗ {test_func.__name__} error: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
+
+    print()
+    print("=" * 70)
+    print(f"Tests passed: {passed}/{len(tests)}")
+    print(f"Tests failed: {failed}/{len(tests)}")
+    print("=" * 70)
 
     return failed == 0
 

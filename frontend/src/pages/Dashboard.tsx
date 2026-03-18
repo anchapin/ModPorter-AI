@@ -88,30 +88,27 @@ export const Dashboard: React.FC = () => {
     const storedHistory = localStorage.getItem('modporter_conversion_history');
     const history = storedHistory ? JSON.parse(storedHistory) : [];
 
+    // ⚡ Performance optimization: Use single reduce pass instead of multiple filters
+    // Reduces O(3N) filter operations to O(N) single pass
+    const counts = history.reduce(
+      (acc, item: any) => {
+        if (item.status === 'completed') acc.completed++;
+        else if (item.status === 'failed') acc.failed++;
+        else if (item.status === 'processing') acc.processing++;
+        return acc;
+      },
+      { completed: 0, failed: 0, processing: 0 }
+    );
+
     const total = history.length;
-
-    // ⚡ Bolt optimization: Use a single O(N) loop to calculate status counts
-    // instead of multiple .filter().length calls to avoid unnecessary intermediate
-    // array allocations and O(3N) time complexity.
-    let completed = 0;
-    let failed = 0;
-    let processing = 0;
-
-    for (let i = 0; i < total; i++) {
-      const status = history[i].status;
-      if (status === 'completed') completed++;
-      else if (status === 'failed') failed++;
-      else if (status === 'processing') processing++;
-    }
-
     const actualSuccessRate =
-      total > 0 ? Math.round((completed / total) * 100) : 0;
+      total > 0 ? Math.round((counts.completed / total) * 100) : 0;
 
     return {
       total,
-      completed,
-      failed,
-      processing,
+      completed: counts.completed,
+      failed: counts.failed,
+      processing: counts.processing,
       successRate: actualSuccessRate,
     };
   };
@@ -235,10 +232,17 @@ export const Dashboard: React.FC = () => {
                     Conversion Complete!
                   </h3>
                   <button
-                    className="dashboard-new-conversion-btn"
                     onClick={() => {
                       setShowReport(false);
                       setCurrentJobId(null);
+                    }}
+                    style={{
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
                     }}
                   >
                     Start New Conversion
