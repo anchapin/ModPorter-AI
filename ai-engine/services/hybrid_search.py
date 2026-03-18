@@ -94,9 +94,7 @@ class HybridSearch:
             semantic_score = semantic_scores.get(i, 0.0)
             keyword_score = keyword_scores.get(i, 0.0)
 
-            combined_score = (
-                semantic_weight * semantic_score + keyword_weight * keyword_score
-            )
+            combined_score = semantic_weight * semantic_score + keyword_weight * keyword_score
 
             combined_scores.append(
                 {

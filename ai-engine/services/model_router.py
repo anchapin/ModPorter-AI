@@ -104,9 +104,7 @@ class ModelRouter:
         uptime = time.time() - self._start_time
         return {
             "total_requests": self._request_count,
-            "requests_per_minute": (
-                self._request_count / (uptime / 60) if uptime > 0 else 0
-            ),
+            "requests_per_minute": (self._request_count / (uptime / 60) if uptime > 0 else 0),
             "last_used_model": self._last_used_model,
             "primary_available": self.primary.health_check(),
             "fallback_available": self.fallback.health_check(),

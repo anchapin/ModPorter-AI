@@ -33,9 +33,7 @@ class ConversionReport:
         self.issues = []
         self.metrics = {}
 
-    def add_stage(
-        self, name: str, status: str, duration_ms: float, details: Optional[str] = None
-    ):
+    def add_stage(self, name: str, status: str, duration_ms: float, details: Optional[str] = None):
         """Add a processing stage."""
         self.stages.append(
             {
@@ -108,9 +106,7 @@ class ConversionReport:
 
         for stage in self.stages:
             status_icon = "✓" if stage["status"] == "success" else "✗"
-            lines.append(
-                f"- {status_icon} **{stage['name']}**: {stage['duration_ms']:.0f}ms"
-            )
+            lines.append(f"- {status_icon} **{stage['name']}**: {stage['duration_ms']:.0f}ms")
             if stage.get("details"):
                 lines.append(f"  - {stage['details']}")
 
@@ -239,9 +235,7 @@ class ConversionReportGenerator:
             )
             report.start_time = datetime.fromisoformat(data["start_time"])
             report.end_time = (
-                datetime.fromisoformat(data["end_time"])
-                if data.get("end_time")
-                else None
+                datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None
             )
             report.status = data["status"]
             report.stages = data["stages"]

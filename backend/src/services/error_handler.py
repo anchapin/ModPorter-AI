@@ -216,9 +216,7 @@ class ErrorHandler:
             "total_errors": sum(self._error_counts.values()),
         }
 
-    def should_alert(
-        self, error_type: str, threshold: int = 10, window_seconds: int = 300
-    ) -> bool:
+    def should_alert(self, error_type: str, threshold: int = 10, window_seconds: int = 300) -> bool:
         """
         Check if we should alert on this error type.
 

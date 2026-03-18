@@ -69,11 +69,11 @@ public class Class{i} {{
         if mode == "Standard" and i == 0:
             class_content += "\n// Entity\npublic class CustomEntity extends Entity {}"
         elif mode == "Complex" and i == 0:
-            class_content += (
-                "\n// IMultiBlock\npublic class Reactor implements IMultiBlock {}"
-            )
+            class_content += "\n// IMultiBlock\npublic class Reactor implements IMultiBlock {}"
         elif mode == "Expert" and i == 0:
-            class_content += "\n// DimensionType\npublic class CustomDimension extends DimensionType {}"
+            class_content += (
+                "\n// DimensionType\npublic class CustomDimension extends DimensionType {}"
+            )
 
         (src_dir / f"Class{i}.java").write_text(class_content)
 
@@ -119,7 +119,6 @@ def test_feature_extraction():
         extractor = FeatureExtractor()
         features = extractor.extract_features(test_jar)
 
-
         # Cleanup
         os.unlink(test_jar)
 
@@ -154,7 +153,6 @@ def test_mode_classification():
             result = classifier.classify_mod(test_jar)
             results[mode] = result
 
-
             os.unlink(test_jar)
 
         # Check if classifications are reasonable
@@ -186,7 +184,6 @@ def test_confidence_scoring():
         create_test_mod("Standard", test_jar)
 
         result = classifier.classify_mod(test_jar)
-
 
         # Cleanup
         os.unlink(test_jar)
@@ -236,7 +233,6 @@ def test_batch_classification():
         correct = sum(1 for expected, result in results if expected == result.mode)
         accuracy = correct / len(results)
 
-
         # Mode distribution
         mode_counts = {}
         for _, result in results:
@@ -264,7 +260,6 @@ def test_mode_info():
         from services.mode_classifier import get_all_modes
 
         all_modes = get_all_modes()
-
 
         for mode_info in all_modes:
             pass
@@ -304,7 +299,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

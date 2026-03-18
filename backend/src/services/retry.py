@@ -162,9 +162,7 @@ class RetryConfig:
         self.exponential_base = exponential_base
         self.jitter = jitter
         self.retryable_exceptions = retryable_exceptions or DEFAULT_RETRYABLE_EXCEPTIONS
-        self.non_retryable_exceptions = (
-            non_retryable_exceptions or DEFAULT_NON_RETRYABLE_EXCEPTIONS
-        )
+        self.non_retryable_exceptions = non_retryable_exceptions or DEFAULT_NON_RETRYABLE_EXCEPTIONS
 
 
 def calculate_delay(attempt: int, config: RetryConfig) -> float:
@@ -234,9 +232,7 @@ async def retry_async(
 
             # Determine if we should retry
             if not is_retryable(e, config):
-                logger.warning(
-                    f"Non-retryable error in {func.__name__}: {type(e).__name__}: {e}"
-                )
+                logger.warning(f"Non-retryable error in {func.__name__}: {type(e).__name__}: {e}")
                 raise
 
             # Check if we have more attempts
@@ -304,9 +300,7 @@ def retry_sync(
 
             # Determine if we should retry
             if not is_retryable(e, config):
-                logger.warning(
-                    f"Non-retryable error in {func.__name__}: {type(e).__name__}: {e}"
-                )
+                logger.warning(f"Non-retryable error in {func.__name__}: {type(e).__name__}: {e}")
                 raise
 
             # Check if we have more attempts

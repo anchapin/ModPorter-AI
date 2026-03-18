@@ -63,9 +63,7 @@ class EventTrigger(BaseModel):
 
     type: EventTriggerType = Field(..., description="Trigger type")
     parameters: Dict[str, Any] = Field(default={}, description="Trigger parameters")
-    conditions: List[EventCondition] = Field(
-        default=[], description="Trigger conditions"
-    )
+    conditions: List[EventCondition] = Field(default=[], description="Trigger conditions")
 
 
 class EventAction(BaseModel):
@@ -74,9 +72,7 @@ class EventAction(BaseModel):
     type: EventActionType = Field(..., description="Action type")
     parameters: Dict[str, Any] = Field(default={}, description="Action parameters")
     delay: int = Field(default=0, description="Delay in ticks before execution")
-    conditions: List[EventCondition] = Field(
-        default=[], description="Action conditions"
-    )
+    conditions: List[EventCondition] = Field(default=[], description="Action conditions")
 
 
 class EventSystemConfig(BaseModel):
@@ -121,9 +117,7 @@ class AdvancedEventSystemUpdate(BaseModel):
 
     name: Optional[str] = Field(None, description="Event system name")
     description: Optional[str] = Field(None, description="Event system description")
-    config: Optional[EventSystemConfig] = Field(
-        None, description="System configuration"
-    )
+    config: Optional[EventSystemConfig] = Field(None, description="System configuration")
     triggers: Optional[List[EventTrigger]] = Field(None, description="Event triggers")
     actions: Optional[List[EventAction]] = Field(None, description="Event actions")
     variables: Optional[Dict[str, Any]] = Field(None, description="System variables")
@@ -135,9 +129,7 @@ class EventSystemTest(BaseModel):
     """Event system test configuration"""
 
     test_data: Dict[str, Any] = Field(..., description="Test data to simulate")
-    expected_results: List[Dict[str, Any]] = Field(
-        default=[], description="Expected results"
-    )
+    expected_results: List[Dict[str, Any]] = Field(default=[], description="Expected results")
     dry_run: bool = Field(default=True, description="Run in dry-run mode")
 
 
@@ -149,9 +141,7 @@ class EventSystemTestResult(BaseModel):
     test_duration: float = Field(..., description="Test duration in milliseconds")
     errors: List[str] = Field(default=[], description="Any errors encountered")
     warnings: List[str] = Field(default=[], description="Any warnings generated")
-    debug_output: List[Dict[str, Any]] = Field(
-        default=[], description="Debug information"
-    )
+    debug_output: List[Dict[str, Any]] = Field(default=[], description="Debug information")
 
 
 # Event template definitions

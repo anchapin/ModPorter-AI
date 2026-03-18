@@ -9,9 +9,7 @@ import importlib.util
 from pathlib import Path
 
 # Load java_parser module directly
-spec = importlib.util.spec_from_file_location(
-    "java_parser", "src/services/java_parser.py"
-)
+spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")
 java_parser = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(java_parser)
 
@@ -78,9 +76,7 @@ public class ExampleMod extends BaseMod {
 
     assert result["success"] == True, "Complex parsing should succeed"
     assert len(result["classes"]) > 0, "Should extract class"
-    assert (
-        result["classes"][0]["name"] == "ExampleMod"
-    ), "Class name should be ExampleMod"
+    assert result["classes"][0]["name"] == "ExampleMod", "Class name should be ExampleMod"
     assert len(result["imports"]) >= 4, "Should extract all imports"
     assert len(result["annotations"]) > 0, "Should extract annotations"
 

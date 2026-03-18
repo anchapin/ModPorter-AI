@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 class OllamaClient:
     """Client for local Ollama deployment."""
 
-    def __init__(
-        self, model: str = "deepseek-coder:6.7b", host: str = "http://localhost:11434"
-    ):
+    def __init__(self, model: str = "deepseek-coder:6.7b", host: str = "http://localhost:11434"):
         self.model = model
         self.host = host
         self._client = None
@@ -35,9 +33,7 @@ class OllamaClient:
                 model_names = [m["name"] for m in models.get("models", [])]
 
                 if self.model not in model_names:
-                    logger.warning(
-                        f"Model {self.model} not found. Available: {model_names}"
-                    )
+                    logger.warning(f"Model {self.model} not found. Available: {model_names}")
                     self._available = False
                 else:
                     self._available = True
@@ -127,7 +123,7 @@ Bedrock Translation:
 
         if context:
             context_str = "\n\n".join(
-                [f"Similar example {i+1}:\n{c}" for i, c in enumerate(context[:2])]
+                [f"Similar example {i + 1}:\n{c}" for i, c in enumerate(context[:2])]
             )
             return f"""Here are some similar conversions for reference:
 

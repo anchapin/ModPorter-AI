@@ -17,7 +17,9 @@ def sanitize_file(file_path):
 
     # Pattern 1: raise HTTPException(..., detail=f"...{str(e)}")
     # Replace with generic message + add logger.error before
-    pattern1 = r'(\s+)raise HTTPException\(status_code=(\d+), detail=f"([^"]*)\{str\(e\)\}([^"]*)"\)'
+    pattern1 = (
+        r'(\s+)raise HTTPException\(status_code=(\d+), detail=f"([^"]*)\{str\(e\)\}([^"]*)"\)'
+    )
     matches1 = list(re.finditer(pattern1, content))
 
     for match in reversed(matches1):  # Reverse to maintain positions
@@ -99,4 +101,3 @@ for filename in files_to_process:
             pass
     else:
         pass
-

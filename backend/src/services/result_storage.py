@@ -93,9 +93,7 @@ class ResultStorage:
         logger.info(f"Result {result_id} stored for job {job_id}")
         return result_id
 
-    async def get_result(
-        self, result_id: str, db: AsyncSession
-    ) -> Optional[Dict[str, Any]]:
+    async def get_result(self, result_id: str, db: AsyncSession) -> Optional[Dict[str, Any]]:
         """
         Get stored result.
 

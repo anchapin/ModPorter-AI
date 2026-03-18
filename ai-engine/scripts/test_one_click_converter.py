@@ -73,7 +73,6 @@ def test_one_click_conversion():
 
         result = converter.convert_mod(test_jar, output_path)
 
-
         # Cleanup
         os.unlink(test_jar)
 
@@ -118,7 +117,6 @@ def test_smart_defaults():
 
         settings = engine.get_defaults_for_mod(mod_features)
 
-
         return True
 
     except Exception as e:
@@ -149,7 +147,6 @@ def test_mode_based_settings():
 
             converter = occ.OneClickConverter()
             result = converter.convert_mod(test_jar, tempfile.mktemp())
-
 
             os.unlink(test_jar)
 
@@ -186,7 +183,6 @@ def test_queue_management():
 
         # Get queue stats
         stats = converter.get_queue_stats()
-
 
         # Get specific conversion status
         if stats["total"] > 0:
@@ -226,7 +222,6 @@ def test_user_preferences():
 
         converter = occ.OneClickConverter()
         result = converter.convert_mod(test_jar, tempfile.mktemp(), user_prefs)
-
 
         os.unlink(test_jar)
 
@@ -269,7 +264,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

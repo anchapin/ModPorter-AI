@@ -45,7 +45,6 @@ def test_feedback_pipeline():
 
         stats = pipeline.get_learning_stats()
 
-
         if stats["total_feedback"] >= 1 and stats["learning_items"] >= 1:
             return True
         else:
@@ -87,7 +86,6 @@ def test_fine_tuning():
         # Simulate fine-tuning
         result = fine_tuner.fine_tune(epochs=3, batch_size=8)
 
-
         model_stats = fine_tuner.get_model_stats()
 
         if result["validation_accuracy"] >= 0.85:
@@ -124,7 +122,6 @@ def test_community_patterns():
             bedrock_example="class DragonBoss extends mc.Mob { phases = [...]; }",
             submitted_by="user_123",
         )
-
 
         # Review and approve
         pattern_sharing.review_pattern(
@@ -187,7 +184,6 @@ def test_dashboard():
         dashboard_data = dashboard.get_dashboard_data()
         milestone = dashboard_data.get("milestone_summary", {})
 
-
         recommendations = dashboard_data.get("recommendations", [])
         for rec in recommendations:
             pass
@@ -217,7 +213,6 @@ def test_learning_system_status():
         spec.loader.exec_module(learning)
 
         status = learning.get_learning_system_status()
-
 
         return True
 
@@ -251,7 +246,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

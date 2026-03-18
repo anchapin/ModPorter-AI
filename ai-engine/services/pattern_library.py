@@ -528,9 +528,7 @@ class PatternLibrary:
 
         return None
 
-    def get_patterns_by_category(
-        self, category: PatternCategory
-    ) -> List[ConversionPattern]:
+    def get_patterns_by_category(self, category: PatternCategory) -> List[ConversionPattern]:
         """Get all patterns in a category."""
         return [p for p in self.patterns.values() if p.category == category]
 

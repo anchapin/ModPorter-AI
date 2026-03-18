@@ -63,24 +63,18 @@ class ConversionJob(Base):
     )
 
     # Relationship: one job -> many results and progress
-    results = relationship(
-        "ConversionResult", back_populates="job", cascade="all, delete-orphan"
-    )
+    results = relationship("ConversionResult", back_populates="job", cascade="all, delete-orphan")
     progress = relationship(
         "JobProgress", back_populates="job", cascade="all, delete-orphan", uselist=False
     )
     # Relationship to comparison_results
-    comparison_results = relationship(
-        "ComparisonResultDb", back_populates="conversion_job"
-    )
+    comparison_results = relationship("ComparisonResultDb", back_populates="conversion_job")
     # Relationship to feedback
     feedback = relationship(
         "ConversionFeedback", back_populates="job", cascade="all, delete-orphan"
     )
     # Relationship to assets
-    assets = relationship(
-        "Asset", back_populates="conversion", cascade="all, delete-orphan"
-    )
+    assets = relationship("Asset", back_populates="conversion", cascade="all, delete-orphan")
 
 
 class ConversionResult(Base):
@@ -122,9 +116,7 @@ class JobProgress(Base):
         nullable=False,
         unique=True,
     )
-    progress: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("0")
-    )
+    progress: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     last_update: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -165,15 +157,9 @@ class Addon(Base):
     )
 
     # Relationships
-    blocks = relationship(
-        "AddonBlock", back_populates="addon", cascade="all, delete-orphan"
-    )
-    assets = relationship(
-        "AddonAsset", back_populates="addon", cascade="all, delete-orphan"
-    )
-    recipes = relationship(
-        "AddonRecipe", back_populates="addon", cascade="all, delete-orphan"
-    )
+    blocks = relationship("AddonBlock", back_populates="addon", cascade="all, delete-orphan")
+    assets = relationship("AddonAsset", back_populates="addon", cascade="all, delete-orphan")
+    recipes = relationship("AddonRecipe", back_populates="addon", cascade="all, delete-orphan")
 
 
 class AddonBlock(Base):
@@ -224,9 +210,7 @@ class AddonAsset(Base):
     addon_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("addons.id", ondelete="CASCADE"), nullable=False
     )
-    type: Mapped[str] = mapped_column(
-        String, nullable=False
-    )  # E.g., "texture", "sound", "script"
+    type: Mapped[str] = mapped_column(String, nullable=False)  # E.g., "texture", "sound", "script"
     path: Mapped[str] = mapped_column(
         String, nullable=False
     )  # Relative path within the addon structure
@@ -357,9 +341,7 @@ class ConversionFeedback(Base):
     __tablename__ = "conversion_feedback"
     __table_args__ = {"extend_existing": True}
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     job_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
     )
@@ -400,9 +382,7 @@ class Asset(Base):
         nullable=False,
         server_default=text("'pending'"),
     )  # 'pending', 'processing', 'converted', 'failed'
-    asset_metadata: Mapped[Optional[dict]] = mapped_column(
-        JSONType, nullable=True, default={}
-    )
+    asset_metadata: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, default={})
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     original_filename: Mapped[str] = mapped_column(String, nullable=False)
@@ -431,9 +411,7 @@ class ComparisonResultDb(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversion_id = Column(
-        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False
-    )
+    conversion_id = Column(UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False)
     structural_diff = Column(JSONType)
     code_diff = Column(JSONType)
     asset_diff = Column(JSONType)
@@ -454,17 +432,13 @@ class FeatureMappingDb(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    comparison_id = Column(
-        UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False
-    )
+    comparison_id = Column(UUID(as_uuid=True), ForeignKey("comparison_results.id"), nullable=False)
     java_feature = Column(Text)
     bedrock_equivalent = Column(Text)
     mapping_type = Column(VARCHAR(50))
     confidence_score = Column(DECIMAL(3, 2))
 
-    comparison_result = relationship(
-        "ComparisonResultDb", back_populates="feature_mappings"
-    )
+    comparison_result = relationship("ComparisonResultDb", back_populates="feature_mappings")
 
 
 # Document Embedding Models
@@ -475,15 +449,11 @@ class DocumentEmbedding(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    embedding = Column(
-        VECTOR(1536), nullable=False
-    )  # Assuming nullable=False for embedding
+    embedding = Column(VECTOR(1536), nullable=False)  # Assuming nullable=False for embedding
     document_source = Column(String, nullable=False, index=True)
     content_hash = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 # A/B Testing Models
@@ -493,17 +463,11 @@ class Experiment(Base):
     __tablename__ = "experiments"
     __table_args__ = {"extend_existing": True}
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    start_date: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    end_date: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="draft"
     )  # draft, active, paused, completed
@@ -532,9 +496,7 @@ class ExperimentVariant(Base):
     __tablename__ = "experiment_variants"
     __table_args__ = {"extend_existing": True}
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     experiment_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("experiments.id", ondelete="CASCADE"),
@@ -565,17 +527,13 @@ class ExperimentResult(Base):
     __tablename__ = "experiment_results"
     __table_args__ = {"extend_existing": True}
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     variant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("experiment_variants.id", ondelete="CASCADE"),
         nullable=False,
     )
-    session_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), nullable=True
-    )
+    session_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
     kpi_quality: Mapped[Optional[float]] = mapped_column(
         DECIMAL(5, 2), nullable=True
     )  # Quality score (0.00 to 100.00)
@@ -618,9 +576,7 @@ class BehaviorTemplate(Base):
     tags: Mapped[list] = mapped_column(JSONType, nullable=False, default=list)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0.0")
-    created_by: Mapped[Optional[UUID]] = mapped_column(
-        UUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[Optional[UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -652,12 +608,8 @@ class AnalyticsEvent(Base):
     event_category: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True
     )  # e.g., "navigation", "conversion", "feedback", "export"
-    user_id: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, index=True
-    )
-    session_id: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True, index=True
-    )
+    user_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     conversion_id: Mapped[Optional[str]] = mapped_column(
         UUID(as_uuid=True), nullable=True, index=True
     )  # Link to conversion job if applicable

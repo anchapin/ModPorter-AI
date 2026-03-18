@@ -172,9 +172,7 @@ class OneClickConverter:
             classification.mode,
             user_preferences,
         )
-        logger.info(
-            f"Settings applied: {settings.detail_level}, {settings.optimization}"
-        )
+        logger.info(f"Settings applied: {settings.detail_level}, {settings.optimization}")
 
         # Step 4: Create conversion result
         result = self._create_conversion_result(
@@ -231,9 +229,7 @@ class OneClickConverter:
             estimated_time=MODE_DEFAULTS[classification.mode]["estimated_time"],
         )
 
-        result.warnings.append(
-            f"{classification.mode} complexity: Manual review recommended"
-        )
+        result.warnings.append(f"{classification.mode} complexity: Manual review recommended")
         result.warnings.extend(classification.recommendations)
 
         logger.info(f"Created recommendation result for {mod_path}")
@@ -256,9 +252,7 @@ class OneClickConverter:
             message=f"Auto-classified as {mode} mode. Starting conversion...",
             estimated_time=MODE_DEFAULTS[mode]["estimated_time"],
             warnings=(
-                classification.recommendations[:2]
-                if classification.confidence < 0.8
-                else []
+                classification.recommendations[:2] if classification.confidence < 0.8 else []
             ),
         )
 
@@ -307,12 +301,8 @@ class OneClickConverter:
     def get_queue_stats(self) -> Dict[str, Any]:
         """Get conversion queue statistics."""
         total = len(self.conversion_queue)
-        completed = sum(
-            1 for r in self.conversion_queue.values() if r.status == "completed"
-        )
-        processing = sum(
-            1 for r in self.conversion_queue.values() if r.status == "processing"
-        )
+        completed = sum(1 for r in self.conversion_queue.values() if r.status == "completed")
+        processing = sum(1 for r in self.conversion_queue.values() if r.status == "processing")
         failed = sum(1 for r in self.conversion_queue.values() if r.status == "failed")
 
         return {
@@ -405,9 +395,7 @@ class SmartDefaultsEngine:
         # Analyze user preferences from history
         if len(history) >= 3:
             # User prefers detailed output
-            detailed_count = sum(
-                1 for h in history if h.get("detail_level") == "comprehensive"
-            )
+            detailed_count = sum(1 for h in history if h.get("detail_level") == "comprehensive")
             if detailed_count / len(history) > 0.7:
                 settings.detail_level = "comprehensive"
 

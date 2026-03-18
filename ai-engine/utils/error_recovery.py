@@ -165,16 +165,12 @@ class CircuitBreaker:
 
             if current_state == CircuitState.HALF_OPEN:
                 if self._half_open_calls >= self.half_open_max_calls:
-                    logger.warning(
-                        f"CircuitBreaker '{self.name}': HALF_OPEN - max calls reached"
-                    )
+                    logger.warning(f"CircuitBreaker '{self.name}': HALF_OPEN - max calls reached")
                     raise CircuitBreakerOpen(
                         f"Circuit breaker '{self.name}' half-open call limit reached"
                     )
                 self._half_open_calls += 1
-                logger.info(
-                    f"CircuitBreaker '{self.name}': HALF_OPEN - allowing test call"
-                )
+                logger.info(f"CircuitBreaker '{self.name}': HALF_OPEN - allowing test call")
 
         # Execute the function
         try:
@@ -189,9 +185,7 @@ class CircuitBreaker:
         """Handle successful call."""
         with self._lock:
             if self._state == CircuitState.HALF_OPEN:
-                logger.info(
-                    f"CircuitBreaker '{self.name}': success in HALF_OPEN, closing circuit"
-                )
+                logger.info(f"CircuitBreaker '{self.name}': success in HALF_OPEN, closing circuit")
                 self._state = CircuitState.CLOSED
                 self._failure_count = 0
                 self._success_count = 0
@@ -268,8 +262,7 @@ def with_retry(strategy: RecoveryStrategy = STANDARD_RETRY):
 
                     # Check if exception is retryable
                     is_retryable = any(
-                        isinstance(e, exc_type)
-                        for exc_type in strategy.retryable_exceptions
+                        isinstance(e, exc_type) for exc_type in strategy.retryable_exceptions
                     )
 
                     if not is_retryable:
@@ -281,9 +274,7 @@ def with_retry(strategy: RecoveryStrategy = STANDARD_RETRY):
                         logger.error(
                             f"Max retries ({strategy.max_retries}) exceeded for {func.__name__}"
                         )
-                        raise RecoveryError(
-                            f"Failed after {strategy.max_retries} retries"
-                        ) from e
+                        raise RecoveryError(f"Failed after {strategy.max_retries} retries") from e
 
                     # Calculate delay and wait
                     delay = strategy.get_delay(attempt)
@@ -322,9 +313,7 @@ def with_circuit_breaker(
 
     def decorator(func: Callable) -> Callable:
         cb_name = name or func.__name__
-        breaker = CircuitBreaker(
-            name=cb_name, fail_max=fail_max, reset_timeout=reset_timeout
-        )
+        breaker = CircuitBreaker(name=cb_name, fail_max=fail_max, reset_timeout=reset_timeout)
 
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -367,9 +356,7 @@ class ErrorRecoverySystem:
     ) -> CircuitBreaker:
         """Register a circuit breaker."""
         with self._lock:
-            cb = CircuitBreaker(
-                name=name, fail_max=fail_max, reset_timeout=reset_timeout
-            )
+            cb = CircuitBreaker(name=name, fail_max=fail_max, reset_timeout=reset_timeout)
             self.circuit_breakers[name] = cb
             logger.info(f"Registered circuit breaker: {name}")
             return cb
@@ -415,9 +402,7 @@ class ErrorRecoverySystem:
                 logger.error(f"Error in {operation} (attempt {attempt + 1}): {e}")
 
                 if attempt >= strategy.max_retries:
-                    logger.error(
-                        f"{operation} failed after {strategy.max_retries} retries"
-                    )
+                    logger.error(f"{operation} failed after {strategy.max_retries} retries")
                     break
 
                 delay = strategy.get_delay(attempt)

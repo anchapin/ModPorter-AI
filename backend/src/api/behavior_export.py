@@ -21,12 +21,8 @@ class ExportRequest(BaseModel):
     file_types: List[str] = Field(
         default=[], description="Specific file types to export (empty = all)"
     )
-    include_templates: bool = Field(
-        default=True, description="Include template metadata"
-    )
-    export_format: str = Field(
-        default="mcaddon", description="Export format: mcaddon, zip, json"
-    )
+    include_templates: bool = Field(default=True, description="Include template metadata")
+    export_format: str = Field(default="mcaddon", description="Export format: mcaddon, zip, json")
 
 
 class ExportResponse(BaseModel):
@@ -67,20 +63,14 @@ async def export_behavior_pack(
         raise HTTPException(status_code=404, detail="Conversion not found")
 
     # Get behavior files
-    behavior_files = await crud.get_behavior_files_by_conversion(
-        db, request.conversion_id
-    )
+    behavior_files = await crud.get_behavior_files_by_conversion(db, request.conversion_id)
 
     if not behavior_files:
-        raise HTTPException(
-            status_code=400, detail="No behavior files found for conversion"
-        )
+        raise HTTPException(status_code=400, detail="No behavior files found for conversion")
 
     # Filter by file types if specified
     if request.file_types:
-        behavior_files = [
-            f for f in behavior_files if f.file_type in request.file_types
-        ]
+        behavior_files = [f for f in behavior_files if f.file_type in request.file_types]
 
     # Get addon details (for proper export structure)
     addon_details = await crud.get_addon_details(db, uuid.UUID(request.conversion_id))
@@ -171,9 +161,7 @@ async def export_behavior_pack(
                 zip_file.writestr(safe_path, file.content)
 
             # Add export metadata
-            zip_file.writestr(
-                "export_metadata.json", json.dumps(export_data["metadata"], indent=2)
-            )
+            zip_file.writestr("export_metadata.json", json.dumps(export_data["metadata"], indent=2))
 
             # Add template info if included
             if request.include_templates and "template_info" in export_data:
@@ -276,9 +264,7 @@ async def download_exported_pack(
     export_data = await cache.get_export_data(conversion_id)
 
     if not export_data:
-        raise HTTPException(
-            status_code=404, detail="Export not found. Please export first."
-        )
+        raise HTTPException(status_code=404, detail="Export not found. Please export first.")
 
     # Determine filename and media type
     if format == "zip":
@@ -348,9 +334,7 @@ async def preview_export(
     behavior_files = await crud.get_behavior_files_by_conversion(db, conversion_id)
 
     if not behavior_files:
-        raise HTTPException(
-            status_code=400, detail="No behavior files found for conversion"
-        )
+        raise HTTPException(status_code=400, detail="No behavior files found for conversion")
 
     # Analyze files
     file_analysis = {
@@ -362,9 +346,7 @@ async def preview_export(
     for file in behavior_files:
         # Count file types
         file_type = file.file_type
-        file_analysis["file_types"][file_type] = (
-            file_analysis["file_types"].get(file_type, 0) + 1
-        )
+        file_analysis["file_types"][file_type] = file_analysis["file_types"].get(file_type, 0) + 1
 
         # Check for template usage
         try:
@@ -393,9 +375,7 @@ async def preview_export(
                 "type": file.file_type,
                 "size": len(file.content),
                 "has_template": (
-                    "_template_info" in json.loads(file.content)
-                    if file.content
-                    else False
+                    "_template_info" in json.loads(file.content) if file.content else False
                 ),
                 "updated_at": file.updated_at.isoformat(),
             }

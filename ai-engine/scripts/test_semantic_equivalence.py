@@ -33,7 +33,6 @@ public class Test {
         analyzer = DataFlowAnalyzer()
         dfg = analyzer.analyze_java(java_code)
 
-
         if dfg.variables and len(dfg.nodes) > 2:
             return True
         else:
@@ -67,7 +66,6 @@ public void test() {
 
         analyzer = ControlFlowAnalyzer()
         cfg = analyzer.analyze_java(java_code)
-
 
         paths = cfg.get_paths()
 
@@ -108,7 +106,6 @@ function increment() {
 
         result = check_semantic_equivalence(java_code, bedrock_code)
 
-
         if result.confidence > 0.5:
             return True
         else:
@@ -146,7 +143,6 @@ function increment() {
 """
 
         result = check_semantic_equivalence(java_code, bedrock_code)
-
 
         # This should detect differences
         if result.differences or result.confidence < 0.8:
@@ -193,7 +189,6 @@ class Block {
 
         result = checker.check_equivalence(java_code, bedrock_code)
 
-
         # Result can be used in QA validation
         qa_report = {
             "semantic_check": "PASS" if result.equivalent else "FAIL",
@@ -201,7 +196,6 @@ class Block {
             "issues": result.differences,
             "warnings": result.warnings,
         }
-
 
         return True
 
@@ -235,7 +229,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

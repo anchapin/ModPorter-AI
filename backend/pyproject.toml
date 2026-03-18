@@ -143,7 +143,7 @@ ignore = [
     # flake8-2020 rules
     "T201",  # print statements (legacy debug code)
     "F841",  # unused variable (common in exception handling)
-    "F401",  # unused import (common with optional dependencies)
+    "F401",  # unused import (common with optional dependencies) - also added in per-file-ignores
     "N818",  # Exception name should end with Error (legacy code style)
     "E712",  # avoid equality comparisons to True (legacy code style)
 ]

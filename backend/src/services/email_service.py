@@ -48,9 +48,7 @@ class SendGridEmailService:
                 self._client = sendgrid.SendGridAPIClient(api_key=self.api_key)
                 logger.info("SendGrid client initialized")
             except ImportError:
-                logger.warning(
-                    "sendgrid package not installed. Emails will be logged only."
-                )
+                logger.warning("sendgrid package not installed. Emails will be logged only.")
                 self._client = None
 
         return self._client
@@ -72,9 +70,7 @@ class SendGridEmailService:
         # If SendGrid not available, just log
         client = self._get_client()
         if client is None:
-            logger.warning(
-                f"SendGrid not available. Email logged only: {message.subject}"
-            )
+            logger.warning(f"SendGrid not available. Email logged only: {message.subject}")
             return True
 
         try:
@@ -290,9 +286,7 @@ def get_email_service(
         api_key = api_key or os.getenv("SENDGRID_API_KEY")
 
         if not api_key:
-            logger.warning(
-                "SendGrid API key not configured. Emails will be logged only."
-            )
+            logger.warning("SendGrid API key not configured. Emails will be logged only.")
             api_key = "dummy-key-for-development"
 
         _email_service = SendGridEmailService(api_key=api_key, from_email=from_email)

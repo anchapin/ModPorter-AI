@@ -226,9 +226,7 @@ class JavaScriptSyntaxValidator:
             return node
         return None
 
-    def _basic_syntax_check(
-        self, source_code: str, file_path: str
-    ) -> List[SyntaxError]:
+    def _basic_syntax_check(self, source_code: str, file_path: str) -> List[SyntaxError]:
         """Basic syntax check without tree-sitter."""
         errors = []
 
@@ -294,9 +292,7 @@ class JSONSchemaValidator:
     def __init__(self):
         self.schemas = BEDROCK_SCHEMAS
 
-    def validate(
-        self, json_data: Dict, schema_name: str, file_path: str = ""
-    ) -> List[SyntaxError]:
+    def validate(self, json_data: Dict, schema_name: str, file_path: str = "") -> List[SyntaxError]:
         """
         Validate JSON data against a schema.
 
@@ -397,9 +393,7 @@ class JSONSchemaValidator:
                 if key in properties:
                     field_path = f"{path}.{key}" if path else key
                     errors.extend(
-                        self._validate_object(
-                            value, properties[key], field_path, file_path
-                        )
+                        self._validate_object(value, properties[key], field_path, file_path)
                     )
 
         # Pattern check

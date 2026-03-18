@@ -68,9 +68,7 @@ class TreeSitterJavaParser:
             # Check for error nodes (tree-sitter's error recovery)
             error_count = self._count_error_nodes(tree.root_node)
             if error_count > 0:
-                logger.warning(
-                    f"Parse completed with {error_count} error nodes (malformed code)"
-                )
+                logger.warning(f"Parse completed with {error_count} error nodes (malformed code)")
 
             return self._tree_to_dict(tree.root_node, error_count)
         except Exception as e:
@@ -122,9 +120,7 @@ class TreeSitterJavaParser:
 
         # Recursively convert children
         if node.child_count > 0:
-            result["children"] = [
-                self._tree_to_dict(child, error_count) for child in node.children
-            ]
+            result["children"] = [self._tree_to_dict(child, error_count) for child in node.children]
 
         return result
 
@@ -553,10 +549,7 @@ class JavaASTAnalyzer:
             return True
 
         # Check if superclass ends with target (handles simple names like "Block")
-        return any(
-            superclass.endswith(target) or target.endswith(superclass)
-            for target in targets
-        )
+        return any(superclass.endswith(target) or target.endswith(superclass) for target in targets)
 
 
 def analyze_java_file(source_code: str, filename: str = "") -> Dict[str, Any]:

@@ -160,9 +160,7 @@ class FeedbackLearningPipeline:
     def submit_feedback(self, feedback: UserFeedback):
         """Submit user feedback for processing."""
         self.feedback_store[feedback.feedback_id] = feedback
-        logger.info(
-            f"Received feedback: {feedback.feedback_id} (rating={feedback.rating})"
-        )
+        logger.info(f"Received feedback: {feedback.feedback_id} (rating={feedback.rating})")
 
         # Process low-rated feedback automatically
         if feedback.rating is not None and feedback.rating <= 2:
@@ -193,9 +191,7 @@ class FeedbackLearningPipeline:
         )
 
         self.learning_items[learning_item.item_id] = learning_item
-        logger.info(
-            f"Created learning item: {learning_item.item_id} (issue={issue_type})"
-        )
+        logger.info(f"Created learning item: {learning_item.item_id} (issue={issue_type})")
 
         # Queue for retraining
         self._queue_for_retraining(feedback)
@@ -242,9 +238,7 @@ class FeedbackLearningPipeline:
         """Get learning pipeline statistics."""
         return {
             "total_feedback": len(self.feedback_store),
-            "low_rated": sum(
-                1 for f in self.feedback_store.values() if f.rating and f.rating <= 2
-            ),
+            "low_rated": sum(1 for f in self.feedback_store.values() if f.rating and f.rating <= 2),
             "learning_items": len(self.learning_items),
             "training_pairs": len(self.training_pairs),
             "translation_rules": len(self.translation_rules),
@@ -285,9 +279,7 @@ class CodeT5FineTuner:
         valid_pairs = [p for p in feedback_pairs if p.quality_score >= min_quality]
 
         self.training_data = valid_pairs
-        logger.info(
-            f"Prepared {len(valid_pairs)} training pairs (quality >= {min_quality})"
-        )
+        logger.info(f"Prepared {len(valid_pairs)} training pairs (quality >= {min_quality})")
 
         return len(valid_pairs)
 
@@ -319,13 +311,9 @@ class CodeT5FineTuner:
         }
 
         self.training_history.append(training_result)
-        self.model_path = (
-            f"models/codet5-plus-finetuned-{datetime.now().strftime('%Y%m%d')}"
-        )
+        self.model_path = f"models/codet5-plus-finetuned-{datetime.now().strftime('%Y%m%d')}"
 
-        logger.info(
-            f"Fine-tuning complete: {training_result['validation_accuracy']:.2%} accuracy"
-        )
+        logger.info(f"Fine-tuning complete: {training_result['validation_accuracy']:.2%} accuracy")
 
         return training_result
 
@@ -336,9 +324,7 @@ class CodeT5FineTuner:
             "model_path": self.model_path,
             "training_runs": len(self.training_history),
             "latest_accuracy": (
-                self.training_history[-1]["validation_accuracy"]
-                if self.training_history
-                else 0.0
+                self.training_history[-1]["validation_accuracy"] if self.training_history else 0.0
             ),
         }
 
@@ -386,9 +372,7 @@ class CommunityPatternSharing:
         logger.info(f"Pattern submitted: {pattern_id} by {submitted_by}")
         return pattern
 
-    def review_pattern(
-        self, pattern_id: str, approved: bool, reviewer: str, comments: str = ""
-    ):
+    def review_pattern(self, pattern_id: str, approved: bool, reviewer: str, comments: str = ""):
         """Review a community pattern."""
         pattern = self.patterns.get(pattern_id)
         if not pattern:
@@ -434,12 +418,8 @@ class CommunityPatternSharing:
         return {
             "total_patterns": len(self.patterns),
             "pending_review": len(self.review_queue),
-            "approved": sum(
-                1 for p in self.patterns.values() if p.status == "approved"
-            ),
-            "rejected": sum(
-                1 for p in self.patterns.values() if p.status == "rejected"
-            ),
+            "approved": sum(1 for p in self.patterns.values() if p.status == "approved"),
+            "rejected": sum(1 for p in self.patterns.values() if p.status == "rejected"),
             "total_votes": sum(p.votes for p in self.patterns.values()),
         }
 
@@ -511,8 +491,7 @@ class ContinuousImprovementDashboard:
 
         return {
             "accuracy_change": latest["accuracy"] - first["accuracy"],
-            "satisfaction_change": latest["user_satisfaction"]
-            - first["user_satisfaction"],
+            "satisfaction_change": latest["user_satisfaction"] - first["user_satisfaction"],
             "coverage_change": latest["mod_coverage"] - first["mod_coverage"],
             "speed_improvement": first["conversion_speed"] - latest["conversion_speed"],
         }

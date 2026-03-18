@@ -67,9 +67,9 @@ class CostTracker:
                 cost = self.MODAL_COST_PER_CONVERSION
             else:
                 rates = self.MODEL_COSTS.get(model, {"in": 0, "out": 0})
-                cost = (tokens_in / 1_000_000) * rates["in"] + (
-                    tokens_out / 1_000_000
-                ) * rates["out"]
+                cost = (tokens_in / 1_000_000) * rates["in"] + (tokens_out / 1_000_000) * rates[
+                    "out"
+                ]
 
         record = CostRecord(
             model=model,
@@ -196,12 +196,12 @@ class CostTracker:
 
 | Metric | Value |
 |--------|-------|
-| Total Conversions | {stats['total_conversions']} |
-| Total Cost | ${stats['total_cost']:.2f} |
-| Avg Cost/Conversion | ${stats['average_cost_per_conversion']:.4f} |
-| Daily Cost | ${stats['daily_cost']:.2f} |
-| Weekly Cost | ${stats['weekly_cost']:.2f} |
-| Monthly Cost | ${stats['monthly_cost']:.2f} |
+| Total Conversions | {stats["total_conversions"]} |
+| Total Cost | ${stats["total_cost"]:.2f} |
+| Avg Cost/Conversion | ${stats["average_cost_per_conversion"]:.4f} |
+| Daily Cost | ${stats["daily_cost"]:.2f} |
+| Weekly Cost | ${stats["weekly_cost"]:.2f} |
+| Monthly Cost | ${stats["monthly_cost"]:.2f} |
 
 ## Model Breakdown
 
@@ -216,8 +216,8 @@ class CostTracker:
 ## Budget Status
 
 - Daily Budget: ${self._daily_budget:.2f}
-- Spent Today: ${stats['daily_cost']:.2f}
-- Remaining: ${stats['budget_remaining']:.2f}
+- Spent Today: ${stats["daily_cost"]:.2f}
+- Remaining: ${stats["budget_remaining"]:.2f}
 
 ## Recommendations
 

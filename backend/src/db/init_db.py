@@ -38,9 +38,7 @@ async def init_db() -> None:
                 await asyncio.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
-                logger.error(
-                    f"Database initialization failed after {max_retries} attempts: {e}"
-                )
+                logger.error(f"Database initialization failed after {max_retries} attempts: {e}")
                 raise
         except Exception as e:
             logger.error(f"Unexpected error during database initialization: {e}")

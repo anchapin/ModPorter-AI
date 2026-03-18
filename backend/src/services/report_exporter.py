@@ -33,9 +33,7 @@ class ReportExporter:
         # Prepare data for template with proper HTML escaping
         context = {
             "report": self._escape_report_data(report.to_dict()),
-            "generation_date": html.escape(
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ),
+            "generation_date": html.escape(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
             "title": html.escape(f"Conversion Report - {report.metadata.job_id}"),
         }
 
@@ -63,21 +61,13 @@ class ReportExporter:
 
         # Summary data
         summary = report.summary
-        csv_content.append(
-            f"Summary,Overall Success Rate,{summary.overall_success_rate}%"
-        )
+        csv_content.append(f"Summary,Overall Success Rate,{summary.overall_success_rate}%")
         csv_content.append(f"Summary,Total Features,{summary.total_features}")
         csv_content.append(f"Summary,Converted Features,{summary.converted_features}")
-        csv_content.append(
-            f"Summary,Partially Converted,{summary.partially_converted_features}"
-        )
+        csv_content.append(f"Summary,Partially Converted,{summary.partially_converted_features}")
         csv_content.append(f"Summary,Failed Features,{summary.failed_features}")
-        csv_content.append(
-            f"Summary,Assumptions Applied,{summary.assumptions_applied_count}"
-        )
-        csv_content.append(
-            f"Summary,Processing Time (s),{summary.processing_time_seconds}"
-        )
+        csv_content.append(f"Summary,Assumptions Applied,{summary.assumptions_applied_count}")
+        csv_content.append(f"Summary,Processing Time (s),{summary.processing_time_seconds}")
         csv_content.append(f"Summary,Quality Score,{summary.conversion_quality_score}")
 
         # Feature analysis

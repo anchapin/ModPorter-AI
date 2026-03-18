@@ -81,9 +81,7 @@ class DeepSeekClient:
             logger.error(f"DeepSeek translation failed: {e}")
             raise RuntimeError(f"DeepSeek API error: {e}")
 
-    def _build_messages(
-        self, java_code: str, context: Optional[List[str]] = None
-    ) -> List[dict]:
+    def _build_messages(self, java_code: str, context: Optional[List[str]] = None) -> List[dict]:
         """Build message list for API call."""
 
         system_message = {
@@ -102,9 +100,7 @@ Guidelines:
         user_content = f"Translate this Java code to Bedrock JavaScript/JSON:\n\n```java\n{java_code}\n```\n\nBedrock Translation:"
 
         if context:
-            context_str = "\n\n".join(
-                [f"Example {i+1}:\n{c}" for i, c in enumerate(context[:3])]
-            )
+            context_str = "\n\n".join([f"Example {i + 1}:\n{c}" for i, c in enumerate(context[:3])])
             user_content = f"Here are some similar conversions for reference:\n\n{context_str}\n\n{user_content}"
 
         messages = [system_message, {"role": "user", "content": user_content}]
