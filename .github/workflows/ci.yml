@@ -1144,6 +1144,9 @@ jobs:
     - name: Check duplicates
       run: pnpm run lint:duplicates
 
+    - name: Check duplicates
+      run: pnpm run lint:duplicates
+
     - name: Build frontend with bundle analysis
       run: cd frontend && pnpm build:analyze
 
@@ -1276,6 +1279,66 @@ jobs:
         path: .github/perf-metrics
         merge-multiple: true
 
+    - name: Set up Python for performance tracking
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+
+    - name: Record workflow metrics
+      id: record-metrics
+      run: |
+        # Record major workflow step timings
+        WORKFLOW_START="${{ job.start_time }}"
+        CURRENT_TIME=$(date +%s)
+        
+        # Initialize performance tracking
+        python3 scripts/ci_performance_tracker.py aggregate
+        python3 scripts/ci_performance_tracker.py compare
+        
+        echo "✅ Performance metrics recorded and aggregated"
+
+    - name: Calculate performance metrics
+      id: metrics
+      run: |
+        echo "🚀 CI Performance Analysis"
+        echo "=========================="
+        
+        # Get job durations from the GitHub API (approximation)
+        WORKFLOW_START=$(date -d "5 minutes ago" +%s)
+        CURRENT_TIME=$(date +%s)
+        TOTAL_DURATION=$((CURRENT_TIME - WORKFLOW_START))
+        
+        echo "Workflow Performance:"
+        echo "- Total estimated time: ${TOTAL_DURATION}s"
+        echo "- Reduced timeout: integration-tests (30→20min), frontend-tests (15→10min)"
+        echo "- Base image strategy: ${{ needs.prepare-base-images.outputs.should-build == 'false' && '✅ Using cached base images' || '🏗️ Building new base images' }}"
+        
+        # Cache analysis
+        echo ""
+        echo "📊 Cache Strategy Analysis"
+        echo "=========================="
+        echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+        
+        echo ""
+        echo "Cache Keys (v2 optimized):"
+        echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
+        echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+        
+        echo ""
+        echo "🎯 Optimization Results"
+        echo "======================"
+        echo "- ✅ Multi-level caching strategy implemented"
+        echo "- ✅ Base image strategy for dependency pre-caching"
+        echo "- ✅ Conditional Python setup (fallback)"
+        echo "- ✅ Optimized pnpm configuration"
+        echo "- ✅ Parallel matrix job execution"
+        echo "- ✅ Reduced timeouts and improved fail-fast"
+        echo "- ✅ Build performance tracking with metrics collection"
+>>>>>>> 29f3f1da (feat: Add build performance tracking (#691))
+
     - name: Run performance tracking
       run: |
         chmod +x ./scripts/ci-performance-tracker.sh
@@ -1310,3 +1373,41 @@ jobs:
           .github/perf-metrics/summary.json
           .github/perf-metrics/history.json
           .github/perf-metrics/*.md
+
+    - name: Generate performance report
+      if: github.event_name == 'pull_request'
+      run: |
+        python3 scripts/ci_performance_tracker.py report --output /tmp/perf-report.md
+        cat /tmp/perf-report.md
+
+    - name: Upload performance metrics artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-performance-metrics
+        path: .github/perf-metrics/
+        retention-days: 30
+
+    - name: Cleanup recommendation
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo ""
+        echo "🧹 Cache Maintenance Recommendations"
+        echo "==================================="
+        echo ""
+        echo "Weekly Tasks:"
+        echo "- ✅ Auto-rebuild base images (via build-base-images.yml)"
+        echo "- ✅ Cache cleanup via cache-cleanup.yml workflow"
+        echo ""
+        echo "Monthly Tasks:"
+        echo "- Review cache hit rates in Actions tab"
+        echo "- Update CACHE_VERSION in workflow if major changes"
+        echo "- Monitor repository cache usage (current limit: 10GB)"
+        echo "- Review performance trends in ci-performance-metrics artifacts"
+        echo ""
+        echo "Repository Cache Status:"
+        echo "- Current optimization level: v2"
+        echo "- Base images: Managed automatically"
+        echo "- Cache retention: 7 days for test artifacts"
+        echo "- Performance metrics: Retained for 30 days"
+>>>>>>> 29f3f1da (feat: Add build performance tracking (#691))

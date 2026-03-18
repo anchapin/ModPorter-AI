@@ -116,7 +116,7 @@ export default [
       'sonarjs/no-duplicated-branches': 'error',
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 15 }],
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 3 }],
       // Disable base rule to avoid conflicts
       'no-unused-vars': 'off',
       // Disable react-hooks exhaustive-deps rule - too strict for this codebase
