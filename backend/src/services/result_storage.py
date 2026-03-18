@@ -6,10 +6,6 @@ Stores conversion results in database and file system.
 
 import logging
 import os
-<<<<<<< HEAD
-=======
-import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -19,10 +15,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from db.models import ConversionJob, ConversionResult
-<<<<<<< HEAD
-=======
-from db.base import get_db
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +29,6 @@ RESULT_EXPIRY_DAYS = 30
 
 class ResultStorage:
     """Storage service for conversion results."""
-<<<<<<< HEAD
 
     def __init__(self):
         self.temp_dir = TEMP_UPLOADS_DIR
@@ -49,19 +40,6 @@ class ResultStorage:
 
         logger.info(f"Result storage initialized. Output dir: {self.output_dir}")
 
-=======
-    
-    def __init__(self):
-        self.temp_dir = TEMP_UPLOADS_DIR
-        self.output_dir = CONVERSION_OUTPUTS_DIR
-        
-        # Ensure directories exist
-        self.temp_dir.mkdir(parents=True, exist_ok=True)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        
-        logger.info(f"Result storage initialized. Output dir: {self.output_dir}")
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def store_result(
         self,
         job_id: str,
@@ -72,44 +50,26 @@ class ResultStorage:
     ) -> str:
         """
         Store conversion result.
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             job_id: Job ID
             user_id: User ID (optional)
             bedrock_code: Generated Bedrock code
             result_metadata: Result metadata
             db: Database session
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Result ID
         """
         result_id = str(uuid.uuid4())
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Store bedrock code as file
         output_file = self.output_dir / f"{result_id}.mcaddon"
         with open(output_file, "w") as f:
             f.write(bedrock_code)
-<<<<<<< HEAD
 
         logger.info(f"Stored bedrock code to {output_file}")
 
-=======
-        
-        logger.info(f"Stored bedrock code to {output_file}")
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Store result metadata in database
         db_result = ConversionResult(
             id=result_id,
@@ -120,20 +80,13 @@ class ResultStorage:
                 "code_length": len(bedrock_code),
             },
         )
-<<<<<<< HEAD
 
         db.add(db_result)
 
-=======
-        
-        db.add(db_result)
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Update job status
         job = await db.get(ConversionJob, job_id)
         if job:
             job.status = "completed"
-<<<<<<< HEAD
 
         await db.commit()
 
@@ -148,29 +101,12 @@ class ResultStorage:
             result_id: Result ID
             db: Database session
 
-=======
-        
-        await db.commit()
-        
-        logger.info(f"Result {result_id} stored for job {job_id}")
-        return result_id
-    
-    async def get_result(self, result_id: str, db: AsyncSession) -> Optional[Dict[str, Any]]:
-        """
-        Get stored result.
-        
-        Args:
-            result_id: Result ID
-            db: Database session
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Result data or None
         """
         result = await db.get(ConversionResult, result_id)
         if not result:
             return None
-<<<<<<< HEAD
 
         # Read bedrock code from file
         output_file = result.output_data.get("output_file")
@@ -180,17 +116,6 @@ class ResultStorage:
             with open(output_file, "r") as f:
                 bedrock_code = f.read()
 
-=======
-        
-        # Read bedrock code from file
-        output_file = result.output_data.get("output_file")
-        bedrock_code = ""
-        
-        if output_file and os.path.exists(output_file):
-            with open(output_file, "r") as f:
-                bedrock_code = f.read()
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "result_id": result_id,
             "job_id": result.job_id,
@@ -198,7 +123,6 @@ class ResultStorage:
             "metadata": result.output_data.get("metadata", {}),
             "created_at": result.created_at.isoformat() if result.created_at else None,
         }
-<<<<<<< HEAD
 
     async def download_result(self, result_id: str) -> Optional[str]:
         """
@@ -207,16 +131,6 @@ class ResultStorage:
         Args:
             result_id: Result ID
 
-=======
-    
-    async def download_result(self, result_id: str) -> Optional[str]:
-        """
-        Get file path for download.
-        
-        Args:
-            result_id: Result ID
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             File path or None
         """
@@ -224,7 +138,6 @@ class ResultStorage:
         if output_file.exists():
             return str(output_file)
         return None
-<<<<<<< HEAD
 
     async def cleanup_expired_results(self, db: AsyncSession) -> int:
         """
@@ -233,34 +146,16 @@ class ResultStorage:
         Args:
             db: Database session
 
-=======
-    
-    async def cleanup_expired_results(self, db: AsyncSession) -> int:
-        """
-        Clean up results older than expiry period.
-        
-        Args:
-            db: Database session
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Number of results cleaned up
         """
         cutoff = datetime.utcnow() - timedelta(days=RESULT_EXPIRY_DAYS)
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Find expired results
         stmt = select(ConversionResult).where(ConversionResult.created_at < cutoff)
         result = await db.execute(stmt)
         expired_results = result.scalars().all()
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         cleaned = 0
         for db_result in expired_results:
             # Delete file
@@ -268,7 +163,6 @@ class ResultStorage:
             if output_file and os.path.exists(output_file):
                 os.remove(output_file)
                 logger.debug(f"Deleted expired file: {output_file}")
-<<<<<<< HEAD
 
             # Delete database record
             await db.delete(db_result)
@@ -279,36 +173,16 @@ class ResultStorage:
 
         return cleaned
 
-=======
-            
-            # Delete database record
-            await db.delete(db_result)
-            cleaned += 1
-        
-        await db.commit()
-        logger.info(f"Cleaned up {cleaned} expired results")
-        
-        return cleaned
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_storage_stats(self) -> dict:
         """Get storage statistics."""
         # Count files and total size
         total_files = 0
         total_size = 0
-<<<<<<< HEAD
 
         for file in self.output_dir.glob("*.mcaddon"):
             total_files += 1
             total_size += file.stat().st_size
 
-=======
-        
-        for file in self.output_dir.glob("*.mcaddon"):
-            total_files += 1
-            total_size += file.stat().st_size
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total_results": total_files,
             "total_size_bytes": total_size,
