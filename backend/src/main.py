@@ -65,7 +65,12 @@ from api import (
     mod_imports,
     analytics,
     health,
+    alerting,
+    patterns,
+    batch_conversion,
+    batch_conversion_v2,
 )
+from api.batch_conversion_v3 import router as batch_conversion_v3_router
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
 # Import mock data from report_generator
@@ -209,7 +214,14 @@ app.include_router(advanced_events.router, prefix="/api/v1", tags=["advanced-eve
 app.include_router(conversions.router)  # Conversions API + WebSocket
 app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(alerting.router, prefix="/api/v1/alerting", tags=["alerting"])
+app.include_router(patterns.router, prefix="/api/v1/patterns", tags=["pattern-library"])
 app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
+
+# Batch conversion routers
+app.include_router(batch_conversion.router, prefix="/api/v1/batch", tags=["Batch Conversion"])
+app.include_router(batch_conversion_v2.router, prefix="/api/v1", tags=["Batch Conversion v2"])
+app.include_router(batch_conversion_v3_router, prefix="/api/v1", tags=["Batch Conversion v3 - Enhanced"])
 
 # Health check endpoints (no prefix - used for Kubernetes probes)
 app.include_router(health.router)

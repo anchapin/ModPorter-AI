@@ -1,0 +1,236 @@
+/* Batch Progress Dashboard Styles */
+
+.batch-progress-dashboard {
+  background: var(--bg-primary, #fff);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-header h3 {
+  margin: 0;
+  color: var(--text-primary, #333);
+  font-size: 1.25rem;
+}
+
+.batch-id {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+  font-family: monospace;
+  background: var(--bg-secondary, #f5f5f5);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Overall Progress Section */
+.overall-progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.progress-percent {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color, #2563eb);
+}
+
+.progress-bar.large {
+  height: 12px;
+  background: var(--bg-secondary, #e5e7eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar.small {
+  height: 4px;
+  width: 80px;
+}
+
+/* ETA Display */
+.eta-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary, #333);
+}
+
+.eta-display.complete {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success-color, #16a34a);
+}
+
+.eta-icon {
+  font-size: 1rem;
+}
+
+.eta-detail {
+  color: var(--text-secondary, #666);
+  font-size: 0.8rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  border-left: 3px solid transparent;
+}
+
+.stat-card.pending {
+  border-left-color: var(--text-secondary, #6b7280);
+}
+
+.stat-card.processing {
+  border-left-color: var(--primary-color, #2563eb);
+}
+
+.stat-card.completed {
+  border-left-color: var(--success-color, #22c55e);
+}
+
+.stat-card.failed {
+  border-left-color: var(--error-color, #ef4444);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
+/* Per-Mod Status */
+.per-mod-status {
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  padding-top: 1rem;
+}
+
+.per-mod-status h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--text-primary, #333);
+}
+
+.mod-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.mod-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.mod-item.completed {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.mod-item.failed {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.mod-item.processing {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.mod-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 0.4rem;
+  flex-shrink: 0;
+}
+
+.mod-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-filename {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mod-status-text {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+  margin-top: 0.25rem;
+}
+
+.mod-item.failed .mod-status-text {
+  color: var(--error-color, #ef4444);
+}
+
+.mod-progress {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Last Update */
+.last-update {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #666);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .eta-display {
+    flex-direction: column;
+    text-align: center;
+  }
+}

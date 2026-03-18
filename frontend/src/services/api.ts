@@ -1536,3 +1536,165 @@ export const modImportsAPI = {
     return response.json();
   },
 };
+
+/**
+ * Get full conversion data including Java and Bedrock files.
+ */
+export const getConversion = async (
+  conversionId: string
+): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to get conversion' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get conversion',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Update a specific file in a conversion.
+ */
+export const updateConversionFile = async (
+  conversionId: string,
+  fileId: string,
+  data: { content: string }
+): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/conversions/${conversionId}/files/${fileId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to update conversion file' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to update conversion file',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Download all converted files from a batch as a ZIP.
+ */
+export const downloadBatchResults = async (
+  batchId: string
+): Promise<{ blob: Blob; filename: string }> => {
+  // Use v3 API for proper ZIP download with manifest
+  const response = await fetch(`${API_BASE_URL}/batch/v2/${batchId}/download`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to download batch' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to download batch',
+      response.status
+    );
+  }
+
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get('Content-Disposition');
+  let filename = `batch-${batchId}.zip`;
+  
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    if (fileNameMatch) {
+      filename = fileNameMatch[1];
+    }
+  }
+
+  return { blob, filename };
+};
+
+/**
+ * Get supported Minecraft versions for batch conversion.
+ */
+export const getSupportedVersions = async (): Promise<{ versions: any[] }> => {
+  const response = await fetch(`${API_BASE_URL}/batch/v2/versions`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to get versions' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get supported versions',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Get version-specific conversion rules.
+ */
+export const getVersionRules = async (version: string): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/batch/v2/versions/${version}/rules`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to get version rules' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get version rules',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Get batch summary.
+ */
+export const getBatchSummary = async (batchId: string): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/batch/v2/${batchId}/summary`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to get batch summary' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get batch summary',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Generate batch report.
+ */
+export const generateBatchReport = async (
+  batchId: string, 
+  format: 'json' | 'markdown'
+): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/batch/v2/${batchId}/report/${format}`);
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to generate report' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to generate batch report',
+      response.status
+    );
+  }
+
+  return response.json();
+};
