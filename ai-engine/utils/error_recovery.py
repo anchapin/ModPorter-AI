@@ -203,7 +203,6 @@ class CircuitBreaker:
         """
         with self._lock:
             current_state = self.state
-<<<<<<< HEAD
 
             if current_state == CircuitState.OPEN:
                 logger.warning(f"CircuitBreaker '{self.name}': OPEN - rejecting call")
@@ -215,17 +214,6 @@ class CircuitBreaker:
                     raise CircuitBreakerOpenError(
                         f"Circuit breaker '{self.name}' half-open call limit reached"
                     )
-=======
-            
-            if current_state == CircuitState.OPEN:
-                logger.warning(f"CircuitBreaker '{self.name}': OPEN - rejecting call")
-                raise CircuitBreakerOpen(f"Circuit breaker '{self.name}' is open")
-            
-            if current_state == CircuitState.HALF_OPEN:
-                if self._half_open_calls >= self.half_open_max_calls:
-                    logger.warning(f"CircuitBreaker '{self.name}': HALF_OPEN - max calls reached")
-                    raise CircuitBreakerOpen(f"Circuit breaker '{self.name}' half-open call limit reached")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 self._half_open_calls += 1
                 logger.info(f"CircuitBreaker '{self.name}': HALF_OPEN - allowing test call")
 
@@ -234,11 +222,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-<<<<<<< HEAD
-        except Exception:
-=======
         except Exception as e:
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             self._on_failure()
             raise
 
@@ -304,37 +288,21 @@ class CircuitBreakerOpenError(Exception):
 
 class RecoveryError(Exception):
     """Exception for recovery failures."""
-<<<<<<< HEAD
-
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     pass
 
 
 def with_retry(strategy: RecoveryStrategy = STANDARD_RETRY):
     """
     Decorator for adding retry logic to functions.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Usage:
         @with_retry(STANDARD_RETRY)
         def flaky_function():
             ...
-<<<<<<< HEAD
 
     Args:
         strategy: Recovery strategy to use
     """
-
-=======
-            
-    Args:
-        strategy: Recovery strategy to use
-    """
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
