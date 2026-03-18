@@ -1,0 +1,361 @@
+.visual-conversion-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-divider {
+  margin: 0 8px;
+  background-color: #3c3c3c;
+}
+
+.file-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-select {
+  min-width: 200px;
+}
+
+.file-select .MuiSelect-select {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.view-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.view-controls .MuiIconButton {
+  color: #cccccc;
+}
+
+.view-controls .MuiIconButton.active {
+  background-color: #094771;
+  color: #ffffff;
+}
+
+.link-controls .MuiIconButton.active {
+  background-color: #4ec9b0;
+  color: #1e1e1e;
+}
+
+.split-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.slider-label {
+  color: #cccccc;
+}
+
+.split-slider-control {
+  width: 100px;
+}
+
+.actions {
+  margin-left: auto;
+}
+
+.editor-toolbar .MuiIconButton {
+  color: #cccccc;
+}
+
+.editor-toolbar .MuiIconButton:hover {
+  background-color: #3c3c3c;
+}
+
+.editor-toolbar .MuiIconButton:disabled {
+  color: #5a5a5a;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Editor Area */
+.editor-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.visual-editor-split-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.java-pane-wrapper,
+.bedrock-pane-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.split-handle {
+  width: 6px;
+  background-color: #3c3c3c;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.split-handle:hover {
+  background-color: #094771;
+}
+
+.split-handle-line {
+  width: 2px;
+  height: 40px;
+  background-color: #5a5a5a;
+  border-radius: 2px;
+}
+
+/* Editor Panes */
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #1e1e1e;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  min-height: 40px;
+}
+
+.pane-title {
+  color: #cccccc;
+  font-weight: 600;
+}
+
+.readonly-chip,
+.editable-chip,
+.modified-chip {
+  height: 22px;
+  font-size: 11px;
+}
+
+.readonly-chip {
+  border-color: #5a5a5a;
+  color: #5a5a5a;
+}
+
+.editable-chip {
+  border-color: #4ec9b0;
+  color: #4ec9b0;
+}
+
+.modified-chip {
+  border-color: #cca700;
+  color: #cca700;
+}
+
+/* Diff Actions */
+.diff-actions {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.diff-actions .MuiIconButton {
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+}
+
+.diff-actions .MuiIconButton:hover {
+  background-color: #3c3c3c;
+}
+
+.diff-actions .accept-btn:hover {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.diff-actions .reject-btn:hover {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.diff-inline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #252526;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.diff-actions-inline {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px;
+  background-color: #252526;
+  border-top: 1px solid #3c3c3c;
+}
+
+.changes-chip {
+  border-color: #cca700 !important;
+  color: #cca700 !important;
+}
+
+.line-count-chip {
+  border-color: #5a5a5a !important;
+  color: #808080 !important;
+  font-size: 11px !important;
+  height: 22px !important;
+}
+
+/* Linked Highlighting */
+.linked-highlight-java {
+  background-color: rgba(78, 201, 176, 0.2) !important;
+}
+
+.linked-highlight-bedrock {
+  background-color: rgba(9, 71, 113, 0.3) !important;
+}
+
+.linked-highlight-glyph {
+  background-color: #4ec9b0;
+  width: 4px !important;
+  margin-left: 3px;
+}
+
+.editor-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Diff Views */
+.diff-side-by-side {
+  gap: 0;
+}
+
+.diff-divider {
+  width: 1px;
+  background-color: #3c3c3c;
+}
+
+.original-pane,
+.modified-pane {
+  flex: 1;
+}
+
+.diff-inline-pane {
+  height: 100%;
+}
+
+/* Status Bar */
+.editor-status-bar {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  background-color: #007acc;
+  color: #ffffff;
+  gap: 24px;
+  min-height: 28px;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+}
+
+.status-section .MuiTypography-caption {
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.highlight-info {
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.changes-indicator {
+  margin-left: auto;
+  color: #cca700;
+}
+
+/* Empty State */
+.visual-editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+}
+
+.visual-editor-empty .MuiTypography-h6 {
+  color: #cccccc;
+  margin-bottom: 8px;
+}
+
+.visual-editor-empty .MuiTypography-body2 {
+  color: #808080;
+}
+
+/* Monaco Editor Overrides */
+.visual-conversion-editor .monaco-editor {
+  padding-top: 8px;
+}
+
+.visual-conversion-editor .monaco-editor .margin {
+  background-color: #1e1e1e !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    padding: 8px;
+  }
+  
+  .file-select {
+    min-width: 150px;
+  }
+  
+  .split-slider {
+    display: none;
+  }
+}
