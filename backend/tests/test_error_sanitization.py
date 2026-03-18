@@ -82,9 +82,7 @@ class TestErrorResponseSanitization:
 
             importlib.reload(eh)
 
-            exc = HTTPException(
-                status_code=500, detail="Database query failed: connection timeout"
-            )
+            exc = HTTPException(status_code=500, detail="Database query failed: connection timeout")
 
             response = eh.create_error_response(exc, mock_request)
 
@@ -104,10 +102,7 @@ class TestErrorResponseSanitization:
             response = eh.create_error_response(validation_error, mock_request)
 
             # Generic message without error details
-            assert (
-                response.user_message
-                == "Invalid request data. Please check your input."
-            )
+            assert response.user_message == "Invalid request data. Please check your input."
             assert response.details == {}  # No error details exposed in production
 
     def test_traceback_never_in_production(self, mock_request):
@@ -121,9 +116,7 @@ class TestErrorResponseSanitization:
             exc = Exception("Something went wrong")
 
             # Even if include_traceback=True, it shouldn't appear in production
-            response = eh.create_error_response(
-                exc, mock_request, include_traceback=True
-            )
+            response = eh.create_error_response(exc, mock_request, include_traceback=True)
 
             assert "traceback" not in response.details
             assert "Traceback" not in str(response.details)
@@ -139,9 +132,7 @@ class TestErrorResponseSanitization:
             try:
                 raise ValueError("Something went wrong internally")
             except ValueError as exc:
-                response = eh.create_error_response(
-                    exc, mock_request, include_traceback=True
-                )
+                response = eh.create_error_response(exc, mock_request, include_traceback=True)
 
                 assert "traceback" in response.details
                 assert "ValueError" in response.details["traceback"]
@@ -186,9 +177,7 @@ class TestGenericExceptionHandler:
 
             # Response content should not contain sensitive details
             content = (
-                response.body.decode()
-                if hasattr(response.body, "decode")
-                else str(response.body)
+                response.body.decode() if hasattr(response.body, "decode") else str(response.body)
             )
             assert "db.internal" not in content
             assert "5432" not in content
