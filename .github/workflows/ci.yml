@@ -28,6 +28,7 @@ env:
   REGISTRY: ghcr.io
   CACHE_VERSION: v2
   PYTHON_VERSION: '3.11'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Check if we need to run tests based on changed files
@@ -773,12 +774,11 @@ jobs:
       with:
         node-version: '20.19.0'
         cache: 'pnpm'
-        cache-dependency-path: 'frontend/pnpm-lock.yaml'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Install dependencies (optimized)
       run: |
         echo "⚡ Installing frontend dependencies with pnpm..."
-        cd frontend
         
         # Use pnpm install with frozen lockfile
         pnpm install --frozen-lockfile
@@ -805,8 +805,10 @@ jobs:
             ;;
           "lint")
             # Force reinstall of potentially corrupted packages from stale cache
+            cd ..
             rm -rf node_modules
             pnpm install --frozen-lockfile
+            cd frontend
             # Run linting
             pnpm run lint
             ;;
@@ -1141,7 +1143,7 @@ jobs:
       run: cd frontend && pnpm prettier --check .
 
     - name: Check duplicates
-      run: cd frontend && pnpm run lint:duplicates || true
+      run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
       run: cd frontend && pnpm build:analyze

@@ -186,7 +186,9 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         role="status"
         aria-label="Loading history"
       >
-        <div className="loading-spinner">⏳ Loading conversion history...</div>
+        <div className="loading-spinner">
+          <span aria-hidden="true">⏳</span> Loading conversion history...
+        </div>
       </div>
     );
   }
@@ -195,7 +197,9 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     <div className={`conversion-history ${className}`}>
       <div className="history-header">
         <h3>
-          <span className="history-icon">📋</span>
+          <span className="history-icon">
+            <span aria-hidden="true">📋</span>
+          </span>
           Conversion History
           {history.length > 0 && (
             <span className="count">({history.length})</span>
@@ -237,7 +241,8 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                   title={`Delete ${selectedItems.size} selected items`}
                   aria-label={`Delete ${selectedItems.size} selected items`}
                 >
-                  🗑️ Delete Selected ({selectedItems.size})
+                  <span aria-hidden="true">🗑️</span> Delete Selected (
+                  {selectedItems.size})
                 </button>
               ))}
 
@@ -271,7 +276,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
                 title="Clear all history"
                 aria-label="Clear all history"
               >
-                🧹 Clear All
+                <span aria-hidden="true">🧹</span> Clear All
               </button>
             )}
           </div>
@@ -280,7 +285,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
       {error && (
         <div className="error-message" role="alert">
-          ⚠️ {error}
+          <span aria-hidden="true">⚠️</span> {error}
         </div>
       )}
 
