@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: Core Infrastructure
-status: unknown
-last_updated: "2026-03-18T20:51:10.357Z"
+milestone: v1.5
+milestone_name: Advanced Features
+status: in_progress
+last_updated: "2026-03-18T22:33:55.180Z"
 progress:
   total_phases: 27
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 2
 ---
 
 # ModPorter-AI Project State
@@ -16,7 +16,7 @@ progress:
 **Version**: 1.0
 **Created**: 2026-03-13
 **Last Updated**: 2026-03-18
-**Current Phase**: Phase 05-01 ✅ COMPLETE | Phase 05-02-05-04 ⚠️ Partial
+**Current Phase**: Phase 05-02 ✅ COMPLETE | Phase 05-03-05-04 ⚠️ Pending
 
 ---
 
@@ -110,6 +110,30 @@ progress:
 - Replaced unavailable MUI icons (GitCompare, Diff) with available alternatives (Compare)
 - Used simple line-by-line comparison for change detection instead of Monaco diff API
 - Fixed syntax error in PatternLibrary.tsx (unrelated issue discovered during build)
+
+**Status**: ✅ COMPLETE
+
+### Phase 05-02: Batch & Multi-Version Support ✅ COMPLETE
+
+**Tasks Completed**:
+- ✅ Task 1.5.2.1: Batch Upload Interface (multi-file, drag-drop, file list, size calculation)
+- ✅ Task 1.5.2.2: Batch Queue System (queue management, parallel processing 3 concurrent, pause/resume)
+- ✅ Task 1.5.2.3: Batch Progress Dashboard (progress bar, per-mod status, ETA calculation)
+- ✅ Task 1.5.2.4: Version Selection (1.19, 1.20, 1.21 dropdown, version-specific rules)
+- ✅ Task 1.5.2.5: Batch Download & Report (ZIP download, summary reports, export)
+
+**New Components Created**:
+- `backend/src/api/batch_conversion_v3.py` - Enhanced batch API with version support
+- `frontend/src/components/BatchConversion/BatchVersionSelector.tsx` - Version selection
+- `frontend/src/components/BatchConversion/BatchProgressDashboard.tsx` - Progress with ETA
+- `frontend/src/components/BatchConversion/BatchDownloadReport.tsx` - Download/report
+
+**Key Features**:
+- Version dropdown (1.19, 1.20, 1.21) with version-specific rules
+- Real-time progress dashboard with ETA calculation (rolling average)
+- Parallel processing (3 concurrent conversions)
+- ZIP download for completed batches
+- Summary reports (JSON/Text export)
 
 **Status**: ✅ COMPLETE
 
