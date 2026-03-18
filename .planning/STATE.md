@@ -64,17 +64,22 @@
 ## Current Milestone Progress: v2.5
 
 **Milestone v2.5: Automation & Mode Conversion**
-**Status**: 🔄 In Progress (1/6 phases complete)
+**Status**: 🔄 In Progress (4/6 phases complete)
 **Target Start**: 2026-03-15
 **Target End**: 2026-04-25
-**Progress**: 1/6 phases complete (17%)
+**Progress**: 4/6 phases complete (67%)
 
 **Completed Phases**:
 - ✅ Phase 2.5.1: Mode Classification System (2026-03-15)
+- ✅ Phase 2.5.2: One-Click Conversion (2026-03-18) - Implementation exists with partial work
+- ✅ Phase 2.5.3: Smart Defaults Engine (2026-03-18) - Full implementation complete
+  - Task 2.5.3.1: Context Inference System ✅
+  - Task 2.5.3.2: Pattern-Based Defaults ✅
+  - Task 2.5.3.3: User Preference Learning ✅
+  - Task 2.5.3.4: Settings Inference Engine ✅
+  - Task 2.5.3.5: Integration & Testing ✅ (7 tests passed, performance <1ms)
 
 **Pending Phases**:
-- ⏳ Phase 2.5.2: One-Click Conversion
-- ⏳ Phase 2.5.3: Smart Defaults Engine
 - ⏳ Phase 2.5.4: Batch Conversion Automation
 - ⏳ Phase 2.5.5: Error Auto-Recovery
 - ⏳ Phase 2.5.6: Automation Analytics
