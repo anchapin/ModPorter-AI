@@ -196,7 +196,7 @@ export default [
       // Warn about deprecated React APIs
       'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for data fetching patterns
       // Cyclomatic complexity threshold
-      complexity: ['warn', 20],
+      complexity: ['warn', 10],
       // Module boundary enforcement rules
       'boundaries/element-types': [
         'error',
