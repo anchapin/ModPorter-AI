@@ -15,6 +15,7 @@ on:
     paths:
       - '**/requirements*.txt'
       - '**/package.json'
+      - 'package-lock.json'
       - 'pnpm-lock.yaml'
       - 'docker/base-images/**'
 
@@ -190,7 +191,7 @@ jobs:
     - name: Extract Node dependencies hash
       id: deps-hash
       run: |
-        HASH=$(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Node deps hash: $HASH"
     

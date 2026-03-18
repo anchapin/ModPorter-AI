@@ -1,19 +1,16 @@
 # Node.js Base Image with Pre-installed Dependencies
-# Built weekly or when package.json/pnpm-lock.yaml changes
+# Built weekly or when package.json/package-lock.json changes
 
 FROM node:20-slim
 
 # Create app directory
 WORKDIR /app
 
-# Install pnpm first
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN pnpm install --prod --ignore-scripts && pnpm store prune
+RUN npm install --prod --ignore-scripts
 
 # Create app user
 RUN adduser --disabled-password --gecos '' appuser && \
