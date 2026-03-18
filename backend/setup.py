@@ -26,7 +26,7 @@ setup(
         "pytest-cov==7.0.0",
         "pytest-timeout==2.4.0",
         "ruff==0.15.5",
-        "black==26.3.0",
+        "black==26.3.1",
         "python-dotenv==1.2.2",
         "structlog>=24.0.0",
     ],
