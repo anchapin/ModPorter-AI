@@ -169,20 +169,13 @@ class TestMVPEndToEndConversion:
         - All Bedrock specifications are met
         - Conversion completes in <30 seconds
         """
-        print("\n" + "=" * 70)
-        print("TEST: Simple Block Conversion (Happy Path)")
-        print("=" * 70)
 
         start_time = time.time()
 
         # Step 1: Analyze JAR
-        print("\n[Step 1/4] Analyzing JAR file...")
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
 
         analysis_time = time.time() - start_time
-        print(f"  ✓ Analysis completed in {analysis_time:.2f}s")
-        print(f"  Registry name: {analysis_result['registry_name']}")
-        print(f"  Texture path: {analysis_result['texture_path']}")
 
         # Verify analysis results
         assert analysis_result["success"], f"Analysis failed: {analysis_result.get('errors', [])}"
@@ -195,7 +188,6 @@ class TestMVPEndToEndConversion:
         )
 
         # Step 2: Build Bedrock add-on
-        print("\n[Step 2/4] Building Bedrock add-on...")
         build_start = time.time()
 
         with tempfile.TemporaryDirectory() as build_dir:
@@ -207,7 +199,6 @@ class TestMVPEndToEndConversion:
             )
 
             build_time = time.time() - build_start
-            print(f"  ✓ Build completed in {build_time:.2f}s")
 
             # Verify build results
             assert build_result["success"], f"Build failed: {build_result.get('errors', [])}"
@@ -252,7 +243,6 @@ class TestMVPEndToEndConversion:
                 assert "header" in rp_manifest_data, "Missing header in RP manifest"
 
             # Step 3: Package .mcaddon
-            print("\n[Step 3/4] Packaging .mcaddon file...")
             package_start = time.time()
 
             mcaddon_path = self.temp_path / "simple_copper_polished_copper.mcaddon"
@@ -261,7 +251,6 @@ class TestMVPEndToEndConversion:
             )
 
             package_time = time.time() - package_start
-            print(f"  ✓ Package completed in {package_time:.2f}s")
 
             # Verify package results
             assert package_result["success"], (
@@ -270,15 +259,7 @@ class TestMVPEndToEndConversion:
             assert mcaddon_path.exists(), f".mcaddon file not created at {mcaddon_path}"
 
             # Step 4: Validate .mcaddon structure
-            print("\n[Step 4/4] Validating .mcaddon file...")
             validation = package_result.get("validation", {})
-
-            print(f"  File size: {package_result['file_size']:,} bytes")
-            print(f"  File count: {validation.get('file_count', 0)}")
-            print(f"  Valid ZIP: {validation.get('is_valid_zip', False)}")
-            print(f"  Has behavior pack: {validation.get('has_behavior_pack', False)}")
-            print(f"  Has resource pack: {validation.get('has_resource_pack', False)}")
-            print(f"  Manifest count: {validation.get('manifest_count', 0)}")
 
             assert validation.get("is_valid_zip", False), (
                 "Generated .mcaddon is not a valid ZIP file"
@@ -319,14 +300,6 @@ class TestMVPEndToEndConversion:
 
         total_time = time.time() - start_time
 
-        print("\n" + "=" * 70)
-        print("✅ TEST PASSED: Simple Block Conversion")
-        print(f"Total time: {total_time:.2f}s")
-        print(
-            f"Analysis: {analysis_time:.2f}s, Build: {build_time:.2f}s, Package: {package_time:.2f}s"
-        )
-        print("=" * 70)
-
         # Performance assertion
         assert total_time < 30.0, f"Conversion took {total_time:.2f}s, expected <30s"
 
@@ -344,9 +317,6 @@ class TestMVPEndToEndConversion:
         - Package still creates valid .mcaddon
         - Warning is properly documented
         """
-        print("\n" + "=" * 70)
-        print("TEST: Missing Texture Fallback")
-        print("=" * 70)
 
         # Create JAR without texture
         generator = JarGenerator(self.temp_dir)
@@ -355,7 +325,6 @@ class TestMVPEndToEndConversion:
         # Analyze
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(jar_path)
 
-        print(f"  Analysis result: {analysis_result}")
         assert analysis_result["success"], "Analysis should succeed even without texture"
         assert (
             "warnings" in analysis_result
@@ -388,8 +357,6 @@ class TestMVPEndToEndConversion:
 
             assert package_result["success"], "Packaging should succeed even without texture"
 
-        print("✅ TEST PASSED: Missing Texture Fallback")
-
     # ========================================
     # Test Case 3: Malformed JAR (Error Handling)
     # ========================================
@@ -403,9 +370,6 @@ class TestMVPEndToEndConversion:
         - No crashes or exceptions
         - Error message is descriptive
         """
-        print("\n" + "=" * 70)
-        print("TEST: Malformed JAR Error Handling")
-        print("=" * 70)
 
         # Create a file that's not a valid JAR
         fake_jar = self.temp_path / "fake.jar"
@@ -414,7 +378,6 @@ class TestMVPEndToEndConversion:
         # Analyze should handle gracefully
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(fake_jar))
 
-        print(f"  Analysis result: {analysis_result}")
         assert not analysis_result["success"], "Analysis should fail for malformed JAR"
         assert len(analysis_result.get("errors", [])) > 0, "Expected error message"
 
@@ -424,15 +387,12 @@ class TestMVPEndToEndConversion:
             pass  # Create empty JAR
 
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
-        print(f"  Empty JAR result: {analysis_result}")
 
         # Empty JAR should be handled gracefully
         assert analysis_result["success"], "Empty JAR should be handled gracefully"
         assert "unknown" in analysis_result["registry_name"], (
             "Empty JAR should use default registry name"
         )
-
-        print("✅ TEST PASSED: Malformed JAR Error Handling")
 
     # ========================================
     # Test Case 4: Multiple Block Types
@@ -452,9 +412,6 @@ class TestMVPEndToEndConversion:
         - Each has appropriate properties
         - .mcaddon contains all blocks
         """
-        print("\n" + "=" * 70)
-        print("TEST: Multiple Block Types")
-        print("=" * 70)
 
         # Create test suite with different block types
         mod_suite = create_test_mod_suite(self.temp_dir)
@@ -462,8 +419,6 @@ class TestMVPEndToEndConversion:
         results = []
 
         for mod_name, jar_path in mod_suite.items():
-            print(f"\n  Converting: {mod_name}")
-
             start_time = time.time()
 
             # Analyze
@@ -499,10 +454,6 @@ class TestMVPEndToEndConversion:
                     }
                 )
 
-                print(
-                    f"    ✓ Converted in {conversion_time:.2f}s ({package_result['file_size']:,} bytes)"
-                )
-
         # Verify all mods converted
         assert len(results) == len(mod_suite), (
             f"Expected {len(mod_suite)} conversions, got {len(results)}"
@@ -510,11 +461,8 @@ class TestMVPEndToEndConversion:
 
         # Verify performance
         avg_time = sum(r["conversion_time"] for r in results) / len(results)
-        print(f"\n  Average conversion time: {avg_time:.2f}s")
 
         assert avg_time < 30.0, f"Average conversion time {avg_time:.2f}s exceeds 30s threshold"
-
-        print("✅ TEST PASSED: Multiple Block Types")
 
     # ========================================
     # Test Case 5: Manual Bedrock Testing Documentation
@@ -545,9 +493,6 @@ class TestMVPEndToEndConversion:
 
         Document any deviations from expected behavior.
         """
-        print("\n" + "=" * 70)
-        print("TEST: Manual Bedrock Testing Documentation")
-        print("=" * 70)
 
         # Run conversion
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
@@ -570,44 +515,13 @@ class TestMVPEndToEndConversion:
 
             assert package_result["success"]
 
-            print("\n" + "=" * 70)
-            print("MANUAL TESTING INSTRUCTIONS")
-            print("=" * 70)
-            print(f"\n1. .mcaddon file generated at:")
-            print(f"   {mcaddon_path}")
-            print(f"\n2. File size: {package_result['file_size']:,} bytes")
-            print(f"\n3. Copy this file to a Bedrock Edition device:")
-            print(
-                f"   - Windows 10: %localappdata%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\development_behavior_packs"
-            )
-            print(f"   - Or import through Minecraft: Settings → Behavior Packs → Import")
-            print(f"\n4. Expected block properties:")
-            print(f"   - Registry name: {analysis_result['registry_name']}")
-            print(f"   - Texture: polished_copper.png")
-            print(f"   - Material: Metal (sound, hardness)")
-            print(f"\n5. In-game verification:")
-            print(f"   ✓ Block appears in creative inventory")
-            print(f"   ✓ Block places and breaks correctly")
-            print(f"   ✓ Texture displays (no purple checkerboard)")
-            print(f"   ✓ Sound effects are metal-like")
-            print(f"   ✓ Can be broken with pickaxe")
-            print(f"\n6. Document any issues in:")
-            print(f"   tests/fixtures/test_validation_report.md")
-            print("=" * 70)
-
             # Also extract and display the block definition for reference
             with zipfile.ZipFile(mcaddon_path, "r") as zf:
                 block_files = [f for f in zf.namelist() if "blocks/" in f and f.endswith(".json")]
 
                 if block_files:
-                    print("\nGENERATED BLOCK DEFINITION:")
-                    print("-" * 70)
                     with zf.open(block_files[0]) as bf:
                         block_data = json.load(bf)
-                        print(json.dumps(block_data, indent=2))
-                    print("-" * 70)
-
-        print("\n✅ TEST PASSED: Manual testing documentation generated")
 
     # ========================================
     # Test Case 6: Performance Benchmarks
@@ -625,9 +539,6 @@ class TestMVPEndToEndConversion:
 
         This ensures the conversion is fast enough for practical use.
         """
-        print("\n" + "=" * 70)
-        print("TEST: Performance Benchmarks")
-        print("=" * 70)
 
         iterations = 3
         times = []
@@ -658,22 +569,14 @@ class TestMVPEndToEndConversion:
 
             total_time = time.time() - start_time
             times.append(total_time)
-            print(f"  Iteration {i + 1}: {total_time:.2f}s")
 
         avg_time = sum(times) / len(times)
         min_time = min(times)
         max_time = max(times)
 
-        print(f"\n  Performance Summary:")
-        print(f"    Average: {avg_time:.2f}s")
-        print(f"    Min: {min_time:.2f}s")
-        print(f"    Max: {max_time:.2f}s")
-
         # Performance assertions
         assert avg_time < 5.0, f"Average time {avg_time:.2f}s exceeds 5s threshold"
         assert max_time < 10.0, f"Max time {max_time:.2f}s exceeds 10s threshold"
-
-        print("\n✅ TEST PASSED: Performance Benchmarks")
 
     # ========================================
     # Test Case 7: Coverage Validation
@@ -692,9 +595,6 @@ class TestMVPEndToEndConversion:
 
         Coverage target: >80% for conversion pipeline
         """
-        print("\n" + "=" * 70)
-        print("TEST: Conversion Pipeline Coverage")
-        print("=" * 70)
 
         # Track which components are exercised
         covered_components = {
@@ -727,7 +627,6 @@ class TestMVPEndToEndConversion:
 
         except Exception as e:
             covered_components["error_handling"] = True
-            print(f"  Error handling exercised: {e}")
 
         # Exercise error handling
         try:
@@ -747,16 +646,10 @@ class TestMVPEndToEndConversion:
         total_count = len(covered_components)
         coverage_percent = (covered_count / total_count) * 100
 
-        print(f"\n  Component Coverage:")
         for component, covered in covered_components.items():
             status = "✓" if covered else "✗"
-            print(f"    {status} {component}")
-
-        print(f"\n  Coverage: {coverage_percent:.1f}% ({covered_count}/{total_count})")
 
         assert coverage_percent >= 80.0, f"Coverage {coverage_percent:.1f}% is below 80% threshold"
-
-        print("\n✅ TEST PASSED: Conversion Pipeline Coverage")
 
 
 class TestMVPEdgeCases:

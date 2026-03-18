@@ -62,13 +62,9 @@ class RateLimiter:
     Supports both in-memory and Redis-based storage.
     """
 
-    def __init__(
-        self, config: Optional[RateLimitConfig] = None, redis_url: Optional[str] = None
-    ):
+    def __init__(self, config: Optional[RateLimitConfig] = None, redis_url: Optional[str] = None):
         self.config = config or RateLimitConfig()
-        self.redis_url = redis_url or getattr(
-            settings, "redis_url", "redis://localhost:6379"
-        )
+        self.redis_url = redis_url or getattr(settings, "redis_url", "redis://localhost:6379")
         self._redis: Optional[aioredis.Redis] = None
         self._local_state: Dict[str, RateLimitState] = defaultdict(RateLimitState)
         self._use_redis = False
@@ -82,9 +78,7 @@ class RateLimiter:
             self._use_redis = True
             logger.info("Rate limiter using Redis backend")
         except Exception as e:
-            logger.warning(
-                f"Redis not available for rate limiter: {e}. Using in-memory storage."
-            )
+            logger.warning(f"Redis not available for rate limiter: {e}. Using in-memory storage.")
             self._use_redis = False
 
     async def close(self):
@@ -116,9 +110,7 @@ class RateLimiter:
         user_tier = getattr(request.state, "user_tier", "free")
 
         if user_tier == "premium":
-            return RateLimitConfig(
-                requests_per_minute=300, requests_per_hour=10000, burst_size=50
-            )
+            return RateLimitConfig(requests_per_minute=300, requests_per_hour=10000, burst_size=50)
 
         return base_config if base_config else self.config
 
@@ -181,9 +173,7 @@ class RateLimiter:
                 "remaining_hour": max(0, remaining_hour),
                 "reset_at_minute": reset_at_minute,
                 "reset_at_hour": reset_at_hour,
-                "retry_after": (
-                    max(0, 60 - (current_time % 60)) if not is_allowed else None
-                ),
+                "retry_after": (max(0, 60 - (current_time % 60)) if not is_allowed else None),
             }
 
         except Exception as e:
@@ -204,16 +194,12 @@ class RateLimiter:
         # Token bucket algorithm for burst handling
         # Refill tokens based on time elapsed
         time_passed = current_time - state.last_request
-        tokens_to_add = (current_time - time_passed) * (
-            config.requests_per_minute / 60.0
-        )
+        tokens_to_add = (current_time - time_passed) * (config.requests_per_minute / 60.0)
         state.tokens = min(config.burst_size, state.tokens + tokens_to_add)
         state.last_request = current_time
 
         # Check limits
-        can_proceed = (
-            state.request_count < config.requests_per_minute and state.tokens >= 1
-        )
+        can_proceed = state.request_count < config.requests_per_minute and state.tokens >= 1
 
         if can_proceed:
             state.request_count += 1
@@ -232,9 +218,7 @@ class RateLimiter:
             "remaining_hour": max(0, remaining_hour),
             "reset_at_minute": int(current_time + 60),
             "reset_at_hour": int(current_time + 3600),
-            "retry_after": (
-                max(0, 60 - (current_time % 60)) if not can_proceed else None
-            ),
+            "retry_after": (max(0, 60 - (current_time % 60)) if not can_proceed else None),
         }
 
     async def get_rate_limit_status(self, request: Request) -> Dict[str, any]:
@@ -254,9 +238,7 @@ class RateLimiter:
                 return {
                     "limit_minute": config.requests_per_minute,
                     "limit_hour": config.requests_per_hour,
-                    "remaining_minute": max(
-                        0, config.requests_per_minute - minute_count
-                    ),
+                    "remaining_minute": max(0, config.requests_per_minute - minute_count),
                     "remaining_hour": max(0, config.requests_per_hour - hour_count),
                     "used_minute": minute_count,
                     "used_hour": hour_count,
@@ -269,9 +251,7 @@ class RateLimiter:
         return {
             "limit_minute": config.requests_per_minute,
             "limit_hour": config.requests_per_hour,
-            "remaining_minute": max(
-                0, config.requests_per_minute - state.request_count
-            ),
+            "remaining_minute": max(0, config.requests_per_minute - state.request_count),
             "remaining_hour": max(0, config.requests_per_hour - state.request_count),
             "used_minute": state.request_count,
             "used_hour": state.request_count,
@@ -304,12 +284,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Endpoints with different limits
         self.endpoint_limits = {
-            "/api/v1/conversions": RateLimitConfig(
-                requests_per_minute=10, requests_per_hour=100
-            ),
-            "/api/v1/upload": RateLimitConfig(
-                requests_per_minute=20, requests_per_hour=200
-            ),
+            "/api/v1/conversions": RateLimitConfig(requests_per_minute=10, requests_per_hour=100),
+            "/api/v1/upload": RateLimitConfig(requests_per_minute=20, requests_per_hour=200),
         }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -327,9 +303,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Determine client type for metrics
         client_type = (
-            "user"
-            if hasattr(request.state, "user_id") and request.state.user_id
-            else "ip"
+            "user" if hasattr(request.state, "user_id") and request.state.user_id else "ip"
         )
 
         # Apply custom config if set (passed as override_config)
@@ -399,9 +373,7 @@ def create_global_limiter() -> RateLimiter:
     global _rate_limiter
 
     if _rate_limiter is None:
-        config = RateLimitConfig(
-            requests_per_minute=60, requests_per_hour=1000, burst_size=10
-        )
+        config = RateLimitConfig(requests_per_minute=60, requests_per_hour=1000, burst_size=10)
         _rate_limiter = RateLimiter(config=config)
 
     return _rate_limiter

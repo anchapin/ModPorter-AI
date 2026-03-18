@@ -57,13 +57,6 @@ def test_convert_single_texture():
         # Test conversion with output directory
         result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
 
-        print(f"\n=== Test: _convert_single_texture ===")
-        print(f"Success: {result['success']}")
-        print(f"Original dimensions: {result['original_dimensions']}")
-        print(f"Converted dimensions: {result['converted_dimensions']}")
-        print(f"Relative path: {result['relative_path']}")
-        print(f"Actual output: {result['converted_path']}")
-
         assert result["success"] is True
         assert result["original_dimensions"] == (32, 32)
         assert result["converted_dimensions"] == (32, 32)
@@ -78,11 +71,6 @@ def test_convert_single_texture():
         assert img.format == "PNG"
         assert img.mode == "RGBA"
         assert img.size == (32, 32)
-
-        print(f"✓ File saved successfully: {output_file.name}")
-        print(f"✓ Valid PNG format: {img.size} {img.mode}")
-
-        print("\n=== Test Passed ===\n")
 
 
 def test_convert_textures_method():
@@ -133,11 +121,6 @@ def test_convert_textures_method():
         result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
         result = json.loads(result_json)
 
-        print(f"\n=== Test: convert_textures method ===")
-        print(f"Total textures: {result['total_textures']}")
-        print(f"Successful: {result['successful_conversions']}")
-        print(f"Failed: {result['failed_conversions']}")
-
         assert result["total_textures"] == 3
         assert result["successful_conversions"] == 3
         assert result["failed_conversions"] == 0
@@ -149,7 +132,6 @@ def test_convert_textures_method():
             assert output_path.exists(), f"Output file not created: {output_path}"
 
             img = Image.open(output_path)
-            print(f"✓ {output_path.name}: {img.size} {img.mode}")
 
             assert img.format == "PNG"
             assert img.mode == "RGBA"
@@ -160,9 +142,6 @@ def test_convert_textures_method():
         )
         assert custom_result["resized"] is True
         assert tuple(custom_result["dimensions"]) == (64, 64)  # 33 -> 64, 45 -> 64
-        print(f"✓ Power-of-2 resize verified: {custom_result['dimensions']}")
-
-        print("\n=== Test Passed ===\n")
 
 
 def test_fallback_texture():
@@ -191,11 +170,6 @@ def test_fallback_texture():
         # Try to convert non-existent file
         result = agent._convert_single_texture("/nonexistent/file.png", {}, "block", output_dir)
 
-        print(f"\n=== Test: Fallback Texture ===")
-        print(f"Success: {result['success']}")
-        print(f"Was fallback: {result['was_fallback']}")
-        print(f"Optimizations: {result['optimizations_applied']}")
-
         assert result["success"] is True
         assert result["was_fallback"] is True
         assert any("fallback" in opt.lower() for opt in result["optimizations_applied"])
@@ -205,13 +179,10 @@ def test_fallback_texture():
         assert output_path.exists(), f"Fallback file not created: {output_path}"
 
         img = Image.open(output_path)
-        print(f"✓ Fallback created: {img.size} {img.mode}")
 
         assert img.format == "PNG"
         assert img.mode == "RGBA"
         assert img.size == (16, 16)  # Default fallback size
-
-        print("\n=== Test Passed ===\n")
 
 
 def test_power_of_2_constraints():
@@ -246,8 +217,6 @@ def test_power_of_2_constraints():
             (2048, 2048, 1024, 1024),  # Cap at max resolution
         ]
 
-        print(f"\n=== Test: Power-of-2 Constraints ===")
-
         for i, (width, height, expected_width, expected_height) in enumerate(test_cases):
             test_file = input_dir / f"test_{i}.png"
             create_test_texture(test_file, (width, height), (128, 128, 128, 255))
@@ -255,9 +224,6 @@ def test_power_of_2_constraints():
             result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
 
             actual_size = result["converted_dimensions"]
-            print(
-                f"Input: {width}x{height} → Output: {actual_size[0]}x{actual_size[1]} (Expected: {expected_width}x{expected_height})"
-            )
 
             assert actual_size == (expected_width, expected_height), (
                 f"Expected {expected_width}x{expected_height}, got {actual_size}"
@@ -267,8 +233,6 @@ def test_power_of_2_constraints():
             output_file = Path(result["converted_path"])
             img = Image.open(output_file)
             assert img.size == (expected_width, expected_height)
-
-        print("\n=== Test Passed ===\n")
 
 
 def test_performance():
@@ -318,11 +282,6 @@ def test_performance():
 
         avg_time_ms = (total_time / num_textures) * 1000
 
-        print(f"\n=== Performance Test ===")
-        print(f"Textures: {num_textures}")
-        print(f"Total time: {total_time:.3f}s")
-        print(f"Average time per texture: {avg_time_ms:.2f}ms")
-
         # Verify performance requirement: < 1s per texture
         assert avg_time_ms < 1000, f"Average time {avg_time_ms:.2f}ms exceeds 1000ms threshold"
 
@@ -330,21 +289,10 @@ def test_performance():
         success_rate = 100.0  # All should succeed
         assert success_rate >= 95.0, f"Success rate {success_rate:.1f}% is below 95% threshold"
 
-        print(f"✓ Performance meets requirements")
-        print("\n=== Test Passed ===\n")
-
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Direct Texture Conversion Tests")
-    print("=" * 60)
-
     test_convert_single_texture()
     test_convert_textures_method()
     test_fallback_texture()
     test_power_of_2_constraints()
     test_performance()
-
-    print("=" * 60)
-    print("ALL TESTS PASSED")
-    print("=" * 60)

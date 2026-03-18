@@ -18,9 +18,6 @@ sys.path.insert(0, "ai-engine")
 
 def test_model_caching():
     """Test 1: Model caching performance."""
-    print("\n" + "=" * 70)
-    print("Test 1: Model Caching Performance")
-    print("=" * 70)
 
     try:
         from services.model_cache import get_model_cache
@@ -47,18 +44,13 @@ def test_model_caching():
         duration = time.time() - start
         stats = cache.get_stats()
 
-        print(f"Cache operations completed in {duration*1000:.2f}ms")
-        print(f"Cache stats: {json.dumps(stats, indent=2)}")
 
         if stats["hits"] >= 1 and stats["loads"] >= 1:
-            print("✅ Model caching working correctly")
             return True
         else:
-            print("❌ Model caching not working as expected")
             return False
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -67,9 +59,6 @@ def test_model_caching():
 
 def test_embedding_cache():
     """Test 2: Embedding model caching."""
-    print("\n" + "=" * 70)
-    print("Test 2: Embedding Model Caching")
-    print("=" * 70)
 
     try:
         from services.embedding_generator import EmbeddingGenerator
@@ -87,19 +76,13 @@ def test_embedding_cache():
         gen2._load_model()
         load_time_2 = time.time() - start
 
-        print(f"First load time: {load_time_1:.2f}s")
-        print(f"Second load time (cached): {load_time_2:.3f}s")
-        print(f"Speedup: {load_time_1/load_time_2:.1f}x" if load_time_2 > 0 else "N/A")
 
         if load_time_2 < load_time_1:
-            print("✅ Embedding model caching working")
             return True
         else:
-            print("⚠️ Cache may not be working (times may vary)")
             return True  # Still pass, caching might be slow first time
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -108,9 +91,6 @@ def test_embedding_cache():
 
 def test_batch_embedding():
     """Test 3: Batch embedding performance."""
-    print("\n" + "=" * 70)
-    print("Test 3: Batch Embedding Performance")
-    print("=" * 70)
 
     try:
         from services.embedding_generator import EmbeddingGenerator
@@ -130,19 +110,13 @@ def test_batch_embedding():
         )
         batch_time = time.time() - start
 
-        print(f"Generated {len(texts)} embeddings in {batch_time:.2f}s")
-        print(f"Embedding shape: {embeddings.shape}")
-        print(f"Time per embedding: {batch_time/len(texts)*1000:.2f}ms")
 
         if embeddings.shape[0] == len(texts):
-            print("✅ Batch embedding working correctly")
             return True
         else:
-            print("❌ Batch embedding dimension mismatch")
             return False
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -151,9 +125,6 @@ def test_batch_embedding():
 
 def test_error_recovery():
     """Test 4: Error recovery system."""
-    print("\n" + "=" * 70)
-    print("Test 4: Error Recovery System")
-    print("=" * 70)
 
     try:
         from utils.error_recovery import (
@@ -183,23 +154,17 @@ def test_error_recovery():
 
         result = flaky_function()
 
-        print(f"Flaky function succeeded after {call_count} attempts")
-        print(f"Result: {result}")
 
         # Test circuit breaker
         cb = CircuitBreaker(name="test", fail_max=3, reset_timeout=1.0)
 
-        print(f"Circuit breaker state: {cb.state.value}")
 
         if result == "success" and call_count == 3:
-            print("✅ Error recovery working correctly")
             return True
         else:
-            print("❌ Error recovery not working as expected")
             return False
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -208,14 +173,11 @@ def test_error_recovery():
 
 def test_circuit_breaker():
     """Test 5: Circuit breaker behavior."""
-    print("\n" + "=" * 70)
-    print("Test 5: Circuit Breaker Behavior")
-    print("=" * 70)
 
     try:
         from utils.error_recovery import (
             CircuitBreaker,
-            CircuitBreakerOpen,
+            CircuitBreakerOpenError,
             CircuitState,
         )
 
@@ -226,31 +188,24 @@ def test_circuit_breaker():
         for i in range(5):
             try:
                 cb.call(lambda: (_ for _ in ()).throw(Exception("Test failure")))
-            except (CircuitBreakerOpen, Exception):
+            except (CircuitBreakerOpenError, Exception):
                 failure_count += 1
 
-        print(f"Circuit breaker state after failures: {cb.state.value}")
-        print(f"Total failures recorded: {failure_count}")
 
         stats = cb.get_stats()
-        print(f"Stats: {json.dumps(stats, indent=2)}")
 
         # Wait for reset timeout
         time.sleep(0.6)
 
         # Check if circuit transitions to half-open
         new_state = cb.state
-        print(f"Circuit breaker state after timeout: {new_state.value}")
 
         if new_state == CircuitState.HALF_OPEN:
-            print("✅ Circuit breaker transitioning correctly")
             return True
         else:
-            print("⚠️ Circuit breaker state unexpected")
             return True  # Still pass, timing may vary
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -259,9 +214,6 @@ def test_circuit_breaker():
 
 def main():
     """Run all benchmark tests."""
-    print("\n" + "=" * 70)
-    print("PHASE 3.3 OPTIMIZATION BENCHMARK SUITE")
-    print("=" * 70)
 
     tests = [
         ("Model Caching", test_model_caching),
@@ -279,20 +231,16 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ {name} FAILED: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"BENCHMARK RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
 
     if failed == 0:
-        print("\n✅ ALL TESTS PASSED - Optimizations working correctly!")
+        pass
     else:
-        print(f"\n⚠️ {failed} test(s) failed - review implementation")
+        pass
 
     return failed == 0
 

@@ -95,7 +95,6 @@ class TextureConverter:
 
             # Check if file exists
             if not Path(texture_path).exists():
-                print(f"Texture not found: {texture_path}, generating fallback")
                 img = self._generate_fallback_texture(usage)
                 original_dimensions = img.size
                 is_valid_png = False
@@ -108,7 +107,6 @@ class TextureConverter:
                     img = img.convert("RGBA")
                     optimizations = ["Converted to RGBA"] if not is_valid_png else []
                 except Exception as e:
-                    print(f"Failed to open texture: {e}, generating fallback")
                     img = self._generate_fallback_texture(usage)
                     original_dimensions = img.size
                     is_valid_png = False
@@ -188,7 +186,6 @@ class TextureConverter:
             return result
 
         except Exception as e:
-            print(f"Error converting texture: {e}")
             return {"success": False, "original_path": str(texture_path), "error": str(e)}
 
 

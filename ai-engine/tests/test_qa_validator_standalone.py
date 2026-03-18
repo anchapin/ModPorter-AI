@@ -9,12 +9,12 @@ import tempfile
 import shutil
 from pathlib import Path
 import importlib.util
+import os
 
 # Load qa_validator directly
-import os
-# Use absolute path resolution to avoid issues when pytest is run from different directories
-QA_VALIDATOR_PATH = Path(os.path.abspath(__file__)).parent.parent / "agents" / "qa_validator.py"
-spec = importlib.util.spec_from_file_location("qa_validator", str(QA_VALIDATOR_PATH))
+base_dir = Path(__file__).resolve().parent.parent
+qa_validator_path = base_dir / "agents" / "qa_validator.py"
+spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies

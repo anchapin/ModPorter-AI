@@ -139,7 +139,6 @@ class PerformanceAnalyzer:
 
     async def analyze_system_resources(self) -> Dict[str, Any]:
         """Analyze system resource usage"""
-        print("🔍 Analyzing system resources...")
 
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
@@ -160,7 +159,6 @@ class PerformanceAnalyzer:
 
     async def test_api_performance(self) -> List[PerformanceMetric]:
         """Test API endpoint performance with comprehensive error handling"""
-        print("🚀 Testing API performance...")
         metrics = []
 
         endpoints = [
@@ -271,7 +269,6 @@ class PerformanceAnalyzer:
 
     async def analyze_database_performance(self) -> List[PerformanceMetric]:
         """Analyze database query performance"""
-        print("🗄️ Analyzing database performance...")
         metrics = []
 
         try:
@@ -329,7 +326,6 @@ class PerformanceAnalyzer:
 
     async def analyze_conversion_performance(self) -> List[PerformanceMetric]:
         """Analyze conversion pipeline performance"""
-        print("🔄 Analyzing conversion performance...")
         metrics = []
 
         # These would be actual conversion metrics in a real implementation
@@ -366,7 +362,6 @@ class PerformanceAnalyzer:
 
     async def analyze_frontend_performance(self) -> List[PerformanceMetric]:
         """Analyze frontend performance metrics"""
-        print("🎨 Analyzing frontend performance...")
         metrics = []
 
         # Simulate Lighthouse-like metrics
@@ -404,7 +399,6 @@ class PerformanceAnalyzer:
 
     async def analyze_ai_engine_performance(self) -> List[PerformanceMetric]:
         """Analyze AI engine processing performance"""
-        print("🤖 Analyzing AI engine performance...")
         metrics = []
 
         ai_metrics = [
@@ -568,7 +562,6 @@ class PerformanceAnalyzer:
 
     async def run_analysis(self) -> PerformanceReport:
         """Run complete performance analysis"""
-        print("🚀 Starting comprehensive performance analysis...\n")
 
         start_time = time.time()
 
@@ -601,11 +594,6 @@ class PerformanceAnalyzer:
                 "warning_issues": len([m for m in all_metrics if m.status == "warning"]),
             }
         )
-
-        print(f"\n✅ Performance analysis completed in {analysis_time:.2f} seconds")
-        print(f"📊 Analyzed {len(all_metrics)} metrics")
-        print(f"🚨 Found {len([m for m in all_metrics if m.status == 'critical'])} critical issues")
-        print(f"⚠️ Found {len([m for m in all_metrics if m.status == 'warning'])} warnings")
 
         return PerformanceReport(
             timestamp=datetime.now(),
@@ -783,8 +771,6 @@ class PerformanceAnalyzer:
         with open(output_path, "w") as f:
             f.write(html)
 
-        print(f"📄 HTML report generated: {output_path}")
-
 
 async def main():
     """Main function with comprehensive error handling"""
@@ -794,18 +780,6 @@ async def main():
     try:
         if len(sys.argv) > 1:
             if sys.argv[1] in ["-h", "--help"]:
-                print(
-                    "Usage: python performance-analysis.py [--output-report performance_report.html] [--config config.json]"
-                )
-                print("\nConfiguration Options:")
-                print("  --config config.json    Load configuration from JSON file")
-                print("  --output-report file    Specify HTML report output file")
-                print("\nEnvironment Variables:")
-                print("  API_BASE_URL          Base URL for API testing")
-                print("  FRONTEND_URL          Base URL for frontend testing")
-                print("  PERFORMANCE_TIMEOUT     Request timeout in seconds")
-                print("  PERFORMANCE_RETRY_ATTEMPTS  Number of retry attempts")
-                print("  PERFORMANCE_RETRY_DELAY   Delay between retries in seconds")
                 return
             if sys.argv[1] == "--output-report" and len(sys.argv) > 2:
                 output_report = sys.argv[2]
@@ -854,27 +828,14 @@ async def main():
     analyzer.generate_html_report(report, output_report)
 
     # Print summary
-    print("\n" + "=" * 60)
-    print("📊 PERFORMANCE ANALYSIS SUMMARY")
-    print("=" * 60)
-    print(f"Analysis completed at: {report.timestamp}")
-    print(f"Total metrics analyzed: {len(report.metrics)}")
-    print(f"Critical issues: {len([m for m in report.metrics if m.status == 'critical'])}")
-    print(f"Warnings: {len([m for m in report.metrics if m.status == 'warning'])}")
-    print(f"Good: {len([m for m in report.metrics if m.status == 'good'])}")
-    print(f"\nReports saved:")
-    print(f"  • JSON: {json_report_path}")
-    print(f"  • HTML: {output_report}")
 
     if report.bottlenecks:
-        print(f"\n🚨 Top Bottlenecks:")
         for bottleneck in report.bottlenecks[:3]:
-            print(f"  {bottleneck}")
+            pass
 
     if report.recommendations:
-        print(f"\n💡 Top Recommendations:")
         for rec in report.recommendations[:3]:
-            print(f"  {rec}")
+            pass
 
 
 if __name__ == "__main__":

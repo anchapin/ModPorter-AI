@@ -7,6 +7,10 @@ SendGrid integration for transactional emails.
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+<<<<<<< HEAD
+=======
+from datetime import datetime
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +18,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EmailMessage:
     """Email message data."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     to: str
     subject: str
     template: str
@@ -26,7 +33,11 @@ class EmailMessage:
 
 class SendGridEmailService:
     """SendGrid email service."""
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(
         self,
         api_key: str,
@@ -37,21 +48,28 @@ class SendGridEmailService:
         self.from_email = from_email
         self.from_name = from_name
         self._client = None
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _get_client(self):
         """Lazy-load SendGrid client."""
         if self._client is None:
             try:
                 import sendgrid
                 from sendgrid.helpers.mail import Mail
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 self._client = sendgrid.SendGridAPIClient(api_key=self.api_key)
                 logger.info("SendGrid client initialized")
             except ImportError:
-                logger.warning(
-                    "sendgrid package not installed. Emails will be logged only."
-                )
+                logger.warning("sendgrid package not installed. Emails will be logged only.")
                 self._client = None
+<<<<<<< HEAD
 
         return self._client
 
@@ -62,20 +80,35 @@ class SendGridEmailService:
         Args:
             message: Email message to send
 
+=======
+        
+        return self._client
+    
+    async def send(self, message: EmailMessage) -> bool:
+        """
+        Send email message.
+        
+        Args:
+            message: Email message to send
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             True if sent successfully
         """
         # Log email (always)
         logger.info(f"Sending email to {message.to}: {message.subject}")
         logger.debug(f"Template: {message.template}, Context: {message.context}")
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # If SendGrid not available, just log
         client = self._get_client()
         if client is None:
-            logger.warning(
-                f"SendGrid not available. Email logged only: {message.subject}"
-            )
+            logger.warning(f"SendGrid not available. Email logged only: {message.subject}")
             return True
+<<<<<<< HEAD
 
         try:
             # Build email content from template
@@ -84,12 +117,23 @@ class SendGridEmailService:
             # Create email message
             from sendgrid.helpers.mail import Mail, To, From, Subject
 
+=======
+        
+        try:
+            # Build email content from template
+            content = self._render_template(message.template, message.context)
+            
+            # Create email message
+            from sendgrid.helpers.mail import Mail, To, From, Content, Subject
+            
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             mail = Mail(
                 from_email=From(self.from_email, self.from_name),
                 to_emails=To(message.to),
                 subject=Subject(message.subject),
                 plain_text_content=content,
             )
+<<<<<<< HEAD
 
             # Send email
             response = client.send(mail)
@@ -109,6 +153,27 @@ class SendGridEmailService:
             template: Template name
             context: Template context
 
+=======
+            
+            # Send email
+            response = client.send(mail)
+            
+            logger.info(f"Email sent successfully. Status code: {response.status_code}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send email: {e}")
+            return False
+    
+    def _render_template(self, template: str, context: Dict[str, Any]) -> str:
+        """
+        Render email template with context.
+        
+        Args:
+            template: Template name
+            context: Template context
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Rendered email content
         """
@@ -118,11 +183,16 @@ class SendGridEmailService:
             "welcome": self._welcome_template,
             "conversion_complete": self._conversion_complete_template,
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         render_func = templates.get(template)
         if render_func is None:
             logger.warning(f"Unknown template: {template}")
             return f"Unknown template: {template}"
+<<<<<<< HEAD
 
         return render_func(**context)
 
@@ -130,6 +200,15 @@ class SendGridEmailService:
     # Email Templates
     # ============================================
 
+=======
+        
+        return render_func(**context)
+    
+    # ============================================
+    # Email Templates
+    # ============================================
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _email_verification_template(
         self,
         verification_url: str,
@@ -154,7 +233,11 @@ The ModPorter AI Team
 ModPorter AI - Java to Bedrock Mod Converter
 https://modporter.ai
 """
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _password_reset_template(
         self,
         reset_url: str,
@@ -181,7 +264,11 @@ The ModPorter AI Team
 ModPorter AI - Java to Bedrock Mod Converter
 https://modporter.ai
 """
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _welcome_template(
         self,
         user_name: str,
@@ -211,7 +298,11 @@ The ModPorter AI Team
 ModPorter AI - Java to Bedrock Mod Converter
 https://modporter.ai
 """
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _conversion_complete_template(
         self,
         conversion_id: str,
@@ -256,7 +347,11 @@ Please review the issues and try again with a different mod file, or contact sup
 
 Support: support@modporter.ai
 """
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return f"""
 Mod Conversion Complete
 
@@ -286,15 +381,24 @@ def get_email_service(
     global _email_service
     if _email_service is None:
         import os
+<<<<<<< HEAD
 
         api_key = api_key or os.getenv("SENDGRID_API_KEY")
 
         if not api_key:
-            logger.warning(
-                "SendGrid API key not configured. Emails will be logged only."
-            )
+            logger.warning("SendGrid API key not configured. Emails will be logged only.")
             api_key = "dummy-key-for-development"
 
         _email_service = SendGridEmailService(api_key=api_key, from_email=from_email)
 
+=======
+        api_key = api_key or os.getenv("SENDGRID_API_KEY")
+        
+        if not api_key:
+            logger.warning("SendGrid API key not configured. Emails will be logged only.")
+            api_key = "dummy-key-for-development"
+        
+        _email_service = SendGridEmailService(api_key=api_key, from_email=from_email)
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return _email_service

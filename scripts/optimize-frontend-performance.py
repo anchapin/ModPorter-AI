@@ -42,7 +42,6 @@ class FrontendPerformanceOptimizer:
 
     def analyze_dependencies(self) -> Dict[str, Any]:
         """Analyze frontend dependencies for optimization opportunities"""
-        print("📦 Analyzing frontend dependencies...")
 
         if not self.package_json_path.exists():
             return {"error": "package.json not found"}
@@ -105,7 +104,6 @@ class FrontendPerformanceOptimizer:
 
     def analyze_bundle_structure(self) -> Dict[str, Any]:
         """Analyze built bundle structure"""
-        print("📊 Analyzing bundle structure...")
 
         if not self.dist_dir.exists():
             return {"error": "Build directory not found. Run 'pnpm run build' first."}
@@ -407,7 +405,6 @@ self.addEventListener('activate', (event) => {
 
     async def run_lighthouse_audit(self) -> Optional[Dict[str, Any]]:
         """Run Lighthouse performance audit if available"""
-        print("🚀 Running Lighthouse audit...")
 
         try:
             # Check if Lighthouse CLI is available
@@ -450,32 +447,28 @@ self.addEventListener('activate', (event) => {
                 }
 
         except (subprocess.CalledProcessError, FileNotFoundError):
-            print("⚠️ Lighthouse not available. Install with: npm install -g lighthouse")
+            pass
 
         return None
 
     def apply_optimizations(self) -> None:
         """Apply performance optimizations"""
-        print("🔧 Applying frontend optimizations...")
 
         # 1. Backup existing config
         if self.vite_config_path.exists():
             backup_path = self.vite_config_path.with_suffix(".ts.backup")
             shutil.copy2(self.vite_config_path, backup_path)
-            print(f"✅ Backed up existing config to {backup_path}")
 
         # 2. Write optimized Vite config
         optimized_config = self.generate_optimized_vite_config()
         with open(self.vite_config_path, "w") as f:
             f.write(optimized_config)
-        print("✅ Optimized Vite configuration applied")
 
         # 3. Create performance budgets file
         budgets = self.generate_performance_budgets()
         budgets_path = self.frontend_dir / "performance-budgets.json"
         with open(budgets_path, "w") as f:
             json.dump(budgets, f, indent=2)
-        print(f"✅ Performance budgets created: {budgets_path}")
 
         # 4. Create service worker
         sw_content = self.create_service_worker()
@@ -483,7 +476,6 @@ self.addEventListener('activate', (event) => {
         sw_path.parent.mkdir(exist_ok=True)
         with open(sw_path, "w") as f:
             f.write(sw_content)
-        print(f"✅ Service worker created: {sw_path}")
 
         # 5. Create performance monitoring utilities
         self.create_performance_utils()
@@ -560,7 +552,6 @@ export const usePerformanceTracking = () => {
         utils_path = self.frontend_dir / "src" / "utils" / "performance.ts"
         with open(utils_path, "w") as f:
             f.write(utils_content)
-        print(f"✅ Performance utilities created: {utils_path}")
 
     def create_build_script(self) -> None:
         """Create optimized build script"""
@@ -610,11 +601,9 @@ echo "📄 Bundle analysis saved to bundle-analysis.json"
 
         # Make script executable
         os.chmod(build_script_path, 0o755)
-        print(f"✅ Build script created: {build_script_path}")
 
     async def generate_performance_report(self) -> FrontendPerformanceMetrics:
         """Generate comprehensive frontend performance report"""
-        print("🚀 Starting frontend performance analysis...\n")
 
         # Analyze dependencies
         dependency_analysis = self.analyze_dependencies()
@@ -666,8 +655,6 @@ echo "📄 Bundle analysis saved to bundle-analysis.json"
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        print(f"📄 Performance report saved: {report_path}")
-
 
 async def main():
     """Main function"""
@@ -675,8 +662,6 @@ async def main():
 
     if len(sys.argv) > 1:
         if sys.argv[1] in ["-h", "--help"]:
-            print("Usage: python optimize-frontend-performance.py [--analyze-only]")
-            print("  --analyze-only: Only run analysis without applying optimizations")
             return
         if sys.argv[1] == "--analyze-only":
             analyze_only = True
@@ -687,39 +672,23 @@ async def main():
     metrics = await optimizer.generate_performance_report()
 
     # Print results
-    print("\n" + "=" * 60)
-    print("🎨 FRONTEND PERFORMANCE ANALYSIS RESULTS")
-    print("=" * 60)
-    print(f"📦 Bundle Size: {metrics.bundle_size_kb:.1f} KB")
-    print(f"🧩 Chunks: {metrics.chunk_count}")
-    print(f"📏 Largest Chunk: {metrics.largest_chunk_kb:.1f} KB")
-    print(f"📚 Dependencies: {metrics.dependencies_count}")
     if metrics.lighthouse_score:
-        print(f"🚀 Lighthouse Score: {metrics.lighthouse_score}")
+        pass
 
     if metrics.unused_dependencies:
-        print(f"\n🧹 Unused Dependencies:")
         for dep in metrics.unused_dependencies:
-            print(f"   • {dep}")
+            pass
 
-    print(f"\n💡 Optimization Suggestions:")
     for suggestion in metrics.optimization_suggestions[:5]:  # Top 5
-        print(f"   {suggestion}")
+        pass
 
     # Apply optimizations if requested
     if not analyze_only:
-        print(f"\n🔧 Applying optimizations...")
         optimizer.apply_optimizations()
         optimizer.save_optimization_report(metrics)
 
-        print(f"\n✅ Frontend optimizations applied!")
-        print(f"📄 Next steps:")
-        print(f"   1. Run 'pnpm install' to update dependencies")
-        print(f"   2. Run 'pnpm run build' to test optimized build")
-        print(f"   3. Test application functionality")
-        print(f"   4. Monitor performance improvements")
     else:
-        print(f"\n📄 Analysis completed. Use without --analyze-only to apply optimizations.")
+        pass
 
 
 if __name__ == "__main__":

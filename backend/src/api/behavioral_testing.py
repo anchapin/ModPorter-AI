@@ -35,9 +35,7 @@ class TestScenario(BaseModel):
     scenario: str = Field(..., description="Scenario name")
     steps: List[Dict[str, Any]] = Field(..., description="Test steps")
     expected_outcome: Optional[str] = Field(None, description="Expected test outcome")
-    timeout_ms: Optional[int] = Field(
-        30000, description="Scenario timeout in milliseconds"
-    )
+    timeout_ms: Optional[int] = Field(30000, description="Scenario timeout in milliseconds")
     fail_fast: Optional[bool] = Field(False, description="Stop on first failure")
 
 
@@ -60,19 +58,13 @@ class BehavioralTestRequest(BaseModel):
     """Request model for starting a behavioral test."""
 
     conversion_id: UUID = Field(..., description="Associated conversion job ID")
-    test_scenarios: List[TestScenario] = Field(
-        ..., description="Test scenarios to execute"
-    )
+    test_scenarios: List[TestScenario] = Field(..., description="Test scenarios to execute")
     expected_behaviors: Optional[List[ExpectedBehavior]] = Field(
         None, description="Expected behaviors"
     )
-    test_environment: Optional[str] = Field(
-        "bedrock_test", description="Test environment"
-    )
+    test_environment: Optional[str] = Field("bedrock_test", description="Test environment")
     minecraft_version: Optional[str] = Field("1.20.0", description="Minecraft version")
-    test_config: Optional[Dict[str, Any]] = Field(
-        {}, description="Additional test configuration"
-    )
+    test_config: Optional[Dict[str, Any]] = Field({}, description="Additional test configuration")
 
 
 class BehavioralTestResponse(BaseModel):
@@ -155,9 +147,7 @@ async def create_behavioral_test(
         logger.error(f"Error creating behavioral test: {e}")
         logger.error(f"Failed to create test: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to create test: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to create test: Please try again.")
 
 
 @router.get("/tests/{test_id}", response_model=BehavioralTestResponse)
@@ -227,9 +217,7 @@ async def get_test_scenarios(test_id: UUID):
         logger.error(f"Error retrieving scenarios for test {test_id}: {e}")
         logger.error(f"Failed to retrieve scenarios: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve scenarios: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve scenarios: Please try again.")
 
 
 @router.get("/tests/{test_id}/report")
@@ -246,9 +234,7 @@ async def get_test_report(test_id: UUID, format: str = "json"):
     """
     try:
         if format not in ["json", "text", "html"]:
-            raise HTTPException(
-                status_code=400, detail="Format must be json, text, or html"
-            )
+            raise HTTPException(status_code=400, detail="Format must be json, text, or html")
 
         # Mock report data
         mock_report = {
@@ -268,9 +254,7 @@ async def get_test_report(test_id: UUID, format: str = "json"):
         logger.error(f"Error generating report for test {test_id}: {e}")
         logger.error(f"Failed to generate report: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to generate report: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to generate report: Please try again.")
 
 
 @router.delete("/tests/{test_id}")
@@ -293,9 +277,7 @@ async def delete_behavioral_test(test_id: UUID):
         logger.error(f"Error deleting test {test_id}: {e}")
         logger.error(f"Failed to delete test: {str(e)}", exc_info=True)
 
-        raise HTTPException(
-            status_code=500, detail="Failed to delete test: Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete test: Please try again.")
 
 
 async def execute_behavioral_test_async(
@@ -321,12 +303,8 @@ async def execute_behavioral_test_async(
         results = framework.run_behavioral_test(scenarios, expected_behaviors)
 
         # Store results in database (implementation needed)
-        logger.info(
-            f"Behavioral test {test_id} completed with status: {results.get('status')}"
-        )
+        logger.info(f"Behavioral test {test_id} completed with status: {results.get('status')}")
 
     except Exception as e:
-        logger.error(
-            f"Error in async behavioral test execution {test_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in async behavioral test execution {test_id}: {e}", exc_info=True)
         # Store error status in database (implementation needed)

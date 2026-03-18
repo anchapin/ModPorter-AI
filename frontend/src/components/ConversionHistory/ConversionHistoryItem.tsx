@@ -66,19 +66,27 @@ export const ConversionHistoryItem = memo(
             {item.options && (
               <div className="item-options">
                 {item.options.smartAssumptions && (
-                  <span className="option-tag">🧠 Smart Assumptions</span>
+                  <span className="option-tag">
+                    <span aria-hidden="true">🧠</span> Smart Assumptions
+                  </span>
                 )}
                 {item.options.includeDependencies && (
-                  <span className="option-tag">📦 Dependencies</span>
+                  <span className="option-tag">
+                    <span aria-hidden="true">📦</span> Dependencies
+                  </span>
                 )}
                 {item.options.modUrl && (
-                  <span className="option-tag">🔗 URL Source</span>
+                  <span className="option-tag">
+                    <span aria-hidden="true">🔗</span> URL Source
+                  </span>
                 )}
               </div>
             )}
 
             {item.error_message && (
-              <div className="error-detail">⚠️ {item.error_message}</div>
+              <div className="error-detail">
+                <span aria-hidden="true">⚠️</span> {item.error_message}
+              </div>
             )}
           </div>
         </div>

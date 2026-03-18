@@ -161,14 +161,14 @@ class CircuitBreaker:
 
             if current_state == CircuitState.OPEN:
                 logger.warning(f"CircuitBreaker '{self.name}': OPEN - rejecting call")
-                raise CircuitBreakerOpen(f"Circuit breaker '{self.name}' is open")
+                raise CircuitBreakerOpenError(f"Circuit breaker '{self.name}' is open")
 
             if current_state == CircuitState.HALF_OPEN:
                 if self._half_open_calls >= self.half_open_max_calls:
                     logger.warning(
                         f"CircuitBreaker '{self.name}': HALF_OPEN - max calls reached"
                     )
-                    raise CircuitBreakerOpen(
+                    raise CircuitBreakerOpenError(
                         f"Circuit breaker '{self.name}' half-open call limit reached"
                     )
                 self._half_open_calls += 1
@@ -229,7 +229,7 @@ class CircuitBreaker:
             }
 
 
-class CircuitBreakerOpen(Exception):
+class CircuitBreakerOpenError(Exception):
     """Exception raised when circuit breaker is open."""
 
     pass

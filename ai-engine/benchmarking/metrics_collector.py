@@ -184,27 +184,27 @@ class PerformanceMetricsCollector:
 if __name__ == "__main__":
     collector = PerformanceMetricsCollector()
 
-    logger.info("\n--- Collecting System-Wide Context Metrics ---")
+    logger.info("--- Collecting System-Wide Context Metrics ---")
     system_context = collector.get_system_context_metrics()
     import json
 
     logger.info(json.dumps(system_context, indent=2))
 
     logger.info(
-        "\n--- Collecting Metrics for a Hypothetical 'python' Process (likely this script itself) ---"
+        "--- Collecting Metrics for a Hypothetical 'python' Process (likely this script itself) ---"
     )
     python_metrics = collector.collect_all_metrics_for_target(
         target_name="python_script", process_keyword="python"
     )
     logger.info(json.dumps(python_metrics, indent=2))
 
-    logger.info("\n--- Collecting Metrics for a non-existent 'nonexistentproc123' Process ---")
+    logger.info("--- Collecting Metrics for a non-existent 'nonexistentproc123' Process ---")
     non_existent_metrics = collector.collect_all_metrics_for_target(
         target_name="nonexistent", process_keyword="nonexistentproc123"
     )
     logger.info(json.dumps(non_existent_metrics, indent=2))
 
-    logger.info("\n--- Direct call examples ---")
-    logger.info("CPU (system):", json.dumps(collector.collect_cpu_metrics(), indent=2))
-    logger.info("Memory (system):", json.dumps(collector.collect_memory_metrics(), indent=2))
-    # logger.info("CPU (Java):", json.dumps(collector.collect_cpu_metrics(process_keyword="java"), indent=2))
+    logger.info("--- Direct call examples ---")
+    logger.info("CPU (system): %s", json.dumps(collector.collect_cpu_metrics(), indent=2))
+    logger.info("Memory (system): %s", json.dumps(collector.collect_memory_metrics(), indent=2))
+    # logger.info("CPU (Java): %s", json.dumps(collector.collect_cpu_metrics(process_keyword="java"), indent=2))

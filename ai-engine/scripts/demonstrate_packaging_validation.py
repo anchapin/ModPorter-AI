@@ -35,7 +35,6 @@ ValidationSeverity = validator_module.ValidationSeverity
 
 def create_example_mcaddon(output_path: Path) -> None:
     """Create an example .mcaddon file with correct structure."""
-    print(f"Creating example .mcaddon file: {output_path}")
 
     with zipfile.ZipFile(output_path, "w") as zipf:
         # Behavior Pack
@@ -97,12 +96,9 @@ def create_example_mcaddon(output_path: Path) -> None:
             "resource_packs/example_copper_mod_rp/manifest.json", json.dumps(rp_manifest, indent=2)
         )
 
-    print("✓ Example .mcaddon created with correct structure")
-
 
 def create_invalid_mcaddon(output_path: Path) -> None:
     """Create an example .mcaddon file with common errors."""
-    print(f"Creating invalid .mcaddon file: {output_path}")
 
     with zipfile.ZipFile(output_path, "w") as zipf:
         # WRONG: Using singular form (will be flagged)
@@ -125,84 +121,45 @@ def create_invalid_mcaddon(output_path: Path) -> None:
         # Add a temporary file (should be flagged)
         zipf.writestr("behavior_pack/invalid_bp/.DS_Store", "binary data")
 
-    print("✓ Invalid .mcaddon created with deliberate errors")
-
 
 def main():
     """Demonstrate the validation system."""
-    print("=" * 80)
-    print("Bedrock .mcaddon Packaging Validation Demonstration")
-    print("=" * 80)
-    print()
 
     # Create validator
     validator = PackagingValidator()
-    print(f"PackagingValidator initialized")
-    print(f"Schemas loaded: {list(validator.schemas.keys())}")
-    print()
 
     # Create temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
         # Example 1: Valid package
-        print("-" * 80)
-        print("Example 1: Valid Package with Correct Structure")
-        print("-" * 80)
 
         valid_path = temp_path / "valid_example.mcaddon"
         create_example_mcaddon(valid_path)
 
         result = validator.validate_mcaddon(valid_path)
 
-        print(f"\nValidation Results:")
-        print(f"  Valid: {result.is_valid}")
-        print(f"  Score: {result.overall_score}/100")
-        print(f"  Behavior Packs: {len(result.file_structure['behavior_packs'])}")
-        print(f"  Resource Packs: {len(result.file_structure['resource_packs'])}")
-        print(f"  Total Files: {result.stats['total_files']}")
-        print(f"  Issues: {len(result.issues)}")
-
         if result.issues:
-            print("\nIssues found:")
             for issue in result.issues[:5]:  # Show first 5
-                print(f"  [{issue.severity.value.upper()}] {issue.message}")
+                pass
         else:
-            print("\n✓ No issues found - package is valid!")
+            pass
 
         # Example 2: Invalid package
-        print("\n" + "-" * 80)
-        print("Example 2: Invalid Package with Common Errors")
-        print("-" * 80)
 
         invalid_path = temp_path / "invalid_example.mcaddon"
         create_invalid_mcaddon(invalid_path)
 
         result = validator.validate_mcaddon(invalid_path)
 
-        print(f"\nValidation Results:")
-        print(f"  Valid: {result.is_valid}")
-        print(f"  Score: {result.overall_score}/100")
-        print(f"  Issues: {len(result.issues)}")
-
-        print("\nIssues found (showing all):")
         for issue in result.issues:
             location = f" [{issue.file_path}]" if issue.file_path else ""
-            print(f"  [{issue.severity.value.upper()}] {issue.message}{location}")
             if issue.suggestion:
-                print(f"      → {issue.suggestion}")
+                pass
 
         # Example 3: Generate report
-        print("\n" + "-" * 80)
-        print("Example 3: Validation Report")
-        print("-" * 80)
 
         report = validator.generate_report(result)
-        print(report)
-
-    print("\n" + "=" * 80)
-    print("Demonstration complete!")
-    print("=" * 80)
 
 
 if __name__ == "__main__":

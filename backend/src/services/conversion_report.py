@@ -6,7 +6,11 @@ Generate comprehensive reports for conversion jobs.
 
 import logging
 import json
+<<<<<<< HEAD
 from typing import Dict, Any, Optional
+=======
+from typing import Dict, Any, List, Optional
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from datetime import datetime
 from pathlib import Path
 
@@ -15,7 +19,11 @@ logger = logging.getLogger(__name__)
 
 class ConversionReport:
     """Conversion report for a single job."""
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(
         self,
         job_id: str,
@@ -32,10 +40,9 @@ class ConversionReport:
         self.assumptions = []
         self.issues = []
         self.metrics = {}
+<<<<<<< HEAD
 
-    def add_stage(
-        self, name: str, status: str, duration_ms: float, details: Optional[str] = None
-    ):
+    def add_stage(self, name: str, status: str, duration_ms: float, details: Optional[str] = None):
         """Add a processing stage."""
         self.stages.append(
             {
@@ -71,12 +78,49 @@ class ConversionReport:
         """Set conversion metrics."""
         self.metrics = metrics
 
+=======
+    
+    def add_stage(self, name: str, status: str, duration_ms: float, details: Optional[str] = None):
+        """Add a processing stage."""
+        self.stages.append({
+            "name": name,
+            "status": status,
+            "duration_ms": duration_ms,
+            "details": details or "",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    
+    def add_assumption(self, feature: str, assumption: str, confidence: float):
+        """Add a smart assumption."""
+        self.assumptions.append({
+            "feature": feature,
+            "assumption": assumption,
+            "confidence": confidence,
+        })
+    
+    def add_issue(self, issue: str, severity: str = "warning"):
+        """Add an issue."""
+        self.issues.append({
+            "issue": issue,
+            "severity": severity,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    
+    def set_metrics(self, metrics: Dict[str, Any]):
+        """Set conversion metrics."""
+        self.metrics = metrics
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def complete(self, bedrock_code: str, success: bool = True):
         """Mark conversion as complete."""
         self.bedrock_code = bedrock_code
         self.end_time = datetime.utcnow()
         self.status = "completed" if success else "failed"
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -91,7 +135,11 @@ class ConversionReport:
             "issues": self.issues,
             "metrics": self.metrics,
         }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_markdown(self) -> str:
         """Convert to Markdown report."""
         lines = [
@@ -105,14 +153,17 @@ class ConversionReport:
             f"## Processing Stages",
             f"",
         ]
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for stage in self.stages:
             status_icon = "✓" if stage["status"] == "success" else "✗"
-            lines.append(
-                f"- {status_icon} **{stage['name']}**: {stage['duration_ms']:.0f}ms"
-            )
+            lines.append(f"- {status_icon} **{stage['name']}**: {stage['duration_ms']:.0f}ms")
             if stage.get("details"):
                 lines.append(f"  - {stage['details']}")
+<<<<<<< HEAD
 
         if self.assumptions:
             lines.extend(
@@ -150,17 +201,56 @@ class ConversionReport:
             for key, value in self.metrics.items():
                 lines.append(f"- **{key}**: {value}")
 
+=======
+        
+        if self.assumptions:
+            lines.extend([
+                f"",
+                f"## Smart Assumptions",
+                f"",
+            ])
+            for assumption in self.assumptions:
+                lines.append(f"- **{assumption['feature']}**: {assumption['assumption']} (confidence: {assumption['confidence']:.0%})")
+        
+        if self.issues:
+            lines.extend([
+                f"",
+                f"## Issues",
+                f"",
+            ])
+            for issue in self.issues:
+                icon = "⚠️" if issue["severity"] == "warning" else "❌"
+                lines.append(f"- {icon} {issue['issue']}")
+        
+        if self.metrics:
+            lines.extend([
+                f"",
+                f"## Metrics",
+                f"",
+            ])
+            for key, value in self.metrics.items():
+                lines.append(f"- **{key}**: {value}")
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return "\n".join(lines)
 
 
 class ConversionReportGenerator:
     """Generate conversion reports."""
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, output_dir: str = "/app/conversion_reports"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Report generator initialized. Output dir: {self.output_dir}")
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def generate_report(
         self,
         job_id: str,
@@ -169,17 +259,26 @@ class ConversionReportGenerator:
     ) -> ConversionReport:
         """
         Generate a conversion report.
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             job_id: Job ID
             java_code: Java source code
             bedrock_code: Bedrock code (optional)
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Conversion report
         """
         report = ConversionReport(job_id, java_code, bedrock_code)
         return report
+<<<<<<< HEAD
 
     def save_report(self, report: ConversionReport, format: str = "json") -> str:
         """
@@ -189,10 +288,22 @@ class ConversionReportGenerator:
             report: Report to save
             format: Output format (json or markdown)
 
+=======
+    
+    def save_report(self, report: ConversionReport, format: str = "json") -> str:
+        """
+        Save report to file.
+        
+        Args:
+            report: Report to save
+            format: Output format (json or markdown)
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             File path
         """
         timestamp = report.start_time.strftime("%Y%m%d_%H%M%S")
+<<<<<<< HEAD
 
         if format == "json":
             filename = f"report_{report.job_id}_{timestamp}.json"
@@ -224,6 +335,39 @@ class ConversionReportGenerator:
         Args:
             job_id: Job ID
 
+=======
+        
+        if format == "json":
+            filename = f"report_{report.job_id}_{timestamp}.json"
+            filepath = self.output_dir / filename
+            
+            with open(filepath, "w") as f:
+                json.dump(report.to_dict(), f, indent=2)
+            
+            logger.info(f"Saved JSON report: {filepath}")
+        
+        elif format == "markdown":
+            filename = f"report_{report.job_id}_{timestamp}.md"
+            filepath = self.output_dir / filename
+            
+            with open(filepath, "w") as f:
+                f.write(report.to_markdown())
+            
+            logger.info(f"Saved Markdown report: {filepath}")
+        
+        else:
+            raise ValueError(f"Unknown format: {format}")
+        
+        return str(filepath)
+    
+    def get_report(self, job_id: str) -> Optional[ConversionReport]:
+        """
+        Load report from file.
+        
+        Args:
+            job_id: Job ID
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Report or None
         """
@@ -231,26 +375,38 @@ class ConversionReportGenerator:
         for filepath in self.output_dir.glob(f"report_{job_id}_*.json"):
             with open(filepath, "r") as f:
                 data = json.load(f)
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             report = ConversionReport(
                 job_id=data["job_id"],
                 java_code=data["java_code"],
                 bedrock_code=data.get("bedrock_code"),
             )
             report.start_time = datetime.fromisoformat(data["start_time"])
+<<<<<<< HEAD
             report.end_time = (
-                datetime.fromisoformat(data["end_time"])
-                if data.get("end_time")
-                else None
+                datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None
             )
+=======
+            report.end_time = datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             report.status = data["status"]
             report.stages = data["stages"]
             report.assumptions = data["assumptions"]
             report.issues = data["issues"]
             report.metrics = data["metrics"]
+<<<<<<< HEAD
 
             return report
 
+=======
+            
+            return report
+        
+>>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return None
 
 

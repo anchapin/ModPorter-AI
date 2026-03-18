@@ -321,9 +321,9 @@ class MetricsTracker:
             # Keep only last 1000 conversion times by target version
             self._conversion_times[target_version].append(duration_seconds)
             if len(self._conversion_times[target_version]) > 1000:
-                self._conversion_times[target_version] = self._conversion_times[
-                    target_version
-                ][-1000:]
+                self._conversion_times[target_version] = self._conversion_times[target_version][
+                    -1000:
+                ]
 
             # Keep conversion times by mod type for average by mod type tracking
             mod_type_key = f"{target_version}:{mod_type}"
@@ -391,12 +391,8 @@ metrics_tracker = MetricsTracker()
 
 def record_http_request(method: str, endpoint: str, status: int, duration: float):
     """Record an HTTP request metric."""
-    http_requests_total.labels(
-        method=method, endpoint=endpoint, status=str(status)
-    ).inc()
-    http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(
-        duration
-    )
+    http_requests_total.labels(method=method, endpoint=endpoint, status=str(status)).inc()
+    http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
 
 
 def record_conversion_job(
@@ -421,14 +417,10 @@ def record_conversion_job(
         conversion_duration_seconds.labels(
             target_version=target_version, mod_type=mod_type
         ).observe(duration)
-        metrics_tracker.record_conversion(
-            duration, status == "completed", target_version, mod_type
-        )
+        metrics_tracker.record_conversion(duration, status == "completed", target_version, mod_type)
 
 
-def record_agent_execution(
-    agent_name: str, status: str, duration: Optional[float] = None
-):
+def record_agent_execution(agent_name: str, status: str, duration: Optional[float] = None):
     """Record an agent execution metric."""
     agent_executions_total.labels(agent_name=agent_name, status=status).inc()
 
@@ -436,34 +428,24 @@ def record_agent_execution(
         agent_duration_seconds.labels(agent_name=agent_name).observe(duration)
 
 
-def record_llm_usage(
-    model: str, prompt_tokens: int, completion_tokens: int, cost: float
-):
+def record_llm_usage(model: str, prompt_tokens: int, completion_tokens: int, cost: float):
     """Record LLM token usage and cost."""
     llm_tokens_total.labels(model=model, prompt_completion="prompt").inc(prompt_tokens)
-    llm_tokens_total.labels(model=model, prompt_completion="completion").inc(
-        completion_tokens
-    )
+    llm_tokens_total.labels(model=model, prompt_completion="completion").inc(completion_tokens)
     llm_cost_dollars.labels(model=model).inc(cost)
 
 
-def record_asset_processed(
-    asset_type: str, status: str, duration: Optional[float] = None
-):
+def record_asset_processed(asset_type: str, status: str, duration: Optional[float] = None):
     """Record an asset processed metric."""
     assets_processed_total.labels(asset_type=asset_type, status=status).inc()
 
     if duration is not None:
-        asset_conversion_duration_seconds.labels(asset_type=asset_type).observe(
-            duration
-        )
+        asset_conversion_duration_seconds.labels(asset_type=asset_type).observe(duration)
 
 
 def record_db_operation(operation: str, table: str, duration: float):
     """Record a database operation metric."""
-    db_operation_duration_seconds.labels(operation=operation, table=table).observe(
-        duration
-    )
+    db_operation_duration_seconds.labels(operation=operation, table=table).observe(duration)
 
 
 def record_cache_operation(operation: str, cache_name: str):
@@ -481,9 +463,7 @@ def update_active_conversions(count: int):
     active_conversions.set(count)
 
 
-def record_error(
-    error_category: str, error_type: str = "Exception", source: str = "unknown"
-):
+def record_error(error_category: str, error_type: str = "Exception", source: str = "unknown"):
     """
     Record an error metric.
 
@@ -492,9 +472,7 @@ def record_error(
         error_type: Type of exception (ValueError, RuntimeError, etc.)
         source: Source of error (api, conversion, agent, etc.)
     """
-    error_total.labels(
-        error_category=error_category, error_type=error_type, source=source
-    ).inc()
+    error_total.labels(error_category=error_category, error_type=error_type, source=source).inc()
 
 
 def record_retry_attempt(error_category: str, function_name: str):
@@ -505,9 +483,7 @@ def record_retry_attempt(error_category: str, function_name: str):
         error_category: Category of error that triggered retry
         function_name: Name of function being retried
     """
-    retry_attempts_total.labels(
-        error_category=error_category, function_name=function_name
-    ).inc()
+    retry_attempts_total.labels(error_category=error_category, function_name=function_name).inc()
 
 
 def record_successful_retry(error_category: str, function_name: str):

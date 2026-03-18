@@ -55,8 +55,10 @@ async def start_performance_tracking(request: BuildPerformanceStartRequest):
             message=f"Performance tracking started for build {build.build_id}",
             started_at=build.created_at,
         )
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to start tracking")
+    except Exception as e:
+        logger.error(f"Failed to start tracking: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="Failed to start tracking: Please try again.")
 
 
 @router.post("/{build_id}/stage", response_model=BuildPerformanceResponse)
@@ -82,9 +84,7 @@ async def update_stage(build_id: str, request: BuildStageUpdateRequest):
     return response
 
 
-@router.post(
-    "/{build_id}/stage/{stage_name}/start", response_model=BuildPerformanceResponse
-)
+@router.post("/{build_id}/stage/{stage_name}/start", response_model=BuildPerformanceResponse)
 async def start_stage(build_id: str, stage_name: str):
     """
     Mark a build stage as started.
@@ -99,9 +99,7 @@ async def start_stage(build_id: str, stage_name: str):
     return response
 
 
-@router.post(
-    "/{build_id}/stage/{stage_name}/complete", response_model=BuildPerformanceResponse
-)
+@router.post("/{build_id}/stage/{stage_name}/complete", response_model=BuildPerformanceResponse)
 async def complete_stage(
     build_id: str,
     stage_name: str,
@@ -176,9 +174,7 @@ async def get_build_snapshot(build_id: str):
     snapshot = get_build_performance_snapshot(build_id)
 
     if not snapshot:
-        raise HTTPException(
-            status_code=404, detail=f"Build {build_id} not found or completed"
-        )
+        raise HTTPException(status_code=404, detail=f"Build {build_id} not found or completed")
 
     return snapshot
 

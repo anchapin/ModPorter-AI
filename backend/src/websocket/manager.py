@@ -101,9 +101,7 @@ class ConnectionManager:
             try:
                 await connection.send_json(message)
             except Exception as e:
-                logger.warning(
-                    f"Failed to send message to connection for {conversion_id}: {e}"
-                )
+                logger.warning(f"Failed to send message to connection for {conversion_id}: {e}")
                 disconnected.append(connection)
 
         # Clean up disconnected clients

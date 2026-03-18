@@ -63,9 +63,7 @@ class EventTrigger(BaseModel):
 
     type: EventTriggerType = Field(..., description="Trigger type")
     parameters: Dict[str, Any] = Field(default={}, description="Trigger parameters")
-    conditions: List[EventCondition] = Field(
-        default=[], description="Trigger conditions"
-    )
+    conditions: List[EventCondition] = Field(default=[], description="Trigger conditions")
 
 
 class EventAction(BaseModel):
@@ -74,9 +72,7 @@ class EventAction(BaseModel):
     type: EventActionType = Field(..., description="Action type")
     parameters: Dict[str, Any] = Field(default={}, description="Action parameters")
     delay: int = Field(default=0, description="Delay in ticks before execution")
-    conditions: List[EventCondition] = Field(
-        default=[], description="Action conditions"
-    )
+    conditions: List[EventCondition] = Field(default=[], description="Action conditions")
 
 
 class EventSystemConfig(BaseModel):
@@ -121,9 +117,7 @@ class AdvancedEventSystemUpdate(BaseModel):
 
     name: Optional[str] = Field(None, description="Event system name")
     description: Optional[str] = Field(None, description="Event system description")
-    config: Optional[EventSystemConfig] = Field(
-        None, description="System configuration"
-    )
+    config: Optional[EventSystemConfig] = Field(None, description="System configuration")
     triggers: Optional[List[EventTrigger]] = Field(None, description="Event triggers")
     actions: Optional[List[EventAction]] = Field(None, description="Event actions")
     variables: Optional[Dict[str, Any]] = Field(None, description="System variables")
@@ -135,9 +129,7 @@ class EventSystemTest(BaseModel):
     """Event system test configuration"""
 
     test_data: Dict[str, Any] = Field(..., description="Test data to simulate")
-    expected_results: List[Dict[str, Any]] = Field(
-        default=[], description="Expected results"
-    )
+    expected_results: List[Dict[str, Any]] = Field(default=[], description="Expected results")
     dry_run: bool = Field(default=True, description="Run in dry-run mode")
 
 
@@ -149,9 +141,7 @@ class EventSystemTestResult(BaseModel):
     test_duration: float = Field(..., description="Test duration in milliseconds")
     errors: List[str] = Field(default=[], description="Any errors encountered")
     warnings: List[str] = Field(default=[], description="Any warnings generated")
-    debug_output: List[Dict[str, Any]] = Field(
-        default=[], description="Debug information"
-    )
+    debug_output: List[Dict[str, Any]] = Field(default=[], description="Debug information")
 
 
 # Event template definitions
@@ -170,11 +160,7 @@ EVENT_TEMPLATES = {
                 "type": EventTriggerType.CONDITION,
                 "parameters": {"entity_type": "minecraft:zombie"},
                 "conditions": [
-                    {
-                        "type": "entity_has_tag",
-                        "parameters": {"tag": "boss"},
-                        "negated": True,
-                    }
+                    {"type": "entity_has_tag", "parameters": {"tag": "boss"}, "negated": True}
                 ],
             }
         ],
@@ -216,10 +202,7 @@ EVENT_TEMPLATES = {
             },
             {
                 "type": EventActionType.COMMAND,
-                "parameters": {
-                    "command": "tell @p Found diamonds!",
-                    "permission_level": "all",
-                },
+                "parameters": {"command": "tell @p Found diamonds!", "permission_level": "all"},
                 "delay": 20,
             },
         ],
@@ -263,9 +246,7 @@ EVENT_TEMPLATES = {
 
 
 @router.get(
-    "/events/types",
-    response_model=List[Dict[str, str]],
-    summary="Get available event types",
+    "/events/types", response_model=List[Dict[str, str]], summary="Get available event types"
 )
 async def get_event_types():
     """
@@ -288,9 +269,7 @@ async def get_event_types():
 
 
 @router.get(
-    "/events/triggers",
-    response_model=List[Dict[str, str]],
-    summary="Get available trigger types",
+    "/events/triggers", response_model=List[Dict[str, str]], summary="Get available trigger types"
 )
 async def get_trigger_types():
     """
@@ -309,9 +288,7 @@ async def get_trigger_types():
 
 
 @router.get(
-    "/events/actions",
-    response_model=List[Dict[str, str]],
-    summary="Get available action types",
+    "/events/actions", response_model=List[Dict[str, str]], summary="Get available action types"
 )
 async def get_action_types():
     """
@@ -409,8 +386,9 @@ async def create_event_system(
 
         return event_system
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to create event system")
+    except Exception as e:
+        logger.error(f"Failed to create event system: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create event system. Please try again.")
 
 
 @router.get(
@@ -419,8 +397,7 @@ async def create_event_system(
     summary="Get specific event system",
 )
 async def get_event_system(
-    system_id: str = Path(..., description="Event system ID"),
-    db: AsyncSession = Depends(get_db),
+    system_id: str = Path(..., description="Event system ID"), db: AsyncSession = Depends(get_db)
 ) -> AdvancedEventSystem:
     """
     Get a specific event system by ID.
@@ -468,15 +445,13 @@ async def test_event_system(
             warnings=warnings,
             debug_output=[
                 {"timestamp": datetime.utcnow().isoformat(), "message": "Test started"},
-                {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "message": "Test completed",
-                },
+                {"timestamp": datetime.utcnow().isoformat(), "message": "Test completed"},
             ],
         )
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Event system test failed")
+    except Exception as e:
+        logger.error(f"Event system test failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Event system test failed. Please try again.")
 
 
 @router.post(
@@ -498,8 +473,9 @@ async def generate_event_system_functions(
 
         return {"message": "Event system function generation started"}
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to start generation")
+    except Exception as e:
+        logger.error(f"Failed to start generation: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to start generation. Please try again.")
 
 
 async def generate_event_functions_background(system_id: str, db: AsyncSession):
@@ -509,7 +485,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
     try:
         # This would contain the actual function generation logic
         # For now, it's a placeholder
-        pass
+        print(f"Generating functions for event system: {system_id}")
 
         # In a full implementation, this would:
         # 1. Parse the event system configuration
@@ -517,17 +493,13 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
         # 3. Create proper function directory structure
         # 4. Store generated functions as behavior files
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Background function generation failed: {e}")
 
 
-@router.get(
-    "/events/systems/{system_id}/debug",
-    summary="Get debug information for event system",
-)
+@router.get("/events/systems/{system_id}/debug", summary="Get debug information for event system")
 async def get_event_system_debug(
-    system_id: str = Path(..., description="Event system ID"),
-    db: AsyncSession = Depends(get_db),
+    system_id: str = Path(..., description="Event system ID"), db: AsyncSession = Depends(get_db)
 ):
     """
     Get debug information for an event system.
@@ -550,5 +522,6 @@ async def get_event_system_debug(
             },
         }
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to get debug info")
+    except Exception as e:
+        logger.error(f"Failed to get debug info: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve debug information. Please try again.")

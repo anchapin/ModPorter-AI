@@ -221,9 +221,7 @@ def scan_python_file(file_path: str) -> list[UnusedImport]:
     return unused
 
 
-def find_python_files(
-    root_dir: str, exclude_dirs: Optional[list[str]] = None
-) -> list[str]:
+def find_python_files(root_dir: str, exclude_dirs: Optional[list[str]] = None) -> list[str]:
     """Find all Python files in a directory tree."""
     if exclude_dirs is None:
         exclude_dirs = [
@@ -263,9 +261,7 @@ def scan_directory_for_unused_imports(
     return all_unused
 
 
-def get_all_imported_modules(
-    directory: str, exclude_dirs: Optional[list[str]] = None
-) -> set[str]:
+def get_all_imported_modules(directory: str, exclude_dirs: Optional[list[str]] = None) -> set[str]:
     """Get all modules imported in a directory."""
     python_files = find_python_files(directory, exclude_dirs)
     imported_modules = set()
@@ -471,9 +467,7 @@ def main():
     """Main entry point for CLI usage."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Detect unused dependencies in Python projects"
-    )
+    parser = argparse.ArgumentParser(description="Detect unused dependencies in Python projects")
     parser.add_argument(
         "--dir",
         "-d",
@@ -483,12 +477,8 @@ def main():
     parser.add_argument(
         "--requirements", "-r", action="append", help="requirements.txt files to check"
     )
-    parser.add_argument(
-        "--pyproject", "-p", action="append", help="pyproject.toml files to check"
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--pyproject", "-p", action="append", help="pyproject.toml files to check")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--output", "-o", help="Output file for report (JSON format)")
 
     args = parser.parse_args()

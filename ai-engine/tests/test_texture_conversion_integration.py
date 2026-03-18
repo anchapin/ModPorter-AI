@@ -68,10 +68,6 @@ def test_full_texture_conversion_pipeline():
         result = json.loads(result_json)
 
         # Verify results
-        print(f"\n=== Texture Conversion Results ===")
-        print(f"Total textures: {result['total_textures']}")
-        print(f"Successful: {result['successful_conversions']}")
-        print(f"Failed: {result['failed_conversions']}")
 
         assert result["total_textures"] == 5, f"Expected 5 textures, got {result['total_textures']}"
         assert result["successful_conversions"] == 5, (
@@ -85,7 +81,6 @@ def test_full_texture_conversion_pipeline():
         for converted in result["converted_textures"]:
             output_path = Path(converted["converted_path"])
             assert output_path.exists(), f"Output file not created: {output_path}"
-            print(f"✓ Created: {output_path.relative_to(temp_path)}")
 
             # Verify the file is a valid PNG
             img = Image.open(output_path)
@@ -98,10 +93,6 @@ def test_full_texture_conversion_pipeline():
                 f"Dimension mismatch for {output_path}: expected {dimensions}, got {img.size}"
             )
 
-            print(f"  - Dimensions: {dimensions}")
-            print(f"  - Resized: {converted['resized']}")
-            print(f"  - Optimizations: {', '.join(converted.get('optimizations', []))}")
-
         # Verify Bedrock directory structure
         expected_structure = [
             output_dir / "textures" / "blocks" / "stone.png",
@@ -113,7 +104,6 @@ def test_full_texture_conversion_pipeline():
 
         for expected_file in expected_structure:
             assert expected_file.exists(), f"Expected file not found: {expected_file}"
-            print(f"✓ Structure verified: {expected_file.relative_to(output_dir)}")
 
         # Verify power-of-2 resizing was applied to custom_block.png
         custom_block_result = next(
@@ -123,9 +113,6 @@ def test_full_texture_conversion_pipeline():
         assert tuple(custom_block_result["dimensions"]) == (64, 64), (
             f"Expected (64, 64), got {custom_block_result['dimensions']}"
         )
-        print(f"✓ Power-of-2 resizing verified: 33x45 → {custom_block_result['dimensions']}")
-
-        print("\n=== All Tests Passed ===")
 
 
 def test_fallback_texture_generation():
@@ -150,10 +137,6 @@ def test_fallback_texture_generation():
         result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
         result = json.loads(result_json)
 
-        print(f"\n=== Fallback Texture Test ===")
-        print(f"Total textures: {result['total_textures']}")
-        print(f"Successful: {result['successful_conversions']}")
-
         assert result["successful_conversions"] == 1, "Fallback should be generated successfully"
 
         # Verify fallback file was created
@@ -161,15 +144,11 @@ def test_fallback_texture_generation():
         output_path = Path(fallback_file["converted_path"])
 
         assert output_path.exists(), f"Fallback file not created: {output_path}"
-        print(f"✓ Fallback created: {output_path.relative_to(temp_path)}")
 
         # Verify it's a valid PNG
         img = Image.open(output_path)
         assert img.format == "PNG"
         assert img.mode == "RGBA"
-        print(f"✓ Fallback is valid PNG: {img.size} RGBA")
-
-        print("\n=== Fallback Test Passed ===")
 
 
 def test_texture_atlas_detection():
@@ -202,18 +181,12 @@ def test_texture_atlas_detection():
         result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
         result = json.loads(result_json)
 
-        print(f"\n=== Texture Atlas Test ===")
-        print(f"Converted {result['successful_conversions']} textures")
-
         # All conversions should succeed
         assert result["successful_conversions"] == 3
 
         # Verify all files exist
         for converted in result["converted_textures"]:
             assert Path(converted["converted_path"]).exists()
-            print(f"✓ {Path(converted['converted_path']).name}")
-
-        print("\n=== Atlas Test Passed ===")
 
 
 def test_performance_benchmark():
@@ -258,16 +231,8 @@ def test_performance_benchmark():
         result = json.loads(result_json)
         total_time = end_time - start_time
 
-        print(f"\n=== Performance Benchmark ===")
-        print(f"Textures processed: {num_textures}")
-        print(f"Total time: {total_time:.3f} seconds")
-        print(f"Average time per texture: {(total_time / num_textures) * 1000:.2f} ms")
-        print(f"Successful: {result['successful_conversions']}")
-        print(f"Failed: {result['failed_conversions']}")
-
         # Verify success rate
         success_rate = result["successful_conversions"] / num_textures
-        print(f"Success rate: {success_rate * 100:.1f}%")
 
         assert result["successful_conversions"] == num_textures
         assert success_rate >= 0.95, f"Success rate {success_rate:.2%} is below 95% threshold"
@@ -276,19 +241,9 @@ def test_performance_benchmark():
         avg_time_ms = (total_time / num_textures) * 1000
         assert avg_time_ms < 1000, f"Average time {avg_time_ms:.2f}ms exceeds 1000ms threshold"
 
-        print("\n=== Performance Benchmark Passed ===")
-
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Texture Conversion Pipeline Integration Tests")
-    print("=" * 60)
-
     test_full_texture_conversion_pipeline()
     test_fallback_texture_generation()
     test_texture_atlas_detection()
     test_performance_benchmark()
-
-    print("\n" + "=" * 60)
-    print("ALL INTEGRATION TESTS PASSED")
-    print("=" * 60)

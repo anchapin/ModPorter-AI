@@ -13,12 +13,9 @@ router = APIRouter()
 class BehaviorFileCreate(BaseModel):
     """Request model for creating a behavior file"""
 
-    file_path: str = Field(
-        ..., description="Path of the behavior file within the mod structure"
-    )
+    file_path: str = Field(..., description="Path of the behavior file within the mod structure")
     file_type: str = Field(
-        ...,
-        description="Type of behavior file (entity_behavior, block_behavior, script, recipe)",
+        ..., description="Type of behavior file (entity_behavior, block_behavior, script, recipe)"
     )
     content: str = Field(..., description="Text content of the behavior file")
 
@@ -34,9 +31,7 @@ class BehaviorFileResponse(BaseModel):
 
     id: str = Field(..., description="Unique identifier of the behavior file")
     conversion_id: str = Field(..., description="ID of the associated conversion job")
-    file_path: str = Field(
-        ..., description="Path of the behavior file within the mod structure"
-    )
+    file_path: str = Field(..., description="Path of the behavior file within the mod structure")
     file_type: str = Field(..., description="Type of behavior file")
     content: str = Field(..., description="Text content of the behavior file")
     created_at: str = Field(..., description="Creation timestamp")
@@ -124,9 +119,7 @@ async def get_conversion_behavior_files(
         """Convert dictionary structure to tree nodes"""
         nodes = []
         for key, value in node_dict.items():
-            children = (
-                dict_to_tree_nodes(value["children"]) if value["children"] else []
-            )
+            children = dict_to_tree_nodes(value["children"]) if value["children"] else []
             node = BehaviorFileTreeNode(
                 id=value.get("id", ""),
                 name=value["name"],
@@ -142,13 +135,10 @@ async def get_conversion_behavior_files(
 
 
 @router.get(
-    "/behaviors/{file_id}",
-    response_model=BehaviorFileResponse,
-    summary="Get behavior file content",
+    "/behaviors/{file_id}", response_model=BehaviorFileResponse, summary="Get behavior file content"
 )
 async def get_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"),
-    db: AsyncSession = Depends(get_db),
+    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
 ) -> BehaviorFileResponse:
     """
     Retrieve the current content of a specific behavior file.
@@ -250,11 +240,13 @@ async def create_behavior_file(
             content=request.content,
         )
     except ValueError as e:
-        logger.error(f"Validation error creating behavior file: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=400, detail="Invalid behavior file data")
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
         logger.error(f"Failed to create behavior file: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create behavior file")
+
+        raise HTTPException(status_code=500, detail="Failed to create behavior file: Please try again.")
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),
@@ -269,8 +261,7 @@ async def create_behavior_file(
 
 @router.delete("/behaviors/{file_id}", status_code=204, summary="Delete behavior file")
 async def delete_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"),
-    db: AsyncSession = Depends(get_db),
+    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete a behavior file.
