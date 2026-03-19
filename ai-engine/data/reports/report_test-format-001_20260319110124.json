@@ -1,0 +1,18 @@
+{
+  "report_id": "report_test-format-001_20260319110124",
+  "conversion_id": "test-format-001",
+  "generated_at": "2026-03-19T11:01:24.178663",
+  "validation_results": {
+    "is_valid": true
+  },
+  "regression_results": null,
+  "coverage_metrics": {
+    "overall_coverage": 0.8
+  },
+  "quality_score": null,
+  "recommendations": [],
+  "metadata": {
+    "format_version": "1.0",
+    "generated_by": "QA Suite Phase 09-04"
+  }
+}

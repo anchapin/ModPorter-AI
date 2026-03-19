@@ -1,0 +1,137 @@
+# Degradation Configuration for AI Conversion Engine
+
+# Degradation levels define how much processing to skip
+degradation_levels:
+  full:
+    description: "Full processing with all validations"
+    skip_validations: []
+    timeout_multiplier: 1.0
+    allow_partial_output: false
+  
+  reduced:
+    description: "Reduced processing - skip semantic validation"
+    skip_validations:
+      - semantic_check
+      - consistency_check
+      - cross_reference_validation
+    timeout_multiplier: 1.25
+    allow_partial_output: true
+  
+  basic:
+    description: "Basic processing - skip QA checks"
+    skip_validations:
+      - semantic_check
+      - consistency_check
+      - cross_reference_validation
+      - qa_rules_check
+      - behavior_test_validation
+    timeout_multiplier: 1.5
+    allow_partial_output: true
+  
+  emergency:
+    description: "Emergency mode - minimal output"
+    skip_validations:
+      - semantic_check
+      - consistency_check
+      - cross_reference_validation
+      - qa_rules_check
+      - behavior_test_validation
+      - schema_validation
+      - manifest_validation
+    timeout_multiplier: 2.0
+    allow_partial_output: true
+
+# Fallback strategies for each component
+fallback_strategies:
+  java_parser:
+    - name: "javalang_primary"
+      priority: 1
+      conditions: ["parse_error"]
+      method_type: "full_parse"
+    - name: "javalang_fallback"
+      priority: 2
+      conditions: ["partial_parse"]
+      method_type: "partial_parse"
+    - name: "regex_extraction"
+      priority: 3
+      conditions: ["extraction_only"]
+      method_type: "regex_based"
+    - name: "error"
+      priority: 4
+      conditions: []
+      method_type: "error"
+
+  llm_translator:
+    - name: "codet5_plus"
+      priority: 1
+      conditions: ["api_error", "timeout"]
+      method_type: "local_model"
+    - name: "deepseek_coder"
+      priority: 2
+      conditions: ["model_unavailable"]
+      method_type: "alternative_model"
+    - name: "pattern_matching"
+      priority: 3
+      conditions: ["no_model_available"]
+      method_type: "rule_based"
+    - name: "error"
+      priority: 4
+      conditions: []
+      method_type: "error"
+
+  asset_converter:
+    - name: "ai_converter"
+      priority: 1
+      conditions: ["conversion_error"]
+      method_type: "ai_based"
+    - name: "rule_based"
+      priority: 2
+      conditions: ["ai_unavailable"]
+      method_type: "rule_based"
+    - name: "passthrough"
+      priority: 3
+      conditions: ["minimal_mode"]
+      method_type: "copy_original"
+    - name: "skip"
+      priority: 4
+      conditions: []
+      method_type: "skip"
+
+  qa_validator:
+    - name: "full_validation"
+      priority: 1
+      conditions: ["validation_error"]
+      method_type: "full_check"
+    - name: "reduced_validation"
+      priority: 2
+      conditions: ["timeout"]
+      method_type: "reduced_check"
+    - name: "schema_only"
+      priority: 3
+      conditions: ["critical_timeout"]
+      method_type: "schema_check"
+    - name: "skip"
+      priority: 4
+      conditions: []
+      method_type: "skip"
+
+# Triggers that cause degradation
+degradation_triggers:
+  - "timeout"
+  - "api_error"
+  - "parse_error"
+  - "validation_error"
+  - "rate_limit"
+  - "model_unavailable"
+  - "connection_error"
+
+# Minimum completeness required for partial output
+partial_output_minimum: 0.3  # 30%
+
+# Settings for partial conversion
+partial_conversion:
+  enabled: true
+  preserve_successful_components: true
+  generate_warnings: true
+  include_error_details: true
+  packaging_on_partial: true

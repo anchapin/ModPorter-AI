@@ -1,0 +1,53 @@
+# Timeout Configuration for AI Conversion Engine
+# All values are in seconds
+
+# LLM API call timeouts by provider and operation
+llm_timeout:
+  openai:
+    translate: 120    # 2 minutes for translation
+    analyze: 60       # 1 minute for analysis
+    validate: 30      # 30 seconds for validation
+    embed: 45         # 45 seconds for embedding
+  anthropic:
+    translate: 120
+    analyze: 60
+    validate: 30
+    embed: 45
+  ollama:
+    translate: 180    # 3 minutes for local LLM
+    analyze: 90       # 1.5 minutes
+    validate: 45      # 45 seconds
+    embed: 60         # 1 minute
+
+# Agent task timeouts by agent type
+agent_timeout:
+  java_analyzer: 120        # 2 minutes
+  bedrock_architect: 60     # 1 minute
+  logic_translator: 180     # 3 minutes
+  asset_converter: 120      # 2 minutes
+  packaging_agent: 60       # 1 minute
+  qa_validator: 90          # 1.5 minutes
+  validation_agent: 90      # 1.5 minutes
+  warning_threshold: 0.8    # Warn at 80% of timeout
+
+# Pipeline stage timeouts
+pipeline_timeout:
+  analysis: 180        # 3 minutes for Java analysis
+  conversion: 300      # 5 minutes for logic conversion
+  validation: 120      # 2 minutes for validation
+  packaging: 60       # 1 minute for packaging
+  total_job: 1800     # 30 minutes total job timeout
+
+# General timeout settings
+timeouts:
+  enabled: true
+  default: 300         # 5 minutes default
+  max: 3600           # 1 hour maximum
+  min: 10             # 10 seconds minimum
+
+# Graceful degradation settings
+graceful_degradation:
+  enabled: true
+  partial_results: true
+  fallback_to_cache: true
+  log_on_timeout: true

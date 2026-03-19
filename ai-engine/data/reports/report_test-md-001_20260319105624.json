@@ -1,0 +1,20 @@
+{
+  "report_id": "report_test-md-001_20260319105624",
+  "conversion_id": "test-md-001",
+  "generated_at": "2026-03-19T10:56:24.100015",
+  "validation_results": {
+    "is_valid": true
+  },
+  "regression_results": null,
+  "coverage_metrics": null,
+  "quality_score": {
+    "grade": "B",
+    "overall_score": 0.8,
+    "breakdown": {}
+  },
+  "recommendations": [],
+  "metadata": {
+    "format_version": "1.0",
+    "generated_by": "QA Suite Phase 09-04"
+  }
+}

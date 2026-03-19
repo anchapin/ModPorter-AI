@@ -1,0 +1,28 @@
+{
+  "report_id": "report_test-report-001_20260319110124",
+  "conversion_id": "test-report-001",
+  "generated_at": "2026-03-19T11:01:24.177520",
+  "validation_results": {
+    "is_valid": true,
+    "confidence": 0.85
+  },
+  "regression_results": {
+    "regression_detected": false,
+    "severity": "none"
+  },
+  "coverage_metrics": {
+    "overall_coverage": 0.8,
+    "java_coverage": 0.7,
+    "bedrock_coverage": 0.9
+  },
+  "quality_score": {
+    "grade": "B",
+    "overall_score": 0.75,
+    "breakdown": {}
+  },
+  "recommendations": [],
+  "metadata": {
+    "format_version": "1.0",
+    "generated_by": "QA Suite Phase 09-04"
+  }
+}

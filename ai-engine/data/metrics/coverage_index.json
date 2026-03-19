@@ -1,0 +1,72 @@
+{
+  "test-001": {
+    "conversion_id": "test-001",
+    "mod_type": "item",
+    "complexity_level": "simple",
+    "java_coverage": 0.6,
+    "bedrock_coverage": 0.6,
+    "asset_coverage": 0.5,
+    "overall_coverage": 0.58,
+    "coverage_details": {
+      "java_lines": 7,
+      "bedrock_lines": 5,
+      "asset_count": 0
+    }
+  },
+  "benchmark_simple_item": {
+    "conversion_id": "benchmark_simple_item",
+    "mod_type": "item",
+    "complexity_level": "simple",
+    "java_coverage": 0.6,
+    "bedrock_coverage": 0.1,
+    "asset_coverage": 0.5,
+    "overall_coverage": 0.38,
+    "coverage_details": {
+      "java_lines": 1,
+      "bedrock_lines": 1,
+      "asset_count": 0
+    }
+  },
+  "integration-test": {
+    "conversion_id": "integration-test",
+    "mod_type": "item",
+    "complexity_level": "simple",
+    "java_coverage": 0.6,
+    "bedrock_coverage": 0.1,
+    "asset_coverage": 0.5,
+    "overall_coverage": 0.38,
+    "coverage_details": {
+      "java_lines": 1,
+      "bedrock_lines": 1,
+      "asset_count": 0
+    }
+  },
+  "grade-a": {
+    "conversion_id": "grade-a",
+    "mod_type": "item",
+    "complexity_level": "simple",
+    "java_coverage": 0.6,
+    "bedrock_coverage": 0.5,
+    "asset_coverage": 0.5,
+    "overall_coverage": 0.54,
+    "coverage_details": {
+      "java_lines": 1,
+      "bedrock_lines": 1,
+      "asset_count": 0
+    }
+  },
+  "grade-f": {
+    "conversion_id": "grade-f",
+    "mod_type": "item",
+    "complexity_level": "simple",
+    "java_coverage": 0.0,
+    "bedrock_coverage": 0.0,
+    "asset_coverage": 0.5,
+    "overall_coverage": 0.1,
+    "coverage_details": {
+      "java_lines": 1,
+      "bedrock_lines": 1,
+      "asset_count": 0
+    }
+  }
+}

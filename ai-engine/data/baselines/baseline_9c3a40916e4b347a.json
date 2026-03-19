@@ -1,0 +1,10 @@
+{
+  "baseline_id": "baseline_9c3a40916e4b347a",
+  "conversion_id": "regtest-1773932652",
+  "mod_type": "entity",
+  "java_code": "public class SimpleEntity {}",
+  "bedrock_code": "// Simple entity",
+  "created_at": "2026-03-19T11:04:12.477062",
+  "validation_score": 0.95,
+  "metadata": {}
+}

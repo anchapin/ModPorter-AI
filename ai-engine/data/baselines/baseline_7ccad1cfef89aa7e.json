@@ -1,0 +1,10 @@
+{
+  "baseline_id": "baseline_7ccad1cfef89aa7e",
+  "conversion_id": "test-mod-1773932652",
+  "mod_type": "item",
+  "java_code": "public class Test {}",
+  "bedrock_code": "// Test",
+  "created_at": "2026-03-19T11:04:12.464592",
+  "validation_score": 0.85,
+  "metadata": {}
+}

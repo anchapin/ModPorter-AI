@@ -1,0 +1,146 @@
+# Input Validation Configuration
+# Phase 10-03: Input Validation
+
+# File size and count limits
+file_limits:
+  # Maximum JAR/ZIP upload size in bytes (50MB default)
+  max_file_size: 52428800
+  # Maximum extracted content size in bytes (500MB default)
+  max_extracted_size: 524288000
+  # Maximum Java files to validate
+  max_java_files: 1000
+  # Maximum file path length
+  max_file_path_length: 260
+  # Maximum total files in archive
+  max_files_in_archive: 10000
+  # Maximum directory depth in archive
+  max_directory_depth: 20
+
+# Allowed file types
+allowed_types:
+  # Allowed archive extensions
+  allowed_extensions:
+    - .jar
+    - .zip
+  # Allowed Java source extensions
+  allowed_java_extensions:
+    - .java
+  # Allowed MIME types for archives
+  allowed_mime_types:
+    - application/java-archive
+    - application/zip
+    - application/x-java-archive
+    - application/x-zip-compressed
+
+# Security settings
+security:
+  # Paths that cannot exist in archives (path traversal prevention)
+  restricted_paths:
+    - ".."
+    - "../"
+    - "..."
+    - "~"
+    - "/etc"
+    - "/root"
+    - "/usr"
+    - "/bin"
+    - "/sbin"
+    - "/tmp"
+    - "C:\\"
+    - "D:\\"
+    - "C:"
+    - "CON"
+    - "PRN"
+    - "AUX"
+    - "NUL"
+  # Patterns indicating suspicious/malicious content
+  suspicious_patterns:
+    # Shell scripts
+    - ".*\\.sh$"
+    - ".*\\.bash$"
+    - ".*\\.ps1$"
+    - ".*\\.bat$"
+    - ".*\\.cmd$"
+    # Executables
+    - ".*\\.exe$"
+    - ".*\\.dll$"
+    - ".*\\.so$"
+    - ".*\\.dylib$"
+    # Scripts in archives
+    - ".*META-INF/.*\\.SF$"
+    - ".*META-INF/.*\\.RSA$"
+    - ".*META-INF/.*\\.DSA$"
+    # Web shells
+    - ".*\\.php$"
+    - ".*\\.phtml$"
+    - ".*\\.asp$"
+    - ".*\\.aspx$"
+    - ".*\\.jsp$"
+    # Other dangerous patterns
+    - ".*\\\\.\\\\."  # Path traversal
+    - ".*//.*//.*"    # Multiple slashes
+    - ".*%00.*"       # Null byte injection
+  # Maximum ratio of compressed to uncompressed size
+  max_compression_ratio: 100
+
+# JAR-specific validation
+jar_validation:
+  # Required files in valid JAR
+  jar_required_files:
+    - "META-INF/MANIFEST.MF"
+  # Optional but recommended files
+  jar_recommended_files:
+    - "mcmod.info"
+    - "fabric.mod.json"
+    - "pack.mcmeta"
+  # Check for valid ZIP/JAR structure
+  validate_zip_structure: true
+  # Validate manifest exists and is parseable
+  validate_manifest: true
+  # Maximum manifest size in bytes
+  max_manifest_size: 1048576
+  # Check for duplicate entries
+  check_duplicate_entries: true
+
+# Java source validation
+java_validation:
+  # Enable javalang syntax validation
+  syntax_check: true
+  # Maximum lines per file
+  max_lines_per_file: 50000
+  # Maximum line length
+  max_line_length: 10000
+  # Check for valid imports
+  validate_imports: true
+  # Check for common syntax errors
+  check_common_errors: true
+  # Detect mod loader type
+  detect_mod_type: true
+  # Supported Java versions for validation
+  supported_java_versions:
+    - "1.8"
+    - "11"
+    - "17"
+    - "21"
+
+# Error messages
+error_messages:
+  FILE_TOO_LARGE: "File size exceeds maximum allowed size of {max_size}"
+  EXTRACTED_TOO_LARGE: "Extracted content size exceeds maximum allowed size of {max_size}"
+  INVALID_EXTENSION: "File extension '{extension}' is not allowed. Allowed: {allowed}"
+  INVALID_JAR: "File is not a valid JAR/ZIP archive: {reason}"
+  MANIFEST_MISSING: "JAR manifest (META-INF/MANIFEST.MF) is missing"
+  PATH_TRAVERSAL: "Path traversal attempt detected: {path}"
+  SUSPICIOUS_CONTENT: "Suspicious content detected: {reason}"
+  JAVA_SYNTAX_ERROR: "Java syntax error at line {line}: {error}"
+  TOO_MANY_FILES: "Too many files in archive: {count} (max: {max})"
+  INVALID_PATH: "Invalid file path: {path}"
+
+# Logging
+logging:
+  # Log level for validation events
+  log_level: INFO
+  # Log all validation attempts (including passes)
+  log_all_attempts: false
+  # Log suspicious content detections
+  log_suspicious: true

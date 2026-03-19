@@ -1,0 +1,29 @@
+{
+  "report_id": "report_integration-test_20260319110412",
+  "conversion_id": "integration-test",
+  "generated_at": "2026-03-19T11:04:12.475888",
+  "validation_results": {
+    "is_valid": true,
+    "confidence": 0.85
+  },
+  "regression_results": null,
+  "coverage_metrics": {
+    "overall_coverage": 0.8
+  },
+  "quality_score": {
+    "grade": "C",
+    "overall_score": 0.6380000000000001,
+    "breakdown": {
+      "validation_confidence": 0.34,
+      "java_coverage": 0.12,
+      "bedrock_coverage": 0.020000000000000004,
+      "asset_coverage": 0.05,
+      "structure_quality": 0.05
+    }
+  },
+  "recommendations": [],
+  "metadata": {
+    "format_version": "1.0",
+    "generated_by": "QA Suite Phase 09-04"
+  }
+}

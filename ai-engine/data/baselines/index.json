@@ -1,0 +1,162 @@
+{
+  "baseline_927da35e4dd97971": {
+    "baseline_id": "baseline_927da35e4dd97971",
+    "conversion_id": "test-mod-v1",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:46:35.713012",
+    "java_code_hash": "92489fb76fd9b167",
+    "bedrock_code_hash": "c11cc5667e334d11",
+    "validation_score": 0.85,
+    "metadata": {}
+  },
+  "baseline_a80570a0a8bc035e": {
+    "baseline_id": "baseline_a80570a0a8bc035e",
+    "conversion_id": "test-mod-v1",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:46:35.713323",
+    "java_code_hash": "eae05f7bab1c78a7",
+    "bedrock_code_hash": "704d252ecde90e05",
+    "validation_score": 0.75,
+    "metadata": {}
+  },
+  "baseline_0296acbcb60fb1b2": {
+    "baseline_id": "baseline_0296acbcb60fb1b2",
+    "conversion_id": "test-mod-v1",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:56:24.020444",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.85,
+    "metadata": {}
+  },
+  "baseline_9fccdbe738fe4243": {
+    "baseline_id": "baseline_9fccdbe738fe4243",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:56:24.092907",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.9,
+    "metadata": {}
+  },
+  "baseline_2b793dc97a58643c": {
+    "baseline_id": "baseline_2b793dc97a58643c",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:56:24.093242",
+    "java_code_hash": "94290a9ee281ef80",
+    "bedrock_code_hash": "863cb9fdeafd0bb2",
+    "validation_score": 0.7,
+    "metadata": {}
+  },
+  "baseline_2c7c53a9dc1a6bb6": {
+    "baseline_id": "baseline_2c7c53a9dc1a6bb6",
+    "conversion_id": "test-mod-1773932233",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:57:13.218817",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.85,
+    "metadata": {}
+  },
+  "baseline_e04206171ec11f56": {
+    "baseline_id": "baseline_e04206171ec11f56",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:57:13.219759",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.9,
+    "metadata": {}
+  },
+  "baseline_b537aaed8f302c15": {
+    "baseline_id": "baseline_b537aaed8f302c15",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T10:57:13.220403",
+    "java_code_hash": "94290a9ee281ef80",
+    "bedrock_code_hash": "863cb9fdeafd0bb2",
+    "validation_score": 0.7,
+    "metadata": {}
+  },
+  "baseline_c6383f738e0f8391": {
+    "baseline_id": "baseline_c6383f738e0f8391",
+    "conversion_id": "test-mod-1773932484",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:01:24.172244",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.85,
+    "metadata": {}
+  },
+  "baseline_f8304f2a09b85e80": {
+    "baseline_id": "baseline_f8304f2a09b85e80",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:01:24.173227",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.9,
+    "metadata": {}
+  },
+  "baseline_149082f9dc1932f7": {
+    "baseline_id": "baseline_149082f9dc1932f7",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:01:24.173912",
+    "java_code_hash": "94290a9ee281ef80",
+    "bedrock_code_hash": "863cb9fdeafd0bb2",
+    "validation_score": 0.7,
+    "metadata": {}
+  },
+  "baseline_7ccad1cfef89aa7e": {
+    "baseline_id": "baseline_7ccad1cfef89aa7e",
+    "conversion_id": "test-mod-1773932652",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:04:12.464592",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.85,
+    "metadata": {}
+  },
+  "baseline_c6ab3c694ea83d2b": {
+    "baseline_id": "baseline_c6ab3c694ea83d2b",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:04:12.465580",
+    "java_code_hash": "aa6fe681bb73f76a",
+    "bedrock_code_hash": "a303afe1753ecc1b",
+    "validation_score": 0.9,
+    "metadata": {}
+  },
+  "baseline_fc68d2cf42f1dce0": {
+    "baseline_id": "baseline_fc68d2cf42f1dce0",
+    "conversion_id": "test-mod-v2",
+    "mod_type": "item",
+    "created_at": "2026-03-19T11:04:12.466267",
+    "java_code_hash": "94290a9ee281ef80",
+    "bedrock_code_hash": "863cb9fdeafd0bb2",
+    "validation_score": 0.7,
+    "metadata": {}
+  },
+  "baseline_9c3a40916e4b347a": {
+    "baseline_id": "baseline_9c3a40916e4b347a",
+    "conversion_id": "regtest-1773932652",
+    "mod_type": "entity",
+    "created_at": "2026-03-19T11:04:12.477062",
+    "java_code_hash": "4795a2db48812b47",
+    "bedrock_code_hash": "9e4d7e0ed471c20b",
+    "validation_score": 0.95,
+    "metadata": {}
+  },
+  "baseline_06e78b45a678933a": {
+    "baseline_id": "baseline_06e78b45a678933a",
+    "conversion_id": "regtest-1773932652",
+    "mod_type": "entity",
+    "created_at": "2026-03-19T11:04:12.477398",
+    "java_code_hash": "4136d52406e840a0",
+    "bedrock_code_hash": "651dabad064c2974",
+    "validation_score": 0.5,
+    "metadata": {}
+  }
+}
