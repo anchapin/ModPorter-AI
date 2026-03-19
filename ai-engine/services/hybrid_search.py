@@ -17,7 +17,6 @@ class HybridSearch:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self._examples = []
         self._embeddings = None
@@ -26,7 +25,6 @@ class HybridSearch:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def index_examples(
         self,
         examples: List[Dict[str, Any]],
@@ -38,7 +36,6 @@ class HybridSearch:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             examples: List of examples
             embeddings: Pre-computed embeddings matrix
@@ -59,7 +56,6 @@ class HybridSearch:
         
         logger.info(f"Indexed {len(examples)} examples for hybrid search")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _build_bm25_index(self, examples: List[Dict[str, Any]]):
         """Build BM25 index for keyword search."""
         try:
@@ -68,7 +64,6 @@ class HybridSearch:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Tokenize documents
             documents = []
             for ex in examples:
@@ -93,7 +88,6 @@ class HybridSearch:
             logger.warning("rank-bm25 not installed. Using simple keyword search.")
             self._bm25_index = None
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def search(
         self,
         query: str,
@@ -108,7 +102,6 @@ class HybridSearch:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             query: Search query
             top_k: Number of results
@@ -119,7 +112,6 @@ class HybridSearch:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             List of results with scores
         """
@@ -141,7 +133,6 @@ class HybridSearch:
         # Get keyword scores
         keyword_scores = self._keyword_search(query)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Combine scores
         combined_scores = []
         for i, example in enumerate(self._examples):
@@ -184,7 +175,6 @@ class HybridSearch:
         
         return combined_scores[:top_k]
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _semantic_search(
         self,
         query_embedding: Optional[np.ndarray],
@@ -204,7 +194,6 @@ class HybridSearch:
             query_embedding: Query embedding (or None to compute from query)
             query: Query text
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Dict mapping example index to similarity score
         """
@@ -233,7 +222,6 @@ class HybridSearch:
         # Compute cosine similarity
         query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         scores = {}
         for i, embedding in enumerate(self._embeddings):
             emb_norm = embedding / (np.linalg.norm(embedding) + 1e-8)
@@ -262,7 +250,6 @@ class HybridSearch:
         Args:
             query: Search query
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Dict mapping example index to score
         """
@@ -272,7 +259,6 @@ class HybridSearch:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if self._bm25_index is not None:
             # Use BM25
             query_tokens = query.lower().split()
@@ -281,7 +267,6 @@ class HybridSearch:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Normalize to 0-1 range
             max_score = max(scores) if len(scores) > 0 else 1.0
             if max_score > 0:
@@ -290,7 +275,6 @@ class HybridSearch:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return {i: float(score) for i, score in enumerate(scores)}
         else:
             # Simple keyword matching
@@ -300,7 +284,6 @@ class HybridSearch:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             for i, example in enumerate(self._examples):
                 text = f"{example.get('java_code', '')} {example.get('metadata', {})}".lower()
                 if query_lower in text:
@@ -314,7 +297,6 @@ class HybridSearch:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return scores
 
 

@@ -19,7 +19,6 @@ import os
 
 # Add ai-engine to path
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def test_feedback_pipeline():
@@ -50,7 +49,6 @@ def test_feedback_pipeline():
         
         pipeline = learning.get_learning_pipeline()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Submit low-rated feedback
         feedback = learning.UserFeedback(
             feedback_id="fb_001",
@@ -98,7 +96,6 @@ def test_feedback_pipeline():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -131,7 +128,6 @@ def test_fine_tuning():
         
         fine_tuner = learning.get_fine_tuner()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Prepare training data
         training_pairs = [
             learning.TrainingPair(
@@ -184,7 +180,6 @@ def test_fine_tuning():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -217,7 +212,6 @@ def test_community_patterns():
         
         pattern_sharing = learning.get_pattern_sharing()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Submit community pattern
         pattern = pattern_sharing.submit_pattern(
             name="Custom Boss Entity",
@@ -233,7 +227,6 @@ def test_community_patterns():
         print(f"Pattern submitted: {pattern.pattern_id}")
         print(f"Status: {pattern.status}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Review and approve
         pattern_sharing.review_pattern(
             pattern.pattern_id,
@@ -283,7 +276,6 @@ def test_community_patterns():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -316,7 +308,6 @@ def test_dashboard():
         
         dashboard = learning.get_dashboard()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Update metrics
         dashboard.update_metrics(
             accuracy=0.85,
@@ -387,7 +378,6 @@ def test_dashboard():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -444,7 +434,6 @@ def test_learning_system_status():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -458,7 +447,6 @@ def main():
     print("LEARNING SYSTEM TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("Feedback Pipeline", test_feedback_pipeline),
         ("Fine-tuning", test_fine_tuning),
@@ -476,7 +464,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -518,7 +505,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

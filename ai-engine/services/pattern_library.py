@@ -13,7 +13,6 @@ import logging
 from typing import Dict, List, Optional, Any
 =======
 from typing import Dict, List, Optional, Any, Tuple
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -25,7 +24,6 @@ class PatternCategory(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     ENTITY = "entity"
     BLOCK = "block"
     ITEM = "item"
@@ -42,7 +40,6 @@ class ComplexityLevel(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     SIMPLE = "simple"  # Direct 1:1 mapping
     MODERATE = "moderate"  # Requires some adaptation
     COMPLEX = "complex"  # Requires significant rework
@@ -55,7 +52,6 @@ class ConversionPattern:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     pattern_id: str
     name: str
     category: PatternCategory
@@ -72,7 +68,6 @@ class ConversionPattern:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "pattern_id": self.pattern_id,
@@ -95,7 +90,6 @@ class WorkaroundSuggestion:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     feature: str
     reason_unsupported: str
     workaround: str
@@ -106,7 +100,6 @@ class WorkaroundSuggestion:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "feature": self.feature,
@@ -124,7 +117,6 @@ class PatternLibrary:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Provides:
     - Pattern lookup by Java signature
     - Pattern matching for code analysis
@@ -135,7 +127,6 @@ class PatternLibrary:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.patterns: Dict[str, ConversionPattern] = {}
         self.workarounds: Dict[str, WorkaroundSuggestion] = {}
@@ -829,7 +820,6 @@ class PatternLibrary:
             ],
         ))
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def add_pattern(self, pattern: ConversionPattern):
         """Add a pattern to the library."""
         self.patterns[pattern.pattern_id] = pattern
@@ -838,7 +828,6 @@ class PatternLibrary:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def add_workaround(self, workaround: WorkaroundSuggestion):
         """Add a workaround suggestion."""
         self.workarounds[workaround.feature] = workaround
@@ -869,7 +858,6 @@ class PatternLibrary:
         Args:
             java_code: Java source code to analyze
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             List of matching patterns
         """
@@ -897,7 +885,6 @@ class PatternLibrary:
         
         return matches
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_workaround(self, feature: str) -> Optional[WorkaroundSuggestion]:
         """Get workaround for a feature."""
         # Try exact match first
@@ -907,7 +894,6 @@ class PatternLibrary:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Try partial match
         for key, workaround in self.workarounds.items():
             if key.lower() in feature.lower() or feature.lower() in key.lower():
@@ -928,7 +914,6 @@ class PatternLibrary:
         """Get all patterns in a category."""
         return [p for p in self.patterns.values() if p.category == category]
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_coverage_stats(self) -> Dict[str, Any]:
         """Get pattern library coverage statistics."""
         stats = {
@@ -941,7 +926,6 @@ class PatternLibrary:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Count by category
         for category in PatternCategory:
             patterns = self.get_patterns_by_category(category)
@@ -951,7 +935,6 @@ class PatternLibrary:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Count by complexity
         for complexity in ComplexityLevel:
             count = sum(1 for p in self.patterns.values() if p.complexity == complexity)
@@ -969,7 +952,6 @@ class PatternLibrary:
     
     # ===== Template Methods =====
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _boss_entity_template(self) -> str:
         return """class {name} extends mc.Mob {{
   constructor() {{
@@ -1004,7 +986,6 @@ class PatternLibrary:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _custom_ai_template(self) -> str:
         return """// Custom AI using behavior trees
 class {name}AI {{
@@ -1031,7 +1012,6 @@ class {name}AI {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _multiphase_entity_template(self) -> str:
         return """class {name} extends mc.Mob {{
   constructor() {{
@@ -1070,7 +1050,6 @@ class {name}AI {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _multiblock_controller_template(self) -> str:
         return """class {name} extends BlockEntity {{
   constructor() {{
@@ -1108,7 +1087,6 @@ class {name}AI {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _structure_validator_template(self) -> str:
         return """function validateStructure(controllerPos, pattern) {{
   for (let layer of pattern) {{
@@ -1128,7 +1106,6 @@ class {name}AI {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _dimension_type_template(self) -> str:
         return """// Dimension configuration for Bedrock
 const dimensionConfig = {{
@@ -1152,7 +1129,6 @@ world.registerDimension(dimensionConfig);"""
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _biome_template(self) -> str:
         return """// Biome modification for Bedrock
 const biomeModification = {{
@@ -1177,7 +1153,6 @@ world.modifyBiome('{biome_id}', biomeModification);"""
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _worldgen_template(self) -> str:
         return """// World generation using structure placement
 const structureConfig = {{
@@ -1197,7 +1172,6 @@ world.registerStructure(structureConfig);"""
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _portal_template(self) -> str:
         return """// Portal implementation for Bedrock
 class {name} extends Block {{
@@ -1225,7 +1199,6 @@ class {name} extends Block {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _energy_block_template(self) -> str:
         return """// Energy block using redstone equivalent
 class {name} extends BlockEntity {{
@@ -1285,7 +1258,6 @@ def match_java_patterns(java_code: str) -> List[Dict[str, Any]]:
     Args:
         java_code: Java source code
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         List of matching pattern dictionaries
     """
@@ -1307,7 +1279,6 @@ def get_workaround_suggestion(feature: str) -> Optional[Dict[str, Any]]:
     Args:
         feature: Feature name
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         Workaround suggestion dictionary or None
     """

@@ -15,7 +15,6 @@ from enum import Enum
 <<<<<<< HEAD
 =======
 import hashlib
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,6 @@ class NodeType(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     ENTRY = "entry"
     EXIT = "exit"
     ASSIGNMENT = "assignment"
@@ -44,7 +42,6 @@ class DFGNode:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     id: str
     node_type: NodeType
     variable: Optional[str] = None
@@ -56,7 +53,6 @@ class DFGNode:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -75,7 +71,6 @@ class CFGNode:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     id: str
     node_type: NodeType
     statement: Optional[str] = None
@@ -86,7 +81,6 @@ class CFGNode:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -104,7 +98,6 @@ class DataFlowGraph:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     nodes: Dict[str, DFGNode] = field(default_factory=dict)
     entry_node: Optional[str] = None
     exit_node: Optional[str] = None
@@ -113,7 +106,6 @@ class DataFlowGraph:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def add_node(self, node: DFGNode):
         """Add node to the graph."""
         self.nodes[node.id] = node
@@ -155,7 +147,6 @@ class DataFlowGraph:
         """Get all nodes that use a variable."""
         return [
             node for node in self.nodes.values()
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             if node.variable == variable and node.operation == "use"
         ]
 
@@ -166,7 +157,6 @@ class ControlFlowGraph:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     nodes: Dict[str, CFGNode] = field(default_factory=dict)
     entry_node: Optional[str] = None
     exit_node: Optional[str] = None
@@ -187,7 +177,6 @@ class ControlFlowGraph:
         """Add node to the graph."""
         self.nodes[node.id] = node
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def add_edge(self, from_id: str, to_id: str):
         """Add edge between nodes."""
         if from_id in self.nodes and to_id in self.nodes:
@@ -197,7 +186,6 @@ class ControlFlowGraph:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_paths(self) -> List[List[str]]:
         """Get all paths from entry to exit."""
         if not self.entry_node or not self.exit_node:
@@ -230,7 +218,6 @@ class ControlFlowGraph:
             all_paths.append(path)
             return
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         node = self.nodes.get(current)
         if node:
             for successor in node.successors:
@@ -244,7 +231,6 @@ class EquivalenceResult:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     equivalent: bool
     confidence: float  # 0.0 to 1.0
     dfg_similarity: float
@@ -255,7 +241,6 @@ class EquivalenceResult:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "equivalent": self.equivalent,
@@ -274,7 +259,6 @@ class DataFlowAnalyzer:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Tracks:
     - Variable definitions (defs)
     - Variable uses (uses)
@@ -292,7 +276,6 @@ class DataFlowAnalyzer:
         self.dfg = DataFlowGraph()
         self._node_counter = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _new_id(self) -> str:
         """Generate unique node ID."""
         self._node_counter += 1
@@ -317,7 +300,6 @@ class DataFlowAnalyzer:
             source_code: Java source code
             ast: Optional pre-parsed AST
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             DataFlowGraph for the code
         """
@@ -327,7 +309,6 @@ class DataFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create entry node
         entry = DFGNode(id=self._new_id(), node_type=NodeType.ENTRY, line_number=0)
         self.dfg.add_node(entry)
@@ -346,7 +327,6 @@ class DataFlowAnalyzer:
         for line_num, line in enumerate(lines, 1):
             self._analyze_java_line(line.strip(), line_num)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create exit node
         exit_node = DFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.dfg.add_node(exit_node)
@@ -387,7 +367,6 @@ class DataFlowAnalyzer:
                 var_name = var_part.split()[-1] if ' ' in var_part else var_part
                 var_name = var_name.replace(';', '').strip()
                 
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 # Definition node
                 def_node = DFGNode(
                     id=self._new_id(),
@@ -440,7 +419,6 @@ class DataFlowAnalyzer:
         tokens = expression.replace('(', ' ').replace(')', ' ').replace('.', ' ').split()
         for token in tokens:
             token = token.strip(';,').strip()
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             if token and token[0].islower() and not self._is_keyword(token):
                 use_node = DFGNode(
                     id=self._new_id(),
@@ -462,7 +440,6 @@ class DataFlowAnalyzer:
         """Extract method call information."""
         # Find method name
         paren_idx = line.find('(')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if paren_idx > 0:
             method_name = line[:paren_idx].strip().split()[-1]
             call_node = DFGNode(
@@ -486,7 +463,6 @@ class DataFlowAnalyzer:
         parts = line.split('.')
         if len(parts) >= 2:
             field_name = parts[-1].split()[0].strip(';,')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             access_node = DFGNode(
                 id=self._new_id(),
                 node_type=NodeType.FIELD_ACCESS,
@@ -545,7 +521,6 @@ class DataFlowAnalyzer:
         """
         Build data flow graph from JavaScript source code.
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Similar to Java analysis but adapted for JavaScript syntax.
         """
         self.dfg = DataFlowGraph()
@@ -554,7 +529,6 @@ class DataFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create entry node
         entry = DFGNode(id=self._new_id(), node_type=NodeType.ENTRY, line_number=0)
         self.dfg.add_node(entry)
@@ -573,7 +547,6 @@ class DataFlowAnalyzer:
         for line_num, line in enumerate(lines, 1):
             self._analyze_javascript_line(line.strip(), line_num)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create exit node
         exit_node = DFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.dfg.add_node(exit_node)
@@ -610,7 +583,6 @@ class DataFlowAnalyzer:
             if '=' in line_clean:
                 var_name = line_clean.split('=')[0].strip()
                 
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 def_node = DFGNode(
                     id=self._new_id(),
                     node_type=NodeType.ASSIGNMENT,
@@ -634,7 +606,6 @@ class DataFlowAnalyzer:
         
         # Function call
         if '(' in line and ')' in line:
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             self._extract_method_call(line, line_num)
 
 
@@ -645,7 +616,6 @@ class ControlFlowAnalyzer:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Tracks:
     - Basic blocks
     - Branches (if/else)
@@ -664,7 +634,6 @@ class ControlFlowAnalyzer:
         self.cfg = ControlFlowGraph()
         self._node_counter = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _new_id(self) -> str:
         """Generate unique node ID."""
         self._node_counter += 1
@@ -673,7 +642,6 @@ class ControlFlowAnalyzer:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def analyze_java(self, source_code: str) -> ControlFlowGraph:
         """Build control flow graph from Java source code."""
         self.cfg = ControlFlowGraph()
@@ -682,7 +650,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create entry node
         entry = CFGNode(id=self._new_id(), node_type=NodeType.ENTRY, line_number=0)
         self.cfg.add_node(entry)
@@ -699,7 +666,6 @@ class ControlFlowAnalyzer:
         lines = source_code.split('\n')
         prev_node_id = entry.id
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for line_num, line in enumerate(lines, 1):
             node = self._analyze_java_line(line.strip(), line_num)
             if node:
@@ -710,7 +676,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create exit node
         exit_node = CFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.cfg.add_node(exit_node)
@@ -739,7 +704,6 @@ class ControlFlowAnalyzer:
         
         # If statement
         if line.startswith('if (') or line.startswith('if('):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             branch_node = CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.BRANCH,
@@ -756,7 +720,6 @@ class ControlFlowAnalyzer:
         
         # Loop
         if line.startswith('while (') or line.startswith('for ('):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             loop_node = CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.LOOP,
@@ -772,7 +735,6 @@ class ControlFlowAnalyzer:
         
         # Return
         if line.startswith('return'):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.RETURN,
@@ -783,7 +745,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Regular statement
         return CFGNode(
             id=self._new_id(),
@@ -795,7 +756,6 @@ class ControlFlowAnalyzer:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def analyze_javascript(self, source_code: str) -> ControlFlowGraph:
         """Build control flow graph from JavaScript source code."""
         self.cfg = ControlFlowGraph()
@@ -804,7 +764,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create entry node
         entry = CFGNode(id=self._new_id(), node_type=NodeType.ENTRY, line_number=0)
         self.cfg.add_node(entry)
@@ -821,7 +780,6 @@ class ControlFlowAnalyzer:
         lines = source_code.split('\n')
         prev_node_id = entry.id
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for line_num, line in enumerate(lines, 1):
             node = self._analyze_javascript_line(line.strip(), line_num)
             if node:
@@ -832,7 +790,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create exit node
         exit_node = CFGNode(id=self._new_id(), node_type=NodeType.EXIT, line_number=len(lines))
         self.cfg.add_node(exit_node)
@@ -861,7 +818,6 @@ class ControlFlowAnalyzer:
         
         # If statement
         if line.startswith('if (') or line.startswith('if('):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             branch_node = CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.BRANCH,
@@ -878,7 +834,6 @@ class ControlFlowAnalyzer:
         
         # Loop
         if line.startswith('while (') or line.startswith('for ('):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             loop_node = CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.LOOP,
@@ -894,7 +849,6 @@ class ControlFlowAnalyzer:
         
         # Return
         if line.startswith('return'):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return CFGNode(
                 id=self._new_id(),
                 node_type=NodeType.RETURN,
@@ -905,7 +859,6 @@ class ControlFlowAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Regular statement
         return CFGNode(
             id=self._new_id(),
@@ -922,7 +875,6 @@ class SemanticEquivalenceChecker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Compares:
     - Data flow graphs (variable definitions and uses)
     - Control flow graphs (branches, loops, paths)
@@ -940,7 +892,6 @@ class SemanticEquivalenceChecker:
         self.dfg_analyzer = DataFlowAnalyzer()
         self.cfg_analyzer = ControlFlowAnalyzer()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def check_equivalence(
         self,
         java_code: str,
@@ -960,7 +911,6 @@ class SemanticEquivalenceChecker:
             java_code: Original Java source code
             bedrock_code: Converted Bedrock JavaScript code
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             EquivalenceResult with confidence score and differences
         """
@@ -999,7 +949,6 @@ class SemanticEquivalenceChecker:
         # Calculate overall confidence
         confidence = (dfg_similarity + cfg_similarity) / 2
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Determine equivalence
         equivalent = confidence >= 0.8
         differences = self._find_differences(java_dfg, bedrock_dfg, java_cfg, bedrock_cfg)
@@ -1008,7 +957,6 @@ class SemanticEquivalenceChecker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         result = EquivalenceResult(
             equivalent=equivalent,
             confidence=confidence,
@@ -1029,7 +977,6 @@ class SemanticEquivalenceChecker:
         logger.info(f"Equivalence check complete: equivalent={equivalent}, confidence={confidence:.2f}")
         return result
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _compare_dfgs(self, java_dfg: DataFlowGraph, bedrock_dfg: DataFlowGraph) -> float:
         """Compare data flow graphs and return similarity score."""
         if not java_dfg.variables and not bedrock_dfg.variables:
@@ -1046,7 +993,6 @@ class SemanticEquivalenceChecker:
         java_vars = java_dfg.variables
         bedrock_vars = bedrock_dfg.variables
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Jaccard similarity for variables
         intersection = len(java_vars & bedrock_vars)
         union = len(java_vars | bedrock_vars)
@@ -1075,7 +1021,6 @@ class SemanticEquivalenceChecker:
         # Weighted average
         return 0.6 * var_similarity + 0.4 * node_similarity
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _compare_cfgs(self, java_cfg: ControlFlowGraph, bedrock_cfg: ControlFlowGraph) -> float:
         """Compare control flow graphs and return similarity score."""
         # Compare branch counts
@@ -1125,7 +1070,6 @@ class SemanticEquivalenceChecker:
         # Weighted average
         return 0.4 * branch_similarity + 0.3 * loop_similarity + 0.3 * path_similarity
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _find_differences(
         self,
         java_dfg: DataFlowGraph,
@@ -1139,7 +1083,6 @@ class SemanticEquivalenceChecker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Missing variables
         missing_vars = java_dfg.variables - bedrock_dfg.variables
         for var in missing_vars:
@@ -1156,7 +1099,6 @@ class SemanticEquivalenceChecker:
         for var in extra_vars:
             differences.append(f"Extra variable in Bedrock: {var}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Different branch counts
         if len(java_cfg.branches) != len(bedrock_cfg.branches):
             differences.append(
@@ -1166,7 +1108,6 @@ class SemanticEquivalenceChecker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Different loop counts
         java_loops = sum(1 for n in java_cfg.nodes.values() if n.node_type == NodeType.LOOP)
         bedrock_loops = sum(1 for n in bedrock_cfg.nodes.values() if n.node_type == NodeType.LOOP)
@@ -1183,7 +1124,6 @@ class SemanticEquivalenceChecker:
         
         return differences
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _generate_warnings(
         self,
         java_dfg: DataFlowGraph,
@@ -1195,7 +1135,6 @@ class SemanticEquivalenceChecker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check for unused variables in Bedrock
         for var in bedrock_dfg.variables:
             defs = bedrock_dfg.get_variable_definitions(var)
@@ -1206,7 +1145,6 @@ class SemanticEquivalenceChecker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return warnings
 
 
@@ -1225,7 +1163,6 @@ def check_semantic_equivalence(java_code: str, bedrock_code: str) -> Equivalence
         java_code: Original Java source code
         bedrock_code: Converted Bedrock JavaScript code
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         EquivalenceResult with analysis
     """

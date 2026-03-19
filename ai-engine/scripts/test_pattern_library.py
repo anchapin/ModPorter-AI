@@ -20,7 +20,6 @@ import os
 
 # Add ai-engine to path
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def test_pattern_matching():
@@ -83,7 +82,6 @@ def test_pattern_matching():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -141,7 +139,6 @@ def test_workaround_suggestions():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -197,7 +194,6 @@ def test_coverage_stats():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -279,7 +275,6 @@ def test_complex_entity_patterns():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -362,7 +357,6 @@ def test_multiblock_patterns():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -445,7 +439,6 @@ def test_dimension_patterns():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -459,7 +452,6 @@ def main():
     print("PATTERN LIBRARY TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("Pattern Matching", test_pattern_matching),
         ("Workaround Suggestions", test_workaround_suggestions),
@@ -478,7 +470,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -510,7 +501,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

@@ -19,7 +19,6 @@ sys.path.insert(0, "src")
 
 =======
 sys.path.insert(0, 'src')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 def generate_java_code(num_classes: int) -> str:
     """Generate Java code with specified number of classes."""
@@ -42,7 +41,6 @@ public class BenchmarkMod extends BaseMod {
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for i in range(num_classes):
         code += f"""
     public static class Block{i} extends Block {{
@@ -68,7 +66,6 @@ public class BenchmarkMod extends BaseMod {
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     code += """
     @Override
     public void init() {
@@ -114,7 +111,6 @@ def benchmark_raw_parsing():
     code_bytes = bytes(code, "utf8")
     lines = len(code.split('\n'))
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     results = {
         "tree_sitter": [],
         "javalang": [],
@@ -135,7 +131,6 @@ def benchmark_raw_parsing():
     print(f"Code size: {lines} lines, {len(code)} bytes")
     print(f"Running {iterations} iterations...\n")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Tree-sitter
     for i in range(iterations):
         start = time.perf_counter()
@@ -146,7 +141,6 @@ def benchmark_raw_parsing():
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Javalang
     for i in range(iterations):
         start = time.perf_counter()
@@ -179,7 +173,6 @@ def benchmark_raw_parsing():
     print(f"Javalang:    {jl_avg*1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
     print(f"Speedup:     {jl_avg/ts_avg:.1f}x faster")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "test": "raw_parsing",
         "tree_sitter_avg_ms": ts_avg * 1000,
@@ -222,7 +215,6 @@ def benchmark_ast_extraction():
     code = generate_java_code(50)
     lines = len(code.split('\n'))
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     results = {
         "tree_sitter": [],
         "javalang": [],
@@ -241,7 +233,6 @@ def benchmark_ast_extraction():
     print(f"Code size: {lines} lines")
     print(f"Running {iterations} iterations...\n")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Tree-sitter with extraction
     analyzer = java_parser.JavaASTAnalyzer()
     for i in range(iterations):
@@ -253,7 +244,6 @@ def benchmark_ast_extraction():
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Javalang with manual extraction
     for i in range(iterations):
         start = time.perf_counter()
@@ -280,7 +270,6 @@ def benchmark_ast_extraction():
                 "modifiers": node.modifiers,
             })
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Extract imports
         imports = []
         for _, node in tree.filter(javalang.tree.Import):
@@ -317,7 +306,6 @@ def benchmark_ast_extraction():
     print(f"Javalang:    {jl_avg*1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
     print(f"Speedup:     {jl_avg/ts_avg:.1f}x faster")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "test": "ast_extraction",
         "tree_sitter_avg_ms": ts_avg * 1000,
@@ -343,7 +331,6 @@ def benchmark_error_recovery():
     from tree_sitter import Language, Parser
     import javalang
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Malformed Java code
     malformed_code = """
 public class Broken {
@@ -378,7 +365,6 @@ public class Broken {
     
     print("Testing with malformed Java code...\n")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Tree-sitter
     print("Tree-sitter:")
     start = time.perf_counter()
@@ -388,7 +374,6 @@ public class Broken {
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def count_errors(node):
         count = 0
         if node.type == "ERROR":
@@ -412,7 +397,6 @@ public class Broken {
     print(f"  Root type: {ts_tree.root_node.type}")
     print(f"  ✓ Recovered and continued parsing\n")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Javalang
     print("Javalang:")
     start = time.perf_counter()
@@ -435,7 +419,6 @@ public class Broken {
         print(f"  Parse time: {jl_duration*1000:.2f}ms")
         print(f"  ✗ Failed with exception: {type(e).__name__}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "test": "error_recovery",
         "tree_sitter": {
@@ -462,7 +445,6 @@ def main():
     
     results = []
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     try:
         results.append(benchmark_raw_parsing())
     except Exception as e:
@@ -475,7 +457,6 @@ def main():
 =======
         traceback.print_exc()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     try:
         results.append(benchmark_ast_extraction())
     except Exception as e:
@@ -488,7 +469,6 @@ def main():
 =======
         traceback.print_exc()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     try:
         results.append(benchmark_error_recovery())
     except Exception as e:
@@ -501,7 +481,6 @@ def main():
 =======
         traceback.print_exc()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Summary
     print("\n" + "=" * 70)
     print("BENCHMARK SUMMARY")
@@ -524,7 +503,6 @@ def main():
             print(f"\nRaw Parsing:")
             print(f"  Tree-sitter: {result['tree_sitter_avg_ms']:.2f}ms ({result['tree_sitter_loc_sec']:,.0f} LOC/sec)")
             print(f"  Javalang: {result['javalang_avg_ms']:.2f}ms ({result['javalang_loc_sec']:,.0f} LOC/sec)")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             print(f"  Speedup: {result['speedup']:.1f}x")
         elif result["test"] == "ast_extraction":
             print(f"\nAST Extraction:")
@@ -547,7 +525,6 @@ def main():
     print("BENCHMARK COMPLETE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return results
 
 
@@ -562,7 +539,6 @@ if __name__ == "__main__":
     
     # Save results to file
     import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     with open("benchmark_results.json", "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to benchmark_results.json")

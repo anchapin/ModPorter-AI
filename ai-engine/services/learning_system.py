@@ -20,7 +20,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,6 @@ class FeedbackType(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     RATING = "rating"
     CORRECTION = "correction"
     SUGGESTION = "suggestion"
@@ -42,7 +40,6 @@ class LearningStatus(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     PENDING = "pending"
     ANALYZED = "analyzed"
     QUEUED = "queued"
@@ -56,7 +53,6 @@ class UserFeedback:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     feedback_id: str
     conversion_id: str
     feedback_type: FeedbackType
@@ -72,7 +68,6 @@ class UserFeedback:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "feedback_id": self.feedback_id,
@@ -91,7 +86,6 @@ class LearningItem:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     item_id: str
     feedback_id: str
     issue_type: str
@@ -105,7 +99,6 @@ class LearningItem:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "item_id": self.item_id,
@@ -124,7 +117,6 @@ class TrainingPair:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     java_code: str
     bedrock_code: str
     quality_score: float  # 0.0 to 1.0
@@ -134,7 +126,6 @@ class TrainingPair:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "java": self.java_code,
@@ -150,7 +141,6 @@ class CommunityPattern:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     pattern_id: str
     name: str
     description: str
@@ -165,7 +155,6 @@ class CommunityPattern:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "pattern_id": self.pattern_id,
@@ -186,7 +175,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Processes:
     1. Collect feedback
     2. Analyze failures
@@ -198,7 +186,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.feedback_store: Dict[str, UserFeedback] = {}
         self.learning_items: Dict[str, LearningItem] = {}
@@ -212,7 +199,6 @@ class FeedbackLearningPipeline:
         
         logger.info("FeedbackLearningPipeline initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def submit_feedback(self, feedback: UserFeedback):
         """Submit user feedback for processing."""
         self.feedback_store[feedback.feedback_id] = feedback
@@ -229,7 +215,6 @@ class FeedbackLearningPipeline:
         if feedback.rating is not None and feedback.rating <= 2:
             self._analyze_failure(feedback)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _analyze_failure(self, feedback: UserFeedback):
         """Analyze low-rated conversion to identify issues."""
         if not feedback.corrected_code or not feedback.original_java:
@@ -239,7 +224,6 @@ class FeedbackLearningPipeline:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Identify issue type (simplified analysis)
         issue_type = self._identify_issue_type(
             feedback.original_java,
@@ -252,7 +236,6 @@ class FeedbackLearningPipeline:
             feedback.corrected_code
         )
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create learning item
         learning_item = LearningItem(
             item_id=f"learn_{feedback.feedback_id}",
@@ -279,7 +262,6 @@ class FeedbackLearningPipeline:
         # Queue for retraining
         self._queue_for_retraining(feedback)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _identify_issue_type(self, java: str, bedrock: str, corrected: str) -> str:
         """Identify the type of conversion issue."""
         # Simple heuristic-based issue identification
@@ -297,7 +279,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _generate_fix(self, feedback: UserFeedback) -> str:
         """Generate fix suggestion from feedback."""
         if feedback.corrected_code:
@@ -307,7 +288,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _queue_for_retraining(self, feedback: UserFeedback):
         """Queue feedback for model retraining."""
         if feedback.original_java and feedback.corrected_code:
@@ -323,7 +303,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def update_translation_rules(self, issue_type: str, fix: str):
         """Update translation rules based on learned issue."""
         rule_key = f"fix_{issue_type}"
@@ -333,7 +312,6 @@ class FeedbackLearningPipeline:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_learning_stats(self) -> Dict[str, Any]:
         """Get learning pipeline statistics."""
         return {
@@ -349,7 +327,6 @@ class FeedbackLearningPipeline:
                 )
 =======
                 status.value: sum(1 for item in self.learning_items.values() if item.status == status)
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 for status in LearningStatus
             },
         }
@@ -362,7 +339,6 @@ class CodeT5FineTuner:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Handles:
     - Training data preparation
     - Model fine-tuning
@@ -373,7 +349,6 @@ class CodeT5FineTuner:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.training_data: List[TrainingPair] = []
         self.model_path: Optional[str] = None
@@ -386,7 +361,6 @@ class CodeT5FineTuner:
         
         logger.info("CodeT5FineTuner initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def prepare_training_data(
         self,
         feedback_pairs: List[TrainingPair],
@@ -409,7 +383,6 @@ class CodeT5FineTuner:
         
         return len(valid_pairs)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def fine_tune(
         self,
         model_name: str = "Salesforce/codet5-plus",
@@ -423,7 +396,6 @@ class CodeT5FineTuner:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Note: Actual training would require GPU and ML infrastructure.
         This is a simulation for the pipeline.
         """
@@ -432,7 +404,6 @@ class CodeT5FineTuner:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Simulated training results
         training_result = {
             "model_name": model_name,
@@ -462,7 +433,6 @@ class CodeT5FineTuner:
         
         return training_result
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_model_stats(self) -> Dict[str, Any]:
         """Get model fine-tuning statistics."""
         return {
@@ -475,7 +445,6 @@ class CodeT5FineTuner:
             ),
 =======
             "latest_accuracy": self.training_history[-1]["validation_accuracy"] if self.training_history else 0.0,
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         }
 
 
@@ -486,7 +455,6 @@ class CommunityPatternSharing:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Features:
     - Pattern submission
     - Review process
@@ -509,7 +477,6 @@ class CommunityPatternSharing:
         
         logger.info("CommunityPatternSharing initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def submit_pattern(
         self,
         name: str,
@@ -524,7 +491,6 @@ class CommunityPatternSharing:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         pattern = CommunityPattern(
             pattern_id=pattern_id,
             name=name,
@@ -549,7 +515,6 @@ class CommunityPatternSharing:
         logger.info(f"Pattern submitted: {pattern_id} by {submitted_by}")
         return pattern
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def review_pattern(self, pattern_id: str, approved: bool, reviewer: str, comments: str = ""):
         """Review a community pattern."""
         pattern = self.patterns.get(pattern_id)
@@ -576,7 +541,6 @@ class CommunityPatternSharing:
             "timestamp": datetime.now().isoformat(),
         })
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if approved:
             pattern.status = "approved"
             logger.info(f"Pattern {pattern_id} approved by {reviewer}")
@@ -593,7 +557,6 @@ class CommunityPatternSharing:
         if pattern_id in self.review_queue:
             self.review_queue.remove(pattern_id)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def vote_pattern(self, pattern_id: str, vote: int):
         """Vote on a community pattern (+1 or -1)."""
         pattern = self.patterns.get(pattern_id)
@@ -609,7 +572,6 @@ class CommunityPatternSharing:
         pattern.votes += vote
         logger.debug(f"Pattern {pattern_id} voted: {vote}, total: {pattern.votes}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_top_patterns(self, limit: int = 10) -> List[CommunityPattern]:
         """Get top-voted approved patterns."""
         approved = [p for p in self.patterns.values() if p.status == "approved"]
@@ -619,7 +581,6 @@ class CommunityPatternSharing:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_stats(self) -> Dict[str, Any]:
         """Get community pattern statistics."""
         return {
@@ -638,7 +599,6 @@ class ContinuousImprovementDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Metrics:
     - Accuracy trend over time
     - New patterns added
@@ -649,7 +609,6 @@ class ContinuousImprovementDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.metrics_history: List[Dict[str, Any]] = []
         self.current_metrics: Dict[str, float] = {
@@ -666,7 +625,6 @@ class ContinuousImprovementDashboard:
         
         logger.info("ContinuousImprovementDashboard initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def update_metrics(
         self,
         accuracy: Optional[float] = None,
@@ -705,7 +663,6 @@ class ContinuousImprovementDashboard:
         
         logger.info(f"Metrics updated: accuracy={accuracy}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_metrics(self) -> Dict[str, Any]:
         """Get current metrics."""
         return {
@@ -717,7 +674,6 @@ class ContinuousImprovementDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _calculate_improvements(self) -> Dict[str, float]:
         """Calculate improvement percentages."""
         if len(self.metrics_history) < 2:
@@ -732,7 +688,6 @@ class ContinuousImprovementDashboard:
         first = self.metrics_history[0]
         latest = self.metrics_history[-1]
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "accuracy_change": latest["accuracy"] - first["accuracy"],
             "satisfaction_change": latest["user_satisfaction"] - first["user_satisfaction"],
@@ -743,7 +698,6 @@ class ContinuousImprovementDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_dashboard_data(self) -> Dict[str, Any]:
         """Get complete dashboard data."""
         return {
@@ -755,7 +709,6 @@ class ContinuousImprovementDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _get_milestone_summary(self) -> Dict[str, Any]:
         """Get Milestone v2.0 summary."""
         return {
@@ -768,7 +721,6 @@ class ContinuousImprovementDashboard:
             },
 =======
             "conversion_time": {"before": 8.0, "after": 3.0, "improvement": "62% faster"},
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             "automation": {"before": 0.60, "after": 0.85, "improvement": "+42%"},
             "mod_coverage": {"before": 0.40, "after": 0.65, "improvement": "+62%"},
             "user_satisfaction": {"before": 3.5, "after": 4.5, "improvement": "+29%"},
@@ -806,7 +758,6 @@ class ContinuousImprovementDashboard:
         if self.current_metrics["conversion_speed"] > 2.0:
             recommendations.append("Optimize conversion pipeline for faster processing")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return recommendations
 
 

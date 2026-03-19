@@ -17,7 +17,6 @@ class OllamaClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, model: str = "deepseek-coder:6.7b", host: str = "http://localhost:11434"):
         self.model = model
         self.host = host
@@ -27,7 +26,6 @@ class OllamaClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _get_client(self):
         """Lazy-load Ollama client."""
         if self._client is None:
@@ -48,7 +46,6 @@ class OllamaClient:
                 models = self._client.list()
                 model_names = [m["name"] for m in models.get("models", [])]
                 
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
                 if self.model not in model_names:
                     logger.warning(f"Model {self.model} not found. Available: {model_names}")
                     self._available = False
@@ -59,7 +56,6 @@ class OllamaClient:
 
 =======
                     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             except ImportError:
                 logger.warning("ollama package not installed. Run: pip install ollama")
                 self._available = False
@@ -74,7 +70,6 @@ class OllamaClient:
         
         return self._client
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def health_check(self) -> bool:
         """Check if Ollama is accessible and model is available."""
         try:
@@ -123,7 +118,6 @@ class OllamaClient:
         Returns:
             Translated Bedrock code
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Raises:
             RuntimeError: If translation fails
         """
@@ -146,7 +140,6 @@ class OllamaClient:
         try:
             prompt = self._build_prompt(java_code, context)
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             response = client.generate(
                 model=self.model,
                 prompt=prompt,
@@ -184,7 +177,6 @@ class OllamaClient:
     def _build_prompt(self, java_code: str, context: Optional[List[str]] = None) -> str:
         """Build prompt for Ollama."""
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         base_prompt = f"""You are an expert Java to Minecraft Bedrock Edition translator.
 Convert the following Java mod code to Bedrock add-on format (JavaScript/JSON).
 
@@ -207,7 +199,6 @@ Bedrock Translation:
         
         if context:
             context_str = "\n\n".join([f"Similar example {i+1}:\n{c}" for i, c in enumerate(context[:2])])
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return f"""Here are some similar conversions for reference:
 
 {context_str}
@@ -221,7 +212,6 @@ Bedrock Translation:
         
         return base_prompt
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def pull_model(self) -> bool:
         """Pull the model if not available."""
         try:
@@ -255,7 +245,6 @@ Bedrock Translation:
             logger.info(f"Model {self.model} pulled successfully")
             return True
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         except Exception as e:
             logger.error(f"Failed to pull model: {e}")
             return False

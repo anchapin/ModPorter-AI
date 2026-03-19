@@ -57,7 +57,6 @@ class CodeT5PlusConverter:
         
         print(f"Loading model: {model_name}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
@@ -67,7 +66,6 @@ class CodeT5PlusConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Load model with mixed precision for faster inference
         self.model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
@@ -80,7 +78,6 @@ class CodeT5PlusConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create translation pipeline
         self.translator = pipeline(
             "text2text-generation",
@@ -99,7 +96,6 @@ class CodeT5PlusConverter:
         
         print("Model loaded successfully")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     @modal.method()
     def translate(self, java_code: str, context: str = None) -> str:
         """
@@ -116,7 +112,6 @@ class CodeT5PlusConverter:
             java_code: Java source code to translate
             context: Optional context (similar conversions, RAG results)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Translated Bedrock code (JavaScript/JSON)
         """
@@ -126,7 +121,6 @@ class CodeT5PlusConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Run translation
         result = self.translator(
             prompt,
@@ -143,7 +137,6 @@ class CodeT5PlusConverter:
         
         return result[0]["generated_text"].strip()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     @modal.method()
     def translate_batch(self, items: list) -> list:
         """
@@ -158,7 +151,6 @@ class CodeT5PlusConverter:
         Args:
             items: List of dicts with 'java_code' and optional 'context'
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             List of translated code strings
         """
@@ -173,7 +165,6 @@ class CodeT5PlusConverter:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     @modal.method()
     def health_check(self) -> dict:
         """Check if model is healthy and ready."""
@@ -182,7 +173,6 @@ class CodeT5PlusConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "status": "healthy",
             "model_loaded": self.model is not None,
@@ -209,7 +199,6 @@ class CodeT5PlusConverter:
     def _build_prompt(self, java_code: str, context: str = None) -> str:
         """Build translation prompt for the model."""
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         base_prompt = """Translate the following Java code to Minecraft Bedrock Edition JavaScript/JSON.
 Output only the translated code, no explanations.
 
@@ -224,7 +213,6 @@ Bedrock Translation:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if context:
             prompt = f"""Context (similar conversions):
 {context}
@@ -236,7 +224,6 @@ Bedrock Translation:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return prompt.format(java_code=java_code)
 
 
@@ -257,7 +244,6 @@ def main():
     health = converter.health_check.remote()
     print(f"Health check: {health}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Test translation
     test_code = """
 public class TestBlock extends Block {
@@ -270,7 +256,6 @@ public class TestBlock extends Block {
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     result = converter.translate.remote(test_code)
     print(f"Translation result:\n{result}")
 

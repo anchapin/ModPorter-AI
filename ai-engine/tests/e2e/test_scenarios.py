@@ -26,7 +26,6 @@ public class ModItem extends Item {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -39,7 +38,6 @@ public class ModItem extends Item {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Simple Block Conversion
     {
         "id": "e2e-002",
@@ -61,7 +59,6 @@ public class ModBlock extends Block {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -74,7 +71,6 @@ public class ModBlock extends Block {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Sword Item Conversion
     {
         "id": "e2e-003",
@@ -97,7 +93,6 @@ public class ModSword extends SwordItem {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -110,7 +105,6 @@ public class ModSword extends SwordItem {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Pickaxe Tool Conversion
     {
         "id": "e2e-004",
@@ -133,7 +127,6 @@ public class ModPickaxe extends PickaxeItem {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -146,7 +139,6 @@ public class ModPickaxe extends PickaxeItem {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Ore Block Conversion
     {
         "id": "e2e-005",
@@ -170,7 +162,6 @@ public class ModOre extends Block {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -183,7 +174,6 @@ public class ModOre extends Block {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Complex Entity Conversion
     {
         "id": "e2e-006",
@@ -211,7 +201,6 @@ public class ModEntity extends Mob {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -224,7 +213,6 @@ public class ModEntity extends Mob {
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Recipe Conversion
     {
         "id": "e2e-007",
@@ -248,7 +236,6 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,
@@ -261,7 +248,6 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
 <<<<<<< HEAD
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Multi-Class Mod
     {
         "id": "e2e-008",
@@ -296,7 +282,6 @@ public class ModSword extends SwordItem {
             },
 =======
             }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         },
         "expected": {
             "success": True,

@@ -22,7 +22,6 @@ class RAGContextBuilder:
     def __init__(self, max_context_length: int = 4000):
         self.max_context_length = max_context_length
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def build_context(
         self,
         search_results: List[Dict[str, Any]],
@@ -35,7 +34,6 @@ class RAGContextBuilder:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             search_results: Results from RAG search
             query: Original query
@@ -44,7 +42,6 @@ class RAGContextBuilder:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Context string for AI prompt
         """
@@ -92,7 +89,6 @@ Example {i + 1} (similarity: {score:.2f}):
             
             example_text = f"""
 Example {i+1} (similarity: {score:.2f}):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 Java:
 ```java
 {java_code[:500]}...
@@ -127,7 +123,6 @@ Bedrock:
         
         return "".join(context_parts)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def build_prompt(
         self,
         java_code: str,
@@ -140,7 +135,6 @@ Bedrock:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             java_code: Java code to translate
             context: RAG context
@@ -149,7 +143,6 @@ Bedrock:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Complete prompt string
         """
@@ -178,7 +171,6 @@ Guidelines:
         prompt_parts.append(instruction or default_instruction)
         prompt_parts.append("\n\n")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Add context if available
         if context:
             prompt_parts.append("Reference examples:\n")
@@ -196,7 +188,6 @@ Guidelines:
         prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")
         prompt_parts.append("Bedrock Translation:\n")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return "".join(prompt_parts)
 
 
