@@ -15,16 +15,13 @@ Features:
 import logging
 import time
 import threading
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
-from collections import defaultdict
 from functools import wraps
 from contextlib import contextmanager
 
 from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.engine import Engine
-from sqlalchemy.pool import Pool
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +77,7 @@ class QueryMonitor:
         Normalize SQL query for pattern matching
         
         Removes values from WHERE clauses, IN clauses, etc. to group similar queries.
+
         Example:
             SELECT * FROM users WHERE id = 123
             SELECT * FROM users WHERE id = 456

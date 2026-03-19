@@ -5,17 +5,10 @@ Side-by-side Java/Bedrock code editor with live preview.
 """
 
 import logging
-<<<<<<< HEAD
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-=======
-from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 from db.base import get_db
 from db.models import ConversionJob
@@ -27,19 +20,13 @@ router = APIRouter(prefix="/editor", tags=["Visual Editor"])
 
 class EditorSessionRequest(BaseModel):
     """Create editor session request."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     conversion_id: str
 
 
 class EditorSessionResponse(BaseModel):
     """Editor session response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     session_id: str
     java_code: str
     bedrock_code: str
@@ -49,10 +36,7 @@ class EditorSessionResponse(BaseModel):
 
 class CodeEditRequest(BaseModel):
     """Code edit request."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     session_id: str
     bedrock_code: str
     edit_type: str  # "manual", "ai_suggestion", "template"
@@ -60,10 +44,7 @@ class CodeEditRequest(BaseModel):
 
 class CodeEditResponse(BaseModel):
     """Code edit response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     success: bool
     bedrock_code: str
     validation_errors: List[dict]
@@ -72,10 +53,7 @@ class CodeEditResponse(BaseModel):
 
 class AISuggestionRequest(BaseModel):
     """AI suggestion request."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     session_id: str
     selected_code: str
     suggestion_type: str  # "fix_error", "improve", "alternative"
@@ -83,10 +61,7 @@ class AISuggestionRequest(BaseModel):
 
 class AISuggestionResponse(BaseModel):
     """AI suggestion response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     suggestion: str
     explanation: str
     confidence: float
@@ -94,10 +69,7 @@ class AISuggestionResponse(BaseModel):
 
 class TemplateRequest(BaseModel):
     """Apply template request."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     session_id: str
     template_id: str
     template_data: Dict[str, Any]
@@ -111,11 +83,7 @@ async def create_editor_session(
 ):
     """
     Create visual editor session for a conversion.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     - Loads Java and Bedrock code
     - Sets up side-by-side view
     - Enables live preview
@@ -128,17 +96,12 @@ async def create_editor_session(
         )
     )
     conversion = result.scalar_one_or_none()
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if not conversion:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversion not found",
         )
-<<<<<<< HEAD
 
     # Create session
     session_id = f"editor_{request.conversion_id}"
@@ -149,16 +112,6 @@ async def create_editor_session(
         bedrock_code=(
             conversion.output_data.get("bedrock_code", "") if conversion.output_data else ""
         ),
-=======
-    
-    # Create session
-    session_id = f"editor_{request.conversion_id}"
-    
-    return EditorSessionResponse(
-        session_id=session_id,
-        java_code=conversion.input_data.get("java_code", ""),
-        bedrock_code=conversion.output_data.get("bedrock_code", "") if conversion.output_data else "",
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         diff_view=False,
         readonly=conversion.status != "completed",
     )
@@ -172,18 +125,13 @@ async def edit_code(
 ):
     """
     Edit Bedrock code in visual editor.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     - Validates changes
     - Updates preview
     - Saves version
     """
     # Validate code changes
     validation_errors = []
-<<<<<<< HEAD
 
     # Basic validation (would be more comprehensive in production)
     if not request.bedrock_code.strip():
@@ -210,29 +158,6 @@ async def edit_code(
 
     success = len(validation_errors) == 0
 
-=======
-    
-    # Basic validation (would be more comprehensive in production)
-    if not request.bedrock_code.strip():
-        validation_errors.append({
-            "field": "bedrock_code",
-            "error": "Code cannot be empty",
-        })
-    
-    # Check for valid JSON structure if applicable
-    if request.bedrock_code.strip().startswith("{"):
-        import json
-        try:
-            json.loads(request.bedrock_code)
-        except json.JSONDecodeError as e:
-            validation_errors.append({
-                "field": "bedrock_code",
-                "error": f"Invalid JSON: {str(e)}",
-            })
-    
-    success = len(validation_errors) == 0
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return CodeEditResponse(
         success=success,
         bedrock_code=request.bedrock_code,
@@ -248,22 +173,14 @@ async def get_ai_suggestion(
 ):
     """
     Get AI-powered code suggestion.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     - Fix errors in selected code
     - Improve code quality
     - Suggest alternatives
     """
     # This would call the AI engine for suggestions
     # For now, return mock response
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     suggestions = {
         "fix_error": {
             "suggestion": request.selected_code + "\n// Fixed",
@@ -281,15 +198,9 @@ async def get_ai_suggestion(
             "confidence": 0.75,
         },
     }
-<<<<<<< HEAD
 
     suggestion = suggestions.get(request.suggestion_type, suggestions["improve"])
 
-=======
-    
-    suggestion = suggestions.get(request.suggestion_type, suggestions["improve"])
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return AISuggestionResponse(**suggestion)
 
 
@@ -300,11 +211,7 @@ async def apply_template(
 ):
     """
     Apply code template to editor.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     - Pre-built templates for common patterns
     - Customizable template data
     - Instant preview
@@ -358,31 +265,19 @@ async def apply_template(
 }""",
         },
     }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     template = templates.get(request.template_id)
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Template not found: {request.template_id}",
         )
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Apply template data
     code = template["code"]
     for key, value in request.template_data.items():
         code = code.replace(f"{{{{{key}}}}}", str(value))
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "success": True,
         "template_name": template["name"],
@@ -394,11 +289,7 @@ async def apply_template(
 async def list_templates():
     """
     List available code templates.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns categorized templates for quick access.
     """
     templates = [
@@ -427,11 +318,7 @@ async def list_templates():
             "description": "Ore block with loot table",
         },
     ]
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return templates
 
 
@@ -444,11 +331,7 @@ async def compare_versions(
 ):
     """
     Compare two versions of code.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Shows diff between original and modified code.
     """
     # Simple diff (would use proper diff library in production)
@@ -457,22 +340,14 @@ async def compare_versions(
         "removed_lines": 0,
         "changes": [],
     }
-<<<<<<< HEAD
 
     original_lines = original_code.split("\n")
     modified_lines = modified_code.split("\n")
 
-=======
-    
-    original_lines = original_code.split("\n")
-    modified_lines = modified_code.split("\n")
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Simple line-by-line comparison
     for i, line in enumerate(modified_lines):
         if i >= len(original_lines):
             diff["added_lines"] += 1
-<<<<<<< HEAD
             diff["changes"].append(
                 {
                     "type": "added",
@@ -500,29 +375,6 @@ async def compare_versions(
             }
         )
 
-=======
-            diff["changes"].append({
-                "type": "added",
-                "line": i + 1,
-                "content": line,
-            })
-        elif line != original_lines[i]:
-            diff["changes"].append({
-                "type": "modified",
-                "line": i + 1,
-                "original": original_lines[i],
-                "modified": line,
-            })
-    
-    for i in range(len(modified_lines), len(original_lines)):
-        diff["removed_lines"] += 1
-        diff["changes"].append({
-            "type": "removed",
-            "line": i + 1,
-            "content": original_lines[i],
-        })
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "session_id": session_id,
         "diff": diff,
