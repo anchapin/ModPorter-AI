@@ -21,17 +21,17 @@
 
 ---
 
-## Current Milestone: v4.2 Error Recovery & Retry Logic
+## Current Milestone: v4.3 Conversion Quality
 
-**Goal:** Build intelligent error recovery with exponential backoff retry, circuit breaker protection, and comprehensive fallback strategies for resilient operations.
+**Goal:** Improve conversion quality through semantic equivalence tracking and achieve 50% successful conversion rate for Java→Bedrock mod conversions.
 
 **Target features:**
-- Retry Strategies with Exponential Backoff: Configurable retry attempts, max delays, jitter, and per-error-type policies
-- Circuit Breaker Pattern: Failure threshold detection, recovery timeout, half-open state management
-- Error Categorization: Transient vs permanent errors, appropriate handling strategies for each type
-- Fallback Strategies: Default values, cached responses, degraded mode for failed operations
+- Semantic Equivalence Scoring: Measure and track semantic similarity between Java source and Bedrock output
+- Behavior Preservation Analysis: Identify and track behavioral differences between original and converted mods
+- Conversion Success Metrics: Track and report conversion success rates with detailed breakdowns
+- Quality Improvement Pipeline: Automated quality assessment and feedback loop for conversions
 
-**Previous milestone:** v4.1 Conversion Robustness (2026-03-19)
+**Previous milestone:** v4.2 Error Recovery & Retry Logic (2026-03-19)
 
 ---
 
