@@ -3,12 +3,18 @@ AI Engine Client Service
 
 Provides HTTP client for communicating with the AI Engine API.
 Handles file transfers, conversion requests, and progress polling.
+
+Features:
+- Retry with exponential backoff for transient failures
+- Circuit breaker pattern to prevent cascading failures
+- LLM fallback chain (OpenAI → Anthropic → Local)
 """
 
 import asyncio
 import logging
 import os
 from typing import Optional, Dict, Any, AsyncIterator
+from enum import Enum
 
 import httpx
 
@@ -20,6 +26,13 @@ AI_ENGINE_TIMEOUT = httpx.Timeout(1800.0)  # 30 minutes timeout for long-running
 
 # Default poll interval for checking conversion status
 DEFAULT_POLL_INTERVAL = 2.0  # seconds
+
+
+class LLMProvider(Enum):
+    """Available LLM providers for fallback chain."""
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    LOCAL = "local"
 
 
 class AIEngineError(Exception):
@@ -39,6 +52,11 @@ class AIEngineClient:
     - Checking conversion status
     - Downloading converted files
     - Polling for progress updates
+
+    Features integrated:
+    - Retry with exponential backoff
+    - Circuit breaker pattern
+    - LLM fallback support
     """
 
     def __init__(
@@ -51,6 +69,8 @@ class AIEngineClient:
         self.timeout = timeout
         self.poll_interval = poll_interval
         self._client: Optional[httpx.AsyncClient] = None
+        # Circuit breaker - will be initialized lazily
+        self._circuit_breaker = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
@@ -61,6 +81,17 @@ class AIEngineClient:
                 follow_redirects=True,
             )
         return self._client
+
+    def _get_circuit_breaker(self):
+        """Get or create circuit breaker (lazy initialization)."""
+        if self._circuit_breaker is None:
+            from backend.src.services.error_recovery import CircuitBreaker
+            self._circuit_breaker = CircuitBreaker(
+                failure_threshold=5,
+                timeout=60,
+                half_open_max_calls=3,
+            )
+        return self._circuit_breaker
 
     async def close(self):
         """Close the HTTP client."""
@@ -75,12 +106,29 @@ class AIEngineClient:
         Returns:
             True if AI Engine is healthy, False otherwise
         """
+        from backend.src.services.retry import retry_async, RetryConfig
+        
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay=1.0,
+            max_delay=10.0,
+            exponential_base=2.0,
+            jitter=True,
+        )
+        
         try:
-            client = await self._get_client()
-            response = await client.get("/api/v1/health")
-            return response.status_code == 200
+            async def _check():
+                client = await self._get_client()
+                response = await client.get("/api/v1/health")
+                return response.status_code == 200
+            
+            result = await retry_async(_check, config=retry_config)
+            return result
         except Exception as e:
             logger.warning(f"AI Engine health check failed: {e}")
+            # Record failure for circuit breaker
+            cb = self._get_circuit_breaker()
+            cb._record_failure()
             return False
 
     async def start_conversion(

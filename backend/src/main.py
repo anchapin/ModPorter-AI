@@ -69,9 +69,12 @@ from api import (
     patterns,
     batch_conversion,
     batch_conversion_v2,
+    integrity,
 )
 from api.batch_conversion_v3 import router as batch_conversion_v3_router
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
+from api.training_review import router as training_review_router
+from api.model_deployment import router as model_deployment_router
 
 # Import mock data from report_generator
 from services.report_generator import (
@@ -217,6 +220,9 @@ app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytic
 app.include_router(alerting.router, prefix="/api/v1/alerting", tags=["alerting"])
 app.include_router(patterns.router, prefix="/api/v1/patterns", tags=["pattern-library"])
 app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
+app.include_router(training_review_router, prefix="/api/v1", tags=["AI Training"])
+app.include_router(model_deployment_router, prefix="/api/v1", tags=["AI Model Deployment"])
+app.include_router(integrity.router, prefix="/api/v1/integrity", tags=["Integrity"])
 
 # Batch conversion routers
 app.include_router(batch_conversion.router, prefix="/api/v1/batch", tags=["Batch Conversion"])

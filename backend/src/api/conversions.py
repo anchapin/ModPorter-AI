@@ -86,6 +86,12 @@ class ConversionOptions(BaseModel):
         default="1.20.0",
         description="Target Minecraft Bedrock version",
     )
+    timeout_seconds: Optional[int] = Field(
+        default=1800,
+        description="Maximum conversion time in seconds (default: 30 minutes)",
+        ge=60,
+        le=3600,
+    )
 
     @validator("assumptions")
     def validate_assumptions(cls, v):
@@ -126,6 +132,9 @@ class ConversionStatusResponse(BaseModel):
     result_url: Optional[str] = Field(None, description="Download URL if completed")
     error: Optional[str] = Field(None, description="Error message if failed")
     original_filename: Optional[str] = Field(None, description="Original uploaded filename")
+    timeout_seconds: Optional[int] = Field(None, description="Configured timeout in seconds")
+    timeout_remaining: Optional[int] = Field(None, description="Remaining time in seconds")
+    timeout_exceeded: bool = Field(default=False, description="Whether timeout was exceeded")
 
 
 class ConversionListResponse(BaseModel):
@@ -683,6 +692,10 @@ async def get_conversion(
 
     message = status_messages.get(job.status, f"Job status: {job.status}")
 
+    # Get timeout settings from job options
+    timeout_seconds = job.options.get("timeout_seconds") if job.options else None
+    timeout_exceeded = job.status == "failed" and "timeout" in (job.error or "").lower()
+
     response = ConversionStatusResponse(
         conversion_id=conversion_id,
         status=job.status,
@@ -691,8 +704,10 @@ async def get_conversion(
         created_at=job.created_at,
         updated_at=job.updated_at,
         result_url=result_url,
-        error=None,
+        error=job.error,
         original_filename=job.input_data.get("original_filename"),
+        timeout_seconds=timeout_seconds,
+        timeout_exceeded=timeout_exceeded,
     )
 
     # Update cache

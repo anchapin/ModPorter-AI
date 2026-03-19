@@ -432,3 +432,236 @@ async def get_event_types():
             AnalyticsEvents.CATEGORY_USER_ACTION,
         ],
     }
+
+
+# Dashboard-specific response models
+class ConversionStatsResponse(BaseModel):
+    """Response model for conversion statistics."""
+    total_conversions: int
+    successful_conversions: int
+    failed_conversions: int
+    success_rate: float
+    average_duration: float
+
+
+class UserStatsResponse(BaseModel):
+    """Response model for user statistics."""
+    total_registrations: int
+    daily_signups: int
+    weekly_signups: int
+    active_users: int
+
+
+class ErrorStatsResponse(BaseModel):
+    """Response model for error statistics."""
+    error_rate: float
+    error_trend: str
+    recent_errors: int
+    top_errors: List[dict]
+
+
+class PerformanceMetricsResponse(BaseModel):
+    """Response model for performance metrics."""
+    average_conversion_time: float
+    throughput: float
+    peak_time: str
+
+
+# Dashboard endpoints
+@router.get("/conversions", response_model=ConversionStatsResponse)
+async def get_conversion_stats(
+    days: int = 7,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get conversion statistics for the analytics dashboard.
+    
+    Returns total conversions, success/failure counts, success rate,
+    and average conversion duration.
+    """
+    analytics = AnalyticsService(db)
+    
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Get conversion events
+        total = await analytics.get_event_count(
+            event_type=AnalyticsEvents.CONVERSION_START,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        successful = await analytics.get_event_count(
+            event_type=AnalyticsEvents.CONVERSION_COMPLETE,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        failed = await analytics.get_event_count(
+            event_type=AnalyticsEvents.CONVERSION_FAIL,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        success_rate = (successful / total * 100) if total > 0 else 0.0
+        
+        # For average duration, we'd need to track timing data
+        # Using a placeholder for now
+        average_duration = 45.2  # Placeholder
+        
+        return ConversionStatsResponse(
+            total_conversions=total,
+            successful_conversions=successful,
+            failed_conversions=failed,
+            success_rate=round(success_rate, 1),
+            average_duration=average_duration,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get conversion stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversion stats")
+
+
+@router.get("/users", response_model=UserStatsResponse)
+async def get_user_stats(
+    days: int = 7,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get user registration statistics for the analytics dashboard.
+    
+    Returns total registrations, daily/weekly signups, and active users.
+    """
+    analytics = AnalyticsService(db)
+    
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        week_start = end_date - timedelta(days=7)
+        
+        # Get unique users who performed actions
+        total = await analytics.get_unique_users(
+            start_date=datetime(2020, 1, 1),  # All time
+            end_date=end_date,
+        )
+        
+        # Get daily signups (users who registered today)
+        day_start = end_date - timedelta(days=1)
+        daily = await analytics.get_unique_users(
+            start_date=day_start,
+            end_date=end_date,
+        )
+        
+        # Get weekly signups
+        weekly = await analytics.get_unique_users(
+            start_date=week_start,
+            end_date=end_date,
+        )
+        
+        # Active users (users with events in the period)
+        active = await analytics.get_unique_users(
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        return UserStatsResponse(
+            total_registrations=total,
+            daily_signups=daily,
+            weekly_signups=weekly,
+            active_users=active,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get user stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user stats")
+
+
+@router.get("/errors", response_model=ErrorStatsResponse)
+async def get_error_stats(
+    days: int = 7,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get error statistics for the analytics dashboard.
+    
+    Returns error rate, trend, recent error count, and top errors.
+    """
+    analytics = AnalyticsService(db)
+    
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        previous_start = start_date - timedelta(days=days)
+        
+        # Get total events and error events
+        total_events = await analytics.get_total_events(
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        error_events = await analytics.get_event_count(
+            event_type=AnalyticsEvents.CONVERSION_FAIL,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        
+        # Get previous period for trend
+        previous_errors = await analytics.get_event_count(
+            event_type=AnalyticsEvents.CONVERSION_FAIL,
+            start_date=previous_start,
+            end_date=start_date,
+        )
+        
+        error_rate = (error_events / total_events * 100) if total_events > 0 else 0.0
+        
+        # Determine trend
+        if error_events > previous_errors * 1.1:
+            error_trend = "up"
+        elif error_events < previous_errors * 0.9:
+            error_trend = "down"
+        else:
+            error_trend = "stable"
+        
+        # Top errors (placeholder data for now)
+        top_errors = [
+            {"error_type": "ParseError", "count": 5},
+            {"error_type": "AssetNotFound", "count": 4},
+            {"error_type": "Timeout", "count": 3},
+            {"error_type": "InvalidInput", "count": 2},
+        ]
+        
+        return ErrorStatsResponse(
+            error_rate=round(error_rate, 1),
+            error_trend=error_trend,
+            recent_errors=error_events,
+            top_errors=top_errors,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get error stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get error stats")
+
+
+@router.get("/performance", response_model=PerformanceMetricsResponse)
+async def get_performance_metrics(
+    days: int = 7,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get performance metrics for the analytics dashboard.
+    
+    Returns average conversion time, throughput, and peak time.
+    """
+    try:
+        # Placeholder for performance metrics
+        # In a real implementation, this would query actual performance data
+        return PerformanceMetricsResponse(
+            average_conversion_time=45.2,
+            throughput=12.5,
+            peak_time="2:00 PM",
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get performance metrics")

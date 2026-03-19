@@ -26,6 +26,7 @@ import httpx  # Add for AI Engine communication
 from dotenv import load_dotenv
 from db.init_db import init_db
 from api.feedback import router as feedback_router
+from api.uploads import router as uploads_router
 
 # Sentry error tracking initialization
 import sentry_sdk
@@ -125,6 +126,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(feedback_router, prefix="/api/v1")
+app.include_router(uploads_router, prefix="/api/v1")
 
 # Register custom exception handlers for comprehensive error handling
 register_exception_handlers(app)
@@ -235,6 +237,7 @@ async def upload_file(file: UploadFile = File(...)):
     Upload a mod file (.jar, .zip, .mcaddon) for conversion.
 
     - Validates file type and size (max 100MB).
+    - Performs comprehensive validation on the file content.
     - Saves the file to a temporary location.
     - Returns a unique file identifier and other file details.
     """
@@ -258,6 +261,37 @@ async def upload_file(file: UploadFile = File(...)):
                 f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}"
             ),
         )
+
+    # Read file content for validation
+    file_content = await file.read()
+    await file.seek(0)
+
+    # Perform comprehensive validation using the new validation module
+    try:
+        from api.uploads import validate_on_upload
+        validation_result = await validate_on_upload(file_content, original_filename)
+        
+        if not validation_result.valid:
+            # Return validation errors with details
+            error_details = []
+            for error in validation_result.errors:
+                error_details.append(f"{error.code}: {error.message}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"File validation failed: {'; '.join(error_details)}"
+            )
+        
+        # Log warnings if any (non-blocking)
+        if validation_result.warnings:
+            print(f"File upload warnings for {original_filename}:")
+            for warning in validation_result.warnings:
+                print(f"  - {warning.message}")
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Validation error: {e}")
+        # Continue with upload if validation fails unexpectedly - don't block
 
     # Generate unique file identifier
     file_id = str(uuid.uuid4())

@@ -238,6 +238,28 @@ successful_retries_total = Counter(
     registry=registry,
 )
 
+# Circuit breaker metrics
+circuit_breaker_state = Gauge(
+    "modporter_circuit_breaker_state",
+    "Circuit breaker state (0=closed, 1=half-open, 2=open)",
+    ["service_name"],
+    registry=registry,
+)
+
+circuit_breaker_failures = Counter(
+    "modporter_circuit_breaker_failures_total",
+    "Total circuit breaker failures",
+    ["service_name"],
+    registry=registry,
+)
+
+circuit_breaker_successes = Counter(
+    "modporter_circuit_breaker_successes_total",
+    "Total circuit breaker successes",
+    ["service_name"],
+    registry=registry,
+)
+
 # ============================================
 # Rate Limiting Metrics (Issue #643)
 # ============================================
@@ -497,6 +519,27 @@ def record_successful_retry(error_category: str, function_name: str):
     successful_retries_total.labels(
         error_category=error_category, function_name=function_name
     ).inc()
+
+
+def record_circuit_breaker_state(service_name: str, state: int):
+    """
+    Record circuit breaker state.
+
+    Args:
+        service_name: Name of the service
+        state: 0=closed, 1=half-open, 2=open
+    """
+    circuit_breaker_state.labels(service_name=service_name).set(state)
+
+
+def record_circuit_breaker_failure(service_name: str):
+    """Record a circuit breaker failure."""
+    circuit_breaker_failures.labels(service_name=service_name).inc()
+
+
+def record_circuit_breaker_success(service_name: str):
+    """Record a circuit breaker success."""
+    circuit_breaker_successes.labels(service_name=service_name).inc()
 
 
 def record_rate_limit_hit(endpoint: str, client_type: str = "ip"):

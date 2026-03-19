@@ -79,6 +79,75 @@ CREATE INDEX idx_experiment_variants_experiment_id ON experiment_variants(experi
 CREATE INDEX idx_experiment_results_variant_id ON experiment_results(variant_id);
 CREATE INDEX idx_experiment_results_session_id ON experiment_results(session_id);
 
+-- Phase 09-02: Regression Detection - Baseline Storage Tables
+-- Table to store baseline conversions for regression detection
+CREATE TABLE baseline_conversions (
+    id UUID PRIMARY KEY,
+    baseline_id VARCHAR(100) NOT NULL UNIQUE,
+    conversion_id UUID NOT NULL,
+    mod_type VARCHAR(50) NOT NULL, -- e.g., item, block, entity, recipe
+    java_code_hash VARCHAR(64) NOT NULL, -- SHA256 hash of original Java code
+    bedrock_code_hash VARCHAR(64) NOT NULL, -- SHA256 hash of converted Bedrock code
+    validation_score DECIMAL(5,2) NOT NULL, -- Quality score at time of baseline
+    metadata JSONB, -- Additional metadata about the conversion
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store conversion history for trend analysis
+CREATE TABLE conversion_history (
+    id UUID PRIMARY KEY,
+    conversion_id UUID NOT NULL,
+    baseline_id UUID REFERENCES baseline_conversions(id) ON DELETE SET NULL,
+    version VARCHAR(20) NOT NULL, -- Version of the conversion
+    java_code TEXT NOT NULL, -- Snapshot of Java code
+    bedrock_code TEXT NOT NULL, -- Snapshot of Bedrock code
+    validation_score DECIMAL(5,2) NOT NULL,
+    regression_score DECIMAL(5,2), -- Score indicating regression from baseline
+    regression_detected BOOLEAN DEFAULT FALSE,
+    regression_severity VARCHAR(20), -- none, minor, moderate, major, critical
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store coverage metrics
+CREATE TABLE coverage_metrics (
+    id UUID PRIMARY KEY,
+    conversion_id UUID NOT NULL,
+    mod_type VARCHAR(50) NOT NULL,
+    complexity_level VARCHAR(20) NOT NULL, -- simple, moderate, complex
+    java_coverage DECIMAL(5,2) NOT NULL,
+    bedrock_coverage DECIMAL(5,2) NOT NULL,
+    asset_coverage DECIMAL(5,2) NOT NULL,
+    overall_coverage DECIMAL(5,2) NOT NULL,
+    quality_score DECIMAL(5,2) NOT NULL,
+    grade VARCHAR(1) NOT NULL, -- A, B, C, D, F
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table to store validation reports
+CREATE TABLE validation_reports (
+    id UUID PRIMARY KEY,
+    report_id VARCHAR(100) NOT NULL UNIQUE,
+    conversion_id UUID NOT NULL,
+    validation_results JSONB NOT NULL,
+    regression_results JSONB,
+    coverage_metrics JSONB,
+    quality_score JSONB,
+    recommendations TEXT[],
+    format VARCHAR(20) NOT NULL, -- json, html, markdown
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for Phase 09 tables
+CREATE INDEX idx_baseline_conversions_conversion_id ON baseline_conversions(conversion_id);
+CREATE INDEX idx_baseline_conversions_mod_type ON baseline_conversions(mod_type);
+CREATE INDEX idx_conversion_history_conversion_id ON conversion_history(conversion_id);
+CREATE INDEX idx_conversion_history_baseline_id ON conversion_history(baseline_id);
+CREATE INDEX idx_conversion_history_created_at ON conversion_history(created_at);
+CREATE INDEX idx_coverage_metrics_conversion_id ON coverage_metrics(conversion_id);
+CREATE INDEX idx_coverage_metrics_mod_type ON coverage_metrics(mod_type);
+CREATE INDEX idx_validation_reports_conversion_id ON validation_reports(conversion_id);
+CREATE INDEX idx_validation_reports_created_at ON validation_reports(created_at);
+
 -- Comments on schema:
 -- - UUIDs are used for primary keys for global uniqueness.
 -- - 'conversions(id)' is assumed to be an existing table from other parts of the project.
@@ -88,3 +157,4 @@ CREATE INDEX idx_experiment_results_session_id ON experiment_results(session_id)
 -- - `WITH TIME ZONE` for timestamps is generally good practice.
 -- - Added `ON DELETE CASCADE` for foreign keys so test cases are removed if the parent result is removed.
 -- - Added tables for A/B testing infrastructure with proper relationships and indexes.
+-- - Added Phase 09 QA Suite tables: baseline_conversions, conversion_history, coverage_metrics, validation_reports

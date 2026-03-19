@@ -251,6 +251,54 @@ class AnalyticsService:
         result = await self.db.execute(query)
         return [{"date": str(row[0]), "count": row[1]} for row in result.all()]
 
+    async def get_event_count(
+        self,
+        event_type: Optional[str] = None,
+        event_category: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        """Get count of events matching filters."""
+        conditions = []
+
+        if event_type:
+            conditions.append(AnalyticsEvent.event_type == event_type)
+        if event_category:
+            conditions.append(AnalyticsEvent.event_category == event_category)
+        if start_date:
+            conditions.append(AnalyticsEvent.created_at >= start_date)
+        if end_date:
+            conditions.append(AnalyticsEvent.created_at <= end_date)
+
+        query = select(func.count(AnalyticsEvent.id))
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        result = await self.db.execute(query)
+        return result.scalar() or 0
+
+    async def get_total_events(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        """Get total count of all events in date range."""
+        conditions = []
+
+        if start_date:
+            conditions.append(AnalyticsEvent.created_at >= start_date)
+        if end_date:
+            conditions.append(AnalyticsEvent.created_at <= end_date)
+
+        query = select(func.count(AnalyticsEvent.id))
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        result = await self.db.execute(query)
+        return result.scalar() or 0
+
 
 # Predefined event types for consistent tracking
 class AnalyticsEvents:
