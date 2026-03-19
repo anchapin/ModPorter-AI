@@ -38,6 +38,7 @@ const DEFAULT_OPTIONS: AdvancedOptions = {
 };
 
 const TARGET_VERSIONS = [
+  { value: '1.21.0', label: '1.21.0 (Trails & Tails)' },
   { value: '1.20.0', label: '1.20.0 (Wild Update)' },
   { value: '1.19.0', label: '1.19.0 (The Wild Update)' },
   { value: '1.18.0', label: '1.18.0 (Caves & Cliffs II)' },

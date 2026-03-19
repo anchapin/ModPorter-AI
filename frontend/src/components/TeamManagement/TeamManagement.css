@@ -1,0 +1,145 @@
+.team-management {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100%;
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+}
+
+.team-tabs {
+  margin-bottom: 16px;
+  background-color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.team-content {
+  min-height: 400px;
+}
+
+.team-card {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.team-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.team-card-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.team-avatar {
+  background-color: #1976d2;
+}
+
+.team-info h6 {
+  margin: 0;
+}
+
+.team-description {
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.team-members-preview {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.member-avatar {
+  border: 2px solid white;
+}
+
+/* Team Detail */
+.team-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.team-detail-header h5 {
+  flex: 1;
+  margin: 0;
+}
+
+.members-list {
+  padding: 16px;
+}
+
+.section-title {
+  margin-bottom: 16px;
+}
+
+.member-item {
+  border-bottom: 1px solid #eee;
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
+.member-role {
+  margin-right: 16px;
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remove-item {
+  color: #d32f2f;
+}
+
+/* Discover & Settings */
+.discover-teams,
+.team-settings {
+  padding: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: #666;
+}
+
+/* Dialog Styles */
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .team-management {
+    padding: 16px;
+  }
+
+  .team-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .team-detail-header {
+    flex-wrap: wrap;
+  }
+}

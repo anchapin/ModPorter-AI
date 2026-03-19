@@ -1,0 +1,382 @@
+/* Pricing Page Styles */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: #1a1a2e;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin: 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Billing Toggle */
+.billingToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  font-size: 1rem;
+  color: #64748b;
+}
+
+.activeLabel {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.toggle {
+  width: 56px;
+  height: 30px;
+  background: #e2e8f0;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.toggleYearly {
+  background: #3b82f6;
+}
+
+.toggleKnob {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleYearly .toggleKnob {
+  transform: translateX(26px);
+}
+
+.discountBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Pricing Grid */
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.pricingCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 2rem;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricingCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.pricingCard.highlighted {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+.pricingCard.hovered {
+  transform: translateY(-8px);
+}
+
+.popularBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3b82f6;
+  color: white;
+  padding: 0.375rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.tierName {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.tierDescription {
+  color: #64748b;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* Price Section */
+.priceSection {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+.currency {
+  font-size: 1.5rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.amount {
+  font-size: 3rem;
+  color: #1e293b;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.period {
+  font-size: 1rem;
+  color: #64748b;
+  margin-left: 0.25rem;
+}
+
+.savings {
+  color: #166534;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.conversions {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9375rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.unlimited {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Features List */
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  flex-grow: 1;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.checkIcon {
+  color: #22c55e;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* CTA Buttons */
+.ctaButton {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.primaryButton {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.primaryButton:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.secondaryButton {
+  background: white;
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.secondaryButton:hover {
+  background: #eff6ff;
+}
+
+/* Enterprise CTA */
+.enterpriseCTA {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.enterpriseContent h2 {
+  color: white;
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+}
+
+.enterpriseContent p {
+  color: #94a3b8;
+  margin: 0 0 2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.enterpriseButton {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  background: white;
+  color: #1e293b;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.enterpriseButton:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+/* FAQ Link */
+.faqLink {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.faqLink p {
+  color: #64748b;
+  margin: 0 0 0.5rem;
+}
+
+.faqLink a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.faqLink a:hover {
+  text-decoration: underline;
+}
+
+/* Guarantee */
+.guarantee {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.guaranteeIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.guarantee strong {
+  color: #1e293b;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.guarantee p {
+  color: #64748b;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1.5rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .pricingGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .pricingCard {
+    padding: 1.5rem;
+  }
+
+  .amount {
+    font-size: 2.5rem;
+  }
+
+  .enterpriseCTA {
+    padding: 2rem 1.5rem;
+  }
+
+  .enterpriseContent h2 {
+    font-size: 1.5rem;
+  }
+}

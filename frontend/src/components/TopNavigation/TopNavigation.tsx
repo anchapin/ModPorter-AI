@@ -23,9 +23,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/comparison', label: 'Comparison' },
     { to: '/behavioral-test', label: 'Behavioral Test' },
+    { to: '/patterns', label: 'Patterns' },
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
     { to: '/docs', label: 'Documentation' },
+    { to: '/faq', label: 'FAQ' },
+    { to: '/pricing', label: 'Pricing' },
     { to: '/settings', label: '⚙️' },
   ];
 

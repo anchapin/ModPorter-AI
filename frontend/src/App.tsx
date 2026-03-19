@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
+import { OnboardingModal, useOnboarding } from './components/common/OnboardingModal';
 import { usePageViewTracking } from './hooks/useAnalytics';
 import './App.css';
 
@@ -31,6 +32,11 @@ const ExperimentResultsPage = lazy(
   () => import('./pages/ExperimentResultsPage')
 );
 const Settings = lazy(() => import('./pages/Settings'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const VisualEditorPage = lazy(() => import('./pages/VisualEditorPage'));
+const PatternLibraryPage = lazy(() => import('./pages/PatternLibraryPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -38,9 +44,28 @@ function App() {
   // Track page views automatically
   usePageViewTracking(true);
 
+  // Onboarding modal state
+  const { shouldShowOnboarding, isLoading: onboardingLoading, completeOnboarding } = useOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (!onboardingLoading && shouldShowOnboarding) {
+      // Show onboarding after a short delay for better UX
+      const timer = setTimeout(() => setShowOnboarding(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [onboardingLoading, shouldShowOnboarding]);
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
+        <OnboardingModal 
+          isOpen={showOnboarding} 
+          onClose={() => {
+            setShowOnboarding(false);
+            completeOnboarding();
+          }} 
+        />
         <Router>
           <div className="app">
             <TopNavigation />
@@ -140,6 +165,50 @@ function App() {
                   element={
                     <Suspense fallback={<div>Loading Settings...</div>}>
                       <Settings />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/faq"
+                  element={
+                    <Suspense fallback={<div>Loading FAQ...</div>}>
+                      <FAQ />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/pricing"
+                  element={
+                    <Suspense fallback={<div>Loading Pricing...</div>}>
+                      <Pricing />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <Suspense fallback={<div>Loading Analytics...</div>}>
+                      <Analytics />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/visual-editor/:conversionId"
+                  element={
+                    <Suspense fallback={<div>Loading Visual Editor...</div>}>
+                      <div className="page-wrapper">
+                        <VisualEditorPage />
+                      </div>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/patterns"
+                  element={
+                    <Suspense fallback={<div>Loading Pattern Library...</div>}>
+                      <div className="page-wrapper">
+                        <PatternLibraryPage />
+                      </div>
                     </Suspense>
                   }
                 />
