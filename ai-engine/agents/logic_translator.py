@@ -1,6 +1,7 @@
 """
 Logic Translator Agent for Java to JavaScript code conversion
 Enhanced for Issue #546: Block Generation from Java block analysis
+Enhanced with semantic context, data flow analysis, and pattern matching (Phase 08-01)
 """
 
 from typing import List, Dict, Any
@@ -13,6 +14,7 @@ from models.smart_assumptions import (
 )
 from agents.java_analyzer import JavaAnalyzerAgent
 from utils.logging_config import get_agent_logger, log_performance
+from utils.enhanced_translation import get_enhanced_translation_engine
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
@@ -636,6 +638,9 @@ class LogicTranslatorAgent:
         self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
         self.java_analyzer_agent = JavaAnalyzerAgent()  # Added JavaAnalyzerAgent initialization
+        # Enhanced Translation Engine (Phase 08-01: Semantic Understanding Enhancement)
+        self.enhanced_engine = get_enhanced_translation_engine()
+        self.enhanced_engine.set_logger(logger)
 
         # Java to JavaScript conversion mappings
         self.type_mappings = {
@@ -926,7 +931,7 @@ class LogicTranslatorAgent:
 
     def translate_java_code(self, java_code: str, code_type: str) -> str:
         """
-        Translate Java code to JavaScript.
+        Translate Java code to JavaScript using enhanced semantic analysis.
 
         Args:
             java_code: Java source code to translate
@@ -936,6 +941,9 @@ class LogicTranslatorAgent:
             JSON string with translation results
         """
         try:
+            # Use enhanced translation engine for semantic analysis (Phase 08-01)
+            analysis_result = self.enhanced_engine.analyze_and_translate(java_code, code_type)
+            
             # Basic translation simulation
             # In real implementation, this would parse Java AST and convert to JavaScript
             result = {
@@ -949,6 +957,13 @@ class LogicTranslatorAgent:
                 "success_rate": 0.85,
                 "assumptions_applied": [],
                 "errors": [],
+                # Enhanced translation results (Phase 08-01)
+                "semantic_analysis": {
+                    "confidence": analysis_result.get('confidence', 0.0),
+                    "patterns_found": len(analysis_result.get('patterns', [])),
+                    "context_prompt": analysis_result.get('context_prompt', ''),
+                    "recommendations": analysis_result.get('recommendations', [])
+                }
             }
 
             return json.dumps(result)

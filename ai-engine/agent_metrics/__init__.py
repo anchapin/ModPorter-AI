@@ -25,6 +25,26 @@ from .alerts import AlertManager, alert_manager, AlertSeverity, Alert, configure
 
 from .dashboard import MetricsDashboard, get_dashboard_data, export_metrics
 
+from .automation_metrics import (
+    AutomationMetrics,
+    automation_metrics,
+)
+
+from .bottleneck_detector import (
+    BottleneckDetector,
+    bottleneck_detector,
+)
+
+from .trend_analyzer import (
+    TrendAnalyzer,
+    trend_analyzer,
+)
+
+from .automation_dashboard import (
+    AutomationDashboard,
+    automation_dashboard,
+)
+
 __all__ = [
     # Performance monitoring
     "PerformanceMonitor",
@@ -53,4 +73,13 @@ __all__ = [
     "MetricsDashboard",
     "get_dashboard_data",
     "export_metrics",
+    # Automation Analytics
+    "AutomationMetrics",
+    "automation_metrics",
+    "BottleneckDetector",
+    "bottleneck_detector",
+    "TrendAnalyzer",
+    "trend_analyzer",
+    "AutomationDashboard",
+    "automation_dashboard",
 ]

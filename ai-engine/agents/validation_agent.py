@@ -3,6 +3,15 @@ import uuid
 import os
 import time
 import random
+import json
+import re
+from typing import Dict, Any, List, Tuple, Optional
+from dataclasses import dataclass
+
+try:
+    import javalang
+except ImportError:
+    javalang = None
 
 from models.validation import (
     ManifestValidationResult,
@@ -11,6 +20,425 @@ from models.validation import (
     AssetValidationResult,
     ValidationReport as AgentValidationReport,
 )
+
+
+@dataclass
+class SyntaxValidationResult:
+    """Result of syntax validation for a code snippet."""
+    is_valid: bool
+    language: str
+    errors: List[str]
+    warnings: List[str]
+    line_count: int
+    complexity_score: float
+
+
+class JavaSyntaxValidator:
+    """Validates Java code syntax using javalang."""
+    
+    def __init__(self):
+        self.javalang_available = javalang is not None
+        if not self.javalang_available:
+            print("WARNING: javalang not available. Java syntax validation will use fallback.")
+    
+    def validate(self, java_code: str) -> SyntaxValidationResult:
+        """Validate Java code syntax."""
+        errors = []
+        warnings = []
+        
+        if not java_code or not java_code.strip():
+            return SyntaxValidationResult(
+                is_valid=False,
+                language="java",
+                errors=["Empty Java code provided"],
+                warnings=[],
+                line_count=0,
+                complexity_score=0.0
+            )
+        
+        line_count = len(java_code.split('\n'))
+        
+        # Calculate complexity based on code features
+        complexity = self._calculate_complexity(java_code)
+        
+        if self.javalang_available:
+            try:
+                tree = javalang.parse.parse(java_code)
+                
+                # Check for common issues
+                if not tree:
+                    errors.append("Failed to parse Java code - empty AST")
+                
+                # Walk the tree to check for basic issues
+                has_class = False
+                has_imports = bool(tree.imports)
+                
+                for path, node in tree:
+                    if isinstance(node, javalang.tree.ClassDeclaration):
+                        has_class = True
+                        # Check class name
+                        if not node.name:
+                            errors.append("Class declaration missing name")
+                
+                if not has_class:
+                    warnings.append("No class declaration found in code")
+                    
+            except javalang.parser.JavaSyntaxError as e:
+                errors.append(f"Java syntax error: {str(e)}")
+            except Exception as e:
+                errors.append(f"Failed to parse Java: {str(e)}")
+        else:
+            # Fallback: basic syntax checks
+            errors, warnings = self._fallback_validation(java_code)
+        
+        # Check for common Java issues
+        self._check_common_issues(java_code, errors, warnings)
+        
+        return SyntaxValidationResult(
+            is_valid=len(errors) == 0,
+            language="java",
+            errors=errors,
+            warnings=warnings,
+            line_count=line_count,
+            complexity_score=complexity
+        )
+    
+    def _calculate_complexity(self, code: str) -> float:
+        """Calculate a simple complexity score based on code features."""
+        score = 0.0
+        
+        # Count control structures
+        keywords = ['if', 'else', 'for', 'while', 'switch', 'case', 'try', 'catch', 'throw']
+        for kw in keywords:
+            score += len(re.findall(r'\b' + kw + r'\b', code))
+        
+        # Count method declarations
+        score += len(re.findall(r'\b(public|private|protected)\s+', code)) * 2
+        
+        # Normalize by line count
+        lines = code.split('\n')
+        if len(lines) > 0:
+            score = score / len(lines) * 10
+        
+        return min(score, 10.0)
+    
+    def _fallback_validation(self, code: str) -> Tuple[List[str], List[str]]:
+        """Fallback validation when javalang is not available."""
+        errors = []
+        warnings = []
+        
+        # Check balanced braces
+        open_braces = code.count('{')
+        close_braces = code.count('}')
+        if open_braces != close_braces:
+            errors.append(f"Unbalanced braces: {open_braces} open, {close_braces} close")
+        
+        # Check balanced parentheses
+        open_parens = code.count('(')
+        close_parens = code.count(')')
+        if open_parens != close_parens:
+            errors.append(f"Unbalanced parentheses: {open_parens} open, {close_parens} close")
+        
+        # Check for semicolons
+        lines = code.split('\n')
+        for i, line in enumerate(lines, 1):
+            line = line.strip()
+            if line and not line.startswith('//') and not line.startswith('/*'):
+                if not line.endswith(';') and not line.endswith('{') and not line.endswith('}'):
+                    if i < len(lines) and lines[i].strip():
+                        pass  # Allow multi-line statements
+        
+        return errors, warnings
+    
+    def _check_common_issues(self, code: str, errors: List[str], warnings: List[str]):
+        """Check for common Java code issues."""
+        # Check for System.out.println in production code
+        if 'System.out.println' in code:
+            warnings.append("System.out.println found - consider using a logger")
+        
+        # Check for empty catch blocks
+        if re.search(r'catch\s*\([^)]+\)\s*\{\s*\}', code):
+            warnings.append("Empty catch block found - errors may be silently swallowed")
+        
+        # Check for TODO/FIXME
+        if 'TODO' in code:
+            warnings.append("TODO comment found - code may be incomplete")
+        if 'FIXME' in code:
+            warnings.append("FIXME comment found - code needs fixing")
+
+
+class BedrockSyntaxValidator:
+    """Validates Bedrock add-on code (JavaScript/JSON)."""
+    
+    def __init__(self):
+        self.js_keywords = {'function', 'var', 'let', 'const', 'if', 'else', 'for', 'while', 
+                          'return', 'true', 'false', 'null', 'undefined', 'try', 'catch',
+                          'throw', 'new', 'this', 'class', 'import', 'export', 'async', 'await'}
+    
+    def validate(self, code: str, file_type: str = "javascript") -> SyntaxValidationResult:
+        """Validate Bedrock code based on file type."""
+        errors = []
+        warnings = []
+        
+        if not code or not code.strip():
+            return SyntaxValidationResult(
+                is_valid=False,
+                language="bedrock",
+                errors=["Empty Bedrock code provided"],
+                warnings=[],
+                line_count=0,
+                complexity_score=0.0
+            )
+        
+        line_count = len(code.split('\n'))
+        complexity = self._calculate_complexity(code)
+        
+        if file_type == "json" or file_type == "behavior":
+            # Validate as JSON
+            errors, warnings = self._validate_json(code)
+        else:
+            # Validate as JavaScript
+            errors, warnings = self._validate_javascript(code)
+        
+        return SyntaxValidationResult(
+            is_valid=len(errors) == 0,
+            language="bedrock",
+            errors=errors,
+            warnings=warnings,
+            line_count=line_count,
+            complexity_score=complexity
+        )
+    
+    def _validate_json(self, code: str) -> Tuple[List[str], List[str]]:
+        """Validate JSON structure."""
+        errors = []
+        warnings = []
+        
+        try:
+            data = json.loads(code)
+            # Check for required Bedrock fields
+            if isinstance(data, dict):
+                if 'format_version' not in data and 'minecraft_format_version' not in data:
+                    warnings.append("Missing format_version field")
+        except json.JSONDecodeError as e:
+            errors.append(f"JSON syntax error: {str(e)}")
+        
+        return errors, warnings
+    
+    def _validate_javascript(self, code: str) -> Tuple[List[str], List[str]]:
+        """Validate JavaScript syntax."""
+        errors = []
+        warnings = []
+        
+        # Check balanced braces
+        open_braces = code.count('{')
+        close_braces = code.count('}')
+        if open_braces != close_braces:
+            errors.append(f"Unbalanced braces: {open_braces} open, {close_braces} close")
+        
+        # Check balanced brackets
+        open_brackets = code.count('[')
+        close_brackets = code.count(']')
+        if open_brackets != close_brackets:
+            errors.append(f"Unbalanced brackets: {open_brackets} open, {close_brackets} close")
+        
+        # Check balanced parentheses
+        open_parens = code.count('(')
+        close_parens = code.count(')')
+        if open_parens != close_parens:
+            errors.append(f"Unbalanced parentheses: {open_parens} open, {close_parens} close")
+        
+        # Check for common issues
+        if 'var ' in code:
+            warnings.append("Using 'var' - consider 'let' or 'const' for better scoping")
+        
+        if '==' in code and '===' not in code:
+            warnings.append("Using '==' - consider '===' for strict equality")
+        
+        return errors, warnings
+    
+    def _calculate_complexity(self, code: str) -> float:
+        """Calculate complexity score."""
+        score = 0.0
+        
+        keywords = ['if', 'else', 'for', 'while', 'switch', 'case', 'try', 'catch', 'function']
+        for kw in keywords:
+            score += len(re.findall(r'\b' + kw + r'\b', code))
+        
+        # Count function declarations
+        score += len(re.findall(r'\bfunction\s+', code)) * 2
+        
+        lines = code.split('\n')
+        if len(lines) > 0:
+            score = score / len(lines) * 10
+        
+        return min(score, 10.0)
+
+
+class StructureValidator:
+    """Validates the structure of Bedrock add-on packages."""
+    
+    REQUIRED_MANIFEST_FIELDS = {'format_version', 'header', 'modules'}
+    REQUIRED_HEADER_FIELDS = {'name', 'description', 'uuid', 'version'}
+    
+    def validate_structure(self, manifest: Dict[str, Any], modules: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Validate the structure of a Bedrock add-on."""
+        errors = []
+        warnings = []
+        
+        # Validate manifest
+        manifest_errors, manifest_warnings = self._validate_manifest(manifest)
+        errors.extend(manifest_errors)
+        warnings.extend(manifest_warnings)
+        
+        # Validate modules
+        module_errors, module_warnings = self._validate_modules(modules)
+        errors.extend(module_errors)
+        warnings.extend(module_warnings)
+        
+        return {
+            "is_valid": len(errors) == 0,
+            "structure_errors": errors,
+            "structure_warnings": warnings,
+            "manifest_valid": len(manifest_errors) == 0,
+            "modules_valid": len([e for e in errors if 'module' in e.lower()]) == 0
+        }
+    
+    def _validate_manifest(self, manifest: Dict[str, Any]) -> Tuple[List[str], List[str]]:
+        """Validate manifest.json structure."""
+        errors = []
+        warnings = []
+        
+        if not manifest:
+            errors.append("Manifest is empty or missing")
+            return errors, warnings
+        
+        # Check required top-level fields
+        missing_fields = self.REQUIRED_MANIFEST_FIELDS - set(manifest.keys())
+        if missing_fields:
+            errors.append(f"Missing manifest fields: {missing_fields}")
+        
+        # Validate header
+        if 'header' in manifest:
+            header = manifest['header']
+            missing_header = self.REQUIRED_HEADER_FIELDS - set(header.keys())
+            if missing_header:
+                errors.append(f"Missing header fields: {missing_header}")
+            
+            # Validate version format
+            if 'version' in header:
+                version = header['version']
+                if isinstance(version, list):
+                    if not all(isinstance(v, int) for v in version):
+                        errors.append("Version must be a list of integers")
+                else:
+                    errors.append("Version must be a list")
+        else:
+            errors.append("Missing 'header' section in manifest")
+        
+        # Validate format_version
+        if 'format_version' in manifest:
+            fv = manifest['format_version']
+            if not isinstance(fv, (int, float, str)):
+                errors.append("format_version must be a number or string")
+        
+        return errors, warnings
+    
+    def _validate_modules(self, modules: List[Dict[str, Any]]) -> Tuple[List[str], List[str]]:
+        """Validate module definitions."""
+        errors = []
+        warnings = []
+        
+        if not modules:
+            warnings.append("No modules defined in add-on")
+            return errors, warnings
+        
+        valid_types = {'data', 'resources', 'script', 'javascript', 'client_data', 'world_template'}
+        
+        for i, module in enumerate(modules):
+            if not isinstance(module, dict):
+                errors.append(f"Module {i} is not a dictionary")
+                continue
+            
+            # Check required fields
+            if 'type' not in module:
+                errors.append(f"Module {i} missing 'type' field")
+            elif module['type'] not in valid_types:
+                warnings.append(f"Module {i} has non-standard type: {module['type']}")
+            
+            if 'uuid' not in module:
+                errors.append(f"Module {i} missing 'uuid' field")
+            
+            if 'version' not in module:
+                warnings.append(f"Module {i} missing 'version' field")
+        
+        return errors, warnings
+
+
+class CrossReferenceValidator:
+    """Validates cross-references between files in a Bedrock add-on."""
+    
+    def __init__(self):
+        self.entity_pattern = re.compile(r'"minecraft:entity"\s*:\s*"([^"]+)"')
+        self.item_pattern = re.compile(r'"minecraft:item"\s*:\s*"([^"]+)"')
+        self.block_pattern = re.compile(r'"minecraft:block"\s*:\s*"([^"]+)"')
+        self.function_pattern = re.compile(r'"script"\s*:\s*"([^"]+)"')
+        self.animation_pattern = re.compile(r'"animation"\s*:\s*"([^"]+)"')
+    
+    def validate_references(self, java_definitions: Dict[str, List[str]], 
+                           bedrock_files: Dict[str, str]) -> Dict[str, Any]:
+        """Validate that references between files are consistent."""
+        errors = []
+        warnings = []
+        
+        # Collect all referenced entities/items/blocks from Bedrock files
+        referenced_entities = set()
+        referenced_items = set()
+        referenced_blocks = set()
+        referenced_functions = set()
+        
+        for content in bedrock_files.values():
+            referenced_entities.update(self.entity_pattern.findall(content))
+            referenced_items.update(self.item_pattern.findall(content))
+            referenced_blocks.update(self.block_pattern.findall(content))
+            referenced_functions.update(self.function_pattern.findall(content))
+        
+        # Check if Java definitions match Bedrock references
+        java_entities = set(java_definitions.get('entities', []))
+        java_items = set(java_definitions.get('items', []))
+        java_blocks = set(java_definitions.get('blocks', []))
+        
+        # Find unreferenced definitions (defined but not used)
+        unused_entities = java_entities - referenced_entities
+        unused_items = java_items - referenced_items
+        unused_blocks = java_blocks - referenced_blocks
+        
+        if unused_entities:
+            warnings.append(f"Defined entities not referenced: {unused_entities}")
+        if unused_items:
+            warnings.append(f"Defined items not referenced: {unused_items}")
+        if unused_blocks:
+            warnings.append(f"Defined blocks not referenced: {unused_blocks}")
+        
+        # Find broken references (referenced but not defined)
+        broken_entities = referenced_entities - java_entities
+        broken_items = referenced_items - java_items
+        broken_blocks = referenced_blocks - java_blocks
+        
+        if broken_entities:
+            errors.append(f"References to undefined entities: {broken_entities}")
+        if broken_items:
+            errors.append(f"References to undefined items: {broken_items}")
+        if broken_blocks:
+            errors.append(f"References to undefined blocks: {broken_blocks}")
+        
+        return {
+            "is_valid": len(errors) == 0,
+            "reference_errors": errors,
+            "reference_warnings": warnings,
+            "total_references": len(referenced_entities) + len(referenced_items) + len(referenced_blocks),
+            "broken_count": len(broken_entities) + len(broken_items) + len(broken_blocks)
+        }
 
 
 class LLMSemanticAnalyzer:
@@ -305,11 +733,18 @@ class ManifestValidator:
 
 class ValidationAgent:
     def __init__(self):
+        # Syntax validators
+        self.java_validator = JavaSyntaxValidator()
+        self.bedrock_validator = BedrockSyntaxValidator()
+        self.structure_validator = StructureValidator()
+        self.crossref_validator = CrossReferenceValidator()
+        
+        # Original validators
         self.semantic_analyzer = LLMSemanticAnalyzer()
         self.behavior_predictor = BehaviorAnalysisEngine()
         self.asset_validator = AssetIntegrityChecker()
         self.manifest_validator = ManifestValidator()
-        print("ValidationAgent initialized with all components.")
+        print("ValidationAgent initialized with all components including syntax validators.")
 
     def validate_conversion(self, conversion_artifacts: dict) -> AgentValidationReport:
         print("Starting validation process...")
@@ -319,7 +754,24 @@ class ValidationAgent:
         asset_files = conversion_artifacts.get("asset_files", [])
         asset_base_path = conversion_artifacts.get("asset_base_path", "")
         manifest_data = conversion_artifacts.get("manifest_data", {})
-
+        
+        # Run syntax validations (Phase 09-01)
+        java_syntax = self.java_validator.validate(java_code)
+        bedrock_syntax = self.bedrock_validator.validate(bedrock_code)
+        
+        # Run structure validation
+        modules = manifest_data.get("modules", []) if manifest_data else []
+        structure_result = self.structure_validator.validate_structure(manifest_data, modules)
+        
+        # Run cross-reference validation if definitions provided
+        java_definitions = conversion_artifacts.get("java_definitions", {})
+        bedrock_files = conversion_artifacts.get("bedrock_files", {})
+        if java_definitions and bedrock_files:
+            crossref_result = self.crossref_validator.validate_references(java_definitions, bedrock_files)
+        else:
+            crossref_result = {"is_valid": True, "reference_errors": [], "reference_warnings": []}
+        
+        # Run original validations
         semantic_raw = self.semantic_analyzer.analyze(bedrock_code)
         behavior_raw = self.behavior_predictor.predict_behavior(java_code, bedrock_code)
         asset_raw = self.asset_validator.validate_assets(asset_files, base_path=asset_base_path)
@@ -329,20 +781,52 @@ class ValidationAgent:
         behavior_model = BehaviorPredictionResult(**behavior_raw)
         asset_model = AssetValidationResult(**asset_raw)
 
+        # Calculate confidence with syntax validation weights
         conf_semantic = semantic_model.confidence
         conf_behavior = behavior_model.confidence
         conf_asset = 1.0 if asset_model.all_assets_valid else 0.3
         conf_manifest = 1.0 if manifest_result_model.is_valid else 0.3
+        
+        # Add syntax validation confidence
+        conf_java_syntax = 1.0 if java_syntax.is_valid else 0.3
+        conf_bedrock_syntax = 1.0 if bedrock_syntax.is_valid else 0.3
+        conf_structure = 1.0 if structure_result["is_valid"] else 0.3
+        conf_crossref = 1.0 if crossref_result["is_valid"] else 0.3
 
+        # Original weights: semantic (0.3), behavior (0.4), assets (0.15), manifest (0.15)
+        # New weights with syntax validation (total = 1.0)
         overall_confidence = (
-            (conf_semantic * 0.3)
-            + (conf_behavior * 0.4)
-            + (conf_asset * 0.15)
-            + (conf_manifest * 0.15)
+            (conf_semantic * 0.20)
+            + (conf_behavior * 0.30)
+            + (conf_asset * 0.10)
+            + (conf_manifest * 0.10)
+            + (conf_java_syntax * 0.10)
+            + (conf_bedrock_syntax * 0.10)
+            + (conf_structure * 0.05)
+            + (conf_crossref * 0.05)
         )
         overall_confidence = round(min(max(overall_confidence, 0.0), 1.0), 2)
 
         recommendations = []
+        
+        # Add syntax validation recommendations
+        if not java_syntax.is_valid:
+            recommendations.append(f"Java syntax errors: {', '.join(java_syntax.errors[:3])}")
+        if java_syntax.warnings:
+            recommendations.append(f"Java syntax warnings: {', '.join(java_syntax.warnings[:2])}")
+        
+        if not bedrock_syntax.is_valid:
+            recommendations.append(f"Bedrock syntax errors: {', '.join(bedrock_syntax.errors[:3])}")
+        if bedrock_syntax.warnings:
+            recommendations.append(f"Bedrock syntax warnings: {', '.join(bedrock_syntax.warnings[:2])}")
+        
+        if not structure_result["is_valid"]:
+            recommendations.append(f"Structure errors: {', '.join(structure_result['structure_errors'][:2])}")
+        
+        if not crossref_result["is_valid"]:
+            recommendations.append(f"Cross-reference errors: {', '.join(crossref_result['reference_errors'][:2])}")
+        
+        # Original recommendations
         if not semantic_model.intent_preserved or semantic_model.confidence < 0.7:
             recommendations.append(
                 "Semantic analysis suggests potential issues; manual review of code logic advised."
@@ -380,6 +864,26 @@ class ValidationAgent:
         if manifest_result_model.warnings:
             recommendations.append("Manifest has warnings. Review for optimal compatibility.")
 
+        # Add syntax validation results to recommendations
+        syntax_validation = {
+            "java_syntax": {
+                "is_valid": java_syntax.is_valid,
+                "errors": java_syntax.errors,
+                "warnings": java_syntax.warnings,
+                "line_count": java_syntax.line_count,
+                "complexity_score": java_syntax.complexity_score
+            },
+            "bedrock_syntax": {
+                "is_valid": bedrock_syntax.is_valid,
+                "errors": bedrock_syntax.errors,
+                "warnings": bedrock_syntax.warnings,
+                "line_count": bedrock_syntax.line_count,
+                "complexity_score": bedrock_syntax.complexity_score
+            },
+            "structure": structure_result,
+            "cross_references": crossref_result
+        }
+
         report = AgentValidationReport(
             conversion_id=conversion_id,
             semantic_analysis=semantic_model,
@@ -389,6 +893,15 @@ class ValidationAgent:
             overall_confidence=overall_confidence,
             recommendations=list(set(recommendations)),
         )
+        
+        # Add syntax validation as raw_data for backward compatibility
+        if hasattr(report, 'raw_data'):
+            report.raw_data = syntax_validation
+        else:
+            # Store in recommendations for visibility
+            if syntax_validation.get("java_syntax", {}).get("errors") or \
+               syntax_validation.get("bedrock_syntax", {}).get("errors"):
+                recommendations.append("Syntax validation found errors - review detailed report")
 
         print("Validation process completed.")
         return report

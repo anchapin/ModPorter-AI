@@ -47,6 +47,24 @@ CONTROL_VARIANTS = {"control", "sequential", "baseline"}
 from models.smart_assumptions import ConversionPlanComponent, AssumptionReport
 from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
 from utils.logging_config import get_crew_logger, log_performance
+from utils.timeout_manager import (
+    TimeoutConfig,
+    get_timeout_config,
+    DeadlineTracker,
+    TimeoutExceeded,
+    create_deadline_tracker,
+)
+
+# Import degradation management (Phase 10-02)
+from utils.degradation_manager import (
+    DegradationManager,
+    DegradationLevel,
+    get_degradation_manager,
+)
+from utils.partial_converter import (
+    PartialConverter,
+    PartialConversionResult,
+)
 
 # Import progress callback for real-time updates
 try:
@@ -72,12 +90,21 @@ class ModPorterConversionCrew:
         model_name: str = "gpt-4",
         variant_id: str = None,
         progress_callback: Optional["ProgressCallback"] = None,
+        timeout_config: Optional[TimeoutConfig] = None,
     ):
         # Store variant ID
         self.variant_id = variant_id
 
         # Store progress callback for real-time updates
         self.progress_callback = progress_callback
+
+        # Load timeout configuration
+        self.timeout_config = timeout_config or get_timeout_config()
+        self.deadline_tracker: Optional[DeadlineTracker] = None
+
+        # Initialize degradation manager and partial converter (Phase 10-02)
+        self.degradation_manager: DegradationManager = get_degradation_manager()
+        self.partial_converter: PartialConverter = PartialConverter()
 
         # Initialize enhanced orchestration crew
         self.enhanced_crew = None
@@ -564,6 +591,57 @@ class ModPorterConversionCrew:
             except Exception as e:
                 logger.warning(f"Failed to send progress update: {e}")
 
+    def _initialize_deadline_tracker(self):
+        """Initialize deadline tracker for timeout management."""
+        self.deadline_tracker = create_deadline_tracker(self.timeout_config)
+        self.deadline_tracker.start()
+        logger.info(
+            f"Deadline tracker initialized with total job timeout: "
+            f"{self.timeout_config.pipeline_timeout.get('total_job', 1800)}s"
+        )
+
+    def _check_stage_deadline(self, stage: str) -> bool:
+        """Check if a pipeline stage can still complete within its deadline."""
+        if self.deadline_tracker is None:
+            return True
+        return self.deadline_tracker.check_stage_deadline(stage)
+
+    def _start_stage(self, stage: str):
+        """Mark the start of a pipeline stage."""
+        if self.deadline_tracker:
+            self.deadline_tracker.start_stage(stage)
+            logger.info(f"Stage '{stage}' started with deadline tracking")
+
+    def _complete_stage(self, stage: str, progress: float = 1.0):
+        """Mark a pipeline stage as completed."""
+        if self.deadline_tracker:
+            self.deadline_tracker.complete_stage(stage, progress)
+            logger.info(f"Stage '{stage}' completed")
+
+    def _handle_stage_timeout(self, stage: str) -> Dict[str, Any]:
+        """Handle timeout for a pipeline stage with graceful degradation."""
+        logger.warning(f"Stage '{stage}' timed out - implementing graceful degradation")
+
+        # Get remaining time for job
+        job_remaining = 0
+        if self.deadline_tracker:
+            job_remaining = self.deadline_tracker.get_job_remaining()
+
+        return {
+            "status": "partial",
+            "error": f"Stage '{stage}' timed out",
+            "timeout": True,
+            "job_remaining_seconds": job_remaining,
+            "graceful_degradation": True,
+            "message": f"Conversion partially completed before {stage} timeout",
+        }
+
+    def get_progress_with_time(self) -> Dict[str, Any]:
+        """Get progress with ETA calculation."""
+        if self.deadline_tracker is None:
+            return {"message": "No deadline tracker initialized"}
+        return self.deadline_tracker.get_progress_with_eta()
+
     @log_performance("mod_conversion")
     def convert_mod(
         self,
@@ -595,6 +673,9 @@ class ModPorterConversionCrew:
             smart_assumptions=smart_assumptions,
             include_dependencies=include_dependencies,
         )
+
+        # Initialize deadline tracker for timeout management
+        self._initialize_deadline_tracker()
 
         # Send initial progress if callback available
         if self.progress_callback:
@@ -770,6 +851,85 @@ class ModPorterConversionCrew:
             "download_url": None,
             "detailed_report": {"stage": "error", "progress": 0, "logs": [error_message]},
         }
+
+    def _create_partial_result(
+        self,
+        partial_result: PartialConversionResult,
+        mod_path: Path,
+    ) -> Dict[str, Any]:
+        """
+        Create a partial/degraded result from partial conversion.
+
+        Args:
+            partial_result: The partial conversion result.
+            mod_path: The original mod path.
+
+        Returns:
+            Dict with partial conversion results.
+        """
+        completeness = partial_result.completeness_percentage
+
+        # Determine status based on completeness
+        if completeness >= 70:
+            status = "partial_success"
+        elif completeness >= 30:
+            status = "degraded"
+        else:
+            status = "failed"
+
+        # Add warnings to response
+        warnings = partial_result.warnings.copy()
+        warnings.append(
+            f"Conversion completed with {completeness:.1f}% completeness. "
+            f"Components converted: {', '.join(partial_result.components_converted)}"
+        )
+
+        # Add degradation info
+        degradation_info = self.degradation_manager.get_status_report()
+
+        return {
+            "status": status,
+            "error": f"Partial conversion: {len(partial_result.components_failed)} components failed",
+            "overall_success_rate": completeness / 100.0,
+            "converted_mods": partial_result.components_converted,
+            "failed_mods": [
+                {"name": comp, "reason": partial_result.error_details.get(comp, "Unknown error")}
+                for comp in partial_result.components_failed
+            ],
+            "smart_assumptions_applied": [],
+            "download_url": None,
+            "partial_output": partial_result.partial_output,
+            "completeness_percentage": completeness,
+            "degradation_level": degradation_info["current_level"],
+            "warnings": warnings,
+            "detailed_report": {
+                "stage": "partial_complete",
+                "progress": completeness,
+                "logs": warnings,
+                "converted_components": partial_result.components_converted,
+                "failed_components": partial_result.components_failed,
+            },
+        }
+
+    def _handle_degradation(self, error: Exception, component: str) -> None:
+        """
+        Handle degradation when an error occurs.
+
+        Args:
+            error: The exception that occurred.
+            component: The component that failed.
+        """
+        # Check if we should degrade
+        if self.degradation_manager.should_degrade(error):
+            self.degradation_manager.escalate_degradation()
+            level = self.degradation_manager.get_current_level()
+            logger.warning(
+                f"Degradation triggered for component '{component}': {error}. "
+                f"New level: {level.value}"
+            )
+
+            # Mark component as failed but track it
+            self.partial_converter.mark_component_failure(component, str(error))
 
     def _extract_plan_components(self, crew_result: Any) -> List[ConversionPlanComponent]:
         """Extract conversion plan components from crew result for assumption reporting"""
