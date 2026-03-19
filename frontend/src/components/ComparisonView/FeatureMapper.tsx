@@ -38,10 +38,13 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
   // ⚡ Bolt optimization: Pre-calculate counts in a single O(N) pass
   // instead of calling .filter().length for every mapping type.
   const mappingTypeCounts = React.useMemo(() => {
-    return features.reduce((acc, feature) => {
-      acc[feature.mapping_type] = (acc[feature.mapping_type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    return features.reduce(
+      (acc, feature) => {
+        acc[feature.mapping_type] = (acc[feature.mapping_type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   }, [features]);
 
   const mappingTypes = Object.keys(mappingTypeCounts);
