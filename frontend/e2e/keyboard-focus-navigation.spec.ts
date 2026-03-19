@@ -45,7 +45,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
     await page.keyboard.press('Tab');
 
     const focusedElement = page.locator(':focus');
-    const isFocusVisible = await focusedElement.evaluate((el) => {
+    const _isFocusVisible = await focusedElement.evaluate((el) => {
       // Check if element matches :focus-visible
       return el.matches(':focus-visible');
     });
@@ -139,7 +139,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
 
       // Focus-visible should not match for mouse users
       // This is browser-dependent, but the CSS should handle it with :focus:not(:focus-visible)
-      const isFocusVisible = await button.evaluate((el) => {
+      const _isFocusVisible = await button.evaluate((el) => {
         return el.matches(':focus-visible');
       });
 
