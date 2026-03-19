@@ -59,7 +59,6 @@ def test_enhanced_orchestration_enabled():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -114,7 +113,6 @@ def test_strategy_selector():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -169,7 +167,6 @@ def test_worker_pool():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -229,7 +226,6 @@ def test_enhanced_crew():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -256,7 +252,6 @@ def test_environment_variables():
     # These should be set in .env file for production
     print("⚠️ Environment variables should be set in .env file")
     print("✅ Test informational only")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return True
 
 
@@ -269,7 +264,6 @@ def main():
     print("PARALLEL EXECUTION VERIFICATION SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("Enhanced Orchestration Enabled", test_enhanced_orchestration_enabled),
         ("Strategy Selector", test_strategy_selector),
@@ -287,7 +281,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -319,7 +312,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review configuration")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

@@ -22,7 +22,6 @@ class E2ETestRunner:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.results = []
         self.start_time = None
@@ -39,7 +38,6 @@ class E2ETestRunner:
         """
         Run all end-to-end tests.
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Test results summary
         """
@@ -85,7 +83,6 @@ class E2ETestRunner:
         Args:
             scenario: Test scenario dict
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Test result dict
         """
@@ -99,7 +96,6 @@ class E2ETestRunner:
         
         logger.info(f"Running test: {scenario_name} ({scenario_id})")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         result = {
             "scenario_id": scenario_id,
             "scenario_name": scenario_name,
@@ -115,7 +111,6 @@ class E2ETestRunner:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         try:
             # Run conversion
             start = time.time()
@@ -139,7 +134,6 @@ class E2ETestRunner:
             # Validate output
             validation = self._validate_output(output, scenario["expected"])
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             if validation["success"]:
                 result["status"] = "passed"
                 logger.info(f"✓ Test passed: {scenario_name} ({duration:.2f}s)")
@@ -151,7 +145,6 @@ class E2ETestRunner:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         except Exception as e:
             result["status"] = "failed"
             result["error"] = str(e)
@@ -179,7 +172,6 @@ class E2ETestRunner:
         Args:
             input_data: Input with java_code and mod_info
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Conversion output
         """
@@ -193,7 +185,6 @@ class E2ETestRunner:
         
         await asyncio.sleep(0.1)  # Simulate processing
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "success": True,
             "bedrock_code": '{\n  "minecraft:item": {\n    "description": {\n      "identifier": "mod:test_item"\n    }\n  }\n}',
@@ -208,7 +199,6 @@ class E2ETestRunner:
             }
         }
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _validate_output(
         self,
         output: Dict[str, Any],
@@ -228,7 +218,6 @@ class E2ETestRunner:
             output: Conversion output
             expected: Expected output criteria
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Validation result
         """
@@ -248,7 +237,6 @@ class E2ETestRunner:
         # Check output type
         bedrock_code = output.get("bedrock_code", "")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check minimum length
         if len(bedrock_code) < expected.get("min_length", 0):
             return {
@@ -259,7 +247,6 @@ class E2ETestRunner:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check required content
         for required in expected.get("contains", []):
             if required not in bedrock_code:
@@ -275,7 +262,6 @@ class E2ETestRunner:
         
         return {"success": True}
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _generate_summary(self) -> Dict[str, Any]:
         """Generate test summary."""
         total = len(self.results)
@@ -289,7 +275,6 @@ class E2ETestRunner:
         
         total_duration = sum(r["duration_seconds"] for r in self.results)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total_tests": total,
             "passed": passed,
@@ -310,7 +295,6 @@ async def run_e2e_tests() -> Dict[str, Any]:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         Test results summary
     """
@@ -337,4 +321,3 @@ if __name__ == "__main__":
     print(f"Total Duration: {results['total_duration_seconds']:.2f}s")
     print(f"Average Duration: {results['average_duration_seconds']:.2f}s")
     print("=" * 60)
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))

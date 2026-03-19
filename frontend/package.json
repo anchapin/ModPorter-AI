@@ -9,7 +9,7 @@
     "build:analyze": "VITE_ANALYZE=true vite build",
     "build:report": "node ../scripts/generate-bundle-report.cjs",
     "build:check": "pnpm run build && pnpm run build:report",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",

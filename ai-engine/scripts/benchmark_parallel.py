@@ -13,7 +13,6 @@ import sys
 <<<<<<< HEAD
 =======
 import os
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 import time
 import json
 import tempfile
@@ -26,7 +25,6 @@ sys.path.insert(0, "ai-engine")
 
 =======
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 def create_test_mod():
     """Create a simple test mod JAR for benchmarking."""
@@ -44,7 +42,6 @@ def create_test_mod():
     src_dir = Path(temp_dir) / "src" / "com" / "example" / "mod"
     src_dir.mkdir(parents=True)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Create a simple block class
     block_code = """
 package com.example.mod;
@@ -67,7 +64,6 @@ public class CopperBlock extends Block {
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Create main mod class
     mod_code = """
 package com.example.mod;
@@ -104,7 +100,6 @@ public class ExampleMod {
     png_data = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00])
     (assets_dir / "copper_block.png").write_bytes(png_data)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Create fabric.mod.json
     mod_json = {
         "schemaVersion": 1,
@@ -135,7 +130,6 @@ public class ExampleMod {
     }
     (Path(temp_dir) / "fabric.mod.json").write_text(json.dumps(mod_json))
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return temp_dir
 
 
@@ -154,7 +148,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
     try:
         from crew.conversion_crew import ModPorterConversionCrew
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Force sequential execution
         crew = ModPorterConversionCrew(
             model_name="gpt-4",
@@ -168,7 +161,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
         
         start_time = time.time()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Run conversion
         result = crew.convert_mod(
             mod_path=mod_path,
@@ -186,7 +178,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
         
         print(f"\nSequential execution completed in {duration:.2f} seconds")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "strategy": "sequential",
             "duration_seconds": duration,
@@ -203,7 +194,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
     except Exception as e:
         print(f"Sequential benchmark failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return {
             "strategy": "sequential",
@@ -228,7 +218,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
     try:
         from crew.conversion_crew import ModPorterConversionCrew
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Force parallel adaptive execution
         crew = ModPorterConversionCrew(
             model_name="gpt-4",
@@ -242,7 +231,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
         
         start_time = time.time()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Run conversion
         result = crew.convert_mod(
             mod_path=mod_path,
@@ -260,7 +248,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
         
         print(f"\nParallel execution completed in {duration:.2f} seconds")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "strategy": "parallel_adaptive",
             "duration_seconds": duration,
@@ -277,7 +264,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
     except Exception as e:
         print(f"Parallel benchmark failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return {
             "strategy": "parallel_adaptive",
@@ -308,7 +294,6 @@ def run_benchmarks():
     
     results = []
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     try:
         # Create output directories
         sequential_output = tempfile.mkdtemp(prefix="sequential_output_")
@@ -380,7 +365,6 @@ def run_benchmarks():
             json.dump(results, f, indent=2)
         print(f"\nResults saved to benchmark_results.json")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Cleanup
         shutil.rmtree(mod_dir)
         shutil.rmtree(sequential_output)
@@ -399,7 +383,6 @@ def run_benchmarks():
         import traceback
         traceback.print_exc()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Cleanup on error
         try:
             shutil.rmtree(mod_dir)
@@ -409,7 +392,6 @@ def run_benchmarks():
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return results
 
 

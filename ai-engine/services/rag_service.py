@@ -12,7 +12,6 @@ from datetime import datetime
 <<<<<<< HEAD
 =======
 from pathlib import Path
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ class RAGService:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self._examples = []
         self._embeddings = {}
@@ -40,7 +38,6 @@ class RAGService:
         """
         Load conversion examples into RAG database.
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             examples: List of conversion examples with java_code, bedrock_code, metadata
         """
@@ -50,7 +47,6 @@ class RAGService:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def add_example(
         self,
         java_code: str,
@@ -63,7 +59,6 @@ class RAGService:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             java_code: Java source code
             bedrock_code: Bedrock JavaScript/JSON code
@@ -72,7 +67,6 @@ class RAGService:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Example ID
         """
@@ -81,7 +75,6 @@ class RAGService:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         example_id = str(uuid.uuid4())
         example = {
             "id": example_id,
@@ -104,7 +97,6 @@ class RAGService:
         
         return example_id
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def search(
         self,
         query: str,
@@ -117,7 +109,6 @@ class RAGService:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             query: Search query (Java code or description)
             top_k: Number of results to return
@@ -126,7 +117,6 @@ class RAGService:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             List of similar examples with scores
         """
@@ -182,7 +172,6 @@ class RAGService:
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:top_k]
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_example(self, example_id: str) -> Optional[Dict[str, Any]]:
         """Get example by ID."""
         for example in self._examples:
@@ -201,7 +190,6 @@ class RAGService:
         """Get all examples."""
         return self._examples.copy()
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_stats(self) -> Dict[str, Any]:
         """Get RAG database statistics."""
         return {

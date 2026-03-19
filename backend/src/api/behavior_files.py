@@ -246,7 +246,9 @@ async def create_behavior_file(
     except Exception as e:
         logger.error(f"Failed to create behavior file: {str(e)}", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Failed to create behavior file: Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to create behavior file: Please try again."
+        )
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),

@@ -28,7 +28,6 @@ class DeepSeekClient:
         self.model = model
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if not self.api_key:
             logger.warning("DEEPSEEK_API_KEY not set, client will be unavailable")
             self._client = None
@@ -45,7 +44,6 @@ class DeepSeekClient:
             )
             logger.info("DeepSeek client initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def health_check(self) -> bool:
         """Check if DeepSeek API is accessible."""
         if self._client is None:
@@ -54,7 +52,6 @@ class DeepSeekClient:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         try:
             # Simple API call to check connectivity
             self._client.models.list()
@@ -88,7 +85,6 @@ class DeepSeekClient:
         Returns:
             Translated Bedrock code
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Raises:
             RuntimeError: If translation fails
         """
@@ -104,7 +100,6 @@ class DeepSeekClient:
         try:
             messages = self._build_messages(java_code, context)
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             response = self._client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -140,7 +135,6 @@ class DeepSeekClient:
     def _build_messages(self, java_code: str, context: Optional[List[str]] = None) -> List[dict]:
         """Build message list for API call."""
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         system_message = {
             "role": "system",
             "content": """You are an expert Java to Minecraft Bedrock Edition translator.
@@ -185,7 +179,6 @@ Guidelines:
         """
         Estimate cost for a translation.
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Pricing (as of 2024):
         - Input: $0.14/1M tokens
         - Output: $0.28/1M tokens

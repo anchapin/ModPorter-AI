@@ -217,7 +217,9 @@ async def get_test_scenarios(test_id: UUID):
         logger.error(f"Error retrieving scenarios for test {test_id}: {e}")
         logger.error(f"Failed to retrieve scenarios: {str(e)}", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Failed to retrieve scenarios: Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve scenarios: Please try again."
+        )
 
 
 @router.get("/tests/{test_id}/report")

@@ -12,7 +12,6 @@ from collections import OrderedDict
 <<<<<<< HEAD
 =======
 import weakref
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 import gc
 
 logger = logging.getLogger(__name__)
@@ -96,7 +95,6 @@ class ModelCache:
         )
 =======
         logger.info(f"ModelCache initialized: max_models={max_models}, max_memory={max_memory_mb}MB")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
     def get(self, model_name: str) -> Optional[Any]:
         """
@@ -149,7 +147,6 @@ class ModelCache:
             logger.info(f"Cached model: {model_name} ({(memory_bytes or 0) / (1024 * 1024):.1f}MB)")
 =======
             logger.info(f"Cached model: {model_name} ({(memory_bytes or 0) / (1024*1024):.1f}MB)")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
     def _evict_if_needed(self, new_model_bytes: int):
         """Evict models if cache is full or over memory limit."""
@@ -267,7 +264,6 @@ def cached_model(model_name: str, loader: Callable[[], Any], memory_bytes: Optio
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def decorator(func: Callable[[], Any]) -> Callable[[], Any]:
         @wraps(func)
         def wrapper() -> Any:
@@ -289,7 +285,6 @@ def cached_model(model_name: str, loader: Callable[[], Any], memory_bytes: Optio
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return decorator
 
 
