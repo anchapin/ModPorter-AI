@@ -21,17 +21,17 @@
 
 ---
 
-## Current Milestone: v4.1 Conversion Robustness
+## Current Milestone: v4.2 Error Recovery & Retry Logic
 
-**Goal:** Make the automated conversion process resilient to failures, handle edge cases gracefully, and provide predictable behavior under all conditions.
+**Goal:** Build intelligent error recovery with exponential backoff retry, circuit breaker protection, and comprehensive fallback strategies for resilient operations.
 
 **Target features:**
-- Timeout & Deadline Management: Explicit timeouts for all LLM calls, agent tasks, and pipeline stages with graceful termination
-- Graceful Degradation System: Partial conversion, fallback strategies, and degraded mode for edge cases
-- Input Validation & Sanitization: Comprehensive validation for mod files, JAR structures, Java code syntax
-- Output Validation & Integrity Checks: Deep validation of generated Bedrock output, file integrity, manifest consistency
+- Retry Strategies with Exponential Backoff: Configurable retry attempts, max delays, jitter, and per-error-type policies
+- Circuit Breaker Pattern: Failure threshold detection, recovery timeout, half-open state management
+- Error Categorization: Transient vs permanent errors, appropriate handling strategies for each type
+- Fallback Strategies: Default values, cached responses, degraded mode for failed operations
 
-**Previous milestone:** v4.0 Complete (2026-03-19)
+**Previous milestone:** v4.1 Conversion Robustness (2026-03-19)
 
 ---
 
