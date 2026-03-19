@@ -11,44 +11,27 @@ Routes translation requests through model hierarchy:
 import logging
 import time
 from typing import Optional, List
-<<<<<<< HEAD
 
 from .modal_client import get_modal_client
 from .deepseek_client import get_deepseek_client
 from .ollama_client import get_ollama_client
-=======
-from datetime import datetime
-
-from .modal_client import ModalClient, get_modal_client
-from .deepseek_client import DeepSeekClient, get_deepseek_client
-from .ollama_client import OllamaClient, get_ollama_client
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
 
 class ModelRouter:
     """Router for AI translation models with automatic fallback."""
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         # Initialize clients
         self.primary = get_modal_client()  # CodeT5+ on Modal
         self.fallback = get_deepseek_client()  # DeepSeek API
         self.backup = get_ollama_client()  # Local Ollama
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Tracking
         self._last_used_model = None
         self._request_count = 0
         self._start_time = time.time()
-<<<<<<< HEAD
 
         logger.info("Model router initialized")
 
@@ -63,32 +46,12 @@ class ModelRouter:
         Returns:
             Translated Bedrock code
 
-=======
-        
-        logger.info("Model router initialized")
-    
-    def translate(self, java_code: str, context: Optional[List[str]] = None) -> str:
-        """
-        Translate Java code with automatic fallback.
-        
-        Args:
-            java_code: Java source code
-            context: Optional context from RAG
-        
-        Returns:
-            Translated Bedrock code
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Raises:
             RuntimeError: If all models fail
         """
         self._request_count += 1
         start_time = time.time()
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Try primary (Modal)
         try:
             if self.primary.health_check():
@@ -99,11 +62,7 @@ class ModelRouter:
                 return result
         except Exception as e:
             logger.warning(f"Primary model (Modal) failed: {e}")
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Try fallback (DeepSeek)
         try:
             if self.fallback.health_check():
@@ -114,11 +73,7 @@ class ModelRouter:
                 return result
         except Exception as e:
             logger.warning(f"Fallback model (DeepSeek) failed: {e}")
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Try backup (Ollama)
         try:
             if self.backup.health_check():
@@ -129,47 +84,27 @@ class ModelRouter:
                 return result
         except Exception as e:
             logger.warning(f"Backup model (Ollama) failed: {e}")
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # All models failed
         error_msg = "All translation models unavailable"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _log_success(self, model: str, start_time: float):
         """Log successful translation."""
         duration = time.time() - start_time
         logger.info(f"Translation successful via {model} ({duration:.2f}s)")
-<<<<<<< HEAD
 
     def get_last_used_model(self) -> Optional[str]:
         """Get the model used for the last successful translation."""
         return self._last_used_model
 
-=======
-    
-    def get_last_used_model(self) -> Optional[str]:
-        """Get the model used for the last successful translation."""
-        return self._last_used_model
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_stats(self) -> dict:
         """Get router statistics."""
         uptime = time.time() - self._start_time
         return {
             "total_requests": self._request_count,
-<<<<<<< HEAD
             "requests_per_minute": (self._request_count / (uptime / 60) if uptime > 0 else 0),
-=======
-            "requests_per_minute": self._request_count / (uptime / 60) if uptime > 0 else 0,
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             "last_used_model": self._last_used_model,
             "primary_available": self.primary.health_check(),
             "fallback_available": self.fallback.health_check(),

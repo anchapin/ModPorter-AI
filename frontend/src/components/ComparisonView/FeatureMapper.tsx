@@ -35,7 +35,19 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
     return feature.mapping_type === filterType;
   });
 
-  const mappingTypes = [...new Set(features.map((f) => f.mapping_type))];
+  // ⚡ Bolt optimization: Pre-calculate counts in a single O(N) pass
+  // instead of calling .filter().length for every mapping type.
+  const mappingTypeCounts = React.useMemo(() => {
+    return features.reduce(
+      (acc, feature) => {
+        acc[feature.mapping_type] = (acc[feature.mapping_type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+  }, [features]);
+
+  const mappingTypes = Object.keys(mappingTypeCounts);
 
   return (
     <div
@@ -77,8 +89,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
               <option value="all">All Types ({features.length})</option>
               {mappingTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type} (
-                  {features.filter((f) => f.mapping_type === type).length})
+                  {type} ({mappingTypeCounts[type]})
                 </option>
               ))}
             </select>

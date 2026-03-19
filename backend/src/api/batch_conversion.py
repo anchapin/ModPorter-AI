@@ -22,10 +22,7 @@ router = APIRouter(prefix="/batch", tags=["Batch Conversion"])
 
 class BatchConversionRequest(BaseModel):
     """Batch conversion request."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     files: List[Dict[str, Any]] = Field(..., min_items=2, max_items=20)
     options: Optional[Dict[str, Any]] = None
     priority: str = Field(default="normal", description="low, normal, high")
@@ -33,10 +30,7 @@ class BatchConversionRequest(BaseModel):
 
 class BatchConversionResponse(BaseModel):
     """Batch conversion response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     batch_id: str
     total_files: int
     estimated_time_minutes: int
@@ -46,10 +40,7 @@ class BatchConversionResponse(BaseModel):
 
 class BatchStatusResponse(BaseModel):
     """Batch status response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     batch_id: str
     total: int
     completed: int
@@ -61,10 +52,7 @@ class BatchStatusResponse(BaseModel):
 
 class BatchResultResponse(BaseModel):
     """Batch result response."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     batch_id: str
     results: List[dict]
     download_all_url: Optional[str]
@@ -80,38 +68,22 @@ async def start_batch_conversion(
 ):
     """
     Start batch conversion of multiple mods.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     - Upload 2-20 mod files
     - Convert simultaneously
     - Track progress centrally
     - Download all results as ZIP
     """
     # Check user quota
-<<<<<<< HEAD
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
-=======
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Check if user has batch conversion access (Pro feature)
     # For beta, allow all users
     if len(request.files) > 20:
@@ -119,17 +91,10 @@ async def start_batch_conversion(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum 20 files per batch",
         )
-<<<<<<< HEAD
 
     # Create batch record
     batch_id = f"batch_{datetime.utcnow().timestamp()}"
 
-=======
-    
-    # Create batch record
-    batch_id = f"batch_{datetime.utcnow().timestamp()}"
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Create individual conversion jobs
     conversion_ids = []
     for file_data in request.files:
@@ -141,15 +106,9 @@ async def start_batch_conversion(
         )
         db.add(conversion)
         conversion_ids.append(str(conversion.id))
-<<<<<<< HEAD
 
     await db.commit()
 
-=======
-    
-    await db.commit()
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Start background processing
     background_tasks.add_task(
         process_batch_conversion,
@@ -157,17 +116,10 @@ async def start_batch_conversion(
         conversion_ids,
         request.options,
     )
-<<<<<<< HEAD
 
     # Estimate time (2 minutes per file average)
     estimated_time = len(request.files) * 2
 
-=======
-    
-    # Estimate time (2 minutes per file average)
-    estimated_time = len(request.files) * 2
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return BatchConversionResponse(
         batch_id=batch_id,
         total_files=len(request.files),
@@ -184,30 +136,18 @@ async def process_batch_conversion(
 ):
     """
     Process batch conversion in background.
-<<<<<<< HEAD
 
     Would process conversions with rate limiting.
     """
     logger.info(f"Processing batch {batch_id} with {len(conversion_ids)} conversions")
 
-=======
-    
-    Would process conversions with rate limiting.
-    """
-    logger.info(f"Processing batch {batch_id} with {len(conversion_ids)} conversions")
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Process each conversion
     # Would have proper error handling and progress tracking
     for conversion_id in conversion_ids:
         # Process conversion
         # Update status
         pass
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     logger.info(f"Batch {batch_id} completed")
 
 
@@ -219,11 +159,7 @@ async def get_batch_status(
 ):
     """
     Get batch conversion status.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Shows progress for all conversions in batch.
     """
     # Get all conversions in batch
@@ -234,36 +170,21 @@ async def get_batch_status(
         )
     )
     conversions = result.scalars().all()
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Calculate status
     completed = sum(1 for c in conversions if c.status == "completed")
     failed = sum(1 for c in conversions if c.status == "failed")
     pending = sum(1 for c in conversions if c.status in ["queued", "processing"])
-<<<<<<< HEAD
 
     total = len(conversions)
     progress = (completed / total * 100) if total > 0 else 0
 
-=======
-    
-    total = len(conversions)
-    progress = (completed / total * 100) if total > 0 else 0
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return BatchStatusResponse(
         batch_id=batch_id,
         total=total,
@@ -291,11 +212,7 @@ async def get_batch_results(
 ):
     """
     Get batch conversion results.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Download individual results or all as ZIP.
     """
     # Get all conversions in batch
@@ -306,26 +223,17 @@ async def get_batch_results(
         )
     )
     conversions = result.scalars().all()
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Build results
     results = []
     successful = 0
     failed = 0
-<<<<<<< HEAD
 
     for conversion in conversions:
         if conversion.status == "completed":
@@ -351,36 +259,11 @@ async def get_batch_results(
                 }
             )
 
-=======
-    
-    for conversion in conversions:
-        if conversion.status == "completed":
-            successful += 1
-            results.append({
-                "conversion_id": str(conversion.id),
-                "filename": conversion.input_data.get("filename", "unknown"),
-                "status": "completed",
-                "download_url": f"/api/v1/conversions/{conversion.id}/download",
-            })
-        else:
-            failed += 1
-            results.append({
-                "conversion_id": str(conversion.id),
-                "filename": conversion.input_data.get("filename", "unknown"),
-                "status": conversion.status,
-                "error": conversion.error_message if hasattr(conversion, "error_message") else None,
-            })
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Generate ZIP download URL if there are successful conversions
     download_all_url = None
     if successful > 0:
         download_all_url = f"/api/v1/batch/{batch_id}/download-all"
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return BatchResultResponse(
         batch_id=batch_id,
         results=results,
@@ -402,20 +285,12 @@ async def download_all_batch(
 ):
     """
     Download all successful conversions as ZIP.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Creates ZIP archive of all .mcaddon files.
     """
     # Would generate ZIP file with all conversions
     # For now, return placeholder
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "batch_id": batch_id,
         "message": "ZIP download would start here",
@@ -431,11 +306,7 @@ async def cancel_batch(
 ):
     """
     Cancel batch conversion.
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Stops pending conversions, keeps completed ones.
     """
     # Get all conversions in batch
@@ -446,36 +317,22 @@ async def cancel_batch(
         )
     )
     conversions = result.scalars().all()
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Cancel pending conversions
     cancelled = 0
     for conversion in conversions:
         if conversion.status in ["queued", "processing"]:
             conversion.status = "cancelled"
             cancelled += 1
-<<<<<<< HEAD
 
     await db.commit()
 
-=======
-    
-    await db.commit()
-    
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return {
         "message": f"Batch cancelled. {cancelled} conversions stopped.",
         "cancelled_count": cancelled,
