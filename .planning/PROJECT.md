@@ -21,6 +21,20 @@
 
 ---
 
+## Current Milestone: v4.1 Conversion Robustness
+
+**Goal:** Make the automated conversion process resilient to failures, handle edge cases gracefully, and provide predictable behavior under all conditions.
+
+**Target features:**
+- Timeout & Deadline Management: Explicit timeouts for all LLM calls, agent tasks, and pipeline stages with graceful termination
+- Graceful Degradation System: Partial conversion, fallback strategies, and degraded mode for edge cases
+- Input Validation & Sanitization: Comprehensive validation for mod files, JAR structures, Java code syntax
+- Output Validation & Integrity Checks: Deep validation of generated Bedrock output, file integrity, manifest consistency
+
+**Previous milestone:** v4.0 Complete (2026-03-19)
+
+---
+
 ## Problem Statement
 
 ### The Cross-Platform Gap

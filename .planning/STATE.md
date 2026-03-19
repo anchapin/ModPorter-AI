@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Advanced Features
+milestone: v4.1
+milestone_name: Conversion Robustness
 status: in_progress
-last_updated: "2026-03-18T22:45:00.000Z"
+last_updated: "2026-03-19T11:19:48.000Z"
 progress:
-  total_phases: 27
-  completed_phases: 6
-  total_plans: 5
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # ModPorter-AI Project State
@@ -31,6 +31,19 @@ progress:
 
 ## Current Position
 
+**Milestone**: v4.1 Conversion Robustness
+**Status**: In Progress
+**Started**: 2026-03-19
+
+### Target Features
+- Timeout & Deadline Management: Explicit timeouts for LLM calls, agent tasks, pipeline stages
+- Graceful Degradation: Partial conversion, fallback strategies, degraded mode
+- Input Validation & Sanitization: Comprehensive mod file, JAR, Java syntax validation
+- Output Validation & Integrity: Deep validation of Bedrock output, file integrity
+
+### Goal
+Make the automated conversion process resilient to failures, handle edge cases gracefully, and provide predictable behavior under all conditions.
+
 ### Completed Milestones
 
 | Milestone | Status | Date Completed |
@@ -49,27 +62,34 @@ progress:
 | - Phase 3.4: Semantic Equivalence | ✅ Complete | 2026-03-14 |
 | - Phase 3.5: Pattern Library Expansion | ✅ Complete | 2026-03-14 |
 | - Phase 3.6: Learning System | ✅ Complete | 2026-03-14 |
+| **Milestone v2.5: Automation Features** | ✅ COMPLETE | 2026-03-18 |
+| - Phase 2.5.1: Mode Classification | ✅ Complete | 2026-03-18 |
+| - Phase 2.5.2: One-Click Conversion | ✅ Complete | 2026-03-18 |
+| - Phase 2.5.3: Smart Defaults Engine | ✅ Complete | 2026-03-18 |
+| - Phase 2.5.4: Batch Conversion | ✅ Complete | 2026-03-18 |
+| - Phase 2.5.5: Error Auto-Recovery | ✅ Complete | 2026-03-18 |
+| - Phase 2.5.6: Automation Analytics | ✅ Complete | 2026-03-18 |
+| **Milestone v3.0: Advanced AI** | ✅ COMPLETE | 2026-03-19 |
+| - Phase 08-01: Semantic Understanding | ✅ Complete | 2026-03-19 |
+| - Phase 08-02: Self-Learning System | ✅ Complete | 2026-03-19 |
+| - Phase 08-03: Custom Model Training | ✅ Complete | 2026-03-19 |
 
 ### Current Milestone
 
-**Milestone v2.0: Conversion Optimization**
-**Status**: ✅ COMPLETE
-**Target Start**: 2026-03-14
-**Target End**: 2026-04-25
-**Actual Completion**: 2026-03-14 (1 month ahead of schedule)
-**Progress**: 6/6 phases complete (100%)
+**Milestone v4.1: Conversion Robustness**
+**Status**: 🔄 In Progress
+**Target Start**: 2026-03-19
+**Progress**: 0/4 phases complete (0%)
 
-**Final Metrics**:
-| Metric | Before v2.0 | After v2.0 | Improvement |
-|--------|-------------|------------|-------------|
-| Parsing Success | 70% | 98% | +40% |
-| Conversion Time | 8 min | 3 min | 62% faster |
-| Automation | 60% | 85% | +42% |
-| Mod Coverage | 40% | 65% | +62% |
-| User Satisfaction | 3.5/5 | 4.5/5 | +29% |
-| Failure Rate | 20% | 10% | -50% |
+**Target Features**:
+- Timeout & Deadline Management: Explicit timeouts for LLM calls, agent tasks, pipeline stages
+- Graceful Degradation: Partial conversion, fallback strategies, degraded mode
+- Input Validation & Sanitization: Comprehensive mod file, JAR, Java syntax validation
+- Output Validation & Integrity: Deep validation of Bedrock output, file integrity
 
-**Next Milestone**: Milestone v2.5 ✅ COMPLETE
+---
+
+**Next Milestone**: Milestone v4.1 🔄 In Progress
 
 ---
 

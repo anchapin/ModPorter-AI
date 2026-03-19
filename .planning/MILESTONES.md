@@ -1,5 +1,62 @@
 # ModPorter-AI Milestones
 
+## v4.1 - 2026-03-19
+
+**Status:** 🔄 In Progress
+
+### Phases
+| Phase | Plans | Summary |
+|-------|-------|---------|
+| 10-01: Timeout & Deadline Management | TBD | 🔄 Pending |
+| 10-02: Graceful Degradation | TBD | 🔄 Pending |
+| 10-03: Input Validation | TBD | 🔄 Pending |
+| 10-04: Output Integrity Checks | TBD | 🔄 Pending |
+
+### Target Features
+- Timeout & Deadline Management: Explicit timeouts for all LLM calls, agent tasks, pipeline stages
+- Graceful Degradation: Partial conversion, fallback strategies, degraded mode
+- Input Validation & Sanitization: Comprehensive mod file, JAR, Java syntax validation
+- Output Validation & Integrity: Deep validation of Bedrock output, file integrity
+
+### Goal
+Make the automated conversion process resilient to failures, handle edge cases gracefully, and provide predictable behavior under all conditions.
+
+---
+
+## v4.0 - 2026-03-19
+
+**Status:** ✅ Complete
+
+### Phases
+| Phase | Plans | Summary |
+|-------|-------|---------|
+| 09-01: Automated Validation | 1 | ✅ Complete |
+| 09-02: Regression Detection | 1 | ✅ Complete |
+| 09-03: Test Coverage Metrics | 1 | ✅ Complete |
+| 09-04: Validation Reporting | 1 | ✅ Complete |
+
+### Target Features
+- Automated Conversion Validation: Syntax, structure, semantic validation ✅
+- Regression Detection: Compare conversions before/after changes ✅
+- Test Coverage Metrics: Track quality across mod types ✅
+- Validation Reporting: Detailed QA reports with pass/fail metrics ✅
+
+### Goal
+Ensure conversion quality through automated testing, regression detection, and comprehensive validation reporting.
+
+### Key Accomplishments
+- JavaSyntaxValidator: javalang + fallback support
+- BedrockSyntaxValidator: JavaScript/JSON validation
+- BaselineStorage & RegressionDetector: Code diff generation with severity scoring
+- CoverageTracker: Quality scoring with A-F grading
+- ReportGenerator: JSON, HTML, Markdown formats
+
+### Notes
+- 24 tests passing
+- Comprehensive validation framework implemented
+
+---
+
 ## v3.0 - 2026-03-19
 
 **Status:** ✅ Complete
