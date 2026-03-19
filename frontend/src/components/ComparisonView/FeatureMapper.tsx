@@ -30,12 +30,21 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
     return 'Low';
   };
 
-  const filteredFeatures = features.filter((feature) => {
-    if (filterType === 'all') return true;
-    return feature.mapping_type === filterType;
-  });
+  const { filteredFeatures, typeCounts } = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    const filtered: FeatureMappingData[] = [];
 
-  const mappingTypes = [...new Set(features.map((f) => f.mapping_type))];
+    for (const feature of features) {
+      counts[feature.mapping_type] = (counts[feature.mapping_type] || 0) + 1;
+      if (filterType === 'all' || feature.mapping_type === filterType) {
+        filtered.push(feature);
+      }
+    }
+
+    return { filteredFeatures: filtered, typeCounts: counts };
+  }, [features, filterType]);
+
+  const mappingTypes = Object.keys(typeCounts);
 
   return (
     <div
@@ -77,8 +86,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
               <option value="all">All Types ({features.length})</option>
               {mappingTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type} (
-                  {features.filter((f) => f.mapping_type === type).length})
+                  {type} ({typeCounts[type]})
                 </option>
               ))}
             </select>
