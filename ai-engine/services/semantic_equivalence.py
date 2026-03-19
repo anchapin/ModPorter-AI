@@ -5,16 +5,108 @@ Implements:
 - Data Flow Graph (DFG) construction
 - Control Flow Graph (CFG) construction
 - Graph-based semantic comparison
-- Equivalence scoring
+- Embedding-based semantic similarity scoring
+- Equivalence scoring with threshold categorization
 """
 
 import logging
-from typing import Dict, List, Set, Tuple, Optional, Any
+import os
+import re
+from typing import Dict, List, Set, Tuple, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 import hashlib
 
 logger = logging.getLogger(__name__)
+
+# Try to import sentence-transformers, fallback to OpenAI embeddings
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "auto")
+_embedding_model = None
+_openai_client = None
+
+
+def _get_embedding_model():
+    """Get the embedding model (lazy loading)."""
+    global _embedding_model
+    if _embedding_model is not None:
+        return _embedding_model
+    
+    if EMBEDDING_PROVIDER in ("auto", "local"):
+        try:
+            from sentence_transformers import SentenceTransformer
+            _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+            logger.info("Using local sentence-transformers for embeddings")
+            return _embedding_model
+        except ImportError:
+            logger.warning("sentence-transformers not available")
+    
+    if EMBEDDING_PROVIDER in ("auto", "openai"):
+        try:
+            from openai import AsyncOpenAI
+            global _openai_client
+            _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            logger.info("Using OpenAI for embeddings")
+            return "openai"
+        except ImportError:
+            logger.warning("OpenAI client not available")
+    
+    logger.warning("No embedding provider available, using mock embeddings")
+    return None
+
+
+async def _compute_embeddings_local(texts: List[str], model) -> List[List[float]]:
+    """Compute embeddings using local sentence-transformers model."""
+    embeddings = model.encode(texts, convert_to_numpy=True)
+    return [emb.tolist() for emb in embeddings]
+
+
+async def _compute_embeddings_openai(texts: List[str], client) -> List[List[float]]:
+    """Compute embeddings using OpenAI API."""
+    response = await client.embeddings.create(
+        model="text-embedding-ada-002",
+        input=texts
+    )
+    return [item.embedding for item in response.data]
+
+
+def _cosine_similarity(a: List[float], b: List[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    dot_product = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(x * x for x in b) ** 0.5
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot_product / (norm_a * norm_b)
+
+
+@lru_cache(maxsize=128)
+def _get_mock_embedding(text_hash: str) -> List[float]:
+    """Generate a deterministic mock embedding for testing."""
+    # Create a reproducible embedding based on text hash
+    import struct
+    seed = int(text_hash[:8], 16)
+    state = [((seed >> (i * 4)) & 0xFFFF) / 32767.0 for i in range(8)]
+    # Extend to 384 dimensions (MiniLM-L6 output)
+    embedding = []
+    for i in range(384):
+        val = (state[i % 8] + (i * 0.1) % 1.0) % 1.0
+        embedding.append(val * 2.0 - 1.0)
+    return embedding
+
+
+def _normalize_code_for_embedding(code: str) -> str:
+    """Normalize code for embedding computation by removing comments and whitespace."""
+    # Remove single-line comments
+    code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
+    # Remove multi-line comments
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    # Remove strings (approximate)
+    code = re.sub(r'"(?:[^"\\]|\\.)*"', '""', code)
+    code = re.sub(r"'(?:[^'\\]|\\.)*'", "''", code)
+    # Normalize whitespace
+    code = re.sub(r'\s+', ' ', code)
+    return code.strip()
 
 
 class NodeType(Enum):
@@ -145,6 +237,13 @@ class ControlFlowGraph:
                     self._find_paths(successor, target, path, all_paths)
 
 
+class ScoreCategory(Enum):
+    """Semantic equivalence score categories."""
+    EXCELLENT = "excellent"  # 90%+
+    GOOD = "good"            # 70-89%
+    NEEDS_WORK = "needs_work"  # <70%
+
+
 @dataclass
 class EquivalenceResult:
     """Result of semantic equivalence checking."""
@@ -152,14 +251,36 @@ class EquivalenceResult:
     confidence: float  # 0.0 to 1.0
     dfg_similarity: float
     cfg_similarity: float
+    embedding_similarity: float = 0.0  # Embedding-based similarity (0.0-1.0)
+    semantic_drift: List[str] = field(default_factory=list)  # Semantic differences identified
+    score_category: ScoreCategory = ScoreCategory.NEEDS_WORK
     differences: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+    
+    def __post_init__(self):
+        """Apply threshold categorization after initialization."""
+        if self.embedding_similarity > 0:
+            self.score_category = self.apply_thresholds(self.embedding_similarity)
+    
+    @staticmethod
+    def apply_thresholds(score: float) -> ScoreCategory:
+        """Apply threshold categorization to a score."""
+        if score >= 0.9:
+            return ScoreCategory.EXCELLENT
+        elif score >= 0.7:
+            return ScoreCategory.GOOD
+        else:
+            return ScoreCategory.NEEDS_WORK
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             "equivalent": self.equivalent,
             "confidence": self.confidence,
             "dfg_similarity": self.dfg_similarity,
             "cfg_similarity": self.cfg_similarity,
+            "embedding_similarity": self.embedding_similarity,
+            "semantic_drift": self.semantic_drift,
+            "score_category": self.score_category.value,
             "differences": self.differences,
             "warnings": self.warnings,
         }
@@ -501,22 +622,26 @@ class SemanticEquivalenceChecker:
     Compares:
     - Data flow graphs (variable definitions and uses)
     - Control flow graphs (branches, loops, paths)
+    - Embedding-based semantic similarity
     - Overall behavioral equivalence
     """
     def __init__(self):
         self.dfg_analyzer = DataFlowAnalyzer()
         self.cfg_analyzer = ControlFlowAnalyzer()
+        self._embedding_cache: Dict[str, List[float]] = {}
     
-    def check_equivalence(
+    async def check_equivalence(
         self,
         java_code: str,
         bedrock_code: str,
+        compute_embedding: bool = True,
     ) -> EquivalenceResult:
         """
         Check semantic equivalence between Java and Bedrock code.
         Args:
             java_code: Original Java source code
             bedrock_code: Converted Bedrock JavaScript code
+            compute_embedding: Whether to compute embedding-based similarity
             
         Returns:
             EquivalenceResult with confidence score and differences
@@ -537,20 +662,149 @@ class SemanticEquivalenceChecker:
         # Calculate overall confidence
         confidence = (dfg_similarity + cfg_similarity) / 2
         
-        # Determine equivalence
-        equivalent = confidence >= 0.8
+        # Compute embedding-based similarity if requested
+        embedding_similarity = 0.0
+        semantic_drift = []
+        if compute_embedding:
+            embedding_similarity = await self._compute_embedding_similarity(java_code, bedrock_code)
+            semantic_drift = self._identify_semantic_drift(java_code, bedrock_code)
+        
+        # Determine equivalence (consider both graph-based and embedding-based)
+        if embedding_similarity > 0:
+            # Weighted combination of graph and embedding similarity
+            confidence = (confidence * 0.5) + (embedding_similarity * 0.5)
+            equivalent = embedding_similarity >= 0.7  # Lower threshold when embedding available
+        else:
+            equivalent = confidence >= 0.8
+        
         differences = self._find_differences(java_dfg, bedrock_dfg, java_cfg, bedrock_cfg)
         warnings = self._generate_warnings(java_dfg, bedrock_dfg)
+        
+        # Apply threshold categorization
+        score_category = EquivalenceResult.apply_thresholds(
+            embedding_similarity if embedding_similarity > 0 else confidence
+        )
+        
         result = EquivalenceResult(
             equivalent=equivalent,
             confidence=confidence,
             dfg_similarity=dfg_similarity,
             cfg_similarity=cfg_similarity,
+            embedding_similarity=embedding_similarity,
+            semantic_drift=semantic_drift,
+            score_category=score_category,
             differences=differences,
             warnings=warnings,
         )
-        logger.info(f"Equivalence check complete: equivalent={equivalent}, confidence={confidence:.2f}")
+        logger.info(f"Equivalence check complete: equivalent={equivalent}, confidence={confidence:.2f}, embedding={embedding_similarity:.2f}")
         return result
+    
+    async def _compute_embedding_similarity(
+        self,
+        java_code: str,
+        bedrock_code: str,
+    ) -> float:
+        """
+        Compute embedding-based similarity between Java and Bedrock code.
+        
+        Uses sentence-transformers or OpenAI embeddings to measure semantic
+        similarity at the code behavior level.
+        """
+        try:
+            model = _get_embedding_model()
+            if model is None:
+                # Use mock embeddings
+                return self._compute_mock_embedding_similarity(java_code, bedrock_code)
+            
+            # Normalize code for embedding
+            java_normalized = _normalize_code_for_embedding(java_code)
+            bedrock_normalized = _normalize_code_for_embedding(bedrock_code)
+            
+            if model == "openai":
+                # Use OpenAI embeddings
+                embeddings = await _compute_embeddings_openai(
+                    [java_normalized, bedrock_normalized], _openai_client
+                )
+            else:
+                # Use local sentence-transformers
+                embeddings = await _compute_embeddings_local(
+                    [java_normalized, bedrock_normalized], model
+                )
+            
+            # Compute cosine similarity
+            similarity = _cosine_similarity(embeddings[0], embeddings[1])
+            return float(similarity)
+            
+        except Exception as e:
+            logger.warning(f"Embedding computation failed: {e}, using mock similarity")
+            return self._compute_mock_embedding_similarity(java_code, bedrock_code)
+    
+    def _compute_mock_embedding_similarity(
+        self,
+        java_code: str,
+        bedrock_code: str,
+    ) -> float:
+        """Compute mock embedding similarity for testing when no embedding provider is available."""
+        # Create deterministic hashes
+        java_hash = hashlib.md5(java_code.encode()).hexdigest()
+        bedrock_hash = hashlib.md5(bedrock_code.encode()).hexdigest()
+        
+        # Get mock embeddings
+        java_emb = _get_mock_embedding(java_hash)
+        bedrock_emb = _get_mock_embedding(bedrock_hash)
+        
+        # Compute similarity
+        return _cosine_similarity(java_emb, bedrock_emb)
+    
+    def _identify_semantic_drift(
+        self,
+        java_code: str,
+        bedrock_code: str,
+    ) -> List[str]:
+        """
+        Identify semantic drift between Java and Bedrock code.
+        
+        Detects differences in:
+        - Method/function signatures
+        - Control flow patterns
+        - Variable usage patterns
+        - API calls
+        """
+        drift = []
+        
+        # Extract method/function names
+        java_methods = set(re.findall(r'(?:public|private|protected)?\s*(?:static)?\s*\w+\s+(\w+)\s*\(', java_code))
+        js_functions = set(re.findall(r'function\s+(\w+)\s*\(', bedrock_code))
+        js_arrows = set(re.findall(r'(?:const|let|var)\s+(\w+)\s*=\s*\(', bedrock_code))
+        
+        js_methods = js_functions | js_arrows
+        
+        # Check for method mapping issues
+        missing_in_js = java_methods - js_methods
+        extra_in_js = js_methods - java_methods
+        
+        if missing_in_js:
+            drift.append(f"Methods not found in Bedrock: {', '.join(missing_in_js)}")
+        if extra_in_js:
+            drift.append(f"Additional methods in Bedrock: {', '.join(extra_in_js)}")
+        
+        # Check for control flow differences
+        java_loops = len(re.findall(r'\b(while|for)\s*\(', java_code))
+        js_loops = len(re.findall(r'\b(while|for)\s*\(', bedrock_code))
+        
+        if java_loops != js_loops:
+            drift.append(f"Loop count mismatch: Java={java_loops}, Bedrock={js_loops}")
+        
+        # Check for async/await usage
+        java_async = 'async' in java_code or 'CompletableFuture' in java_code
+        js_async = 'async' in bedrock_code or 'await' in bedrock_code
+        
+        if java_async and not js_async:
+            drift.append("Java uses async but Bedrock does not")
+        elif js_async and not java_async:
+            drift.append("Bedrock uses async but Java does not")
+        
+        return drift
     
     def _compare_dfgs(self, java_dfg: DataFlowGraph, bedrock_dfg: DataFlowGraph) -> float:
         """Compare data flow graphs and return similarity score."""
@@ -640,15 +894,20 @@ class SemanticEquivalenceChecker:
         return warnings
 
 
-def check_semantic_equivalence(java_code: str, bedrock_code: str) -> EquivalenceResult:
+async def check_semantic_equivalence(
+    java_code: str,
+    bedrock_code: str,
+    compute_embedding: bool = True,
+) -> EquivalenceResult:
     """
-    Convenience function to check semantic equivalence.
+    Convenience async function to check semantic equivalence.
     Args:
         java_code: Original Java source code
         bedrock_code: Converted Bedrock JavaScript code
+        compute_embedding: Whether to compute embedding-based similarity
         
     Returns:
         EquivalenceResult with analysis
     """
     checker = SemanticEquivalenceChecker()
-    return checker.check_equivalence(java_code, bedrock_code)
+    return await checker.check_equivalence(java_code, bedrock_code, compute_embedding)

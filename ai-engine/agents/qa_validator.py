@@ -15,6 +15,13 @@ import json
 from crewai.tools import tool
 from models.smart_assumptions import SmartAssumptionEngine
 
+# Import semantic equivalence checker
+from services.semantic_equivalence import (
+    SemanticEquivalenceChecker,
+    check_semantic_equivalence,
+    ScoreCategory,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -374,7 +381,7 @@ class QAValidatorAgent:
             },
         }
 
-    def validate_mcaddon(self, mcaddon_path: str) -> Dict[str, Any]:
+    async def validate_mcaddon(self, mcaddon_path: str) -> Dict[str, Any]:
         """
         Validate a .mcaddon file and generate comprehensive QA report.
 
@@ -438,6 +445,14 @@ class QAValidatorAgent:
                     "warnings": [],
                 },
             },
+            # Semantic equivalence score for code comparison
+            "semantic_equivalence": {
+                "status": "unknown",
+                "checks": 0,
+                "passed": 0,
+                "errors": [],
+                "warnings": [],
+            },
             "issues": [],
             "recommendations": [],
             "stats": {},
@@ -464,6 +479,9 @@ class QAValidatorAgent:
                 self._validate_semantic_accuracy(zipf, validation_result)
                 self._validate_best_practices(zipf, validation_result)
                 self._validate_bedrock_compatibility(zipf, validation_result)
+                
+                # Run semantic equivalence validation (requires java_source and bedrock_code)
+                await self._validate_semantic_equivalence(path, validation_result)
 
                 # Collect statistics
                 validation_result["stats"] = self._collect_stats(zipf)
@@ -864,6 +882,109 @@ class QAValidatorAgent:
         validation["checks"] = checks
         validation["passed"] = passed
         validation["status"] = self._get_category_status(checks, passed)
+
+    async def _validate_semantic_equivalence(
+        self,
+        addon_path: Path,
+        result: Dict[str, Any]
+    ):
+        """
+        Validate semantic equivalence between original Java source and generated Bedrock code.
+        
+        This checks how semantically similar the converted code is to the original,
+        providing a measure of behavioral preservation.
+        """
+        validation = result["validations"]["semantic_equivalence"]
+        
+        # Check if source files are available
+        java_source_path = addon_path.parent / "conversion_data" / "original_source.java"
+        bedrock_code_path = addon_path.parent / "conversion_data" / "generated_bedrock.js"
+        
+        # Also check for files embedded in the ZIP
+        java_source = None
+        bedrock_code = None
+        
+        try:
+            with zipfile.ZipFile(addon_path, "r") as zipf:
+                # Look for Java source in the ZIP
+                for name in zipf.namelist():
+                    if name.endswith(".java"):
+                        java_source = zipf.read(name).decode("utf-8", errors="ignore")
+                        break
+                    
+                    # Also check in behavior_packs folder
+                    if "behavior_packs" in name and name.endswith(".js"):
+                        # Read JavaScript files
+                        if bedrock_code is None:
+                            bedrock_code = zipf.read(name).decode("utf-8", errors="ignore")
+                            break
+        except Exception as e:
+            logger.warning(f"Could not read ZIP for semantic equivalence: {e}")
+        
+        # If no source available, skip this validation
+        if not java_source:
+            validation["status"] = "skipped"
+            validation["warnings"].append("No Java source available for semantic equivalence checking")
+            result["stats"]["semantic_equivalence"] = {
+                "score": None,
+                "category": "unavailable",
+                "reason": "No source files provided"
+            }
+            return
+        
+        if not bedrock_code:
+            validation["status"] = "skipped"
+            validation["warnings"].append("No Bedrock code available for semantic equivalence checking")
+            result["stats"]["semantic_equivalence"] = {
+                "score": None,
+                "category": "unavailable", 
+                "reason": "No generated code found"
+            }
+            return
+        
+        try:
+            # Run semantic equivalence check
+            checker = SemanticEquivalenceChecker()
+            eq_result = await checker.check_equivalence(java_source, bedrock_code, compute_embedding=True)
+            
+            # Update validation results
+            validation["checks"] = 1
+            validation["semantic_score"] = eq_result.embedding_similarity
+            validation["score_category"] = eq_result.score_category.value
+            validation["dfg_similarity"] = eq_result.dfg_similarity
+            validation["cfg_similarity"] = eq_result.cfg_similarity
+            validation["semantic_drift"] = eq_result.semantic_drift
+            
+            # Check threshold (fail if <70%)
+            if eq_result.embedding_similarity >= 0.7:
+                validation["passed"] = 1
+                validation["status"] = "pass"
+            else:
+                validation["passed"] = 0
+                validation["status"] = "fail"
+                validation["errors"].append(
+                    f"Semantic equivalence below threshold: {eq_result.embedding_similarity:.1%} (required: 70%+)"
+                )
+            
+            # Add warnings for semantic drift
+            for drift in eq_result.semantic_drift[:3]:
+                validation["warnings"].append(f"Semantic drift: {drift}")
+            
+            # Add to stats
+            result["stats"]["semantic_equivalence"] = {
+                "score": round(eq_result.embedding_similarity, 3),
+                "category": eq_result.score_category.value,
+                "dfg_similarity": round(eq_result.dfg_similarity, 3),
+                "cfg_similarity": round(eq_result.cfg_similarity, 3),
+                "drift_count": len(eq_result.semantic_drift),
+            }
+            
+        except Exception as e:
+            logger.error(f"Semantic equivalence validation failed: {e}")
+            validation["checks"] = 1
+            validation["passed"] = 0
+            validation["status"] = "fail"
+            validation["errors"].append(f"Semantic equivalence check failed: {str(e)}")
 
     def _validate_best_practices(self, zipf: zipfile.ZipFile, result: Dict[str, Any]):
         """
@@ -1991,8 +2112,9 @@ class QAValidatorAgent:
             - validations for each category (structural, manifest, content, bedrock_compatibility)
             - issues and recommendations
         """
+        import asyncio
         agent = QAValidatorAgent.get_instance()
-        result = agent.validate_mcaddon(mcaddon_path)
+        result = asyncio.run(agent.validate_mcaddon(mcaddon_path))
         result["success"] = result["status"] != "error"
         return json.dumps(result, indent=2)
 
