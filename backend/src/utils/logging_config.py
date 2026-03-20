@@ -10,10 +10,8 @@ Uses structlog for structured JSON logging with:
 
 import logging
 import sys
-from typing import Any, Dict
 
 import structlog
-from structlog.types import Processor
 
 
 def setup_logging(log_level: str = "INFO", json_format: bool = True) -> None:

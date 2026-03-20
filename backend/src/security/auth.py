@@ -54,11 +54,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(
     user_id: str,
     expires_delta: Optional[timedelta] = None,
-<<<<<<< HEAD
-    extra_claims: Optional[dict] = None,
-=======
     extra_claims: Optional[dict] = None
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 ) -> str:
     """
     Create a JWT access token.
@@ -90,14 +86,10 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-<<<<<<< HEAD
-def create_refresh_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-=======
 def create_refresh_token(
     user_id: str,
     expires_delta: Optional[timedelta] = None
 ) -> str:
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     """
     Create a JWT refresh token.
 
@@ -215,8 +207,4 @@ def hash_api_key(api_key: str) -> str:
         Hashed API key using SHA-256
     """
     import hashlib
-<<<<<<< HEAD
-
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return hashlib.sha256(api_key.encode()).hexdigest()

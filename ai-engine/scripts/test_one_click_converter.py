@@ -16,11 +16,7 @@ import zipfile
 from pathlib import Path
 
 # Add ai-engine to path
-<<<<<<< HEAD
-sys.path.insert(0, "ai-engine")
-=======
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def create_test_mod(mode: str, output_path: str):
@@ -31,35 +27,17 @@ def create_test_mod(mode: str, output_path: str):
         "Complex": {"class_count": 30, "features": ["multiblock"]},
         "Expert": {"class_count": 60, "features": ["dimension"]},
     }
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     config = configs.get(mode, configs["Simple"])
     temp_dir = tempfile.mkdtemp()
     src_dir = Path(temp_dir) / "com" / "example" / "mod"
     src_dir.mkdir(parents=True)
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for i in range(config["class_count"]):
         content = f"public class Class{i} {{ }}"
         if config["features"] and i == 0:
             content += f"\n// {config['features'][0]}"
         (src_dir / f"Class{i}.java").write_text(content)
-<<<<<<< HEAD
-
-    with zipfile.ZipFile(output_path, "w") as jar:
-        for file_path in Path(temp_dir).rglob("*"):
-            if file_path.is_file():
-                jar.write(file_path, file_path.relative_to(temp_dir))
-
-    import shutil
-
-=======
     
     with zipfile.ZipFile(output_path, 'w') as jar:
         for file_path in Path(temp_dir).rglob('*'):
@@ -67,49 +45,12 @@ def create_test_mod(mode: str, output_path: str):
                 jar.write(file_path, file_path.relative_to(temp_dir))
     
     import shutil
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     shutil.rmtree(temp_dir)
     return output_path
 
 
 def test_one_click_conversion():
     """Test 1: One-click conversion flow."""
-<<<<<<< HEAD
-
-    try:
-        # Import directly to avoid modal dependency
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "one_click_converter", "ai-engine/services/one_click_converter.py"
-        )
-        occ = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(occ)
-
-        # Create test mod (Standard mode)
-        test_jar = tempfile.mktemp(suffix=".jar")
-        create_test_mod("Standard", test_jar)
-
-        # Test one-click conversion
-        converter = occ.OneClickConverter()
-        output_path = tempfile.mktemp(suffix="_output")
-
-        result = converter.convert_mod(test_jar, output_path)
-
-        # Cleanup
-        os.unlink(test_jar)
-
-        if result.success and result.status == "completed":
-            return True
-        elif result.success:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 1: One-Click Conversion Flow")
     print("=" * 70)
@@ -155,32 +96,12 @@ def test_one_click_conversion():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
 
 def test_smart_defaults():
     """Test 2: Smart defaults application."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "one_click_converter", "ai-engine/services/one_click_converter.py"
-        )
-        occ = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(occ)
-
-        # Test defaults for each mode
-        for mode in ["Simple", "Standard", "Complex", "Expert"]:
-            defaults = occ.get_mode_defaults(mode)
-
-        # Test SmartDefaultsEngine
-        engine = occ.SmartDefaultsEngine()
-
-=======
     print("\n" + "=" * 70)
     print("Test 2: Smart Defaults Application")
     print("=" * 70)
@@ -204,22 +125,11 @@ def test_smart_defaults():
         # Test SmartDefaultsEngine
         engine = occ.SmartDefaultsEngine()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         mod_features = {
             "mode": "Standard",
             "class_count": 25,
             "complex_features": ["entity", "recipe"],
         }
-<<<<<<< HEAD
-
-        settings = engine.get_defaults_for_mod(mod_features)
-
-        return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         settings = engine.get_defaults_for_mod(mod_features)
         
@@ -233,42 +143,12 @@ def test_smart_defaults():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
 
 def test_mode_based_settings():
     """Test 3: Mode-based settings."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "one_click_converter", "ai-engine/services/one_click_converter.py"
-        )
-        occ = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(occ)
-
-        # Test classification → settings flow
-        test_modes = ["Simple", "Standard"]
-
-        for mode in test_modes:
-            test_jar = tempfile.mktemp(suffix=f"_{mode}.jar")
-            create_test_mod(mode, test_jar)
-
-            converter = occ.OneClickConverter()
-            result = converter.convert_mod(test_jar, tempfile.mktemp())
-
-            os.unlink(test_jar)
-
-        return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 3: Mode-Based Settings")
     print("=" * 70)
@@ -303,48 +183,12 @@ def test_mode_based_settings():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
 
 def test_queue_management():
     """Test 4: Conversion queue management."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "one_click_converter", "ai-engine/services/one_click_converter.py"
-        )
-        occ = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(occ)
-
-        converter = occ.OneClickConverter()
-
-        # Create multiple conversions
-        for i in range(3):
-            test_jar = tempfile.mktemp(suffix=f"_{i}.jar")
-            create_test_mod("Simple", test_jar)
-
-            converter.convert_mod(test_jar, tempfile.mktemp())
-            os.unlink(test_jar)
-
-        # Get queue stats
-        stats = converter.get_queue_stats()
-
-        # Get specific conversion status
-        if stats["total"] > 0:
-            conversion_id = list(converter.conversion_queue.keys())[0]
-            status = converter.get_conversion_status(conversion_id)
-
-        return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 4: Conversion Queue Management")
     print("=" * 70)
@@ -389,28 +233,12 @@ def test_queue_management():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
 
 def test_user_preferences():
     """Test 5: User preference overrides."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "one_click_converter", "ai-engine/services/one_click_converter.py"
-        )
-        occ = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(occ)
-
-        test_jar = tempfile.mktemp(suffix=".jar")
-        create_test_mod("Standard", test_jar)
-
-=======
     print("\n" + "=" * 70)
     print("Test 5: User Preference Overrides")
     print("=" * 70)
@@ -424,33 +252,12 @@ def test_user_preferences():
         test_jar = tempfile.mktemp(suffix='.jar')
         create_test_mod("Standard", test_jar)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Test with user preferences
         user_prefs = {
             "detail_level": "comprehensive",
             "optimization": "accuracy",
             "include_source": True,
         }
-<<<<<<< HEAD
-
-        converter = occ.OneClickConverter()
-        result = converter.convert_mod(test_jar, tempfile.mktemp(), user_prefs)
-
-        os.unlink(test_jar)
-
-        if (
-            result.settings.detail_level == "comprehensive"
-            and result.settings.optimization == "accuracy"
-            and result.settings.include_source
-        ):
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         converter = occ.OneClickConverter()
         result = converter.convert_mod(test_jar, tempfile.mktemp(), user_prefs)
@@ -464,7 +271,7 @@ def test_user_preferences():
         
         if (result.settings.detail_level == "comprehensive" and
             result.settings.optimization == "accuracy" and
-            result.settings.include_source == True):
+            result.settings.include_source):
             print("\n✅ User preferences working")
             return True
         else:
@@ -474,21 +281,16 @@ def test_user_preferences():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
 
 def main():
     """Run all test cases."""
-<<<<<<< HEAD
-
-=======
     print("\n" + "=" * 70)
     print("ONE-CLICK CONVERSION SYSTEM TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("One-Click Flow", test_one_click_conversion),
         ("Smart Defaults", test_smart_defaults),
@@ -496,34 +298,15 @@ def main():
         ("Queue Management", test_queue_management),
         ("User Preferences", test_user_preferences),
     ]
-<<<<<<< HEAD
-
-    passed = 0
-    failed = 0
-
-=======
     
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
                 passed += 1
         except Exception as e:
-<<<<<<< HEAD
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    if failed == 0:
-        pass
-    else:
-        pass
-
-=======
             print(f"❌ {name} FAILED: {e}")
             import traceback
             traceback.print_exc()
@@ -539,7 +322,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

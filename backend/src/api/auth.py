@@ -13,10 +13,6 @@ Endpoints:
 
 import logging
 from datetime import datetime, timedelta, timezone
-<<<<<<< HEAD
-=======
-from typing import Optional
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -36,10 +32,6 @@ from security.auth import (
     generate_reset_token,
     generate_api_key,
     hash_api_key,
-<<<<<<< HEAD
-=======
-    ACCESS_TOKEN_EXPIRE_MINUTES,
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 )
 
 logger = logging.getLogger(__name__)
@@ -62,11 +54,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-<<<<<<< HEAD
     def validate_password(self, v):
-=======
-    def validate_password(cls, v):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -126,11 +114,7 @@ class PasswordResetConfirmRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-<<<<<<< HEAD
     def validate_password(self, v):
-=======
-    def validate_password(cls, v):
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -223,13 +207,7 @@ async def register(
     await db.refresh(user)
 
     logger.info(f"Email verification token for {request_data.email}: {verification_token}")
-<<<<<<< HEAD
-    logger.info(
-        f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}"
-    )
-=======
     logger.info(f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}")
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
     return RegisterResponse(
         message="User registered. Please check email for verification link.",
@@ -521,13 +499,9 @@ async def list_api_keys(
     List all API keys for current user.
     """
     result = await db.execute(
-<<<<<<< HEAD
-        select(APIKey).where(APIKey.user_id == current_user.id).order_by(APIKey.created_at.desc())
-=======
         select(APIKey)
         .where(APIKey.user_id == current_user.id)
         .order_by(APIKey.created_at.desc())
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     )
     api_keys = result.scalars().all()
 

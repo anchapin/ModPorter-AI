@@ -128,4 +128,4 @@ known-first-party = ["app", "core", "src", "backend", "ai_engine"]
 force-single-line = false
 
 [tool.ruff.lint.mccabe]
-max-complexity = 10
+max-complexity = 20

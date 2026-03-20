@@ -7,13 +7,8 @@ Redis-based job queue for managing AI conversion requests.
 import logging
 import json
 import uuid
-<<<<<<< HEAD
 from typing import Optional, Dict, Any
 from datetime import datetime
-=======
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
@@ -21,29 +16,17 @@ logger = logging.getLogger(__name__)
 
 class ConversionJobQueue:
     """Redis-based job queue for conversions."""
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Queue keys
     QUEUE_KEY = "conversion:queue"
     JOBS_KEY = "conversion:jobs"
     PROGRESS_KEY = "conversion:progress"
     RESULTS_KEY = "conversion:results"
-<<<<<<< HEAD
-
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
-        self.redis_url = redis_url
-        self._redis: Optional[redis.Redis] = None
-
-=======
     
     def __init__(self, redis_url: str = "redis://localhost:6379"):
         self.redis_url = redis_url
         self._redis: Optional[redis.Redis] = None
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis connection."""
         if self._redis is None:
@@ -53,11 +36,7 @@ class ConversionJobQueue:
                 decode_responses=True,
             )
         return self._redis
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def enqueue_job(
         self,
         user_id: str,
@@ -68,32 +47,20 @@ class ConversionJobQueue:
     ) -> str:
         """
         Add a conversion job to the queue.
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             user_id: User ID
             java_code: Java source code
             mod_info: Mod metadata
             options: Conversion options
             priority: Job priority (higher = more urgent)
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Job ID
         """
         r = await self._get_redis()
         job_id = str(uuid.uuid4())
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         job_data = {
             "job_id": job_id,
             "user_id": user_id,
@@ -105,22 +72,6 @@ class ConversionJobQueue:
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
         }
-<<<<<<< HEAD
-
-        # Store job data
-        await r.hset(f"{self.JOBS_KEY}:{job_id}", mapping=job_data)
-
-        # Add to priority queue (sorted set with priority as score)
-        await r.zadd(self.QUEUE_KEY, {job_id: priority})
-
-        logger.info(f"Job {job_id} queued for user {user_id}")
-        return job_id
-
-    async def dequeue_job(self) -> Optional[Dict[str, Any]]:
-        """
-        Get the next job from the queue (highest priority).
-
-=======
         
         # Store job data
         await r.hset(f"{self.JOBS_KEY}:{job_id}", mapping=job_data)
@@ -135,31 +86,19 @@ class ConversionJobQueue:
         """
         Get the next job from the queue (highest priority).
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Job data or None if queue is empty
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Get highest priority job
         result = await r.zpopmax(self.QUEUE_KEY, count=1)
         if not result:
             return None
-<<<<<<< HEAD
-
-        job_id = result[0][0]
-        job_data = await r.hgetall(f"{self.JOBS_KEY}:{job_id}")
-
-=======
         
         job_id = result[0][0]
         job_data = await r.hgetall(f"{self.JOBS_KEY}:{job_id}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if job_data:
             # Update status
             await r.hset(
@@ -167,24 +106,14 @@ class ConversionJobQueue:
                 mapping={
                     "status": "processing",
                     "updated_at": datetime.utcnow().isoformat(),
-<<<<<<< HEAD
-                },
-=======
                 }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             )
             # Parse JSON fields
             job_data["mod_info"] = json.loads(job_data.get("mod_info", "{}"))
             job_data["options"] = json.loads(job_data.get("options", "{}"))
-<<<<<<< HEAD
-
-        return job_data
-
-=======
         
         return job_data
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def update_progress(
         self,
         job_id: str,
@@ -194,11 +123,7 @@ class ConversionJobQueue:
     ):
         """
         Update job progress.
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             job_id: Job ID
             progress: Progress percentage (0-100)
@@ -206,11 +131,7 @@ class ConversionJobQueue:
             message: Optional status message
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         progress_data = {
             "job_id": job_id,
             "progress": progress,
@@ -218,34 +139,20 @@ class ConversionJobQueue:
             "message": message or "",
             "updated_at": datetime.utcnow().isoformat(),
         }
-<<<<<<< HEAD
-
-        await r.hset(f"{self.PROGRESS_KEY}:{job_id}", mapping=progress_data)
-
-=======
         
         await r.hset(f"{self.PROGRESS_KEY}:{job_id}", mapping=progress_data)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Also update job status
         await r.hset(
             f"{self.JOBS_KEY}:{job_id}",
             mapping={
                 "status": "processing",
                 "updated_at": datetime.utcnow().isoformat(),
-<<<<<<< HEAD
-            },
-        )
-
-        logger.debug(f"Job {job_id} progress: {progress}% - {current_stage}")
-
-=======
             }
         )
         
         logger.debug(f"Job {job_id} progress: {progress}% - {current_stage}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def complete_job(
         self,
         job_id: str,
@@ -254,22 +161,14 @@ class ConversionJobQueue:
     ):
         """
         Mark job as completed with result.
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             job_id: Job ID
             result: Conversion result metadata
             bedrock_code: Generated Bedrock code
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Store result
         result_data = {
             "job_id": job_id,
@@ -277,34 +176,20 @@ class ConversionJobQueue:
             "bedrock_code": bedrock_code,
             "completed_at": datetime.utcnow().isoformat(),
         }
-<<<<<<< HEAD
-
-        await r.hset(f"{self.RESULTS_KEY}:{job_id}", mapping=result_data)
-
-=======
         
         await r.hset(f"{self.RESULTS_KEY}:{job_id}", mapping=result_data)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Update job status
         await r.hset(
             f"{self.JOBS_KEY}:{job_id}",
             mapping={
                 "status": "completed",
                 "updated_at": datetime.utcnow().isoformat(),
-<<<<<<< HEAD
-            },
-        )
-
-        logger.info(f"Job {job_id} completed")
-
-=======
             }
         )
         
         logger.info(f"Job {job_id} completed")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def fail_job(
         self,
         job_id: str,
@@ -312,21 +197,13 @@ class ConversionJobQueue:
     ):
         """
         Mark job as failed.
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             job_id: Job ID
             error_message: Error description
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Update job status
         await r.hset(
             f"{self.JOBS_KEY}:{job_id}",
@@ -334,20 +211,6 @@ class ConversionJobQueue:
                 "status": "failed",
                 "error_message": error_message,
                 "updated_at": datetime.utcnow().isoformat(),
-<<<<<<< HEAD
-            },
-        )
-
-        logger.error(f"Job {job_id} failed: {error_message}")
-
-    async def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get current job status.
-
-        Args:
-            job_id: Job ID
-
-=======
             }
         )
         
@@ -360,21 +223,10 @@ class ConversionJobQueue:
         Args:
             job_id: Job ID
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Job status data or None
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-        job_data = await r.hgetall(f"{self.JOBS_KEY}:{job_id}")
-        if not job_data:
-            return None
-
-        # Get progress if available
-        progress_data = await r.hgetall(f"{self.PROGRESS_KEY}:{job_id}")
-
-=======
         
         job_data = await r.hgetall(f"{self.JOBS_KEY}:{job_id}")
         if not job_data:
@@ -383,7 +235,6 @@ class ConversionJobQueue:
         # Get progress if available
         progress_data = await r.hgetall(f"{self.PROGRESS_KEY}:{job_id}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "job_id": job_id,
             "status": job_data.get("status"),
@@ -393,16 +244,6 @@ class ConversionJobQueue:
             "created_at": job_data.get("created_at"),
             "updated_at": job_data.get("updated_at"),
         }
-<<<<<<< HEAD
-
-    async def get_job_result(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get job result if completed.
-
-        Args:
-            job_id: Job ID
-
-=======
     
     async def get_job_result(self, job_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -411,39 +252,21 @@ class ConversionJobQueue:
         Args:
             job_id: Job ID
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Result data or None
         """
         r = await self._get_redis()
-<<<<<<< HEAD
-
-        result_data = await r.hgetall(f"{self.RESULTS_KEY}:{job_id}")
-        if not result_data:
-            return None
-
-=======
         
         result_data = await r.hgetall(f"{self.RESULTS_KEY}:{job_id}")
         if not result_data:
             return None
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "job_id": job_id,
             "result": json.loads(result_data.get("result", "{}")),
             "bedrock_code": result_data.get("bedrock_code", ""),
             "completed_at": result_data.get("completed_at"),
         }
-<<<<<<< HEAD
-
-    async def get_queue_stats(self) -> Dict[str, Any]:
-        """Get queue statistics."""
-        r = await self._get_redis()
-
-        queue_size = await r.zcard(self.QUEUE_KEY)
-
-=======
     
     async def get_queue_stats(self) -> Dict[str, Any]:
         """Get queue statistics."""
@@ -451,16 +274,11 @@ class ConversionJobQueue:
         
         queue_size = await r.zcard(self.QUEUE_KEY)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "queue_size": queue_size,
             "timestamp": datetime.utcnow().isoformat(),
         }
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     async def close(self):
         """Close Redis connection."""
         if self._redis:
