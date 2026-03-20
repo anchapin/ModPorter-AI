@@ -6,7 +6,7 @@ These tests verify the embedding generation implementation for the RAG system.
 
 import numpy as np
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
 import sys
 import os

@@ -19,12 +19,9 @@ import uuid
 
 from agents.packaging_validator import (
     PackagingValidator,
-    ValidationResult,
     ValidationSeverity,
-    ValidationIssue,
 )
 from agents.packaging_agent import PackagingAgent
-from agents.bedrock_manifest_generator import BedrockManifestGenerator
 
 
 class TestBedrockFolderStructure:

@@ -77,9 +77,7 @@ class TestDebtTracker:
     @pytest.fixture
     def temp_py_file(self):
         """Create a temporary Python file with debt markers."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write('''"""Test module."""
 
 # TODO(#687): Optimize authentication [critical/performance]
@@ -220,9 +218,7 @@ def old_method():
         items = tracker.scan_file(temp_py_file)
         tracker.debt_items = items  # Manually set items
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             output_path = f.name
 
         try:
@@ -261,13 +257,11 @@ def old_method():
 
     def test_malformed_markers(self):
         """Test that malformed markers are partially matched."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
-            f.write('''# TODO 687: Missing parentheses
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("""# TODO 687: Missing parentheses
 # FIXME(687: Missing closing paren
 # TODO(#689): Valid marker
-''')
+""")
             f.flush()
 
             tracker = DebtTracker(root_path=Path(f.name).parent)

@@ -20,10 +20,12 @@ import uuid
 
 from .structured_logging import correlation_id_var, set_correlation_id
 
+
 # Check if running in debug mode (use function for dynamic checking)
 def is_debug_mode() -> bool:
     """Check if debug mode is enabled."""
     return os.getenv("DEBUG", "false").lower() == "true"
+
 
 # For backwards compatibility, also provide the constant (deprecated)
 DEBUG_MODE = is_debug_mode()
@@ -276,6 +278,7 @@ def _categorize_error(error: Exception) -> str:
         return "rate_limit_error"
     # Import ConversionError here to avoid circular imports
     from .error_handler import ConversionError
+
     if isinstance(error, ConversionError):
         return "conversion_error"
 
@@ -304,7 +307,7 @@ def create_error_response(
     error: Exception, request: Request, include_traceback: bool = False
 ) -> ErrorResponse:
     """Create a structured error response
-    
+
     NOTE: Sensitive error details are NEVER included in HTTP responses.
     - Stack traces are logged server-side only, never sent to clients
     - Exception messages are sanitized to generic user messages
@@ -427,14 +430,12 @@ async def validation_exception_handler(
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for all other exceptions
-    
+
     Full error details are logged server-side with traceback for debugging.
     Clients only receive a generic error message without sensitive information.
     """
     # Always log the full exception with traceback (server-side only)
-    logger.error(
-        f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True
-    )
+    logger.error(f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True)
 
     # Create sanitized error response (no traceback exposed to clients)
     error_response = create_error_response(exc, request, include_traceback=False)

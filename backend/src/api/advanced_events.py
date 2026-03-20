@@ -388,7 +388,9 @@ async def create_event_system(
 
     except Exception as e:
         logger.error(f"Failed to create event system: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create event system. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to create event system. Please try again."
+        )
 
 
 @router.get(
@@ -524,4 +526,6 @@ async def get_event_system_debug(
 
     except Exception as e:
         logger.error(f"Failed to get debug info: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to retrieve debug information. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve debug information. Please try again."
+        )

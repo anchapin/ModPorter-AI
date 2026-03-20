@@ -16,7 +16,6 @@ import tempfile
 import os
 from pathlib import Path
 from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock
 
 from agents.gameplay_comparison_agent import (
     MinecraftLauncher,
@@ -491,7 +490,7 @@ class TestGameplayComparisonAgentIntegration:
             agent = GameplayComparisonAgent(screenshot_dir=tmpdir)
 
             # Validate prerequisites
-            prereqs = agent.validate_prerequisites()
+            agent.validate_prerequisites()
 
             # Run comparison
             result = agent.run_comparison(
@@ -553,7 +552,7 @@ class TestGameplayComparisonAgentEdgeCases:
         with tempfile.TemporaryDirectory() as tmpdir:
             screenshot_dir = os.path.join(tmpdir, "new_screenshots")
 
-            agent = GameplayComparisonAgent(screenshot_dir=screenshot_dir)
+            GameplayComparisonAgent(screenshot_dir=screenshot_dir)
 
             # Directory should be created by GameplayTestRunner
             assert os.path.exists(screenshot_dir)

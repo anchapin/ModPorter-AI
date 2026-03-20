@@ -9,8 +9,6 @@ Tests for LogicTranslatorAgent expanded capabilities:
 """
 
 import pytest
-import json
-from pathlib import Path
 
 # Import the module
 from agents.logic_translator import (

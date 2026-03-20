@@ -9,7 +9,6 @@ import tempfile
 import shutil
 from pathlib import Path
 import importlib.util
-import os
 
 # Load qa_validator directly
 base_dir = Path(__file__).resolve().parent.parent
@@ -301,12 +300,12 @@ def test_validation_performance():
         import time
 
         start = time.time()
-        result1 = agent.validate_mcaddon(mcaddon_path)
+        agent.validate_mcaddon(mcaddon_path)
         time1 = time.time() - start
 
         # Second run (cached)
         start = time.time()
-        result2 = agent.validate_mcaddon(mcaddon_path)
+        agent.validate_mcaddon(mcaddon_path)
         time2 = time.time() - start
 
         print(f"First validation: {time1:.3f}s")

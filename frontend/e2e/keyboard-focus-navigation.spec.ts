@@ -66,7 +66,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
     expect(focusableCount).toBeGreaterThan(0);
 
     // Tab through elements
-    let previousElement: string | null = null;
+    let _previousElement: string | null = null;
     for (let i = 0; i < Math.min(focusableCount, 5); i++) {
       await page.keyboard.press('Tab');
 
@@ -145,7 +145,8 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
 
       // Mouse click should not trigger focus-visible in most browsers
       // (This is automatic browser behavior, CSS just respects it)
-      expect(true).toBeTruthy();
+      // Some browsers like webkit may occasionally trigger it, so we don't strictly assert false
+      expect(isFocusVisible).toBeDefined();
     }
   });
 
