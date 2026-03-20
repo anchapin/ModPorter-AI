@@ -94,7 +94,7 @@ jobs:
         path: |
           ~/.npm
           frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
+        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
 
@@ -110,6 +110,11 @@ jobs:
         cd ai-engine
         pip install --upgrade pip setuptools wheel --no-cache-dir
         pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Install frontend dependencies
       run: |
