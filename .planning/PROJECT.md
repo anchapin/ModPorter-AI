@@ -21,17 +21,20 @@
 
 ---
 
-## Current Milestone: v4.3 Conversion Quality
+## Current Milestone: v4.5 Java Patterns Complete
 
-**Goal:** Improve conversion quality through semantic equivalence tracking and achieve 50% successful conversion rate for Java→Bedrock mod conversions.
+**Goal:** Achieve maximum coverage of advanced Java patterns including annotations, inner classes, enums, type annotations, var, records, and sealed classes for comprehensive mod conversion.
 
 **Target features:**
-- Semantic Equivalence Scoring: Measure and track semantic similarity between Java source and Bedrock output
-- Behavior Preservation Analysis: Identify and track behavioral differences between original and converted mods
-- Conversion Success Metrics: Track and report conversion success rates with detailed breakdowns
-- Quality Improvement Pipeline: Automated quality assessment and feedback loop for conversions
+- Annotations: @Override, @Deprecated, @Nullable, custom annotations
+- Inner Classes: Static, non-static (inner), local, anonymous classes
+- Enums: Basic enums, enums with methods, enum inheritance
+- Type Annotations: @Nullable, @NotNull, @NonNull, custom type annotations
+- Var: Local variable type inference (Java 10+)
+- Records: Java 14+ records with compact constructor
+- Sealed Classes: Java 17+ sealed classes with permits clause
 
-**Previous milestone:** v4.2 Error Recovery & Retry Logic (2026-03-19)
+**Previous milestone:** v4.4 Advanced Conversion (2026-03-20) - 74 tests passing
 
 ---
 
