@@ -340,7 +340,7 @@ class PerformanceBenchmarks(unittest.TestCase):
         # Print summary for each test type
         for test_type, results in test_groups.items():
             if test_type == "single_block":
-                avg_times = [r["avg_time"] for r in results]
+                [r["avg_time"] for r in results]
 
             elif test_type == "scaling":
                 throughputs = [r["throughput"] for r in results if r["throughput"] > 0]

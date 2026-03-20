@@ -1,7 +1,5 @@
 """Test basic imports to verify package structure."""
 
-import pytest
-import sys
 import os
 
 
@@ -58,7 +56,6 @@ def test_can_import_agents():
 
 def test_python_path():
     """Test Python path setup."""
-    import sys
     import os
 
     # Check if main.py exists

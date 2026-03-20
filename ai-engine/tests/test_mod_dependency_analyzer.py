@@ -13,11 +13,8 @@ from agents.mod_dependency_analyzer import (
     ModDependencyAnalyzer,
     DependencyType,
     ConflictResolution,
-    ModDependency,
     ModInfo,
     DependencyGraph,
-    CircularDependency,
-    VersionConflict,
     DependencyAnalysisResult,
 )
 
