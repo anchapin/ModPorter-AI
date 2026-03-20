@@ -980,11 +980,6 @@ jobs:
       with:
         node-version: '20.19.0'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
-
     - name: Get pnpm store directory
       id: pnpm-store
       shell: bash
@@ -1115,11 +1110,6 @@ jobs:
       with:
         node-version: '20.19.0'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
-
     - name: Get pnpm store directory
       id: pnpm-store
       shell: bash
@@ -1224,11 +1214,6 @@ jobs:
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
-
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
