@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class ErrorSeverity(Enum):
     """Severity levels for errors."""
+
     LOW = "low"  # Can retry immediately
     MEDIUM = "medium"  # Retry with backoff
     HIGH = "high"  # May need intervention
@@ -29,6 +30,7 @@ class ErrorSeverity(Enum):
 
 class ErrorType(Enum):
     """Types of conversion errors."""
+
     SYNTAX_ERROR = "syntax_error"
     MISSING_PATTERN = "missing_pattern"
     TYPE_MISMATCH = "type_mismatch"
@@ -42,6 +44,7 @@ class ErrorType(Enum):
 @dataclass
 class ConversionError:
     """Represents a conversion error."""
+
     error_id: str
     error_type: ErrorType
     severity: ErrorSeverity
@@ -51,7 +54,7 @@ class ConversionError:
     timestamp: datetime = field(default_factory=datetime.now)
     retry_count: int = 0
     max_retries: int = 3
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "error_id": self.error_id,
@@ -66,13 +69,14 @@ class ConversionError:
 @dataclass
 class RecoveryResult:
     """Result of error recovery attempt."""
+
     success: bool
     recovery_strategy: str
     message: str
     retry_count: int = 0
     fallback_used: bool = False
     manual_intervention_required: bool = False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "success": self.success,
@@ -87,15 +91,15 @@ class RecoveryResult:
 class ErrorPatternDetector:
     """
     Detects error patterns from conversion errors.
-    
+
     Identifies common error types and suggests recovery strategies.
     """
-    
+
     def __init__(self):
         # Error pattern mappings
         self.patterns = self._initialize_patterns()
         logger.info("ErrorPatternDetector initialized")
-    
+
     def _initialize_patterns(self) -> Dict[str, ErrorType]:
         """Initialize error pattern mappings."""
         return {
@@ -104,89 +108,83 @@ class ErrorPatternDetector:
             "parse error": ErrorType.SYNTAX_ERROR,
             "unexpected token": ErrorType.SYNTAX_ERROR,
             "missing semicolon": ErrorType.SYNTAX_ERROR,
-            
             # Missing pattern errors
             "no pattern found": ErrorType.MISSING_PATTERN,
             "pattern not found": ErrorType.MISSING_PATTERN,
             "unsupported feature": ErrorType.MISSING_PATTERN,
-            
             # Type mismatch errors
             "type mismatch": ErrorType.TYPE_MISMATCH,
             "incompatible types": ErrorType.TYPE_MISMATCH,
             "cannot convert": ErrorType.TYPE_MISMATCH,
-            
             # Resource errors
             "out of memory": ErrorType.RESOURCE_ERROR,
             "resource not found": ErrorType.RESOURCE_ERROR,
             "file not found": ErrorType.RESOURCE_ERROR,
-            
             # Timeout errors
             "timeout": ErrorType.TIMEOUT_ERROR,
             "timed out": ErrorType.TIMEOUT_ERROR,
             "deadline exceeded": ErrorType.TIMEOUT_ERROR,
-            
             # Dependency errors
             "dependency not found": ErrorType.DEPENDENCY_ERROR,
             "missing dependency": ErrorType.DEPENDENCY_ERROR,
             "import error": ErrorType.DEPENDENCY_ERROR,
-            
             # Validation errors
             "validation failed": ErrorType.VALIDATION_ERROR,
             "invalid format": ErrorType.VALIDATION_ERROR,
             "checksum mismatch": ErrorType.VALIDATION_ERROR,
         }
-    
+
     def detect_error_type(self, error_message: str) -> ErrorType:
         """Detect error type from error message."""
         message_lower = error_message.lower()
-        
+
         for pattern, error_type in self.patterns.items():
             if pattern in message_lower:
                 return error_type
-        
+
         return ErrorType.UNKNOWN
-    
+
     def get_severity(self, error_type: ErrorType, retry_count: int) -> ErrorSeverity:
         """Determine error severity based on type and retry count."""
         # Critical errors
         if error_type in [ErrorType.RESOURCE_ERROR, ErrorType.TIMEOUT_ERROR]:
             return ErrorSeverity.HIGH if retry_count > 1 else ErrorSeverity.MEDIUM
-        
+
         # High severity errors
         if error_type in [ErrorType.DEPENDENCY_ERROR, ErrorType.VALIDATION_ERROR]:
             return ErrorSeverity.HIGH
-        
+
         # Medium severity errors
         if error_type in [ErrorType.TYPE_MISMATCH, ErrorType.MISSING_PATTERN]:
             return ErrorSeverity.MEDIUM
-        
+
         # Low severity errors
         if error_type == ErrorType.SYNTAX_ERROR:
             return ErrorSeverity.LOW
-        
+
         return ErrorSeverity.MEDIUM
 
 
 class RecoveryStrategy:
     """Base class for recovery strategies."""
-    
+
     def __init__(self, name: str, success_rate: float = 0.8):
         self.name = name
         self.success_rate = success_rate
         self.execution_count = 0
         self.success_count = 0
-    
+
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute recovery strategy."""
         self.execution_count += 1
         raise NotImplementedError
-    
+
     def record_success(self):
         """Record successful recovery."""
         self.success_count += 1
         if self.execution_count > 0:
             self.success_rate = self.success_count / self.execution_count
-    
+
     def record_failure(self):
         """Record failed recovery."""
         if self.execution_count > 0:
@@ -195,10 +193,10 @@ class RecoveryStrategy:
 
 class RetryStrategy(RecoveryStrategy):
     """Retry the operation with exponential backoff."""
-    
+
     def __init__(self):
         super().__init__("retry_with_backoff", success_rate=0.9)
-    
+
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute retry with backoff."""
         if error.retry_count >= error.max_retries:
@@ -208,17 +206,19 @@ class RetryStrategy(RecoveryStrategy):
                 message=f"Max retries ({error.max_retries}) exceeded",
                 retry_count=error.retry_count,
             )
-        
+
         # Calculate backoff delay
         base_delay = 1.0
         max_delay = 30.0
-        delay = min(base_delay * (2 ** error.retry_count) + random.uniform(0, 1), max_delay)
-        
-        logger.info(f"Retrying after {delay:.1f}s (attempt {error.retry_count + 1}/{error.max_retries})")
+        delay = min(base_delay * (2**error.retry_count) + random.uniform(0, 1), max_delay)
+
+        logger.info(
+            f"Retrying after {delay:.1f}s (attempt {error.retry_count + 1}/{error.max_retries})"
+        )
         time.sleep(delay)
-        
+
         error.retry_count += 1
-        
+
         return RecoveryResult(
             success=True,  # Will be retried
             recovery_strategy=self.name,
@@ -229,11 +229,11 @@ class RetryStrategy(RecoveryStrategy):
 
 class FallbackStrategy(RecoveryStrategy):
     """Use fallback mechanism when primary fails."""
-    
+
     def __init__(self, fallback_name: str):
         super().__init__(f"use_fallback_{fallback_name}", success_rate=0.7)
         self.fallback_name = fallback_name
-    
+
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute fallback."""
         return RecoveryResult(
@@ -246,10 +246,10 @@ class FallbackStrategy(RecoveryStrategy):
 
 class SimplifyStrategy(RecoveryStrategy):
     """Simplify the conversion to avoid complex features."""
-    
+
     def __init__(self):
         super().__init__("simplify_conversion", success_rate=0.6)
-    
+
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute simplification."""
         return RecoveryResult(
@@ -262,10 +262,10 @@ class SimplifyStrategy(RecoveryStrategy):
 
 class ManualInterventionStrategy(RecoveryStrategy):
     """Flag for manual review when auto-recovery fails."""
-    
+
     def __init__(self):
         super().__init__("manual_review", success_rate=1.0)
-    
+
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Flag for manual review."""
         return RecoveryResult(
@@ -279,20 +279,20 @@ class ManualInterventionStrategy(RecoveryStrategy):
 class AutoRecoveryEngine:
     """
     Main engine for automatic error recovery.
-    
+
     Coordinates:
     - Error detection
     - Strategy selection
     - Recovery execution
     - Success tracking
     """
-    
+
     def __init__(self):
         self.detector = ErrorPatternDetector()
         self.strategies = self._initialize_strategies()
         self.recovery_history: List[Dict[str, Any]] = []
         logger.info("AutoRecoveryEngine initialized")
-    
+
     def _initialize_strategies(self) -> Dict[ErrorType, List[RecoveryStrategy]]:
         """Initialize recovery strategies by error type."""
         return {
@@ -336,62 +336,64 @@ class AutoRecoveryEngine:
                 ManualInterventionStrategy(),
             ],
         }
-    
+
     def attempt_recovery(self, error: ConversionError) -> RecoveryResult:
         """
         Attempt to recover from an error.
-        
+
         Args:
             error: The conversion error to recover from
-            
+
         Returns:
             RecoveryResult with recovery status
         """
         # Detect error type if not set
         if error.error_type == ErrorType.UNKNOWN:
             error.error_type = self.detector.detect_error_type(error.message)
-        
+
         # Get severity
         error.severity = self.detector.get_severity(error.error_type, error.retry_count)
-        
+
         # Get strategies for this error type
         strategies = self.strategies.get(error.error_type, self.strategies[ErrorType.UNKNOWN])
-        
+
         # Try each strategy in order
         for strategy in strategies:
             result = strategy.execute(error)
-            
+
             # Record in history
-            self.recovery_history.append({
-                "error_id": error.error_id,
-                "error_type": error.error_type.value,
-                "strategy": strategy.name,
-                "success": result.success,
-                "timestamp": datetime.now().isoformat(),
-            })
-            
+            self.recovery_history.append(
+                {
+                    "error_id": error.error_id,
+                    "error_type": error.error_type.value,
+                    "strategy": strategy.name,
+                    "success": result.success,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
             if result.success:
                 strategy.record_success()
                 logger.info(f"Recovery successful: {strategy.name}")
                 return result
             else:
                 strategy.record_failure()
-        
+
         # All strategies failed
         logger.warning(f"All recovery strategies failed for error {error.error_id}")
-        
+
         return RecoveryResult(
             success=False,
             recovery_strategy="all_exhausted",
             message="All auto-recovery strategies failed",
             manual_intervention_required=True,
         )
-    
+
     def get_recovery_stats(self) -> Dict[str, Any]:
         """Get recovery statistics."""
         total = len(self.recovery_history)
         successful = sum(1 for r in self.recovery_history if r["success"])
-        
+
         # Strategy success rates
         strategy_stats = {}
         for error_type, strategies in self.strategies.items():
@@ -402,7 +404,7 @@ class AutoRecoveryEngine:
                         "executions": strategy.execution_count,
                         "success_rate": strategy.success_rate,
                     }
-        
+
         return {
             "total_recoveries": total,
             "successful": successful,
@@ -415,17 +417,17 @@ class AutoRecoveryEngine:
 class ConversionErrorHandler:
     """
     High-level error handler for conversions.
-    
+
     Integrates with the conversion pipeline to provide
     seamless error recovery.
     """
-    
+
     def __init__(self, auto_recovery_enabled: bool = True):
         self.recovery_engine = AutoRecoveryEngine()
         self.auto_recovery_enabled = auto_recovery_enabled
         self.error_log: List[ConversionError] = []
         logger.info(f"ConversionErrorHandler initialized (auto_recovery={auto_recovery_enabled})")
-    
+
     def handle_error(
         self,
         error_message: str,
@@ -434,12 +436,12 @@ class ConversionErrorHandler:
     ) -> RecoveryResult:
         """
         Handle a conversion error.
-        
+
         Args:
             error_message: Error message
             mod_path: Path to mod being converted
             stack_trace: Optional stack trace
-            
+
         Returns:
             RecoveryResult with recovery status
         """
@@ -452,20 +454,20 @@ class ConversionErrorHandler:
             mod_path=mod_path,
             stack_trace=stack_trace,
         )
-        
+
         # Log error
         self.error_log.append(error)
         logger.error(f"Conversion error: {error_message} (mod={mod_path})")
-        
+
         # Attempt auto-recovery if enabled
         if self.auto_recovery_enabled:
             result = self.recovery_engine.attempt_recovery(error)
-            
+
             if result.success:
                 logger.info(f"Auto-recovery successful: {result.recovery_strategy}")
             elif result.manual_intervention_required:
                 logger.warning(f"Manual intervention required for error {error.error_id}")
-            
+
             return result
         else:
             # Auto-recovery disabled
@@ -475,33 +477,33 @@ class ConversionErrorHandler:
                 message="Auto-recovery disabled",
                 manual_intervention_required=True,
             )
-    
+
     def can_continue(self) -> bool:
         """Check if conversion can continue after errors."""
         if not self.error_log:
             return True
-        
+
         # Check recent errors
         recent_errors = self.error_log[-5:]
         critical_count = sum(1 for e in recent_errors if e.severity == ErrorSeverity.CRITICAL)
-        
+
         # Stop if multiple critical errors
         return critical_count < 2
-    
+
     def get_error_summary(self) -> Dict[str, Any]:
         """Get summary of errors."""
         by_type = {}
         by_severity = {}
-        
+
         for error in self.error_log:
             # Count by type
             type_key = error.error_type.value
             by_type[type_key] = by_type.get(type_key, 0) + 1
-            
+
             # Count by severity
             sev_key = error.severity.value
             by_severity[sev_key] = by_severity.get(sev_key, 0) + 1
-        
+
         return {
             "total_errors": len(self.error_log),
             "by_type": by_type,
@@ -519,12 +521,12 @@ def recover_from_error(
 ) -> RecoveryResult:
     """
     Attempt to recover from a conversion error.
-    
+
     Args:
         error_message: Error message
         mod_path: Path to mod being converted
         auto_retry: Whether to automatically retry
-        
+
     Returns:
         RecoveryResult with recovery status
     """

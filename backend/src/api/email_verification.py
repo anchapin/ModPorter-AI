@@ -22,23 +22,27 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 class RegisterWithVerificationRequest(BaseModel):
     """User registration with email verification."""
+
     email: EmailStr
     password: str
 
 
 class RegisterWithVerificationResponse(BaseModel):
     """Registration response."""
+
     message: str
     user_id: str
 
 
 class ResendVerificationRequest(BaseModel):
     """Resend verification email request."""
+
     email: EmailStr
 
 
 class ResendVerificationResponse(BaseModel):
     """Resend verification response."""
+
     message: str
 
 
@@ -49,18 +53,19 @@ async def register_with_verification(
 ):
     """
     Register a new user with email verification.
-    
+
     - Creates user account (unverified)
     - Sends verification email
     - User must verify before logging in
     """
     from security.auth import hash_password
-    
+
     # Check if user already exists
     from sqlalchemy import select
+
     result = await db.execute(select(User).where(User.email == request.email))
     existing_user = result.scalar_one_or_none()
-    
+
     if existing_user:
         if existing_user.is_verified:
             raise HTTPException(
@@ -71,11 +76,11 @@ async def register_with_verification(
             # Delete unverified user to allow re-registration
             await db.delete(existing_user)
             await db.commit()
-    
+
     # Generate verification token
     verification_token = generate_verification_token()
     verification_expires = datetime.utcnow() + timedelta(hours=24)
-    
+
     # Create user
     user = User(
         email=request.email,
@@ -84,15 +89,15 @@ async def register_with_verification(
         verification_token_expires=verification_expires,
         is_verified=False,
     )
-    
+
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    
+
     # Send verification email
     email_service = get_email_service()
     verification_url = f"https://modporter.ai/verify-email/{verification_token}"
-    
+
     message = EmailMessage(
         to=request.email,
         subject="Verify your ModPorter AI account",
@@ -102,11 +107,11 @@ async def register_with_verification(
             "expiry_hours": 24,
         },
     )
-    
+
     await email_service.send(message)
-    
+
     logger.info(f"Verification email sent to {request.email}")
-    
+
     return RegisterWithVerificationResponse(
         message="Registration successful. Please check your email to verify your account.",
         user_id=str(user.id),
@@ -120,13 +125,13 @@ async def verify_email(
 ):
     """
     Verify email address using verification token.
-    
+
     - Validates token
     - Marks user as verified
     - Clears verification token
     """
     from sqlalchemy import select
-    
+
     # Find user with valid token
     result = await db.execute(
         select(User).where(
@@ -135,22 +140,22 @@ async def verify_email(
         )
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification token",
         )
-    
+
     # Mark user as verified
     user.is_verified = True
     user.verification_token = None
     user.verification_token_expires = None
-    
+
     await db.commit()
-    
+
     logger.info(f"Email verified for user {user.email}")
-    
+
     return {
         "message": "Email verified successfully",
         "email": user.email,
@@ -164,13 +169,13 @@ async def resend_verification(
 ):
     """
     Resend verification email.
-    
+
     - Finds unverified user
     - Generates new token
     - Sends new verification email
     """
     from sqlalchemy import select
-    
+
     # Find unverified user
     result = await db.execute(
         select(User).where(
@@ -179,33 +184,33 @@ async def resend_verification(
         )
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         # Don't reveal if email exists
         return ResendVerificationResponse(
             message="If the email is registered, a new verification link has been sent.",
         )
-    
+
     # Check if token is still valid (prevent spam)
     if user.verification_token_expires and user.verification_token_expires > datetime.utcnow():
         # Token still valid, don't resend
         return ResendVerificationResponse(
             message="Verification email already sent. Please check your inbox.",
         )
-    
+
     # Generate new token
     verification_token = generate_verification_token()
     verification_expires = datetime.utcnow() + timedelta(hours=24)
-    
+
     user.verification_token = verification_token
     user.verification_token_expires = verification_expires
-    
+
     await db.commit()
-    
+
     # Send verification email
     email_service = get_email_service()
     verification_url = f"https://modporter.ai/verify-email/{verification_token}"
-    
+
     message = EmailMessage(
         to=request.email,
         subject="Verify your ModPorter AI account",
@@ -215,11 +220,11 @@ async def resend_verification(
             "expiry_hours": 24,
         },
     )
-    
+
     await email_service.send(message)
-    
+
     logger.info(f"Verification email resent to {request.email}")
-    
+
     return ResendVerificationResponse(
         message="If the email is registered, a new verification link has been sent.",
     )

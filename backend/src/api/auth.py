@@ -207,7 +207,9 @@ async def register(
     await db.refresh(user)
 
     logger.info(f"Email verification token for {request_data.email}: {verification_token}")
-    logger.info(f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}")
+    logger.info(
+        f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}"
+    )
 
     return RegisterResponse(
         message="User registered. Please check email for verification link.",
@@ -499,9 +501,7 @@ async def list_api_keys(
     List all API keys for current user.
     """
     result = await db.execute(
-        select(APIKey)
-        .where(APIKey.user_id == current_user.id)
-        .order_by(APIKey.created_at.desc())
+        select(APIKey).where(APIKey.user_id == current_user.id).order_by(APIKey.created_at.desc())
     )
     api_keys = result.scalars().all()
 

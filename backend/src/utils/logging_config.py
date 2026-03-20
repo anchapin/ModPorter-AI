@@ -56,9 +56,7 @@ def setup_logging(log_level: str = "INFO", json_format: bool = True) -> None:
 
     # Configure standard library logging
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        logging.Formatter("%(message)s") if json_format else None
-    )
+    handler.setFormatter(logging.Formatter("%(message)s") if json_format else None)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper()))

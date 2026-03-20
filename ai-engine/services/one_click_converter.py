@@ -25,23 +25,24 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ConversionSettings:
     """Settings for conversion."""
+
     # Mode-specific settings
     mode: str = "Standard"
     detail_level: str = "standard"  # basic, standard, detailed, comprehensive
     validation_level: str = "standard"  # basic, standard, strict
     optimization: str = "balanced"  # speed, balanced, accuracy
     error_handling: str = "auto-fix"  # auto-fix, review, manual
-    
+
     # Output settings
     output_format: str = "mcaddon"  # mcaddon, zip, folder
     include_source: bool = False
     include_report: bool = True
-    
+
     # Advanced settings
     use_rag: bool = True
     use_pattern_library: bool = True
     semantic_check: bool = True
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "mode": self.mode,
@@ -61,6 +62,7 @@ class ConversionSettings:
 @dataclass
 class OneClickResult:
     """Result of one-click conversion request."""
+
     success: bool
     conversion_id: str
     mode: str
@@ -74,7 +76,7 @@ class OneClickResult:
     output_path: Optional[str] = None
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "success": self.success,
@@ -126,17 +128,17 @@ MODE_DEFAULTS = {
 class OneClickConverter:
     """
     One-click conversion system.
-    
+
     Usage:
         converter = OneClickConverter()
         result = converter.convert_mod("/path/to/mod.jar", "/output/path")
     """
-    
+
     def __init__(self):
         self.classifier = ModeClassifier()
         self.conversion_queue: Dict[str, OneClickResult] = {}
         logger.info("OneClickConverter initialized")
-    
+
     def convert_mod(
         self,
         mod_path: str,
@@ -145,47 +147,47 @@ class OneClickConverter:
     ) -> OneClickResult:
         """
         Convert a mod with one click.
-        
+
         Args:
             mod_path: Path to mod JAR file
             output_path: Output path for converted mod
             user_preferences: Optional user preference overrides
-            
+
         Returns:
             OneClickResult with conversion status
         """
         logger.info(f"One-click conversion requested: {mod_path}")
-        
+
         # Step 1: Classify mod
         classification = self.classifier.classify_mod(mod_path)
         logger.info(f"Mod classified as: {classification.mode}")
-        
+
         # Step 2: Check if auto-conversion is appropriate
         if classification.mode in [ConversionMode.COMPLEX, ConversionMode.EXPERT]:
             # For complex/expert mods, provide recommendation instead of auto-converting
             return self._create_recommendation_result(classification, mod_path)
-        
+
         # Step 3: Apply smart defaults
         settings = self._apply_smart_defaults(
             classification.mode,
             user_preferences,
         )
         logger.info(f"Settings applied: {settings.detail_level}, {settings.optimization}")
-        
+
         # Step 4: Create conversion result
         result = self._create_conversion_result(
             classification.mode,
             settings,
             classification,
         )
-        
+
         # Step 5: Start conversion (simulated for now)
         result = self._start_conversion(result, mod_path, output_path)
-        
+
         logger.info(f"One-click conversion started: {result.conversion_id}")
-        
+
         return result
-    
+
     def _apply_smart_defaults(
         self,
         mode: str,
@@ -193,7 +195,7 @@ class OneClickConverter:
     ) -> ConversionSettings:
         """Apply smart defaults based on mode and user preferences."""
         defaults = MODE_DEFAULTS.get(mode, MODE_DEFAULTS[ConversionMode.STANDARD])
-        
+
         settings = ConversionSettings(
             mode=mode,
             detail_level=defaults["detail_level"],
@@ -201,16 +203,16 @@ class OneClickConverter:
             optimization=defaults["optimization"],
             error_handling=defaults["error_handling"],
         )
-        
+
         # Apply user preferences if provided
         if user_preferences:
             for key, value in user_preferences.items():
                 if hasattr(settings, key):
                     setattr(settings, key, value)
                     logger.debug(f"User preference applied: {key}={value}")
-        
+
         return settings
-    
+
     def _create_recommendation_result(
         self,
         classification: ClassificationResult,
@@ -226,16 +228,14 @@ class OneClickConverter:
             message=f"{classification.mode} mode requires manual review. {classification.reason}",
             estimated_time=MODE_DEFAULTS[classification.mode]["estimated_time"],
         )
-        
-        result.warnings.append(
-            f"{classification.mode} complexity: Manual review recommended"
-        )
+
+        result.warnings.append(f"{classification.mode} complexity: Manual review recommended")
         result.warnings.extend(classification.recommendations)
-        
+
         logger.info(f"Created recommendation result for {mod_path}")
-        
+
         return result
-    
+
     def _create_conversion_result(
         self,
         mode: str,
@@ -253,7 +253,7 @@ class OneClickConverter:
             estimated_time=MODE_DEFAULTS[mode]["estimated_time"],
             warnings=classification.recommendations[:2] if classification.confidence < 0.8 else [],
         )
-    
+
     def _start_conversion(
         self,
         result: OneClickResult,
@@ -264,45 +264,45 @@ class OneClickConverter:
         result.status = "processing"
         result.started_at = datetime.now()
         result.progress = 10
-        
+
         # Simulate conversion steps
         # In production, this would call the actual conversion pipeline
-        
+
         # Step 1: Extract mod (10% → 30%)
         result.progress = 30
-        
+
         # Step 2: Analyze features (30% → 50%)
         result.progress = 50
-        
+
         # Step 3: Apply patterns (50% → 70%)
         result.progress = 70
-        
+
         # Step 4: Generate Bedrock code (70% → 90%)
         result.progress = 90
-        
+
         # Step 5: Package output (90% → 100%)
         result.progress = 100
         result.status = "completed"
         result.completed_at = datetime.now()
         result.output_path = output_path
         result.message = f"Conversion completed successfully. Output: {output_path}"
-        
+
         # Store in queue
         self.conversion_queue[result.conversion_id] = result
-        
+
         return result
-    
+
     def get_conversion_status(self, conversion_id: str) -> Optional[OneClickResult]:
         """Get status of a conversion by ID."""
         return self.conversion_queue.get(conversion_id)
-    
+
     def get_queue_stats(self) -> Dict[str, Any]:
         """Get conversion queue statistics."""
         total = len(self.conversion_queue)
         completed = sum(1 for r in self.conversion_queue.values() if r.status == "completed")
         processing = sum(1 for r in self.conversion_queue.values() if r.status == "processing")
         failed = sum(1 for r in self.conversion_queue.values() if r.status == "failed")
-        
+
         return {
             "total": total,
             "completed": completed,
@@ -315,15 +315,15 @@ class OneClickConverter:
 class SmartDefaultsEngine:
     """
     Engine for applying smart defaults based on mod analysis.
-    
+
     Analyzes mod characteristics and user history to determine
     optimal conversion settings.
     """
-    
+
     def __init__(self):
         self.user_history: Dict[str, List[Dict[str, Any]]] = {}
         logger.info("SmartDefaultsEngine initialized")
-    
+
     def get_defaults_for_mod(
         self,
         mod_features: Dict[str, Any],
@@ -331,18 +331,18 @@ class SmartDefaultsEngine:
     ) -> ConversionSettings:
         """
         Get smart defaults for a mod based on features and user history.
-        
+
         Args:
             mod_features: Features extracted from mod
             user_id: Optional user ID for personalization
-            
+
         Returns:
             ConversionSettings with optimal defaults
         """
         # Base defaults from mode
         mode = mod_features.get("mode", ConversionMode.STANDARD)
         defaults = MODE_DEFAULTS.get(mode, MODE_DEFAULTS[ConversionMode.STANDARD])
-        
+
         settings = ConversionSettings(
             mode=mode,
             detail_level=defaults["detail_level"],
@@ -350,16 +350,16 @@ class SmartDefaultsEngine:
             optimization=defaults["optimization"],
             error_handling=defaults["error_handling"],
         )
-        
+
         # Adjust based on mod features
         settings = self._adjust_for_features(settings, mod_features)
-        
+
         # Adjust based on user history
         if user_id and user_id in self.user_history:
             settings = self._adjust_for_user(settings, user_id)
-        
+
         return settings
-    
+
     def _adjust_for_features(
         self,
         settings: ConversionSettings,
@@ -369,19 +369,19 @@ class SmartDefaultsEngine:
         # More classes → more detailed
         if mod_features.get("class_count", 0) > 30:
             settings.detail_level = "comprehensive"
-        
+
         # Complex features → stricter validation
         complex_features = mod_features.get("complex_features", [])
         if len(complex_features) > 2:
             settings.validation_level = "strict"
             settings.optimization = "accuracy"
-        
+
         # Multiblock → manual error handling
         if "multiblock" in complex_features:
             settings.error_handling = "review"
-        
+
         return settings
-    
+
     def _adjust_for_user(
         self,
         settings: ConversionSettings,
@@ -389,27 +389,21 @@ class SmartDefaultsEngine:
     ) -> ConversionSettings:
         """Adjust settings based on user history."""
         history = self.user_history[user_id]
-        
+
         # Analyze user preferences from history
         if len(history) >= 3:
             # User prefers detailed output
-            detailed_count = sum(
-                1 for h in history 
-                if h.get("detail_level") == "comprehensive"
-            )
+            detailed_count = sum(1 for h in history if h.get("detail_level") == "comprehensive")
             if detailed_count / len(history) > 0.7:
                 settings.detail_level = "comprehensive"
-            
+
             # User prefers speed
-            speed_count = sum(
-                1 for h in history 
-                if h.get("optimization") == "speed"
-            )
+            speed_count = sum(1 for h in history if h.get("optimization") == "speed")
             if speed_count / len(history) > 0.7:
                 settings.optimization = "speed"
-        
+
         return settings
-    
+
     def record_conversion(
         self,
         user_id: str,
@@ -419,16 +413,18 @@ class SmartDefaultsEngine:
         """Record a conversion for learning user preferences."""
         if user_id not in self.user_history:
             self.user_history[user_id] = []
-        
-        self.user_history[user_id].append({
-            "mode": settings.mode,
-            "detail_level": settings.detail_level,
-            "validation_level": settings.validation_level,
-            "optimization": settings.optimization,
-            "success": success,
-            "timestamp": datetime.now().isoformat(),
-        })
-        
+
+        self.user_history[user_id].append(
+            {
+                "mode": settings.mode,
+                "detail_level": settings.detail_level,
+                "validation_level": settings.validation_level,
+                "optimization": settings.optimization,
+                "success": success,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
         # Keep only last 100 conversions per user
         if len(self.user_history[user_id]) > 100:
             self.user_history[user_id] = self.user_history[user_id][-100:]
@@ -442,12 +438,12 @@ def one_click_convert(
 ) -> OneClickResult:
     """
     Convert a mod with one click.
-    
+
     Args:
         mod_path: Path to mod JAR file
         output_path: Output path for converted mod
         user_preferences: Optional user preference overrides
-        
+
     Returns:
         OneClickResult with conversion status
     """
@@ -458,16 +454,16 @@ def one_click_convert(
 def get_mode_defaults(mode: str) -> Dict[str, Any]:
     """
     Get default settings for a conversion mode.
-    
+
     Args:
         mode: Mode name (Simple/Standard/Complex/Expert)
-        
+
     Returns:
         Dictionary with default settings
     """
     if mode not in MODE_DEFAULTS:
         return {"error": f"Unknown mode: {mode}"}
-    
+
     defaults = MODE_DEFAULTS[mode]
     return {
         "mode": mode,

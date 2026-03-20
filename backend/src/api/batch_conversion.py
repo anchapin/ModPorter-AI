@@ -22,6 +22,7 @@ router = APIRouter(prefix="/batch", tags=["Batch Conversion"])
 
 class BatchConversionRequest(BaseModel):
     """Batch conversion request."""
+
     files: List[Dict[str, Any]] = Field(..., min_items=2, max_items=20)
     options: Optional[Dict[str, Any]] = None
     priority: str = Field(default="normal", description="low, normal, high")
@@ -29,6 +30,7 @@ class BatchConversionRequest(BaseModel):
 
 class BatchConversionResponse(BaseModel):
     """Batch conversion response."""
+
     batch_id: str
     total_files: int
     estimated_time_minutes: int
@@ -38,6 +40,7 @@ class BatchConversionResponse(BaseModel):
 
 class BatchStatusResponse(BaseModel):
     """Batch status response."""
+
     batch_id: str
     total: int
     completed: int
@@ -49,6 +52,7 @@ class BatchStatusResponse(BaseModel):
 
 class BatchResultResponse(BaseModel):
     """Batch result response."""
+
     batch_id: str
     results: List[dict]
     download_all_url: Optional[str]
@@ -64,24 +68,22 @@ async def start_batch_conversion(
 ):
     """
     Start batch conversion of multiple mods.
-    
+
     - Upload 2-20 mod files
     - Convert simultaneously
     - Track progress centrally
     - Download all results as ZIP
     """
     # Check user quota
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
     # Check if user has batch conversion access (Pro feature)
     # For beta, allow all users
     if len(request.files) > 20:
@@ -89,10 +91,10 @@ async def start_batch_conversion(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum 20 files per batch",
         )
-    
+
     # Create batch record
     batch_id = f"batch_{datetime.utcnow().timestamp()}"
-    
+
     # Create individual conversion jobs
     conversion_ids = []
     for file_data in request.files:
@@ -104,9 +106,9 @@ async def start_batch_conversion(
         )
         db.add(conversion)
         conversion_ids.append(str(conversion.id))
-    
+
     await db.commit()
-    
+
     # Start background processing
     background_tasks.add_task(
         process_batch_conversion,
@@ -114,10 +116,10 @@ async def start_batch_conversion(
         conversion_ids,
         request.options,
     )
-    
+
     # Estimate time (2 minutes per file average)
     estimated_time = len(request.files) * 2
-    
+
     return BatchConversionResponse(
         batch_id=batch_id,
         total_files=len(request.files),
@@ -134,18 +136,18 @@ async def process_batch_conversion(
 ):
     """
     Process batch conversion in background.
-    
+
     Would process conversions with rate limiting.
     """
     logger.info(f"Processing batch {batch_id} with {len(conversion_ids)} conversions")
-    
+
     # Process each conversion
     # Would have proper error handling and progress tracking
     for conversion_id in conversion_ids:
         # Process conversion
         # Update status
         pass
-    
+
     logger.info(f"Batch {batch_id} completed")
 
 
@@ -157,7 +159,7 @@ async def get_batch_status(
 ):
     """
     Get batch conversion status.
-    
+
     Shows progress for all conversions in batch.
     """
     # Get all conversions in batch
@@ -168,21 +170,21 @@ async def get_batch_status(
         )
     )
     conversions = result.scalars().all()
-    
+
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-    
+
     # Calculate status
     completed = sum(1 for c in conversions if c.status == "completed")
     failed = sum(1 for c in conversions if c.status == "failed")
     pending = sum(1 for c in conversions if c.status in ["queued", "processing"])
-    
+
     total = len(conversions)
     progress = (completed / total * 100) if total > 0 else 0
-    
+
     return BatchStatusResponse(
         batch_id=batch_id,
         total=total,
@@ -210,7 +212,7 @@ async def get_batch_results(
 ):
     """
     Get batch conversion results.
-    
+
     Download individual results or all as ZIP.
     """
     # Get all conversions in batch
@@ -221,41 +223,47 @@ async def get_batch_results(
         )
     )
     conversions = result.scalars().all()
-    
+
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-    
+
     # Build results
     results = []
     successful = 0
     failed = 0
-    
+
     for conversion in conversions:
         if conversion.status == "completed":
             successful += 1
-            results.append({
-                "conversion_id": str(conversion.id),
-                "filename": conversion.input_data.get("filename", "unknown"),
-                "status": "completed",
-                "download_url": f"/api/v1/conversions/{conversion.id}/download",
-            })
+            results.append(
+                {
+                    "conversion_id": str(conversion.id),
+                    "filename": conversion.input_data.get("filename", "unknown"),
+                    "status": "completed",
+                    "download_url": f"/api/v1/conversions/{conversion.id}/download",
+                }
+            )
         else:
             failed += 1
-            results.append({
-                "conversion_id": str(conversion.id),
-                "filename": conversion.input_data.get("filename", "unknown"),
-                "status": conversion.status,
-                "error": conversion.error_message if hasattr(conversion, "error_message") else None,
-            })
-    
+            results.append(
+                {
+                    "conversion_id": str(conversion.id),
+                    "filename": conversion.input_data.get("filename", "unknown"),
+                    "status": conversion.status,
+                    "error": conversion.error_message
+                    if hasattr(conversion, "error_message")
+                    else None,
+                }
+            )
+
     # Generate ZIP download URL if there are successful conversions
     download_all_url = None
     if successful > 0:
         download_all_url = f"/api/v1/batch/{batch_id}/download-all"
-    
+
     return BatchResultResponse(
         batch_id=batch_id,
         results=results,
@@ -277,12 +285,12 @@ async def download_all_batch(
 ):
     """
     Download all successful conversions as ZIP.
-    
+
     Creates ZIP archive of all .mcaddon files.
     """
     # Would generate ZIP file with all conversions
     # For now, return placeholder
-    
+
     return {
         "batch_id": batch_id,
         "message": "ZIP download would start here",
@@ -298,7 +306,7 @@ async def cancel_batch(
 ):
     """
     Cancel batch conversion.
-    
+
     Stops pending conversions, keeps completed ones.
     """
     # Get all conversions in batch
@@ -309,22 +317,22 @@ async def cancel_batch(
         )
     )
     conversions = result.scalars().all()
-    
+
     if not conversions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Batch not found",
         )
-    
+
     # Cancel pending conversions
     cancelled = 0
     for conversion in conversions:
         if conversion.status in ["queued", "processing"]:
             conversion.status = "cancelled"
             cancelled += 1
-    
+
     await db.commit()
-    
+
     return {
         "message": f"Batch cancelled. {cancelled} conversions stopped.",
         "cancelled_count": cancelled,
