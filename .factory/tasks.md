@@ -1,9 +1,17 @@
 # Current Tasks
 
 ## Completed
+- ✅ Phase 14-04: Switch Expression Support (22 tests passing)
+- ✅ Phase 14-03: Enum Conversion (30 tests passing)
+- ✅ Phase 14-02: Inner Classes Support (30 tests passing)
+- ✅ Phase 14-01: Annotations Conversion (26 tests passing)
 - ✅ Phase 13-03: Reflection API Handling (23 tests passing)
 - ✅ Phase 13-02: Lambda Expression Support (34 tests passing)
 - ✅ Phase 13-01: Generics Conversion (17 tests passing)
+- ✅ Milestone v4.4: Advanced Conversion (74 tests passing)
+  - ✅ Phase 13-01: Generics Conversion (17 tests)
+  - ✅ Phase 13-02: Lambda Expression Support (34 tests)
+  - ✅ Phase 13-03: Reflection API Handling (23 tests)
 - ✅ Phase 12-05: Conversion Report Enhancement (21 tests passing)
 - ✅ Phase 12-04: Quality Improvement Pipeline (24 tests passing)
 - ✅ Phase 12-03: Conversion Success Metrics (23 tests passing)
@@ -40,4 +48,4 @@
   - ✅ Phase 04-G2: Beta Launch Infrastructure (6/6 tasks)
 
 ---
-*Last updated: 2026-03-19*
+*Last updated: 2026-03-20*
