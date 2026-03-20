@@ -6,7 +6,6 @@ Verifies AST extraction, semantic analysis, and error recovery
 
 import sys
 import importlib.util
-from pathlib import Path
 
 # Load java_parser module directly
 spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")
@@ -23,7 +22,7 @@ def test_basic_parsing():
     analyzer = java_parser.JavaASTAnalyzer()
     result = analyzer.analyze_file(code, "Test.java")
     
-    assert result["success"] == True, "Basic parsing should succeed"
+    assert result["success"], "Basic parsing should succeed"
     assert len(result["classes"]) > 0, "Should extract class"
     assert result["classes"][0]["name"] == "Test", "Class name should be Test"
     print("✅ Basic parsing works")
@@ -70,7 +69,7 @@ public class ExampleMod extends BaseMod {
     print(f"Annotations found: {len(result['annotations'])}")
     print(f"Components: blocks={len(result['components']['blocks'])}, items={len(result['components']['items'])}")
     
-    assert result["success"] == True, "Complex parsing should succeed"
+    assert result["success"], "Complex parsing should succeed"
     assert len(result["classes"]) > 0, "Should extract class"
     assert result["classes"][0]["name"] == "ExampleMod", "Class name should be ExampleMod"
     assert len(result["imports"]) >= 4, "Should extract all imports"

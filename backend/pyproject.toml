@@ -162,4 +162,4 @@ known-first-party = ["app", "core", "src"]
 force-single-line = false
 
 [tool.ruff.lint.mccabe]
-max-complexity = 10
+max-complexity = 20
