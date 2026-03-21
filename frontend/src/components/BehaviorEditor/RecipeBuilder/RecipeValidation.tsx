@@ -4,6 +4,10 @@ export class RecipeValidation {
   validate(recipe: Recipe, availableItems: RecipeItem[]): string[] {
     const errors: string[] = [];
 
+    // ⚡ Bolt: Use Sets for O(1) item lookup instead of O(N) array scans during validation
+    const availableItemIds = new Set(availableItems.filter(i => i.id).map(i => i.id));
+    const availableItemNames = new Set(availableItems.filter(i => i.name).map(i => i.name));
+
     // Basic validation
     if (!recipe.identifier) {
       errors.push('Recipe identifier is required');
@@ -22,29 +26,29 @@ export class RecipeValidation {
     // Type-specific validation
     switch (recipe.type) {
       case 'shaped':
-        this.validateShapedRecipe(recipe, availableItems, errors);
+        this.validateShapedRecipe(recipe, availableItemIds, availableItemNames, errors);
         break;
       case 'shapeless':
-        this.validateShapelessRecipe(recipe, availableItems, errors);
+        this.validateShapelessRecipe(recipe, availableItemIds, availableItemNames, errors);
         break;
       case 'furnace':
       case 'blast_furnace':
       case 'campfire':
       case 'smoker':
-        this.validateSmeltingRecipe(recipe, availableItems, errors);
+        this.validateSmeltingRecipe(recipe, availableItemIds, availableItemNames, errors);
         break;
       case 'brewing':
-        this.validateBrewingRecipe(recipe, availableItems, errors);
+        this.validateBrewingRecipe(recipe, availableItemIds, availableItemNames, errors);
         break;
       case 'stonecutter':
-        this.validateStonecutterRecipe(recipe, availableItems, errors);
+        this.validateStonecutterRecipe(recipe, availableItemIds, availableItemNames, errors);
         break;
       default:
         errors.push(`Unknown recipe type: ${recipe.type}`);
     }
 
     // Result validation
-    this.validateResult(recipe, availableItems, errors);
+    this.validateResult(recipe, availableItemIds, availableItemNames, errors);
 
     return errors;
   }
@@ -55,7 +59,8 @@ export class RecipeValidation {
 
   private validateShapedRecipe(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (!recipe.pattern || recipe.pattern.length === 0) {
@@ -79,7 +84,7 @@ export class RecipeValidation {
           rowHasItems = true;
 
           // Validate item exists
-          if (!this.itemExists(slot.item, availableItems)) {
+          if (!this.itemExists(slot.item, availableItemIds, availableItemNames)) {
             errors.push(
               `Item "${slot.item.name}" in slot (${x},${y}) is not available`
             );
@@ -117,7 +122,8 @@ export class RecipeValidation {
 
   private validateShapelessRecipe(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (!recipe.pattern || recipe.pattern.length === 0) {
@@ -133,7 +139,7 @@ export class RecipeValidation {
           usedSlots.push(slot.item);
 
           // Validate item exists
-          if (!this.itemExists(slot.item, availableItems)) {
+          if (!this.itemExists(slot.item, availableItemIds, availableItemNames)) {
             errors.push(`Ingredient "${slot.item.name}" is not available`);
           }
         }
@@ -151,7 +157,8 @@ export class RecipeValidation {
 
   private validateSmeltingRecipe(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (
@@ -171,7 +178,7 @@ export class RecipeValidation {
     }
 
     // Validate input item exists
-    if (!this.itemExists(inputSlot.item, availableItems)) {
+    if (!this.itemExists(inputSlot.item, availableItemIds, availableItemNames)) {
       errors.push(`Input item "${inputSlot.item.name}" is not available`);
     }
 
@@ -198,7 +205,8 @@ export class RecipeValidation {
 
   private validateBrewingRecipe(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (!recipe.pattern || recipe.pattern.length < 3) {
@@ -224,13 +232,13 @@ export class RecipeValidation {
     }
 
     // Validate ingredient exists
-    if (!this.itemExists(topSlot.item, availableItems)) {
+    if (!this.itemExists(topSlot.item, availableItemIds, availableItemNames)) {
       errors.push(`Brewing ingredient "${topSlot.item.name}" is not available`);
     }
 
     // Validate bottles
     bottomSlots.forEach((slot, index) => {
-      if (slot.item && !this.itemExists(slot.item, availableItems)) {
+      if (slot.item && !this.itemExists(slot.item, availableItemIds, availableItemNames)) {
         errors.push(
           `Bottom slot ${index + 1} item "${slot.item.name}" is not available`
         );
@@ -240,7 +248,8 @@ export class RecipeValidation {
 
   private validateStonecutterRecipe(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (
@@ -260,14 +269,15 @@ export class RecipeValidation {
     }
 
     // Validate input item exists
-    if (!this.itemExists(inputSlot.item, availableItems)) {
+    if (!this.itemExists(inputSlot.item, availableItemIds, availableItemNames)) {
       errors.push(`Input item "${inputSlot.item.name}" is not available`);
     }
   }
 
   private validateResult(
     recipe: Recipe,
-    availableItems: RecipeItem[],
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>,
     errors: string[]
   ): void {
     if (!recipe.result) {
@@ -291,7 +301,7 @@ export class RecipeValidation {
     }
 
     // Check if result item is valid (optional, as some recipes create new items)
-    if (recipe.result.id && !this.itemExists(recipe.result, availableItems)) {
+    if (recipe.result.id && !this.itemExists(recipe.result, availableItemIds, availableItemNames)) {
       // This is just a warning, not an error
       console.warn(
         `Result item "${recipe.result.name}" is not in available items list`
@@ -306,11 +316,15 @@ export class RecipeValidation {
     }
   }
 
-  private itemExists(item: RecipeItem, availableItems: RecipeItem[]): boolean {
-    return availableItems.some(
-      (availableItem) =>
-        availableItem.id === item.id || availableItem.name === item.name
-    );
+  private itemExists(
+    item: RecipeItem,
+    availableItemIds: Set<string>,
+    availableItemNames: Set<string>
+  ): boolean {
+    if (item.id && availableItemIds.has(item.id)) return true;
+    if (item.name && availableItemNames.has(item.name)) return true;
+
+    return false;
   }
 
   // Helper method to get recipe summary
