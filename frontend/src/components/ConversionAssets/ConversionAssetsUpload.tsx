@@ -206,7 +206,9 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
           >
             {isUploading ? (
               <>
-                <span className="loading-spinner">⏳</span>
+                <span className="loading-spinner" aria-hidden="true">
+                  ⏳
+                </span>
                 Uploading...
               </>
             ) : (
