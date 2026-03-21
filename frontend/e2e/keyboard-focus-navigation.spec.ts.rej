@@ -1,0 +1,10 @@
+--- keyboard-focus-navigation.spec.ts
++++ keyboard-focus-navigation.spec.ts
+@@ -139,7 +139,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
+
+       // Focus-visible should not match for mouse users
+       // This is browser-dependent, but the CSS should handle it with :focus:not(:focus-visible)
+-      const _isFocusVisible = await button.evaluate((el) => {
++      const isFocusVisible = await button.evaluate((el) => {
+         return el.matches(':focus-visible');
+       });

@@ -234,7 +234,10 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           <div className="file-list-header">
             <span>{items.length} file(s) queued</span>
             {!isConverting && (
-              <button className="clear-button focus-visible:ring-2 focus-visible:outline-none" onClick={clearAll}>
+              <button
+                className="clear-button focus-visible:ring-2 focus-visible:outline-none"
+                onClick={clearAll}
+              >
                 Clear All
               </button>
             )}
@@ -306,7 +309,10 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
               )}
 
               {isConverting && (
-                <button className="processing-button focus-visible:ring-2 focus-visible:outline-none" disabled>
+                <button
+                  className="processing-button focus-visible:ring-2 focus-visible:outline-none"
+                  disabled
+                >
                   Processing...
                 </button>
               )}
