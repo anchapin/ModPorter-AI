@@ -234,7 +234,10 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           <div className="file-list-header">
             <span>{items.length} file(s) queued</span>
             {!isConverting && (
-              <button className="clear-button" onClick={clearAll}>
+              <button
+                className="clear-button focus-visible:ring-2 focus-visible:outline-none"
+                onClick={clearAll}
+              >
                 Clear All
               </button>
             )}
@@ -266,10 +269,11 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                 </div>
                 {item.status === 'pending' && !isConverting && (
                   <button
-                    className="remove-button"
+                    className="remove-button focus-visible:ring-2 focus-visible:outline-none"
                     onClick={() => removeItem(item.id)}
+                    aria-label="Remove item"
                   >
-                    ✕
+                    <span aria-hidden="true">✕</span>
                   </button>
                 )}
               </div>
@@ -297,7 +301,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
             <div className="action-buttons">
               {pendingCount > 0 && !isConverting && (
                 <button
-                  className="start-button primary"
+                  className="start-button primary focus-visible:ring-2 focus-visible:outline-none"
                   onClick={startBatchConversion}
                 >
                   Start Batch ({pendingCount})
@@ -305,14 +309,17 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
               )}
 
               {isConverting && (
-                <button className="processing-button" disabled>
+                <button
+                  className="processing-button focus-visible:ring-2 focus-visible:outline-none"
+                  disabled
+                >
                   Processing...
                 </button>
               )}
 
               {completedCount > 0 && !isConverting && (
                 <button
-                  className="download-button secondary"
+                  className="download-button secondary focus-visible:ring-2 focus-visible:outline-none"
                   onClick={downloadAll}
                 >
                   Download All ({completedCount})
