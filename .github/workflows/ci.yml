@@ -774,12 +774,19 @@ jobs:
       with:
         version: 9
 
-    - name: Cache pnpm
-      uses: actions/cache@v4
+    - name: Get pnpm store directory
+      id: pnpm-store
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v5
       with:
-        path: ~/.local/share/pnpm/store/v3
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
+          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
           ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies (optimized)
