@@ -62,16 +62,16 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
         },
       });
 
-      // Render the diagram
+      // Render the diagram securely to prevent XSS vulnerabilities
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        chartRef.current.textContent = chart;
         mermaid.init(undefined, chartRef.current);
       }
     } catch (error) {
       console.error('Error initializing or rendering Mermaid diagram:', error);
-      // Gracefully handle errors by showing the chart content as plain text
+      // Gracefully handle errors by showing the chart content as plain text securely
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        chartRef.current.textContent = chart;
       }
     }
   }, [chart]);
