@@ -1,11 +1,7 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "pnpm",
-  "reporters": [
-    "html",
-    "json",
-    "clear-text"
-  ],
+  "reporters": ["html", "json", "clear-text"],
   "vitest": {
     "configFile": "vite.config.ts",
     "enableFindRelatedTests": true
@@ -30,9 +26,5 @@
     "**/.next/**"
   ],
   "concurrency": 4,
-  "coverageAnalysis": "perTest",
-  "testRunner": "vitest",
-  "testRunnerNodeArgs": [
-    "--experimental-vm-modules"
-  ]
+  "coverageAnalysis": "perTest"
 }

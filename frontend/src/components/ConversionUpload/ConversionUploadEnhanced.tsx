@@ -530,7 +530,7 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
                 disabled={isProcessing || isCompleted}
                 aria-label={`Remove ${selectedFile.name}`}
               >
-                <span aria-hidden="true">&#x2715;</span>
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (

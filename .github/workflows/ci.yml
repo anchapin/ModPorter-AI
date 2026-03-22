@@ -764,15 +764,15 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
         cache: 'pnpm'
         cache-dependency-path: 'pnpm-lock.yaml'
 
@@ -789,7 +789,7 @@ jobs:
       env:
         VITE_API_BASE_URL: http://localhost:8000
       run: |
-        cd frontend &&
+        cd frontend
         echo "🚀 Running ${{ matrix.test-type }} tests..."
         
         case "${{ matrix.test-type }}" in
@@ -808,7 +808,7 @@ jobs:
             cd ..
             rm -rf node_modules
             pnpm install --frozen-lockfile
-            cd frontend &&
+            cd frontend
             # Run linting
             pnpm run lint
             ;;
@@ -1007,11 +1007,11 @@ jobs:
     - name: Run mutation testing
       timeout-minutes: 10
       run: |
-        cd frontend &&
+        cd frontend
         
         # Run stryker mutation testing
         # Using --exitCodeProcesses=false to allow threshold failures
-        pnpm run mutation || true
+        pnpm mutation || true
         
         # Check results
         if [ -f "reports/mutation/json/mutation.json" ]; then
@@ -1023,7 +1023,7 @@ jobs:
 
     - name: Check mutation testing threshold
       run: |
-        cd frontend &&
+        cd frontend
         
         # Threshold: 70% mutation score (30% allowed to survive)
         THRESHOLD=70
@@ -1139,7 +1139,7 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Check frontend format
-      run: cd frontend &&   && pnpm prettier --check .
+      run: cd frontend && pnpm prettier --check .
 
     - name: Check duplicates
       run: pnpm run lint:duplicates
@@ -1148,7 +1148,7 @@ jobs:
       run: pnpm run lint:duplicates
 
     - name: Build frontend with bundle analysis
-      run: cd frontend &&   && pnpm build:analyze
+      run: cd frontend && pnpm build:analyze
 
     - name: Generate bundle size report
       run: node scripts/generate-bundle-report.cjs frontend/dist
@@ -1252,7 +1252,7 @@ jobs:
       if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
       run: |
         echo "=== Scanning Frontend pnpm Dependencies ==="
-        cd frontend &&
+        cd frontend
         pnpm audit --audit-level=high || true
       continue-on-error: true
 
