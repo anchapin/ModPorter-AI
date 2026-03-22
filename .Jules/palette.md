@@ -5,3 +5,6 @@
 ## 2025-02-21 - Inline Confirmation Focus Management
 **Learning:** When replacing an action button with an inline confirmation dialog, focus is lost unless manually managed. Adding `autoFocus` to the "Cancel" button is a simple, effective way to restore focus and prevent accidental confirmation.
 **Action:** Always use `autoFocus` on the safe/cancel option in inline confirmation flows.
+## 2024-05-18 - [Add aria-hidden wrappers to emoji text]
+**Learning:** Screen readers announce literal emojis which can create redundant or confusing announcements when combined with an `aria-label` on the parent button.
+**Action:** Wrap decorative emojis or text-based icons in `<span aria-hidden="true">` when adding an `aria-label` to their parent `<button>`.
