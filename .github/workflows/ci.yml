@@ -764,17 +764,23 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
+
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
+    - name: Cache pnpm
+      uses: actions/cache@v4
       with:
-        node-version: '20.19.0'
-        cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
+        path: ~/.local/share/pnpm/store/v3
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies (optimized)
       run: |
