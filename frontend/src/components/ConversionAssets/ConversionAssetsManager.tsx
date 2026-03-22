@@ -80,11 +80,15 @@ export const ConversionAssetsManager: React.FC<
           >
             {isConverting ? (
               <>
-                <span className="loading-spinner">⏳</span>
+                <span className="loading-spinner" aria-hidden="true">
+                  ⏳
+                </span>
                 Converting All...
               </>
             ) : (
-              '🔄 Convert All Assets'
+              <>
+                <span aria-hidden="true">🔄</span> Convert All Assets
+              </>
             )}
           </button>
         </div>
