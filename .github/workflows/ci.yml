@@ -807,6 +807,7 @@ jobs:
             # Force reinstall of potentially corrupted packages from stale cache
             cd ..
             rm -rf node_modules
+            rm -rf frontend/node_modules
             pnpm install --frozen-lockfile
             cd frontend
             # Run linting
