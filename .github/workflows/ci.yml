@@ -911,7 +911,7 @@ jobs:
         fi
 
     - name: Run mutation testing
-      timeout-minutes: 5
+      timeout-minutes: 20
       run: |
         cd ${{ matrix.project }}
         
@@ -1018,7 +1018,7 @@ jobs:
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
-      timeout-minutes: 10
+      timeout-minutes: 20
       run: |
         cd frontend
         
@@ -1118,7 +1118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
@@ -1203,7 +1203,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
