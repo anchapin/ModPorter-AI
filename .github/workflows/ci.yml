@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: changes
         with:
           base: main
@@ -576,7 +576,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-integration-${{ matrix.test-suite }}
         path: .github/perf-metrics/*.json
@@ -584,7 +584,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -612,7 +612,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
 
@@ -765,7 +765,7 @@ jobs:
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v5
       with:
         version: 9
 
@@ -815,7 +815,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -852,7 +852,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
         path: .github/perf-metrics/*.json
@@ -954,7 +954,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-mutation-python-${{ matrix.project }}
         path: .github/perf-metrics/*.json
@@ -981,7 +981,7 @@ jobs:
         node-version: '20.19.0'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v5
       with:
         version: 9
 
@@ -1048,7 +1048,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-mutation-frontend
         path: .github/perf-metrics/*.json
@@ -1116,7 +1116,7 @@ jobs:
         node-version: '20.19.0'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v5
       with:
         version: 9
 
@@ -1154,7 +1154,7 @@ jobs:
       run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: bundle-report
@@ -1226,7 +1226,7 @@ jobs:
         node-version: '20.19.0'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v5
       with:
         version: 9
 
@@ -1273,7 +1273,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Download all performance metrics
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: perf-metrics-*
         path: .github/perf-metrics
@@ -1365,7 +1365,7 @@ jobs:
         fi
 
     - name: Upload performance summary
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ci-performance-summary
         path: |
@@ -1381,7 +1381,7 @@ jobs:
 
     - name: Upload performance metrics artifact
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ci-performance-metrics
         path: .github/perf-metrics/
