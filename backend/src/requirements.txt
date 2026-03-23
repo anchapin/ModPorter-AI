@@ -3,7 +3,7 @@ httpx>=0.25.0
 
 # Core Framework (updated for CI fix)
 fastapi==0.135.1
-uvicorn[standard]==0.41.0
+uvicorn[standard]==0.42.0
 pydantic==2.12.5
 pydantic-settings==2.13.1
 python-dateutil==2.9.0.post0
@@ -30,11 +30,11 @@ httpx==0.28.1
 # Testing
 pytest>=8.2
 pytest-asyncio==1.3.0
-pytest-cov==7.0.0
+pytest-cov==7.1.0
 pytest-timeout==2.4.0
 
 # Code Quality
-ruff==0.15.5
+ruff==0.15.7
 black==26.3.1
 
 # Utilities
