@@ -764,17 +764,12 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
 
-    - name: Setup Node.js cache
+    - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
@@ -812,7 +807,6 @@ jobs:
             # Force reinstall of potentially corrupted packages from stale cache
             cd ..
             rm -rf node_modules
-            rm -rf frontend/node_modules
             pnpm install --frozen-lockfile
             cd frontend
             # Run linting
@@ -911,7 +905,7 @@ jobs:
         fi
 
     - name: Run mutation testing
-      timeout-minutes: 20
+      timeout-minutes: 5
       run: |
         cd ${{ matrix.project }}
         
@@ -991,13 +985,6 @@ jobs:
       with:
         version: 9
 
-    - name: Setup Node.js cache
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-        cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
-
     - name: Get pnpm store directory
       id: pnpm-store
       shell: bash
@@ -1018,7 +1005,7 @@ jobs:
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
-      timeout-minutes: 20
+      timeout-minutes: 10
       run: |
         cd frontend
         
@@ -1118,7 +1105,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
@@ -1132,13 +1119,6 @@ jobs:
       uses: pnpm/action-setup@v4
       with:
         version: 9
-
-    - name: Setup Node.js cache
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-        cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1203,7 +1183,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
@@ -1249,13 +1229,6 @@ jobs:
       uses: pnpm/action-setup@v4
       with:
         version: 9
-
-    - name: Setup Node.js cache
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-        cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Get pnpm store directory
       id: pnpm-store

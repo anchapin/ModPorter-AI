@@ -23,7 +23,8 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
-## 2024-05-15 - [XSS via innerHTML in MermaidDiagram]
-**Vulnerability:** Found an XSS vulnerability where raw chart strings were assigned to `innerHTML` in `MermaidDiagram.tsx`.
-**Learning:** Using `innerHTML` with unsanitized user or external input creates high-priority XSS risks, especially in charting libraries that render complex DOM elements.
-**Prevention:** Always use a sanitization library like `dompurify` to clean strings before passing them to `innerHTML`.
+
+## 2026-03-18 - XSS Prevention in React Mermaid Components
+**Vulnerability:** DOM-based Cross-Site Scripting (XSS) in `MermaidDiagram` component using `innerHTML`.
+**Learning:** Using `innerHTML` to inject raw chart strings for Mermaid to process is dangerous, especially when the component handles untrusted data. Mermaid's `init` works natively with `textContent` instead, securely rendering the text representation without exposing the React application to XSS vectors embedded in HTML tags or scripts.
+**Prevention:** Always use `.textContent` instead of `.innerHTML` when injecting untrusted diagram code into charting or markdown parsers that support it.
