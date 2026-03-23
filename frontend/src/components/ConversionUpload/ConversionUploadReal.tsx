@@ -461,8 +461,9 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
                   if (!isConverting) setSelectedFile(null);
                 }}
                 disabled={isConverting}
+                aria-label="Remove selected file"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (
