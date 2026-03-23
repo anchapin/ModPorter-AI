@@ -192,7 +192,7 @@ jobs:
     - name: Extract Node dependencies hash
       id: deps-hash
       run: |
-          HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Node deps hash: $HASH"
     
