@@ -26,7 +26,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
       mermaid.initialize({
         startOnLoad: true,
         theme: 'default',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
         flowchart: {
           useMaxWidth: true,
           htmlLabels: true,
@@ -64,14 +64,14 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
 
       // Render the diagram
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        chartRef.current.textContent = chart;
         mermaid.init(undefined, chartRef.current);
       }
     } catch (error) {
       console.error('Error initializing or rendering Mermaid diagram:', error);
       // Gracefully handle errors by showing the chart content as plain text
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        chartRef.current.textContent = chart;
       }
     }
   }, [chart]);
