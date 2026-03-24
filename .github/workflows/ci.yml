@@ -710,7 +710,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16 || sha256sum frontend/package.json | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -1319,14 +1319,14 @@ jobs:
         echo "📊 Cache Strategy Analysis"
         echo "=========================="
         echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
         
         echo ""
         echo "Cache Keys (v2 optimized):"
         echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
         echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
         
         echo ""
         echo "🎯 Optimization Results"
