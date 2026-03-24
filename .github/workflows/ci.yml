@@ -271,7 +271,8 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
+        # Disable built-in pip cache as it causes ENOENT
+        # cache: 'pip'
         cache-dependency-path: |
           ai-engine/requirements*.txt
           backend/requirements*.txt
@@ -889,7 +890,8 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.11'
-        cache: 'pip'
+        # Disable built-in pip cache as it causes ENOENT
+        # cache: 'pip'
         cache-dependency-path: |
           ai-engine/requirements*.txt
           backend/requirements*.txt
