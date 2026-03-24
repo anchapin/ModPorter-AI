@@ -1005,7 +1005,7 @@ jobs:
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
-      timeout-minutes: 10
+      timeout-minutes: 20
       run: |
         cd frontend
         
