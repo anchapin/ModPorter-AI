@@ -180,13 +180,17 @@ async def upload_asset(
         if os.path.exists(file_path):
             os.remove(file_path)
         logger.error(f"Error saving asset file: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=400, detail="Failed to save asset file. Please ensure it's a valid file.")
+        raise HTTPException(
+            status_code=400, detail="Failed to save asset file. Please ensure it's a valid file."
+        )
     except Exception as e:
         # Clean up uploaded file if database creation fails
         if os.path.exists(file_path):
             os.remove(file_path)
         logger.error(f"Error creating asset record: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create asset record. Please try again.")
+        raise HTTPException(
+            status_code=500, detail="Failed to create asset record. Please try again."
+        )
 
 
 @router.get("/assets/{asset_id}", response_model=AssetResponse, tags=["assets"])
