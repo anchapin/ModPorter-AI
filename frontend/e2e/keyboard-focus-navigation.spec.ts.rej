@@ -1,0 +1,11 @@
+--- frontend/e2e/keyboard-focus-navigation.spec.ts
++++ frontend/e2e/keyboard-focus-navigation.spec.ts
+@@ -139,7 +139,7 @@
+       await button.focus();
+
+       // Check if focus-visible class or outline is applied
+-      const isFocusVisible = await button.evaluate((el) => {
++      const _isFocusVisible = await button.evaluate((el) => {
+         return el.matches(':focus-visible') ||
+                window.getComputedStyle(el).outlineStyle !== 'none' ||
+                window.getComputedStyle(el).boxShadow !== 'none';
