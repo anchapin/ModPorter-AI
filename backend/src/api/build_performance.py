@@ -9,6 +9,9 @@ Issue: #691 - Build performance tracking
 
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 from models import (
     BuildPerformanceStartRequest,
@@ -55,10 +58,8 @@ async def start_performance_tracking(request: BuildPerformanceStartRequest):
             message=f"Performance tracking started for build {build.build_id}",
             started_at=build.created_at,
         )
-    except Exception as e:
-        logger.error(f"Failed to start tracking: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=500, detail="Failed to start tracking: Please try again.")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to start tracking")
 
 
 @router.post("/{build_id}/stage", response_model=BuildPerformanceResponse)

@@ -1,5 +1,9 @@
 from typing import List
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -128,13 +132,17 @@ async def generate_embeddings(
 
     # Add ai-engine to path for embedding generator
     ai_engine_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "ai-engine",
     )
     if ai_engine_path not in sys.path:
         sys.path.insert(0, ai_engine_path)
 
     try:
-        from utils.embedding_generator import LocalEmbeddingGenerator, OpenAIEmbeddingGenerator
+        from utils.embedding_generator import (
+            LocalEmbeddingGenerator,
+            OpenAIEmbeddingGenerator,
+        )
 
         # Determine provider
         provider = request.provider or "auto"
@@ -170,13 +178,13 @@ async def generate_embeddings(
         logger.error("Embedding generator not available", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Embedding generator not available",
+            detail="An internal error occurred",
         )
     except Exception as e:
         logger.error("Error generating embeddings", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error generating embeddings",
+            detail="An internal error occurred",
         )
 
 
