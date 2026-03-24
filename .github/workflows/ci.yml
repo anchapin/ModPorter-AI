@@ -975,15 +975,15 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
+
+    - name: Set up Node.js 20
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1110,15 +1110,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
+
+    - name: Set up Node.js 20
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1220,15 +1220,15 @@ jobs:
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
-
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20.19.0'
 
     - name: Get pnpm store directory
       id: pnpm-store
