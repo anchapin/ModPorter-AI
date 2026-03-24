@@ -66,7 +66,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
     expect(focusableCount).toBeGreaterThan(0);
 
     // Tab through elements
-    let previousElement: string | null = null;
+    let _previousElement: string | null = null;
     for (let i = 0; i < Math.min(focusableCount, 5); i++) {
       await page.keyboard.press('Tab');
 
