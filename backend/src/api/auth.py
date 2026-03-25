@@ -54,7 +54,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-    def validate_password(self, v):
+    def validate_password(cls, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -114,7 +114,7 @@ class PasswordResetConfirmRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
     @validator("password")
-    def validate_password(self, v):
+    def validate_password(cls, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")

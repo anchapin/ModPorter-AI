@@ -51,7 +51,7 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Set up pnpm
+    - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
@@ -61,6 +61,7 @@ jobs:
       with:
         node-version: '20.19.0'
         cache: 'pnpm'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Cache Python dependencies (backend)
       uses: actions/cache@v5
@@ -160,22 +161,22 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        npm run test:ci
+        pnpm run test:ci
 
     - name: Frontend type check
       run: |
         cd frontend
-        npx tsc --noEmit
+        pnpm exec tsc --noEmit
 
     - name: Frontend lint check
       run: |
         cd frontend
-        npm run lint
+        pnpm run lint
 
     - name: Build frontend
       run: |
         cd frontend
-        npm run build
+        pnpm run build
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v5

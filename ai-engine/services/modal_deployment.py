@@ -31,6 +31,7 @@ image = modal.Image.debian_slim(python_version="3.11").pip_install(
 )
 class CodeT5PlusConverter:
     """CodeT5+ 16B model for Java to Bedrock code translation."""
+<<<<<<< HEAD
 
     def __enter__(self):
         """Load model and tokenizer on container startup."""
@@ -43,12 +44,28 @@ class CodeT5PlusConverter:
 
         print(f"Loading model: {model_name}")
 
+=======
+    
+    def __enter__(self):
+        """Load model and tokenizer on container startup."""
+        import os
+        
+        # Set environment variables for better performance
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        
+        model_name = "Salesforce/codet5p-16b"
+        
+        print(f"Loading model: {model_name}")
+        
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             trust_remote_code=True,
         )
+<<<<<<< HEAD
 
+=======
+        
         # Load model with mixed precision for faster inference
         self.model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
@@ -57,7 +74,10 @@ class CodeT5PlusConverter:
             device_map="auto",  # Automatic device mapping
             low_cpu_mem_usage=True,  # Reduce memory usage during loading
         )
+<<<<<<< HEAD
 
+=======
+        
         # Create translation pipeline
         self.translator = pipeline(
             "text2text-generation",
@@ -68,24 +88,39 @@ class CodeT5PlusConverter:
             num_beams=10,  # Beam search for better quality
             early_stopping=True,
         )
+<<<<<<< HEAD
 
         print("Model loaded successfully")
 
+=======
+        
+        print("Model loaded successfully")
+    
     @modal.method()
     def translate(self, java_code: str, context: str = None) -> str:
         """
         Translate Java code to Bedrock JavaScript/JSON.
+<<<<<<< HEAD
 
         Args:
             java_code: Java source code to translate
             context: Optional context (similar conversions, RAG results)
 
+=======
+        
+        Args:
+            java_code: Java source code to translate
+            context: Optional context (similar conversions, RAG results)
+        
         Returns:
             Translated Bedrock code (JavaScript/JSON)
         """
         # Build prompt
         prompt = self._build_prompt(java_code, context)
+<<<<<<< HEAD
 
+=======
+        
         # Run translation
         result = self.translator(
             prompt,
@@ -94,17 +129,28 @@ class CodeT5PlusConverter:
             temperature=0.3,  # Lower temperature for more deterministic output
             do_sample=True,  # Enable sampling for better quality
         )
+<<<<<<< HEAD
 
         return result[0]["generated_text"].strip()
 
+=======
+        
+        return result[0]["generated_text"].strip()
+    
     @modal.method()
     def translate_batch(self, items: list) -> list:
         """
         Translate multiple Java code snippets in batch.
+<<<<<<< HEAD
 
         Args:
             items: List of dicts with 'java_code' and optional 'context'
 
+=======
+        
+        Args:
+            items: List of dicts with 'java_code' and optional 'context'
+        
         Returns:
             List of translated code strings
         """
@@ -115,16 +161,23 @@ class CodeT5PlusConverter:
             result = self.translate(java_code, context)
             results.append(result)
         return results
+<<<<<<< HEAD
 
+=======
+    
     @modal.method()
     def health_check(self) -> dict:
         """Check if model is healthy and ready."""
         import torch
+<<<<<<< HEAD
 
+=======
+        
         return {
             "status": "healthy",
             "model_loaded": self.model is not None,
             "gpu_available": torch.cuda.is_available(),
+<<<<<<< HEAD
             "gpu_name": (torch.cuda.get_device_name(0) if torch.cuda.is_available() else None),
             "gpu_memory_allocated": (
                 torch.cuda.memory_allocated(0) if torch.cuda.is_available() else 0
@@ -137,6 +190,15 @@ class CodeT5PlusConverter:
     def _build_prompt(self, java_code: str, context: str = None) -> str:
         """Build translation prompt for the model."""
 
+=======
+            "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+            "gpu_memory_allocated": torch.cuda.memory_allocated(0) if torch.cuda.is_available() else 0,
+            "gpu_memory_cached": torch.cuda.memory_reserved(0) if torch.cuda.is_available() else 0,
+        }
+    
+    def _build_prompt(self, java_code: str, context: str = None) -> str:
+        """Build translation prompt for the model."""
+        
         base_prompt = """Translate the following Java code to Minecraft Bedrock Edition JavaScript/JSON.
 Output only the translated code, no explanations.
 
@@ -147,7 +209,10 @@ Java Code:
 
 Bedrock Translation:
 """
+<<<<<<< HEAD
 
+=======
+        
         if context:
             prompt = f"""Context (similar conversions):
 {context}
@@ -155,7 +220,10 @@ Bedrock Translation:
 {base_prompt}"""
         else:
             prompt = base_prompt
+<<<<<<< HEAD
 
+=======
+        
         return prompt.format(java_code=java_code)
 
 
@@ -164,11 +232,18 @@ Bedrock Translation:
 def main():
     """Test the model locally (runs on Modal)."""
     converter = CodeT5PlusConverter()
+<<<<<<< HEAD
 
     # Test health check
     health = converter.health_check.remote()
     print(f"Health check: {health}")
 
+=======
+    
+    # Test health check
+    health = converter.health_check.remote()
+    print(f"Health check: {health}")
+    
     # Test translation
     test_code = """
 public class TestBlock extends Block {
@@ -177,7 +252,10 @@ public class TestBlock extends Block {
     }
 }
 """
+<<<<<<< HEAD
 
+=======
+    
     result = converter.translate.remote(test_code)
     print(f"Translation result:\n{result}")
 

@@ -38,7 +38,10 @@ public class ModItem extends Item {
             "difficulty": "simple",
             "features": ["basic_item"],
             "category": "items",
+<<<<<<< HEAD
         },
+=======
+        }
     },
     {
         "id": "item-002",
@@ -84,7 +87,10 @@ public class ModSword extends SwordItem {
             "difficulty": "simple",
             "features": ["sword", "weapon", "durability"],
             "category": "items",
+<<<<<<< HEAD
         },
+=======
+        }
     },
     {
         "id": "item-003",
@@ -131,8 +137,13 @@ public class ModPickaxe extends PickaxeItem {
             "difficulty": "simple",
             "features": ["pickaxe", "tool", "mining"],
             "category": "items",
+<<<<<<< HEAD
         },
     },
+=======
+        }
+    },
+    
     # Simple Blocks (21-40)
     {
         "id": "block-001",
@@ -182,7 +193,10 @@ public class ModBlock extends Block {
             "difficulty": "simple",
             "features": ["basic_block", "stone"],
             "category": "blocks",
+<<<<<<< HEAD
         },
+=======
+        }
     },
     {
         "id": "block-002",
@@ -230,8 +244,13 @@ public class ModOre extends Block {
             "difficulty": "simple",
             "features": ["ore", "requires_tool", "drops_loot"],
             "category": "blocks",
+<<<<<<< HEAD
         },
     },
+=======
+        }
+    },
+    
     # Basic Entities (41-60)
     {
         "id": "entity-001",
@@ -292,8 +311,13 @@ public class ModEntity extends Mob {
             "difficulty": "moderate",
             "features": ["entity", "mob", "ai_goals"],
             "category": "entities",
+<<<<<<< HEAD
         },
     },
+=======
+        }
+    },
+    
     # Recipes (61-80)
     {
         "id": "recipe-001",
@@ -345,8 +369,13 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
             "difficulty": "simple",
             "features": ["recipe", "shaped_recipe", "crafting"],
             "category": "recipes",
+<<<<<<< HEAD
         },
     },
+=======
+        }
+    },
+    
     # More complex examples would continue here...
     # For brevity, showing representative examples only
 ]
@@ -381,9 +410,14 @@ def get_seed_examples() -> List[Dict[str, Any]]:
 def generate_examples_from_templates() -> List[Dict[str, Any]]:
     """Generate additional examples from templates."""
     import uuid
+<<<<<<< HEAD
 
     examples = []
 
+=======
+    
+    examples = []
+    
     for item_template in EXAMPLE_TEMPLATES["items"]:
         example = {
             "id": f"generated-{item_template['name']}-{uuid.uuid4().hex[:8]}",
@@ -393,10 +427,16 @@ def generate_examples_from_templates() -> List[Dict[str, Any]]:
                 "difficulty": "simple",
                 "generated": True,
                 "template": item_template,
+<<<<<<< HEAD
             },
         }
         examples.append(example)
 
+=======
+            }
+        }
+        examples.append(example)
+    
     return examples
 
 

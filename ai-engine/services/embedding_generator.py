@@ -6,7 +6,10 @@ Enhanced with model caching and optimized batch processing.
 """
 
 import logging
+<<<<<<< HEAD
 from typing import List
+=======
+from typing import List, Optional, Dict, Any
 import numpy as np
 
 # Import model cache
@@ -36,13 +39,17 @@ class EmbeddingGenerator:
             return
 
         logger.info(f"Loading embedding model: {self.model_name}")
+<<<<<<< HEAD
 
+=======
+        
         try:
             from sentence_transformers import SentenceTransformer
 
             self._model = SentenceTransformer(self.model_name)
             self._dimension = self._model.get_sentence_embedding_dimension()
             logger.info(f"Model loaded with dimension: {self._dimension}")
+<<<<<<< HEAD
 
             # Cache the model (estimate 500MB for embedding model)
             self._cache.set(self.model_name, self._model, memory_bytes=500 * 1024 * 1024)
@@ -58,12 +65,31 @@ class EmbeddingGenerator:
         Args:
             text: Text to embed
 
+=======
+            
+            # Cache the model (estimate 500MB for embedding model)
+            self._cache.set(self.model_name, self._model, memory_bytes=500 * 1024 * 1024)
+            
+        except ImportError:
+            logger.warning("sentence-transformers not installed. Using mock embeddings.")
+            self._model = None
+    
+    def generate_embedding(self, text: str) -> np.ndarray:
+        """
+        Generate embedding for text.
+        
+        Args:
+            text: Text to embed
+        
         Returns:
             Embedding vector
         """
         if self._model is None:
             self._load_model()
+<<<<<<< HEAD
 
+=======
+        
         if self._model is not None:
             embedding = self._model.encode(text, convert_to_numpy=True)
             return embedding.astype(np.float32)
@@ -71,7 +97,10 @@ class EmbeddingGenerator:
             # Mock embedding for development
             logger.debug("Using mock embedding")
             return np.random.randn(self._dimension).astype(np.float32)
+<<<<<<< HEAD
 
+=======
+    
     def generate_embeddings_batch(
         self,
         texts: List[str],
@@ -80,7 +109,10 @@ class EmbeddingGenerator:
     ) -> np.ndarray:
         """
         Generate embeddings for multiple texts in optimized batches.
+<<<<<<< HEAD
 
+=======
+        
         Features:
         - Configurable batch size for memory efficiency
         - Progress bar for monitoring
@@ -99,7 +131,10 @@ class EmbeddingGenerator:
 
         if self._model is not None:
             logger.info(f"Generating {len(texts)} embeddings in batches of {batch_size}")
+<<<<<<< HEAD
 
+=======
+            
             embeddings = self._model.encode(
                 texts,
                 batch_size=batch_size,
@@ -123,7 +158,10 @@ class EmbeddingGenerator:
     ) -> np.ndarray:
         """
         Generate embeddings with advanced optimization.
+<<<<<<< HEAD
 
+=======
+        
         Features:
         - Multi-processing for CPU-bound encoding
         - Larger batch sizes for GPU efficiency
@@ -161,7 +199,10 @@ class EmbeddingGenerator:
         )
 
         return embeddings.astype(np.float32)
+<<<<<<< HEAD
 
+=======
+    
     @property
     def dimension(self) -> int:
         """Get embedding dimension."""

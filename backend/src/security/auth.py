@@ -52,9 +52,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(
-    user_id: str,
-    expires_delta: Optional[timedelta] = None,
-    extra_claims: Optional[dict] = None,
+    user_id: str, expires_delta: Optional[timedelta] = None, extra_claims: Optional[dict] = None
 ) -> str:
     """
     Create a JWT access token.
