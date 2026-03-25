@@ -66,57 +66,85 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     [onChange]
   );
 
-  const renderField = useCallback(
+  const getFieldErrorState = useCallback(
     (field: FormField) => {
+      const errors = getFieldErrors(field.name);
+      return {
+        hasError: errors.some((e) => e.severity === 'error'),
+        helperText:
+          errors.find((e) => e.severity === 'error')?.message ||
+          field.description,
+      };
+    },
+    [getFieldErrors]
+  );
+
+  const renderTextField = useCallback(
+    (
+      field: FormField,
+      type: 'text' | 'number' | 'textarea',
+      extraProps: Record<string, any> = {}
+    ) => {
       const errors = getFieldErrors(field.name);
       const hasError = errors.some((e) => e.severity === 'error');
       const helperText =
         errors.find((e) => e.severity === 'error')?.message ||
         field.description;
 
+      const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (type === 'number') {
+          handleChange(field, parseFloat(e.target.value) || 0);
+        } else {
+          handleChange(field, e.target.value);
+        }
+      };
+
+      return (
+        <TextField
+          key={field.id}
+          fullWidth
+          label={field.label}
+          type={type === 'number' ? 'number' : undefined}
+          multiline={type === 'textarea'}
+          rows={type === 'textarea' ? 4 : undefined}
+          value={data[field.name] || ''}
+          onChange={handleChangeValue}
+          error={hasError}
+          helperText={helperText}
+          required={field.required}
+          disabled={readOnly || field.disabled}
+          {...extraProps}
+        />
+      );
+    },
+    [data, getFieldErrors, handleChange, readOnly]
+  );
+
+  const renderField = useCallback(
+    (field: FormField) => {
+      const { hasError, helperText } = getFieldErrorState(field);
+
       switch (field.type) {
         case 'text':
-          return (
-            <BaseTextField
-              field={field}
-              value={data[field.name] || ''}
-              onChange={(value) => handleChange(field, value)}
-              error={hasError}
-              helperText={helperText}
-              readOnly={readOnly}
-              inputAdornment={
-                field.name.includes('url') ? (
-                  <InputAdornment position="start">🌐</InputAdornment>
-                ) : undefined
-              }
-            />
-          );
+          return renderTextField(field, 'text', {
+            InputProps: {
+              startAdornment: field.name.includes('url') && (
+                <InputAdornment position="start">🌐</InputAdornment>
+              ),
+            },
+          });
 
         case 'number':
-          return (
-            <BaseTextField
-              field={field}
-              value={data[field.name] || ''}
-              onChange={(value) => handleChange(field, parseFloat(value) || 0)}
-              error={hasError}
-              helperText={helperText}
-              readOnly={readOnly}
-              inputProps={{ type: 'number', min: field.min, max: field.max, step: field.step || 1 }}
-            />
-          );
+          return renderTextField(field, 'number', {
+            inputProps: {
+              min: field.min,
+              max: field.max,
+              step: field.step || 1,
+            },
+          });
 
         case 'textarea':
-          return (
-            <BaseTextField
-              field={field}
-              value={data[field.name] || ''}
-              onChange={(value) => handleChange(field, value)}
-              error={hasError}
-              helperText={helperText}
-              readOnly={readOnly}
-              inputProps={{ multiline: true, rows: 4 }}
-            />
-          );
+          return renderTextField(field, 'textarea');
 
         case 'select':
           return (
@@ -212,7 +240,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           );
       }
     },
-    [data, getFieldErrors, handleChange, readOnly]
+    [data, getFieldErrors, getFieldErrorState, handleChange, readOnly, renderTextField]
   );
 
   const visibleFields = useMemo(

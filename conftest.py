@@ -4,7 +4,6 @@ pytest configuration - root conftest
 
 import sys
 from pathlib import Path
-import os
 
 # DEBUG: Print when conftest is loaded
 print(f"[ROOT CONFTEST] Loading at {Path(__file__).resolve()}")
