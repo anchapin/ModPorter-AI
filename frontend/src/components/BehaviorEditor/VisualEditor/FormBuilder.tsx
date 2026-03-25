@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -209,7 +209,30 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     [data, getFieldErrors, handleChange, readOnly]
   );
 
-  const visibleFields = fields.filter((field) => field.visible !== false);
+  const visibleFields = useMemo(
+    () => fields.filter((field) => field.visible !== false),
+    [fields]
+  );
+
+  // ⚡ Bolt optimization: Compute summary metrics in a single O(N) pass
+  // instead of multiple O(3N) inline array filters on every render
+  const formSummary = useMemo(() => {
+    let filled = 0;
+    let required = 0;
+
+    for (const f of visibleFields) {
+      if (data[f.name] !== undefined && data[f.name] !== '') filled++;
+      if (f.required) required++;
+    }
+
+    let errors = 0;
+    const allErrors = getFieldErrors('all');
+    for (const e of allErrors) {
+      if (e.severity === 'error') errors++;
+    }
+
+    return { filled, required, errors };
+  }, [visibleFields, data, getFieldErrors]);
 
   if (visibleFields.length === 0) {
     return (
@@ -282,17 +305,17 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Chip
-              label={`${visibleFields.filter((f) => data[f.name] !== undefined && data[f.name] !== '').length} fields filled`}
+              label={`${formSummary.filled} fields filled`}
               size="small"
               color="primary"
             />
             <Chip
-              label={`${visibleFields.filter((f) => f.required).length} required fields`}
+              label={`${formSummary.required} required fields`}
               size="small"
               color="secondary"
             />
             <Chip
-              label={`${getFieldErrors('all').filter((e) => e.severity === 'error').length} errors`}
+              label={`${formSummary.errors} errors`}
               size="small"
               color="error"
             />
