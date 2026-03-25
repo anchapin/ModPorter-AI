@@ -13,7 +13,6 @@ Issue #570: AI Engine Logic Translation - Java OOP to Bedrock Event-Driven JavaS
 
 import pytest
 import json
-from pathlib import Path
 
 
 # Import modules for testing
@@ -23,7 +22,7 @@ try:
     from engines.translation_warnings import TranslationWarningDetector, ImpactLevel
 
     MODULES_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     MODULES_AVAILABLE = False
 
 

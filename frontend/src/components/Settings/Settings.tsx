@@ -300,8 +300,8 @@ export const Settings: React.FC<SettingsProps> = ({
                   title={showApiKeys.openai ? 'Hide' : 'Show'}
                   aria-label={
                     showApiKeys.openai
-                      ? 'Hide OpenAI API key'
-                      : 'Show OpenAI API key'
+                      ? 'Hide OpenAI API Key'
+                      : 'Show OpenAI API Key'
                   }
                 >
                   <span aria-hidden="true">
@@ -336,8 +336,8 @@ export const Settings: React.FC<SettingsProps> = ({
                   title={showApiKeys.curseforge ? 'Hide' : 'Show'}
                   aria-label={
                     showApiKeys.curseforge
-                      ? 'Hide CurseForge API key'
-                      : 'Show CurseForge API key'
+                      ? 'Hide CurseForge API Key'
+                      : 'Show CurseForge API Key'
                   }
                 >
                   <span aria-hidden="true">
@@ -372,8 +372,8 @@ export const Settings: React.FC<SettingsProps> = ({
                   title={showApiKeys.modrinth ? 'Hide' : 'Show'}
                   aria-label={
                     showApiKeys.modrinth
-                      ? 'Hide Modrinth API key'
-                      : 'Show Modrinth API key'
+                      ? 'Hide Modrinth API Key'
+                      : 'Show Modrinth API Key'
                   }
                 >
                   <span aria-hidden="true">

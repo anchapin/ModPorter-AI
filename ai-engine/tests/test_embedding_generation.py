@@ -17,8 +17,6 @@ sys.path.insert(0, str(ai_engine_root))
 from utils.embedding_generator import (
     create_rag_embedding_service,
     LocalEmbeddingGenerator,
-    OpenAIEmbeddingGenerator,
-    EmbeddingResult,
 )
 
 

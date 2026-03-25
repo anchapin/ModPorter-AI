@@ -6,7 +6,6 @@ These tests verify that all entity, item, and recipe templates generate valid Be
 
 import json
 import pytest
-from pathlib import Path
 
 import sys
 import os

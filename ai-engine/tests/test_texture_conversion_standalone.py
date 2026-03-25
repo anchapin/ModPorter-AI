@@ -2,7 +2,6 @@
 Standalone unit tests for texture conversion functionality (without CrewAI dependency)
 """
 
-import json
 import os
 import sys
 import tempfile
@@ -106,7 +105,7 @@ class TextureConverter:
                     is_valid_png = img.format == "PNG"
                     img = img.convert("RGBA")
                     optimizations = ["Converted to RGBA"] if not is_valid_png else []
-                except Exception as e:
+                except Exception:
                     img = self._generate_fallback_texture(usage)
                     original_dimensions = img.size
                     is_valid_png = False

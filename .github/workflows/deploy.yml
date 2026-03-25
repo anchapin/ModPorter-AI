@@ -51,7 +51,7 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install pnpm
+    - name: Set up pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
@@ -61,7 +61,6 @@ jobs:
       with:
         node-version: '20.19.0'
         cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Cache Python dependencies (backend)
       uses: actions/cache@v5
@@ -95,16 +94,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-site-packages-ai-engine-
 
-    - name: Cache Node dependencies
-      uses: actions/cache@v5
-      with:
-        path: |
-          ~/.npm
-          frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
-
     - name: Install backend dependencies
       run: |
         cd backend
@@ -117,11 +106,6 @@ jobs:
         cd ai-engine
         pip install --upgrade pip setuptools wheel --no-cache-dir
         pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
-
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
 
     - name: Install frontend dependencies
       run: |

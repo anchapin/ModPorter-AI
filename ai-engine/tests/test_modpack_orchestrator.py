@@ -12,7 +12,6 @@ import pytest
 import tempfile
 import zipfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 from agents.modpack_orchestrator import (
     ModpackOrchestrator,

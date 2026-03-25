@@ -11,7 +11,6 @@ import pytest
 import tempfile
 import os
 import json
-from datetime import datetime
 from pathlib import Path
 
 from rl.data_collection import (
@@ -466,7 +465,7 @@ class TestGetFunctions:
     async def test_collect_conversion_function(self, temp_db_path):
         """Test the convenience collect_conversion function with isolated database."""
         # Use a fresh pipeline with isolated database to avoid shared state
-        from rl.data_collection import DataCollectionPipeline, _data_collection_pipeline
+        from rl.data_collection import DataCollectionPipeline
         import rl.data_collection as module
 
         # Reset singleton for isolated test

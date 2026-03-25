@@ -9,7 +9,6 @@ import tempfile
 import shutil
 from pathlib import Path
 import importlib.util
-import os
 
 # Load qa_validator directly
 base_dir = Path(__file__).resolve().parent.parent

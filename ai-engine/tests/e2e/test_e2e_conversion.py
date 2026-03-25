@@ -7,10 +7,10 @@ Test complete conversion pipeline from Java to Bedrock.
 import asyncio
 import logging
 import time
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
 
-from .test_scenarios import get_test_scenarios, get_scenario_by_id
+from .test_scenarios import get_test_scenarios
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

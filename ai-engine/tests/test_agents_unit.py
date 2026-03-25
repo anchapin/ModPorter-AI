@@ -5,9 +5,7 @@ Comprehensive tests for JavaAnalyzer, LogicTranslator, and RAG tool responses
 
 import pytest
 import json
-import os
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
+from unittest.mock import Mock, patch
 
 
 # Test fixtures
@@ -78,7 +76,7 @@ class TestJavaAnalyzerAgent:
         jar_path = tmp_path / "empty.jar"
         import zipfile
 
-        with zipfile.ZipFile(jar_path, "w") as zf:
+        with zipfile.ZipFile(jar_path, "w"):
             pass  # Empty JAR
 
         result = agent.analyze_jar_with_ast(str(jar_path))

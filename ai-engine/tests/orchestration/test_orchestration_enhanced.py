@@ -12,15 +12,11 @@ This module tests:
 import pytest
 import logging
 import time
-import threading
-from unittest.mock import Mock, patch, MagicMock
-from concurrent.futures import Future
-from typing import Dict, Any, List
+from unittest.mock import Mock
 
 from orchestration.task_graph import TaskGraph, TaskNode, TaskStatus
 from orchestration.worker_pool import WorkerPool, WorkerType, WorkerStats, create_agent_executor
 from orchestration.orchestrator import ParallelOrchestrator
-from orchestration.strategy_selector import StrategySelector, OrchestrationStrategy, StrategyConfig
 
 
 class TestTaskStateLogging:
@@ -643,7 +639,7 @@ class TestMemoryLeakDetection:
         task = TaskNode("test", "agent", "type", {})
 
         with WorkerPool(max_workers=1, worker_type=WorkerType.THREAD) as pool:
-            initial_stats = pool.get_worker_stats()
+            pool.get_worker_stats()
 
             future = pool.submit_task(task, simple_executor)
             future.result(timeout=5.0)

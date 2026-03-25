@@ -3,7 +3,6 @@ Unit tests for feature flag infrastructure.
 """
 
 import pytest
-import json
 import tempfile
 import os
 import sys
