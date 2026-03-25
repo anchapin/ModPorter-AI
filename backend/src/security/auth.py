@@ -14,11 +14,13 @@ from typing import Optional
 import jwt
 from passlib.context import CryptContext
 
+from core.secrets import get_secret
+
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT settings (should be loaded from environment in production)
-SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Load from env
+SECRET_KEY = get_secret("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7

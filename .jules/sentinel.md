@@ -23,8 +23,7 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
-
-## 2026-03-18 - XSS Prevention in React Mermaid Components
-**Vulnerability:** DOM-based Cross-Site Scripting (XSS) in `MermaidDiagram` component using `innerHTML`.
-**Learning:** Using `innerHTML` to inject raw chart strings for Mermaid to process is dangerous, especially when the component handles untrusted data. Mermaid's `init` works natively with `textContent` instead, securely rendering the text representation without exposing the React application to XSS vectors embedded in HTML tags or scripts.
-**Prevention:** Always use `.textContent` instead of `.innerHTML` when injecting untrusted diagram code into charting or markdown parsers that support it.
+## 2024-05-24 - [Hardcoded JWT Secret Key]
+**Vulnerability:** A hardcoded `SECRET_KEY` ("your-secret-key-change-in-production") was used in `backend/src/security/auth.py` for signing JWT tokens.
+**Learning:** Hardcoded cryptographic keys allow attackers who read the source code to forge valid JWT tokens, completely bypassing authentication.
+**Prevention:** Always load secrets from environment variables or a secure secret management system using a utility like `get_secret` from `core.secrets`.
