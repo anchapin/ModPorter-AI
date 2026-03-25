@@ -21,6 +21,7 @@ from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocum
 
 # Import existing components
 from utils.vector_db_client import VectorDBClient
+from utils.token_optimizer import ContextTrimmer, MODEL_TOKEN_LIMITS
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,11 @@ class AdvancedRAGAgent:
             "answer_max_length": 2000,
             "context_window_size": 4000,
             "confidence_threshold": 0.6,
+            "default_model": "default",
         }
+
+        # Context trimming (token-based)
+        self.context_trimmer = ContextTrimmer(model=self.config["default_model"])
 
         # Internal state
         self.document_cache = {}
@@ -466,14 +471,27 @@ class AdvancedRAGAgent:
                 {"source_count": 0, "generation_method": "fallback"},
             )
 
-        # Combine source content for context
+        # Combine source content for context using token budgeting
         context_parts = []
         source_info = []
 
-        for i, source in enumerate(sources[:5]):  # Use top 5 sources
+        # Calculate token budget per source (reserve some for system prompt and completion)
+        max_context_tokens = self.config["context_window_size"]
+        reserve_tokens = 500  # Reserve for system prompt and completion
+        available_tokens = max_context_tokens - reserve_tokens
+        num_sources = min(5, len(sources))
+        tokens_per_source = available_tokens // max(1, num_sources)
+
+        # Convert tokens to approximate character limit (4 chars ≈ 1 token)
+        chars_per_source = tokens_per_source * 4
+
+        for i, source in enumerate(sources[:num_sources]):
             if source.document.content_text:
-                # Truncate content to fit context window
-                content = source.document.content_text[:800]  # Limit per source
+                # Token-aware truncation: limit based on token budget
+                content = source.document.content_text[:chars_per_source]
+                if len(source.document.content_text) > chars_per_source:
+                    content += " [...]"
+
                 context_parts.append(f"Source {i + 1} ({source.document.source_path}):\n{content}")
                 source_info.append(
                     {
@@ -486,6 +504,10 @@ class AdvancedRAGAgent:
 
         combined_context = "\n\n".join(context_parts)
 
+        # Log token usage
+        estimated_tokens = self.context_trimmer.estimate_tokens(combined_context)
+        logger.debug(f"Context built with ~{estimated_tokens} tokens (budget: {available_tokens})")
+
         # Simple answer generation (in a real implementation, this would use an LLM)
         answer = self._generate_simple_answer(query, combined_context, sources)
 
@@ -494,10 +516,15 @@ class AdvancedRAGAgent:
         source_diversity = len(set(s.document.content_type for s in sources[:3]))
         confidence = min(avg_relevance * (1 + source_diversity * 0.1), 1.0)
 
+        # Estimate token count for the context
+        estimated_context_tokens = self.context_trimmer.estimate_tokens(combined_context)
+
         metadata = {
             "source_count": len(sources),
             "sources_used": source_info,
             "context_length": len(combined_context),
+            "context_tokens": estimated_context_tokens,
+            "context_token_budget": available_tokens,
             "avg_source_relevance": avg_relevance,
             "source_diversity": source_diversity,
             "generation_method": "context_synthesis",

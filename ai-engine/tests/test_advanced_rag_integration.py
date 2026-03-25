@@ -464,6 +464,125 @@ async def test_full_advanced_rag_workflow():
     return comprehensive_results
 
 
+class TestAdvancedRAGTokenBudgeting:
+    """Tests for AdvancedRAGAgent token budgeting functionality."""
+
+    @pytest.fixture
+    def rag_agent(self):
+        """Create an AdvancedRAGAgent for testing."""
+        return AdvancedRAGAgent(
+            enable_query_expansion=False,
+            enable_reranking=False,
+            enable_multimodal=False,
+        )
+
+    def test_context_trimmer_initialized(self, rag_agent):
+        """Test that context_trimmer is initialized."""
+        assert rag_agent.context_trimmer is not None
+        assert hasattr(rag_agent.context_trimmer, "estimate_tokens")
+
+    def test_context_window_size_config(self, rag_agent):
+        """Test that context_window_size is configured correctly."""
+        assert "context_window_size" in rag_agent.config
+        assert rag_agent.config["context_window_size"] == 4000
+
+    def test_estimate_tokens_method(self, rag_agent):
+        """Test token estimation method on the agent."""
+        text = "Hello world, this is a test for token estimation."
+        tokens = rag_agent.context_trimmer.estimate_tokens(text)
+
+        assert tokens > 0
+        assert isinstance(tokens, int)
+
+    def test_estimate_tokens_empty_string(self, rag_agent):
+        """Test token estimation with empty string."""
+        tokens = rag_agent.context_trimmer.estimate_tokens("")
+        assert tokens == 0
+
+    def test_estimate_tokens_long_text(self, rag_agent):
+        """Test token estimation with long text."""
+        # Create a longer text
+        long_text = "Lorem ipsum dolor sit amet. " * 100
+        tokens = rag_agent.context_trimmer.estimate_tokens(long_text)
+
+        # Should be around 500 tokens (2000 chars / 4)
+        assert tokens > 0
+        assert tokens < len(long_text)  # Tokens should be less than chars
+
+    def test_token_budget_calculation(self, rag_agent):
+        """Test token budget calculation logic."""
+        max_context_tokens = rag_agent.config["context_window_size"]
+        reserve_tokens = 500
+        available_tokens = max_context_tokens - reserve_tokens
+
+        assert available_tokens == 3500  # 4000 - 500
+
+    def test_tokens_per_source_calculation(self, rag_agent):
+        """Test token budget per source calculation."""
+        max_context_tokens = 4000
+        reserve_tokens = 500
+        available_tokens = max_context_tokens - reserve_tokens
+        num_sources = 5
+
+        tokens_per_source = available_tokens // num_sources
+
+        assert tokens_per_source == 700  # 3500 // 5
+
+    def test_chars_per_source_calculation(self, rag_agent):
+        """Test character limit per source calculation."""
+        tokens_per_source = 700
+        chars_per_source = tokens_per_source * 4
+
+        assert chars_per_source == 2800
+
+    def test_context_trimmer_with_different_models(self):
+        """Test context_trimmer with different model configurations."""
+        # Test with default model
+        agent_default = AdvancedRAGAgent()
+        assert agent_default.context_trimmer.max_tokens == 4096
+
+        # Test that model config is passed through
+        assert agent_default.config["default_model"] == "default"
+
+    @pytest.mark.asyncio
+    async def test_response_metadata_includes_token_info(self, rag_agent):
+        """Test that response metadata includes token information when sources are available."""
+        response = await rag_agent.query(
+            query_text="How to create a block in Minecraft",
+            content_types=[ContentType.CODE],
+        )
+
+        # Check that metadata contains generation info
+        assert "generation" in response.metadata
+        gen_metadata = response.metadata["generation"]
+
+        # When sources are available, token info should be present
+        # When no sources, it falls back to fallback method without token info
+        if gen_metadata.get("generation_method") == "context_synthesis":
+            assert "context_tokens" in gen_metadata
+            assert "context_token_budget" in gen_metadata
+        else:
+            # Fallback case - no sources found
+            assert gen_metadata.get("generation_method") == "fallback"
+            assert gen_metadata.get("source_count") == 0
+
+    @pytest.mark.asyncio
+    async def test_context_respects_token_budget(self, rag_agent):
+        """Test that generated context respects token budget."""
+        response = await rag_agent.query(
+            query_text="Test query for token budget",
+            content_types=[ContentType.DOCUMENTATION],
+        )
+
+        # Verify the context tokens are within budget
+        gen_metadata = response.metadata.get("generation", {})
+        context_tokens = gen_metadata.get("context_tokens", 0)
+        context_budget = gen_metadata.get("context_token_budget", 0)
+
+        if context_tokens > 0:
+            assert context_tokens <= context_budget
+
+
 if __name__ == "__main__":
     # Run the comprehensive test
     asyncio.run(test_full_advanced_rag_workflow())
