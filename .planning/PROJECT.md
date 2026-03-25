@@ -21,6 +21,24 @@
 
 ---
 
+## Current Milestone: v4.6 RAG & Knowledge Enhancement
+
+**Goal:** Build advanced RAG system with improved document indexing, semantic search, knowledge expansion, context optimization, user correction learning, and multi-modal support.
+
+**Target features:**
+- Improved Document Indexing: Smart chunking, metadata extraction, hierarchical indexing
+- Semantic Search Enhancement: Hybrid search improvement, re-ranking, query expansion
+- Knowledge Base Expansion: Add Minecraft modding docs, Bedrock APIs, more conversion patterns
+- Context Window Optimization: Dynamic context sizing, relevant chunk prioritization
+- User Correction Learning: Store and apply user feedback/corrections to knowledge base
+- Cross-Reference Linking: Connect related concepts across knowledge base
+- Advanced RAG: Re-ranking pipeline, query expansion, hybrid fusion
+- Multi-Modal Knowledge: Support for texture metadata, model documentation embeddings
+
+**Previous milestone:** v4.5 Java Patterns Complete (2026-03-20) - 170+ tests passing
+
+---
+
 ## Problem Statement
 
 ### The Cross-Platform Gap
