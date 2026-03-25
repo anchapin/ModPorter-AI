@@ -5,7 +5,6 @@
 ## 2025-02-21 - Inline Confirmation Focus Management
 **Learning:** When replacing an action button with an inline confirmation dialog, focus is lost unless manually managed. Adding `autoFocus` to the "Cancel" button is a simple, effective way to restore focus and prevent accidental confirmation.
 **Action:** Always use `autoFocus` on the safe/cancel option in inline confirmation flows.
-
-## $(date +%Y-%m-%d) - Text-based Icon Button Accessibility
-**Learning:** When using text characters or emojis (like '✕' or '🗑️') as icons in buttons, screen readers will attempt to read them literally (e.g., "Multiplication X"), which creates confusion if there's no visual label.
-**Action:** Always wrap textual icons in `<span aria-hidden="true">` and add an explicit, descriptive `aria-label` (e.g., `aria-label="Remove [filename]"`) to the `<button>` element so that assistive technologies read the intended action rather than the literal character.
+## 2024-05-18 - [Add aria-hidden wrappers to emoji text]
+**Learning:** Screen readers announce literal emojis which can create redundant or confusing announcements when combined with an `aria-label` on the parent button.
+**Action:** Wrap decorative emojis or text-based icons in `<span aria-hidden="true">` when adding an `aria-label` to their parent `<button>`.
