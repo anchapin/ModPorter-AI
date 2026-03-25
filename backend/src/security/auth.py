@@ -18,7 +18,16 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT settings (should be loaded from environment in production)
-SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Load from env
+import os
+
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    # Allow fallback in testing/development, but in production this should be strictly enforced
+    # Assuming ENV or ENVIRONMENT is set in production
+    if os.environ.get("ENVIRONMENT") == "production":
+        raise ValueError("SECRET_KEY environment variable is missing in production")
+    SECRET_KEY = "your-secret-key-change-in-production"
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -54,11 +63,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(
     user_id: str,
     expires_delta: Optional[timedelta] = None,
-<<<<<<< HEAD
     extra_claims: Optional[dict] = None,
-=======
-    extra_claims: Optional[dict] = None
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 ) -> str:
     """
     Create a JWT access token.
@@ -90,14 +95,10 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-<<<<<<< HEAD
-def create_refresh_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-=======
 def create_refresh_token(
     user_id: str,
-    expires_delta: Optional[timedelta] = None
+    expires_delta: Optional[timedelta] = None,
 ) -> str:
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     """
     Create a JWT refresh token.
 
@@ -215,8 +216,5 @@ def hash_api_key(api_key: str) -> str:
         Hashed API key using SHA-256
     """
     import hashlib
-<<<<<<< HEAD
 
-=======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return hashlib.sha256(api_key.encode()).hexdigest()
