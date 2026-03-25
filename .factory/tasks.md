@@ -1,10 +1,15 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 Phase 15-01: Improved Document Indexing (Complete - 24 tests passing)
+- 🔄 Phase 15-02: Semantic Search Enhancement (Complete - 15 tests passing)
 
 ## Completed
 - ✅ Phase 15-01: Improved Document Indexing (24 tests passing)
+- ✅ Phase 15-02: Semantic Search Enhancement (Complete)
+  - ✅ Task 1: HybridSearchEngine (15 tests passing)
+  - ✅ Task 2: Re-ranking with cross-encoder (implemented in API)
+  - ✅ Task 3: Query expansion (implemented in API)
+  - ✅ Task 4: Backend API integration
   - ✅ Task 1.1: Chunking Strategies Module (FixedSize, Semantic, Recursive)
   - ✅ Task 1.2: Database Schema Updates (parent_document_id, chunk_index, metadata)
   - ✅ Task 1.3: Metadata Extraction Logic

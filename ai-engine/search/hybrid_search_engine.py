@@ -14,9 +14,18 @@ import numpy as np
 from collections import Counter, defaultdict
 import math
 
-from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument
-
+# Initialize logger first
 logger = logging.getLogger(__name__)
+
+# BM25 import with fallback
+try:
+    from rank_bm25 import BM25Okapi
+    BM25_AVAILABLE = True
+except ImportError:
+    BM25_AVAILABLE = False
+    logger.warning("rank_bm25 not installed. BM25 search will not be available.")
+
+from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument
 
 
 class SearchMode(str, Enum):
@@ -324,6 +333,119 @@ class KeywordSearchEngine:
             penalty = 1.0 / (1.0 + 0.01 * excess)
             return max(penalty, 0.3)  # Minimum penalty
 
+    # BM25-specific attributes
+    _bm25_index: Optional[Any] = None
+    _bm25_documents: List[str] = []
+
+    def build_bm25_index(self, documents: Dict[str, MultiModalDocument]) -> bool:
+        """
+        Build a BM25 index from documents for keyword search.
+
+        Args:
+            documents: Dictionary of document_id to MultiModalDocument
+
+        Returns:
+            True if index was built successfully, False otherwise
+        """
+        if not BM25_AVAILABLE:
+            logger.warning("BM25 not available - rank_bm25 not installed")
+            return False
+
+        try:
+            # Prepare documents for BM25 (tokenized)
+            self._bm25_documents = []
+            doc_ids = []
+
+            for doc_id, doc in documents.items():
+                if doc.content_text:
+                    # Tokenize: lowercase and split on whitespace/punctuation
+                    tokens = re.findall(r'\b\w+\b', doc.content_text.lower())
+                    # Filter out stop words
+                    tokens = [t for t in tokens if t not in self.stop_words and len(t) > 1]
+                    self._bm25_documents.append(tokens)
+                    doc_ids.append(doc_id)
+
+            if not self._bm25_documents:
+                logger.warning("No documents with content to index for BM25")
+                return False
+
+            # Build BM25 index
+            self._bm25_index = BM25Okapi(self._bm25_documents)
+            logger.info(f"Built BM25 index with {len(self._bm25_documents)} documents")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to build BM25 index: {e}")
+            return False
+
+    def search_bm25(
+        self,
+        query: str,
+        documents: Dict[str, MultiModalDocument],
+        top_k: int = 10,
+    ) -> List[Tuple[str, float]]:
+        """
+        Search documents using BM25 algorithm.
+
+        Args:
+            query: Search query text
+            documents: Dictionary of document_id to MultiModalDocument
+            top_k: Number of top results to return
+
+        Returns:
+            List of (document_id, bm25_score) tuples
+        """
+        if not BM25_AVAILABLE or self._bm25_index is None:
+            # Fall back to simple keyword search
+            query_keywords = self.extract_keywords(query)
+            results = []
+            for doc_id, doc in documents.items():
+                if doc.content_text:
+                    score, _ = self.calculate_keyword_similarity(query_keywords, doc.content_text)
+                    results.append((doc_id, score))
+            results.sort(key=lambda x: x[1], reverse=True)
+            return results[:top_k]
+
+        try:
+            # Tokenize query
+            query_tokens = re.findall(r'\b\w+\b', query.lower())
+            query_tokens = [t for t in query_tokens if t not in self.stop_words and len(t) > 1]
+
+            if not query_tokens:
+                return []
+
+            # Get BM25 scores
+            scores = self._bm25_index.get_scores(query_tokens)
+
+            # Map scores back to document IDs
+            doc_ids = list(documents.keys())
+            results = []
+            for i, score in enumerate(scores):
+                if i < len(doc_ids):
+                    results.append((doc_ids[i], score))
+
+            # Normalize scores to 0-1 range
+            if results:
+                max_score = max(s for _, s in results)
+                if max_score > 0:
+                    results = [(doc_id, score / max_score) for doc_id, score in results]
+
+            # Sort by score and return top_k
+            results.sort(key=lambda x: x[1], reverse=True)
+            return results[:top_k]
+
+        except Exception as e:
+            logger.error(f"BM25 search failed: {e}")
+            # Fall back to simple keyword search
+            query_keywords = self.extract_keywords(query)
+            results = []
+            for doc_id, doc in documents.items():
+                if doc.content_text:
+                    score, _ = self.calculate_keyword_similarity(query_keywords, doc.content_text)
+                    results.append((doc_id, score))
+            results.sort(key=lambda x: x[1], reverse=True)
+            return results[:top_k]
+
 
 class HybridSearchEngine:
     """
@@ -340,6 +462,30 @@ class HybridSearchEngine:
             RankingStrategy.RECIPROCAL_RANK_FUSION: self._reciprocal_rank_fusion,
             RankingStrategy.BAYESIAN_COMBINATION: self._bayesian_combination,
         }
+        self._bm25_built = False
+
+    def build_index(self, documents: Dict[str, MultiModalDocument]) -> bool:
+        """
+        Build search indexes for the documents.
+
+        Args:
+            documents: Dictionary of document_id to MultiModalDocument
+
+        Returns:
+            True if index was built successfully
+        """
+        # Build BM25 index for keyword search
+        if BM25_AVAILABLE:
+            self._bm25_built = self.keyword_engine.build_bm25_index(documents)
+            if self._bm25_built:
+                logger.info("BM25 index built successfully")
+            else:
+                logger.warning("Failed to build BM25 index, will use basic keyword search")
+        else:
+            logger.info("BM25 not available, using basic keyword search")
+            self._bm25_built = False
+
+        return True
 
     async def search(
         self,
@@ -366,6 +512,12 @@ class HybridSearchEngine:
         """
         logger.info(f"Performing {search_mode} search for: {query.query_text}")
 
+        # Auto-build BM25 index if needed and keyword search is requested
+        if search_mode in [SearchMode.KEYWORD_ONLY, SearchMode.HYBRID, SearchMode.ADAPTIVE]:
+            if not self._bm25_built and BM25_AVAILABLE:
+                logger.info("Building BM25 index on first search...")
+                self.build_index(documents)
+
         candidates = []
         query_keywords = self.keyword_engine.extract_keywords(query.query_text)
 
@@ -385,19 +537,34 @@ class HybridSearchEngine:
                     )
                     candidate.explanation.append(f"Vector similarity: {candidate.vector_score:.3f}")
 
-            # Calculate keyword similarity
+            # Calculate keyword similarity (use BM25 if available, otherwise use basic keyword matching)
             if search_mode in [SearchMode.KEYWORD_ONLY, SearchMode.HYBRID, SearchMode.ADAPTIVE]:
                 if document.content_text:
-                    keyword_score, keyword_explanation = (
-                        self.keyword_engine.calculate_keyword_similarity(
-                            query_keywords, document.content_text
+                    # Try BM25 first if index is built
+                    if self.keyword_engine._bm25_index is not None and BM25_AVAILABLE:
+                        bm25_results = self.keyword_engine.search_bm25(
+                            query.query_text, documents, top_k=len(documents)
                         )
-                    )
-                    candidate.keyword_score = keyword_score
-                    candidate.explanation.append(f"Keyword similarity: {keyword_score:.3f}")
-                    candidate.explanation.append(
-                        f"Matched terms: {len(keyword_explanation.get('matched_terms', []))}"
-                    )
+                        # Get score for this document
+                        doc_bm25_score = 0.0
+                        for result_doc_id, score in bm25_results:
+                            if result_doc_id == doc_id:
+                                doc_bm25_score = score
+                                break
+                        candidate.keyword_score = doc_bm25_score
+                        candidate.explanation.append(f"BM25 score: {doc_bm25_score:.3f}")
+                    else:
+                        # Fall back to basic keyword similarity
+                        keyword_score, keyword_explanation = (
+                            self.keyword_engine.calculate_keyword_similarity(
+                                query_keywords, document.content_text
+                            )
+                        )
+                        candidate.keyword_score = keyword_score
+                        candidate.explanation.append(f"Keyword similarity: {keyword_score:.3f}")
+                        candidate.explanation.append(
+                            f"Matched terms: {len(keyword_explanation.get('matched_terms', []))}"
+                        )
 
             # Calculate context-aware score
             candidate.context_score = self._calculate_context_score(document, query)
@@ -462,6 +629,19 @@ class HybridSearchEngine:
         max_similarity = 0.0
         query_vector = np.array(query_embedding)
 
+        # Handle case where doc_embeddings is a simple list of floats (not objects)
+        # Check if first element is a number (not an object with .embedding attribute)
+        if doc_embeddings and not hasattr(doc_embeddings[0], 'embedding') and not hasattr(doc_embeddings[0], 'embedding_vector'):
+            # Treat entire list as a single embedding vector
+            doc_vector = np.array(doc_embeddings)
+            if doc_vector.size > 0 and query_vector.shape[0] == doc_vector.shape[0]:
+                dot_product = np.dot(query_vector, doc_vector)
+                norm_query = np.linalg.norm(query_vector)
+                norm_doc = np.linalg.norm(doc_vector)
+                if norm_query > 0 and norm_doc > 0:
+                    return dot_product / (norm_query * norm_doc)
+            return 0.0
+
         for embedding_data in doc_embeddings:
             if hasattr(embedding_data, "embedding"):
                 doc_vector = np.array(embedding_data.embedding)
@@ -471,7 +651,7 @@ class HybridSearchEngine:
                 doc_vector = np.array(embedding_data)
 
             # Ensure vectors have the same dimension
-            if len(query_vector) != len(doc_vector):
+            if doc_vector.size == 0 or query_vector.shape[0] != doc_vector.shape[0]:
                 continue
 
             # Calculate cosine similarity
