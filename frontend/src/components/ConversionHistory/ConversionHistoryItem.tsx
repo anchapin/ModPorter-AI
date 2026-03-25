@@ -99,7 +99,7 @@ export const ConversionHistoryItem = memo(
               title="Download converted file"
               aria-label={`Download ${item.original_filename}`}
             >
-              ⬇️ Download
+              <span aria-hidden="true">⬇️</span> Download
             </button>
           )}
 

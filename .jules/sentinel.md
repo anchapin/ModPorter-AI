@@ -23,7 +23,7 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
-## 2024-03-25 - Fix Hardcoded Secret Key (Part 2)
-**Vulnerability:** Hardcoded JWT Secret Key in `backend/src/security/auth.py` was used directly in production.
-**Learning:** Relying on `get_secret` isn't enough if it still uses a hardcoded fallback value in production mode without raising an error.
-**Prevention:** Strictly enforce that `SECRET_KEY` is set via environment variable when `ENVIRONMENT == "production"` by raising a `ValueError`.
+## 2024-05-24 - [Hardcoded JWT Secret Key]
+**Vulnerability:** A hardcoded `SECRET_KEY` ("your-secret-key-change-in-production") was used in `backend/src/security/auth.py` for signing JWT tokens.
+**Learning:** Hardcoded cryptographic keys allow attackers who read the source code to forge valid JWT tokens, completely bypassing authentication.
+**Prevention:** Always load secrets from environment variables or a secure secret management system using a utility like `get_secret` from `core.secrets`.

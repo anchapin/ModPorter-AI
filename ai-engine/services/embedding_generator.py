@@ -10,7 +10,6 @@ import logging
 from typing import List
 =======
 from typing import List, Optional, Dict, Any
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 import numpy as np
 
 # Import model cache
@@ -44,7 +43,6 @@ class EmbeddingGenerator:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         try:
             from sentence_transformers import SentenceTransformer
 
@@ -83,7 +81,6 @@ class EmbeddingGenerator:
         Args:
             text: Text to embed
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             Embedding vector
         """
@@ -93,7 +90,6 @@ class EmbeddingGenerator:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if self._model is not None:
             embedding = self._model.encode(text, convert_to_numpy=True)
             return embedding.astype(np.float32)
@@ -105,7 +101,6 @@ class EmbeddingGenerator:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def generate_embeddings_batch(
         self,
         texts: List[str],
@@ -118,7 +113,6 @@ class EmbeddingGenerator:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Features:
         - Configurable batch size for memory efficiency
         - Progress bar for monitoring
@@ -141,7 +135,6 @@ class EmbeddingGenerator:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             embeddings = self._model.encode(
                 texts,
                 batch_size=batch_size,
@@ -169,7 +162,6 @@ class EmbeddingGenerator:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Features:
         - Multi-processing for CPU-bound encoding
         - Larger batch sizes for GPU efficiency
@@ -211,7 +203,6 @@ class EmbeddingGenerator:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     @property
     def dimension(self) -> int:
         """Get embedding dimension."""

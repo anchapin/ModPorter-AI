@@ -76,7 +76,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-
 # Adjust these imports based on your actual database setup location
 # from db.declarative_base import Base # Base is not directly used here, models are
 from db.models import (
@@ -131,12 +130,12 @@ async def create_comparison(
         )
     except HTTPException:  # Re-raise HTTPExceptions from validation
         raise
-    except Exception as e:
+    except Exception:
         # Log the exception e here if logging is set up
         # logger.error(f"Comparison engine failed: {e}", exc_info=True)
-        logger.error(f"Comparison engine failed: {str(e)}", exc_info=True)
+        logger.error("Comparison engine failed", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Comparison engine failed: Please try again.")
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     # Map AI Engine models to SQLAlchemy DB models
     db_comparison_result = ComparisonResultDb(
@@ -166,13 +165,13 @@ async def create_comparison(
         # Refresh related feature_mappings if their IDs are needed immediately, though often not.
         # for fm in db_comparison_result.feature_mappings:
         # await session.refresh(fm)
-    except Exception as e:
+    except Exception:
         await session.rollback()
         # Log the exception e here
         # logger.error(f"Database error during comparison creation: {e}", exc_info=True)
-        logger.error(f"Database error: {str(e)}", exc_info=True)
+        logger.error("Database error", exc_info=True)
 
-        raise HTTPException(status_code=500, detail="Database error: Please try again.")
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     return ComparisonResponse(
         message="Comparison successfully created",

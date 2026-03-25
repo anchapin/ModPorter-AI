@@ -14,6 +14,10 @@ import sys
 import statistics
 
 # Add backend to path
+<<<<<<< HEAD
+sys.path.insert(0, "src")
+
+=======
 sys.path.insert(0, 'src')
 
 def generate_java_code(num_classes: int) -> str:
@@ -33,6 +37,9 @@ import java.util.HashMap;
 public class BenchmarkMod extends BaseMod {
     private static final String MOD_ID = "benchmark";
 """
+<<<<<<< HEAD
+
+=======
     
     for i in range(num_classes):
         code += f"""
@@ -55,6 +62,9 @@ public class BenchmarkMod extends BaseMod {
         }}
     }}
 """
+<<<<<<< HEAD
+
+=======
     
     code += """
     @Override
@@ -71,6 +81,22 @@ def benchmark_raw_parsing():
     print("\n" + "=" * 70)
     print("BENCHMARK 1: Raw Parsing Speed")
     print("=" * 70)
+<<<<<<< HEAD
+
+    import javalang
+    import tree_sitter_java as ts_java
+    from tree_sitter import Language, Parser
+
+    # Initialize parsers
+    ts_language = Language(ts_java.language())
+    ts_parser = Parser(ts_language)
+
+    # Generate test code
+    code = generate_java_code(100)
+    code_bytes = bytes(code, "utf8")
+    lines = len(code.split("\n"))
+
+=======
     
     import javalang
     import tree_sitter_java as ts_java
@@ -89,6 +115,15 @@ def benchmark_raw_parsing():
         "tree_sitter": [],
         "javalang": [],
     }
+<<<<<<< HEAD
+
+    # Run benchmarks (5 iterations each)
+    iterations = 5
+
+    print(f"Code size: {lines} lines, {len(code)} bytes")
+    print(f"Running {iterations} iterations...\n")
+
+=======
     
     # Run benchmarks (5 iterations each)
     iterations = 5
@@ -102,6 +137,9 @@ def benchmark_raw_parsing():
         tree = ts_parser.parse(code_bytes)
         duration = time.perf_counter() - start
         results["tree_sitter"].append(duration)
+<<<<<<< HEAD
+
+=======
     
     # Javalang
     for i in range(iterations):
@@ -109,6 +147,20 @@ def benchmark_raw_parsing():
         tree = javalang.parse.parse(code)
         duration = time.perf_counter() - start
         results["javalang"].append(duration)
+<<<<<<< HEAD
+
+    # Calculate statistics
+    ts_avg = statistics.mean(results["tree_sitter"])
+    jl_avg = statistics.mean(results["javalang"])
+
+    ts_loc = lines / ts_avg
+    jl_loc = lines / jl_avg
+
+    print(f"Tree-sitter: {ts_avg * 1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
+    print(f"Javalang:    {jl_avg * 1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
+    print(f"Speedup:     {jl_avg / ts_avg:.1f}x faster")
+
+=======
     
     # Calculate statistics
     ts_avg = statistics.mean(results["tree_sitter"])
@@ -136,6 +188,21 @@ def benchmark_ast_extraction():
     print("\n" + "=" * 70)
     print("BENCHMARK 2: AST Extraction & Traversal")
     print("=" * 70)
+<<<<<<< HEAD
+
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")
+    java_parser = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(java_parser)
+
+    import javalang
+
+    # Generate test code
+    code = generate_java_code(50)
+    lines = len(code.split("\n"))
+
+=======
     
     import importlib.util
     spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")
@@ -152,6 +219,14 @@ def benchmark_ast_extraction():
         "tree_sitter": [],
         "javalang": [],
     }
+<<<<<<< HEAD
+
+    iterations = 5
+
+    print(f"Code size: {lines} lines")
+    print(f"Running {iterations} iterations...\n")
+
+=======
     
     iterations = 5
     
@@ -165,11 +240,27 @@ def benchmark_ast_extraction():
         result = analyzer.analyze_file(code)
         duration = time.perf_counter() - start
         results["tree_sitter"].append(duration)
+<<<<<<< HEAD
+
+=======
     
     # Javalang with manual extraction
     for i in range(iterations):
         start = time.perf_counter()
         tree = javalang.parse.parse(code)
+<<<<<<< HEAD
+
+        # Extract classes (similar to what our analyzer does)
+        classes = []
+        for _, node in tree.filter(javalang.tree.ClassDeclaration):
+            classes.append(
+                {
+                    "name": node.name,
+                    "modifiers": node.modifiers,
+                }
+            )
+
+=======
         
         # Extract classes (similar to what our analyzer does)
         classes = []
@@ -183,6 +274,23 @@ def benchmark_ast_extraction():
         imports = []
         for _, node in tree.filter(javalang.tree.Import):
             imports.append(node.path)
+<<<<<<< HEAD
+
+        duration = time.perf_counter() - start
+        results["javalang"].append(duration)
+
+    # Calculate statistics
+    ts_avg = statistics.mean(results["tree_sitter"])
+    jl_avg = statistics.mean(results["javalang"])
+
+    ts_loc = lines / ts_avg if ts_avg > 0 else 0
+    jl_loc = lines / jl_avg if jl_avg > 0 else 0
+
+    print(f"Tree-sitter: {ts_avg * 1000:.2f}ms avg ({ts_loc:,.0f} LOC/sec)")
+    print(f"Javalang:    {jl_avg * 1000:.2f}ms avg ({jl_loc:,.0f} LOC/sec)")
+    print(f"Speedup:     {jl_avg / ts_avg:.1f}x faster")
+
+=======
         
         duration = time.perf_counter() - start
         results["javalang"].append(duration)
@@ -211,6 +319,13 @@ def benchmark_error_recovery():
     print("\n" + "=" * 70)
     print("BENCHMARK 3: Error Recovery")
     print("=" * 70)
+<<<<<<< HEAD
+
+    import tree_sitter_java as ts_java
+    from tree_sitter import Language, Parser
+    import javalang
+
+=======
     
     import tree_sitter_java as ts_java
     from tree_sitter import Language, Parser
@@ -234,6 +349,15 @@ public class Broken {
     }
 }
 """
+<<<<<<< HEAD
+
+    # Initialize parsers
+    ts_language = Language(ts_java.language())
+    ts_parser = Parser(ts_language)
+
+    print("Testing with malformed Java code...\n")
+
+=======
     
     # Initialize parsers
     ts_language = Language(ts_java.language())
@@ -246,6 +370,9 @@ public class Broken {
     start = time.perf_counter()
     ts_tree = ts_parser.parse(bytes(malformed_code, "utf8"))
     ts_duration = time.perf_counter() - start
+<<<<<<< HEAD
+
+=======
     
     def count_errors(node):
         count = 0
@@ -254,6 +381,15 @@ public class Broken {
         for child in node.children:
             count += count_errors(child)
         return count
+<<<<<<< HEAD
+
+    ts_errors = count_errors(ts_tree.root_node)
+    print(f"  Parse time: {ts_duration * 1000:.2f}ms")
+    print(f"  Error nodes: {ts_errors}")
+    print(f"  Root type: {ts_tree.root_node.type}")
+    print(f"  ✓ Recovered and continued parsing\n")
+
+=======
     
     ts_errors = count_errors(ts_tree.root_node)
     print(f"  Parse time: {ts_duration*1000:.2f}ms")
@@ -267,6 +403,15 @@ public class Broken {
     try:
         jl_tree = javalang.parse.parse(malformed_code)
         jl_duration = time.perf_counter() - start
+<<<<<<< HEAD
+        print(f"  Parse time: {jl_duration * 1000:.2f}ms")
+        print(f"  ✗ No error reported (unexpected)")
+    except Exception as e:
+        jl_duration = time.perf_counter() - start
+        print(f"  Parse time: {jl_duration * 1000:.2f}ms")
+        print(f"  ✗ Failed with exception: {type(e).__name__}")
+
+=======
         print(f"  Parse time: {jl_duration*1000:.2f}ms")
         print(f"  ✗ No error reported (unexpected)")
     except Exception as e:
@@ -292,6 +437,11 @@ def main():
     print("\n" + "=" * 70)
     print("TREE-SITTER JAVA PARSER BENCHMARK SUITE")
     print("=" * 70)
+<<<<<<< HEAD
+
+    results = []
+
+=======
     
     results = []
     
@@ -300,6 +450,11 @@ def main():
     except Exception as e:
         print(f"Raw parsing benchmark failed: {e}")
         import traceback
+<<<<<<< HEAD
+
+        traceback.print_exc()
+
+=======
         traceback.print_exc()
     
     try:
@@ -307,6 +462,11 @@ def main():
     except Exception as e:
         print(f"AST extraction benchmark failed: {e}")
         import traceback
+<<<<<<< HEAD
+
+        traceback.print_exc()
+
+=======
         traceback.print_exc()
     
     try:
@@ -314,9 +474,71 @@ def main():
     except Exception as e:
         print(f"Error recovery benchmark failed: {e}")
         import traceback
+<<<<<<< HEAD
+
+        traceback.print_exc()
+
+=======
         traceback.print_exc()
     
     # Summary
     print("\n" + "=" * 70)
     print("BENCHMARK SUMMARY")
     print("=" * 70)
+<<<<<<< HEAD
+
+    for result in results:
+        if result["test"] == "raw_parsing":
+            print(f"\nRaw Parsing:")
+            print(
+                f"  Tree-sitter: {result['tree_sitter_avg_ms']:.2f}ms ({result['tree_sitter_loc_sec']:,.0f} LOC/sec)"
+            )
+            print(
+                f"  Javalang: {result['javalang_avg_ms']:.2f}ms ({result['javalang_loc_sec']:,.0f} LOC/sec)"
+            )
+=======
+    
+    for result in results:
+        if result["test"] == "raw_parsing":
+            print(f"\nRaw Parsing:")
+            print(f"  Tree-sitter: {result['tree_sitter_avg_ms']:.2f}ms ({result['tree_sitter_loc_sec']:,.0f} LOC/sec)")
+            print(f"  Javalang: {result['javalang_avg_ms']:.2f}ms ({result['javalang_loc_sec']:,.0f} LOC/sec)")
+            print(f"  Speedup: {result['speedup']:.1f}x")
+        elif result["test"] == "ast_extraction":
+            print(f"\nAST Extraction:")
+            print(f"  Tree-sitter: {result['tree_sitter_avg_ms']:.2f}ms")
+            print(f"  Javalang: {result['javalang_avg_ms']:.2f}ms")
+            print(f"  Speedup: {result['speedup']:.1f}x")
+        elif result["test"] == "error_recovery":
+            print(f"\nError Recovery:")
+            print(f"  Tree-sitter: ✓ Recovers and continues parsing")
+            print(f"  Javalang: ✗ Throws exception on syntax errors")
+<<<<<<< HEAD
+
+    print("\n" + "=" * 70)
+    print("BENCHMARK COMPLETE")
+    print("=" * 70)
+
+=======
+    
+    print("\n" + "=" * 70)
+    print("BENCHMARK COMPLETE")
+    print("=" * 70)
+    
+    return results
+
+
+if __name__ == "__main__":
+    results = main()
+<<<<<<< HEAD
+
+    # Save results to file
+    import json
+
+=======
+    
+    # Save results to file
+    import json
+    with open("benchmark_results.json", "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"\nResults saved to benchmark_results.json")

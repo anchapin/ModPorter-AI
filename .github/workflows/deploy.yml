@@ -51,10 +51,17 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+        cache: 'pnpm'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Cache Python dependencies (backend)
       uses: actions/cache@v5
@@ -87,16 +94,6 @@ jobs:
         key: ${{ runner.os }}-site-packages-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-site-packages-ai-engine-
-
-    - name: Cache Node dependencies
-      uses: actions/cache@v5
-      with:
-        path: |
-          ~/.npm
-          frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
 
     - name: Install backend dependencies
       run: |
@@ -164,22 +161,22 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        npm run test:ci
+        pnpm run test:ci
 
     - name: Frontend type check
       run: |
         cd frontend
-        npx tsc --noEmit
+        pnpm exec tsc --noEmit
 
     - name: Frontend lint check
       run: |
         cd frontend
-        npm run lint
+        pnpm run lint
 
     - name: Build frontend
       run: |
         cd frontend
-        npm run build
+        pnpm run build
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v5
@@ -288,7 +285,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-build
         path: .github/perf-metrics/*.json
@@ -309,7 +306,7 @@ jobs:
         echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.10.0
+      uses: webfactory/ssh-agent@v0.9.1
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
@@ -380,7 +377,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-deploy
         path: .github/perf-metrics/*.json

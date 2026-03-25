@@ -333,14 +333,14 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
             test_groups[test_type].append(result)
 
         # Print detailed summary
-        total_tests = len(self.results)
+        len(self.results)
 
         # Mod types summary
         if "mod_types" in test_groups:
             mod_results = test_groups["mod_types"]
             successful = sum(1 for r in mod_results if r["success"])
-            success_rate = successful / len(mod_results) if mod_results else 0
-            avg_time = (
+            successful / len(mod_results) if mod_results else 0
+            (
                 sum(r["processing_time"] for r in mod_results if r["success"]) / successful
                 if successful > 0
                 else 0
@@ -348,25 +348,25 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
 
             # List by mod type
             for result in mod_results:
-                status = "✅" if result["success"] else "❌"
+                "✅" if result["success"] else "❌"
 
         # Consistency summary
         if "consistency" in test_groups:
-            consistency = test_groups["consistency"][0]
+            test_groups["consistency"][0]
 
         # Edge cases summary
         if "edge_cases" in test_groups:
             edge_results = test_groups["edge_cases"]
             for result in edge_results:
-                status = "✅" if not result["success"] else "⚠️"  # Failure expected for edge cases
+                "✅" if not result["success"] else "⚠️"  # Failure expected for edge cases
 
         # Output validation summary
         if "output_validation" in test_groups:
-            validation = test_groups["output_validation"][0]
+            test_groups["output_validation"][0]
 
         # Performance summary
         if "performance_load" in test_groups:
-            perf = test_groups["performance_load"][0]
+            test_groups["performance_load"][0]
 
 
 if __name__ == "__main__":

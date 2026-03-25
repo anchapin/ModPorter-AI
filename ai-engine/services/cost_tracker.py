@@ -18,7 +18,6 @@ class CostRecord:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     model: str
     cost: float
     tokens_in: int
@@ -33,7 +32,6 @@ class CostTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Cost per 1M tokens (as of 2024)
     MODEL_COSTS = {
         "modal": {"in": 0.0, "out": 0.0},  # GPU time, not token-based
@@ -52,7 +50,6 @@ class CostTracker:
     # Average cost per conversion (for Modal GPU time)
     MODAL_COST_PER_CONVERSION = 0.05  # ~$0.05 per conversion
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self._records: List[CostRecord] = []
         self._daily_budget = 50.0  # $50/day budget
@@ -61,7 +58,6 @@ class CostTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record(
         self,
         model: str,
@@ -76,7 +72,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             model: Model name (modal, deepseek, ollama, etc.)
             tokens_in: Input tokens
@@ -100,7 +95,6 @@ class CostTracker:
                     (tokens_out / 1_000_000) * rates["out"]
                 )
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         record = CostRecord(
             model=model,
             cost=cost,
@@ -113,7 +107,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check budget
         daily_cost = self.get_daily_cost()
         if daily_cost > self._daily_budget * 0.8:
@@ -129,7 +122,6 @@ class CostTracker:
         
         logger.debug(f"Cost recorded: {model} - ${cost:.4f}")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_daily_cost(self, date: Optional[datetime] = None) -> float:
         """Get total cost for a specific date (or today)."""
         if date is None:
@@ -145,7 +137,6 @@ class CostTracker:
             if r.timestamp.date() == date.date()
         )
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_weekly_cost(self) -> float:
         """Get total cost for the last 7 days."""
         week_ago = datetime.utcnow() - timedelta(days=7)
@@ -154,7 +145,6 @@ class CostTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_monthly_cost(self) -> float:
         """Get total cost for the last 30 days."""
         month_ago = datetime.utcnow() - timedelta(days=30)
@@ -163,7 +153,6 @@ class CostTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_average_cost_per_conversion(self) -> float:
         """Get average cost per conversion."""
         if not self._records:
@@ -181,7 +170,6 @@ class CostTracker:
         """Get cost breakdown by model."""
         breakdown = {}
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for model in self.MODEL_COSTS.keys():
             model_records = [r for r in self._records if r.model == model]
             if model_records:
@@ -200,7 +188,6 @@ class CostTracker:
         
         return breakdown
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_usage_stats(self) -> dict:
         """Get comprehensive usage statistics."""
         total_cost = sum(r.cost for r in self._records)
@@ -219,7 +206,6 @@ class CostTracker:
             "total_conversions": total_conversions,
             "total_cost": total_cost,
             "average_cost_per_conversion": total_cost / total_conversions if total_conversions > 0 else 0,
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             "daily_cost": self.get_daily_cost(),
             "weekly_cost": self.get_weekly_cost(),
             "monthly_cost": self.get_monthly_cost(),
@@ -243,7 +229,6 @@ class CostTracker:
         
         breakdown = self.get_model_breakdown()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check if using expensive models too much
         expensive_models = ["gpt4", "claude"]
         for model in expensive_models:
@@ -258,7 +243,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check daily budget
         daily_cost = self.get_daily_cost()
         if daily_cost > self._daily_budget * 0.9:
@@ -270,7 +254,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check average cost
         avg_cost = self.get_average_cost_per_conversion()
         if avg_cost > 0.20:
@@ -294,7 +277,6 @@ class CostTracker:
         """Export cost report as markdown."""
         stats = self.get_usage_stats()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         report = f"""# AI Model Cost Report
 
 **Generated**: {datetime.utcnow().isoformat()}
@@ -317,7 +299,6 @@ class CostTracker:
 | Daily Cost | ${stats['daily_cost']:.2f} |
 | Weekly Cost | ${stats['weekly_cost']:.2f} |
 | Monthly Cost | ${stats['monthly_cost']:.2f} |
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 ## Model Breakdown
 
@@ -334,7 +315,6 @@ class CostTracker:
         for model, data in stats['model_breakdown'].items():
             report += f"| {model} | {data['count']} | ${data['total_cost']:.2f} | ${data['avg_cost']:.4f} |\n"
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         report += f"""
 ## Budget Status
 
@@ -345,7 +325,6 @@ class CostTracker:
 =======
 - Spent Today: ${stats['daily_cost']:.2f}
 - Remaining: ${stats['budget_remaining']:.2f}
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 ## Recommendations
 
@@ -354,7 +333,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         recommendations = self.get_optimization_recommendations()
         if recommendations:
             for rec in recommendations:
@@ -365,7 +343,6 @@ class CostTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return report
 
 

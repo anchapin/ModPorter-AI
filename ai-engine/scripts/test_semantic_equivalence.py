@@ -19,7 +19,6 @@ import os
 
 # Add ai-engine to path
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def test_dfg_construction():
@@ -37,7 +36,6 @@ def test_dfg_construction():
     try:
         from services.semantic_equivalence import DataFlowAnalyzer, NodeType
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         java_code = """
 public class Test {
     int x = 0;
@@ -79,7 +77,6 @@ public class Test {
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -99,7 +96,6 @@ def test_cfg_construction():
     try:
         from services.semantic_equivalence import ControlFlowAnalyzer, NodeType
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         java_code = """
 public void test() {
     int x = 0;
@@ -150,7 +146,6 @@ public void test() {
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -170,7 +165,6 @@ def test_equivalence_check():
     try:
         from services.semantic_equivalence import check_semantic_equivalence
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Equivalent code pair
         java_code = """
 public class Test {
@@ -184,7 +178,6 @@ public class Test {
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         bedrock_code = """
 let x = 0;
 function increment() {
@@ -224,7 +217,6 @@ function increment() {
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -244,7 +236,6 @@ def test_nonequivalence():
     try:
         from services.semantic_equivalence import check_semantic_equivalence
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Non-equivalent code pair
         java_code = """
 public class Test {
@@ -259,7 +250,6 @@ public class Test {
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         bedrock_code = """
 let x = 0;
 function increment() {
@@ -298,7 +288,6 @@ function increment() {
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -324,7 +313,6 @@ def test_qa_integration():
         # Create checker
         checker = SemanticEquivalenceChecker()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Test codes
         java_code = """
 public class Block {
@@ -338,7 +326,6 @@ public class Block {
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         bedrock_code = """
 class Block {
     constructor() {
@@ -363,7 +350,6 @@ class Block {
         print(f"  DFG Similarity: {result.dfg_similarity:.2f}")
         print(f"  CFG Similarity: {result.cfg_similarity:.2f}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Result can be used in QA validation
         qa_report = {
             "semantic_check": "PASS" if result.equivalent else "FAIL",
@@ -388,7 +374,6 @@ class Block {
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -402,7 +387,6 @@ def main():
     print("SEMANTIC EQUIVALENCE CHECKER TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("DFG Construction", test_dfg_construction),
         ("CFG Construction", test_cfg_construction),
@@ -420,7 +404,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -452,7 +435,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

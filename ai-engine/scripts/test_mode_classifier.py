@@ -20,7 +20,6 @@ from pathlib import Path
 sys.path.insert(0, "ai-engine")
 =======
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def create_test_mod(mode: str, output_path: str):
@@ -29,7 +28,6 @@ def create_test_mod(mode: str, output_path: str):
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Mod configurations by mode
     configs = {
         "Simple": {
@@ -75,7 +73,6 @@ def create_test_mod(mode: str, output_path: str):
     src_dir = Path(temp_dir) / "com" / "example" / "mod"
     src_dir.mkdir(parents=True)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for i in range(config["class_count"]):
         class_content = f"""
 package com.example.mod;
@@ -111,7 +108,6 @@ public class Class{i} {{
     # Create fabric.mod.json if dependencies
     if config["dependencies"]:
         import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         mod_json = {
             "schemaVersion": 1,
             "id": "test_mod",
@@ -147,7 +143,6 @@ public class Class{i} {{
     import shutil
     shutil.rmtree(temp_dir)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return output_path
 
 
@@ -212,7 +207,6 @@ def test_feature_extraction():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -294,7 +288,6 @@ def test_mode_classification():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -358,7 +351,6 @@ def test_confidence_scoring():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -384,7 +376,6 @@ def test_batch_classification():
         
         classifier = ModeClassifier()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Create test mods
         test_mods = []
         for mode in ["Simple", "Standard", "Complex", "Expert"]:
@@ -407,7 +398,6 @@ def test_batch_classification():
         start_time = time.time()
         results = []
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for expected_mode, test_jar in test_mods:
             result = classifier.classify_mod(test_jar)
             results.append((expected_mode, result))
@@ -436,7 +426,6 @@ def test_batch_classification():
         print(f"Classification accuracy: {accuracy:.0%}")
         print(f"Correct: {correct}/{len(results)}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Mode distribution
         mode_counts = {}
         for _, result in results:
@@ -470,7 +459,6 @@ def test_batch_classification():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -524,7 +512,6 @@ def test_mode_info():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -538,7 +525,6 @@ def main():
     print("MODE CLASSIFICATION SYSTEM TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("Feature Extraction", test_feature_extraction),
         ("Mode Classification", test_mode_classification),
@@ -556,7 +542,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -589,7 +574,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 

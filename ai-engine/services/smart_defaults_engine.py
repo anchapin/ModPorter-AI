@@ -16,7 +16,6 @@ from collections import defaultdict
 <<<<<<< HEAD
 =======
 import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,6 @@ class ConversionContext:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Mod characteristics
     mod_size: str = "medium"  # small, medium, large, very_large
     mod_complexity: float = 0.5  # 0.0 to 1.0
@@ -38,7 +36,6 @@ class ConversionContext:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Feature flags
     has_entities: bool = False
     has_multiblock: bool = False
@@ -57,7 +54,6 @@ class ConversionContext:
     user_experience: str = "intermediate"  # beginner, intermediate, expert
     conversion_purpose: str = "personal"  # personal, community, production
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "mod_size": self.mod_size,
@@ -81,7 +77,6 @@ class SmartDefaultsResult:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     settings: Dict[str, Any]
     confidence: float  # 0.0 to 1.0
     reasoning: List[str] = field(default_factory=list)
@@ -91,7 +86,6 @@ class SmartDefaultsResult:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "settings": self.settings,
@@ -117,7 +111,6 @@ class SettingsInferenceEngine:
     the best settings for each conversion.
     """
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         # Inference rules
         self.rules = self._initialize_rules()
@@ -126,7 +119,6 @@ class SettingsInferenceEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _initialize_rules(self) -> List[Dict[str, Any]]:
         """Initialize inference rules."""
         return [
@@ -146,7 +138,6 @@ class SettingsInferenceEngine:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Complexity-based rules
             {
                 "name": "high_complexity_accuracy",
@@ -157,7 +148,6 @@ class SettingsInferenceEngine:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Feature-based rules
             {
                 "name": "multiblock_review",
@@ -180,7 +170,6 @@ class SettingsInferenceEngine:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # User experience rules
             {
                 "name": "beginner_auto_fix",
@@ -197,7 +186,6 @@ class SettingsInferenceEngine:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Purpose-based rules
             {
                 "name": "production_strict",
@@ -224,7 +212,6 @@ class SettingsInferenceEngine:
         Args:
             context: Conversion context
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             SmartDefaultsResult with inferred settings
         """
@@ -235,7 +222,6 @@ class SettingsInferenceEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Apply rules
         for rule in self.rules:
             if rule["condition"](context):
@@ -245,7 +231,6 @@ class SettingsInferenceEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Calculate confidence based on how many rules matched
         match_count = len(reasoning)
         if match_count == 0:
@@ -264,7 +249,6 @@ class SettingsInferenceEngine:
         # Generate alternatives
         alternatives = self._generate_alternatives(settings, context)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return SmartDefaultsResult(
             settings=settings,
             confidence=confidence,
@@ -276,7 +260,6 @@ class SettingsInferenceEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _generate_alternatives(
         self,
         base_settings: Dict[str, Any],
@@ -326,7 +309,6 @@ class SettingsInferenceEngine:
             "tradeoff": "Higher quality, slower conversion",
         })
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return alternatives
 
 
@@ -345,7 +327,6 @@ class PatternBasedDefaults:
     patterns that lead to successful conversions.
     """
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.conversion_history: List[Dict[str, Any]] = []
         self.pattern_cache: Dict[str, Dict[str, Any]] = {}
@@ -354,7 +335,6 @@ class PatternBasedDefaults:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_conversion(
         self,
         mod_features: Dict[str, Any],
@@ -397,7 +377,6 @@ class PatternBasedDefaults:
         if len(self.conversion_history) > 1000:
             self.conversion_history = self.conversion_history[-1000:]
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _update_patterns(
         self,
         mod_features: Dict[str, Any],
@@ -412,7 +391,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if pattern_key not in self.pattern_cache:
             self.pattern_cache[pattern_key] = {
                 "successful_settings": [],
@@ -430,7 +408,6 @@ class PatternBasedDefaults:
         cache = self.pattern_cache[pattern_key]
         cache["count"] += 1
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if success and quality_score >= 0.8:
             cache["successful_settings"].append(settings)
         else:
@@ -447,7 +424,6 @@ class PatternBasedDefaults:
         total_quality = cache["avg_quality"] * (cache["count"] - 1) + quality_score
         cache["avg_quality"] = total_quality / cache["count"]
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _create_pattern_key(self, mod_features: Dict[str, Any]) -> str:
         """Create pattern key from mod features."""
         # Simplified pattern key based on key features
@@ -456,7 +432,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if mod_features.get("class_count", 0) > 50:
             features.append("large")
         elif mod_features.get("class_count", 0) > 20:
@@ -467,7 +442,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if mod_features.get("has_multiblock", False):
             features.append("multiblock")
         if mod_features.get("has_entities", False):
@@ -482,7 +456,6 @@ class PatternBasedDefaults:
         
         return "_".join(features) or "default"
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_defaults_for_pattern(
         self,
         mod_features: Dict[str, Any],
@@ -493,7 +466,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if pattern_key not in self.pattern_cache:
             return SmartDefaultsResult(
                 settings={},
@@ -509,7 +481,6 @@ class PatternBasedDefaults:
         
         cache = self.pattern_cache[pattern_key]
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if not cache["successful_settings"]:
             return SmartDefaultsResult(
                 settings={},
@@ -527,7 +498,6 @@ class PatternBasedDefaults:
         # Find most common successful settings
         settings = self._find_common_settings(cache["successful_settings"])
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         reasoning = [
             f"Based on {len(cache['successful_settings'])} successful conversions",
             f"Pattern: {pattern_key}",
@@ -537,7 +507,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return SmartDefaultsResult(
             settings=settings,
             confidence=min(0.95, 0.5 + len(cache["successful_settings"]) * 0.1),
@@ -548,7 +517,6 @@ class PatternBasedDefaults:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _find_common_settings(
         self,
         successful_settings: List[Dict[str, Any]],
@@ -574,7 +542,6 @@ class PatternBasedDefaults:
             for key, value in settings.items():
                 counts[key][str(value)] += 1
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Find most common value for each setting
         result = {}
         for key, value_counts in counts.items():
@@ -592,7 +559,6 @@ class PatternBasedDefaults:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return result
 
 
@@ -619,7 +585,6 @@ class UserPreferenceLearner:
         self.user_profiles: Dict[str, Dict[str, Any]] = {}
         logger.info("UserPreferenceLearner initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_user_choice(
         self,
         user_id: str,
@@ -731,7 +696,6 @@ class UserPreferenceLearner:
             if count >= 3:  # Consistent preference
                 profile["preferences"][setting] = most_common
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_personalized_defaults(
         self,
         user_id: str,
@@ -757,7 +721,6 @@ class UserPreferenceLearner:
         settings = base_settings.copy()
         reasoning = []
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Apply learned preferences
         for setting, value in profile["preferences"].items():
             if setting in settings:
@@ -772,7 +735,6 @@ class UserPreferenceLearner:
         
         confidence = 0.7 if profile["conversion_count"] < 10 else 0.9
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return SmartDefaultsResult(
             settings=settings,
             confidence=confidence,
@@ -788,7 +750,6 @@ class SmartDefaultsEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Combines:
     - Settings inference from context
     - Pattern-based defaults from history
@@ -798,7 +759,6 @@ class SmartDefaultsEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.inference_engine = SettingsInferenceEngine()
         self.pattern_defaults = PatternBasedDefaults()
@@ -808,7 +768,6 @@ class SmartDefaultsEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_defaults(
         self,
         context: ConversionContext,
@@ -821,7 +780,6 @@ class SmartDefaultsEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             context: Conversion context
             mod_features: Optional mod features for pattern matching
@@ -830,7 +788,6 @@ class SmartDefaultsEngine:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             SmartDefaultsResult with combined defaults
         """
@@ -847,7 +804,6 @@ class SmartDefaultsEngine:
         inference_result = self.inference_engine.infer_settings(context)
         results.append(("inference", inference_result, 0.4))  # 40% weight
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # 2. Get pattern-based defaults (if mod features provided)
         if mod_features:
             pattern_result = self.pattern_defaults.get_defaults_for_pattern(mod_features)
@@ -857,7 +813,6 @@ class SmartDefaultsEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # 3. Get user-personalized defaults (if user ID provided)
         if user_id:
             base_settings = inference_result.settings
@@ -882,7 +837,6 @@ class SmartDefaultsEngine:
         
         return combined
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _combine_results(
         self,
         results: List[Tuple[str, SmartDefaultsResult, float]],
@@ -905,7 +859,6 @@ class SmartDefaultsEngine:
         if len(results) == 1:
             return results[0][1]
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Combine settings with weights
         combined_settings = {}
         combined_reasoning = []
@@ -914,7 +867,6 @@ class SmartDefaultsEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for source, result, weight in results:
             for key, value in result.settings.items():
                 if key not in combined_settings:
@@ -933,7 +885,6 @@ class SmartDefaultsEngine:
         # Calculate combined confidence
         weighted_confidence = sum(r[1].confidence * r[2] for r in results) / total_weight
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return SmartDefaultsResult(
             settings=combined_settings,
             confidence=weighted_confidence,
@@ -945,7 +896,6 @@ class SmartDefaultsEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_conversion_outcome(
         self,
         mod_features: Dict[str, Any],
@@ -965,7 +915,6 @@ class SmartDefaultsEngine:
             mod_features, settings_used, success, quality_score
         )
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Update user preference learning
         if user_id:
             self.user_learner.record_user_choice(
@@ -995,7 +944,6 @@ def get_smart_defaults(
         mod_features: Features extracted from mod
         user_id: Optional user ID for personalization
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         SmartDefaultsResult with recommended settings
     """
@@ -1010,7 +958,6 @@ def get_smart_defaults(
     # Create context from features
     context = _features_to_context(mod_features)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return engine.get_defaults(context, mod_features, user_id)
 
 
@@ -1021,7 +968,6 @@ def _features_to_context(features: Dict[str, Any]) -> ConversionContext:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     if class_count < 10:
         mod_size = "small"
     elif class_count < 30:
@@ -1034,7 +980,6 @@ def _features_to_context(features: Dict[str, Any]) -> ConversionContext:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return ConversionContext(
         mod_size=mod_size,
         mod_complexity=features.get("complexity_score", 0.5),

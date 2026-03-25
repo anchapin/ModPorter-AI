@@ -298,8 +298,15 @@ export const Settings: React.FC<SettingsProps> = ({
                   className="visibility-toggle"
                   onClick={() => toggleApiKeyVisibility('openai')}
                   title={showApiKeys.openai ? 'Hide' : 'Show'}
+                  aria-label={
+                    showApiKeys.openai
+                      ? 'Hide OpenAI API Key'
+                      : 'Show OpenAI API Key'
+                  }
                 >
-                  {showApiKeys.openai ? '🙈' : '👁️'}
+                  <span aria-hidden="true">
+                    {showApiKeys.openai ? '🙈' : '👁️'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -327,8 +334,15 @@ export const Settings: React.FC<SettingsProps> = ({
                   className="visibility-toggle"
                   onClick={() => toggleApiKeyVisibility('curseforge')}
                   title={showApiKeys.curseforge ? 'Hide' : 'Show'}
+                  aria-label={
+                    showApiKeys.curseforge
+                      ? 'Hide CurseForge API Key'
+                      : 'Show CurseForge API Key'
+                  }
                 >
-                  {showApiKeys.curseforge ? '🙈' : '👁️'}
+                  <span aria-hidden="true">
+                    {showApiKeys.curseforge ? '🙈' : '👁️'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -356,8 +370,15 @@ export const Settings: React.FC<SettingsProps> = ({
                   className="visibility-toggle"
                   onClick={() => toggleApiKeyVisibility('modrinth')}
                   title={showApiKeys.modrinth ? 'Hide' : 'Show'}
+                  aria-label={
+                    showApiKeys.modrinth
+                      ? 'Hide Modrinth API Key'
+                      : 'Show Modrinth API Key'
+                  }
                 >
-                  {showApiKeys.modrinth ? '🙈' : '👁️'}
+                  <span aria-hidden="true">
+                    {showApiKeys.modrinth ? '🙈' : '👁️'}
+                  </span>
                 </button>
               </div>
             </div>

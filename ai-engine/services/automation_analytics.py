@@ -13,7 +13,6 @@ import logging
 from typing import Dict, List, Optional, Any
 =======
 from typing import Dict, List, Optional, Any, Tuple
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -28,7 +27,6 @@ class ConversionMetric:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     conversion_id: str
     timestamp: datetime
     mod_path: str
@@ -43,7 +41,6 @@ class ConversionMetric:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "conversion_id": self.conversion_id,
@@ -63,7 +60,6 @@ class AutomationDashboard:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Overall metrics
     total_conversions: int = 0
     successful_conversions: int = 0
@@ -101,7 +97,6 @@ class AutomationDashboard:
     # Trends
     automation_trend: List[Dict[str, Any]] = field(default_factory=list)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "total_conversions": self.total_conversions,
@@ -115,7 +110,6 @@ class AutomationDashboard:
             ),
 =======
             "success_rate": self.successful_conversions / self.total_conversions if self.total_conversions > 0 else 0,
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             "automation_rate": self.automation_rate,
             "avg_conversion_time_sec": self.avg_conversion_time,
             "total_time_saved_hours": self.total_time_saved / 3600,
@@ -131,7 +125,6 @@ class AutomationMetricsCollector:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Features:
     - Real-time metric collection
     - Time-series storage
@@ -141,7 +134,6 @@ class AutomationMetricsCollector:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, max_history: int = 10000):
         self.max_history = max_history
         self.metrics: List[ConversionMetric] = []
@@ -171,7 +163,6 @@ class AutomationMetricsCollector:
         
         logger.debug(f"Recorded conversion: {metric.conversion_id} (success={metric.success})")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_metrics(
         self,
         start_time: Optional[datetime] = None,
@@ -185,7 +176,6 @@ class AutomationMetricsCollector:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if start_time:
             filtered = [m for m in filtered if m.timestamp >= start_time]
         if end_time:
@@ -202,7 +192,6 @@ class AutomationMetricsCollector:
         
         return filtered
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_summary_stats(self) -> Dict[str, Any]:
         """Get summary statistics."""
         if not self.metrics:
@@ -211,7 +200,6 @@ class AutomationMetricsCollector:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         total = len(self.metrics)
         successful = sum(1 for m in self.metrics if m.success)
         avg_duration = sum(m.duration_seconds for m in self.metrics) / total
@@ -220,7 +208,6 @@ class AutomationMetricsCollector:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total": total,
             "successful": successful,
@@ -238,7 +225,6 @@ class SuccessRateTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Features:
     - Success rate by mode
     - Success rate by time period
@@ -267,7 +253,6 @@ class SuccessRateTracker:
         self.success_by_user: Dict[str, Dict[str, int]] = defaultdict(lambda: {"success": 0, "total": 0})
         logger.info("SuccessRateTracker initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_outcome(self, mode: str, success: bool, user_id: Optional[str] = None):
         """Record a conversion outcome."""
         # By mode
@@ -278,7 +263,6 @@ class SuccessRateTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # By day
         day_key = datetime.now().strftime("%Y-%m-%d")
         self.success_by_day[day_key]["total"] += 1
@@ -288,7 +272,6 @@ class SuccessRateTracker:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # By user
         if user_id:
             self.success_by_user[user_id]["total"] += 1
@@ -298,7 +281,6 @@ class SuccessRateTracker:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_success_rate_by_mode(self) -> Dict[str, float]:
         """Get success rate by mode."""
         rates = {}
@@ -346,7 +328,6 @@ class SuccessRateTracker:
         
         return trend
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_overall_success_rate(self) -> float:
         """Get overall success rate."""
         total_success = sum(c["success"] for c in self.success_by_mode.values())
@@ -361,7 +342,6 @@ class ModeDistributionAnalyzer:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Features:
     - Mode distribution tracking
     - Mode performance comparison
@@ -391,7 +371,6 @@ class ModeDistributionAnalyzer:
         })
         logger.info("ModeDistributionAnalyzer initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_conversion(self, mode: str, duration: float, automation_level: float, success: bool):
         """Record a conversion for mode analysis."""
         stats = self.mode_stats[mode]
@@ -420,7 +399,6 @@ class ModeDistributionAnalyzer:
         """Get performance metrics by mode."""
         performance = {}
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for mode, stats in self.mode_stats.items():
             count = stats["count"]
             if count > 0:
@@ -434,7 +412,6 @@ class ModeDistributionAnalyzer:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return performance
 
 
@@ -445,7 +422,6 @@ class ImprovementRecommendationEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Features:
     - Bottleneck identification
     - Optimization suggestions
@@ -463,7 +439,6 @@ class ImprovementRecommendationEngine:
         self.recommendations: List[Dict[str, Any]] = []
         logger.info("ImprovementRecommendationEngine initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def analyze_and_recommend(
         self,
         dashboard: AutomationDashboard,
@@ -566,7 +541,6 @@ class ImprovementRecommendationEngine:
                     "impact": "Improved success rate for {mode} conversions",
                 })
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Check trend
         if len(success_trend) >= 7:
             recent_avg = sum(t["success_rate"] for t in success_trend[-3:]) / 3
@@ -601,7 +575,6 @@ class ImprovementRecommendationEngine:
         self.recommendations = recommendations
         return recommendations
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_recommendations(self) -> List[Dict[str, Any]]:
         """Get current recommendations."""
         return self.recommendations
@@ -614,7 +587,6 @@ class AutomationAnalyticsDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Combines all analytics components:
     - Metrics collection
     - Success rate tracking
@@ -625,7 +597,6 @@ class AutomationAnalyticsDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.metrics_collector = AutomationMetricsCollector()
         self.success_tracker = SuccessRateTracker()
@@ -636,7 +607,6 @@ class AutomationAnalyticsDashboard:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_conversion(
         self,
         conversion_id: str,
@@ -666,7 +636,6 @@ class AutomationAnalyticsDashboard:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Record in all trackers
         self.metrics_collector.record_conversion(metric)
         self.success_tracker.record_outcome(mode, success, user_id)
@@ -683,7 +652,6 @@ class AutomationAnalyticsDashboard:
         """Get current dashboard data."""
         dashboard = AutomationDashboard()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Get summary stats
         stats = self.metrics_collector.get_summary_stats()
         dashboard.total_conversions = stats.get("total", 0)
@@ -719,7 +687,6 @@ class AutomationAnalyticsDashboard:
         
         return dashboard
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_full_analytics(self) -> Dict[str, Any]:
         """Get complete analytics data."""
         dashboard = self.get_dashboard()
@@ -732,7 +699,6 @@ class AutomationAnalyticsDashboard:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "dashboard": dashboard.to_dict(),
             "mode_performance": mode_performance,
@@ -752,7 +718,6 @@ class AutomationAnalyticsDashboard:
         """Export analytics report."""
         analytics = self.get_full_analytics()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         if format == "json":
             return json.dumps(analytics, indent=2)
         else:
@@ -776,7 +741,6 @@ class AutomationAnalyticsDashboard:
             for key, value in analytics["dashboard"].items():
                 lines.append(f"  {key}: {value}")
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             lines.extend(["", "RECOMMENDATIONS", "-" * 40])
             for rec in analytics["recommendations"]:
                 lines.append(f"  [{rec['priority'].upper()}] {rec['issue']}")
@@ -785,7 +749,6 @@ class AutomationAnalyticsDashboard:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return "\n".join(lines)
 
 

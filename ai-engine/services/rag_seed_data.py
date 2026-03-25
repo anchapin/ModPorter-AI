@@ -42,7 +42,6 @@ public class ModItem extends Item {
         },
 =======
         }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     },
     {
         "id": "item-002",
@@ -92,7 +91,6 @@ public class ModSword extends SwordItem {
         },
 =======
         }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     },
     {
         "id": "item-003",
@@ -146,7 +144,6 @@ public class ModPickaxe extends PickaxeItem {
         }
     },
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Simple Blocks (21-40)
     {
         "id": "block-001",
@@ -200,7 +197,6 @@ public class ModBlock extends Block {
         },
 =======
         }
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     },
     {
         "id": "block-002",
@@ -255,7 +251,6 @@ public class ModOre extends Block {
         }
     },
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Basic Entities (41-60)
     {
         "id": "entity-001",
@@ -323,7 +318,6 @@ public class ModEntity extends Mob {
         }
     },
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Recipes (61-80)
     {
         "id": "recipe-001",
@@ -382,7 +376,6 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
         }
     },
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # More complex examples would continue here...
     # For brevity, showing representative examples only
 ]
@@ -425,7 +418,6 @@ def generate_examples_from_templates() -> List[Dict[str, Any]]:
     
     examples = []
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for item_template in EXAMPLE_TEMPLATES["items"]:
         example = {
             "id": f"generated-{item_template['name']}-{uuid.uuid4().hex[:8]}",
@@ -445,7 +437,6 @@ def generate_examples_from_templates() -> List[Dict[str, Any]]:
         }
         examples.append(example)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return examples
 
 

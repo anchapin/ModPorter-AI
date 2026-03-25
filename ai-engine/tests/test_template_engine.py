@@ -5,10 +5,8 @@ This test verifies the template system works correctly for Issue #436.
 """
 
 import pytest
-import json
 from pathlib import Path
 import sys
-import tempfile
 
 # Add ai-engine to path
 ai_engine_root = Path(__file__).parent.parent
@@ -18,7 +16,6 @@ from templates.template_engine import (
     TemplateEngine,
     TemplateSelector,
     TemplateType,
-    TemplateCategory,
 )
 
 
@@ -48,7 +45,7 @@ class TestTemplateEngine:
         assert len(templates) > 0
 
         # Check for expected template types
-        template_names = [t.value for t in templates]
+        [t.value for t in templates]
 
         # Should have basic block template
         assert TemplateType.BASIC_BLOCK in templates

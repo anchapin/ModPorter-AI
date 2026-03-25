@@ -16,7 +16,6 @@ from datetime import datetime
 =======
 from pathlib import Path
 import json
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 # Import mode classifier
 try:
@@ -33,7 +32,6 @@ class ConversionSettings:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Mode-specific settings
     mode: str = "Standard"
     detail_level: str = "standard"  # basic, standard, detailed, comprehensive
@@ -44,7 +42,6 @@ class ConversionSettings:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Output settings
     output_format: str = "mcaddon"  # mcaddon, zip, folder
     include_source: bool = False
@@ -53,7 +50,6 @@ class ConversionSettings:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     # Advanced settings
     use_rag: bool = True
     use_pattern_library: bool = True
@@ -62,7 +58,6 @@ class ConversionSettings:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "mode": self.mode,
@@ -85,7 +80,6 @@ class OneClickResult:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     success: bool
     conversion_id: str
     mode: str
@@ -103,7 +97,6 @@ class OneClickResult:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "success": self.success,
@@ -159,7 +152,6 @@ class OneClickConverter:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Usage:
         converter = OneClickConverter()
         result = converter.convert_mod("/path/to/mod.jar", "/output/path")
@@ -168,7 +160,6 @@ class OneClickConverter:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.classifier = ModeClassifier()
         self.conversion_queue: Dict[str, OneClickResult] = {}
@@ -177,7 +168,6 @@ class OneClickConverter:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def convert_mod(
         self,
         mod_path: str,
@@ -190,7 +180,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             mod_path: Path to mod JAR file
             output_path: Output path for converted mod
@@ -199,7 +188,6 @@ class OneClickConverter:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             OneClickResult with conversion status
         """
@@ -216,7 +204,6 @@ class OneClickConverter:
         classification = self.classifier.classify_mod(mod_path)
         logger.info(f"Mod classified as: {classification.mode}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Step 2: Check if auto-conversion is appropriate
         if classification.mode in [ConversionMode.COMPLEX, ConversionMode.EXPERT]:
             # For complex/expert mods, provide recommendation instead of auto-converting
@@ -225,7 +212,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Step 3: Apply smart defaults
         settings = self._apply_smart_defaults(
             classification.mode,
@@ -236,7 +222,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Step 4: Create conversion result
         result = self._create_conversion_result(
             classification.mode,
@@ -261,7 +246,6 @@ class OneClickConverter:
         
         return result
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _apply_smart_defaults(
         self,
         mode: str,
@@ -273,7 +257,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         settings = ConversionSettings(
             mode=mode,
             detail_level=defaults["detail_level"],
@@ -285,7 +268,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Apply user preferences if provided
         if user_preferences:
             for key, value in user_preferences.items():
@@ -300,7 +282,6 @@ class OneClickConverter:
         
         return settings
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _create_recommendation_result(
         self,
         classification: ClassificationResult,
@@ -336,7 +317,6 @@ class OneClickConverter:
         
         return result
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _create_conversion_result(
         self,
         mode: str,
@@ -362,7 +342,6 @@ class OneClickConverter:
             warnings=classification.recommendations[:2] if classification.confidence < 0.8 else [],
         )
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _start_conversion(
         self,
         result: OneClickResult,
@@ -407,7 +386,6 @@ class OneClickConverter:
         # Step 4: Generate Bedrock code (70% → 90%)
         result.progress = 90
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Step 5: Package output (90% → 100%)
         result.progress = 100
         result.status = "completed"
@@ -436,7 +414,6 @@ class OneClickConverter:
         """Get status of a conversion by ID."""
         return self.conversion_queue.get(conversion_id)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_queue_stats(self) -> Dict[str, Any]:
         """Get conversion queue statistics."""
         total = len(self.conversion_queue)
@@ -447,7 +424,6 @@ class OneClickConverter:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total": total,
             "completed": completed,
@@ -480,7 +456,6 @@ class SmartDefaultsEngine:
         self.user_history: Dict[str, List[Dict[str, Any]]] = {}
         logger.info("SmartDefaultsEngine initialized")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_defaults_for_mod(
         self,
         mod_features: Dict[str, Any],
@@ -500,7 +475,6 @@ class SmartDefaultsEngine:
             mod_features: Features extracted from mod
             user_id: Optional user ID for personalization
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             ConversionSettings with optimal defaults
         """
@@ -511,7 +485,6 @@ class SmartDefaultsEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         settings = ConversionSettings(
             mode=mode,
             detail_level=defaults["detail_level"],
@@ -541,7 +514,6 @@ class SmartDefaultsEngine:
         
         return settings
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _adjust_for_features(
         self,
         settings: ConversionSettings,
@@ -555,7 +527,6 @@ class SmartDefaultsEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Complex features → stricter validation
         complex_features = mod_features.get("complex_features", [])
         if len(complex_features) > 2:
@@ -577,7 +548,6 @@ class SmartDefaultsEngine:
         
         return settings
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _adjust_for_user(
         self,
         settings: ConversionSettings,
@@ -623,7 +593,6 @@ class SmartDefaultsEngine:
         
         return settings
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_conversion(
         self,
         user_id: str,
@@ -657,7 +626,6 @@ class SmartDefaultsEngine:
             "timestamp": datetime.now().isoformat(),
         })
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Keep only last 100 conversions per user
         if len(self.user_history[user_id]) > 100:
             self.user_history[user_id] = self.user_history[user_id][-100:]
@@ -675,7 +643,6 @@ def one_click_convert(
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Args:
         mod_path: Path to mod JAR file
         output_path: Output path for converted mod
@@ -684,7 +651,6 @@ def one_click_convert(
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         OneClickResult with conversion status
     """
@@ -705,7 +671,6 @@ def get_mode_defaults(mode: str) -> Dict[str, Any]:
     Args:
         mode: Mode name (Simple/Standard/Complex/Expert)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         Dictionary with default settings
     """
@@ -715,7 +680,6 @@ def get_mode_defaults(mode: str) -> Dict[str, Any]:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     defaults = MODE_DEFAULTS[mode]
     return {
         "mode": mode,

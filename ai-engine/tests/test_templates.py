@@ -5,8 +5,6 @@ These tests validate that all templates can be rendered correctly
 and produce valid JSON output for Bedrock add-ons.
 """
 
-import json
-import os
 import pytest
 from pathlib import Path
 

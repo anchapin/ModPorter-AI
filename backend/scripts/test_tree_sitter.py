@@ -6,7 +6,6 @@ Verifies AST extraction, semantic analysis, and error recovery
 
 import sys
 import importlib.util
-from pathlib import Path
 
 # Load java_parser module directly
 spec = importlib.util.spec_from_file_location("java_parser", "src/services/java_parser.py")

@@ -26,7 +26,6 @@ import json
 import time
 import shutil
 from pathlib import Path
-from typing import Dict, List, Any, Optional
 import sys
 
 # Add the ai-engine, tests, and root directories to the path
@@ -175,7 +174,7 @@ class TestMVPEndToEndConversion:
         # Step 1: Analyze JAR
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(simple_copper_block_jar)
 
-        analysis_time = time.time() - start_time
+        time.time() - start_time
 
         # Verify analysis results
         assert analysis_result["success"], f"Analysis failed: {analysis_result.get('errors', [])}"
@@ -198,7 +197,7 @@ class TestMVPEndToEndConversion:
                 output_dir=build_dir,
             )
 
-            build_time = time.time() - build_start
+            time.time() - build_start
 
             # Verify build results
             assert build_result["success"], f"Build failed: {build_result.get('errors', [])}"
@@ -250,7 +249,7 @@ class TestMVPEndToEndConversion:
                 temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="simple_copper"
             )
 
-            package_time = time.time() - package_start
+            time.time() - package_start
 
             # Verify package results
             assert package_result["success"], (
@@ -383,7 +382,7 @@ class TestMVPEndToEndConversion:
 
         # Test empty JAR
         empty_jar = self.temp_path / "empty.jar"
-        with zipfile.ZipFile(empty_jar, "w") as zf:
+        with zipfile.ZipFile(empty_jar, "w"):
             pass  # Create empty JAR
 
         analysis_result = self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
@@ -521,7 +520,7 @@ class TestMVPEndToEndConversion:
 
                 if block_files:
                     with zf.open(block_files[0]) as bf:
-                        block_data = json.load(bf)
+                        json.load(bf)
 
     # ========================================
     # Test Case 6: Performance Benchmarks
@@ -571,7 +570,7 @@ class TestMVPEndToEndConversion:
             times.append(total_time)
 
         avg_time = sum(times) / len(times)
-        min_time = min(times)
+        min(times)
         max_time = max(times)
 
         # Performance assertions
@@ -611,7 +610,7 @@ class TestMVPEndToEndConversion:
             covered_components["JavaAnalyzerAgent.analyze_jar_for_mvp"] = True
 
             with tempfile.TemporaryDirectory() as build_dir:
-                build_result = self.bedrock_builder.build_block_addon_mvp(
+                self.bedrock_builder.build_block_addon_mvp(
                     registry_name=analysis_result["registry_name"],
                     texture_path=analysis_result["texture_path"],
                     jar_path=simple_copper_block_jar,
@@ -620,12 +619,12 @@ class TestMVPEndToEndConversion:
                 covered_components["BedrockBuilderAgent.build_block_addon_mvp"] = True
 
                 mcaddon_path = self.temp_path / "coverage_test.mcaddon"
-                package_result = self.packaging_agent.build_mcaddon_mvp(
+                self.packaging_agent.build_mcaddon_mvp(
                     temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="coverage"
                 )
                 covered_components["PackagingAgent.build_mcaddon_mvp"] = True
 
-        except Exception as e:
+        except Exception:
             covered_components["error_handling"] = True
 
         # Exercise error handling
@@ -636,7 +635,7 @@ class TestMVPEndToEndConversion:
 
         # Exercise edge cases (empty JAR)
         empty_jar = self.temp_path / "empty.jar"
-        with zipfile.ZipFile(empty_jar, "w") as zf:
+        with zipfile.ZipFile(empty_jar, "w"):
             pass
         self.java_analyzer.analyze_jar_for_mvp(str(empty_jar))
         covered_components["edge_cases"] = True
@@ -647,7 +646,7 @@ class TestMVPEndToEndConversion:
         coverage_percent = (covered_count / total_count) * 100
 
         for component, covered in covered_components.items():
-            status = "✓" if covered else "✗"
+            pass
 
         assert coverage_percent >= 80.0, f"Coverage {coverage_percent:.1f}% is below 80% threshold"
 

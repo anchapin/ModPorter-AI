@@ -13,7 +13,6 @@ import logging
 from typing import Dict, List, Optional, Any
 =======
 from typing import Dict, List, Optional, Any, Callable, Tuple
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -28,7 +27,6 @@ class ErrorSeverity(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     LOW = "low"  # Can retry immediately
     MEDIUM = "medium"  # Retry with backoff
     HIGH = "high"  # May need intervention
@@ -40,7 +38,6 @@ class ErrorType(Enum):
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     SYNTAX_ERROR = "syntax_error"
     MISSING_PATTERN = "missing_pattern"
     TYPE_MISMATCH = "type_mismatch"
@@ -57,7 +54,6 @@ class ConversionError:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     error_id: str
     error_type: ErrorType
     severity: ErrorSeverity
@@ -71,7 +67,6 @@ class ConversionError:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "error_id": self.error_id,
@@ -89,7 +84,6 @@ class RecoveryResult:
 <<<<<<< HEAD
 
 =======
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     success: bool
     recovery_strategy: str
     message: str
@@ -100,7 +94,6 @@ class RecoveryResult:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def to_dict(self) -> Dict[str, Any]:
         return {
             "success": self.success,
@@ -125,7 +118,6 @@ class ErrorPatternDetector:
     Identifies common error types and suggests recovery strategies.
     """
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         # Error pattern mappings
         self.patterns = self._initialize_patterns()
@@ -134,7 +126,6 @@ class ErrorPatternDetector:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _initialize_patterns(self) -> Dict[str, ErrorType]:
         """Initialize error pattern mappings."""
         return {
@@ -146,7 +137,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Missing pattern errors
             "no pattern found": ErrorType.MISSING_PATTERN,
             "pattern not found": ErrorType.MISSING_PATTERN,
@@ -154,7 +144,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Type mismatch errors
             "type mismatch": ErrorType.TYPE_MISMATCH,
             "incompatible types": ErrorType.TYPE_MISMATCH,
@@ -162,7 +151,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Resource errors
             "out of memory": ErrorType.RESOURCE_ERROR,
             "resource not found": ErrorType.RESOURCE_ERROR,
@@ -170,7 +158,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Timeout errors
             "timeout": ErrorType.TIMEOUT_ERROR,
             "timed out": ErrorType.TIMEOUT_ERROR,
@@ -178,7 +165,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Dependency errors
             "dependency not found": ErrorType.DEPENDENCY_ERROR,
             "missing dependency": ErrorType.DEPENDENCY_ERROR,
@@ -186,7 +172,6 @@ class ErrorPatternDetector:
 <<<<<<< HEAD
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Validation errors
             "validation failed": ErrorType.VALIDATION_ERROR,
             "invalid format": ErrorType.VALIDATION_ERROR,
@@ -216,7 +201,6 @@ class ErrorPatternDetector:
         
         return ErrorType.UNKNOWN
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_severity(self, error_type: ErrorType, retry_count: int) -> ErrorSeverity:
         """Determine error severity based on type and retry count."""
         # Critical errors
@@ -250,7 +234,6 @@ class ErrorPatternDetector:
         if error_type == ErrorType.SYNTAX_ERROR:
             return ErrorSeverity.LOW
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return ErrorSeverity.MEDIUM
 
 
@@ -260,7 +243,6 @@ class RecoveryStrategy:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, name: str, success_rate: float = 0.8):
         self.name = name
         self.success_rate = success_rate
@@ -270,7 +252,6 @@ class RecoveryStrategy:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute recovery strategy."""
         self.execution_count += 1
@@ -279,7 +260,6 @@ class RecoveryStrategy:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_success(self):
         """Record successful recovery."""
         self.success_count += 1
@@ -289,7 +269,6 @@ class RecoveryStrategy:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def record_failure(self):
         """Record failed recovery."""
         if self.execution_count > 0:
@@ -308,7 +287,6 @@ class RetryStrategy(RecoveryStrategy):
     def __init__(self):
         super().__init__("retry_with_backoff", success_rate=0.9)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute retry with backoff."""
         if error.retry_count >= error.max_retries:
@@ -344,7 +322,6 @@ class RetryStrategy(RecoveryStrategy):
         
         error.retry_count += 1
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return RecoveryResult(
             success=True,  # Will be retried
             recovery_strategy=self.name,
@@ -367,7 +344,6 @@ class FallbackStrategy(RecoveryStrategy):
         super().__init__(f"use_fallback_{fallback_name}", success_rate=0.7)
         self.fallback_name = fallback_name
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute fallback."""
         return RecoveryResult(
@@ -390,7 +366,6 @@ class SimplifyStrategy(RecoveryStrategy):
     def __init__(self):
         super().__init__("simplify_conversion", success_rate=0.6)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Execute simplification."""
         return RecoveryResult(
@@ -413,7 +388,6 @@ class ManualInterventionStrategy(RecoveryStrategy):
     def __init__(self):
         super().__init__("manual_review", success_rate=1.0)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def execute(self, error: ConversionError) -> RecoveryResult:
         """Flag for manual review."""
         return RecoveryResult(
@@ -431,7 +405,6 @@ class AutoRecoveryEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Coordinates:
     - Error detection
     - Strategy selection
@@ -442,7 +415,6 @@ class AutoRecoveryEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self):
         self.detector = ErrorPatternDetector()
         self.strategies = self._initialize_strategies()
@@ -452,7 +424,6 @@ class AutoRecoveryEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _initialize_strategies(self) -> Dict[ErrorType, List[RecoveryStrategy]]:
         """Initialize recovery strategies by error type."""
         return {
@@ -514,7 +485,6 @@ class AutoRecoveryEngine:
         Args:
             error: The conversion error to recover from
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             RecoveryResult with recovery status
         """
@@ -565,7 +535,6 @@ class AutoRecoveryEngine:
                 "timestamp": datetime.now().isoformat(),
             })
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             if result.success:
                 strategy.record_success()
                 logger.info(f"Recovery successful: {strategy.name}")
@@ -582,7 +551,6 @@ class AutoRecoveryEngine:
         # All strategies failed
         logger.warning(f"All recovery strategies failed for error {error.error_id}")
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return RecoveryResult(
             success=False,
             recovery_strategy="all_exhausted",
@@ -593,7 +561,6 @@ class AutoRecoveryEngine:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_recovery_stats(self) -> Dict[str, Any]:
         """Get recovery statistics."""
         total = len(self.recovery_history)
@@ -602,7 +569,6 @@ class AutoRecoveryEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Strategy success rates
         strategy_stats = {}
         for error_type, strategies in self.strategies.items():
@@ -617,7 +583,6 @@ class AutoRecoveryEngine:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total_recoveries": total,
             "successful": successful,
@@ -642,7 +607,6 @@ class ConversionErrorHandler:
     seamless error recovery.
     """
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, auto_recovery_enabled: bool = True):
         self.recovery_engine = AutoRecoveryEngine()
         self.auto_recovery_enabled = auto_recovery_enabled
@@ -652,7 +616,6 @@ class ConversionErrorHandler:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def handle_error(
         self,
         error_message: str,
@@ -665,7 +628,6 @@ class ConversionErrorHandler:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Args:
             error_message: Error message
             mod_path: Path to mod being converted
@@ -674,7 +636,6 @@ class ConversionErrorHandler:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Returns:
             RecoveryResult with recovery status
         """
@@ -707,7 +668,6 @@ class ConversionErrorHandler:
         if self.auto_recovery_enabled:
             result = self.recovery_engine.attempt_recovery(error)
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             if result.success:
                 logger.info(f"Auto-recovery successful: {result.recovery_strategy}")
             elif result.manual_intervention_required:
@@ -716,7 +676,6 @@ class ConversionErrorHandler:
 
 =======
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             return result
         else:
             # Auto-recovery disabled
@@ -730,7 +689,6 @@ class ConversionErrorHandler:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def can_continue(self) -> bool:
         """Check if conversion can continue after errors."""
         if not self.error_log:
@@ -753,7 +711,6 @@ class ConversionErrorHandler:
         # Stop if multiple critical errors
         return critical_count < 2
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_error_summary(self) -> Dict[str, Any]:
         """Get summary of errors."""
         by_type = {}
@@ -762,7 +719,6 @@ class ConversionErrorHandler:
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         for error in self.error_log:
             # Count by type
             type_key = error.error_type.value
@@ -779,7 +735,6 @@ class ConversionErrorHandler:
             sev_key = error.severity.value
             by_severity[sev_key] = by_severity.get(sev_key, 0) + 1
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         return {
             "total_errors": len(self.error_log),
             "by_type": by_type,
@@ -801,7 +756,6 @@ def recover_from_error(
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Args:
         error_message: Error message
         mod_path: Path to mod being converted
@@ -810,7 +764,6 @@ def recover_from_error(
 
 =======
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     Returns:
         RecoveryResult with recovery status
     """

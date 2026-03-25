@@ -17,7 +17,6 @@ class ModalClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def __init__(self, app_name: str = "codet5-plus-converter"):
         self.app_name = app_name
         self._client = None
@@ -26,7 +25,6 @@ class ModalClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _get_client(self):
         """Lazy-load Modal client."""
         if self._client is None:
@@ -46,7 +44,6 @@ class ModalClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def health_check(self) -> bool:
         """Check if Modal endpoint is healthy."""
         try:
@@ -55,7 +52,6 @@ class ModalClient:
 <<<<<<< HEAD
 =======
             import modal
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
             # Just verify Modal is accessible
             return True
         except Exception as e:
@@ -88,7 +84,6 @@ class ModalClient:
         Returns:
             Translated Bedrock code
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         Raises:
             RuntimeError: If translation fails
         """
@@ -120,7 +115,6 @@ class ModalClient:
             logger.info("Translation completed")
             return result
             
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         except Exception as e:
             logger.error(f"Translation failed: {e}")
             self._last_error = e
@@ -129,7 +123,6 @@ class ModalClient:
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def _mock_translate(self, java_code: str) -> str:
         """Mock translation for development."""
         # This is a placeholder - in production, this calls the actual model
@@ -155,7 +148,6 @@ const testBlock = {{
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     def get_last_error(self) -> Optional[Exception]:
         """Get the last error that occurred."""
         return self._last_error

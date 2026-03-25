@@ -300,7 +300,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
         # Test CLI convert_mod function
         result = convert_mod(str(jar_path), str(output_dir))
 
-        cli_time = time.time() - start_time
+        time.time() - start_time
 
         # Verify CLI result
         self.assertTrue(result["success"])
@@ -370,7 +370,7 @@ public class {mod_id.title()}Mod implements ModInitializer {{
 
         # Performance analysis
         avg_time = sum(r["processing_time"] for r in results) / len(results)
-        avg_size = sum(r["file_size"] for r in results) / len(results)
+        sum(r["file_size"] for r in results) / len(results)
 
         self.assertLess(avg_time, 3.0, "Average processing time should be under 3 seconds")
 

@@ -2,27 +2,25 @@
 RAG Context Builder
 
 Build context for AI model from RAG search results.
-Includes token-based context window optimization.
 """
 
 import logging
 from typing import List, Dict, Any, Optional
 
-from utils.token_optimizer import ContextTrimmer, MODEL_TOKEN_LIMITS
-
 logger = logging.getLogger(__name__)
 
 
 class RAGContextBuilder:
-    """Build context for AI model from RAG results with token optimization."""
-    def __init__(
-        self,
-        max_context_tokens: int = 4000,
-        model: str = "default",
-    ):
-        self.max_context_tokens = max_context_tokens
-        self.model = model
-        self.context_trimmer = ContextTrimmer(model=model)
+    """Build context for AI model from RAG results."""
+<<<<<<< HEAD
+
+    def __init__(self, max_context_length: int = 4000):
+        self.max_context_length = max_context_length
+
+=======
+    
+    def __init__(self, max_context_length: int = 4000):
+        self.max_context_length = max_context_length
     
     def build_context(
         self,
@@ -31,38 +29,35 @@ class RAGContextBuilder:
         max_examples: int = 5,
     ) -> str:
         """
-        Build context string for AI model using token-based budgeting.
+        Build context string for AI model.
+<<<<<<< HEAD
 
+=======
+        
         Args:
             search_results: Results from RAG search
             query: Original query
             max_examples: Maximum number of examples to include
+<<<<<<< HEAD
 
+=======
+        
         Returns:
             Context string for AI prompt
         """
         if not search_results:
             return ""
-
-        # Token counting via ContextTrimmer
-        estimate_tokens = self.context_trimmer.estimate_tokens
+<<<<<<< HEAD
 
         context_parts = []
-        current_tokens = 0
+        current_length = 0
 
         # Add query context
-        query_text = f"Query: {query}\n"
-        context_parts.append(query_text)
-        current_tokens += estimate_tokens(query_text)
+        context_parts.append(f"Query: {query}\n")
+        current_length += len(context_parts[-1])
 
-        # Add examples header
-        examples_header = "\nSimilar conversion examples:\n"
-        context_parts.append(examples_header)
-        current_tokens += estimate_tokens(examples_header)
-
-        # Calculate tokens available for examples
-        available_tokens = self.max_context_tokens - current_tokens - 100  # Reserve for completion
-        tokens_per_example = available_tokens // max_examples if max_examples > 0 else 0
+        # Add examples
+        context_parts.append("\nSimilar conversion examples:\n")
 
         for i, result in enumerate(search_results[:max_examples]):
             example = result.get("example", {})
@@ -71,41 +66,61 @@ class RAGContextBuilder:
             java_code = example.get("java_code", "")
             bedrock_code = example.get("bedrock_code", "")
 
-            # Smart truncation: keep more relevant parts, use token limit
-            # Reserve ~60% for Java, ~40% for Bedrock
-            java_tokens = tokens_per_example * 3 // 5
-            bedrock_tokens = tokens_per_example * 2 // 5
-
-            # Approximate chars per token (4 chars ≈ 1 token)
-            java_chars = java_tokens * 4
-            bedrock_chars = bedrock_tokens * 4
-
-            java_truncated = java_code[:java_chars] + ("..." if len(java_code) > java_chars else "")
-            bedrock_truncated = bedrock_code[:bedrock_chars] + ("..." if len(bedrock_code) > bedrock_chars else "")
-
+            example_text = f"""
+Example {i + 1} (similarity: {score:.2f}):
+=======
+        
+        context_parts = []
+        current_length = 0
+        
+        # Add query context
+        context_parts.append(f"Query: {query}\n")
+        current_length += len(context_parts[-1])
+        
+        # Add examples
+        context_parts.append("\nSimilar conversion examples:\n")
+        
+        for i, result in enumerate(search_results[:max_examples]):
+            example = result.get("example", {})
+            score = result.get("score", 0.0)
+            
+            java_code = example.get("java_code", "")
+            bedrock_code = example.get("bedrock_code", "")
+            
             example_text = f"""
 Example {i+1} (similarity: {score:.2f}):
 Java:
 ```java
-{java_truncated}
+{java_code[:500]}...
 ```
 
 Bedrock:
 ```json
-{bedrock_truncated}
+{bedrock_code[:500]}...
 ```
 """
-            example_tokens = estimate_tokens(example_text)
+<<<<<<< HEAD
 
-            # Check if adding this example would exceed token budget
-            if current_tokens + example_tokens > self.max_context_tokens:
-                logger.debug(f"Stopping at example {i+1} due to token limit ({current_tokens + example_tokens} > {self.max_context_tokens})")
+            # Check if adding this example would exceed limit
+            if current_length + len(example_text) > self.max_context_length:
+                logger.debug(f"Stopping at example {i + 1} due to length limit")
                 break
 
             context_parts.append(example_text)
-            current_tokens += example_tokens
+            current_length += len(example_text)
 
-        logger.debug(f"Built context with {current_tokens} tokens (limit: {self.max_context_tokens})")
+        return "".join(context_parts)
+
+=======
+            
+            # Check if adding this example would exceed limit
+            if current_length + len(example_text) > self.max_context_length:
+                logger.debug(f"Stopping at example {i+1} due to length limit")
+                break
+            
+            context_parts.append(example_text)
+            current_length += len(example_text)
+        
         return "".join(context_parts)
     
     def build_prompt(
@@ -116,10 +131,18 @@ Bedrock:
     ) -> str:
         """
         Build complete prompt for AI model.
+<<<<<<< HEAD
+
+=======
+        
         Args:
             java_code: Java code to translate
             context: RAG context
             instruction: Optional custom instruction
+<<<<<<< HEAD
+
+=======
+        
         Returns:
             Complete prompt string
         """
@@ -132,6 +155,16 @@ Guidelines:
 3. Preserve functionality where possible
 4. Add comments for complex conversions
 5. If a feature has no Bedrock equivalent, add a TODO comment"""
+<<<<<<< HEAD
+
+        prompt_parts = []
+
+        # Add instruction
+        prompt_parts.append(instruction or default_instruction)
+        prompt_parts.append("\n\n")
+
+=======
+        
         prompt_parts = []
         
         # Add instruction
@@ -143,6 +176,14 @@ Guidelines:
             prompt_parts.append("Reference examples:\n")
             prompt_parts.append(context)
             prompt_parts.append("\n\n")
+<<<<<<< HEAD
+
+        # Add Java code to translate
+        prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")
+        prompt_parts.append("Bedrock Translation:\n")
+
+=======
+        
         # Add Java code to translate
         prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")
         prompt_parts.append("Bedrock Translation:\n")
@@ -154,9 +195,9 @@ Guidelines:
 _context_builder = None
 
 
-def get_context_builder(max_context_tokens: int = 4000, model: str = "default") -> RAGContextBuilder:
+def get_context_builder(max_context_length: int = 4000) -> RAGContextBuilder:
     """Get or create context builder singleton."""
     global _context_builder
-    if _context_builder is None or _context_builder.max_context_tokens != max_context_tokens:
-        _context_builder = RAGContextBuilder(max_context_tokens=max_context_tokens, model=model)
+    if _context_builder is None or _context_builder.max_context_length != max_context_length:
+        _context_builder = RAGContextBuilder(max_context_length=max_context_length)
     return _context_builder

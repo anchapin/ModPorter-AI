@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           base: main
@@ -271,8 +271,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        # Disable built-in pip cache as it causes ENOENT
-        # cache: 'pip'
+        cache: 'pip'
         cache-dependency-path: |
           ai-engine/requirements*.txt
           backend/requirements*.txt
@@ -577,7 +576,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-integration-${{ matrix.test-suite }}
         path: .github/perf-metrics/*.json
@@ -585,7 +584,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -613,7 +612,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -766,29 +765,16 @@ jobs:
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v5
+      uses: pnpm/action-setup@v4
       with:
         version: 9
-
-    - name: Get pnpm store directory
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-    - name: Setup pnpm cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+        cache: 'pnpm'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Install dependencies (optimized)
       run: |
@@ -818,13 +804,18 @@ jobs:
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
+            # Force reinstall of potentially corrupted packages from stale cache
+            cd ..
+            rm -rf node_modules
+            pnpm install --frozen-lockfile
+            cd frontend
             # Run linting
             pnpm run lint
             ;;
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -861,7 +852,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
         path: .github/perf-metrics/*.json
@@ -890,8 +881,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.11'
-        # Disable built-in pip cache as it causes ENOENT
-        # cache: 'pip'
+        cache: 'pip'
         cache-dependency-path: |
           ai-engine/requirements*.txt
           backend/requirements*.txt
@@ -964,7 +954,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-python-${{ matrix.project }}
         path: .github/perf-metrics/*.json
@@ -985,15 +975,15 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1058,7 +1048,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-frontend
         path: .github/perf-metrics/*.json
@@ -1120,15 +1110,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1164,7 +1154,7 @@ jobs:
       run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bundle-report
@@ -1230,15 +1220,15 @@ jobs:
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1283,7 +1273,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Download all performance metrics
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         pattern: perf-metrics-*
         path: .github/perf-metrics
@@ -1375,7 +1365,7 @@ jobs:
         fi
 
     - name: Upload performance summary
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: ci-performance-summary
         path: |
@@ -1391,7 +1381,7 @@ jobs:
 
     - name: Upload performance metrics artifact
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: ci-performance-metrics
         path: .github/perf-metrics/

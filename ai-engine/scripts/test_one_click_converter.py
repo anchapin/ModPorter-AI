@@ -20,7 +20,6 @@ from pathlib import Path
 sys.path.insert(0, "ai-engine")
 =======
 sys.path.insert(0, 'ai-engine')
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
 
 
 def create_test_mod(mode: str, output_path: str):
@@ -35,7 +34,6 @@ def create_test_mod(mode: str, output_path: str):
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     config = configs.get(mode, configs["Simple"])
     temp_dir = tempfile.mkdtemp()
     src_dir = Path(temp_dir) / "com" / "example" / "mod"
@@ -44,7 +42,6 @@ def create_test_mod(mode: str, output_path: str):
 
 =======
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for i in range(config["class_count"]):
         content = f"public class Class{i} {{ }}"
         if config["features"] and i == 0:
@@ -67,7 +64,6 @@ def create_test_mod(mode: str, output_path: str):
                 jar.write(file_path, file_path.relative_to(temp_dir))
     
     import shutil
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     shutil.rmtree(temp_dir)
     return output_path
 
@@ -155,7 +151,6 @@ def test_one_click_conversion():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -204,7 +199,6 @@ def test_smart_defaults():
         # Test SmartDefaultsEngine
         engine = occ.SmartDefaultsEngine()
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         mod_features = {
             "mode": "Standard",
             "class_count": 25,
@@ -233,7 +227,6 @@ def test_smart_defaults():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -303,7 +296,6 @@ def test_mode_based_settings():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -389,7 +381,6 @@ def test_queue_management():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -424,7 +415,6 @@ def test_user_preferences():
         test_jar = tempfile.mktemp(suffix='.jar')
         create_test_mod("Standard", test_jar)
         
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         # Test with user preferences
         user_prefs = {
             "detail_level": "comprehensive",
@@ -474,7 +464,6 @@ def test_user_preferences():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
         traceback.print_exc()
         return False
 
@@ -488,7 +477,6 @@ def main():
     print("ONE-CLICK CONVERSION SYSTEM TEST SUITE")
     print("=" * 70)
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     tests = [
         ("One-Click Flow", test_one_click_conversion),
         ("Smart Defaults", test_smart_defaults),
@@ -506,7 +494,6 @@ def main():
     passed = 0
     failed = 0
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     for name, test_func in tests:
         try:
             if test_func():
@@ -539,7 +526,6 @@ def main():
     else:
         print(f"\n⚠️ {failed} test(s) failed - review implementation")
     
->>>>>>> 676f3c2 (fix: replace Math.random() with crypto.randomUUID() for ID generation (#841))
     return failed == 0
 
 
