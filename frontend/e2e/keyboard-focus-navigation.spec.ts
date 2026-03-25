@@ -146,7 +146,7 @@ test.describe('Keyboard Focus-Visible Navigation', () => {
       // Mouse click should not trigger focus-visible in most browsers
       // (This is automatic browser behavior, CSS just respects it)
       // Some browsers like webkit may occasionally trigger it, so we don't strictly assert false
-      expect(isFocusVisible).toBeDefined();
+      expect(_isFocusVisible).toBeDefined();
     }
   });
 

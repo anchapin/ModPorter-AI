@@ -149,7 +149,9 @@ export class RecipeValidation {
     }
   }
 
-  private validateSmeltingRecipe(
+  // Common validation for single-input recipes (smelting, stonecutter, etc.)
+  private validateSingleInputRecipe(
+    recipeType: string,
     recipe: Recipe,
     availableItems: RecipeItem[],
     errors: string[]
@@ -160,13 +162,13 @@ export class RecipeValidation {
       !recipe.pattern[0] ||
       recipe.pattern[0].length === 0
     ) {
-      errors.push('Smelting recipe requires an input item');
+      errors.push(`${recipeType} recipe requires an input item`);
       return;
     }
 
     const inputSlot = recipe.pattern[0][0];
     if (!inputSlot.item) {
-      errors.push('Smelting recipe requires an input item');
+      errors.push(`${recipeType} recipe requires an input item`);
       return;
     }
 
@@ -174,8 +176,16 @@ export class RecipeValidation {
     if (!this.itemExists(inputSlot.item, availableItems)) {
       errors.push(`Input item "${inputSlot.item.name}" is not available`);
     }
+  }
 
-    // Validate experience
+  private validateSmeltingRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
+    this.validateSingleInputRecipe('Smelting', recipe, availableItems, errors);
+
+    // Validate experience (specific to smelting)
     if (recipe.experience !== undefined) {
       if (recipe.experience < 0) {
         errors.push('Experience cannot be negative');
@@ -243,26 +253,7 @@ export class RecipeValidation {
     availableItems: RecipeItem[],
     errors: string[]
   ): void {
-    if (
-      !recipe.pattern ||
-      recipe.pattern.length === 0 ||
-      !recipe.pattern[0] ||
-      recipe.pattern[0].length === 0
-    ) {
-      errors.push('Stonecutter recipe requires an input item');
-      return;
-    }
-
-    const inputSlot = recipe.pattern[0][0];
-    if (!inputSlot.item) {
-      errors.push('Stonecutter recipe requires an input item');
-      return;
-    }
-
-    // Validate input item exists
-    if (!this.itemExists(inputSlot.item, availableItems)) {
-      errors.push(`Input item "${inputSlot.item.name}" is not available`);
-    }
+    this.validateSingleInputRecipe('Stonecutter', recipe, availableItems, errors);
   }
 
   private validateResult(
