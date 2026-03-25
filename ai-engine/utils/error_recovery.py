@@ -119,7 +119,7 @@ class CircuitBreaker:
         self._success_count = 0
         self._last_failure_time: Optional[float] = None
         self._half_open_calls = 0
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # Use RLock for reentrant locking
 
         logger.info(
             f"CircuitBreaker '{name}' initialized: fail_max={fail_max}, reset_timeout={reset_timeout}s"
@@ -154,7 +154,7 @@ class CircuitBreaker:
             Function result
 
         Raises:
-            CircuitBreakerError: If circuit is open
+            CircuitBreakerOpenError: If circuit is open
         """
         with self._lock:
             current_state = self.state
