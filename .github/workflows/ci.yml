@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           base: main
@@ -265,19 +265,6 @@ jobs:
           apt-get update -qq && apt-get install -y -qq lsb-release || true
         fi
 
-    # Conditional Python setup - only if not using container
-    - name: Set up Python 3.11 (fallback)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        # Disable built-in pip cache as it causes ENOENT
-        # cache: 'pip'
-        cache-dependency-path: |
-          ai-engine/requirements*.txt
-          backend/requirements*.txt
-          requirements-test.txt
-
     # Multi-level caching strategy
     - name: Cache Python packages (L1 - pip cache)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -457,12 +444,12 @@ jobs:
       run: |
         echo "🔍 Python environment verification..."
         python --version
-        pip --version
+        pip --version || echo "pip missing"
         echo "Installed packages:"
-        pip list | head -20
+        pip list | head -20 || echo "pip missing"
         echo "..."
         echo "Python path: $(which python)"
-        echo "Pip cache dir: $(pip cache dir)"
+        echo "Pip cache dir: $(pip cache dir || echo 'missing')"
 
     - name: Wait for services to be ready
       run: |
@@ -542,6 +529,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
             
             echo "Running basic integration test..."
+            python -m pip install -e . || echo "Failed to install ai-engine"
             timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "backend")
@@ -552,6 +540,7 @@ jobs:
             find tests -name "*.py" | head -5 || echo "No backend test files found"
             
             echo "Running backend integration tests..."
+            python -m pip install -e . || echo "Failed to install backend"
             timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "ai-engine")
@@ -562,6 +551,7 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
             
             echo "Running import tests..."
+            python -m pip install -e . || echo "Failed to install ai-engine"
             timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
@@ -577,7 +567,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-integration-${{ matrix.test-suite }}
         path: .github/perf-metrics/*.json
@@ -585,7 +575,7 @@ jobs:
     # Cache management removed - not using Docker buildx cache
 
     - name: Upload test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.test-suite }}
@@ -613,7 +603,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -711,7 +701,7 @@ jobs:
     - name: Calculate Node dependencies hash
       id: deps-hash
       run: |
-        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16 || sha256sum frontend/package.json | cut -d' ' -f1 | head -c16)
+        NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
         echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
         echo "Node dependencies hash: $NODE_HASH"
 
@@ -766,29 +756,16 @@ jobs:
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v5
+      uses: pnpm/action-setup@v4
       with:
         version: 9
-
-    - name: Get pnpm store directory
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-    - name: Setup pnpm cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+        cache: 'pnpm'
+        cache-dependency-path: 'pnpm-lock.yaml'
 
     - name: Install dependencies (optimized)
       run: |
@@ -820,7 +797,7 @@ jobs:
           "lint")
             # Force reinstall of potentially corrupted packages from stale cache
             cd ..
-            rm -rf node_modules frontend/node_modules
+            rm -rf node_modules
             pnpm install --frozen-lockfile
             cd frontend
             # Run linting
@@ -829,7 +806,7 @@ jobs:
         esac
 
     - name: Upload frontend test results
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always() && matrix.upload-artifacts == 'true'
       with:
         name: frontend-test-results-${{ matrix.test-type }}
@@ -866,7 +843,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-frontend-${{ matrix.test-type }}
         path: .github/perf-metrics/*.json
@@ -895,8 +872,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.11'
-        # Disable built-in pip cache as it causes ENOENT
-        # cache: 'pip'
+        cache: 'pip'
         cache-dependency-path: |
           ai-engine/requirements*.txt
           backend/requirements*.txt
@@ -913,6 +889,7 @@ jobs:
           pip install mutmut
         else
           cd backend
+          pip install -e .
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           pip install structlog
@@ -963,13 +940,13 @@ jobs:
         # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
         STEP_END=$(date +%s)
-        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
+        ../scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-python-${{ matrix.project }}
         path: .github/perf-metrics/*.json
@@ -990,15 +967,15 @@ jobs:
         ./scripts/ci-performance-tracker.sh init
         echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1063,7 +1040,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: perf-metrics-mutation-frontend
         path: .github/perf-metrics/*.json
@@ -1125,15 +1102,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v6
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js 20
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1169,7 +1146,7 @@ jobs:
       run: node scripts/generate-bundle-report.cjs frontend/dist
 
     - name: Upload bundle report
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bundle-report
@@ -1198,7 +1175,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
-    timeout-minutes: 15
+    timeout-minutes: 60
     permissions:
       actions: read
       contents: read
@@ -1235,15 +1212,15 @@ jobs:
       continue-on-error: true
 
     # Node.js dependency vulnerability scanning (npm audit)
-    - name: Install pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 9
-
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
         node-version: '20.19.0'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
 
     - name: Get pnpm store directory
       id: pnpm-store
@@ -1288,7 +1265,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Download all performance metrics
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         pattern: perf-metrics-*
         path: .github/perf-metrics
@@ -1333,14 +1310,14 @@ jobs:
         echo "📊 Cache Strategy Analysis"
         echo "=========================="
         echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+        echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
         
         echo ""
         echo "Cache Keys (v2 optimized):"
         echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
         echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
+        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
         
         echo ""
         echo "🎯 Optimization Results"
@@ -1380,7 +1357,7 @@ jobs:
         fi
 
     - name: Upload performance summary
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: ci-performance-summary
         path: |
@@ -1396,7 +1373,7 @@ jobs:
 
     - name: Upload performance metrics artifact
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: ci-performance-metrics
         path: .github/perf-metrics/

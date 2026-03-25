@@ -44,7 +44,6 @@ def test_model_caching():
         duration = time.time() - start
         stats = cache.get_stats()
 
-
         if stats["hits"] >= 1 and stats["loads"] >= 1:
             return True
         else:
@@ -76,7 +75,6 @@ def test_embedding_cache():
         gen2._load_model()
         load_time_2 = time.time() - start
 
-
         if load_time_2 < load_time_1:
             return True
         else:
@@ -96,20 +94,14 @@ def test_batch_embedding():
         from services.embedding_generator import EmbeddingGenerator
 
         # Generate test texts
-        texts = [
-            f"This is test text number {i} for embedding generation."
-            for i in range(100)
-        ]
+        texts = [f"This is test text number {i} for embedding generation." for i in range(100)]
 
         gen = EmbeddingGenerator(model_name="BAAI/bge-m3")
 
         # Test batch generation
         start = time.time()
-        embeddings = gen.generate_embeddings_batch(
-            texts, batch_size=32, show_progress=False
-        )
+        embeddings = gen.generate_embeddings_batch(texts, batch_size=32, show_progress=False)
         batch_time = time.time() - start
-
 
         if embeddings.shape[0] == len(texts):
             return True
@@ -154,10 +146,8 @@ def test_error_recovery():
 
         result = flaky_function()
 
-
         # Test circuit breaker
         cb = CircuitBreaker(name="test", fail_max=3, reset_timeout=1.0)
-
 
         if result == "success" and call_count == 3:
             return True
@@ -190,7 +180,6 @@ def test_circuit_breaker():
                 cb.call(lambda: (_ for _ in ()).throw(Exception("Test failure")))
             except (CircuitBreakerOpenError, Exception):
                 failure_count += 1
-
 
         stats = cb.get_stats()
 
@@ -235,7 +224,6 @@ def main():
 
             traceback.print_exc()
             failed += 1
-
 
     if failed == 0:
         pass

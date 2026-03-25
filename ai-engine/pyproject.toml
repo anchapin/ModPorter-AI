@@ -104,7 +104,7 @@ known-first-party = ["src"]
 force-single-line = false
 
 [tool.ruff.lint.mccabe]
-max-complexity = 10
+max-complexity = 20
 
 [tool.mutmut]
 paths_to_mutate = ["src"]

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 
 interface FeatureMappingData {
   id: string;
@@ -30,29 +30,21 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
     return 'Low';
   };
 
-  // ⚡ Bolt optimization: Memoize the filtered features list
-  const filteredFeatures = useMemo(() => {
-    if (filterType === 'all') return features;
-    return features.filter((feature) => feature.mapping_type === filterType);
-  }, [features, filterType]);
-
-  // ⚡ Bolt optimization: Compute mapping types and counts in a single O(N) pass,
-  // preventing O(M*N) time complexity and intermediate array allocations
-  const { mappingTypes, mappingTypeCounts } = useMemo(() => {
+  const { filteredFeatures, typeCounts } = React.useMemo(() => {
     const counts: Record<string, number> = {};
-    const types = new Set<string>();
+    const filtered: FeatureMappingData[] = [];
 
-    for (let i = 0; i < features.length; i++) {
-      const type = features[i].mapping_type;
-      types.add(type);
-      counts[type] = (counts[type] || 0) + 1;
+    for (const feature of features) {
+      counts[feature.mapping_type] = (counts[feature.mapping_type] || 0) + 1;
+      if (filterType === 'all' || feature.mapping_type === filterType) {
+        filtered.push(feature);
+      }
     }
 
-    return {
-      mappingTypes: Array.from(types),
-      mappingTypeCounts: counts,
-    };
-  }, [features]);
+    return { filteredFeatures: filtered, typeCounts: counts };
+  }, [features, filterType]);
+
+  const mappingTypes = Object.keys(typeCounts);
 
   return (
     <div
@@ -94,7 +86,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
               <option value="all">All Types ({features.length})</option>
               {mappingTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type} ({mappingTypeCounts[type]})
+                  {type} ({typeCounts[type]})
                 </option>
               ))}
             </select>

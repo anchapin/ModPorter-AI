@@ -43,7 +43,6 @@ class SendGridEmailService:
         if self._client is None:
             try:
                 import sendgrid
-                from sendgrid.helpers.mail import Mail
 
                 self._client = sendgrid.SendGridAPIClient(api_key=self.api_key)
                 logger.info("SendGrid client initialized")
@@ -119,6 +118,7 @@ class SendGridEmailService:
         if render_func is None:
             logger.warning(f"Unknown template: {template}")
             return f"Unknown template: {template}"
+        # Email Templates
 
         return render_func(**context)
 

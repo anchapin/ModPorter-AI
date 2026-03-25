@@ -79,9 +79,7 @@ def _asset_to_response(asset) -> AssetResponse:
 
 
 @router.get(
-    "/conversions/{conversion_id}/assets",
-    response_model=List[AssetResponse],
-    tags=["assets"],
+    "/conversions/{conversion_id}/assets", response_model=List[AssetResponse], tags=["assets"]
 )
 async def list_conversion_assets(
     conversion_id: str = Path(..., description="ID of the conversion job"),
@@ -183,8 +181,7 @@ async def upload_asset(
             os.remove(file_path)
         logger.error(f"Error saving asset file: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=400,
-            detail="Failed to save asset file. Please ensure it's a valid file.",
+            status_code=400, detail="Failed to save asset file. Please ensure it's a valid file."
         )
     except Exception as e:
         # Clean up uploaded file if database creation fails
@@ -198,8 +195,7 @@ async def upload_asset(
 
 @router.get("/assets/{asset_id}", response_model=AssetResponse, tags=["assets"])
 async def get_asset(
-    asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db),
+    asset_id: str = Path(..., description="ID of the asset"), db: AsyncSession = Depends(get_db)
 ):
     """
     Get details of a specific asset.
@@ -263,8 +259,7 @@ async def update_asset_metadata(
 
 @router.delete("/assets/{asset_id}", tags=["assets"])
 async def delete_asset(
-    asset_id: str = Path(..., description="ID of the asset"),
-    db: AsyncSession = Depends(get_db),
+    asset_id: str = Path(..., description="ID of the asset"), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete an asset and its associated file.

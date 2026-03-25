@@ -195,9 +195,9 @@ async def submit_bug_report(
         "message": "Bug report submitted. Thank you!",
         "bug_id": bug_id,
         "severity": request.severity,
-        "expected_response_time": (
-            "24-48 hours" if request.severity in ["high", "critical"] else "3-5 days"
-        ),
+        "expected_response_time": "24-48 hours"
+        if request.severity in ["high", "critical"]
+        else "3-5 days",
     }
 
 

@@ -204,8 +204,7 @@ class ErrorHandler:
         self._last_error_time[error_type] = time.time()
 
         logger.error(
-            f"Error recorded: {error_type} - {error}",
-            extra={"job_id": job_id} if job_id else {},
+            f"Error recorded: {error_type} - {error}", extra={"job_id": job_id} if job_id else {}
         )
 
     def get_error_stats(self) -> dict:
@@ -232,7 +231,10 @@ class ErrorHandler:
         last_time = self._last_error_time.get(error_type, 0)
 
         # Check if we're in an error burst
-        return bool(count >= threshold and time.time() - last_time < window_seconds)
+        if count >= threshold and (time.time() - last_time) < window_seconds:
+            return True
+
+        return False
 
 
 # Singleton instance
