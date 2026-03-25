@@ -165,7 +165,6 @@ def simulate_benchmark_execution(run_id: str, scenario_id: str, device_type: str
 
         report_text = f"""
 Performance Benchmark Report for {scenario.get("scenario_name", "Unknown")}
-================================================================
 
 Scenario: {scenario_id}
 Device Type: {device_type}
