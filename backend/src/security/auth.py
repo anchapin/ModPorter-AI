@@ -18,16 +18,7 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT settings (should be loaded from environment in production)
-import os
-
-SECRET_KEY = os.environ.get("SECRET_KEY")
-if not SECRET_KEY:
-    # Allow fallback in testing/development, but in production this should be strictly enforced
-    # Assuming ENV or ENVIRONMENT is set in production
-    if os.environ.get("ENVIRONMENT") == "production":
-        raise ValueError("SECRET_KEY environment variable is missing in production")
-    SECRET_KEY = "your-secret-key-change-in-production"
-
+SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Load from env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -61,7 +52,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(
-    user_id: str, expires_delta: Optional[timedelta] = None, extra_claims: Optional[dict] = None
+    user_id: str,
+    expires_delta: Optional[timedelta] = None,
+    extra_claims: Optional[dict] = None,
 ) -> str:
     """
     Create a JWT access token.

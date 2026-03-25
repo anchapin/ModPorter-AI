@@ -277,29 +277,31 @@ export const FeatureAnalysis: React.FC<FeatureAnalysisProps> = ({
   ];
 
   const filteredFeatures = useMemo(() => {
-    let filtered = analysis.features || [];
+    const features = analysis.features || [];
+    if (!searchQuery && statusFilter === 'all') return features;
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (feature) =>
-          feature.feature_name
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          feature.compatibility_notes
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase())
-      );
-    }
+    // ⚡ Bolt: Hoist toLowerCase() outside the loop and use a single O(N) pass
+    const lowerQuery = searchQuery ? searchQuery.toLowerCase() : '';
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((feature) =>
-        feature.status?.toLowerCase().includes(statusFilter)
-      );
-    }
+    return features.filter((feature) => {
+      // Apply status filter first (faster)
+      if (
+        statusFilter !== 'all' &&
+        !feature.status?.toLowerCase().includes(statusFilter)
+      ) {
+        return false;
+      }
 
-    return filtered;
+      // Apply search filter
+      if (lowerQuery) {
+        return (
+          feature.feature_name?.toLowerCase().includes(lowerQuery) ||
+          feature.compatibility_notes?.toLowerCase().includes(lowerQuery)
+        );
+      }
+
+      return true;
+    });
   }, [analysis.features, searchQuery, statusFilter]);
 
   const averageCompatibility = useMemo(() => {

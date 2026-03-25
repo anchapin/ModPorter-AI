@@ -154,9 +154,11 @@ class TreeSitterJavaParser:
                     result[attr_name] = self._javalang_to_dict(attr)
                 elif isinstance(attr, list):
                     result[attr_name] = [
-                        self._javalang_to_dict(item)
-                        if isinstance(item, javalang.tree.Node)
-                        else item
+                        (
+                            self._javalang_to_dict(item)
+                            if isinstance(item, javalang.tree.Node)
+                            else item
+                        )
                         for item in attr
                     ]
             except Exception:
@@ -404,7 +406,7 @@ class JavaASTAnalyzer:
         return {
             "name": node.get("name", ""),
             "modifiers": node.get("modifiers", []),
-            "superclass": node.get("extends", None),
+            "superclass": node.get("extends"),
             "interfaces": node.get("implements", []),
         }
 
@@ -488,7 +490,7 @@ class JavaASTAnalyzer:
         for cls in classes:
             superclass = cls.get("superclass", "") or ""
             class_name = cls.get("name", "")
-            modifiers = cls.get("modifiers", [])
+            cls.get("modifiers", [])
 
             # Check if it's a nested class (static class inside another class)
             # Tree-sitter represents extends as "superclass" child node
@@ -547,11 +549,7 @@ class JavaASTAnalyzer:
             return True
 
         # Check if superclass ends with target (handles simple names like "Block")
-        for target in targets:
-            if superclass.endswith(target) or target.endswith(superclass):
-                return True
-
-        return False
+        return any(superclass.endswith(target) or target.endswith(superclass) for target in targets)
 
 
 def analyze_java_file(source_code: str, filename: str = "") -> Dict[str, Any]:

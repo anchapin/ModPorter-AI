@@ -36,7 +36,11 @@ class ExportResponse(BaseModel):
     exported_at: str
 
 
-@router.post("/export/behavior-pack", response_model=ExportResponse, summary="Export behavior pack")
+@router.post(
+    "/export/behavior-pack",
+    response_model=ExportResponse,
+    summary="Export behavior pack",
+)
 async def export_behavior_pack(
     request: ExportRequest, db: AsyncSession = Depends(get_db)
 ) -> ExportResponse:
@@ -162,7 +166,8 @@ async def export_behavior_pack(
             # Add template info if included
             if request.include_templates and "template_info" in export_data:
                 zip_file.writestr(
-                    "template_info.json", json.dumps(export_data["template_info"], indent=2)
+                    "template_info.json",
+                    json.dumps(export_data["template_info"], indent=2),
                 )
 
         zip_buffer.seek(0)
@@ -200,12 +205,14 @@ async def export_behavior_pack(
             # Read existing zip content and add metadata
             with zipfile.ZipFile(zip_bytes_io, "a") as mcaddon_zip:
                 mcaddon_zip.writestr(
-                    "export_metadata.json", json.dumps(export_data["metadata"], indent=2)
+                    "export_metadata.json",
+                    json.dumps(export_data["metadata"], indent=2),
                 )
 
                 if request.include_templates and "template_info" in export_data:
                     mcaddon_zip.writestr(
-                        "template_info.json", json.dumps(export_data["template_info"], indent=2)
+                        "template_info.json",
+                        json.dumps(export_data["template_info"], indent=2),
                     )
 
             zip_bytes_io.seek(0)
@@ -224,16 +231,13 @@ async def export_behavior_pack(
                 exported_at=datetime.utcnow().isoformat(),
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create MCADDON: {str(e)}", exc_info=True)
-
-            raise HTTPException(
-                status_code=500, detail="Failed to create MCADDON: Please try again."
-            )
+        except Exception:
+            raise HTTPException(status_code=500, detail="Failed to create MCADDON")
 
 
 @router.get(
-    "/export/behavior-pack/{conversion_id}/download", summary="Download exported behavior pack"
+    "/export/behavior-pack/{conversion_id}/download",
+    summary="Download exported behavior pack",
 )
 async def download_exported_pack(
     conversion_id: str = Path(..., description="Conversion job ID"),
@@ -278,7 +282,9 @@ async def download_exported_pack(
 
 
 @router.get(
-    "/export/formats", response_model=List[Dict[str, str]], summary="Get available export formats"
+    "/export/formats",
+    response_model=List[Dict[str, str]],
+    summary="Get available export formats",
 )
 async def get_export_formats():
     """
@@ -368,9 +374,9 @@ async def preview_export(
                 "path": file.file_path,
                 "type": file.file_type,
                 "size": len(file.content),
-                "has_template": "_template_info" in json.loads(file.content)
-                if file.content
-                else False,
+                "has_template": (
+                    "_template_info" in json.loads(file.content) if file.content else False
+                ),
                 "updated_at": file.updated_at.isoformat(),
             }
             for file in behavior_files[:10]  # Preview first 10 files

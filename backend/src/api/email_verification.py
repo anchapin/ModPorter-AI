@@ -180,7 +180,7 @@ async def resend_verification(
     result = await db.execute(
         select(User).where(
             User.email == request.email,
-            User.is_verified == False,
+            not User.is_verified,
         )
     )
     user = result.scalar_one_or_none()

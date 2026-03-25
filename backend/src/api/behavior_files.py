@@ -15,7 +15,8 @@ class BehaviorFileCreate(BaseModel):
 
     file_path: str = Field(..., description="Path of the behavior file within the mod structure")
     file_type: str = Field(
-        ..., description="Type of behavior file (entity_behavior, block_behavior, script, recipe)"
+        ...,
+        description="Type of behavior file (entity_behavior, block_behavior, script, recipe)",
     )
     content: str = Field(..., description="Text content of the behavior file")
 
@@ -135,10 +136,13 @@ async def get_conversion_behavior_files(
 
 
 @router.get(
-    "/behaviors/{file_id}", response_model=BehaviorFileResponse, summary="Get behavior file content"
+    "/behaviors/{file_id}",
+    response_model=BehaviorFileResponse,
+    summary="Get behavior file content",
 )
 async def get_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
+    file_id: str = Path(..., description="Behavior file ID"),
+    db: AsyncSession = Depends(get_db),
 ) -> BehaviorFileResponse:
     """
     Retrieve the current content of a specific behavior file.
@@ -240,15 +244,11 @@ async def create_behavior_file(
             content=request.content,
         )
     except ValueError as e:
-        logger.error(f"Request error: {str(e)}", exc_info=True)
-
-        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
+        logger.error("Validation error creating behavior file", exc_info=True)
+        raise HTTPException(status_code=400, detail="Invalid behavior file data")
     except Exception as e:
-        logger.error(f"Failed to create behavior file: {str(e)}", exc_info=True)
-
-        raise HTTPException(
-            status_code=500, detail="Failed to create behavior file: Please try again."
-        )
+        logger.error("Failed to create behavior file", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),
@@ -263,7 +263,8 @@ async def create_behavior_file(
 
 @router.delete("/behaviors/{file_id}", status_code=204, summary="Delete behavior file")
 async def delete_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
+    file_id: str = Path(..., description="Behavior file ID"),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete a behavior file.
