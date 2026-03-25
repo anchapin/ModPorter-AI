@@ -26,7 +26,16 @@ const BaseTextField: React.FC<{
   readOnly: boolean;
   inputProps?: object;
   inputAdornment?: React.ReactNode;
-}> = ({ field, value, onChange, error, helperText, readOnly, inputProps, inputAdornment }) => (
+}> = ({
+  field,
+  value,
+  onChange,
+  error,
+  helperText,
+  readOnly,
+  inputProps,
+  inputAdornment,
+}) => (
   <TextField
     key={field.id}
     fullWidth
@@ -240,7 +249,14 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           );
       }
     },
-    [data, getFieldErrors, getFieldErrorState, handleChange, readOnly, renderTextField]
+    [
+      data,
+      getFieldErrors,
+      getFieldErrorState,
+      handleChange,
+      readOnly,
+      renderTextField,
+    ]
   );
 
   const visibleFields = useMemo(
