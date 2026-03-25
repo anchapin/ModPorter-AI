@@ -168,3 +168,6 @@ AGENTS.MD
 ai-engine/tests/test_smart_assumptions.py
 
 .worktrees/
+
+# External projects accidentally in repo
+.opencode/
