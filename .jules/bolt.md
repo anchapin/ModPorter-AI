@@ -1,4 +1,4 @@
+## 2025-02-28 - Optimize Iterations Over Log Entries
 
-## 2026-02-19 - [Frontend Download Optimization]
-**Learning:** Using `fetch` + `blob` to download large files (500MB+) in browser JavaScript causes significant memory spikes and potential crashes.
-**Action:** Always prefer direct link downloads (creating a hidden `<a>` tag) for large file downloads. Implemented `triggerDownload` utility in `api.ts` to handle this centrally with backend compatibility checks.
+**Learning:** When performing multiple categorization operations over an array in React, especially inside `useMemo`, looping individually or repeatedly executing string functions (like `toLowerCase()`) over the same item multiple times creates an architectural performance bottleneck as the size of the array scales.
+**Action:** Consolidate aggregate passes on the same array structure into a single pass using `Array.prototype.reduce`. Do not blindly string `.filter().length` together or repeat variable modifications inside `.forEach` when they could be reduced iteratively in O(n) combined overhead.

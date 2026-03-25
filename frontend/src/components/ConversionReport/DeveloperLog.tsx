@@ -107,15 +107,17 @@ const LogSection: React.FC<LogSectionProps> = ({
   }, [logs, levelFilter]);
 
   const logCounts = useMemo(() => {
-    const counts = { error: 0, warning: 0, info: 0, debug: 0 };
-    logs.forEach((log) => {
-      const level = log.level.toLowerCase();
-      if (level === 'error') counts.error++;
-      else if (level === 'warning' || level === 'warn') counts.warning++;
-      else if (level === 'info') counts.info++;
-      else if (level === 'debug') counts.debug++;
-    });
-    return counts;
+    return logs.reduce(
+      (counts, log) => {
+        const level = log.level.toLowerCase();
+        if (level === 'error') counts.error++;
+        else if (level === 'warning' || level === 'warn') counts.warning++;
+        else if (level === 'info') counts.info++;
+        else if (level === 'debug') counts.debug++;
+        return counts;
+      },
+      { error: 0, warning: 0, info: 0, debug: 0 }
+    );
   }, [logs]);
 
   if (logs.length === 0) return null;

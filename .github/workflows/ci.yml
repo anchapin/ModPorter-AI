@@ -804,11 +804,6 @@ jobs:
             du -sh dist/* 2>/dev/null || echo "Build completed"
             ;;
           "lint")
-            # Force reinstall of potentially corrupted packages from stale cache
-            cd ..
-            rm -rf node_modules
-            pnpm install --frozen-lockfile
-            cd frontend
             # Run linting
             pnpm run lint
             ;;
