@@ -1,0 +1,10 @@
+{
+  "baseline_id": "baseline_ff92ec36f381418e",
+  "conversion_id": "regtest-1773962990",
+  "mod_type": "entity",
+  "java_code": "\npublic class ComplexEntity {\n    public void onSpawn() {}\n    public void onDeath() {}\n    public void onInteract() {}\n    public void update() {}\n}\n",
+  "bedrock_code": "\n// Complex entity with more functions\nfunction onSpawn(event) {}\nfunction onDeath(event) {}\nfunction onInteract(event) {}\nfunction update(event) {}\n",
+  "created_at": "2026-03-19T19:29:50.931478",
+  "validation_score": 0.5,
+  "metadata": {}
+}

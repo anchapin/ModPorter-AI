@@ -4,6 +4,7 @@
   "description": "AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
   "type": "module",
   "scripts": {
+    "postinstall": "node -e \"const fs=require('fs'); const p=require('path'); const w=p.resolve('./node_modules/@composio/ao-web/node_modules/@composio'); try{fs.mkdirSync(w,{recursive:true});fs.symlinkSync(p.resolve('./node_modules/@composio/ao-core'),p.join(w,'ao-core'),'dir');}catch(e){}\"",
     "install-all": "pnpm install && cd frontend && pnpm install",
     "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:frontend": "cd frontend && pnpm run dev",
@@ -48,6 +49,8 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.1",
     "@commitlint/config-conventional": "^19.2.1",
+    "@composio/ao-core": "^0.2.0",
+    "@composio/ao-web": "^0.2.0",
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "concurrently": "^9.2.1",

@@ -41,6 +41,16 @@ from crew.conversion_crew import ModPorterConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
 
+# Import RAG evaluation components
+try:
+    from evaluation.rag_evaluator import RAGEvaluator, GoldenDatasetItem, EvaluationResult
+    RAG_EVALUATOR_AVAILABLE = True
+except ImportError:
+    RAG_EVALUATOR_AVAILABLE = False
+    RAGEvaluator = None
+    GoldenDatasetItem = None
+    EvaluationResult = None
+
 # Import progress callback for real-time updates
 try:
     from utils.progress_callback import create_progress_callback, cleanup_progress_callback
@@ -606,6 +616,132 @@ async def process_conversion(
                 logger.info(f"Cleaned up progress callback for job {job_id}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup progress callback: {e}")
+
+
+# RAG Evaluation Models
+
+
+class RAGEvaluationRequest(BaseModel):
+    """Request model for RAG evaluation."""
+
+    query: str = Field(..., description="The query that was asked")
+    retrieved_docs: List[str] = Field(..., description="List of retrieved document IDs")
+    relevant_docs: List[str] = Field(..., description="List of relevant document IDs")
+    answer: str = Field(..., description="The generated answer")
+    required_keywords: Optional[List[str]] = Field(default=[], description="Keywords that should be in answer")
+    prohibited_keywords: Optional[List[str]] = Field(default=[], description="Keywords that should not be in answer")
+    query_type: Optional[str] = Field(default="general", description="Type of query (explanation, how_to, example, etc.)")
+    relevance_scores: Optional[Dict[str, float]] = Field(default=None, description="Relevance scores for retrieved docs")
+
+
+class RAGEvaluationResponse(BaseModel):
+    """Response model for RAG evaluation."""
+
+    query: str
+    overall_score: float
+    retrieval_metrics: Dict[str, float]
+    generation_metrics: Dict[str, float]
+    diversity_metrics: Dict[str, float]
+    evaluation_timestamp: datetime
+
+
+@app.post(
+    "/api/v1/rag/evaluate",
+    response_model=RAGEvaluationResponse,
+    tags=["evaluation"],
+    summary="Evaluate RAG system performance",
+    description="Evaluate a RAG query against retrieved documents and generated answer"
+)
+async def evaluate_rag_query(request: RAGEvaluationRequest):
+    """
+    Evaluate RAG system performance for a single query.
+
+    Computes:
+    - Retrieval metrics: precision, recall, MRR, NDCG, hit rate
+    - Generation metrics: keyword coverage, coherence, answer length
+    - Diversity metrics: content type diversity, source diversity
+    """
+    if not RAG_EVALUATOR_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG evaluation not available - evaluation module not loaded"
+        )
+
+    try:
+        # Create evaluator and compute metrics
+        evaluator = RAGEvaluator()
+
+        # Build evaluation input
+        evaluation_input = {
+            "query": request.query,
+            "retrieved_docs": request.retrieved_docs,
+            "relevant_docs": request.relevant_docs,
+            "answer": request.answer,
+            "required_keywords": request.required_keywords,
+            "prohibited_keywords": request.prohibited_keywords,
+            "query_type": request.query_type,
+            "relevance_scores": request.relevance_scores,
+        }
+
+        # Run evaluation
+        result = await evaluator.evaluate_query(**evaluation_input)
+
+        # Extract metrics
+        metrics = result.metrics
+
+        # Build response
+        retrieval_metrics = {
+            "precision_at_5": metrics.get("precision_at_5", 0.0),
+            "recall_at_5": metrics.get("recall_at_5", 0.0),
+            "mrr": metrics.get("mrr", 0.0),
+            "ndcg": metrics.get("ndcg", 0.0),
+            "hit_rate": metrics.get("hit_rate", 0.0),
+        }
+
+        generation_metrics = {
+            "keyword_coverage": metrics.get("keyword_coverage", 0.0),
+            "coherence_score": metrics.get("coherence_score", 0.0),
+            "answer_length_score": metrics.get("answer_length_score", 0.0),
+        }
+
+        diversity_metrics = {
+            "content_type_diversity": metrics.get("content_type_diversity", 0.0),
+            "source_diversity": metrics.get("source_diversity", 0.0),
+        }
+
+        # Calculate overall score (weighted average)
+        overall_score = (
+            0.4 * retrieval_metrics["precision_at_5"] +
+            0.3 * generation_metrics["keyword_coverage"] +
+            0.2 * generation_metrics["coherence_score"] +
+            0.1 * diversity_metrics["source_diversity"]
+        )
+
+        return RAGEvaluationResponse(
+            query=request.query,
+            overall_score=overall_score,
+            retrieval_metrics=retrieval_metrics,
+            generation_metrics=generation_metrics,
+            diversity_metrics=diversity_metrics,
+            evaluation_timestamp=datetime.utcnow()
+        )
+
+    except Exception as e:
+        logger.error(f"RAG evaluation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+
+
+@app.get(
+    "/api/v1/rag/health",
+    tags=["evaluation"],
+    summary="Check RAG evaluation service health"
+)
+async def evaluation_health_check():
+    """Check if RAG evaluation service is available."""
+    return {
+        "status": "healthy" if RAG_EVALUATOR_AVAILABLE else "unavailable",
+        "evaluator_available": RAG_EVALUATOR_AVAILABLE
+    }
 
 
 if __name__ == "__main__":
