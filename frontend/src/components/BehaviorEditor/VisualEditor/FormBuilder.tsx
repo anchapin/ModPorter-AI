@@ -120,19 +120,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     [data, getFieldErrors, handleChange, readOnly]
   );
 
-  const getFieldErrorState = useCallback(
-    (field: FormField) => {
-      const errors = getFieldErrors(field.name);
-      return {
-        hasError: errors.some((e) => e.severity === 'error'),
-        helperText:
-          errors.find((e) => e.severity === 'error')?.message ||
-          field.description,
-      };
-    },
-    [getFieldErrors]
-  );
-
   const renderField = useCallback(
     (field: FormField) => {
       const { hasError, helperText } = getFieldErrorState(field);
