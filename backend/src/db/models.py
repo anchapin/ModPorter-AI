@@ -455,6 +455,17 @@ class DocumentEmbedding(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    # Hierarchical indexing fields
+    parent_document_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    chunk_index = Column(Integer, nullable=True, index=True)
+    hierarchy_level = Column(
+        Integer, nullable=False, server_default=text("2")
+    )  # 0=document, 1=section, 2=chunk
+    title = Column(String, nullable=True, index=True)
+
+    # Metadata storage
+    metadata_json = Column(JSONB, nullable=True)
+
 
 # A/B Testing Models
 

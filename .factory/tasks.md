@@ -1,6 +1,19 @@
 # Current Tasks
 
+## In Progress
+- 🔄 Phase 15-01: Improved Document Indexing (Complete - 24 tests passing)
+
 ## Completed
+- ✅ Phase 15-01: Improved Document Indexing (24 tests passing)
+  - ✅ Task 1.1: Chunking Strategies Module (FixedSize, Semantic, Recursive)
+  - ✅ Task 1.2: Database Schema Updates (parent_document_id, chunk_index, metadata)
+  - ✅ Task 1.3: Metadata Extraction Logic
+  - ✅ Task 2.1: Connect Chunking to Embeddings API
+  - ✅ Task 2.2: Hierarchical Retrieval
+  - ✅ Task 2.3: New API Endpoints (index-document, documents/{id}, documents/{id}/chunks)
+  - ✅ Task 3.1: Unit Tests for Chunking (24 tests passing)
+  - ✅ Task 3.2: Integration Tests (via pgvector integration tests)
+  - ✅ Task 3.3: Performance Benchmarking (360K+ chunks/s for fixed, 80K+ for semantic)
 - ✅ Phase 14-04: Switch Expression Support (22 tests passing)
 - ✅ Phase 14-03: Enum Conversion (30 tests passing)
 - ✅ Phase 14-02: Inner Classes Support (30 tests passing)

@@ -288,6 +288,131 @@ async def delete_document_embedding(db: AsyncSession, embedding_id: PyUUID) -> b
     return True
 
 
+# Hierarchical Document Indexing CRUD
+
+
+async def create_document_with_chunks(
+    db: AsyncSession,
+    *,
+    chunks: list[dict],  # List of {content, embedding, metadata}
+    document_source: str,
+    title: Optional[str] = None,
+    parent_document_id: Optional[PyUUID] = None,
+) -> tuple[DocumentEmbedding, list[DocumentEmbedding]]:
+    """
+    Create a document with multiple chunks.
+
+    Returns tuple of (parent_document, chunks)
+    """
+    from uuid import uuid4
+
+    # Create parent document
+    parent_id = parent_document_id or uuid4()
+    parent_doc = DocumentEmbedding(
+        id=parent_id,
+        embedding=None,  # No embedding for document level
+        document_source=document_source,
+        content_hash="",  # Will be calculated from chunks
+        parent_document_id=None,
+        chunk_index=None,
+        hierarchy_level=0,  # Document level
+        title=title,
+        metadata_json={"chunk_count": len(chunks)},
+    )
+    db.add(parent_doc)
+    await db.flush()
+
+    # Create chunks
+    created_chunks = []
+    for i, chunk_data in enumerate(chunks):
+        chunk = DocumentEmbedding(
+            embedding=chunk_data["embedding"],
+            document_source=document_source,
+            content_hash=chunk_data.get("content_hash", ""),
+            parent_document_id=parent_id,
+            chunk_index=i,
+            hierarchy_level=2,  # Chunk level
+            title=title,
+            metadata_json=chunk_data.get("metadata"),
+        )
+        db.add(chunk)
+        created_chunks.append(chunk)
+
+    await db.commit()
+    for chunk in created_chunks:
+        await db.refresh(chunk)
+    await db.refresh(parent_doc)
+
+    return parent_doc, created_chunks
+
+
+async def get_document_with_chunks(
+    db: AsyncSession, document_id: PyUUID
+) -> tuple[Optional[DocumentEmbedding], list[DocumentEmbedding]]:
+    """
+    Get a document with all its chunks.
+
+    Returns tuple of (parent_document, list of chunks)
+    """
+    # Get parent document
+    parent = await get_document_embedding_by_id(db, document_id)
+    if parent is None:
+        return None, []
+
+    # Get all chunks for this document
+    stmt = (
+        select(DocumentEmbedding)
+        .where(DocumentEmbedding.parent_document_id == document_id)
+        .order_by(DocumentEmbedding.chunk_index)
+    )
+    result = await db.execute(stmt)
+    chunks = result.scalars().all()
+
+    return parent, list(chunks)
+
+
+async def get_chunks_by_parent(
+    db: AsyncSession, parent_document_id: PyUUID
+) -> list[DocumentEmbedding]:
+    """
+    Get all chunks for a parent document.
+    """
+    stmt = (
+        select(DocumentEmbedding)
+        .where(DocumentEmbedding.parent_document_id == parent_document_id)
+        .order_by(DocumentEmbedding.chunk_index)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def search_similar_chunks(
+    db: AsyncSession,
+    query_embedding: list[float],
+    limit: int = 10,
+    parent_document_id: Optional[PyUUID] = None,
+) -> list[DocumentEmbedding]:
+    """
+    Search for similar chunks, optionally within a specific document.
+    """
+    from sqlalchemy import and_
+
+    # Simple similarity search (cosine similarity via dot product)
+    # For pgvector, we use the <=> operator for cosine distance
+    stmt = (
+        select(DocumentEmbedding)
+        .where(DocumentEmbedding.embedding.isnot(None))
+        .order_by(DocumentEmbedding.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+    )
+
+    if parent_document_id:
+        stmt = stmt.where(DocumentEmbedding.parent_document_id == parent_document_id)
+
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def find_similar_embeddings(
     db: AsyncSession, query_embedding: list[float], limit: int = 5
 ) -> List[DocumentEmbedding]:

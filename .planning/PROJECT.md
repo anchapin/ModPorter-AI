@@ -21,20 +21,21 @@
 
 ---
 
-## Current Milestone: v4.5 Java Patterns Complete
+## Current Milestone: v4.6 RAG & Knowledge Enhancement
 
-**Goal:** Achieve maximum coverage of advanced Java patterns including annotations, inner classes, enums, type annotations, var, records, and sealed classes for comprehensive mod conversion.
+**Goal:** Build advanced RAG system with improved document indexing, semantic search, knowledge expansion, context optimization, user correction learning, and multi-modal support.
 
 **Target features:**
-- Annotations: @Override, @Deprecated, @Nullable, custom annotations
-- Inner Classes: Static, non-static (inner), local, anonymous classes
-- Enums: Basic enums, enums with methods, enum inheritance
-- Type Annotations: @Nullable, @NotNull, @NonNull, custom type annotations
-- Var: Local variable type inference (Java 10+)
-- Records: Java 14+ records with compact constructor
-- Sealed Classes: Java 17+ sealed classes with permits clause
+- Improved Document Indexing: Smart chunking, metadata extraction, hierarchical indexing
+- Semantic Search Enhancement: Hybrid search improvement, re-ranking, query expansion
+- Knowledge Base Expansion: Add Minecraft modding docs, Bedrock APIs, more conversion patterns
+- Context Window Optimization: Dynamic context sizing, relevant chunk prioritization
+- User Correction Learning: Store and apply user feedback/corrections to knowledge base
+- Cross-Reference Linking: Connect related concepts across knowledge base
+- Advanced RAG: Re-ranking pipeline, query expansion, hybrid fusion
+- Multi-Modal Knowledge: Support for texture metadata, model documentation embeddings
 
-**Previous milestone:** v4.4 Advanced Conversion (2026-03-20) - 74 tests passing
+**Previous milestone:** v4.5 Java Patterns Complete (2026-03-20) - 170+ tests passing
 
 ---
 
