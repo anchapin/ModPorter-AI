@@ -179,7 +179,12 @@ class BatchConversionQueue:
         """Get the next job to process based on priority."""
         with self._lock:
             # Check priority queues in order
-            for priority in [Priority.URGENT, Priority.HIGH, Priority.NORMAL, Priority.LOW]:
+            for priority in [
+                Priority.URGENT,
+                Priority.HIGH,
+                Priority.NORMAL,
+                Priority.LOW,
+            ]:
                 if self.priority_queues[priority]:
                     job_id = self.priority_queues[priority].pop(0)
                     job = self.jobs.get(job_id)

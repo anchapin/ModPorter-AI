@@ -52,9 +52,6 @@ def create_test_mod(mode: str, output_path: str):
 
 def test_one_click_conversion():
     """Test 1: One-click conversion flow."""
-    print("\n" + "=" * 70)
-    print("Test 1: One-Click Conversion Flow")
-    print("=" * 70)
 
     try:
         # Import directly to avoid modal dependency
@@ -76,31 +73,17 @@ def test_one_click_conversion():
 
         result = converter.convert_mod(test_jar, output_path)
 
-        print(f"Conversion ID: {result.conversion_id}")
-        print(f"Mode: {result.mode}")
-        print(f"Status: {result.status}")
-        print(f"Progress: {result.progress}%")
-        print(f"Message: {result.message}")
-        print(f"Estimated time: {result.estimated_time}s")
-        print(
-            f"Settings: detail={result.settings.detail_level}, optimization={result.settings.optimization}"
-        )
-
         # Cleanup
         os.unlink(test_jar)
 
         if result.success and result.status == "completed":
-            print("\n✅ One-click conversion working")
             return True
         elif result.success:
-            print("\n✅ One-click conversion initiated")
             return True
         else:
-            print("\n⚠️ Conversion requires review (expected for complex mods)")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -109,9 +92,6 @@ def test_one_click_conversion():
 
 def test_smart_defaults():
     """Test 2: Smart defaults application."""
-    print("\n" + "=" * 70)
-    print("Test 2: Smart Defaults Application")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -125,12 +105,6 @@ def test_smart_defaults():
         # Test defaults for each mode
         for mode in ["Simple", "Standard", "Complex", "Expert"]:
             defaults = occ.get_mode_defaults(mode)
-            print(f"\n{mode} Mode:")
-            print(f"  Detail level: {defaults['detail_level']}")
-            print(f"  Validation: {defaults['validation_level']}")
-            print(f"  Optimization: {defaults['optimization']}")
-            print(f"  Error handling: {defaults['error_handling']}")
-            print(f"  Estimated time: {defaults['estimated_time_seconds']}s")
 
         # Test SmartDefaultsEngine
         engine = occ.SmartDefaultsEngine()
@@ -143,15 +117,9 @@ def test_smart_defaults():
 
         settings = engine.get_defaults_for_mod(mod_features)
 
-        print(f"\nSmart Defaults for mod with 25 classes:")
-        print(f"  Detail level: {settings.detail_level}")
-        print(f"  Validation: {settings.validation_level}")
-
-        print("\n✅ Smart defaults working")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -160,9 +128,6 @@ def test_smart_defaults():
 
 def test_mode_based_settings():
     """Test 3: Mode-based settings."""
-    print("\n" + "=" * 70)
-    print("Test 3: Mode-Based Settings")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -183,19 +148,11 @@ def test_mode_based_settings():
             converter = occ.OneClickConverter()
             result = converter.convert_mod(test_jar, tempfile.mktemp())
 
-            print(f"\n{mode} Mod:")
-            print(f"  Auto-selected mode: {result.mode}")
-            print(f"  Detail level: {result.settings.detail_level}")
-            print(f"  Optimization: {result.settings.optimization}")
-            print(f"  Error handling: {result.settings.error_handling}")
-
             os.unlink(test_jar)
 
-        print("\n✅ Mode-based settings working")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -204,9 +161,6 @@ def test_mode_based_settings():
 
 def test_queue_management():
     """Test 4: Conversion queue management."""
-    print("\n" + "=" * 70)
-    print("Test 4: Conversion Queue Management")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -224,32 +178,20 @@ def test_queue_management():
             test_jar = tempfile.mktemp(suffix=f"_{i}.jar")
             create_test_mod("Simple", test_jar)
 
-            result = converter.convert_mod(test_jar, tempfile.mktemp())
+            converter.convert_mod(test_jar, tempfile.mktemp())
             os.unlink(test_jar)
 
         # Get queue stats
         stats = converter.get_queue_stats()
 
-        print(f"Total conversions: {stats['total']}")
-        print(f"Completed: {stats['completed']}")
-        print(f"Processing: {stats['processing']}")
-        print(f"Failed: {stats['failed']}")
-        print(f"Success rate: {stats['success_rate']:.0%}")
-
         # Get specific conversion status
         if stats["total"] > 0:
             conversion_id = list(converter.conversion_queue.keys())[0]
             status = converter.get_conversion_status(conversion_id)
-            print(f"\nFirst conversion status:")
-            print(f"  ID: {status.conversion_id}")
-            print(f"  Status: {status.status}")
-            print(f"  Progress: {status.progress}%")
 
-        print("\n✅ Queue management working")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -258,9 +200,6 @@ def test_queue_management():
 
 def test_user_preferences():
     """Test 5: User preference overrides."""
-    print("\n" + "=" * 70)
-    print("Test 5: User Preference Overrides")
-    print("=" * 70)
 
     try:
         import importlib.util
@@ -284,11 +223,6 @@ def test_user_preferences():
         converter = occ.OneClickConverter()
         result = converter.convert_mod(test_jar, tempfile.mktemp(), user_prefs)
 
-        print(f"User preferences applied:")
-        print(f"  Detail level: {result.settings.detail_level} (expected: comprehensive)")
-        print(f"  Optimization: {result.settings.optimization} (expected: accuracy)")
-        print(f"  Include source: {result.settings.include_source} (expected: True)")
-
         os.unlink(test_jar)
 
         if (
@@ -296,14 +230,11 @@ def test_user_preferences():
             and result.settings.optimization == "accuracy"
             and result.settings.include_source
         ):
-            print("\n✅ User preferences working")
             return True
         else:
-            print("\n⚠️ Some preferences may not have applied")
             return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -312,9 +243,6 @@ def test_user_preferences():
 
 def main():
     """Run all test cases."""
-    print("\n" + "=" * 70)
-    print("ONE-CLICK CONVERSION SYSTEM TEST SUITE")
-    print("=" * 70)
 
     tests = [
         ("One-Click Flow", test_one_click_conversion),
@@ -332,21 +260,15 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ {name} FAILED: {e}")
             import traceback
 
             traceback.print_exc()
             failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"TEST RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
-
     if failed == 0:
-        print("\n✅ ALL TESTS PASSED - One-click conversion system working!")
-        print("\nPhase 2.5.2 Ready for Verification")
+        pass
     else:
-        print(f"\n⚠️ {failed} test(s) failed - review implementation")
+        pass
 
     return failed == 0
 

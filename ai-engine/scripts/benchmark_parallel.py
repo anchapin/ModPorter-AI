@@ -10,7 +10,6 @@ Measures:
 """
 
 import sys
-import os
 import time
 import json
 import tempfile
@@ -95,9 +94,6 @@ public class ExampleMod {
 
 def benchmark_sequential(mod_path: str, output_path: str) -> dict:
     """Benchmark sequential execution (control)."""
-    print("\n" + "=" * 70)
-    print("BENCHMARK: Sequential Execution (Control)")
-    print("=" * 70)
 
     try:
         from crew.conversion_crew import ModPorterConversionCrew
@@ -119,8 +115,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
         end_time = time.time()
         duration = end_time - start_time
 
-        print(f"\nSequential execution completed in {duration:.2f} seconds")
-
         return {
             "strategy": "sequential",
             "duration_seconds": duration,
@@ -129,7 +123,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
         }
 
     except Exception as e:
-        print(f"Sequential benchmark failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -143,9 +136,6 @@ def benchmark_sequential(mod_path: str, output_path: str) -> dict:
 
 def benchmark_parallel(mod_path: str, output_path: str) -> dict:
     """Benchmark parallel execution (enhanced)."""
-    print("\n" + "=" * 70)
-    print("BENCHMARK: Parallel Execution (Enhanced)")
-    print("=" * 70)
 
     try:
         from crew.conversion_crew import ModPorterConversionCrew
@@ -167,8 +157,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
         end_time = time.time()
         duration = end_time - start_time
 
-        print(f"\nParallel execution completed in {duration:.2f} seconds")
-
         return {
             "strategy": "parallel_adaptive",
             "duration_seconds": duration,
@@ -177,7 +165,6 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
         }
 
     except Exception as e:
-        print(f"Parallel benchmark failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -191,14 +178,9 @@ def benchmark_parallel(mod_path: str, output_path: str) -> dict:
 
 def run_benchmarks():
     """Run all benchmarks."""
-    print("\n" + "=" * 70)
-    print("PARALLEL EXECUTION BENCHMARK SUITE")
-    print("=" * 70)
 
     # Create test mod
-    print("\nCreating test mod...")
     mod_dir = create_test_mod()
-    print(f"Test mod created at: {mod_dir}")
 
     results = []
 
@@ -216,9 +198,6 @@ def run_benchmarks():
         results.append(parallel_result)
 
         # Calculate improvement
-        print("\n" + "=" * 70)
-        print("BENCHMARK RESULTS")
-        print("=" * 70)
 
         if sequential_result["success"] and parallel_result["success"]:
             seq_time = sequential_result["duration_seconds"]
@@ -227,21 +206,15 @@ def run_benchmarks():
             improvement = ((seq_time - par_time) / seq_time) * 100 if seq_time > 0 else 0
             speedup = seq_time / par_time if par_time > 0 else 0
 
-            print(f"\nSequential: {seq_time:.2f} seconds")
-            print(f"Parallel:   {par_time:.2f} seconds")
-            print(f"Improvement: {improvement:.1f}% faster")
-            print(f"Speedup: {speedup:.2f}x")
-
             # Check if target met (50% improvement)
             if improvement >= 50:
-                print(f"\n✅ TARGET MET: {improvement:.1f}% improvement (target: 50%)")
+                pass
             else:
-                print(f"\n⚠️ TARGET NOT MET: {improvement:.1f}% improvement (target: 50%)")
+                pass
 
         # Save results
         with open("benchmark_results.json", "w") as f:
             json.dump(results, f, indent=2)
-        print(f"\nResults saved to benchmark_results.json")
 
         # Cleanup
         shutil.rmtree(mod_dir)
@@ -249,7 +222,6 @@ def run_benchmarks():
         shutil.rmtree(parallel_output)
 
     except Exception as e:
-        print(f"Benchmark failed: {e}")
         import traceback
 
         traceback.print_exc()

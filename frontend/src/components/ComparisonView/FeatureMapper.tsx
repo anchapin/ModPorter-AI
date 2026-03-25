@@ -30,21 +30,24 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
     return 'Low';
   };
 
-  const { filteredFeatures, typeCounts } = React.useMemo(() => {
-    const counts: Record<string, number> = {};
-    const filtered: FeatureMappingData[] = [];
+  const filteredFeatures = features.filter((feature) => {
+    if (filterType === 'all') return true;
+    return feature.mapping_type === filterType;
+  });
 
-    for (const feature of features) {
-      counts[feature.mapping_type] = (counts[feature.mapping_type] || 0) + 1;
-      if (filterType === 'all' || feature.mapping_type === filterType) {
-        filtered.push(feature);
-      }
-    }
+  // ⚡ Bolt optimization: Pre-calculate counts in a single O(N) pass
+  // instead of calling .filter().length for every mapping type.
+  const mappingTypeCounts = React.useMemo(() => {
+    return features.reduce(
+      (acc, feature) => {
+        acc[feature.mapping_type] = (acc[feature.mapping_type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+  }, [features]);
 
-    return { filteredFeatures: filtered, typeCounts: counts };
-  }, [features, filterType]);
-
-  const mappingTypes = Object.keys(typeCounts);
+  const mappingTypes = Object.keys(mappingTypeCounts);
 
   return (
     <div
@@ -86,7 +89,7 @@ const FeatureMapper: React.FC<FeatureMapperProps> = ({ features }) => {
               <option value="all">All Types ({features.length})</option>
               {mappingTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type} ({typeCounts[type]})
+                  {type} ({mappingTypeCounts[type]})
                 </option>
               ))}
             </select>

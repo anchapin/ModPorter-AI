@@ -133,7 +133,12 @@ CLASSIFICATION_RULES = {
 
 # Feature detection patterns
 FEATURE_PATTERNS = {
-    "multiblock": ["IMultiBlock", "MultiBlockPart", "TileEntityMultiBlock", "multiblock"],
+    "multiblock": [
+        "IMultiBlock",
+        "MultiBlockPart",
+        "TileEntityMultiBlock",
+        "multiblock",
+    ],
     "machine": ["TileEntity", "BlockEntity", "IMachine", "EnergyTile"],
     "custom_ai": ["Goal", "Task", "AI", "PathNavigate"],
     "dimension": ["DimensionType", "WorldProvider", "DimensionRegistry"],

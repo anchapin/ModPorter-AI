@@ -174,7 +174,9 @@ class FeedbackLearningPipeline:
 
         # Identify issue type (simplified analysis)
         issue_type = self._identify_issue_type(
-            feedback.original_java, feedback.converted_bedrock or "", feedback.corrected_code
+            feedback.original_java,
+            feedback.converted_bedrock or "",
+            feedback.corrected_code,
         )
 
         # Create learning item
@@ -321,9 +323,9 @@ class CodeT5FineTuner:
             "training_data_size": len(self.training_data),
             "model_path": self.model_path,
             "training_runs": len(self.training_history),
-            "latest_accuracy": self.training_history[-1]["validation_accuracy"]
-            if self.training_history
-            else 0.0,
+            "latest_accuracy": (
+                self.training_history[-1]["validation_accuracy"] if self.training_history else 0.0
+            ),
         }
 
 
@@ -506,7 +508,11 @@ class ContinuousImprovementDashboard:
         """Get Milestone v2.0 summary."""
         return {
             "parsing_success": {"before": 0.70, "after": 0.98, "improvement": "+40%"},
-            "conversion_time": {"before": 8.0, "after": 3.0, "improvement": "62% faster"},
+            "conversion_time": {
+                "before": 8.0,
+                "after": 3.0,
+                "improvement": "62% faster",
+            },
             "automation": {"before": 0.60, "after": 0.85, "improvement": "+42%"},
             "mod_coverage": {"before": 0.40, "after": 0.65, "improvement": "+62%"},
             "user_satisfaction": {"before": 3.5, "after": 4.5, "improvement": "+29%"},

@@ -138,9 +138,9 @@ class CostTracker:
         return {
             "total_conversions": total_conversions,
             "total_cost": total_cost,
-            "average_cost_per_conversion": total_cost / total_conversions
-            if total_conversions > 0
-            else 0,
+            "average_cost_per_conversion": (
+                total_cost / total_conversions if total_conversions > 0 else 0
+            ),
             "daily_cost": self.get_daily_cost(),
             "weekly_cost": self.get_weekly_cost(),
             "monthly_cost": self.get_monthly_cost(),

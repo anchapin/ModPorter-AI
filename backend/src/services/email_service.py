@@ -118,7 +118,6 @@ class SendGridEmailService:
         if render_func is None:
             logger.warning(f"Unknown template: {template}")
             return f"Unknown template: {template}"
-        # Email Templates
 
         return render_func(**context)
 

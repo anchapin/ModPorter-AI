@@ -125,11 +125,13 @@ class CodeT5PlusConverter:
             "status": "healthy",
             "model_loaded": self.model is not None,
             "gpu_available": torch.cuda.is_available(),
-            "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
-            "gpu_memory_allocated": torch.cuda.memory_allocated(0)
-            if torch.cuda.is_available()
-            else 0,
-            "gpu_memory_cached": torch.cuda.memory_reserved(0) if torch.cuda.is_available() else 0,
+            "gpu_name": (torch.cuda.get_device_name(0) if torch.cuda.is_available() else None),
+            "gpu_memory_allocated": (
+                torch.cuda.memory_allocated(0) if torch.cuda.is_available() else 0
+            ),
+            "gpu_memory_cached": (
+                torch.cuda.memory_reserved(0) if torch.cuda.is_available() else 0
+            ),
         }
 
     def _build_prompt(self, java_code: str, context: str = None) -> str:

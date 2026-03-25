@@ -251,7 +251,9 @@ class OneClickConverter:
             status="queued",
             message=f"Auto-classified as {mode} mode. Starting conversion...",
             estimated_time=MODE_DEFAULTS[mode]["estimated_time"],
-            warnings=classification.recommendations[:2] if classification.confidence < 0.8 else [],
+            warnings=(
+                classification.recommendations[:2] if classification.confidence < 0.8 else []
+            ),
         )
 
     def _start_conversion(

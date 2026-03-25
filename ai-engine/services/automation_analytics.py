@@ -75,9 +75,11 @@ class AutomationDashboard:
             "total_conversions": self.total_conversions,
             "successful_conversions": self.successful_conversions,
             "failed_conversions": self.failed_conversions,
-            "success_rate": self.successful_conversions / self.total_conversions
-            if self.total_conversions > 0
-            else 0,
+            "success_rate": (
+                self.successful_conversions / self.total_conversions
+                if self.total_conversions > 0
+                else 0
+            ),
             "automation_rate": self.automation_rate,
             "avg_conversion_time_sec": self.avg_conversion_time,
             "total_time_saved_hours": self.total_time_saved / 3600,

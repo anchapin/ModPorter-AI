@@ -265,6 +265,18 @@ jobs:
           apt-get update -qq && apt-get install -y -qq lsb-release || true
         fi
 
+    # Conditional Python setup - only if not using container
+    - name: Set up Python 3.11 (fallback)
+      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        cache-dependency-path: |
+          ai-engine/requirements*.txt
+          backend/requirements*.txt
+          requirements-test.txt
+
     # Multi-level caching strategy
     - name: Cache Python packages (L1 - pip cache)
       if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
@@ -444,12 +456,12 @@ jobs:
       run: |
         echo "🔍 Python environment verification..."
         python --version
-        pip --version || echo "pip missing"
+        pip --version
         echo "Installed packages:"
-        pip list | head -20 || echo "pip missing"
+        pip list | head -20
         echo "..."
         echo "Python path: $(which python)"
-        echo "Pip cache dir: $(pip cache dir || echo 'missing')"
+        echo "Pip cache dir: $(pip cache dir)"
 
     - name: Wait for services to be ready
       run: |
@@ -529,7 +541,6 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
             
             echo "Running basic integration test..."
-            python -m pip install -e . || echo "Failed to install ai-engine"
             timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "backend")
@@ -540,7 +551,6 @@ jobs:
             find tests -name "*.py" | head -5 || echo "No backend test files found"
             
             echo "Running backend integration tests..."
-            python -m pip install -e . || echo "Failed to install backend"
             timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
           "ai-engine")
@@ -551,7 +561,6 @@ jobs:
             find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
             
             echo "Running import tests..."
-            python -m pip install -e . || echo "Failed to install ai-engine"
             timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
             ;;
         esac
@@ -889,7 +898,6 @@ jobs:
           pip install mutmut
         else
           cd backend
-          pip install -e .
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           pip install structlog
@@ -940,7 +948,7 @@ jobs:
         # Exit 0 to ensure the step always passes in CI
         echo "✅ Mutation testing completed"
         STEP_END=$(date +%s)
-        ../scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
+        ./scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
       env:
         STEP_START: ${{ env.STEP_START }}
 
@@ -997,7 +1005,7 @@ jobs:
         pnpm install --frozen-lockfile
 
     - name: Run mutation testing
-      timeout-minutes: 20
+      timeout-minutes: 30
       run: |
         cd frontend
         
@@ -1175,7 +1183,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes]
     if: ${{ needs.changes.outputs.dependencies == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' }}
-    timeout-minutes: 60
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
