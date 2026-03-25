@@ -6,6 +6,6 @@
 **Learning:** When replacing an action button with an inline confirmation dialog, focus is lost unless manually managed. Adding `autoFocus` to the "Cancel" button is a simple, effective way to restore focus and prevent accidental confirmation.
 **Action:** Always use `autoFocus` on the safe/cancel option in inline confirmation flows.
 
-## 2025-03-21 - Hide decorative emojis from screen readers in Conversion Assets
-**Learning:** Decorative emojis in buttons and UI elements (like 🔄 or ⏳) are read aloud by screen readers by default, which can cause confusion and clutter the audio output, detracting from the actual button label (e.g., "clockwise vertical arrows Refresh").
-**Action:** Always wrap purely decorative emojis in `<span aria-hidden="true">` to ensure a cleaner, more accessible experience for screen reader users.
+## 2025-03-20 - Icon-Only Button Accessibility
+**Learning:** Icon-only buttons (like a `✕` for "remove") need explicit aria labels, and the visual symbol itself should be hidden from screen readers using `<span aria-hidden="true">`.
+**Action:** Always wrap visual symbols in `aria-hidden` spans and provide a descriptive `aria-label` to the parent `<button>` element.
