@@ -43,11 +43,11 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-dropzone": "^15.0.0",
-    "react-router-dom": "^7.13.1",
+    "react-router-dom": "^7.13.2",
     "zod-validation-error": "^5.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/addon-onboarding": "^10.3.1",
@@ -88,7 +88,7 @@
     "prettier": "^3.8.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "storybook": "^10.3.1",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.1",
     "vite": "8.0.1",
     "vitest": "^4.1.0",
