@@ -259,17 +259,17 @@ async def index_document(
     """
     try:
         # Import chunking and metadata modules
-        ChunkingStrategyFactory, DocumentMetadataExtractor = _get_ai_engine_indexing()
+        chunking_strategy_factory, document_metadata_extractor = _get_ai_engine_indexing()
 
         # Create chunking strategy
-        strategy = ChunkingStrategyFactory.create(
+        strategy = chunking_strategy_factory.create(
             request.chunking_strategy,
             chunk_size=request.chunk_size,
             overlap=request.overlap,
         )
 
         # Extract document metadata
-        extractor = DocumentMetadataExtractor()
+        extractor = document_metadata_extractor()
         doc_metadata = extractor.extract(request.content, source=request.source)
 
         # Chunk the document
@@ -461,41 +461,34 @@ async def get_document_chunks(
 
 class HybridSearchRequest(BaseModel):
     """Request model for hybrid search."""
+
     query: str = Field(..., description="Search query text")
     limit: int = Field(default=10, description="Maximum number of results")
     search_mode: str = Field(
-        default="hybrid",
-        description="Search mode: vector_only, keyword_only, hybrid, adaptive"
+        default="hybrid", description="Search mode: vector_only, keyword_only, hybrid, adaptive"
     )
     include_metadata: bool = Field(
-        default=True,
-        description="Include document metadata in response"
+        default=True, description="Include document metadata in response"
     )
     # Phase 15-02: New parameters for semantic search enhancement
     use_reranker: bool = Field(
-        default=True,
-        description="Enable cross-encoder re-ranking for improved results"
+        default=True, description="Enable cross-encoder re-ranking for improved results"
     )
     use_hybrid: bool = Field(
-        default=True,
-        description="Use hybrid search (vector + keyword) vs vector-only"
+        default=True, description="Use hybrid search (vector + keyword) vs vector-only"
     )
     expand_query: bool = Field(
-        default=True,
-        description="Enable query expansion with synonyms and related terms"
+        default=True, description="Enable query expansion with synonyms and related terms"
     )
     diversity: float = Field(
-        default=0.3,
-        description="Diversity parameter for MMR re-ranking (0.0-1.0)"
+        default=0.3, description="Diversity parameter for MMR re-ranking (0.0-1.0)"
     )
-    rerank_top_k: int = Field(
-        default=50,
-        description="Number of top results to re-rank"
-    )
+    rerank_top_k: int = Field(default=50, description="Number of top results to re-rank")
 
 
 class HybridSearchResult(BaseModel):
     """Single search result with scores."""
+
     document_id: str
     document_source: str
     title: Optional[str] = None
@@ -508,6 +501,7 @@ class HybridSearchResult(BaseModel):
 
 class HybridSearchResponse(BaseModel):
     """Response model for hybrid search."""
+
     results: List[HybridSearchResult]
     query: str
     total: int
@@ -516,20 +510,20 @@ class HybridSearchResponse(BaseModel):
 
 
 @router.post("/embeddings/hybrid-search", response_model=HybridSearchResponse)
-async def hybrid_search(
+async def hybrid_search(  # noqa: C901
     request: HybridSearchRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Perform hybrid search combining vector and keyword search.
-    
+
     This endpoint provides enhanced search capabilities (Phase 15-02):
     - Vector-based semantic similarity search
     - Keyword-based search (BM25 when available)
     - Query expansion with synonyms and related terms
     - Cross-encoder re-ranking for improved precision
     - Adaptive combination of both methods
-    
+
     Request body:
     ```json
     {
@@ -544,42 +538,43 @@ async def hybrid_search(
         "rerank_top_k": 50         // Number of results to re-rank
     }
     ```
-    
+
     Returns ranked search results with scores.
     """
     import time
     import sys
     import os
-    
+
     start_time = time.time()
-    
+
     # Validate search mode
     valid_modes = ["vector_only", "keyword_only", "hybrid", "adaptive"]
     if request.search_mode not in valid_modes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search_mode. Must be one of: {valid_modes}"
+            detail=f"Invalid search_mode. Must be one of: {valid_modes}",
         )
-    
+
     try:
         # Setup ai-engine path
         ai_engine_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-            "ai-engine"
+            "ai-engine",
         )
         if ai_engine_path not in sys.path:
             sys.path.insert(0, ai_engine_path)
-        
+
         # Phase 15-02: Import AI engine components
         from utils.embedding_generator import LocalEmbeddingGenerator, OpenAIEmbeddingGenerator
-        
+
         # Import query expansion if enabled
         original_query = request.query
         expanded_query = request.query
-        
+
         if request.expand_query:
             try:
                 from search.query_expansion import QueryExpansionEngine
+
                 query_expander = QueryExpansionEngine()
                 # Expand the query for better recall
                 expanded_result = query_expander.expand(request.query)
@@ -588,43 +583,45 @@ async def hybrid_search(
                     logger.info(f"Query expanded: '{original_query}' -> '{expanded_query}'")
             except Exception as e:
                 logger.warning(f"Query expansion failed: {e}, using original query")
-        
+
         # Generate embedding for query (use expanded query if expansion enabled)
         generator = OpenAIEmbeddingGenerator()
         if generator._client is None:
             generator = LocalEmbeddingGenerator()
-        
+
         query_to_embed = expanded_query if request.expand_query else original_query
         query_embeddings = generator.generate_embeddings([query_to_embed])
         if not query_embeddings or query_embeddings[0] is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to generate query embedding"
+                detail="Failed to generate query embedding",
             )
-        
+
         query_embedding = query_embeddings[0].embedding.tolist()
-        
+
         # Get more results than needed to allow for re-ranking
-        fetch_limit = max(request.limit, request.rerank_top_k) if request.use_reranker else request.limit
-        
+        fetch_limit = (
+            max(request.limit, request.rerank_top_k) if request.use_reranker else request.limit
+        )
+
         # Perform vector search
         similar_embeddings = await crud.find_similar_embeddings(
             db=db,
             query_embedding=query_embedding,
             limit=fetch_limit,
         )
-        
+
         # Build results with vector scores
         results = []
         for doc in similar_embeddings:
             doc_meta = doc.metadata_json or {}
             # Calculate actual similarity score from distance
             vector_score = 1.0 / (1.0 + (doc.distance or 0.0))
-            
+
             # For hybrid mode, we would need text content for keyword scoring
             # For now, use vector score as primary
             keyword_score = None
-            
+
             # Combine scores based on search mode
             if request.search_mode == "vector_only":
                 final_score = vector_score
@@ -636,7 +633,7 @@ async def hybrid_search(
                     final_score = 0.7 * vector_score + 0.3 * keyword_score
                 else:
                     final_score = vector_score
-            
+
             result = HybridSearchResult(
                 document_id=str(doc.id),
                 document_source=doc.document_source,
@@ -648,47 +645,48 @@ async def hybrid_search(
                 metadata=doc_meta if request.include_metadata else {},
             )
             results.append(result)
-        
+
         # Phase 15-02: Apply re-ranking if enabled
         reranking_metadata = {}
         if request.use_reranker and len(results) > 1:
             try:
                 from search.reranking_engine import CrossEncoderReRanker, EnsembleReRanker
-                
+
                 # Use ensemble reranker for best results
                 reranker = EnsembleReRanker()
-                
+
                 # Convert to format expected by reranker
                 from schemas.multimodal_schema import SearchResult as AISearchResult
+
                 search_results = [
                     AISearchResult(
                         id=str(r.document_id),
                         content=r.metadata.get("content", ""),
                         source=r.document_source,
                         score=r.score,
-                        metadata=r.metadata
+                        metadata=r.metadata,
                     )
                     for r in results
                 ]
-                
+
                 # Perform re-ranking
                 reranked_results = reranker.rerank(query_to_embed, search_results)
-                
+
                 # Update results with reranked scores
                 if reranked_results:
                     for i, reranked in enumerate(reranked_results):
                         if i < len(results):
                             results[i].score = reranked.score
-                            reranking_metadata[f"rank_{i+1}"] = reranked.id
-                    
+                            reranking_metadata[f"rank_{i + 1}"] = reranked.id
+
                     # Re-sort by reranked scores
                     results = sorted(results, key=lambda x: x.score, reverse=True)
-                    
+
                     logger.info(f"Re-ranking applied to {len(results)} results")
-                    
+
             except Exception as e:
                 logger.warning(f"Re-ranking failed: {e}, using original rankings")
-        
+
         # Apply diversity if specified (MMR-like approach)
         if request.diversity > 0 and len(results) > 1:
             # Simple diversity: boost results from different sources
@@ -701,19 +699,19 @@ async def hybrid_search(
                     if len(final_results) >= request.limit:
                         break
             results = final_results
-        
+
         # Trim to requested limit
-        results = results[:request.limit]
-        
+        results = results[: request.limit]
+
         execution_time = (time.time() - start_time) * 1000
-        
+
         logger.info(
             f"Hybrid search completed: query='{original_query}', "
             f"expanded='{expanded_query}', results={len(results)}, "
             f"reranker={request.use_reranker}, expand={request.expand_query}, "
             f"time={execution_time:.1f}ms"
         )
-        
+
         return HybridSearchResponse(
             results=results,
             query=original_query,
@@ -721,18 +719,17 @@ async def hybrid_search(
             search_mode=request.search_mode,
             execution_time_ms=execution_time,
         )
-        
+
     except ImportError as e:
         logger.error("Required module not available", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Required module not available: {str(e)}"
+            detail=f"Required module not available: {str(e)}",
         )
     except Exception as e:
         logger.error(f"Hybrid search failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}"
         )
 
 

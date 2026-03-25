@@ -404,7 +404,7 @@ class JavaASTAnalyzer:
         return {
             "name": node.get("name", ""),
             "modifiers": node.get("modifiers", []),
-            "superclass": node.get("extends", None),
+            "superclass": node.get("extends"),
             "interfaces": node.get("implements", []),
         }
 
