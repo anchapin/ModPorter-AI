@@ -44,6 +44,7 @@ class EmbeddingGenerateRequest(BaseModel):
 
 class IndexDocumentRequest(BaseModel):
     """Request model for indexing a document with smart chunking."""
+
     content: str
     source: str
     metadata: dict = {}  # Optional user-provided metadata
@@ -54,6 +55,7 @@ class IndexDocumentRequest(BaseModel):
 
 class IndexDocumentResponse(BaseModel):
     """Response model for document indexing."""
+
     document_id: str
     chunks_created: int
     metadata: dict
@@ -61,6 +63,7 @@ class IndexDocumentResponse(BaseModel):
 
 class DocumentWithChunksResponse(BaseModel):
     """Response model for document with all chunks."""
+
     id: str
     title: str = None
     document_source: str
@@ -70,6 +73,7 @@ class DocumentWithChunksResponse(BaseModel):
 
 class ChunkResponse(BaseModel):
     """Response model for a single chunk."""
+
     id: str
     content: str  # Note: embedding is excluded from response
     chunk_index: int
@@ -78,5 +82,5 @@ class ChunkResponse(BaseModel):
     char_start: int
     char_end: int
     metadata: dict = {}
-    
+
     model_config = {"from_attributes": True}

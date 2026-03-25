@@ -16,6 +16,32 @@ import {
 } from '@mui/material';
 import { FormField } from './VisualEditor';
 
+// Helper component to reduce duplicate code in field rendering
+const BaseTextField: React.FC<{
+  field: FormField;
+  value: any;
+  onChange: (value: any) => void;
+  error?: boolean;
+  helperText?: string;
+  readOnly: boolean;
+  inputProps?: object;
+  inputAdornment?: React.ReactNode;
+}> = ({ field, value, onChange, error, helperText, readOnly, inputProps, inputAdornment }) => (
+  <TextField
+    key={field.id}
+    fullWidth
+    label={field.label}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    error={error}
+    helperText={helperText}
+    required={field.required}
+    disabled={readOnly || field.disabled}
+    {...inputProps}
+    InputProps={inputAdornment ? { startAdornment: inputAdornment } : undefined}
+  />
+);
+
 export interface FormBuilderProps {
   fields: FormField[];
   data: Record<string, any>;
@@ -51,61 +77,44 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       switch (field.type) {
         case 'text':
           return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
+            <BaseTextField
+              field={field}
               value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
+              onChange={(value) => handleChange(field, value)}
               error={hasError}
               helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
-              InputProps={{
-                startAdornment: field.name.includes('url') && (
+              readOnly={readOnly}
+              inputAdornment={
+                field.name.includes('url') ? (
                   <InputAdornment position="start">🌐</InputAdornment>
-                ),
-              }}
+                ) : undefined
+              }
             />
           );
 
         case 'number':
           return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
-              type="number"
+            <BaseTextField
+              field={field}
               value={data[field.name] || ''}
-              onChange={(e) =>
-                handleChange(field, parseFloat(e.target.value) || 0)
-              }
+              onChange={(value) => handleChange(field, parseFloat(value) || 0)}
               error={hasError}
               helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
-              inputProps={{
-                min: field.min,
-                max: field.max,
-                step: field.step || 1,
-              }}
+              readOnly={readOnly}
+              inputProps={{ type: 'number', min: field.min, max: field.max, step: field.step || 1 }}
             />
           );
 
         case 'textarea':
           return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
-              multiline
-              rows={4}
+            <BaseTextField
+              field={field}
               value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
+              onChange={(value) => handleChange(field, value)}
               error={hasError}
               helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
+              readOnly={readOnly}
+              inputProps={{ multiline: true, rows: 4 }}
             />
           );
 
@@ -192,16 +201,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
         default:
           return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
+            <BaseTextField
+              field={field}
               value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
+              onChange={(value) => handleChange(field, value)}
               error={hasError}
               helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
+              readOnly={readOnly}
             />
           );
       }
