@@ -17,9 +17,9 @@ sentence-transformers>=2.2.0,<3.0.0
 # Note: chromadb may require Python <3.13
 chromadb<1.6.0
 
-# Data Processing
+# Data Processing - align with backend version
 numpy
-python-dotenv
+python-dotenv~=1.1.1
 
 # Java analysis - align with backend version
 javalang==0.13.0
