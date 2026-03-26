@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
     Boolean,
+    JSON,
     String,
     Integer,
     ForeignKey,
@@ -464,7 +465,7 @@ class DocumentEmbedding(Base):
     title = Column(String, nullable=True, index=True)
 
     # Metadata storage
-    metadata_json = Column(JSONB, nullable=True)
+    metadata_json = Column(JSON().with_variant(JSONB, 'postgresql'), nullable=True)
 
 
 # A/B Testing Models

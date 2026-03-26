@@ -22,9 +22,6 @@ public class ModItem extends Item {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -35,8 +32,6 @@ public class ModItem extends Item {
         },
         "timeout_seconds": 60,
     },
-<<<<<<< HEAD
-=======
     
     # Simple Block Conversion
     {
@@ -55,9 +50,6 @@ public class ModBlock extends Block {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -68,8 +60,6 @@ public class ModBlock extends Block {
         },
         "timeout_seconds": 60,
     },
-<<<<<<< HEAD
-=======
     
     # Sword Item Conversion
     {
@@ -89,9 +79,6 @@ public class ModSword extends SwordItem {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -102,8 +89,6 @@ public class ModSword extends SwordItem {
         },
         "timeout_seconds": 90,
     },
-<<<<<<< HEAD
-=======
     
     # Pickaxe Tool Conversion
     {
@@ -123,9 +108,6 @@ public class ModPickaxe extends PickaxeItem {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -136,8 +118,6 @@ public class ModPickaxe extends PickaxeItem {
         },
         "timeout_seconds": 90,
     },
-<<<<<<< HEAD
-=======
     
     # Ore Block Conversion
     {
@@ -158,9 +138,6 @@ public class ModOre extends Block {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -171,8 +148,6 @@ public class ModOre extends Block {
         },
         "timeout_seconds": 90,
     },
-<<<<<<< HEAD
-=======
     
     # Complex Entity Conversion
     {
@@ -197,9 +172,6 @@ public class ModEntity extends Mob {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -210,8 +182,6 @@ public class ModEntity extends Mob {
         },
         "timeout_seconds": 120,
     },
-<<<<<<< HEAD
-=======
     
     # Recipe Conversion
     {
@@ -232,9 +202,6 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {
@@ -245,8 +212,6 @@ ShapedRecipeBuilder.shaped(ModItems.CUSTOM_ITEM.get())
         },
         "timeout_seconds": 90,
     },
-<<<<<<< HEAD
-=======
     
     # Multi-Class Mod
     {
@@ -278,9 +243,6 @@ public class ModSword extends SwordItem {
             "mod_info": {
                 "name": "Test Mod",
                 "version": "1.0.0",
-<<<<<<< HEAD
-            },
-=======
             }
         },
         "expected": {

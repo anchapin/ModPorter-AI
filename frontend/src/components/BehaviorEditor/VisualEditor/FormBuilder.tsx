@@ -26,7 +26,16 @@ const BaseTextField: React.FC<{
   readOnly: boolean;
   inputProps?: object;
   inputAdornment?: React.ReactNode;
-}> = ({ field, value, onChange, error, helperText, readOnly, inputProps, inputAdornment }) => (
+}> = ({
+  field,
+  value,
+  onChange,
+  error,
+  helperText,
+  readOnly,
+  inputProps,
+  inputAdornment,
+}) => (
   <TextField
     key={field.id}
     fullWidth
@@ -101,7 +110,12 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
               error={hasError}
               helperText={helperText}
               readOnly={readOnly}
-              inputProps={{ type: 'number', min: field.min, max: field.max, step: field.step || 1 }}
+              inputProps={{
+                type: 'number',
+                min: field.min,
+                max: field.max,
+                step: field.step || 1,
+              }}
             />
           );
 
