@@ -12,12 +12,6 @@ logger = logging.getLogger(__name__)
 
 class RAGContextBuilder:
     """Build context for AI model from RAG results."""
-<<<<<<< HEAD
-
-    def __init__(self, max_context_length: int = 4000):
-        self.max_context_length = max_context_length
-
-=======
     
     def __init__(self, max_context_length: int = 4000):
         self.max_context_length = max_context_length
@@ -30,45 +24,17 @@ class RAGContextBuilder:
     ) -> str:
         """
         Build context string for AI model.
-<<<<<<< HEAD
-
-=======
         
         Args:
             search_results: Results from RAG search
             query: Original query
             max_examples: Maximum number of examples to include
-<<<<<<< HEAD
-
-=======
         
         Returns:
             Context string for AI prompt
         """
         if not search_results:
             return ""
-<<<<<<< HEAD
-
-        context_parts = []
-        current_length = 0
-
-        # Add query context
-        context_parts.append(f"Query: {query}\n")
-        current_length += len(context_parts[-1])
-
-        # Add examples
-        context_parts.append("\nSimilar conversion examples:\n")
-
-        for i, result in enumerate(search_results[:max_examples]):
-            example = result.get("example", {})
-            score = result.get("score", 0.0)
-
-            java_code = example.get("java_code", "")
-            bedrock_code = example.get("bedrock_code", "")
-
-            example_text = f"""
-Example {i + 1} (similarity: {score:.2f}):
-=======
         
         context_parts = []
         current_length = 0
@@ -99,19 +65,6 @@ Bedrock:
 {bedrock_code[:500]}...
 ```
 """
-<<<<<<< HEAD
-
-            # Check if adding this example would exceed limit
-            if current_length + len(example_text) > self.max_context_length:
-                logger.debug(f"Stopping at example {i + 1} due to length limit")
-                break
-
-            context_parts.append(example_text)
-            current_length += len(example_text)
-
-        return "".join(context_parts)
-
-=======
             
             # Check if adding this example would exceed limit
             if current_length + len(example_text) > self.max_context_length:
@@ -131,17 +84,11 @@ Bedrock:
     ) -> str:
         """
         Build complete prompt for AI model.
-<<<<<<< HEAD
-
-=======
         
         Args:
             java_code: Java code to translate
             context: RAG context
             instruction: Optional custom instruction
-<<<<<<< HEAD
-
-=======
         
         Returns:
             Complete prompt string
@@ -155,15 +102,6 @@ Guidelines:
 3. Preserve functionality where possible
 4. Add comments for complex conversions
 5. If a feature has no Bedrock equivalent, add a TODO comment"""
-<<<<<<< HEAD
-
-        prompt_parts = []
-
-        # Add instruction
-        prompt_parts.append(instruction or default_instruction)
-        prompt_parts.append("\n\n")
-
-=======
         
         prompt_parts = []
         
@@ -176,13 +114,6 @@ Guidelines:
             prompt_parts.append("Reference examples:\n")
             prompt_parts.append(context)
             prompt_parts.append("\n\n")
-<<<<<<< HEAD
-
-        # Add Java code to translate
-        prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")
-        prompt_parts.append("Bedrock Translation:\n")
-
-=======
         
         # Add Java code to translate
         prompt_parts.append(f"Translate this Java code:\n\n```java\n{java_code}\n```\n\n")

@@ -16,17 +16,11 @@ import zipfile
 from pathlib import Path
 
 # Add ai-engine to path
-<<<<<<< HEAD
-sys.path.insert(0, "ai-engine")
-=======
 sys.path.insert(0, 'ai-engine')
 
 
 def create_test_mod(mode: str, output_path: str):
     """Create a test mod JAR for a specific mode."""
-<<<<<<< HEAD
-
-=======
     
     # Mod configurations by mode
     configs = {
@@ -51,18 +45,6 @@ def create_test_mod(mode: str, output_path: str):
             "features": ["dimension", "biome", "worldgen"],
         },
     }
-<<<<<<< HEAD
-
-    config = configs.get(mode, configs["Simple"])
-
-    # Create temporary directory structure
-    temp_dir = tempfile.mkdtemp()
-
-    # Create Java class files
-    src_dir = Path(temp_dir) / "com" / "example" / "mod"
-    src_dir.mkdir(parents=True)
-
-=======
     
     config = configs.get(mode, configs["Simple"])
     
@@ -89,18 +71,6 @@ public class Class{i} {{
         elif mode == "Complex" and i == 0:
             class_content += "\n// IMultiBlock\npublic class Reactor implements IMultiBlock {}"
         elif mode == "Expert" and i == 0:
-<<<<<<< HEAD
-            class_content += (
-                "\n// DimensionType\npublic class CustomDimension extends DimensionType {}"
-            )
-
-        (src_dir / f"Class{i}.java").write_text(class_content)
-
-    # Create fabric.mod.json if dependencies
-    if config["dependencies"]:
-        import json
-
-=======
             class_content += "\n// DimensionType\npublic class CustomDimension extends DimensionType {}"
         
         (src_dir / f"Class{i}.java").write_text(class_content)
@@ -116,21 +86,6 @@ public class Class{i} {{
             "depends": {dep: "*" for dep in config["dependencies"]},
         }
         (Path(temp_dir) / "fabric.mod.json").write_text(json.dumps(mod_json))
-<<<<<<< HEAD
-
-    # Create JAR
-    with zipfile.ZipFile(output_path, "w") as jar:
-        for file_path in Path(temp_dir).rglob("*"):
-            if file_path.is_file():
-                arcname = file_path.relative_to(temp_dir)
-                jar.write(file_path, arcname)
-
-    # Cleanup temp directory
-    import shutil
-
-    shutil.rmtree(temp_dir)
-
-=======
     
     # Create JAR
     with zipfile.ZipFile(output_path, 'w') as jar:
@@ -148,31 +103,6 @@ public class Class{i} {{
 
 def test_feature_extraction():
     """Test 1: Feature extraction."""
-<<<<<<< HEAD
-
-    try:
-        from services.mode_classifier import FeatureExtractor
-
-        # Create test mod
-        test_jar = tempfile.mktemp(suffix=".jar")
-        create_test_mod("Standard", test_jar)
-
-        # Extract features
-        extractor = FeatureExtractor()
-        features = extractor.extract_features(test_jar)
-
-        # Cleanup
-        os.unlink(test_jar)
-
-        if features.class_count > 0:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 1: Feature Extraction")
     print("=" * 70)
@@ -213,39 +143,6 @@ def test_feature_extraction():
 
 def test_mode_classification():
     """Test 2: Mode classification."""
-<<<<<<< HEAD
-
-    try:
-        from services.mode_classifier import ModeClassifier, ConversionMode
-
-        classifier = ModeClassifier()
-
-        # Test each mode
-        test_modes = ["Simple", "Standard", "Complex", "Expert"]
-        results = {}
-
-        for mode in test_modes:
-            test_jar = tempfile.mktemp(suffix=".jar")
-            create_test_mod(mode, test_jar)
-
-            result = classifier.classify_mod(test_jar)
-            results[mode] = result
-
-            os.unlink(test_jar)
-
-        # Check if classifications are reasonable
-        simple_correct = results["Simple"].mode == ConversionMode.SIMPLE
-        expert_correct = results["Expert"].mode == ConversionMode.EXPERT
-
-        if simple_correct and expert_correct:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 2: Mode Classification")
     print("=" * 70)
@@ -294,31 +191,6 @@ def test_mode_classification():
 
 def test_confidence_scoring():
     """Test 3: Confidence scoring."""
-<<<<<<< HEAD
-
-    try:
-        from services.mode_classifier import ModeClassifier
-
-        classifier = ModeClassifier()
-
-        # Create test mod
-        test_jar = tempfile.mktemp(suffix=".jar")
-        create_test_mod("Standard", test_jar)
-
-        result = classifier.classify_mod(test_jar)
-
-        # Cleanup
-        os.unlink(test_jar)
-
-        if 0 <= result.confidence <= 1:
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 3: Confidence Scoring")
     print("=" * 70)
@@ -357,15 +229,6 @@ def test_confidence_scoring():
 
 def test_batch_classification():
     """Test 4: Batch classification."""
-<<<<<<< HEAD
-
-    try:
-        from services.mode_classifier import ModeClassifier
-        import time
-
-        classifier = ModeClassifier()
-
-=======
     print("\n" + "=" * 70)
     print("Test 4: Batch Classification")
     print("=" * 70)
@@ -380,16 +243,6 @@ def test_batch_classification():
         test_mods = []
         for mode in ["Simple", "Standard", "Complex", "Expert"]:
             for i in range(5):
-<<<<<<< HEAD
-                test_jar = tempfile.mktemp(suffix=f"_{i}.jar")
-                create_test_mod(mode, test_jar)
-                test_mods.append((mode, test_jar))
-
-        # Classify all
-        start_time = time.time()
-        results = []
-
-=======
                 test_jar = tempfile.mktemp(suffix=f'_{i}.jar')
                 create_test_mod(mode, test_jar)
                 test_mods.append((mode, test_jar))
@@ -402,16 +255,6 @@ def test_batch_classification():
             result = classifier.classify_mod(test_jar)
             results.append((expected_mode, result))
             os.unlink(test_jar)
-<<<<<<< HEAD
-
-        total_time = time.time() - start_time
-        avg_time = total_time / len(test_mods) * 1000  # ms
-
-        # Calculate accuracy
-        correct = sum(1 for expected, result in results if expected == result.mode)
-        accuracy = correct / len(results)
-
-=======
         
         total_time = time.time() - start_time
         avg_time = total_time / len(test_mods) * 1000  # ms
@@ -430,20 +273,6 @@ def test_batch_classification():
         mode_counts = {}
         for _, result in results:
             mode_counts[result.mode] = mode_counts.get(result.mode, 0) + 1
-<<<<<<< HEAD
-
-        for mode, count in sorted(mode_counts.items()):
-            pass
-
-        if accuracy >= 0.75 and avg_time < 1000:  # 75% accuracy, <1s per mod
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         print(f"\nMode distribution:")
         for mode, count in sorted(mode_counts.items()):
@@ -465,25 +294,6 @@ def test_batch_classification():
 
 def test_mode_info():
     """Test 5: Mode information retrieval."""
-<<<<<<< HEAD
-
-    try:
-        from services.mode_classifier import get_all_modes
-
-        all_modes = get_all_modes()
-
-        for mode_info in all_modes:
-            pass
-
-        if len(all_modes) == 4:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 5: Mode Information")
     print("=" * 70)
@@ -518,9 +328,6 @@ def test_mode_info():
 
 def main():
     """Run all test cases."""
-<<<<<<< HEAD
-
-=======
     print("\n" + "=" * 70)
     print("MODE CLASSIFICATION SYSTEM TEST SUITE")
     print("=" * 70)
@@ -532,12 +339,6 @@ def main():
         ("Batch Classification", test_batch_classification),
         ("Mode Information", test_mode_info),
     ]
-<<<<<<< HEAD
-
-    passed = 0
-    failed = 0
-
-=======
     
     passed = 0
     failed = 0
@@ -547,18 +348,6 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-<<<<<<< HEAD
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    if failed == 0:
-        pass
-    else:
-        pass
-
-=======
             print(f"❌ {name} FAILED: {e}")
             import traceback
             traceback.print_exc()

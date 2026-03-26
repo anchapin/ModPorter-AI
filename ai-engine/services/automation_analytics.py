@@ -9,9 +9,6 @@ Provides comprehensive analytics for the conversion automation system:
 """
 
 import logging
-<<<<<<< HEAD
-from typing import Dict, List, Optional, Any
-=======
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -24,9 +21,6 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ConversionMetric:
     """Single conversion metric record."""
-<<<<<<< HEAD
-
-=======
     conversion_id: str
     timestamp: datetime
     mod_path: str
@@ -37,9 +31,6 @@ class ConversionMetric:
     manual_interventions: int = 0
     errors: List[str] = field(default_factory=list)
     user_id: Optional[str] = None
-<<<<<<< HEAD
-
-=======
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -57,31 +48,11 @@ class ConversionMetric:
 @dataclass
 class AutomationDashboard:
     """Dashboard data for automation metrics."""
-<<<<<<< HEAD
-
-=======
     # Overall metrics
     total_conversions: int = 0
     successful_conversions: int = 0
     failed_conversions: int = 0
     automation_rate: float = 0.0  # 0.0 to 1.0
-<<<<<<< HEAD
-
-    # Time metrics
-    avg_conversion_time: float = 0.0  # seconds
-    total_time_saved: float = 0.0  # seconds
-
-    # Mode distribution
-    mode_distribution: Dict[str, int] = field(default_factory=dict)
-
-    # Error metrics
-    error_rate: float = 0.0
-    top_errors: List[Dict[str, Any]] = field(default_factory=list)
-
-    # Trends
-    automation_trend: List[Dict[str, Any]] = field(default_factory=list)
-
-=======
     
     # Time metrics
     avg_conversion_time: float = 0.0  # seconds
@@ -102,13 +73,6 @@ class AutomationDashboard:
             "total_conversions": self.total_conversions,
             "successful_conversions": self.successful_conversions,
             "failed_conversions": self.failed_conversions,
-<<<<<<< HEAD
-            "success_rate": (
-                self.successful_conversions / self.total_conversions
-                if self.total_conversions > 0
-                else 0
-            ),
-=======
             "success_rate": self.successful_conversions / self.total_conversions if self.total_conversions > 0 else 0,
             "automation_rate": self.automation_rate,
             "avg_conversion_time_sec": self.avg_conversion_time,
@@ -121,37 +85,18 @@ class AutomationDashboard:
 class AutomationMetricsCollector:
     """
     Collects and stores automation metrics.
-<<<<<<< HEAD
-
-=======
     
     Features:
     - Real-time metric collection
     - Time-series storage
     - Aggregation functions
     """
-<<<<<<< HEAD
-
-=======
     
     def __init__(self, max_history: int = 10000):
         self.max_history = max_history
         self.metrics: List[ConversionMetric] = []
         self._lock = None  # Would use threading.Lock in production
         logger.info(f"AutomationMetricsCollector initialized (max_history={max_history})")
-<<<<<<< HEAD
-
-    def record_conversion(self, metric: ConversionMetric):
-        """Record a conversion metric."""
-        self.metrics.append(metric)
-
-        # Trim history if needed
-        if len(self.metrics) > self.max_history:
-            self.metrics = self.metrics[-self.max_history :]
-
-        logger.debug(f"Recorded conversion: {metric.conversion_id} (success={metric.success})")
-
-=======
     
     def record_conversion(self, metric: ConversionMetric):
         """Record a conversion metric."""
@@ -172,9 +117,6 @@ class AutomationMetricsCollector:
     ) -> List[ConversionMetric]:
         """Get metrics with optional filtering."""
         filtered = self.metrics
-<<<<<<< HEAD
-
-=======
         
         if start_time:
             filtered = [m for m in filtered if m.timestamp >= start_time]
@@ -184,11 +126,6 @@ class AutomationMetricsCollector:
             filtered = [m for m in filtered if m.user_id == user_id]
         if mode:
             filtered = [m for m in filtered if m.mode == mode]
-<<<<<<< HEAD
-
-        return filtered
-
-=======
         
         return filtered
     
@@ -196,17 +133,11 @@ class AutomationMetricsCollector:
         """Get summary statistics."""
         if not self.metrics:
             return {"total": 0}
-<<<<<<< HEAD
-
-=======
         
         total = len(self.metrics)
         successful = sum(1 for m in self.metrics if m.success)
         avg_duration = sum(m.duration_seconds for m in self.metrics) / total
         avg_automation = sum(m.automation_level for m in self.metrics) / total
-<<<<<<< HEAD
-
-=======
         
         return {
             "total": total,
@@ -221,9 +152,6 @@ class AutomationMetricsCollector:
 class SuccessRateTracker:
     """
     Tracks success rates by various dimensions.
-<<<<<<< HEAD
-
-=======
     
     Features:
     - Success rate by mode
@@ -231,21 +159,6 @@ class SuccessRateTracker:
     - Success rate by user
     - Trend analysis
     """
-<<<<<<< HEAD
-
-    def __init__(self):
-        self.success_by_mode: Dict[str, Dict[str, int]] = defaultdict(
-            lambda: {"success": 0, "total": 0}
-        )
-        self.success_by_day: Dict[str, Dict[str, int]] = defaultdict(
-            lambda: {"success": 0, "total": 0}
-        )
-        self.success_by_user: Dict[str, Dict[str, int]] = defaultdict(
-            lambda: {"success": 0, "total": 0}
-        )
-        logger.info("SuccessRateTracker initialized")
-
-=======
     
     def __init__(self):
         self.success_by_mode: Dict[str, Dict[str, int]] = defaultdict(lambda: {"success": 0, "total": 0})
@@ -259,27 +172,18 @@ class SuccessRateTracker:
         self.success_by_mode[mode]["total"] += 1
         if success:
             self.success_by_mode[mode]["success"] += 1
-<<<<<<< HEAD
-
-=======
         
         # By day
         day_key = datetime.now().strftime("%Y-%m-%d")
         self.success_by_day[day_key]["total"] += 1
         if success:
             self.success_by_day[day_key]["success"] += 1
-<<<<<<< HEAD
-
-=======
         
         # By user
         if user_id:
             self.success_by_user[user_id]["total"] += 1
             if success:
                 self.success_by_user[user_id]["success"] += 1
-<<<<<<< HEAD
-
-=======
     
     def get_success_rate_by_mode(self) -> Dict[str, float]:
         """Get success rate by mode."""
@@ -288,28 +192,6 @@ class SuccessRateTracker:
             if counts["total"] > 0:
                 rates[mode] = counts["success"] / counts["total"]
         return rates
-<<<<<<< HEAD
-
-    def get_success_rate_trend(self, days: int = 7) -> List[Dict[str, Any]]:
-        """Get success rate trend over recent days."""
-        trend = []
-
-        for i in range(days - 1, -1, -1):
-            date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-            counts = self.success_by_day.get(date, {"success": 0, "total": 0})
-
-            if counts["total"] > 0:
-                trend.append(
-                    {
-                        "date": date,
-                        "success_rate": counts["success"] / counts["total"],
-                        "total": counts["total"],
-                    }
-                )
-
-        return trend
-
-=======
     
     def get_success_rate_trend(self, days: int = 7) -> List[Dict[str, Any]]:
         """Get success rate trend over recent days."""
@@ -338,29 +220,12 @@ class SuccessRateTracker:
 class ModeDistributionAnalyzer:
     """
     Analyzes mode distribution and patterns.
-<<<<<<< HEAD
-
-=======
     
     Features:
     - Mode distribution tracking
     - Mode performance comparison
     - Automation level by mode
     """
-<<<<<<< HEAD
-
-    def __init__(self):
-        self.mode_stats: Dict[str, Dict[str, Any]] = defaultdict(
-            lambda: {
-                "count": 0,
-                "total_duration": 0,
-                "total_automation": 0,
-                "success": 0,
-            }
-        )
-        logger.info("ModeDistributionAnalyzer initialized")
-
-=======
     
     def __init__(self):
         self.mode_stats: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
@@ -379,17 +244,6 @@ class ModeDistributionAnalyzer:
         stats["total_automation"] += automation_level
         if success:
             stats["success"] += 1
-<<<<<<< HEAD
-
-    def get_mode_distribution(self) -> Dict[str, int]:
-        """Get distribution of conversions by mode."""
-        return {mode: stats["count"] for mode, stats in self.mode_stats.items()}
-
-    def get_mode_performance(self) -> Dict[str, Dict[str, Any]]:
-        """Get performance metrics by mode."""
-        performance = {}
-
-=======
     
     def get_mode_distribution(self) -> Dict[str, int]:
         """Get distribution of conversions by mode."""
@@ -408,9 +262,6 @@ class ModeDistributionAnalyzer:
                     "avg_automation_level": stats["total_automation"] / count,
                     "success_rate": stats["success"] / count,
                 }
-<<<<<<< HEAD
-
-=======
         
         return performance
 
@@ -418,22 +269,12 @@ class ModeDistributionAnalyzer:
 class ImprovementRecommendationEngine:
     """
     Generates recommendations for continuous improvement.
-<<<<<<< HEAD
-
-=======
     
     Features:
     - Bottleneck identification
     - Optimization suggestions
     - Trend-based recommendations
     """
-<<<<<<< HEAD
-
-    def __init__(self):
-        self.recommendations: List[Dict[str, Any]] = []
-        logger.info("ImprovementRecommendationEngine initialized")
-
-=======
     
     def __init__(self):
         self.recommendations: List[Dict[str, Any]] = []
@@ -447,58 +288,6 @@ class ImprovementRecommendationEngine:
     ) -> List[Dict[str, Any]]:
         """Generate improvement recommendations."""
         recommendations = []
-<<<<<<< HEAD
-
-        # Check automation rate
-        if dashboard.automation_rate < 0.95:
-            recommendations.append(
-                {
-                    "category": "automation",
-                    "priority": "high",
-                    "issue": f"Automation rate is {dashboard.automation_rate:.0%} (target: 95%)",
-                    "recommendation": "Review manual intervention patterns and create automation rules",
-                    "impact": "Could save significant manual effort",
-                }
-            )
-
-        # Check conversion time
-        if dashboard.avg_conversion_time > 180:  # 3 minutes
-            recommendations.append(
-                {
-                    "category": "performance",
-                    "priority": "medium",
-                    "issue": f"Average conversion time is {dashboard.avg_conversion_time:.0f}s",
-                    "recommendation": "Optimize slow conversion steps or enable parallel processing",
-                    "impact": "Faster conversions, higher throughput",
-                }
-            )
-
-        # Check error rate
-        if dashboard.error_rate > 0.10:  # 10%
-            recommendations.append(
-                {
-                    "category": "reliability",
-                    "priority": "high",
-                    "issue": f"Error rate is {dashboard.error_rate:.0%}",
-                    "recommendation": "Review top errors and implement error recovery",
-                    "impact": "Fewer failed conversions",
-                }
-            )
-
-        # Check mode-specific issues
-        for mode, perf in mode_performance.items():
-            if perf.get("success_rate", 1.0) < 0.80:
-                recommendations.append(
-                    {
-                        "category": "mode_quality",
-                        "priority": "medium",
-                        "issue": f"{mode} mode has {perf['success_rate']:.0%} success rate",
-                        "recommendation": f"Review {mode} mode conversion patterns and rules",
-                        "impact": "Improved success rate for {mode} conversions",
-                    }
-                )
-
-=======
         
         # Check automation rate
         if dashboard.automation_rate < 0.95:
@@ -545,23 +334,6 @@ class ImprovementRecommendationEngine:
         if len(success_trend) >= 7:
             recent_avg = sum(t["success_rate"] for t in success_trend[-3:]) / 3
             older_avg = sum(t["success_rate"] for t in success_trend[:3]) / 3
-<<<<<<< HEAD
-
-            if recent_avg < older_avg - 0.05:
-                recommendations.append(
-                    {
-                        "category": "trend",
-                        "priority": "high",
-                        "issue": "Success rate declining over past week",
-                        "recommendation": "Investigate recent changes that may have affected quality",
-                        "impact": "Prevent further quality degradation",
-                    }
-                )
-
-        self.recommendations = recommendations
-        return recommendations
-
-=======
             
             if recent_avg < older_avg - 0.05:
                 recommendations.append({
@@ -583,9 +355,6 @@ class ImprovementRecommendationEngine:
 class AutomationAnalyticsDashboard:
     """
     Main dashboard for automation analytics.
-<<<<<<< HEAD
-
-=======
     
     Combines all analytics components:
     - Metrics collection
@@ -593,9 +362,6 @@ class AutomationAnalyticsDashboard:
     - Mode analysis
     - Recommendations
     """
-<<<<<<< HEAD
-
-=======
     
     def __init__(self):
         self.metrics_collector = AutomationMetricsCollector()
@@ -603,9 +369,6 @@ class AutomationAnalyticsDashboard:
         self.mode_analyzer = ModeDistributionAnalyzer()
         self.recommendation_engine = ImprovementRecommendationEngine()
         logger.info("AutomationAnalyticsDashboard initialized")
-<<<<<<< HEAD
-
-=======
     
     def record_conversion(
         self,
@@ -632,21 +395,11 @@ class AutomationAnalyticsDashboard:
             errors=errors or [],
             user_id=user_id,
         )
-<<<<<<< HEAD
-
-=======
         
         # Record in all trackers
         self.metrics_collector.record_conversion(metric)
         self.success_tracker.record_outcome(mode, success, user_id)
         self.mode_analyzer.record_conversion(mode, duration_seconds, automation_level, success)
-<<<<<<< HEAD
-
-    def get_dashboard(self) -> AutomationDashboard:
-        """Get current dashboard data."""
-        dashboard = AutomationDashboard()
-
-=======
     
     def get_dashboard(self) -> AutomationDashboard:
         """Get current dashboard data."""
@@ -659,21 +412,6 @@ class AutomationAnalyticsDashboard:
         dashboard.failed_conversions = stats.get("failed", 0)
         dashboard.automation_rate = stats.get("avg_automation_level", 0)
         dashboard.avg_conversion_time = stats.get("avg_duration_sec", 0)
-<<<<<<< HEAD
-
-        # Mode distribution
-        dashboard.mode_distribution = self.mode_analyzer.get_mode_distribution()
-
-        # Error rate
-        if dashboard.total_conversions > 0:
-            dashboard.error_rate = dashboard.failed_conversions / dashboard.total_conversions
-
-        # Success trend
-        dashboard.automation_trend = self.success_tracker.get_success_rate_trend()
-
-        return dashboard
-
-=======
         
         # Mode distribution
         dashboard.mode_distribution = self.mode_analyzer.get_mode_distribution()
@@ -695,9 +433,6 @@ class AutomationAnalyticsDashboard:
         recommendations = self.recommendation_engine.analyze_and_recommend(
             dashboard, mode_performance, success_trend
         )
-<<<<<<< HEAD
-
-=======
         
         return {
             "dashboard": dashboard.to_dict(),
@@ -706,13 +441,6 @@ class AutomationAnalyticsDashboard:
             "recommendations": recommendations,
             "generated_at": datetime.now().isoformat(),
         }
-<<<<<<< HEAD
-
-    def export_report(self, format: str = "json") -> str:
-        """Export analytics report."""
-        analytics = self.get_full_analytics()
-
-=======
     
     def export_report(self, format: str = "json") -> str:
         """Export analytics report."""
@@ -731,12 +459,6 @@ class AutomationAnalyticsDashboard:
                 "DASHBOARD",
                 "-" * 40,
             ]
-<<<<<<< HEAD
-
-            for key, value in analytics["dashboard"].items():
-                lines.append(f"  {key}: {value}")
-
-=======
             
             for key, value in analytics["dashboard"].items():
                 lines.append(f"  {key}: {value}")
@@ -745,9 +467,6 @@ class AutomationAnalyticsDashboard:
             for rec in analytics["recommendations"]:
                 lines.append(f"  [{rec['priority'].upper()}] {rec['issue']}")
                 lines.append(f"    → {rec['recommendation']}")
-<<<<<<< HEAD
-
-=======
             
             return "\n".join(lines)
 

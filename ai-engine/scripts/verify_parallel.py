@@ -13,28 +13,6 @@ import sys
 import os
 
 # Add ai-engine to path
-<<<<<<< HEAD
-sys.path.insert(0, "ai-engine")
-
-
-def test_enhanced_orchestration_enabled():
-    """Test 1: Enhanced orchestration is enabled by default."""
-
-    try:
-        from crew.conversion_crew import ModPorterConversionCrew
-
-        # Create crew without variant (should use default)
-        crew = ModPorterConversionCrew(model_name="gpt-4")
-
-        if crew.use_enhanced_orchestration:
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        import traceback
-
-=======
 sys.path.insert(0, 'ai-engine')
 
 def test_enhanced_orchestration_enabled():
@@ -65,28 +43,6 @@ def test_enhanced_orchestration_enabled():
 
 def test_strategy_selector():
     """Test 2: Strategy selector chooses parallel adaptive."""
-<<<<<<< HEAD
-
-    try:
-        from orchestration.strategy_selector import (
-            StrategySelector,
-            OrchestrationStrategy,
-        )
-
-        selector = StrategySelector()
-
-        # Test default strategy
-        strategy, config = selector.select_strategy()
-
-        if strategy == OrchestrationStrategy.PARALLEL_ADAPTIVE:
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 2: Strategy Selector Configuration")
     print("=" * 70)
@@ -119,26 +75,6 @@ def test_strategy_selector():
 
 def test_worker_pool():
     """Test 3: Worker pool is configured correctly."""
-<<<<<<< HEAD
-
-    try:
-        from orchestration.worker_pool import WorkerPool, WorkerType
-        import multiprocessing
-
-        # Create worker pool with default settings
-        pool = WorkerPool()
-
-        expected_workers = min(32, (multiprocessing.cpu_count() or 1) + 4)
-
-        if pool.max_workers == expected_workers and pool.worker_type == WorkerType.THREAD:
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 3: Worker Pool Configuration")
     print("=" * 70)
@@ -173,29 +109,6 @@ def test_worker_pool():
 
 def test_enhanced_crew():
     """Test 4: Enhanced conversion crew initializes correctly."""
-<<<<<<< HEAD
-
-    try:
-        from orchestration.crew_integration import EnhancedConversionCrew
-
-        crew = EnhancedConversionCrew(model_name="gpt-4")
-
-        # Check orchestrator is initialized
-        if crew.orchestrator is not None:
-            # Check agents are registered
-            agent_count = len(crew.orchestrator.agent_executors)
-
-            if agent_count >= 5:
-                return True
-            else:
-                return True  # Still pass, just a warning
-        else:
-            return False
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 4: Enhanced Conversion Crew")
     print("=" * 70)
@@ -232,13 +145,6 @@ def test_enhanced_crew():
 
 def test_environment_variables():
     """Test 5: Environment variables are set correctly."""
-<<<<<<< HEAD
-
-    use_enhanced = os.getenv("USE_ENHANCED_ORCHESTRATION", "")
-    default_enhanced = os.getenv("DEFAULT_ENHANCED_ORCHESTRATION", "true")
-
-    # These should be set in .env file for production
-=======
     print("\n" + "=" * 70)
     print("Test 5: Environment Variables")
     print("=" * 70)
@@ -257,9 +163,6 @@ def test_environment_variables():
 
 def main():
     """Run all verification tests."""
-<<<<<<< HEAD
-
-=======
     print("\n" + "=" * 70)
     print("PARALLEL EXECUTION VERIFICATION SUITE")
     print("=" * 70)
@@ -271,12 +174,6 @@ def main():
         ("Enhanced Crew", test_enhanced_crew),
         ("Environment Variables", test_environment_variables),
     ]
-<<<<<<< HEAD
-
-    passed = 0
-    failed = 0
-
-=======
     
     passed = 0
     failed = 0
@@ -286,18 +183,6 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-<<<<<<< HEAD
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    if failed == 0:
-        pass
-    else:
-        pass
-
-=======
             print(f"❌ {name} FAILED: {e}")
             import traceback
             traceback.print_exc()

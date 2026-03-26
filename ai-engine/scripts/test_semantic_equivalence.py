@@ -10,11 +10,6 @@ Tests:
 """
 
 import sys
-<<<<<<< HEAD
-
-# Add ai-engine to path
-sys.path.insert(0, "ai-engine")
-=======
 import os
 
 # Add ai-engine to path
@@ -23,12 +18,6 @@ sys.path.insert(0, 'ai-engine')
 
 def test_dfg_construction():
     """Test 1: Data Flow Graph construction."""
-<<<<<<< HEAD
-
-    try:
-        from services.semantic_equivalence import DataFlowAnalyzer
-
-=======
     print("\n" + "=" * 70)
     print("Test 1: Data Flow Graph Construction")
     print("=" * 70)
@@ -44,20 +33,6 @@ public class Test {
     }
 }
 """
-<<<<<<< HEAD
-
-        analyzer = DataFlowAnalyzer()
-        dfg = analyzer.analyze_java(java_code)
-
-        if dfg.variables and len(dfg.nodes) > 2:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         analyzer = DataFlowAnalyzer()
         dfg = analyzer.analyze_java(java_code)
@@ -83,12 +58,6 @@ public class Test {
 
 def test_cfg_construction():
     """Test 2: Control Flow Graph construction."""
-<<<<<<< HEAD
-
-    try:
-        from services.semantic_equivalence import ControlFlowAnalyzer
-
-=======
     print("\n" + "=" * 70)
     print("Test 2: Control Flow Graph Construction")
     print("=" * 70)
@@ -108,22 +77,6 @@ public void test() {
     return x;
 }
 """
-<<<<<<< HEAD
-
-        analyzer = ControlFlowAnalyzer()
-        cfg = analyzer.analyze_java(java_code)
-
-        paths = cfg.get_paths()
-
-        if cfg.nodes and cfg.entry_node and cfg.exit_node:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         analyzer = ControlFlowAnalyzer()
         cfg = analyzer.analyze_java(java_code)
@@ -152,12 +105,6 @@ public void test() {
 
 def test_equivalence_check():
     """Test 3: Semantic equivalence checking."""
-<<<<<<< HEAD
-
-    try:
-        from services.semantic_equivalence import check_semantic_equivalence
-
-=======
     print("\n" + "=" * 70)
     print("Test 3: Semantic Equivalence Checking")
     print("=" * 70)
@@ -174,9 +121,6 @@ public class Test {
     }
 }
 """
-<<<<<<< HEAD
-
-=======
         
         bedrock_code = """
 let x = 0;
@@ -184,19 +128,6 @@ function increment() {
     x++;
 }
 """
-<<<<<<< HEAD
-
-        result = check_semantic_equivalence(java_code, bedrock_code)
-
-        if result.confidence > 0.5:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         result = check_semantic_equivalence(java_code, bedrock_code)
         
@@ -223,12 +154,6 @@ function increment() {
 
 def test_nonequivalence():
     """Test 4: Non-equivalent code detection."""
-<<<<<<< HEAD
-
-    try:
-        from services.semantic_equivalence import check_semantic_equivalence
-
-=======
     print("\n" + "=" * 70)
     print("Test 4: Non-Equivalent Code Detection")
     print("=" * 70)
@@ -246,9 +171,6 @@ public class Test {
     }
 }
 """
-<<<<<<< HEAD
-
-=======
         
         bedrock_code = """
 let x = 0;
@@ -256,20 +178,6 @@ function increment() {
     x++;
 }
 """
-<<<<<<< HEAD
-
-        result = check_semantic_equivalence(java_code, bedrock_code)
-
-        # This should detect differences
-        if result.differences or result.confidence < 0.8:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         result = check_semantic_equivalence(java_code, bedrock_code)
         
@@ -294,15 +202,6 @@ function increment() {
 
 def test_qa_integration():
     """Test 5: QA Validator integration."""
-<<<<<<< HEAD
-
-    try:
-        from services.semantic_equivalence import SemanticEquivalenceChecker
-
-        # Create checker
-        checker = SemanticEquivalenceChecker()
-
-=======
     print("\n" + "=" * 70)
     print("Test 5: QA Validator Integration")
     print("=" * 70)
@@ -322,9 +221,6 @@ public class Block {
     }
 }
 """
-<<<<<<< HEAD
-
-=======
         
         bedrock_code = """
 class Block {
@@ -336,11 +232,6 @@ class Block {
     }
 }
 """
-<<<<<<< HEAD
-
-        result = checker.check_equivalence(java_code, bedrock_code)
-
-=======
         
         result = checker.check_equivalence(java_code, bedrock_code)
         
@@ -357,14 +248,6 @@ class Block {
             "issues": result.differences,
             "warnings": result.warnings,
         }
-<<<<<<< HEAD
-
-        return True
-
-    except Exception as e:
-        import traceback
-
-=======
         
         print(f"\nQA Report: {qa_report}")
         
@@ -380,9 +263,6 @@ class Block {
 
 def main():
     """Run all test cases."""
-<<<<<<< HEAD
-
-=======
     print("\n" + "=" * 70)
     print("SEMANTIC EQUIVALENCE CHECKER TEST SUITE")
     print("=" * 70)
@@ -394,12 +274,6 @@ def main():
         ("Non-Equivalence Detection", test_nonequivalence),
         ("QA Integration", test_qa_integration),
     ]
-<<<<<<< HEAD
-
-    passed = 0
-    failed = 0
-
-=======
     
     passed = 0
     failed = 0
@@ -409,18 +283,6 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-<<<<<<< HEAD
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    if failed == 0:
-        pass
-    else:
-        pass
-
-=======
             print(f"❌ {name} FAILED: {e}")
             import traceback
             traceback.print_exc()

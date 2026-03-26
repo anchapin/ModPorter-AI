@@ -7,10 +7,10 @@ Test complete conversion pipeline from Java to Bedrock.
 import asyncio
 import logging
 import time
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
 
-from .test_scenarios import get_test_scenarios, get_scenario_by_id
+from .test_scenarios import get_test_scenarios
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,21 +18,11 @@ logger = logging.getLogger(__name__)
 
 class E2ETestRunner:
     """End-to-end test runner."""
-<<<<<<< HEAD
-
-=======
     
     def __init__(self):
         self.results = []
         self.start_time = None
         self.end_time = None
-<<<<<<< HEAD
-
-    async def run_all_tests(self) -> Dict[str, Any]:
-        """
-        Run all end-to-end tests.
-
-=======
     
     async def run_all_tests(self) -> Dict[str, Any]:
         """
@@ -43,27 +33,6 @@ class E2ETestRunner:
         """
         self.start_time = datetime.utcnow()
         self.results = []
-<<<<<<< HEAD
-
-        scenarios = get_test_scenarios()
-        logger.info(f"Running {len(scenarios)} end-to-end tests")
-
-        for scenario in scenarios:
-            result = await self.run_test(scenario)
-            self.results.append(result)
-
-        self.end_time = datetime.utcnow()
-
-        return self._generate_summary()
-
-    async def run_test(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Run a single test scenario.
-
-        Args:
-            scenario: Test scenario dict
-
-=======
         
         scenarios = get_test_scenarios()
         logger.info(f"Running {len(scenarios)} end-to-end tests")
@@ -88,11 +57,6 @@ class E2ETestRunner:
         """
         scenario_id = scenario["id"]
         scenario_name = scenario["name"]
-<<<<<<< HEAD
-
-        logger.info(f"Running test: {scenario_name} ({scenario_id})")
-
-=======
         
         logger.info(f"Running test: {scenario_name} ({scenario_id})")
         
@@ -107,25 +71,12 @@ class E2ETestRunner:
             "output": None,
             "expected": scenario["expected"],
         }
-<<<<<<< HEAD
-
-=======
         
         try:
             # Run conversion
             start = time.time()
             output = await self._run_conversion(scenario["input"])
             duration = time.time() - start
-<<<<<<< HEAD
-
-            result["output"] = output
-            result["duration_seconds"] = duration
-            result["end_time"] = datetime.utcnow().isoformat()
-
-            # Validate output
-            validation = self._validate_output(output, scenario["expected"])
-
-=======
             
             result["output"] = output
             result["duration_seconds"] = duration
@@ -141,27 +92,12 @@ class E2ETestRunner:
                 result["status"] = "failed"
                 result["error"] = validation["error"]
                 logger.error(f"✗ Test failed: {scenario_name} - {validation['error']}")
-<<<<<<< HEAD
-
-=======
             
         except Exception as e:
             result["status"] = "failed"
             result["error"] = str(e)
             result["end_time"] = datetime.utcnow().isoformat()
             logger.error(f"✗ Test error: {scenario_name} - {e}")
-<<<<<<< HEAD
-
-        return result
-
-    async def _run_conversion(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Run conversion through the pipeline.
-
-        Args:
-            input_data: Input with java_code and mod_info
-
-=======
         
         return result
     
@@ -177,11 +113,6 @@ class E2ETestRunner:
         """
         # This would call the actual conversion pipeline
         # For now, simulate with mock response
-<<<<<<< HEAD
-
-        await asyncio.sleep(0.1)  # Simulate processing
-
-=======
         
         await asyncio.sleep(0.1)  # Simulate processing
         
@@ -191,11 +122,6 @@ class E2ETestRunner:
             "metadata": {
                 "model_used": "mock",
                 "processing_time_ms": 100,
-<<<<<<< HEAD
-            },
-        }
-
-=======
             }
         }
     
@@ -206,13 +132,6 @@ class E2ETestRunner:
     ) -> Dict[str, Any]:
         """
         Validate conversion output.
-<<<<<<< HEAD
-
-        Args:
-            output: Conversion output
-            expected: Expected output criteria
-
-=======
         
         Args:
             output: Conversion output
@@ -227,12 +146,6 @@ class E2ETestRunner:
                 "success": False,
                 "error": f"Success flag mismatch: expected {expected.get('success', True)}, got {output.get('success')}",
             }
-<<<<<<< HEAD
-
-        # Check output type
-        bedrock_code = output.get("bedrock_code", "")
-
-=======
         
         # Check output type
         bedrock_code = output.get("bedrock_code", "")
@@ -243,9 +156,6 @@ class E2ETestRunner:
                 "success": False,
                 "error": f"Output too short: {len(bedrock_code)} < {expected.get('min_length')}",
             }
-<<<<<<< HEAD
-
-=======
         
         # Check required content
         for required in expected.get("contains", []):
@@ -254,11 +164,6 @@ class E2ETestRunner:
                     "success": False,
                     "error": f"Missing required content: {required}",
                 }
-<<<<<<< HEAD
-
-        return {"success": True}
-
-=======
         
         return {"success": True}
     
@@ -267,11 +172,6 @@ class E2ETestRunner:
         total = len(self.results)
         passed = sum(1 for r in self.results if r["status"] == "passed")
         failed = sum(1 for r in self.results if r["status"] == "failed")
-<<<<<<< HEAD
-
-        total_duration = sum(r["duration_seconds"] for r in self.results)
-
-=======
         
         total_duration = sum(r["duration_seconds"] for r in self.results)
         
@@ -291,9 +191,6 @@ class E2ETestRunner:
 async def run_e2e_tests() -> Dict[str, Any]:
     """
     Run all end-to-end tests.
-<<<<<<< HEAD
-
-=======
     
     Returns:
         Test results summary
@@ -305,10 +202,6 @@ async def run_e2e_tests() -> Dict[str, Any]:
 if __name__ == "__main__":
     # Run tests
     results = asyncio.run(run_e2e_tests())
-<<<<<<< HEAD
-
-    # Print summary
-=======
     
     # Print summary
     print("\n" + "=" * 60)

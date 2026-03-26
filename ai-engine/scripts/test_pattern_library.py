@@ -11,11 +11,6 @@ Tests:
 """
 
 import sys
-<<<<<<< HEAD
-
-# Add ai-engine to path
-sys.path.insert(0, "ai-engine")
-=======
 import os
 
 # Add ai-engine to path
@@ -24,34 +19,6 @@ sys.path.insert(0, 'ai-engine')
 
 def test_pattern_matching():
     """Test 1: Pattern matching."""
-<<<<<<< HEAD
-
-    try:
-        # Import directly to avoid modal dependency
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        # Test basic entity pattern
-        java_code = "public class Zombie extends Entity {}"
-        matches = pattern_lib.match_java_patterns(java_code)
-
-        for match in matches:
-            pass
-
-        if len(matches) > 0:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 1: Pattern Matching")
     print("=" * 70)
@@ -88,29 +55,6 @@ def test_pattern_matching():
 
 def test_workaround_suggestions():
     """Test 2: Workaround suggestions."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        # Test energy system workaround
-        workaround = pattern_lib.get_workaround_suggestion("Forge Energy")
-
-        if workaround:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 2: Workaround Suggestions")
     print("=" * 70)
@@ -145,28 +89,6 @@ def test_workaround_suggestions():
 
 def test_coverage_stats():
     """Test 3: Coverage statistics."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        stats = pattern_lib.get_coverage_stats()
-
-        if stats["total_patterns"] >= 10:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 3: Coverage Statistics")
     print("=" * 70)
@@ -200,39 +122,6 @@ def test_coverage_stats():
 
 def test_complex_entity_patterns():
     """Test 4: Complex entity patterns."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        library = pattern_lib.get_pattern_library()
-
-        # Get entity patterns
-        entity_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.ENTITY)
-
-        boss_pattern = library.get_pattern("entity_boss")
-        if boss_pattern:
-            pass
-
-        ai_pattern = library.get_pattern("entity_custom_ai")
-        if ai_pattern:
-            pass
-
-        if len(entity_patterns) >= 3:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 4: Complex Entity Patterns")
     print("=" * 70)
@@ -281,41 +170,6 @@ def test_complex_entity_patterns():
 
 def test_multiblock_patterns():
     """Test 5: Multi-block structure patterns."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        library = pattern_lib.get_pattern_library()
-
-        # Get multi-block patterns
-        multiblock_patterns = library.get_patterns_by_category(
-            pattern_lib.PatternCategory.MULTI_BLOCK
-        )
-
-        controller_pattern = library.get_pattern("multiblock_controller")
-        if controller_pattern:
-            pass
-
-        validator_pattern = library.get_pattern("multiblock_validator")
-        if validator_pattern:
-            pass
-
-        if len(multiblock_patterns) >= 2:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 5: Multi-Block Structure Patterns")
     print("=" * 70)
@@ -363,40 +217,6 @@ def test_multiblock_patterns():
 
 def test_dimension_patterns():
     """Test 6: Dimension and world patterns."""
-<<<<<<< HEAD
-
-    try:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "pattern_library", "ai-engine/services/pattern_library.py"
-        )
-        pattern_lib = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pattern_lib)
-
-        library = pattern_lib.get_pattern_library()
-
-        # Get dimension patterns
-        dimension_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.DIMENSION)
-        worldgen_patterns = library.get_patterns_by_category(pattern_lib.PatternCategory.WORLD_GEN)
-
-        dim_pattern = library.get_pattern("dimension_type")
-        if dim_pattern:
-            pass
-
-        biome_pattern = library.get_pattern("biome_custom")
-        if biome_pattern:
-            pass
-
-        if len(dimension_patterns) + len(worldgen_patterns) >= 3:
-            return True
-        else:
-            return True
-
-    except Exception as e:
-        import traceback
-
-=======
     print("\n" + "=" * 70)
     print("Test 6: Dimension & World Patterns")
     print("=" * 70)
@@ -445,9 +265,6 @@ def test_dimension_patterns():
 
 def main():
     """Run all test cases."""
-<<<<<<< HEAD
-
-=======
     print("\n" + "=" * 70)
     print("PATTERN LIBRARY TEST SUITE")
     print("=" * 70)
@@ -460,12 +277,6 @@ def main():
         ("Multi-Block Patterns", test_multiblock_patterns),
         ("Dimension & World Patterns", test_dimension_patterns),
     ]
-<<<<<<< HEAD
-
-    passed = 0
-    failed = 0
-
-=======
     
     passed = 0
     failed = 0
@@ -475,18 +286,6 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-<<<<<<< HEAD
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    if failed == 0:
-        pass
-    else:
-        pass
-
-=======
             print(f"❌ {name} FAILED: {e}")
             import traceback
             traceback.print_exc()

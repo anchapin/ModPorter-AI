@@ -13,17 +13,11 @@ logger = logging.getLogger(__name__)
 
 class ModalClient:
     """Client for CodeT5+ model on Modal."""
-<<<<<<< HEAD
-
-=======
     
     def __init__(self, app_name: str = "codet5-plus-converter"):
         self.app_name = app_name
         self._client = None
         self._last_error = None
-<<<<<<< HEAD
-
-=======
     
     def _get_client(self):
         """Lazy-load Modal client."""
@@ -40,17 +34,12 @@ class ModalClient:
                 self._last_error = e
                 raise
         return self._client
-<<<<<<< HEAD
-
-=======
     
     def health_check(self) -> bool:
         """Check if Modal endpoint is healthy."""
         try:
             # For now, just check if we can connect to Modal
             # In production, this would call the actual health_check method
-<<<<<<< HEAD
-=======
             import modal
             # Just verify Modal is accessible
             return True
@@ -58,20 +47,6 @@ class ModalClient:
             logger.warning(f"Modal health check failed: {e}")
             self._last_error = e
             return False
-<<<<<<< HEAD
-
-    def translate(self, java_code: str, context: Optional[str] = None) -> str:
-        """
-        Translate Java code to Bedrock code.
-
-        Args:
-            java_code: Java source code
-            context: Optional context from RAG
-
-        Returns:
-            Translated Bedrock code
-
-=======
     
     def translate(self, java_code: str, context: Optional[str] = None) -> str:
         """
@@ -91,19 +66,6 @@ class ModalClient:
             # For development, we'll use a mock response
             # In production, this would call the actual Modal endpoint
             logger.info(f"Translating Java code ({len(java_code)} chars)")
-<<<<<<< HEAD
-
-            # TODO: Replace with actual Modal call when deployed
-            # converter = modal.Function.lookup(self.app_name, "translate")
-            # result = converter.remote(java_code, context)
-
-            # Mock response for development
-            result = self._mock_translate(java_code)
-
-            logger.info("Translation completed")
-            return result
-
-=======
             
             # TODO: Replace with actual Modal call when deployed
             # converter = modal.Function.lookup(self.app_name, "translate")
@@ -119,9 +81,6 @@ class ModalClient:
             logger.error(f"Translation failed: {e}")
             self._last_error = e
             raise RuntimeError(f"Modal translation failed: {e}")
-<<<<<<< HEAD
-
-=======
     
     def _mock_translate(self, java_code: str) -> str:
         """Mock translation for development."""
@@ -144,9 +103,6 @@ const testBlock = {{
 // Original Java:
 {java_code[:200]}...
 """
-<<<<<<< HEAD
-
-=======
     
     def get_last_error(self) -> Optional[Exception]:
         """Get the last error that occurred."""
