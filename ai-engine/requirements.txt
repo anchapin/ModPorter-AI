@@ -1,7 +1,7 @@
 # Core FastAPI for AI Engine API - align with backend version
 fastapi==0.135.1
 uvicorn[standard]==0.42.0
-python-multipart>=0.0.6
+python-multipart==0.0.22
 
 # AI Framework - add upper bounds to avoid dependency conflicts
 # Note: crewai requires Python 3.10-3.13. Use Docker container for development (Python 3.12).
