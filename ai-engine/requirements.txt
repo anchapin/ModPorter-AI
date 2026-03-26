@@ -46,8 +46,8 @@ redis>=7.1.0
 pydantic~=2.11.9
 pydantic-settings~=2.10.1
 
-# Monitoring
-prometheus-client
+# Monitoring - align with backend version
+prometheus_client>=0.17.0
 psutil
 structlog>=24.0.0
 
