@@ -61,16 +61,6 @@ class IndexDocumentResponse(BaseModel):
     metadata: dict
 
 
-class DocumentWithChunksResponse(BaseModel):
-    """Response model for document with all chunks."""
-
-    id: str
-    title: str = None
-    document_source: str
-    metadata: dict = {}
-    chunks: List[ChunkResponse]
-
-
 class ChunkResponse(BaseModel):
     """Response model for a single chunk."""
 
@@ -84,3 +74,13 @@ class ChunkResponse(BaseModel):
     metadata: dict = {}
 
     model_config = {"from_attributes": True}
+
+
+class DocumentWithChunksResponse(BaseModel):
+    """Response model for document with all chunks."""
+
+    id: str
+    title: str = None
+    document_source: str
+    metadata: dict = {}
+    chunks: List[ChunkResponse]
