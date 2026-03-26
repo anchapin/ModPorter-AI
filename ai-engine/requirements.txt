@@ -3,15 +3,15 @@ fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 
-# AI Framework
+# AI Framework - add upper bounds to avoid dependency conflicts
 # Note: crewai requires Python 3.10-3.13. Use Docker container for development (Python 3.12).
 # If running locally, use Python 3.12 virtual environment.
-crewai>=0.11.0
-langchain>=0.3.0
-langchain-openai>=0.2.0
-langchain-ollama>=0.1.0
-openai>=1.0.0
-sentence-transformers>=2.2.0
+crewai>=0.11.0,<1.0.0
+langchain>=0.3.0,<1.0.0
+langchain-openai>=0.2.0,<1.0.0
+langchain-ollama>=0.1.0,<1.0.0
+openai>=1.0.0,<2.0.0
+sentence-transformers>=2.2.0,<3.0.0
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
@@ -36,8 +36,8 @@ beautifulsoup4>=4.12.0 # For web scraping (BedrockDocsScraper)
 aiofiles>=23.0.0     # For async file operations (potentially in scraper or other utils)
 validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 
-# Web Search
-ddgs>=5.3.0              # For actual web search functionality (replaces duckduckgo-search)
+# Web Search - pin to specific version to avoid resolution issues
+ddgs==5.3.0
 
 # Redis for job management
 redis>=4.5.0
@@ -61,5 +61,5 @@ opentelemetry-instrumentation-fastapi>=0.45b0
 opentelemetry-instrumentation-httpx>=0.45b0
 opentelemetry-instrumentation-redis>=0.45b0
 
-# Modal for CodeT5+ model deployment
-modal>=0.60
+# Modal for CodeT5+ model deployment - pin version
+modal>=0.60,<1.0.0
