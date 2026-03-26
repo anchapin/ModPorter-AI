@@ -9,7 +9,6 @@ import time
 import logging
 from typing import Dict, Any, Optional, Callable
 from collections import OrderedDict
-import weakref
 import gc
 
 logger = logging.getLogger(__name__)

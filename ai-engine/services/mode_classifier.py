@@ -9,7 +9,7 @@ Classifies mods into 4 conversion modes:
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Set, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -186,7 +186,7 @@ class ModeClassifier:
         """Classify mod based on extracted features."""
         
         # Check for expert features first (highest priority)
-        expert_features = set(FEATURE_PATTERNS.keys()) & set(features.complex_features)
+        set(FEATURE_PATTERNS.keys()) & set(features.complex_features)
         if any(f in features.complex_features for f in CLASSIFICATION_RULES[ConversionMode.EXPERT]["complex_features"]):
             return ClassificationResult(
                 mode=ConversionMode.EXPERT,

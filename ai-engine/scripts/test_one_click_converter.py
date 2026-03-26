@@ -271,7 +271,7 @@ def test_user_preferences():
         
         if (result.settings.detail_level == "comprehensive" and
             result.settings.optimization == "accuracy" and
-            result.settings.include_source == True):
+            result.settings.include_source):
             print("\n✅ User preferences working")
             return True
         else:

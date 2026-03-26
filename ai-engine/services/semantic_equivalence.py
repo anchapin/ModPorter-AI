@@ -12,7 +12,6 @@ import logging
 from typing import Dict, List, Set, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
-import hashlib
 
 logger = logging.getLogger(__name__)
 

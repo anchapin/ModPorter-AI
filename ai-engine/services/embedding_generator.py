@@ -6,7 +6,7 @@ Enhanced with model caching and optimized batch processing.
 """
 
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List
 import numpy as np
 
 # Import model cache

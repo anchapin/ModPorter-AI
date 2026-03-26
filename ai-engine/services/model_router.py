@@ -11,11 +11,10 @@ Routes translation requests through model hierarchy:
 import logging
 import time
 from typing import Optional, List
-from datetime import datetime
 
-from .modal_client import ModalClient, get_modal_client
-from .deepseek_client import DeepSeekClient, get_deepseek_client
-from .ollama_client import OllamaClient, get_ollama_client
+from .modal_client import get_modal_client
+from .deepseek_client import get_deepseek_client
+from .ollama_client import get_ollama_client
 
 logger = logging.getLogger(__name__)
 

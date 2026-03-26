@@ -9,7 +9,7 @@ Provides comprehensive analytics for the conversion automation system:
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import defaultdict

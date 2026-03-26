@@ -40,7 +40,6 @@ class ModalClient:
         try:
             # For now, just check if we can connect to Modal
             # In production, this would call the actual health_check method
-            import modal
             # Just verify Modal is accessible
             return True
         except Exception as e:
