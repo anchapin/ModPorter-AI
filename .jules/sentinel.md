@@ -27,3 +27,8 @@
 **Vulnerability:** A hardcoded `SECRET_KEY` ("your-secret-key-change-in-production") was used in `backend/src/security/auth.py` for signing JWT tokens.
 **Learning:** Hardcoded cryptographic keys allow attackers who read the source code to forge valid JWT tokens, completely bypassing authentication.
 **Prevention:** Always load secrets from environment variables or a secure secret management system using a utility like `get_secret` from `core.secrets`.
+
+## 2024-05-24 - [Fail-Secure Missing Secrets]
+**Vulnerability:** A hardcoded `SECRET_KEY` was used as a default, or the application might fall back to an insecure default if the secret was not available.
+**Learning:** When removing hardcoded cryptographic secrets to use environment variables, the application must fail securely if the variable is unset. Falling back to an insecure default negates the purpose of externalized secrets.
+**Prevention:** Raise an explicit error (e.g., `ValueError`) during initialization if critical cryptographic secrets are missing, rather than using fallback values.
