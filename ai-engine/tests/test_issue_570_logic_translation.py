@@ -18,7 +18,7 @@ import json
 # Import modules for testing
 try:
     from agents.logic_translator import LogicTranslatorAgent
-    from engines.javascript_validator import JavaScriptValidator, Severity
+    from engines.javascript_validator import JavaScriptValidator
     from engines.translation_warnings import TranslationWarningDetector, ImpactLevel
 
     MODULES_AVAILABLE = True

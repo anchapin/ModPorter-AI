@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from indexing.chunking_strategies import (
     ChunkingStrategyFactory,
-    ChunkingStrategy,
 )
 from indexing.metadata_extractor import DocumentMetadataExtractor
 
@@ -73,7 +72,7 @@ def benchmark_metadata_extraction(document: str, iterations: int = 50) -> dict:
     
     for _ in range(iterations):
         start = time.perf_counter()
-        metadata = extractor.extract(document)
+        extractor.extract(document)  # noqa: F841
         end = time.perf_counter()
         times.append(end - start)
     
