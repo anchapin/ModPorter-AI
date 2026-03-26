@@ -67,6 +67,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=base-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=base-builder /usr/local/bin /usr/local/bin
 
+# Ensure pip is available - this can be missing in some slim images
+RUN python -m ensurepip --upgrade || true
+
 # Create app user
 RUN adduser --disabled-password --gecos '' appuser
 
