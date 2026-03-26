@@ -36,8 +36,8 @@ beautifulsoup4>=4.12.0 # For web scraping (BedrockDocsScraper)
 aiofiles>=23.0.0     # For async file operations (potentially in scraper or other utils)
 validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 
-# Web Search - pin to specific version to avoid resolution issues
-ddgs==5.3.0
+# Web Search - use available version
+ddgs>=5.3.0
 
 # Redis for job management - align with backend version
 redis>=7.1.0
