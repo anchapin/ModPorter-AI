@@ -741,7 +741,9 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped**: RAG-5.1, RAG-5.2
 
-**Plan**: `phases/15-05-user-correction-learning/15-05-PLAN.md`
+**Plans**:
+- [ ] `phases/15-05-user-correction-learning/15-05-01-PLAN.md` — Database models + API + Storage (Wave 1)
+- [ ] `phases/15-05-user-correction-learning/15-05-02-PLAN.md` — Validation + Re-ranker + Tests (Wave 2)
 
 ---
 
