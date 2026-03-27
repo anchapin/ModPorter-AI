@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src.utils.dependency_detector import (
+from utils.dependency_detector import (
     DependencyReport,
     ImportVisitor,
     UnusedImport,
@@ -171,9 +171,7 @@ class TestGetAllImportedModules:
         """Test getting all imported modules from a directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             Path(tmpdir, "test1.py").write_text("import os\nimport sys\n")
-            Path(tmpdir, "test2.py").write_text(
-                "import json\nfrom pathlib import Path\n"
-            )
+            Path(tmpdir, "test2.py").write_text("import json\nfrom pathlib import Path\n")
 
             imports = get_all_imported_modules(tmpdir)
             assert "os" in imports
@@ -221,9 +219,7 @@ class TestAnalyzeDependencies:
             # Create source directory
             src_dir = Path(tmpdir, "src")
             src_dir.mkdir()
-            Path(src_dir, "main.py").write_text(
-                "import os\nfrom used_package import something\n"
-            )
+            Path(src_dir, "main.py").write_text("import os\nfrom used_package import something\n")
 
             report = analyze_dependencies(
                 source_directories=[str(src_dir)],
@@ -253,9 +249,7 @@ class TestDependencyReport:
             import_statement="import os",
             imported_names=["os"],
         )
-        unused_package = UnusedPackage(
-            package_name="unused", source_file="/requirements.txt"
-        )
+        unused_package = UnusedPackage(package_name="unused", source_file="/requirements.txt")
 
         report = DependencyReport(
             unused_imports=[unused_import],

@@ -10,8 +10,8 @@ import pytest
 import datetime
 from unittest.mock import patch
 
-from src.services.comprehensive_report_generator import ConversionReportGenerator
-from src.schemas.report_types import (
+from services.comprehensive_report_generator import ConversionReportGenerator
+from schemas.report_types import (
     SummaryReport,
     FeatureAnalysis,
     AssumptionsReport,
@@ -271,9 +271,7 @@ class TestSummaryReportGeneration:
 class TestFeatureAnalysisGeneration:
     """Test feature analysis generation."""
 
-    def test_generate_feature_analysis(
-        self, report_generator, sample_conversion_result
-    ):
+    def test_generate_feature_analysis(self, report_generator, sample_conversion_result):
         """Test basic feature analysis generation."""
         analysis = report_generator.generate_feature_analysis(
             sample_conversion_result["features_data"]
@@ -337,9 +335,7 @@ class TestFeatureAnalysisGeneration:
 class TestAssumptionsReportGeneration:
     """Test assumptions report generation."""
 
-    def test_generate_assumptions_report(
-        self, report_generator, sample_conversion_result
-    ):
+    def test_generate_assumptions_report(self, report_generator, sample_conversion_result):
         """Test basic assumptions report generation."""
         report = report_generator.generate_assumptions_report(
             sample_conversion_result["assumptions_detail_data"]
@@ -410,14 +406,10 @@ class TestDeveloperLogGeneration:
 class TestInteractiveReportGeneration:
     """Test complete interactive report generation."""
 
-    def test_create_interactive_report(
-        self, report_generator, sample_conversion_result
-    ):
+    def test_create_interactive_report(self, report_generator, sample_conversion_result):
         """Test complete interactive report creation."""
         job_id = "test_job_123"
-        report = report_generator.create_interactive_report(
-            sample_conversion_result, job_id
-        )
+        report = report_generator.create_interactive_report(sample_conversion_result, job_id)
 
         # Check report structure
         assert isinstance(report, InteractiveReport)
@@ -443,9 +435,7 @@ class TestInteractiveReportGeneration:
     def test_report_to_dict(self, report_generator, sample_conversion_result):
         """Test report dictionary conversion."""
         job_id = "test_job_123"
-        report = report_generator.create_interactive_report(
-            sample_conversion_result, job_id
-        )
+        report = report_generator.create_interactive_report(sample_conversion_result, job_id)
 
         report_dict = report.to_dict()
 
@@ -467,9 +457,7 @@ class TestInteractiveReportGeneration:
     def test_report_to_json(self, report_generator, sample_conversion_result):
         """Test report JSON serialization."""
         job_id = "test_job_123"
-        report = report_generator.create_interactive_report(
-            sample_conversion_result, job_id
-        )
+        report = report_generator.create_interactive_report(sample_conversion_result, job_id)
 
         json_str = report.to_json()
 
@@ -504,9 +492,7 @@ class TestEdgeCases:
         minimal_result = {"job_id": "minimal_job"}
 
         # Should not raise exception
-        report = report_generator.create_interactive_report(
-            minimal_result, "minimal_job"
-        )
+        report = report_generator.create_interactive_report(minimal_result, "minimal_job")
 
         assert report.summary.total_features == 0
         assert report.summary.overall_success_rate == 0.0
@@ -521,9 +507,7 @@ class TestEdgeCases:
 
         # Should handle gracefully
         try:
-            report = report_generator.create_interactive_report(
-                invalid_result, "invalid_job"
-            )
+            report = report_generator.create_interactive_report(invalid_result, "invalid_job")
             # If no exception, check defaults were used
             assert report.summary.total_features == 0
         except (TypeError, ValueError):
@@ -536,18 +520,14 @@ class TestReportGenerationIntegration:
     """Integration tests for complete report generation workflow."""
 
     @patch("time.time")
-    def test_full_workflow_integration(
-        self, mock_time, report_generator, sample_conversion_result
-    ):
+    def test_full_workflow_integration(self, mock_time, report_generator, sample_conversion_result):
         """Test complete workflow from conversion result to interactive report."""
         mock_time.return_value = 1234567890
 
         job_id = "integration_test_job"
 
         # Generate complete report
-        report = report_generator.create_interactive_report(
-            sample_conversion_result, job_id
-        )
+        report = report_generator.create_interactive_report(sample_conversion_result, job_id)
 
         # Verify all components work together
         assert report.metadata.job_id == job_id
