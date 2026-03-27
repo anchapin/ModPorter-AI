@@ -6,6 +6,7 @@ This module provides:
 - Chunking strategies (FixedSize, Semantic, Recursive)
 - Metadata extraction for documents
 - Hierarchical indexing support
+- Chunk prioritization for relevance ranking
 """
 
 from .chunking_strategies import (
@@ -21,6 +22,10 @@ from .metadata_extractor import (
     ChunkMetadata,
     DocumentMetadata,
 )
+from .chunk_prioritizer import (
+    ChunkPrioritizer,
+    RelevanceScore,
+)
 
 __all__ = [
     "ChunkingStrategy",
@@ -32,4 +37,6 @@ __all__ = [
     "DocumentMetadataExtractor",
     "ChunkMetadata",
     "DocumentMetadata",
+    "ChunkPrioritizer",
+    "RelevanceScore",
 ]

@@ -37,6 +37,21 @@ from search.query_expansion import (
     ContextualExpander,
 )
 
+from search.query_complexity_analyzer import (
+    QueryComplexityAnalyzer,
+    ComplexityLevel,
+    ComplexityAnalysis,
+    analyze_query_complexity,
+)
+
+from search.context_manager import (
+    DynamicContextSizer,
+    ContextManager,
+    ContextConfig,
+    ContextStrategy,
+    Turn,
+)
+
 # Alias for backwards compatibility
 QueryExpander = QueryExpansionEngine
 
@@ -67,4 +82,15 @@ __all__ = [
     "MinecraftDomainExpander",
     "SynonymExpander",
     "ContextualExpander",
+    # Query complexity analysis
+    "QueryComplexityAnalyzer",
+    "ComplexityLevel",
+    "ComplexityAnalysis",
+    "analyze_query_complexity",
+    # Context management
+    "DynamicContextSizer",
+    "ContextManager",
+    "ContextConfig",
+    "ContextStrategy",
+    "Turn",
 ]
