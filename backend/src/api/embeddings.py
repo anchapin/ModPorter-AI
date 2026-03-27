@@ -26,6 +26,9 @@ from models.embedding_models import (
     IndexDocumentResponse,
     DocumentWithChunksResponse,
     ChunkResponse,
+    EnhancedSearchQuery,
+    EnhancedSearchResult,
+    EnhancedSearchResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -741,3 +744,295 @@ async def hybrid_search_legacy(
 ):
     """Legacy endpoint - redirects to /embeddings/hybrid-search"""
     return await hybrid_search(request, db)
+
+
+# ============================================================================
+# Enhanced Search API - Phase 15-02: Direct Search Engine Integration
+# ============================================================================
+
+# Singleton instances for search engines (lazy initialization)
+_hybrid_engine = None
+_reranker = None
+_query_expander = None
+
+
+def get_hybrid_engine():
+    """Get or create singleton HybridSearchEngine instance."""
+    global _hybrid_engine
+    if _hybrid_engine is None:
+        import sys
+        import os
+
+        ai_engine_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        )
+        if ai_engine_path not in sys.path:
+            sys.path.insert(0, ai_engine_path)
+
+        from search.hybrid_search_engine import HybridSearchEngine
+
+        _hybrid_engine = HybridSearchEngine()
+        logger.info("HybridSearchEngine initialized")
+    return _hybrid_engine
+
+
+def get_reranker():
+    """Get or create singleton CrossEncoderReRanker instance."""
+    global _reranker
+    if _reranker is None:
+        import sys
+        import os
+
+        ai_engine_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        )
+        if ai_engine_path not in sys.path:
+            sys.path.insert(0, ai_engine_path)
+
+        from search.reranking_engine import CrossEncoderReRanker
+
+        _reranker = CrossEncoderReRanker(model_name="msmarco")
+        logger.info("CrossEncoderReRanker initialized with ms-marco model")
+    return _reranker
+
+
+def get_query_expander():
+    """Get or create singleton QueryExpansionEngine instance."""
+    global _query_expander
+    if _query_expander is None:
+        import sys
+        import os
+
+        ai_engine_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        )
+        if ai_engine_path not in sys.path:
+            sys.path.insert(0, ai_engine_path)
+
+        from search.query_expansion import QueryExpansionEngine
+
+        _query_expander = QueryExpansionEngine()
+        logger.info("QueryExpansionEngine initialized")
+    return _query_expander
+
+
+@router.post("/embeddings/search-enhanced/", response_model=EnhancedSearchResponse)
+async def search_similar_embeddings_enhanced(
+    search_query: EnhancedSearchQuery,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Enhanced semantic search with hybrid ranking, re-ranking, and query expansion.
+
+    Features:
+    - Hybrid search: Combines vector similarity (semantic) with BM25 keyword matching
+    - Cross-encoder re-ranking: Improves result quality using neural re-ranking
+    - Query expansion: Expands queries with domain-specific terms and synonyms
+    - Performance: Target latency < 500ms
+
+    Parameters:
+    - use_hybrid: If True (default), combine vector + keyword search. If False, vector-only.
+    - use_reranker: If True (default), apply cross-encoder re-ranking to top results.
+    - expand_query: If True (default), expand query with synonyms and domain terms.
+    - top_k: Number of results to return (1-100, default 10).
+    - search_mode: Force specific search mode ("vector", "keyword", or "hybrid").
+    - ranking_strategy: How to combine scores ("weighted_sum", "rrf", or "ensemble").
+
+    Returns:
+    - EnhancedSearchResponse with results, metadata, and performance metrics
+    """
+    import time
+
+    start_time = time.time()
+    original_query = search_query.query_text
+    expanded_query = None
+    reranked = False
+
+    try:
+        # Step 1: Query expansion (if enabled)
+        if search_query.expand_query:
+            expander = get_query_expander()
+            expansion_result = expander.expand_query(
+                original_query, strategies=["domain_expansion", "synonym_expansion"], max_expansion_terms=10
+            )
+            expanded_query = expansion_result.expanded_query
+            logger.info(f"Query expanded: '{original_query}' -> '{expanded_query}'")
+        else:
+            expanded_query = original_query
+
+        # Step 2: Generate query embedding if not provided
+        query_embedding = search_query.query_embedding
+        if query_embedding is None:
+            # Use local embedding generation
+            import sys
+            import os
+
+            ai_engine_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+            )
+            if ai_engine_path not in sys.path:
+                sys.path.insert(0, ai_engine_path)
+
+            from utils.embedding_generator import LocalEmbeddingGenerator
+
+            embedding_gen = LocalEmbeddingGenerator()
+            query_embeddings = embedding_gen.generate_embeddings([expanded_query])
+            if not query_embeddings or query_embeddings[0] is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate query embedding"
+                )
+            query_embedding = query_embeddings[0].embedding.tolist()
+            logger.debug(f"Generated query embedding (dim: {len(query_embedding)})")
+
+        # Step 3: Fetch all documents from database
+        # TODO: Add caching layer for documents (Redis or in-memory)
+        # For now, fetch from database (should be fast with indexed queries)
+        from sqlalchemy import select
+
+        result = await db.execute(select(DocumentEmbedding).where(DocumentEmbedding.embedding.isnot(None)).limit(1000))
+        documents_db = result.scalars().all()
+
+        if not documents_db:
+            logger.warning("No documents found in database")
+            return EnhancedSearchResponse(
+                results=[],
+                total_results=0,
+                query=original_query,
+                expanded_query=expanded_query,
+                search_mode=search_query.search_mode,
+                ranking_strategy=search_query.ranking_strategy,
+                latency_ms=(time.time() - start_time) * 1000,
+                hybrid_used=search_query.use_hybrid,
+                reranker_used=False,
+                expansion_used=search_query.expand_query,
+            )
+
+        # Convert database documents to MultiModalDocument format
+        import sys
+        import os
+
+        ai_engine_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+        )
+        if ai_engine_path not in sys.path:
+            sys.path.insert(0, ai_engine_path)
+
+        from schemas.multimodal_schema import MultiModalDocument, ContentType
+
+        documents = {}
+        embeddings_dict = {}
+
+        for doc_db in documents_db:
+            # Create MultiModalDocument from database record
+            doc = MultiModalDocument(
+                id=str(doc_db.id), content=doc_db.document_source or "", content_type=ContentType.TEXT, metadata=doc_db.metadata_json or {}
+            )
+            documents[doc.id] = doc
+            embeddings_dict[doc.id] = doc_db.embedding
+
+        logger.info(f"Loaded {len(documents)} documents for search")
+
+        # Step 4: Perform hybrid search
+        engine = get_hybrid_engine()
+
+        # Map search mode string to enum
+        from search.hybrid_search_engine import SearchMode
+
+        mode_map = {"vector": SearchMode.VECTOR_ONLY, "keyword": SearchMode.KEYWORD_ONLY, "hybrid": SearchMode.HYBRID}
+        search_mode = mode_map.get(search_query.search_mode, SearchMode.HYBRID)
+
+        # Determine top_k for retrieval (get more for re-ranking)
+        retrieval_k = search_query.top_k * 5 if search_query.use_reranker else search_query.top_k
+
+        from schemas.multimodal_schema import SearchQuery
+
+        search_results = await engine.search(
+            query=SearchQuery(query_text=expanded_query, top_k=retrieval_k),
+            documents=documents,
+            embeddings=embeddings_dict,
+            query_embedding=query_embedding,
+            search_mode=search_mode if search_query.use_hybrid else SearchMode.VECTOR_ONLY,
+        )
+
+        logger.info(f"Hybrid search returned {len(search_results)} candidates")
+
+        # Step 5: Cross-encoder re-ranking (if enabled)
+        final_results = search_results
+
+        if search_query.use_reranker and search_results:
+            reranker = get_reranker()
+
+            # Re-rank top candidates (limit to 50 for performance)
+            rerank_candidates = search_results[:50] if len(search_results) > 50 else search_results
+
+            reranked_results = reranker.rerank(query=expanded_query, results=rerank_candidates, top_k=search_query.top_k)
+
+            # Convert ReRankingResult back to EnhancedSearchResult format
+            reranked = True
+            final_results = []
+            for rerank_result in reranked_results:
+                original_result = rerank_candidates[rerank_result.original_rank - 1]
+                final_results.append(
+                    EnhancedSearchResult(
+                        document_id=original_result.document.id,
+                        content=original_result.matched_content or original_result.document.content,
+                        metadata=original_result.document.metadata or {},
+                        similarity_score=original_result.similarity_score,
+                        keyword_score=original_result.keyword_score,
+                        final_score=rerank_result.final_score,
+                        rank=rerank_result.new_rank,
+                        match_explanation=rerank_result.explanation,
+                        reranked=True,
+                        expanded_query=expanded_query if expanded_query != original_query else None,
+                    )
+                )
+
+            logger.info(f"Re-ranking applied, returned {len(final_results)} results")
+        else:
+            # Convert search results to EnhancedSearchResult format (no re-ranking)
+            final_results = [
+                EnhancedSearchResult(
+                    document_id=result.document.id,
+                    content=result.matched_content or result.document.content,
+                    metadata=result.document.metadata or {},
+                    similarity_score=result.similarity_score,
+                    keyword_score=result.keyword_score,
+                    final_score=result.final_score,
+                    rank=result.rank,
+                    match_explanation=result.match_explanation,
+                    reranked=False,
+                    expanded_query=expanded_query if expanded_query != original_query else None,
+                )
+                for result in search_results[:search_query.top_k]
+            ]
+
+        # Calculate latency
+        latency_ms = (time.time() - start_time) * 1000
+
+        # Log performance
+        logger.info(
+            f"Enhanced search completed: {len(final_results)} results, "
+            f"{latency_ms:.2f}ms, hybrid={search_query.use_hybrid}, "
+            f"reranked={reranked}, expanded={search_query.expand_query}"
+        )
+
+        # Warn if latency exceeds target
+        if latency_ms > 500:
+            logger.warning(f"Search latency {latency_ms:.2f}ms exceeds 500ms target")
+
+        return EnhancedSearchResponse(
+            results=final_results,
+            total_results=len(final_results),
+            query=original_query,
+            expanded_query=expanded_query if expanded_query != original_query else None,
+            search_mode=search_query.search_mode,
+            ranking_strategy=search_query.ranking_strategy,
+            latency_ms=latency_ms,
+            hybrid_used=search_query.use_hybrid,
+            reranker_used=reranked,
+            expansion_used=search_query.expand_query,
+        )
+
+    except Exception as e:
+        logger.error(f"Error in enhanced search: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}")
