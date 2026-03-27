@@ -27,10 +27,9 @@ jobs:
 
       - name: Generate diagrams
         run: |
-          set -e
           for f in docs/*.md; do
             if [ -f "$f" ]; then
-              mmdc -i "$f" -o "${f%.md}-diagram.png" --no-sandbox || true
+              mmdc -i "$f" -o "${f%.md}-diagram.png" || true
             fi
           done
 
