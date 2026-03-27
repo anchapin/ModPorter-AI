@@ -214,10 +214,10 @@ class CommunityPatternManager:
                 name=f"Community: {submission.category} pattern",
                 description=submission.description,
                 java_example=submission.java_pattern,
-                bedrock_example=submission.bedrock_example,
+                bedrock_example=submission.bedrock_pattern,
                 category=submission.category,
                 tags=submission.tags,
-                complexity="unknown",  # Could be determined by analyzer
+                complexity="simple",  # Default to simple, could be determined by analyzer
                 success_rate=0.0,  # Will be updated based on conversions
             )
 
