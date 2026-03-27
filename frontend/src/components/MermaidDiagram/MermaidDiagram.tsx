@@ -26,7 +26,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
       mermaid.initialize({
         startOnLoad: true,
         theme: 'default',
-        securityLevel: 'strict',
+        securityLevel: 'loose',
         flowchart: {
           useMaxWidth: true,
           htmlLabels: true,
