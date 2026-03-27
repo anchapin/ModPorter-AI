@@ -27,10 +27,8 @@ jobs:
 
       - name: Generate diagrams
         run: |
-          for f in $(find docs -name "*.md"); do
-            if grep -q "```mermaid" "$f"; then
-              mmdc -i "$f" -o "${f%.md}-diagram.png" --no-sandbox
-            fi
+          find docs -name "*.md" -exec grep -l "```mermaid" {} \; | while read -r file; do
+            mmdc -i "$file" -o "${file%.md}-diagram.png" --no-sandbox
           done
 
       - name: Deploy to GitHub Pages
