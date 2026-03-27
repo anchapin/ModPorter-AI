@@ -2,7 +2,7 @@
 
 **Version**: 1.0  
 **Created**: 2026-03-13  
-**Last Updated**: 2026-03-13  
+**Last Updated**: 2026-03-27  
 **Status**: Active
 
 ---
@@ -884,6 +884,278 @@ semantic_checker:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-03-13 | GSD System | Initial requirements from research |
+
+---
+
+---
+
+## v4.7 Requirements (Multi-Agent QA Review - Current Milestone)
+
+### Agent Infrastructure
+
+#### QA-01: QA Context & Orchestration
+**Priority**: CRITICAL  
+**Effort**: Medium  
+**Dependencies**: None
+
+**Description**: Core infrastructure for multi-agent QA system with context passing and orchestration.
+
+**Acceptance Criteria**:
+- [ ] QAContext dataclass with job ID, paths, metadata, validation results
+- [ ] QAOrchestrator class coordinating 4-agent pipeline
+- [ ] Post-conversion integration hook (after Packaging Agent)
+- [ ] Sequential task execution with context passing
+- [ ] Output schema validation after each agent
+- [ ] Timeout handling for each agent (5 min default)
+- [ ] Circuit breaker for failed agents
+
+**Test Cases**:
+- QAContext created with all required fields → Valid object
+- Orchestrator executes 4 agents sequentially → All complete
+- Agent timeout → Circuit breaker triggers, pipeline stops
+- Invalid agent output → Schema validation catches, retries
+
+---
+
+#### QA-02: Translator Agent
+**Priority**: CRITICAL  
+**Effort**: High  
+**Dependencies**: QA-01
+
+**Description**: Agent that generates Bedrock code from parsed Java AST with RAG augmentation.
+
+**Acceptance Criteria**:
+- [ ] Parse Java AST to extract structural information
+- [ ] Query RAG for similar conversion patterns
+- [ ] Generate Bedrock JSON (behavior pack components)
+- [ ] Generate TypeScript/JavaScript (Script API code)
+- [ ] Preserve code comments and documentation
+- [ ] Output schema validation before handoff
+- [ ] Temperature=0 for deterministic results
+- [ ] Context compression for large code blocks
+
+**Test Cases**:
+- Translate simple item mod → Valid Bedrock JSON + TS
+- Translate complex entity mod → Full component output
+- Translation timeout → Graceful failure with error context
+- Invalid output → Schema validation fails, retry triggered
+
+---
+
+#### QA-03: Reviewer Agent
+**Priority**: CRITICAL  
+**Effort**: High  
+**Dependencies**: QA-02
+
+**Description**: Agent that validates code quality, style, and best practices for Bedrock output.
+
+**Acceptance Criteria**:
+- [ ] Run ESLint/TSLint on generated JavaScript/TypeScript
+- [ ] Validate JSON against Bedrock schemas
+- [ ] Check TypeScript types (tsc compilation)
+- [ ] Verify Script API method usage
+- [ ] Flag issues with line numbers and severity
+- [ ] Auto-fix suggestions for common issues
+- [ ] Generate quality score (0-100)
+- [ ] Deterministic validation with explicit rubrics
+
+**Test Cases**:
+- Valid code → Pass with high quality score
+- Syntax error → Caught with line number
+- TypeScript type error → Compilation error caught
+- Missing Script API method → Flagged with suggestion
+- Auto-fixable issue → Fix suggestion provided
+
+---
+
+#### QA-04: Tester Agent
+**Priority**: CRITICAL  
+**Effort**: High  
+**Dependencies**: QA-02
+
+**Description**: Agent that generates and executes unit and integration tests for converted code.
+
+**Acceptance Criteria**:
+- [ ] Generate unit tests from Java docstrings/comments
+- [ ] Generate integration tests for component interactions
+- [ ] Use pytest for test execution
+- [ ] Execute tests in sandboxed environment
+- [ ] Mock Bedrock Script API for testing
+- [ ] Report pass/fail with detailed error messages
+- [ ] Generate test coverage report
+- [ ] Support both unit and integration test generation
+
+**Test Cases**:
+- Generate unit tests for item mod → Tests execute
+- Generate integration tests → Component interaction verified
+- Test execution timeout → Graceful failure
+- Test failure → Detailed error with stack trace
+- Coverage report generated → HTML report available
+
+---
+
+#### QA-05: Semantic Checker Agent
+**Priority**: CRITICAL  
+**Effort**: High  
+**Dependencies**: QA-03, QA-04
+
+**Description**: Agent that validates behavioral equivalence between Java source and Bedrock output.
+
+**Acceptance Criteria**:
+- [ ] Compare data flow graphs between Java and Bedrock
+- [ ] Analyze control flow equivalence
+- [ ] Verify Script API method validity
+- [ ] Check variable/type mappings
+- [ ] Generate semantic similarity score
+- [ ] Flag behavioral drift with explanations
+- [ ] Handle edge cases and boundary conditions
+- [ ] Deterministic validation with explicit criteria
+
+**Test Cases**:
+- Equivalent code → High similarity score (>90%)
+- Missing functionality → Drift flagged with explanation
+- Invalid Script API usage → API validity error
+- Edge case difference → Boundary condition noted
+- Non-equivalent logic → Behavioral drift reported
+
+---
+
+#### QA-06: QA Report Generator
+**Priority**: HIGH  
+**Effort**: Medium  
+**Dependencies**: QA-02, QA-03, QA-04, QA-05
+
+**Description**: Aggregates all agent outputs into comprehensive QA report.
+
+**Acceptance Criteria**:
+- [ ] Aggregate results from all 4 agents
+- [ ] Generate quality score (weighted average)
+- [ ] List all issues with severity and location
+- [ ] Include test execution results
+- [ ] Show semantic equivalence analysis
+- [ ] Export report in JSON/HTML/Markdown formats
+- [ ] Color-coded severity (green/yellow/red)
+- [ ] Downloadable with conversion results
+
+**Test Cases**:
+- All agents pass → Green report, high overall score
+- Reviewer finds issues → Yellow/red with details
+- Tester fails → Test failures detailed
+- Semantic drift detected → Behavior analysis included
+- Report export → All formats valid
+
+---
+
+### Validation & Integration
+
+#### QA-07: Parallel Agent Execution
+**Priority**: MEDIUM  
+**Effort**: Medium  
+**Dependencies**: QA-01
+
+**Description**: Support parallel execution for independent agents (Reviewer + Tester).
+
+**Acceptance Criteria**:
+- [ ] Identify parallelizable agent pairs
+- [ ] Execute Reviewer and Tester in parallel
+- [ ] Aggregate parallel results correctly
+- [ ] Handle partial failures gracefully
+- [ ] Performance benchmarking (parallel vs sequential)
+- [ ] Configurable parallelization
+
+**Test Cases**:
+- Parallel execution → Same results as sequential
+- One agent fails → Other continues, results aggregated
+- Performance improvement → Measurable speedup
+
+---
+
+#### QA-08: Iterative Refinement Loop
+**Priority**: MEDIUM  
+**Effort**: Medium  
+**Dependencies**: QA-06
+
+**Description**: Allow iterative refinement when critical issues are found.
+
+**Acceptance Criteria**:
+- [ ] Detect critical issues requiring re-translation
+- [ ] Pass error context back to Translator
+- [ ] Re-run pipeline with corrected context
+- [ ] Limit refinement iterations (max 3)
+- [ ] Track refinement history
+- [ ] Report improvement after refinement
+
+**Test Cases**- Critical issue found → Refinement triggered
+- Refinement improves score → Noted in report
+- Max iterations reached → Pipeline stops, report generated
+- No improvement after refinement → Final state reported
+
+---
+
+## Future Requirements (v4.8+)
+
+#### QA-09: Self-Learning from QA
+**Priority**: LOW  
+**Effort**: High  
+**Dependencies**: QA-06, QA-08
+
+**Description**: Feed QA results back into RAG for continuous improvement.
+
+**Acceptance Criteria**:
+- [ ] Store successful conversion patterns
+- [ ] Learn from user corrections
+- [ ] Improve RAG retrieval based on QA feedback
+- [ ] Confidence scoring for patterns
+
+---
+
+#### QA-10: Advanced Security Scanning
+**Priority**: LOW  
+**Effort**: Medium  
+**Dependencies**: QA-03
+
+**Description**: Enhanced security validation for Bedrock output.
+
+**Acceptance Criteria**:
+- [ ] Detect unsafe Script API usage
+- [ ] Check for hardcoded values
+- [ ] Validate against security best practices
+- [ ] Generate security score
+
+---
+
+## Out of Scope for v4.7
+
+### QA-OS-1: Formal Verification
+**Rationale**: Mathematically proving equivalence is too complex for v4.7  
+**Approach**: Use proxy metrics (API coverage, structure similarity)
+
+---
+
+### QA-OS-2: Mutation Testing
+**Rationale**: Nice to have but not critical  
+**Approach**: Defer to v4.8+
+
+---
+
+### QA-OS-3: In-Game Testing
+**Rationale**: Requires Minecraft Bedrock execution environment  
+**Approach**: Defer to v2.0 (REQ-2.6)
+
+---
+
+## Traceability (v4.7)
+
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| QA-01 | 16-01 | Pending |
+| QA-02 | 16-02 | Pending |
+| QA-03 | 16-03 | Pending |
+| QA-04 | 16-04 | Pending |
+| QA-05 | 16-05 | Pending |
+| QA-06 | 16-06 | Pending |
+| QA-07 | 16-07 | Pending |
+| QA-08 | 16-08 | Pending |
 
 ---
 
