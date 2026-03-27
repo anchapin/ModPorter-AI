@@ -698,14 +698,16 @@ Phase 1.3 (Beta Launch)
 **Phase Goal**: Add Minecraft modding docs, Bedrock APIs, more conversion patterns
 
 **Deliverables**:
-- [ ] Minecraft modding documentation ingestion
+- [x] Minecraft modding documentation ingestion ✅ (Plan 15-03-01 Complete)
 - [ ] Bedrock API reference integration
 - [ ] Expanded conversion pattern library
 - [ ] Community contribution workflow
 
-**Requirements Mapped**: RAG-3.1, RAG-3.2
+**Requirements Mapped**: RAG-3.1 ✅, RAG-3.2
 
-**Plan**: `phases/15-03-knowledge-base-expansion/15-03-PLAN.md`
+**Plans**:
+- `phases/15-03-knowledge-base-expansion/15-03-01-PLAN.md` ✅ Complete (2026-03-27)
+- `phases/15-03-knowledge-base-expansion/15-03-02-PLAN.md` (pending)
 
 ---
 
