@@ -9,10 +9,28 @@ references, parent model references, and model type classification.
 import json
 import os
 import logging
+import uuid
 from typing import Optional, Dict, Any, List
 from pathlib import Path
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# Import MultiModalDocument schema
+try:
+    from schemas.multimodal_schema import MultiModalDocument, ContentType, ProcessingStatus
+except ImportError:
+    try:
+        from ai_engine.schemas.multimodal_schema import (
+            MultiModalDocument,
+            ContentType,
+            ProcessingStatus,
+        )
+    except ImportError:
+        MultiModalDocument = None
+        ContentType = None
+        ProcessingStatus = None
+        logger.warning("Could not import MultiModalDocument schema")
 
 
 class ModelMetadataExtractor:
@@ -39,7 +57,7 @@ class ModelMetadataExtractor:
         """Initialize the model metadata extractor."""
         self.geometry_schemas = ["minecraft:geometry", "minecraft:geometry_template"]
 
-    def extract(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def extract(self, file_path: str) -> Optional[MultiModalDocument]:
         """
         Extract metadata from a Bedrock model JSON file.
 
@@ -72,8 +90,8 @@ class ModelMetadataExtractor:
             # Classify model type
             model_type = self._classify_model_type(file_path, model_data)
 
-            # Build result dictionary
-            result = {
+            # Build result dictionary (for metadata content)
+            metadata_content = {
                 "file_path": file_path,
                 "file_name": os.path.basename(file_path),
                 "geometry_count": geometry_info["geometry_count"],
@@ -87,7 +105,24 @@ class ModelMetadataExtractor:
                 "model_type": model_type,
             }
 
-            return result
+            # Return as MultiModalDocument if schema is available
+            if MultiModalDocument and ContentType and ProcessingStatus:
+                content_text = json.dumps(metadata_content)
+                content_hash = str(uuid.uuid4())  # Simple hash for now
+
+                return MultiModalDocument(
+                    id=str(uuid.uuid4()),
+                    content_hash=content_hash,
+                    source_path=file_path,
+                    content_type=ContentType.MULTIMODAL,
+                    content_text=content_text,
+                    content_metadata=metadata_content,
+                    processing_status=ProcessingStatus.COMPLETED,
+                    indexed_at=datetime.utcnow(),
+                )
+            else:
+                # Fallback to dict if schema not available
+                return metadata_content
 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in model file {file_path}: {e}")
@@ -309,7 +344,7 @@ class ModelMetadataExtractor:
         return "entity"
 
 
-def extract_model_metadata(file_path: str) -> Optional[Dict[str, Any]]:
+def extract_model_metadata(file_path: str) -> Optional[MultiModalDocument]:
     """
     Convenience function to extract model metadata.
 
@@ -317,7 +352,7 @@ def extract_model_metadata(file_path: str) -> Optional[Dict[str, Any]]:
         file_path: Path to the model JSON file
 
     Returns:
-        Dictionary containing extracted metadata, or None if extraction failed
+        MultiModalDocument instance containing extracted metadata, or None if extraction failed
     """
     extractor = ModelMetadataExtractor()
     return extractor.extract(file_path)
