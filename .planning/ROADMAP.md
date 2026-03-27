@@ -759,7 +759,8 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped**: RAG-6.1, RAG-6.2
 
-**Plan**: `phases/15-06-cross-reference-linking/15-06-PLAN.md`
+**Plans**:
+- [x] `phases/15-06-cross-reference-linking/15-06-01-PLAN.md` — Database schema + Cross-reference detection + API (Wave 1)
 
 ---
 
@@ -775,7 +776,10 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped**: RAG-7.1, RAG-7.2, RAG-7.3
 
-**Plan**: `phases/15-07-advanced-rag-pipeline/15-07-PLAN.md`
+**Plans:**
+- [ ] `phases/15-07-advanced-rag-pipeline/15-07-01-PLAN.md` — RAG Pipeline + Multi-stage Reranker + Tests (Wave 1)
+- [ ] `phases/15-07-advanced-rag-pipeline/15-07-02-PLAN.md` — Query Rewriter + Adaptive Fusion + API (Wave 2)
+- [ ] `phases/15-07-advanced-rag-pipeline/15-07-03-PLAN.md` — Pipeline Cache + Integration Tests (Wave 3)
 
 ---
 
