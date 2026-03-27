@@ -21,21 +21,17 @@
 
 ---
 
-## Current Milestone: v4.6 RAG & Knowledge Enhancement
+## Current Milestone: v4.7 Multi-Agent QA Review
 
-**Goal:** Build advanced RAG system with improved document indexing, semantic search, knowledge expansion, context optimization, user correction learning, and multi-modal support.
+**Goal:** Implement complete multi-agent QA pipeline with 4 specialized agents for automated conversion validation.
 
 **Target features:**
-- Improved Document Indexing: Smart chunking, metadata extraction, hierarchical indexing
-- Semantic Search Enhancement: Hybrid search improvement, re-ranking, query expansion
-- Knowledge Base Expansion: Add Minecraft modding docs, Bedrock APIs, more conversion patterns
-- Context Window Optimization: Dynamic context sizing, relevant chunk prioritization
-- User Correction Learning: Store and apply user feedback/corrections to knowledge base
-- Cross-Reference Linking: Connect related concepts across knowledge base
-- Advanced RAG: Re-ranking pipeline, query expansion, hybrid fusion
-- Multi-Modal Knowledge: Support for texture metadata, model documentation embeddings
+- Translator Agent: Generate Bedrock code from parsed Java
+- Reviewer Agent: Check code quality, style, best practices
+- Tester Agent: Generate both unit and integration tests
+- Semantic Checker: Validate behavior equivalence AND API validity
 
-**Previous milestone:** v4.5 Java Patterns Complete (2026-03-20) - 170+ tests passing
+**Previous milestone:** v4.6 RAG & Knowledge Enhancement (2026-03-27) - 8 phases complete
 
 ---
 
@@ -427,6 +423,25 @@ ModPorter-AI eliminates the technical barriers between Java and Bedrock editions
 - Tree-sitter performance metrics
 - Modal GPU pricing and benchmarks
 - BGE-M3 embedding benchmarks (MTEB 64.3)
+
+---
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
 
