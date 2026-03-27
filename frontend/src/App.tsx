@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
+import { OnboardingFlow } from './components/Onboarding';
 import { usePageViewTracking } from './hooks/useAnalytics';
 import './App.css';
 
@@ -39,11 +40,28 @@ function App() {
   // Track page views automatically
   usePageViewTracking(true);
 
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    // Check if user has completed onboarding
+    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    if (!onboardingCompleted) {
+      // Show onboarding for first-time users
+      setShowOnboarding(true);
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
         <Router>
           <div className="app">
+            <OnboardingFlow
+              isOpen={showOnboarding}
+              onComplete={() => setShowOnboarding(false)}
+              onClose={() => setShowOnboarding(false)}
+            />
             <TopNavigation />
 
             <main>
