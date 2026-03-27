@@ -355,6 +355,42 @@ class ConversionFeedback(Base):
     job = relationship("ConversionJob", back_populates="feedback")
 
 
+class CorrectionSubmission(Base):
+    __tablename__ = "correction_submissions"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False, index=True
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+
+    original_output: Mapped[str] = mapped_column(Text, nullable=False)
+    original_chunk_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+
+    corrected_output: Mapped[str] = mapped_column(Text, nullable=False)
+    correction_rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default=text("'pending'"), index=True
+    )
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    embedding_updated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("'false'")
+    )
+
+    job = relationship("ConversionJob", backref="correction_submissions")
+
+
 # Asset Management Models
 
 
@@ -449,9 +485,13 @@ class DocumentEmbedding(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    embedding = Column(VECTOR(1536), nullable=True)  # Nullable to support parent documents without embeddings
+    embedding = Column(
+        VECTOR(1536), nullable=True
+    )  # Nullable to support parent documents without embeddings
     document_source = Column(String, nullable=False, index=True)
-    content_hash = Column(String, nullable=True, unique=True, index=True)  # Nullable for parent documents
+    content_hash = Column(
+        String, nullable=True, unique=True, index=True
+    )  # Nullable for parent documents
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
