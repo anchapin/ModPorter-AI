@@ -449,9 +449,9 @@ class DocumentEmbedding(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    embedding = Column(VECTOR(1536), nullable=False)  # Assuming nullable=False for embedding
+    embedding = Column(VECTOR(1536), nullable=True)  # Nullable to support parent documents without embeddings
     document_source = Column(String, nullable=False, index=True)
-    content_hash = Column(String, nullable=False, unique=True, index=True)
+    content_hash = Column(String, nullable=True, unique=True, index=True)  # Nullable for parent documents
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
