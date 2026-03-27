@@ -653,6 +653,184 @@ Phase 1.3 (Beta Launch)
 
 ---
 
+## Milestone v4.7: Multi-Agent QA Review
+
+**Duration:** 8 phases  
+**Goal:** Implement complete multi-agent QA pipeline with 4 specialized agents for automated conversion validation  
+**Success Criteria:** 80%+ functional correctness, 100% syntax validity, comprehensive quality reporting
+
+### Phase 16-01: QA Context & Orchestration
+
+**Phase Goal:** Core infrastructure for multi-agent QA system with context passing and orchestration
+
+**Deliverables:**
+- [ ] QAContext dataclass with job ID, paths, metadata, validation results
+- [ ] QAOrchestrator class coordinating 4-agent pipeline
+- [ ] Post-conversion integration hook (after Packaging Agent)
+- [ ] Sequential task execution with context passing
+- [ ] Output schema validation after each agent
+- [ ] Timeout handling for each agent (5 min default)
+- [ ] Circuit breaker for failed agents
+
+**Requirements Mapped:** QA-01
+
+**Plans:** TBD
+
+---
+
+### Phase 16-02: Translator Agent
+
+**Phase Goal:** Agent that generates Bedrock code from parsed Java AST with RAG augmentation
+
+**Deliverables:**
+- [ ] Parse Java AST to extract structural information
+- [ ] Query RAG for similar conversion patterns
+- [ ] Generate Bedrock JSON (behavior pack components)
+- [ ] Generate TypeScript/JavaScript (Script API code)
+- [ ] Preserve code comments and documentation
+- [ ] Output schema validation before handoff
+- [ ] Temperature=0 for deterministic results
+- [ ] Context compression for large code blocks
+
+**Requirements Mapped:** QA-02
+
+**Plans:** TBD
+
+---
+
+### Phase 16-03: Reviewer Agent
+
+**Phase Goal:** Agent that validates code quality, style, and best practices for Bedrock output
+
+**Deliverables:**
+- [ ] Run ESLint/TSLint on generated JavaScript/TypeScript
+- [ ] Validate JSON against Bedrock schemas
+- [ ] Check TypeScript types (tsc compilation)
+- [ ] Verify Script API method usage
+- [ ] Flag issues with line numbers and severity
+- [ ] Auto-fix suggestions for common issues
+- [ ] Generate quality score (0-100)
+- [ ] Deterministic validation with explicit rubrics
+
+**Requirements Mapped:** QA-03
+
+**Plans:** TBD
+
+---
+
+### Phase 16-04: Tester Agent
+
+**Phase Goal:** Agent that generates and executes unit and integration tests for converted code
+
+**Deliverables:**
+- [ ] Generate unit tests from Java docstrings/comments
+- [ ] Generate integration tests for component interactions
+- [ ] Use pytest for test execution
+- [ ] Execute tests in sandboxed environment
+- [ ] Mock Bedrock Script API for testing
+- [ ] Report pass/fail with detailed error messages
+- [ ] Generate test coverage report
+- [ ] Support both unit and integration test generation
+
+**Requirements Mapped:** QA-04
+
+**Plans:** TBD
+
+---
+
+### Phase 16-05: Semantic Checker Agent
+
+**Phase Goal:** Agent that validates behavioral equivalence between Java source and Bedrock output
+
+**Deliverables:**
+- [ ] Compare data flow graphs between Java and Bedrock
+- [ ] Analyze control flow equivalence
+- [ ] Verify Script API method validity
+- [ ] Check variable/type mappings
+- [ ] Generate semantic similarity score
+- [ ] Flag behavioral drift with explanations
+- [ ] Handle edge cases and boundary conditions
+- [ ] Deterministic validation with explicit criteria
+
+**Requirements Mapped:** QA-05
+
+**Plans:** TBD
+
+---
+
+### Phase 16-06: QA Report Generator
+
+**Phase Goal:** Aggregates all agent outputs into comprehensive QA report
+
+**Deliverables:**
+- [ ] Aggregate results from all 4 agents
+- [ ] Generate quality score (weighted average)
+- [ ] List all issues with severity and location
+- [ ] Include test execution results
+- [ ] Show semantic equivalence analysis
+- [ ] Export report in JSON/HTML/Markdown formats
+- [ ] Color-coded severity (green/yellow/red)
+- [ ] Downloadable with conversion results
+
+**Requirements Mapped:** QA-06
+
+**Plans:** TBD
+
+---
+
+### Phase 16-07: Parallel Agent Execution
+
+**Phase Goal:** Support parallel execution for independent agents (Reviewer + Tester)
+
+**Deliverables:**
+- [ ] Identify parallelizable agent pairs
+- [ ] Execute Reviewer and Tester in parallel
+- [ ] Aggregate parallel results correctly
+- [ ] Handle partial failures gracefully
+- [ ] Performance benchmarking (parallel vs sequential)
+- [ ] Configurable parallelization
+
+**Requirements Mapped:** QA-07
+
+**Plans:** TBD
+
+---
+
+### Phase 16-08: Iterative Refinement Loop
+
+**Phase Goal:** Allow iterative refinement when critical issues are found
+
+**Deliverables:**
+- [ ] Detect critical issues requiring re-translation
+- [ ] Pass error context back to Translator
+- [ ] Re-run pipeline with corrected context
+- [ ] Limit refinement iterations (max 3)
+- [ ] Track refinement history
+- [ ] Report improvement after refinement
+
+**Requirements Mapped:** QA-08
+
+**Plans:** TBD
+
+---
+
+## v4.7 Coverage Matrix
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| QA-01: QA Context & Orchestration | 16-01 | Pending |
+| QA-02: Translator Agent | 16-02 | Pending |
+| QA-03: Reviewer Agent | 16-03 | Pending |
+| QA-04: Tester Agent | 16-04 | Pending |
+| QA-05: Semantic Checker Agent | 16-05 | Pending |
+| QA-06: QA Report Generator | 16-06 | Pending |
+| QA-07: Parallel Agent Execution | 16-07 | Pending |
+| QA-08: Iterative Refinement Loop | 16-08 | Pending |
+
+**Coverage:** 8/8 requirements mapped ✓
+
+---
+
 ## Milestone v4.6: RAG & Knowledge Enhancement
 
 **Duration**: 8 weeks (Q1 2026)
@@ -803,6 +981,184 @@ Phase 1.3 (Beta Launch)
 - [x] `phases/15-08-multi-modal-knowledge/15-08-02-PLAN.md` — Gap closure (verified: 3/3 must-haves)
 
 **Status**: ✅ Complete - 2026-03-27
+
+---
+
+## Milestone v4.7: Multi-Agent QA Review
+
+**Duration:** 8 phases  
+**Goal:** Implement complete multi-agent QA pipeline with 4 specialized agents for automated conversion validation  
+**Success Criteria:** 80%+ functional correctness, 100% syntax validity, comprehensive quality reporting
+
+### Phase 16-01: QA Context & Orchestration ✅ PENDING
+
+**Phase Goal:** Core infrastructure for multi-agent QA system with context passing and orchestration
+
+**Deliverables:**
+- [ ] QAContext dataclass with job ID, paths, metadata, validation results
+- [ ] QAOrchestrator class coordinating 4-agent pipeline
+- [ ] Post-conversion integration hook (after Packaging Agent)
+- [ ] Sequential task execution with context passing
+- [ ] Output schema validation after each agent
+- [ ] Timeout handling for each agent (5 min default)
+- [ ] Circuit breaker for failed agents
+
+**Requirements Mapped:** QA-01
+
+**Plans:** TBD
+
+---
+
+### Phase 16-02: Translator Agent ✅ PENDING
+
+**Phase Goal:** Agent that generates Bedrock code from parsed Java AST with RAG augmentation
+
+**Deliverables:**
+- [ ] Parse Java AST to extract structural information
+- [ ] Query RAG for similar conversion patterns
+- [ ] Generate Bedrock JSON (behavior pack components)
+- [ ] Generate TypeScript/JavaScript (Script API code)
+- [ ] Preserve code comments and documentation
+- [ ] Output schema validation before handoff
+- [ ] Temperature=0 for deterministic results
+- [ ] Context compression for large code blocks
+
+**Requirements Mapped:** QA-02
+
+**Plans:** TBD
+
+---
+
+### Phase 16-03: Reviewer Agent ✅ PENDING
+
+**Phase Goal:** Agent that validates code quality, style, and best practices for Bedrock output
+
+**Deliverables:**
+- [ ] Run ESLint/TSLint on generated JavaScript/TypeScript
+- [ ] Validate JSON against Bedrock schemas
+- [ ] Check TypeScript types (tsc compilation)
+- [ ] Verify Script API method usage
+- [ ] Flag issues with line numbers and severity
+- [ ] Auto-fix suggestions for common issues
+- [ ] Generate quality score (0-100)
+- [ ] Deterministic validation with explicit rubrics
+
+**Requirements Mapped:** QA-03
+
+**Plans:** TBD
+
+---
+
+### Phase 16-04: Tester Agent ✅ PENDING
+
+**Phase Goal:** Agent that generates and executes unit and integration tests for converted code
+
+**Deliverables:**
+- [ ] Generate unit tests from Java docstrings/comments
+- [ ] Generate integration tests for component interactions
+- [ ] Use pytest for test execution
+- [ ] Execute tests in sandboxed environment
+- [ ] Mock Bedrock Script API for testing
+- [ ] Report pass/fail with detailed error messages
+- [ ] Generate test coverage report
+- [ ] Support both unit and integration test generation
+
+**Requirements Mapped:** QA-04
+
+**Plans:** TBD
+
+---
+
+### Phase 16-05: Semantic Checker Agent ✅ PENDING
+
+**Phase Goal:** Agent that validates behavioral equivalence between Java source and Bedrock output
+
+**Deliverables:**
+- [ ] Compare data flow graphs between Java and Bedrock
+- [ ] Analyze control flow equivalence
+- [ ] Verify Script API method validity
+- [ ] Check variable/type mappings
+- [ ] Generate semantic similarity score
+- [ ] Flag behavioral drift with explanations
+- [ ] Handle edge cases and boundary conditions
+- [ ] Deterministic validation with explicit criteria
+
+**Requirements Mapped:** QA-05
+
+**Plans:** TBD
+
+---
+
+### Phase 16-06: QA Report Generator ✅ PENDING
+
+**Phase Goal:** Aggregates all agent outputs into comprehensive QA report
+
+**Deliverables:**
+- [ ] Aggregate results from all 4 agents
+- [ ] Generate quality score (weighted average)
+- [ ] List all issues with severity and location
+- [ ] Include test execution results
+- [ ] Show semantic equivalence analysis
+- [ ] Export report in JSON/HTML/Markdown formats
+- [ ] Color-coded severity (green/yellow/red)
+- [ ] Downloadable with conversion results
+
+**Requirements Mapped:** QA-06
+
+**Plans:** TBD
+
+---
+
+### Phase 16-07: Parallel Agent Execution ✅ PENDING
+
+**Phase Goal:** Support parallel execution for independent agents (Reviewer + Tester)
+
+**Deliverables:**
+- [ ] Identify parallelizable agent pairs
+- [ ] Execute Reviewer and Tester in parallel
+- [ ] Aggregate parallel results correctly
+- [ ] Handle partial failures gracefully
+- [ ] Performance benchmarking (parallel vs sequential)
+- [ ] Configurable parallelization
+
+**Requirements Mapped:** QA-07
+
+**Plans:** TBD
+
+---
+
+### Phase 16-08: Iterative Refinement Loop ✅ PENDING
+
+**Phase Goal:** Allow iterative refinement when critical issues are found
+
+**Deliverables:**
+- [ ] Detect critical issues requiring re-translation
+- [ ] Pass error context back to Translator
+- [ ] Re-run pipeline with corrected context
+- [ ] Limit refinement iterations (max 3)
+- [ ] Track refinement history
+- [ ] Report improvement after refinement
+
+**Requirements Mapped:** QA-08
+
+**Plans:** TBD
+
+---
+
+## v4.7 Coverage Matrix
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| QA-01: QA Context & Orchestration | 16-01 | Pending |
+| QA-02: Translator Agent | 16-02 | Pending |
+| QA-03: Reviewer Agent | 16-03 | Pending |
+| QA-04: Tester Agent | 16-04 | Pending |
+| QA-05: Semantic Checker Agent | 16-05 | Pending |
+| QA-06: QA Report Generator | 16-06 | Pending |
+| QA-07: Parallel Agent Execution | 16-07 | Pending |
+| QA-08: Iterative Refinement Loop | 16-08 | Pending |
+
+**Coverage:** 8/8 requirements mapped ✓
 
 ---
 

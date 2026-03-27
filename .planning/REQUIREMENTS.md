@@ -1157,6 +1157,8 @@ semantic_checker:
 | QA-07 | 16-07 | Pending |
 | QA-08 | 16-08 | Pending |
 
+**Coverage:** 8/8 requirements mapped ✓
+
 ---
 
 *This document is living and should be updated as requirements evolve.*
