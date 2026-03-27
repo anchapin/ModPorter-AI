@@ -31,6 +31,7 @@ const ExperimentResultsPage = lazy(
   () => import('./pages/ExperimentResultsPage')
 );
 const Settings = lazy(() => import('./pages/Settings'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -140,6 +141,14 @@ function App() {
                   element={
                     <Suspense fallback={<div>Loading Settings...</div>}>
                       <Settings />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/pricing"
+                  element={
+                    <Suspense fallback={<div>Loading Pricing...</div>}>
+                      <PricingPage />
                     </Suspense>
                   }
                 />
