@@ -15,6 +15,7 @@ from config import settings
 # Set testing environment variable BEFORE importing main
 os.environ["TESTING"] = "true"
 os.environ["TEST_DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ.setdefault("SECRET_KEY", "test-secret-key-change-me")
 
 # Set up async engine for tests
 test_engine = create_async_engine(
