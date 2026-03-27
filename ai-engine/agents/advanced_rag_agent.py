@@ -21,7 +21,7 @@ from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocum
 
 # Import existing components
 from utils.vector_db_client import VectorDBClient
-from utils.token_optimizer import ContextTrimmer, MODEL_TOKEN_LIMITS
+from utils.token_optimizer import ContextTrimmer
 
 logger = logging.getLogger(__name__)
 

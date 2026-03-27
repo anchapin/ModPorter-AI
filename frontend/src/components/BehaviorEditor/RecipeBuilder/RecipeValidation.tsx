@@ -253,7 +253,12 @@ export class RecipeValidation {
     availableItems: RecipeItem[],
     errors: string[]
   ): void {
-    this.validateSingleInputRecipe('Stonecutter', recipe, availableItems, errors);
+    this.validateSingleInputRecipe(
+      'Stonecutter',
+      recipe,
+      availableItems,
+      errors
+    );
   }
 
   private validateResult(

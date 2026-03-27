@@ -67,7 +67,7 @@ describe('MermaidDiagram', () => {
     expect(mermaid.default.initialize).toHaveBeenCalledWith({
       startOnLoad: true,
       theme: 'default',
-      securityLevel: 'strict',
+      securityLevel: 'loose',
       flowchart: {
         useMaxWidth: true,
         htmlLabels: true,

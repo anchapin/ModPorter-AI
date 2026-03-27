@@ -7,7 +7,6 @@ keyword search, BM25 search, and vector similarity search.
 
 import pytest
 import hashlib
-from datetime import datetime
 from typing import Dict, List
 
 import sys

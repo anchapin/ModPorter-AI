@@ -5,15 +5,13 @@ Tests ContextTrimmer, PromptCache, and token estimation functionality.
 """
 
 import pytest
-import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from utils.token_optimizer import (
     ContextTrimmer,
     PromptCache,
     TokenUsage,
     MODEL_TOKEN_LIMITS,
     TOKEN_PRICING,
-    CachedPrompt,
 )
 
 

@@ -44,7 +44,7 @@ class TestRetrievalMetricsPrecisionAtK:
         assert result == 0.6
 
     def test_precision_at_k_smaller_than_retrieved(self):
-        """k smaller than retrieved list should only consider first k."""
+        """K smaller than retrieved list should only consider first k."""
         retrieved = ["doc1", "doc2", "doc3", "doc4", "doc5"]
         relevant = ["doc1", "doc2", "doc3"]
         result = RetrievalMetrics.precision_at_k(retrieved, relevant, k=2)
@@ -88,7 +88,7 @@ class TestRetrievalMetricsRecallAtK:
         assert result == 0.6
 
     def test_k_limited_recall(self):
-        """k smaller than relevant should only consider retrieved up to k."""
+        """K smaller than relevant should only consider retrieved up to k."""
         retrieved = ["doc1", "doc2", "doc3", "doc4", "doc5"]
         relevant = ["doc1", "doc2", "doc3", "doc4", "doc5", "doc6"]
         result = RetrievalMetrics.recall_at_k(retrieved, relevant, k=3)
@@ -268,7 +268,7 @@ class TestRetrievalMetricsEdgeCases:
         assert result == 1.0
 
     def test_k_larger_than_retrieved_length(self):
-        """k larger than retrieved length should work."""
+        """K larger than retrieved length should work."""
         retrieved = ["doc1", "doc2"]
         relevant = ["doc1", "doc2", "doc3"]
         result = RetrievalMetrics.precision_at_k(retrieved, relevant, k=10)
