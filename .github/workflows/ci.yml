@@ -265,9 +265,10 @@ jobs:
             apt-get update -qq && apt-get install -y -qq lsb-release || true
           fi
 
-      # Conditional Python setup - only if not using container
+      # Conditional Python setup - skip when using custom base image container
+      # The container already has Python pre-installed
       - name: Set up Python 3.11 (fallback)
-        if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+        if: ${{ needs.prepare-base-images.outputs.python-image == '' }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -279,7 +280,7 @@ jobs:
 
       # Multi-level caching strategy
       - name: Cache Python packages (L1 - pip cache)
-        if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+        if: ${{ needs.prepare-base-images.outputs.python-image == '' }}
         uses: actions/cache@v5
         with:
           path: ~/.cache/pip
@@ -289,7 +290,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Cache Python packages (L2 - site-packages)
-        if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+        if: ${{ needs.prepare-base-images.outputs.python-image == '' }}
         uses: actions/cache@v5
         with:
           path: |
@@ -313,9 +314,10 @@ jobs:
             ${{ runner.os }}-test-cache-${{ env.CACHE_VERSION }}-${{ matrix.test-suite }}-
             ${{ runner.os }}-test-cache-${{ env.CACHE_VERSION }}-
 
-      # Fast dependency installation (only if not using base image)
+      # Fast dependency installation (only if NOT using pre-built base image)
+      # When using custom base image, dependencies are already installed in the container
       - name: Install Python dependencies (fast)
-        if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+        if: ${{ needs.prepare-base-images.outputs.python-image == '' }}
         run: |
           echo "⚡ Installing Python dependencies with optimizations..."
           python -m pip install --upgrade --no-cache-dir pip setuptools wheel
@@ -328,7 +330,7 @@ jobs:
             -r requirements-test.txt
 
       - name: Install service dependencies (fast)
-        if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
+        if: ${{ needs.prepare-base-images.outputs.python-image == '' }}
         run: |
           echo "⚡ Installing service-specific dependencies..."
 
