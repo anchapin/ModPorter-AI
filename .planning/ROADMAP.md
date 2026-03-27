@@ -653,4 +653,140 @@ Phase 1.3 (Beta Launch)
 
 ---
 
+## Milestone v4.6: RAG & Knowledge Enhancement
+
+**Duration**: 8 weeks (Q1 2026)
+**Goal**: Build advanced RAG system with improved document indexing, semantic search, knowledge expansion, context optimization, user correction learning, and multi-modal support
+**Success Criteria**: 90%+ retrieval accuracy, <500ms search latency, 10x knowledge base coverage
+
+### Phase 15-01: Improved Document Indexing ✅ COMPLETE
+
+**Phase Goal**: Smart chunking, metadata extraction, hierarchical indexing
+
+**Deliverables**:
+- [x] Smart chunking strategies (FixedSize, Recursive, Semantic)
+- [x] Metadata extraction for Java/Bedrock code constructs
+- [x] Hierarchical index structure (document → section → chunk)
+- [x] Embedding API for document vector operations
+- [x] `ai-engine/indexing/` module with chunking and metadata extraction
+
+**Requirements Mapped**: RAG-1.1, RAG-1.2, RAG-1.3
+
+**Plan**: `phases/15-01-improved-document-indexing/15-01-PLAN.md`
+
+---
+
+### Phase 15-02: Semantic Search Enhancement
+
+**Phase Goal**: Hybrid search improvement, re-ranking, query expansion
+
+**Deliverables**:
+- [ ] Hybrid search combining dense (semantic) and sparse (keyword) vectors
+- [ ] Cross-encoder re-ranking for improved top-k results
+- [ ] Query expansion with synonyms and related terms
+- [ ] BM25 fallback for keyword-only queries
+- [ ] Enhanced search API with new parameters
+
+**Requirements Mapped**: RAG-2.1, RAG-2.2, RAG-2.3
+
+**Plan**: `phases/15-02-semantic-search-enhancement/15-02-PLAN.md`
+
+---
+
+### Phase 15-03: Knowledge Base Expansion
+
+**Phase Goal**: Add Minecraft modding docs, Bedrock APIs, more conversion patterns
+
+**Deliverables**:
+- [ ] Minecraft modding documentation ingestion
+- [ ] Bedrock API reference integration
+- [ ] Expanded conversion pattern library
+- [ ] Community contribution workflow
+
+**Requirements Mapped**: RAG-3.1, RAG-3.2
+
+**Plan**: `phases/15-03-knowledge-base-expansion/15-03-PLAN.md`
+
+---
+
+### Phase 15-04: Context Window Optimization
+
+**Phase Goal**: Dynamic context sizing, relevant chunk prioritization
+
+**Deliverables**:
+- [ ] Dynamic context window sizing based on query complexity
+- [ ] Relevancy-based chunk prioritization
+- [ ] Context compression for long documents
+- [ ] Multi-turn conversation context management
+
+**Requirements Mapped**: RAG-4.1, RAG-4.2
+
+**Plan**: `phases/15-04-context-optimization/15-04-PLAN.md`
+
+---
+
+### Phase 15-05: User Correction Learning
+
+**Phase Goal**: Store and apply user feedback/corrections to knowledge base
+
+**Deliverables**:
+- [ ] User feedback collection system
+- [ ] Correction validation and approval workflow
+- [ ] Knowledge base update pipeline
+- [ ] Feedback-driven re-ranking
+
+**Requirements Mapped**: RAG-5.1, RAG-5.2
+
+**Plan**: `phases/15-05-user-correction-learning/15-05-PLAN.md`
+
+---
+
+### Phase 15-06: Cross-Reference Linking
+
+**Phase Goal**: Connect related concepts across knowledge base
+
+**Deliverables**:
+- [ ] Automatic cross-reference detection
+- [ ] Concept graph construction
+- [ ] Related documents suggestion
+- [ ] Knowledge graph visualization
+
+**Requirements Mapped**: RAG-6.1, RAG-6.2
+
+**Plan**: `phases/15-06-cross-reference-linking/15-06-PLAN.md`
+
+---
+
+### Phase 15-07: Advanced RAG Pipeline
+
+**Phase Goal**: Re-ranking pipeline, query expansion, hybrid fusion
+
+**Deliverables**:
+- [ ] Multi-stage re-ranking pipeline
+- [ ] Query rewrite and expansion
+- [ ] Hybrid fusion algorithms
+- [ ] Performance optimization
+
+**Requirements Mapped**: RAG-7.1, RAG-7.2, RAG-7.3
+
+**Plan**: `phases/15-07-advanced-rag-pipeline/15-07-PLAN.md`
+
+---
+
+### Phase 15-08: Multi-Modal Knowledge
+
+**Phase Goal**: Support for texture metadata, model documentation embeddings
+
+**Deliverables**:
+- [ ] Texture metadata extraction and indexing
+- [ ] 3D model documentation processing
+- [ ] Multi-modal similarity search
+- [ ] Cross-modal retrieval
+
+**Requirements Mapped**: RAG-8.1, RAG-8.2
+
+**Plan**: `phases/15-08-multi-modal-knowledge/15-08-PLAN.md`
+
+---
+
 *This roadmap is living and should be updated quarterly based on user feedback and business priorities.*
