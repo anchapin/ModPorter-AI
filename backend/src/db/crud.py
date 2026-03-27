@@ -1189,3 +1189,181 @@ async def list_assets_for_conversion(
 
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+# ============================================================================
+# Pattern Submission CRUD Functions
+# ============================================================================
+
+
+async def create_pattern_submission(
+    session: AsyncSession,
+    java_pattern: str,
+    bedrock_pattern: str,
+    description: str,
+    contributor_id: str,
+    tags: List[str],
+    category: str,
+) -> models.PatternSubmission:
+    """
+    Create a new pattern submission.
+
+    Args:
+        session: Database session
+        java_pattern: Java code example
+        bedrock_pattern: Bedrock code example
+        description: Pattern description
+        contributor_id: User submitting the pattern
+        tags: List of tags
+        category: Pattern category
+
+    Returns:
+        Created PatternSubmission
+    """
+    submission = models.PatternSubmission(
+        java_pattern=java_pattern,
+        bedrock_pattern=bedrock_pattern,
+        description=description,
+        contributor_id=contributor_id,
+        tags=tags,
+        category=category,
+        status="pending",
+    )
+    session.add(submission)
+    await session.commit()
+    await session.refresh(submission)
+    return submission
+
+
+async def get_pattern_submission(
+    session: AsyncSession,
+    submission_id: str,
+) -> Optional[models.PatternSubmission]:
+    """
+    Get a pattern submission by ID.
+
+    Args:
+        session: Database session
+        submission_id: Submission UUID
+
+    Returns:
+        PatternSubmission if found, None otherwise
+    """
+    try:
+        submission_uuid = uuid.UUID(submission_id)
+    except ValueError:
+        raise ValueError(f"Invalid submission ID format: {submission_id}")
+
+    stmt = select(models.PatternSubmission).where(
+        models.PatternSubmission.id == submission_uuid
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_pending_submissions(
+    session: AsyncSession,
+    limit: int = 50,
+) -> List[models.PatternSubmission]:
+    """
+    Get pending pattern submissions.
+
+    Args:
+        session: Database session
+        limit: Maximum number of submissions to return
+
+    Returns:
+        List of pending submissions, ordered by created_at DESC
+    """
+    stmt = (
+        select(models.PatternSubmission)
+        .where(models.PatternSubmission.status == "pending")
+        .order_by(models.PatternSubmission.created_at.desc())
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def update_pattern_submission_status(
+    session: AsyncSession,
+    submission_id: str,
+    status: str,
+    reviewed_by: str,
+    notes: Optional[str] = None,
+) -> models.PatternSubmission:
+    """
+    Update pattern submission status (review workflow).
+
+    Args:
+        session: Database session
+        submission_id: Submission UUID
+        status: New status ("approved" or "rejected")
+        reviewed_by: Reviewer user ID
+        notes: Optional review notes
+
+    Returns:
+        Updated PatternSubmission
+
+    Raises:
+        ValueError: If submission not found
+    """
+    try:
+        submission_uuid = uuid.UUID(submission_id)
+    except ValueError:
+        raise ValueError(f"Invalid submission ID format: {submission_id}")
+
+    # Get submission
+    submission = await get_pattern_submission(session, submission_id)
+    if not submission:
+        raise ValueError(f"Submission {submission_id} not found")
+
+    # Update fields
+    submission.status = status
+    submission.reviewed_by = reviewed_by
+    submission.review_notes = notes
+    submission.reviewed_at = datetime.utcnow()
+
+    await session.commit()
+    await session.refresh(submission)
+    return submission
+
+
+async def vote_on_pattern(
+    session: AsyncSession,
+    submission_id: str,
+    upvote: bool,
+) -> models.PatternSubmission:
+    """
+    Vote on a pattern submission.
+
+    Args:
+        session: Database session
+        submission_id: Submission UUID
+        upvote: True for upvote, False for downvote
+
+    Returns:
+        Updated PatternSubmission
+
+    Raises:
+        ValueError: If submission not found
+    """
+    try:
+        submission_uuid = uuid.UUID(submission_id)
+    except ValueError:
+        raise ValueError(f"Invalid submission ID format: {submission_id}")
+
+    # Get submission
+    submission = await get_pattern_submission(session, submission_id)
+    if not submission:
+        raise ValueError(f"Submission {submission_id} not found")
+
+    # Update vote counts
+    if upvote:
+        submission.upvotes += 1
+    else:
+        submission.downvotes += 1
+
+    await session.commit()
+    await session.refresh(submission)
+    return submission

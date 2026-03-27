@@ -641,3 +641,62 @@ class AnalyticsEvent(Base):
         server_default=func.now(),
         index=True,
     )
+
+
+# Community Pattern Submission Models
+
+
+class PatternSubmission(Base):
+    __tablename__ = "pattern_submissions"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    java_pattern: Mapped[str] = mapped_column(Text, nullable=False)
+    bedrock_pattern: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    contributor_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'pending'"),
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    upvotes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+    )
+    downvotes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+    )
+    tags: Mapped[dict] = mapped_column(
+        JSONType,
+        nullable=False,
+        default=list,
+    )
+    category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+    )
