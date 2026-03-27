@@ -9,7 +9,7 @@ import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from backend.src.websocket.enhanced_manager import (
+from websocket.enhanced_manager import (
     EnhancedConnectionManager,
     ConnectionInfo,
     ConnectionState,
@@ -118,9 +118,7 @@ class TestHealthConfig:
 
     def test_custom_config(self):
         """Test custom health configuration."""
-        config = HealthConfig(
-            heartbeat_interval_seconds=15.0, stale_connection_seconds=60.0
-        )
+        config = HealthConfig(heartbeat_interval_seconds=15.0, stale_connection_seconds=60.0)
 
         assert config.heartbeat_interval_seconds == 15.0
         assert config.stale_connection_seconds == 60.0
@@ -345,9 +343,7 @@ class TestConnectionLifecycle:
         assert info.state == ConnectionState.CONNECTED
 
         # Activity
-        await manager.handle_message(
-            websocket, "conversion-123", {"type": MessageType.PING.value}
-        )
+        await manager.handle_message(websocket, "conversion-123", {"type": MessageType.PING.value})
         assert info.messages_received == 1
 
         # Broadcast
