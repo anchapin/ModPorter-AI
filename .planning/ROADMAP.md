@@ -689,7 +689,7 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped**: RAG-2.1, RAG-2.2, RAG-2.3
 
-**Plan**: `phases/15-02-semantic-search-enhancement/15-02-PLAN.md`
+**Plan**: `phases/15-02-semantic-search-enhancement/15-02-01-PLAN.md`
 
 ---
 
