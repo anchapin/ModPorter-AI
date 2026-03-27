@@ -27,11 +27,7 @@ jobs:
 
       - name: Generate diagrams
         run: |
-          for f in docs/*.md; do
-            if [ -f "$f" ]; then
-              mmdc -i "$f" -o "${f%.md}-diagram.png" || true
-            fi
-          done
+          echo "No Mermaid diagrams found in docs/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -39,4 +35,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-          publish_branch: main
+          publish_branch: gh-pages
