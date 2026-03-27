@@ -138,7 +138,7 @@ class TextureMetadataExtractor:
         """Initialize the texture metadata extractor."""
         self.supported_formats = {"png", "jpg", "jpeg", "gif", "bmp"}
 
-    def extract(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def extract(self, file_path: str) -> Optional[ImageMetadata]:
         """
         Extract metadata from a texture file.
 
@@ -199,8 +199,21 @@ class TextureMetadataExtractor:
                     "complexity_score": complexity_score,
                 }
 
-                # Add to image metadata
-                return result
+                # Add to image metadata - return as ImageMetadata model
+                return ImageMetadata(
+                    document_id="",  # Will be set by caller when stored
+                    width=width,
+                    height=height,
+                    channels=channels,
+                    format=format_str,
+                    file_size_bytes=file_size,
+                    has_transparency=has_transparency,
+                    color_palette=color_palette,
+                    texture_category=category,
+                    is_tileable=is_tileable,
+                    animation_frames=animation_frames,
+                    complexity_score=complexity_score,
+                )
 
         except Exception as e:
             logger.error(f"Failed to extract texture metadata from {file_path}: {e}")
@@ -394,7 +407,7 @@ class TextureMetadataExtractor:
             return None
 
 
-def extract_texture_metadata(file_path: str) -> Optional[Dict[str, Any]]:
+def extract_texture_metadata(file_path: str) -> Optional[ImageMetadata]:
     """
     Convenience function to extract texture metadata.
 
@@ -402,7 +415,7 @@ def extract_texture_metadata(file_path: str) -> Optional[Dict[str, Any]]:
         file_path: Path to the texture file
 
     Returns:
-        Dictionary containing extracted metadata, or None if extraction failed
+        ImageMetadata instance containing extracted metadata, or None if extraction failed
     """
     extractor = TextureMetadataExtractor()
     return extractor.extract(file_path)
