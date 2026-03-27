@@ -27,7 +27,11 @@ jobs:
 
       - name: Generate diagrams
         run: |
-          find docs -name "*.md" -print0 -exec sh -c 'if grep -q "```mermaid" "$1"; then mmdc -i "$1" -o "${1%.md}-diagram.png" --no-sandbox; else echo "No Mermaid diagrams found"; fi' _ {} \;
+          for f in $(find docs -name "*.md"); do
+            if grep -q "```mermaid" "$f"; then
+              mmdc -i "$f" -o "${f%.md}-diagram.png" --no-sandbox
+            fi
+          done
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
