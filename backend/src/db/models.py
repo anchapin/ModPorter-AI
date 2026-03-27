@@ -463,8 +463,8 @@ class DocumentEmbedding(Base):
     )  # 0=document, 1=section, 2=chunk
     title = Column(String, nullable=True, index=True)
 
-    # Metadata storage
-    metadata_json = Column(JSONB, nullable=True)
+    # Metadata storage - use JSONType to support both SQLite and PostgreSQL
+    metadata_json = Column(JSONType, nullable=True)
 
 
 # A/B Testing Models
