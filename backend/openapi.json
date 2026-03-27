@@ -1,0 +1,815 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ModPorter AI API",
+    "description": "AI-powered Java to Bedrock Minecraft mod conversion API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ModPorter AI Support",
+      "email": "api-support@modporter.ai",
+      "url": "https://modporter.ai"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.modporter.ai/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://api-staging.modporter.ai/v1",
+      "description": "Staging server"
+    },
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "conversions",
+      "description": "Conversion operations"
+    },
+    {
+      "name": "analytics",
+      "description": "Usage analytics and statistics"
+    },
+    {
+      "name": "health",
+      "description": "Health check endpoints"
+    }
+  ],
+  "paths": {
+    "/conversions": {
+      "post": {
+        "tags": ["conversions"],
+        "summary": "Start a new conversion",
+        "description": "Upload a Java mod file and start conversion to Bedrock add-on",
+        "operationId": "startConversion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Java mod file (.jar or .zip, max 100MB)"
+                  },
+                  "options": {
+                    "type": "string",
+                    "description": "JSON string of conversion options",
+                    "example": "{\"complexity\":\"high\",\"optimize_assets\":true}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conversion started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionStarted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file or options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large - file exceeds size limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": ["conversions"],
+        "summary": "List conversions",
+        "description": "Get paginated list of user's conversions",
+        "operationId": "listConversions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": ["uploaded", "analyzing", "converting", "validating", "packaging", "completed", "failed"]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": ["created_at", "updated_at"],
+              "default": "created_at"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/conversions/{id}": {
+      "get": {
+        "tags": ["conversions"],
+        "summary": "Get conversion status",
+        "description": "Get detailed status and progress of a conversion",
+        "operationId": "getConversion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Conversion ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversion details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["conversions"],
+        "summary": "Delete conversion",
+        "description": "Cancel or delete a conversion",
+        "operationId": "deleteConversion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Conversion ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversion deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Conversion deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/conversions/{id}/download": {
+      "get": {
+        "tags": ["conversions"],
+        "summary": "Download converted add-on",
+        "description": "Download the .mcaddon file for a completed conversion",
+        "operationId": "downloadConversion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Conversion ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File download",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion not found or not completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/conversions/{id}/report": {
+      "get": {
+        "tags": ["conversions"],
+        "summary": "Get conversion report",
+        "description": "Get detailed conversion report with assumptions and manual steps",
+        "operationId": "getConversionReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Conversion ID (UUID)",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversion report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/analytics/usage": {
+      "get": {
+        "tags": ["analytics"],
+        "summary": "Get usage statistics",
+        "description": "Get API usage statistics for current billing period",
+        "operationId": "getUsageStats",
+        "responses": {
+          "200": {
+            "description": "Usage statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "description": "Check API and service health status",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "API key in format: Bearer YOUR_API_KEY"
+      }
+    },
+    "schemas": {
+      "ConversionStarted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique conversion identifier"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["uploaded", "analyzing", "converting", "validating", "packaging", "completed", "failed"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estimated_completion": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mod_info": {
+            "$ref": "#/components/schemas/ModInfo"
+          }
+        },
+        "required": ["id", "status", "created_at", "mod_info"]
+      },
+      "ModInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "loader": {
+            "type": "string",
+            "enum": ["forge", "fabric", "quilt", "vanilla"]
+          },
+          "complexity": {
+            "type": "string",
+            "enum": ["simple", "moderate", "complex"]
+          }
+        }
+      },
+      "ConversionList": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "conversions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversionSummary"
+            }
+          }
+        }
+      },
+      "ConversionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mod_name": {
+            "type": "string"
+          },
+          "success_rate": {
+            "type": "integer"
+          },
+          "components_converted": {
+            "type": "integer"
+          }
+        }
+      },
+      "ConversionDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ConversionProgress"
+          },
+          "mod_info": {
+            "$ref": "#/components/schemas/ModInfo"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ConversionResult"
+          }
+        }
+      },
+      "ConversionProgress": {
+        "type": "object",
+        "properties": {
+          "current_step": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "eta_seconds": {
+            "type": "integer"
+          }
+        }
+      },
+      "ConversionResult": {
+        "type": "object",
+        "properties": {
+          "success_rate": {
+            "type": "integer"
+          },
+          "components_converted": {
+            "type": "integer"
+          },
+          "manual_steps_required": {
+            "type": "integer"
+          },
+          "download_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ConversionReport": {
+        "type": "object",
+        "properties": {
+          "conversion_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mod_info": {
+            "$ref": "#/components/schemas/ModInfo"
+          },
+          "success_rate": {
+            "type": "integer"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentInfo"
+            }
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            }
+          },
+          "manual_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validation_results": {
+            "$ref": "#/components/schemas/ValidationResults"
+          }
+        }
+      },
+      "ComponentInfo": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      },
+      "Assumption": {
+        "type": "object",
+        "properties": {
+          "feature": {
+            "type": "string"
+          },
+          "java_value": {
+            "type": "string"
+          },
+          "bedrock_value": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      },
+      "ValidationResults": {
+        "type": "object",
+        "properties": {
+          "syntax_check": {
+            "type": "string"
+          },
+          "schema_validation": {
+            "type": "string"
+          },
+          "asset_integrity": {
+            "type": "string"
+          }
+        }
+      },
+      "UsageStats": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "conversions_total": {
+                "type": "integer"
+              },
+              "conversions_completed": {
+                "type": "integer"
+              },
+              "conversions_failed": {
+                "type": "integer"
+              },
+              "api_calls": {
+                "type": "integer"
+              },
+              "storage_used_mb": {
+                "type": "integer"
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "conversions_limit": {
+                "type": "string"
+              },
+              "api_calls_limit": {
+                "type": "integer"
+              },
+              "storage_limit_mb": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["healthy", "degraded", "unhealthy"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "services": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "string"
+              },
+              "redis": {
+                "type": "string"
+              },
+              "ai_engine": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object"
+              },
+              "documentation_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
