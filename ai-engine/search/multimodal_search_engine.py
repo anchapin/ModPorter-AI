@@ -11,13 +11,30 @@ import logging
 from typing import List, Dict, Any, Optional, Set
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from schemas.multimodal_schema import (
     SearchQuery,
     SearchResult,
     MultiModalDocument,
     ContentType,
+    EmbeddingModel,
 )
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode
+
+# Try to import embedding generator
+try:
+    from utils.embedding_generator import LocalEmbeddingGenerator
+
+    EMBEDDING_GENERATOR_AVAILABLE = True
+except ImportError:
+    try:
+        from ai_engine.utils.embedding_generator import LocalEmbeddingGenerator
+
+        EMBEDDING_GENERATOR_AVAILABLE = True
+    except ImportError:
+        EMBEDDING_GENERATOR_AVAILABLE = False
+        logger.warning("Embedding generator not available for multi-modal search")
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +97,15 @@ class MultiModalSearchEngine:
         self.enable_cross_modal = enable_cross_modal
         self._db_session = db_session
 
+        # Initialize embedding generator for real embedding-based search
+        self._embedding_generator = None
+        if EMBEDDING_GENERATOR_AVAILABLE:
+            try:
+                self._embedding_generator = LocalEmbeddingGenerator()
+                logger.info("Embedding generator initialized for multi-modal search")
+            except Exception as e:
+                logger.warning(f"Failed to initialize embedding generator: {e}")
+
         # Content type to modality mapping
         self.content_type_modality = {
             ContentType.CODE: "code",
@@ -126,7 +152,8 @@ class MultiModalSearchEngine:
             }
             logger.info(f"Filtered to {len(filtered_docs)} documents by content type")
 
-        # If hybrid engine has search method, use it
+        # Use embedding-based search
+        # If hybrid engine is available with embeddings, use it
         if hasattr(self.hybrid_engine, "search") and embeddings and query_embedding:
             results = self.hybrid_engine.search(
                 query=query,
@@ -135,9 +162,30 @@ class MultiModalSearchEngine:
                 query_embedding=query_embedding,
                 search_mode=SearchMode.HYBRID,
             )
+        elif hasattr(self.hybrid_engine, "search"):
+            # Hybrid engine available but no embeddings provided
+            # Generate embeddings for query
+            query_emb = self._generate_query_embedding(query.query_text)
+            if query_emb:
+                results = self.hybrid_engine.search(
+                    query=query,
+                    documents=filtered_docs,
+                    embeddings={},  # Will use query embedding for similarity
+                    query_embedding=query_emb,
+                    search_mode=SearchMode.VECTOR_ONLY,
+                )
+            else:
+                # No embedding generation available - use hybrid without embeddings
+                results = self.hybrid_engine.search(
+                    query=query,
+                    documents=filtered_docs,
+                    embeddings={},
+                    query_embedding=[],
+                    search_mode=SearchMode.KEYWORD_ONLY,
+                )
         else:
-            # Fallback to simple filtering if hybrid search not available
-            results = self._simple_search(query, filtered_docs)
+            # No hybrid engine available - use basic vector similarity
+            results = self._embedding_based_search(query, filtered_docs)
 
         # Apply modality-aware scoring
         if primary_modality and query.content_types and len(query.content_types) > 1:
@@ -223,6 +271,113 @@ class MultiModalSearchEngine:
             result.rank = i + 1
 
         return results[: query.top_k]
+
+    def _generate_query_embedding(self, query_text: str) -> Optional[List[float]]:
+        """
+        Generate embedding for query text using the embedding generator.
+
+        Args:
+            query_text: The query text to embed
+
+        Returns:
+            Query embedding vector or None if generation fails
+        """
+        if not self._embedding_generator:
+            return None
+
+        try:
+            result = self._embedding_generator.generate_embedding(query_text)
+            if result:
+                return result.embedding.tolist()
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to generate query embedding: {e}")
+            return None
+
+    def _embedding_based_search(
+        self, query: SearchQuery, documents: Dict[str, MultiModalDocument]
+    ) -> List[SearchResult]:
+        """
+        Perform embedding-based search when hybrid engine is not available.
+
+        Args:
+            query: Search query
+            documents: Documents to search
+
+        Returns:
+            List of search results based on embedding similarity
+        """
+        if not self._embedding_generator:
+            # Fallback to simple search if no embedding generator
+            logger.warning("No embedding generator available, falling back to simple search")
+            return self._simple_search(query, documents)
+
+        try:
+            # Generate query embedding
+            query_embedding = self._generate_query_embedding(query.query_text)
+            if not query_embedding:
+                return self._simple_search(query, documents)
+
+            results = []
+
+            for doc_id, doc in documents.items():
+                if not doc.content_text:
+                    continue
+
+                # Generate embedding for document content
+                doc_embedding = self._generate_query_embedding(doc.content_text)
+                if not doc_embedding:
+                    continue
+
+                # Calculate cosine similarity
+                similarity = self._cosine_similarity(query_embedding, doc_embedding)
+
+                results.append(
+                    SearchResult(
+                        document=doc,
+                        similarity_score=similarity,
+                        keyword_score=0.0,
+                        final_score=similarity,
+                        rank=0,
+                        embedding_model_used=EmbeddingModel.SENTENCE_TRANSFORMER,
+                    )
+                )
+
+            # Sort by score
+            results.sort(key=lambda r: r.final_score, reverse=True)
+
+            # Assign ranks
+            for i, result in enumerate(results):
+                result.rank = i + 1
+
+            return results[: query.top_k]
+
+        except Exception as e:
+            logger.error(f"Embedding-based search failed: {e}")
+            return self._simple_search(query, documents)
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """
+        Calculate cosine similarity between two vectors.
+
+        Args:
+            vec1: First vector
+            vec2: Second vector
+
+        Returns:
+            Cosine similarity score
+        """
+        v1 = np.array(vec1)
+        v2 = np.array(vec2)
+
+        dot_product = np.dot(v1, v2)
+        norm1 = np.linalg.norm(v1)
+        norm2 = np.linalg.norm(v2)
+
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+
+        return float(dot_product / (norm1 * norm2))
 
     def _apply_modality_scoring(
         self, results: List[SearchResult], primary_modality: str
