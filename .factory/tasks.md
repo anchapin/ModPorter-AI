@@ -7,8 +7,8 @@
   - ✅ Task 3: Implement Animation Conversion
   - ✅ Task 4: Create unit tests (32 tests)
 
-## In Progress
-- 🔄 Phase 17-10: Custom Weapon/Tool Conversion
+## Completed
+- ✅ Phase 17-10: Custom Weapon/Tool Conversion (30 tests)
   - ✅ Task 1: Create WeaponToolConverter module
   - ✅ Task 2: Create WeaponToolPatternLibrary
   - ✅ Task 3: Implement Tool Attribute Conversion
