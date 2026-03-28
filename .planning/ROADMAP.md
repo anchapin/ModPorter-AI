@@ -1095,7 +1095,7 @@ Phase 1.3 (Beta Launch)
 
 ---
 
-### Phase 16-06: QA Report Generator ✅ PENDING
+### Phase 16-06: QA Report Generator ✅ PLANNED
 
 **Phase Goal:** Aggregates all agent outputs into comprehensive QA report
 
@@ -1111,7 +1111,9 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped:** QA-06
 
-**Plans:** TBD
+**Plans:** 2 plans
+- [x] 16-06-01-PLAN.md — Core data models and aggregation (Wave 1)
+- [x] 16-06-02-PLAN.md — Export implementations (Wave 2)
 
 ---
 
@@ -1160,7 +1162,7 @@ Phase 1.3 (Beta Launch)
 | QA-03: Reviewer Agent | 16-03 | ✅ Planned |
 | QA-04: Fixer Agent | 16-04 | ✅ Planned |
 | QA-05: Semantic Checker Agent | 16-05 | ✅ Planned |
-| QA-06: QA Report Generator | 16-06 | Pending |
+| QA-06: QA Report Generator | 16-06 | ✅ Planned |
 | QA-07: Parallel Agent Execution | 16-07 | Pending |
 | QA-08: Iterative Refinement Loop | 16-08 | Pending |
 
