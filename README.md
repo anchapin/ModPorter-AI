@@ -372,6 +372,9 @@ docker compose ps --services
 
 ## 📖 Documentation
 
+- [Getting Started Guide](docs/getting-started.md) - Quick start and installation
+- [API Reference](docs/api-reference.md) - Full API documentation
+- [Conversion Guide](docs/conversion-guide.md) - Feature support and best practices
 - [Product Requirements Document](docs/PRD.md)
 - [API Documentation](docs/API.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
