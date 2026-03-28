@@ -32,3 +32,7 @@
 **Vulnerability:** A hardcoded `SECRET_KEY` was used as a default, or the application might fall back to an insecure default if the secret was not available.
 **Learning:** When removing hardcoded cryptographic secrets to use environment variables, the application must fail securely if the variable is unset. Falling back to an insecure default negates the purpose of externalized secrets.
 **Prevention:** Raise an explicit error (e.g., `ValueError`) during initialization if critical cryptographic secrets are missing, rather than using fallback values.
+## 2024-05-24 - [Remove Hardcoded Secret Key Fallback]
+**Vulnerability:** A hardcoded `SECRET_KEY` was used as a fallback for the JWT generation and validation logic if not provided through environment variables.
+**Learning:** Hardcoded secrets in version-controlled repositories can easily leak into production environments and lead to unauthorized access and session hijacking.
+**Prevention:** Ensure secrets are strictly required via environment variables, raising an error (e.g., `ValueError`) when missing to "fail securely" and immediately alert operators.

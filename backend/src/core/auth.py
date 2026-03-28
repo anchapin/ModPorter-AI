@@ -20,8 +20,7 @@ from core.secrets import get_secret
 # JWT settings
 SECRET_KEY = get_secret("SECRET_KEY")
 if not SECRET_KEY:
-    # Fallback for development/testing - not for production
-    SECRET_KEY = "dev-secret-key-do-not-use-in-production-change-me"
+    raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
