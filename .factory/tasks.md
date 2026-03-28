@@ -1,6 +1,17 @@
 # Current Tasks
 
+## Pending
+- ⏳ Phase 16-04: [Next phase]
+
 ## Completed
+- ✅ Phase 16-03: Reviewer Agent (21 tests passing)
+  - ✅ Task 1: Create ReviewerAgent class (ai-engine/qa/reviewer.py)
+  - ✅ Task 2: Add unit tests (ai-engine/tests/test_reviewer_agent.py)
+  - ✅ Task 3: Update qa/__init__.py exports
+- ✅ Phase 16-02: Translator Agent (13 tests passing)
+  - ✅ Task 1: Create TranslatorAgent class (ai-engine/qa/translator.py)
+  - ✅ Task 2: Add unit tests (ai-engine/tests/test_translator_agent.py)
+  - ✅ Task 3: Update qa/__init__.py exports
 - ✅ Phase 16-01: QA Context Orchestration (11 tests passing)
   - ✅ Plan 01: QA Context & Output Validation
   - ✅ Plan 02: QAOrchestrator with timeout and circuit breaker
