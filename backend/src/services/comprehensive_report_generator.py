@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional
 import time
 import logging
 
-from ..schemas.report_types import (
+from schemas.report_types import (
     InteractiveReport,
     SummaryReport,
     FeatureAnalysis,

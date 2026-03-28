@@ -272,11 +272,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: |
-            ai-engine/requirements*.txt
-            backend/requirements*.txt
-            requirements-test.txt
+          cache: ''
 
       # Multi-level caching strategy
       - name: Cache Python packages (L1 - pip cache)
@@ -334,6 +330,7 @@ jobs:
         run: |
           echo "⚡ Installing service-specific dependencies..."
 
+          python -m pip install -e .
           case "${{ matrix.test-suite }}" in
             "ai-engine"|"integration")
               echo "Installing AI Engine dependencies..."
@@ -617,7 +614,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -886,16 +883,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: |
-            ai-engine/requirements*.txt
-            backend/requirements*.txt
-            requirements-test.txt
+          cache: ''
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
+          python -m pip install -e .
           if [ "${{ matrix.project }}" = "ai-engine" ]; then
             cd ai-engine
             python -m pip install -e ".[dev]"
