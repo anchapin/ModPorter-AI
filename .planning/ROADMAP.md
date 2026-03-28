@@ -1074,23 +1074,24 @@ Phase 1.3 (Beta Launch)
 
 ---
 
-### Phase 16-05: Semantic Checker Agent ✅ PENDING
+### Phase 16-05: Semantic Checker Agent ✅ PLANNED
 
 **Phase Goal:** Agent that validates behavioral equivalence between Java source and Bedrock output
 
 **Deliverables:**
-- [ ] Compare data flow graphs between Java and Bedrock
-- [ ] Analyze control flow equivalence
-- [ ] Verify Script API method validity
-- [ ] Check variable/type mappings
-- [ ] Generate semantic similarity score
-- [ ] Flag behavioral drift with explanations
-- [ ] Handle edge cases and boundary conditions
-- [ ] Deterministic validation with explicit criteria
+- [x] Compare data flow graphs between Java and Bedrock
+- [x] Analyze control flow equivalence
+- [x] Verify Script API method validity
+- [x] Check variable/type mappings
+- [x] Generate semantic similarity score
+- [x] Flag behavioral drift with explanations
+- [x] Handle edge cases and boundary conditions
+- [x] Deterministic validation with explicit criteria
 
 **Requirements Mapped:** QA-05
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [x] 16-05-01-PLAN.md — SemanticCheckerAgent for behavioral equivalence (Wave 1)
 
 ---
 
@@ -1157,8 +1158,8 @@ Phase 1.3 (Beta Launch)
 | QA-01: QA Context & Orchestration | 16-01 | ✅ Complete |
 | QA-02: Translator Agent | 16-02 | ✅ Complete |
 | QA-03: Reviewer Agent | 16-03 | ✅ Planned |
-| QA-04: Tester Agent | 16-04 | Pending |
-| QA-05: Semantic Checker Agent | 16-05 | Pending |
+| QA-04: Fixer Agent | 16-04 | ✅ Planned |
+| QA-05: Semantic Checker Agent | 16-05 | ✅ Planned |
 | QA-06: QA Report Generator | 16-06 | Pending |
 | QA-07: Parallel Agent Execution | 16-07 | Pending |
 | QA-08: Iterative Refinement Loop | 16-08 | Pending |
