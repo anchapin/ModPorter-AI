@@ -4,6 +4,7 @@ from qa.orchestrator import QAOrchestrator
 from qa.hooks import QAIntegrationHook, run_post_conversion_qa
 from qa.translator import TranslatorAgent, translate
 from qa.reviewer import ReviewerAgent, review
+from qa.fixer import FixerAgent, fix
 
 __all__ = [
     "QAContext",
@@ -14,6 +15,8 @@ __all__ = [
     "translate",
     "ReviewerAgent",
     "review",
+    "FixerAgent",
+    "fix",
     "QAIntegrationHook",
     "run_post_conversion_qa",
 ]
