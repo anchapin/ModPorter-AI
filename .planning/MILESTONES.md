@@ -1,5 +1,36 @@
 # ModPorter-AI Milestones
 
+## v4.7 - Multi-Agent QA Review (2026-03-27)
+
+**Status:** 🚧 In Progress
+
+### Phases
+| Phase | Plans | Summary |
+|-------|-------|---------|
+| 16-01: QA Context & Orchestration | TBD | ⏳ Pending |
+| 16-02: Translator Agent | TBD | ⏳ Pending |
+| 16-03: Reviewer Agent | TBD | ⏳ Pending |
+| 16-04: Tester Agent | TBD | ⏳ Pending |
+| 16-05: Semantic Checker Agent | TBD | ⏳ Pending |
+| 16-06: QA Report Generator | TBD | ⏳ Pending |
+| 16-07: Parallel Agent Execution | TBD | ⏳ Pending |
+| 16-08: Iterative Refinement Loop | TBD | ⏳ Pending |
+
+### Target Features
+- **QA Context & Orchestration**: Core infrastructure with QAContext dataclass, QAOrchestrator, context passing
+- **Translator Agent**: Generate Bedrock code from parsed Java AST with RAG augmentation
+- **Reviewer Agent**: Validate code quality, style, ESLint/TSLint, schema validation
+- **Tester Agent**: Generate and execute unit/integration tests with pytest
+- **Semantic Checker Agent**: Validate behavioral equivalence between Java and Bedrock
+- **QA Report Generator**: Aggregate results, quality scores, JSON/HTML/Markdown export
+- **Parallel Agent Execution**: Run Reviewer+Tester in parallel for performance
+- **Iterative Refinement Loop**: Self-correction when critical issues found
+
+### Goal
+Implement complete multi-agent QA pipeline with 4 specialized agents for automated conversion validation.
+
+---
+
 ## v4.6 - RAG & Knowledge Enhancement (2026-03-20)
 
 **Status:** ✅ Complete

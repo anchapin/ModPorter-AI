@@ -2,7 +2,6 @@
   "version": "1.0",
   "created": "2026-03-13",
   "lastUpdated": "2026-03-13",
-  
   "workflow": {
     "mode": "interactive",
     "granularity": "standard",
@@ -11,16 +10,15 @@
       "humanVerify": true,
       "decision": true,
       "humanAction": true
-    }
+    },
+    "_auto_chain_active": false
   },
-
   "automation": {
     "research": true,
     "planCheck": true,
     "verifier": true,
     "integrationCheck": true
   },
-
   "checkpoints": {
     "afterPhase": true,
     "afterMilestone": true,
@@ -28,14 +26,12 @@
     "beforeDecision": true,
     "beforeHumanAction": true
   },
-
   "notifications": {
     "phaseComplete": true,
     "milestoneComplete": true,
     "checkpointReached": true,
     "errorThreshold": 0.05
   },
-
   "profiles": {
     "default": {
       "model": "claude-sonnet-4-20250514",
@@ -63,7 +59,6 @@
       "maxTokens": 2048
     }
   },
-
   "project": {
     "name": "ModPorter-AI",
     "description": "AI-powered Java to Bedrock Minecraft mod converter",
@@ -74,7 +69,6 @@
     "todosDirectory": ".planning/todos",
     "debugDirectory": ".planning/debug"
   },
-
   "milestones": {
     "current": "v0.1",
     "target": "v1.0",
@@ -85,7 +79,6 @@
       "v1.0": "2026-06-05 to 2026-07-03"
     }
   },
-
   "features": {
     "todoTracking": true,
     "checkpointProtocol": true,
@@ -93,7 +86,6 @@
     "deviationHandling": true,
     "atomicCommits": true
   },
-
   "integrations": {
     "git": true,
     "github": true,
