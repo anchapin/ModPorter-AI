@@ -1,0 +1,66 @@
+/**
+ * Results Page Styles
+ */
+
+.results-page {
+  padding: 2rem 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.results-header {
+  background: linear-gradient(135deg, #f5f9ff 0%, #fff 100%);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.download-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: #fff;
+  border: 2px solid #e8f5e9;
+  margin-bottom: 1.5rem;
+}
+
+.stats-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: #fff;
+  margin-bottom: 1.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  background-color: #fafafa;
+  border-radius: 8px;
+}
+
+.feedback-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: #f5f9ff;
+  border: 1px solid #e3f2fd;
+}
+
+@media (max-width: 600px) {
+  .results-header {
+    padding: 1.5rem;
+  }
+
+  .download-card .MuiBox-root {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

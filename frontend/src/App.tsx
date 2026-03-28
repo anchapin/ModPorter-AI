@@ -33,6 +33,9 @@ const ExperimentResultsPage = lazy(
 );
 const Settings = lazy(() => import('./pages/Settings'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
+const UploadPage = lazy(() => import('./pages/UploadPage'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage'));
+const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -167,6 +170,30 @@ function App() {
                   element={
                     <Suspense fallback={<div>Loading Pricing...</div>}>
                       <PricingPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/upload"
+                  element={
+                    <Suspense fallback={<div>Loading Upload...</div>}>
+                      <UploadPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/progress/:jobId"
+                  element={
+                    <Suspense fallback={<div>Loading Progress...</div>}>
+                      <ProgressPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/results/:jobId"
+                  element={
+                    <Suspense fallback={<div>Loading Results...</div>}>
+                      <ResultsPage />
                     </Suspense>
                   }
                 />
