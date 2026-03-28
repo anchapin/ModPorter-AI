@@ -1153,7 +1153,7 @@ semantic_checker:
 | QA-03 | 16-03 | Pending |
 | QA-04 | 16-04 | Pending |
 | QA-05 | 16-05 | Pending |
-| QA-06 | 16-06 | Pending |
+| QA-06 | 16-06 | Complete |
 | QA-07 | 16-07 | Pending |
 | QA-08 | 16-08 | Pending |
 
