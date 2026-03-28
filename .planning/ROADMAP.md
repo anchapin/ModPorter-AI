@@ -819,8 +819,8 @@ Phase 1.3 (Beta Launch)
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | QA-01: QA Context & Orchestration | 16-01 | ✅ Complete |
-| QA-02: Translator Agent | 16-02 | ✅ Planned |
-| QA-03: Reviewer Agent | 16-03 | Pending |
+| QA-02: Translator Agent | 16-02 | ✅ Complete |
+| QA-03: Reviewer Agent | 16-03 | ✅ Planned |
 | QA-04: Tester Agent | 16-04 | Pending |
 | QA-05: Semantic Checker Agent | 16-05 | Pending |
 | QA-06: QA Report Generator | 16-06 | Pending |
@@ -1049,7 +1049,8 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped:** QA-03
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [x] 16-03-01-PLAN.md — ReviewerAgent for code quality validation (Wave 1)
 
 ---
 
@@ -1154,8 +1155,8 @@ Phase 1.3 (Beta Launch)
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | QA-01: QA Context & Orchestration | 16-01 | ✅ Complete |
-| QA-02: Translator Agent | 16-02 | ✅ Planned |
-| QA-03: Reviewer Agent | 16-03 | Pending |
+| QA-02: Translator Agent | 16-02 | ✅ Complete |
+| QA-03: Reviewer Agent | 16-03 | ✅ Planned |
 | QA-04: Tester Agent | 16-04 | Pending |
 | QA-05: Semantic Checker Agent | 16-05 | Pending |
 | QA-06: QA Report Generator | 16-06 | Pending |
