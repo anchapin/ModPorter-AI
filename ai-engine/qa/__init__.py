@@ -3,6 +3,7 @@ from qa.validators import AgentOutput, validate_agent_output
 from qa.orchestrator import QAOrchestrator
 from qa.hooks import QAIntegrationHook, run_post_conversion_qa
 from qa.translator import TranslatorAgent, translate
+from qa.reviewer import ReviewerAgent, review
 
 __all__ = [
     "QAContext",
@@ -11,6 +12,8 @@ __all__ = [
     "QAOrchestrator",
     "TranslatorAgent",
     "translate",
+    "ReviewerAgent",
+    "review",
     "QAIntegrationHook",
     "run_post_conversion_qa",
 ]
