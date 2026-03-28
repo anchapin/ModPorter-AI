@@ -48,7 +48,7 @@ from .particle_patterns import (
 from .advancement_patterns import (
     AdvancementPattern,
     AdvancementPatternLibrary,
-    AdvancementCategory,
+    AdvancementPatternCategory,
     ADVANCEMENT_PATTERNS,
     get_advancement_pattern,
     search_advancement_patterns,
@@ -56,7 +56,7 @@ from .advancement_patterns import (
 from .potion_patterns import (
     PotionPattern,
     PotionPatternLibrary,
-    PotionCategory,
+    PotionPatternCategory,
     POTION_PATTERNS,
     get_potion_pattern,
     search_potion_patterns,
@@ -64,7 +64,7 @@ from .potion_patterns import (
 from .villager_patterns import (
     VillagerPattern,
     VillagerPatternLibrary,
-    VillagerCategory,
+    VillagerPatternCategory,
     VILLAGER_PATTERNS,
     get_villager_pattern,
     search_villager_patterns,
@@ -72,7 +72,7 @@ from .villager_patterns import (
 from .rendering_patterns import (
     RenderingPattern,
     RenderingPatternLibrary,
-    RenderingCategory,
+    RenderingPatternCategory,
     RENDERING_PATTERNS,
     get_rendering_pattern,
     search_rendering_patterns,
@@ -145,28 +145,28 @@ __all__ = [
     # Advancement patterns
     "AdvancementPattern",
     "AdvancementPatternLibrary",
-    "AdvancementCategory",
+    "AdvancementPatternCategory",
     "ADVANCEMENT_PATTERNS",
     "get_advancement_pattern",
     "search_advancement_patterns",
     # Potion patterns
     "PotionPattern",
     "PotionPatternLibrary",
-    "PotionCategory",
+    "PotionPatternCategory",
     "POTION_PATTERNS",
     "get_potion_pattern",
     "search_potion_patterns",
     # Villager patterns
     "VillagerPattern",
     "VillagerPatternLibrary",
-    "VillagerCategory",
+    "VillagerPatternCategory",
     "VILLAGER_PATTERNS",
     "get_villager_pattern",
     "search_villager_patterns",
     # Rendering patterns
     "RenderingPattern",
     "RenderingPatternLibrary",
-    "RenderingCategory",
+    "RenderingPatternCategory",
     "RENDERING_PATTERNS",
     "get_rendering_pattern",
     "search_rendering_patterns",
