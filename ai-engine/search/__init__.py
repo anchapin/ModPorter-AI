@@ -15,6 +15,8 @@ from search.hybrid_search_engine import (
     SearchCandidate,
 )
 
+from search.feedback_reranker import FeedbackReranker, FeedbackBoost, rerank_with_feedback
+
 from search.reranking_engine import (
     CrossEncoderReRanker,
     NeuralReRanker,
@@ -63,6 +65,10 @@ __all__ = [
     "SearchMode",
     "RankingStrategy",
     "SearchCandidate",
+    # Feedback reranking
+    "FeedbackReranker",
+    "FeedbackBoost",
+    "rerank_with_feedback",
     # Reranking
     "CrossEncoderReRanker",
     "NeuralReRanker",

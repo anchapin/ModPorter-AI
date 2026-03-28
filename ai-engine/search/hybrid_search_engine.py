@@ -13,6 +13,7 @@ from enum import Enum
 import numpy as np
 from collections import Counter, defaultdict
 import math
+import uuid
 
 # Initialize logger first
 logger = logging.getLogger(__name__)
@@ -20,12 +21,26 @@ logger = logging.getLogger(__name__)
 # BM25 import with fallback
 try:
     from rank_bm25 import BM25Okapi
+
     BM25_AVAILABLE = True
 except ImportError:
     BM25_AVAILABLE = False
     logger.warning("rank_bm25 not installed. BM25 search will not be available.")
 
 from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument
+
+try:
+    from search.feedback_reranker import FeedbackReranker
+
+    FEEDBACK_RERANKER_AVAILABLE = True
+except ImportError:
+    try:
+        from search.feedback_reranker import FeedbackReranker
+
+        FEEDBACK_RERANKER_AVAILABLE = True
+    except ImportError:
+        FEEDBACK_RERANKER_AVAILABLE = False
+        logger.warning("FeedbackReranker not available")
 
 
 class SearchMode(str, Enum):
@@ -359,7 +374,7 @@ class KeywordSearchEngine:
             for doc_id, doc in documents.items():
                 if doc.content_text:
                     # Tokenize: lowercase and split on whitespace/punctuation
-                    tokens = re.findall(r'\b\w+\b', doc.content_text.lower())
+                    tokens = re.findall(r"\b\w+\b", doc.content_text.lower())
                     # Filter out stop words
                     tokens = [t for t in tokens if t not in self.stop_words and len(t) > 1]
                     self._bm25_documents.append(tokens)
@@ -408,7 +423,7 @@ class KeywordSearchEngine:
 
         try:
             # Tokenize query
-            query_tokens = re.findall(r'\b\w+\b', query.lower())
+            query_tokens = re.findall(r"\b\w+\b", query.lower())
             query_tokens = [t for t in query_tokens if t not in self.stop_words and len(t) > 1]
 
             if not query_tokens:
@@ -455,7 +470,7 @@ class HybridSearchEngine:
     semantic vector similarity with keyword-based relevance scoring.
     """
 
-    def __init__(self):
+    def __init__(self, db_session=None):
         self.keyword_engine = KeywordSearchEngine()
         self.ranking_strategies = {
             RankingStrategy.WEIGHTED_SUM: self._weighted_sum_ranking,
@@ -463,6 +478,12 @@ class HybridSearchEngine:
             RankingStrategy.BAYESIAN_COMBINATION: self._bayesian_combination,
         }
         self._bm25_built = False
+        self._db_session = db_session
+        self._feedback_reranker = None
+        if db_session and FEEDBACK_RERANKER_AVAILABLE:
+            from search.feedback_reranker import FeedbackReranker
+
+            self._feedback_reranker = FeedbackReranker(db_session=db_session)
 
     def build_index(self, documents: Dict[str, MultiModalDocument]) -> bool:
         """
@@ -495,6 +516,9 @@ class HybridSearchEngine:
         query_embedding: List[float],
         search_mode: SearchMode = SearchMode.HYBRID,
         ranking_strategy: RankingStrategy = RankingStrategy.WEIGHTED_SUM,
+        use_feedback_boost: bool = True,
+        user_id: Optional[str] = None,
+        include_related: bool = True,
     ) -> List[SearchResult]:
         """
         Perform hybrid search across documents.
@@ -506,6 +530,9 @@ class HybridSearchEngine:
             query_embedding: Query embedding vector
             search_mode: Search mode to use
             ranking_strategy: Ranking strategy for combining scores
+            use_feedback_boost: Whether to apply feedback-based re-ranking
+            user_id: Optional user ID for personalized feedback
+            include_related: Whether to include related concepts in results
 
         Returns:
             Ranked list of search results
@@ -595,6 +622,44 @@ class HybridSearchEngine:
             )
             results.append(result)
 
+        # Add related concepts if enabled
+        if include_related and self._db_session:
+            try:
+                from knowledge.cross_reference import CrossReferenceDetector
+
+                detector = CrossReferenceDetector(db_session=self._db_session)
+                await detector.initialize(self._db_session)
+
+                for result in results:
+                    doc_id = result.document.id
+                    related = await detector.find_related_chunks(
+                        chunk_id=doc_id,
+                        limit=5,
+                    )
+                    if related:
+                        if not hasattr(result, "metadata"):
+                            result.metadata = {}
+                        result.metadata["related_concepts"] = related
+
+                logger.info(f"Added related concepts to {len(results)} results")
+            except Exception as e:
+                logger.warning(f"Failed to add related concepts: {e}")
+
+        if use_feedback_boost and FEEDBACK_RERANKER_AVAILABLE:
+            try:
+                if self._feedback_reranker:
+                    results = await self._feedback_reranker.rerank_with_feedback(
+                        query.query_text, results, user_id
+                    )
+                else:
+                    feedback_reranker = FeedbackReranker()
+                    results = await feedback_reranker.rerank_with_feedback(
+                        query.query_text, results, user_id
+                    )
+                logger.info("Applied feedback-based re-ranking")
+            except Exception as e:
+                logger.warning(f"Feedback re-ranking failed: {e}")
+
         logger.info(f"Returning {len(results)} results")
         return results
 
@@ -631,7 +696,11 @@ class HybridSearchEngine:
 
         # Handle case where doc_embeddings is a simple list of floats (not objects)
         # Check if first element is a number (not an object with .embedding attribute)
-        if doc_embeddings and not hasattr(doc_embeddings[0], 'embedding') and not hasattr(doc_embeddings[0], 'embedding_vector'):
+        if (
+            doc_embeddings
+            and not hasattr(doc_embeddings[0], "embedding")
+            and not hasattr(doc_embeddings[0], "embedding_vector")
+        ):
             # Treat entire list as a single embedding vector
             doc_vector = np.array(doc_embeddings)
             if doc_vector.size > 0 and query_vector.shape[0] == doc_vector.shape[0]:
