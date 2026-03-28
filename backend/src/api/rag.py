@@ -7,7 +7,7 @@ with multi-stage reranking, query rewriting, and adaptive fusion.
 
 import logging
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -144,4 +144,4 @@ async def rag_search(request: RAGSearchRequest):
 @router.get("/rag/health")
 async def rag_health():
     """Health check for RAG pipeline."""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}

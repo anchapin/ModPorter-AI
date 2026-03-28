@@ -145,7 +145,7 @@ class AssumptionReporter:
 
         return DetailedAssumptionReport(
             job_id=job_id,
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             summary=summary,
             assumptions_applied=assumptions_applied,
             features_without_assumptions=features_without,

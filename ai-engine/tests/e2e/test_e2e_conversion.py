@@ -32,7 +32,7 @@ class E2ETestRunner:
             result = await self.run_test(scenario)
             self.results.append(result)
 
-        self.end_time = datetime.utcnow()
+        self.end_time = datetime.now(timezone.utc)
         return self._generate_summary()
 
     async def run_test(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,7 +41,7 @@ class E2ETestRunner:
         scenario_name = scenario.get("name", "Unnamed")
         logger.info(f"Running test: {scenario_name} ({scenario_id})")
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         # Run the conversion
         output = await self._run_conversion(scenario.get("input", {}))
@@ -50,8 +50,8 @@ class E2ETestRunner:
             "scenario_id": scenario_id,
             "scenario_name": scenario_name,
             "output": output,
-            "duration_seconds": (datetime.utcnow() - start_time).total_seconds(),
-            "end_time": datetime.utcnow().isoformat(),
+            "duration_seconds": (datetime.now(timezone.utc) - start_time).total_seconds(),
+            "end_time": datetime.now(timezone.utc).isoformat(),
         }
 
         return result

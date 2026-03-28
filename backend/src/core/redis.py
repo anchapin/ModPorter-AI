@@ -193,7 +193,7 @@ class JobQueue:
         job_payload = json.dumps({**job_data, "job_id": job_id})
 
         # Use sorted set for priority queue
-        score = priority * 1_000_000_000 + int(datetime.utcnow().timestamp() * 1000)
+        score = priority * 1_000_000_000 + int(datetime.now(timezone.utc).timestamp() * 1000)
 
         try:
             await self.client._client.zadd(self.queue_name, {job_payload: score})
@@ -278,7 +278,7 @@ class RateLimiter:
         if not self.client.is_connected:
             return True  # Allow if Redis unavailable
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(seconds=self.window)
 
         try:
@@ -311,7 +311,7 @@ class RateLimiter:
         if not self.client.is_connected:
             return self.limit
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(seconds=self.window)
 
         try:

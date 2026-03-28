@@ -5,7 +5,7 @@ Convert multiple mods simultaneously.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,7 +93,7 @@ async def start_batch_conversion(
         )
 
     # Create batch record
-    batch_id = f"batch_{datetime.utcnow().timestamp()}"
+    batch_id = f"batch_{datetime.now(timezone.utc).timestamp()}"
 
     # Create individual conversion jobs
     conversion_ids = []

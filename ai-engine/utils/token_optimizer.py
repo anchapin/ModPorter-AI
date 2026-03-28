@@ -10,7 +10,7 @@ import hashlib
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, timezone timedelta
 
 
 # Token pricing (approximate, in dollars per 1M tokens)
@@ -48,7 +48,7 @@ class TokenUsage:
     total_tokens: int = 0
     cost: float = 0.0
     model: str = "default"
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict:
         return {
@@ -104,13 +104,13 @@ class PromptCache:
             cached = self._cache[content_hash]
 
             # Check if expired
-            if datetime.utcnow() - cached.created_at > self._ttl:
+            if datetime.now(timezone.utc) - cached.created_at > self._ttl:
                 del self._cache[content_hash]
                 self._misses += 1
                 return None
 
             # Update last used and move to end (LRU)
-            cached.last_used = datetime.utcnow()
+            cached.last_used = datetime.now(timezone.utc)
             cached.hit_count += 1
             self._cache.move_to_end(content_hash)
             self._hits += 1
@@ -131,8 +131,8 @@ class PromptCache:
             content_hash=content_hash,
             content=content,
             tokens=tokens,
-            created_at=datetime.utcnow(),
-            last_used=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            last_used=datetime.now(timezone.utc),
         )
 
     def get_stats(self) -> Dict:
@@ -242,7 +242,7 @@ class CostTracker:
 
     def __init__(self):
         self._usage: List[TokenUsage] = []
-        self._session_start = datetime.utcnow()
+        self._session_start = datetime.now(timezone.utc)
         self._daily_usage: Dict[str, Dict[str, int]] = {}
 
     def record_usage(
@@ -254,7 +254,7 @@ class CostTracker:
     ) -> TokenUsage:
         """Record token usage for a request."""
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc)
 
         pricing = TOKEN_PRICING.get(model, TOKEN_PRICING["default"])
         prompt_cost = (prompt_tokens / 1_000_000) * pricing["prompt"]
@@ -297,7 +297,7 @@ class CostTracker:
                 "average_tokens_per_request": 0,
             }
 
-        duration = datetime.utcnow() - self._session_start
+        duration = datetime.now(timezone.utc) - self._session_start
         total_cost = sum(u.cost for u in self._usage)
 
         return {
@@ -315,7 +315,7 @@ class CostTracker:
     def get_daily_stats(self, date: Optional[str] = None) -> Dict:
         """Get usage statistics for a specific date or today."""
         if date is None:
-            date = datetime.utcnow().strftime("%Y-%m-%d")
+            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         daily = self._daily_usage.get(
             date, {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0}
@@ -360,7 +360,7 @@ class CostTracker:
         """Reset all tracking."""
         self._usage.clear()
         self._daily_usage.clear()
-        self._session_start = datetime.utcnow()
+        self._session_start = datetime.now(timezone.utc)
 
 
 class TokenOptimizer:

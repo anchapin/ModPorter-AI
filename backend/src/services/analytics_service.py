@@ -228,7 +228,7 @@ class AnalyticsService:
         Returns:
             List of dicts with date and count
         """
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         conditions = [AnalyticsEvent.created_at >= start_date]
 

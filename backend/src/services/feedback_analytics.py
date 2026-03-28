@@ -60,7 +60,7 @@ class FeedbackAnalyticsService:
         """
         ratings = []
         for feedback in self._feedback_data:
-            timestamp = feedback.get("timestamp", datetime.utcnow())
+            timestamp = feedback.get("timestamp", datetime.now(timezone.utc))
             if start_date <= timestamp <= end_date:
                 rating = feedback.get("rating", 0)
                 if rating > 0:
@@ -100,7 +100,7 @@ class FeedbackAnalyticsService:
         by_type = {}
 
         for feedback in self._feedback_data:
-            timestamp = feedback.get("timestamp", datetime.utcnow())
+            timestamp = feedback.get("timestamp", datetime.now(timezone.utc))
             if start_date <= timestamp <= end_date:
                 feedback_type = feedback.get("feedback_type", "other")
                 by_type[feedback_type] = by_type.get(feedback_type, 0) + 1
@@ -115,7 +115,7 @@ class FeedbackAnalyticsService:
         """Get bug report summary."""
         bugs = []
         for bug in self._bug_reports:
-            timestamp = bug.get("timestamp", datetime.utcnow())
+            timestamp = bug.get("timestamp", datetime.now(timezone.utc))
             if start_date <= timestamp <= end_date:
                 bugs.append(bug)
 
@@ -144,7 +144,7 @@ class FeedbackAnalyticsService:
         """Get feature request summary."""
         features = []
         for feature in self._feature_requests:
-            timestamp = feature.get("timestamp", datetime.utcnow())
+            timestamp = feature.get("timestamp", datetime.now(timezone.utc))
             if start_date <= timestamp <= end_date:
                 features.append(feature)
 
@@ -194,7 +194,7 @@ class FeedbackAnalyticsService:
         feedback_by_duration = {"fast": [], "medium": [], "slow": []}
 
         for feedback in self._feedback_data:
-            timestamp = feedback.get("timestamp", datetime.utcnow())
+            timestamp = feedback.get("timestamp", datetime.now(timezone.utc))
             if not (start_date <= timestamp <= end_date):
                 continue
 
@@ -284,7 +284,7 @@ class FeedbackAnalyticsService:
             "feature_requests": features,
             "feedback_by_type": feedback_by_type,
             "total_feedback": sum(feedback_by_type.values()),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
 

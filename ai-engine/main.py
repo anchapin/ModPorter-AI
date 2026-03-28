@@ -289,7 +289,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version="1.0.0",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         services=services,
     )
 
@@ -356,7 +356,7 @@ async def readiness_check():
 
     return HealthStatus(
         status=status,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         checks={
             "dependencies": {
                 c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
@@ -375,7 +375,7 @@ async def liveness_check():
     """
     return HealthStatus(
         status="healthy",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         checks={"application": {"status": "running", "message": "Application process is running"}},
     )
 
@@ -397,7 +397,7 @@ async def start_conversion(request: ConversionRequest, background_tasks: Backgro
         progress=0,
         current_stage="initialization",
         message="Conversion job queued",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
 
     # Store in Redis instead of global dict
@@ -589,7 +589,7 @@ async def process_conversion(
         if job_status:
             job_status.status = "completed"
             job_status.message = "Conversion completed successfully"
-            job_status.completed_at = datetime.utcnow()
+            job_status.completed_at = datetime.now(timezone.utc)
             await job_manager.set_job_status(job_id, job_status)
 
         logger.info(f"Completed conversion for job {job_id}")
@@ -723,7 +723,7 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
             retrieval_metrics=retrieval_metrics,
             generation_metrics=generation_metrics,
             diversity_metrics=diversity_metrics,
-            evaluation_timestamp=datetime.utcnow()
+            evaluation_timestamp=datetime.now(timezone.utc)
         )
 
     except Exception as e:

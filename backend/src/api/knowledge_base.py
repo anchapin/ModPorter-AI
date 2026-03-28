@@ -8,7 +8,7 @@ import logging
 import sys
 import os
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -685,7 +685,7 @@ async def upload_texture_asset(
             os.unlink(tmp_path)
 
         # Generate document ID
-        document_id = f"texture_{request.file_name}_{datetime.utcnow().timestamp()}"
+        document_id = f"texture_{request.file_name}_{datetime.now(timezone.utc).timestamp()}"
 
         return TextureMetadataResponse(
             document_id=document_id,
@@ -768,7 +768,7 @@ async def upload_model_asset(
             os.unlink(tmp_path)
 
         # Generate document ID
-        document_id = f"model_{request.file_name}_{datetime.utcnow().timestamp()}"
+        document_id = f"model_{request.file_name}_{datetime.now(timezone.utc).timestamp()}"
 
         return ModelMetadataResponse(
             document_id=document_id,

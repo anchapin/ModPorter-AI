@@ -761,7 +761,7 @@ class HybridSearchEngine:
             # Recent documents get a small boost
             from datetime import datetime, timedelta
 
-            if document.updated_at > datetime.utcnow() - timedelta(days=30):
+            if document.updated_at > datetime.now(timezone.utc) - timedelta(days=30):
                 context_score += 0.02
 
         return min(context_score, 0.3)  # Cap context score

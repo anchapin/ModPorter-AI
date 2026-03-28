@@ -7,7 +7,7 @@ Generate comprehensive reports for conversion jobs.
 import logging
 import json
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class ConversionReport:
         self.job_id = job_id
         self.java_code = java_code
         self.bedrock_code = bedrock_code
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.end_time = None
         self.status = "pending"
         self.stages = []
@@ -41,7 +41,7 @@ class ConversionReport:
                 "status": status,
                 "duration_ms": duration_ms,
                 "details": details or "",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -61,7 +61,7 @@ class ConversionReport:
             {
                 "issue": issue,
                 "severity": severity,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -72,7 +72,7 @@ class ConversionReport:
     def complete(self, bedrock_code: str, success: bool = True):
         """Mark conversion as complete."""
         self.bedrock_code = bedrock_code
-        self.end_time = datetime.utcnow()
+        self.end_time = datetime.now(timezone.utc)
         self.status = "completed" if success else "failed"
 
     def to_dict(self) -> Dict[str, Any]:

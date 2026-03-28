@@ -14,7 +14,7 @@ import logging
 import os
 import shutil
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -357,7 +357,7 @@ class ConversionService:
                 "status": status,
                 "progress": progress,
                 "message": message,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         await self.cache.set_progress(conversion_id, progress)

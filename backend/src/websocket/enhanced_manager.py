@@ -17,7 +17,7 @@ import time
 import weakref
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timezone timedelta
 from enum import Enum
 from typing import Dict, List, Optional, Any
 
@@ -72,9 +72,9 @@ class ConnectionInfo:
 
     websocket: WebSocket
     conversion_id: str
-    connected_at: datetime = field(default_factory=datetime.utcnow)
-    last_activity: datetime = field(default_factory=datetime.utcnow)
-    last_heartbeat: datetime = field(default_factory=datetime.utcnow)
+    connected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_activity: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_heartbeat: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     state: ConnectionState = ConnectionState.CONNECTED
     messages_sent: int = 0
     messages_received: int = 0
@@ -342,7 +342,7 @@ class EnhancedConnectionManager:
         if not info:
             return {"type": MessageType.ERROR.value, "data": {"error": "Not connected"}}
 
-        info.last_activity = datetime.utcnow()
+        info.last_activity = datetime.now(timezone.utc)
         info.messages_received += 1
         self._total_messages_received += 1
 
@@ -397,7 +397,7 @@ class EnhancedConnectionManager:
 
         # Add timestamp if not present
         if "timestamp" not in message:
-            message["timestamp"] = datetime.utcnow().isoformat()
+            message["timestamp"] = datetime.now(timezone.utc).isoformat()
 
         sent_count = 0
         disconnected = []
@@ -506,7 +506,7 @@ class EnhancedConnectionManager:
         if conversion_id not in self._connections:
             return {"healthy": False, "reason": "No connections"}
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
         issues = []
         healthy_count = 0
@@ -543,7 +543,7 @@ class EnhancedConnectionManager:
             try:
                 await asyncio.sleep(self._health_config.heartbeat_interval_seconds)
 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 heartbeat_msg = {
                     "type": MessageType.HEARTBEAT.value,
                     "data": {"timestamp": now.isoformat()},
@@ -570,7 +570,7 @@ class EnhancedConnectionManager:
             try:
                 await asyncio.sleep(60)  # Check every minute
 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
 
                 to_disconnect = []

@@ -79,7 +79,7 @@ async def register_with_verification(
 
     # Generate verification token
     verification_token = generate_verification_token()
-    verification_expires = datetime.utcnow() + timedelta(hours=24)
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
 
     # Create user
     user = User(
@@ -136,7 +136,7 @@ async def verify_email(
     result = await db.execute(
         select(User).where(
             User.verification_token == token,
-            User.verification_token_expires > datetime.utcnow(),
+            User.verification_token_expires > datetime.now(timezone.utc),
         )
     )
     user = result.scalar_one_or_none()
@@ -192,7 +192,7 @@ async def resend_verification(
         )
 
     # Check if token is still valid (prevent spam)
-    if user.verification_token_expires and user.verification_token_expires > datetime.utcnow():
+    if user.verification_token_expires and user.verification_token_expires > datetime.now(timezone.utc):
         # Token still valid, don't resend
         return ResendVerificationResponse(
             message="Verification email already sent. Please check your inbox.",
@@ -200,7 +200,7 @@ async def resend_verification(
 
     # Generate new token
     verification_token = generate_verification_token()
-    verification_expires = datetime.utcnow() + timedelta(hours=24)
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
 
     user.verification_token = verification_token
     user.verification_token_expires = verification_expires

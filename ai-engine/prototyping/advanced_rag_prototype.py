@@ -182,7 +182,7 @@ class AdvancedVectorDatabase:
 
             # Update document status
             document.processing_status = ProcessingStatus.COMPLETED
-            document.indexed_at = datetime.utcnow()
+            document.indexed_at = datetime.now(timezone.utc)
 
             logger.info(
                 f"Successfully indexed document {document.id} with {len(embeddings)} embeddings"

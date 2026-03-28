@@ -158,7 +158,7 @@ class CommunityPatternManager:
             description=description,
             contributor_id=contributor_id,
             status=SubmissionStatus.PENDING,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             tags=tags,
             category=category,
         )
@@ -201,7 +201,7 @@ class CommunityPatternManager:
         submission.status = SubmissionStatus.APPROVED if approved else SubmissionStatus.REJECTED
         submission.reviewed_by = reviewer_id
         submission.review_notes = notes
-        submission.reviewed_at = datetime.utcnow()
+        submission.reviewed_at = datetime.now(timezone.utc)
 
         # If approved, add to pattern library
         if approved:

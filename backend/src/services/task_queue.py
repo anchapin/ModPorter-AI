@@ -10,7 +10,7 @@ import asyncio
 import uuid
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import logging
 
@@ -47,7 +47,7 @@ class Task:
     payload: Dict[str, Any]
     status: TaskStatus = TaskStatus.QUEUED
     priority: TaskPriority = TaskPriority.NORMAL
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     result: Optional[Dict[str, Any]] = None
@@ -204,7 +204,7 @@ class AsyncTaskQueue:
 
                     # Update status to processing
                     task.status = TaskStatus.PROCESSING
-                    task.started_at = datetime.utcnow()
+                    task.started_at = datetime.now(timezone.utc)
 
                     await redis.set(f"task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
@@ -221,7 +221,7 @@ class AsyncTaskQueue:
         if task_data:
             task_dict = json.loads(task_data)
             task_dict["status"] = TaskStatus.COMPLETED.value
-            task_dict["completed_at"] = datetime.utcnow().isoformat()
+            task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
             task_dict["result"] = result
 
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
@@ -269,7 +269,7 @@ class AsyncTaskQueue:
         else:
             # Mark as failed
             task_dict["status"] = TaskStatus.FAILED.value
-            task_dict["completed_at"] = datetime.utcnow().isoformat()
+            task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
 
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
 
@@ -286,7 +286,7 @@ class AsyncTaskQueue:
 
             if task_dict["status"] == TaskStatus.QUEUED.value:
                 task_dict["status"] = TaskStatus.CANCELLED.value
-                task_dict["completed_at"] = datetime.utcnow().isoformat()
+                task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
 
                 await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
 

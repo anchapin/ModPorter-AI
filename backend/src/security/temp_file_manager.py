@@ -162,7 +162,7 @@ class SecureTempFileManager:
             with self._lock:
                 self._tracked_files[str(dir_path)] = TempFileInfo(
                     path=dir_path,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
                     job_id=job_id,
                     is_directory=True,
                 )
@@ -217,7 +217,7 @@ class SecureTempFileManager:
             with self._lock:
                 self._tracked_files[str(file_path)] = TempFileInfo(
                     path=file_path,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
                     job_id=job_id,
                     is_directory=False,
                 )
@@ -365,7 +365,7 @@ class SecureTempFileManager:
             Number of files/directories cleaned
         """
         max_age = max_age_hours or self.config.max_file_age_hours
-        cutoff = datetime.utcnow() - timedelta(hours=max_age)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age)
         cleaned = 0
 
         with self._lock:

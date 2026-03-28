@@ -10,7 +10,7 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 from typing import Dict, List, Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 from services.rate_limiter import get_rate_limiter
 from services.metrics import (
@@ -210,7 +210,7 @@ async def get_rate_limit_dashboard():
         endpoint_stats=endpoint_stats,
         top_blocked_endpoints=top_blocked,
         recent_activity=recent_activity,
-        last_updated=datetime.utcnow(),
+        last_updated=datetime.now(timezone.utc),
     )
 
 

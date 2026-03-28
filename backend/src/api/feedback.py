@@ -698,7 +698,7 @@ async def review_correction(
 
     correction.status = review.status
     correction.review_notes = review.review_notes
-    correction.reviewed_at = datetime.utcnow()
+    correction.reviewed_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(correction)
@@ -742,7 +742,7 @@ async def apply_correction(correction_id: str, db: AsyncSession = Depends(get_db
         raise HTTPException(status_code=400, detail="Only approved corrections can be applied")
 
     correction.status = "applied"
-    correction.applied_at = datetime.utcnow()
+    correction.applied_at = datetime.now(timezone.utc)
     correction.embedding_updated = True
 
     await db.commit()

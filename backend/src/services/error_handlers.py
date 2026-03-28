@@ -15,7 +15,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ValidationError
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from .structured_logging import correlation_id_var, set_correlation_id
@@ -314,7 +314,7 @@ def create_error_response(
     - Internal details are sanitized unless DEBUG_MODE is enabled
     """
     error_id = str(uuid.uuid4())[:8]
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     # Get or create correlation ID
     correlation_id = correlation_id_var.get()

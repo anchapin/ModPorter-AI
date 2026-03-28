@@ -8,7 +8,7 @@ import logging
 import json
 import uuid
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
@@ -69,8 +69,8 @@ class ConversionJobQueue:
             "options": json.dumps(options or {}),
             "priority": priority,
             "status": "queued",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Store job data
@@ -105,7 +105,7 @@ class ConversionJobQueue:
                 f"{self.JOBS_KEY}:{job_id}",
                 mapping={
                     "status": "processing",
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
                 },
             )
             # Parse JSON fields
@@ -137,7 +137,7 @@ class ConversionJobQueue:
             "progress": progress,
             "current_stage": current_stage,
             "message": message or "",
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         await r.hset(f"{self.PROGRESS_KEY}:{job_id}", mapping=progress_data)
@@ -147,7 +147,7 @@ class ConversionJobQueue:
             f"{self.JOBS_KEY}:{job_id}",
             mapping={
                 "status": "processing",
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -174,7 +174,7 @@ class ConversionJobQueue:
             "job_id": job_id,
             "result": json.dumps(result),
             "bedrock_code": bedrock_code,
-            "completed_at": datetime.utcnow().isoformat(),
+            "completed_at": datetime.now(timezone.utc).isoformat(),
         }
 
         await r.hset(f"{self.RESULTS_KEY}:{job_id}", mapping=result_data)
@@ -184,7 +184,7 @@ class ConversionJobQueue:
             f"{self.JOBS_KEY}:{job_id}",
             mapping={
                 "status": "completed",
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -210,7 +210,7 @@ class ConversionJobQueue:
             mapping={
                 "status": "failed",
                 "error_message": error_message,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
@@ -276,7 +276,7 @@ class ConversionJobQueue:
 
         return {
             "queue_size": queue_size,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     async def close(self):

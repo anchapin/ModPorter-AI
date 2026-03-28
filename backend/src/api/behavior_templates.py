@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import behavior_templates_crud
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -413,7 +413,7 @@ async def apply_behavior_template(
         "generated_content": result.get("content"),
         "file_path": result.get("file_path"),
         "file_type": result.get("file_type"),
-        "applied_at": datetime.utcnow().isoformat(),
+        "applied_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -519,8 +519,8 @@ async def get_predefined_templates():
             is_public=template["is_public"],
             version=template["version"],
             created_by=None,
-            created_at=datetime.utcnow().isoformat(),
-            updated_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
+            updated_at=datetime.now(timezone.utc).isoformat(),
         )
         for template in predefined_templates
     ]

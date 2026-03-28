@@ -6,7 +6,7 @@ WebSocket-based progress updates from AI Engine to backend to frontend.
 
 import logging
 from typing import Optional, Set, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ProgressCallback:
             "current_stage": current_stage,
             "message": message or "",
             "metadata": metadata or {},
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Store in history

@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
 from db.models import DocumentEmbedding
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 async def create_job(
@@ -1322,7 +1322,7 @@ async def update_pattern_submission_status(
     submission.status = status
     submission.reviewed_by = reviewed_by
     submission.review_notes = notes
-    submission.reviewed_at = datetime.utcnow()
+    submission.reviewed_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(submission)

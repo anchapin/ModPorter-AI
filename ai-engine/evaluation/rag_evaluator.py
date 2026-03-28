@@ -461,7 +461,7 @@ class RAGEvaluator:
         Returns:
             Evaluation result with metrics
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             # Execute the query
@@ -631,7 +631,7 @@ class RAGEvaluator:
         # Store evaluation history
         self.evaluation_history.append(
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "results": evaluation_results,
                 "summary": report,
             }
@@ -753,7 +753,7 @@ class RAGEvaluator:
                 "successful_evaluations": len(successful_evaluations),
                 "failed_evaluations": len(results) - len(successful_evaluations),
                 "overall_score": overall_score,
-                "evaluation_timestamp": datetime.utcnow().isoformat(),
+                "evaluation_timestamp": datetime.now(timezone.utc).isoformat(),
             },
             "category_scores": category_scores,
             "metric_summaries": metric_summaries,

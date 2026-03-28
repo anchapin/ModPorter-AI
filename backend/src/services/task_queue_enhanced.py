@@ -106,7 +106,7 @@ class Task:
     payload: Dict[str, Any]
     status: TaskStatus = TaskStatus.QUEUED
     priority: TaskPriority = TaskPriority.NORMAL
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     result: Optional[Dict[str, Any]] = None
@@ -180,7 +180,7 @@ class QueueHealth:
     worker_count: int = 0
     healthy: bool = True
     issues: List[str] = field(default_factory=list)
-    checked_at: datetime = field(default_factory=datetime.utcnow)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -363,7 +363,7 @@ class AsyncTaskQueue:
 
                     # Update status to processing
                     task.status = TaskStatus.PROCESSING
-                    task.started_at = datetime.utcnow()
+                    task.started_at = datetime.now(timezone.utc)
 
                     # Add to processing set
                     await redis.sadd(self._processing_set, task_id)
@@ -385,13 +385,13 @@ class AsyncTaskQueue:
         if task_data:
             task_dict = json.loads(task_data)
             task_dict["status"] = TaskStatus.COMPLETED.value
-            task_dict["completed_at"] = datetime.utcnow().isoformat()
+            task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
             task_dict["result"] = result
 
             # Calculate processing time
             if task_dict.get("started_at"):
                 started = datetime.fromisoformat(task_dict["started_at"])
-                processing_time = (datetime.utcnow() - started).total_seconds()
+                processing_time = (datetime.now(timezone.utc) - started).total_seconds()
                 await self._record_processing_time(processing_time)
 
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
@@ -442,7 +442,7 @@ class AsyncTaskQueue:
         if should_retry:
             # Calculate retry delay with exponential backoff
             delay = DEFAULT_RETRY_POLICY.calculate_delay(retry_count)
-            next_retry = datetime.utcnow() + timedelta(seconds=delay)
+            next_retry = datetime.now(timezone.utc) + timedelta(seconds=delay)
 
             task_dict["retry_count"] = retry_count + 1
             task_dict["status"] = TaskStatus.RETRYING.value
@@ -469,7 +469,7 @@ class AsyncTaskQueue:
             # Move to dead letter queue or mark as failed
             if self.dead_letter_enabled:
                 task_dict["status"] = TaskStatus.DEAD_LETTER.value
-                task_dict["completed_at"] = datetime.utcnow().isoformat()
+                task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
 
                 await redis.zadd(self._dead_letter_queue, {task_id: time.time()})
 
@@ -477,7 +477,7 @@ class AsyncTaskQueue:
                 logger.warning(f"Task {task_id} moved to dead letter queue: {error}")
             else:
                 task_dict["status"] = TaskStatus.FAILED.value
-                task_dict["completed_at"] = datetime.utcnow().isoformat()
+                task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
 
                 await self._increment_metric("tasks_failed")
                 logger.error(f"Task {task_id} failed: {error}")
@@ -604,7 +604,7 @@ class AsyncTaskQueue:
 
             if task_dict["status"] == TaskStatus.QUEUED.value:
                 task_dict["status"] = TaskStatus.CANCELLED.value
-                task_dict["completed_at"] = datetime.utcnow().isoformat()
+                task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
 
                 await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
 
@@ -747,7 +747,7 @@ class AsyncTaskQueue:
             Number of tasks cleaned up
         """
         redis = await self._get_redis()
-        cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
         cleaned = 0
 
         keys = []

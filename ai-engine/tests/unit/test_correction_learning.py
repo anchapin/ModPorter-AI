@@ -137,7 +137,7 @@ class TestFeedbackReranker:
         corrections = [
             {
                 "status": "approved",
-                "submitted_at": datetime.utcnow().isoformat(),
+                "submitted_at": datetime.now(timezone.utc).isoformat(),
             }
         ]
         boost = reranker._calculate_boost_score_for_corrections(corrections)

@@ -143,7 +143,7 @@ class CorrectionStore:
         correction.status = status
         correction.reviewed_by = reviewed_by
         correction.review_notes = review_notes
-        correction.reviewed_at = datetime.utcnow()
+        correction.reviewed_at = datetime.now(timezone.utc)
 
         await self._db_session.commit()
         await self._db_session.refresh(correction)
@@ -176,7 +176,7 @@ class CorrectionStore:
             raise ValueError(f"Correction {correction_id} not found")
 
         correction.status = "applied"
-        correction.applied_at = datetime.utcnow()
+        correction.applied_at = datetime.now(timezone.utc)
         correction.embedding_updated = True
 
         await self._db_session.commit()

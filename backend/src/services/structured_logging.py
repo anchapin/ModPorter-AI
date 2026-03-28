@@ -11,7 +11,7 @@ import uuid
 import sys
 import os
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from logging.handlers import RotatingFileHandler
 from structlog.processors import JSONRenderer, TimeStamper
@@ -132,7 +132,7 @@ class LoggingFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         # Build structured log data
         log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

@@ -9,7 +9,7 @@ Issue: #455 - Comprehensive Error Handling (Phase 3)
 
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from enum import Enum
 import traceback
@@ -251,7 +251,7 @@ def log_conversion_failure(
     failure = ConversionFailure(
         job_id=job_id,
         correlation_id=correlation_id,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat() + "Z",
         failure_severity=severity.value,
         failure_source=source.value,
         failure_summary=f"{type(error).__name__}: {str(error)[:100]}",
@@ -323,7 +323,7 @@ def log_retry_success(job_id: str, previous_attempts: int):
                 "job_id": job_id,
                 "correlation_id": correlation_id,
                 "previous_attempts": previous_attempts,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         },
     )
@@ -347,7 +347,7 @@ def log_retry_failure(
                 "error_category": error_category,
                 "error_type": type(error).__name__,
                 "error_message": str(error),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         },
     )

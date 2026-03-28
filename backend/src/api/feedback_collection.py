@@ -5,7 +5,7 @@ Collect and manage user feedback on conversions.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,7 +103,7 @@ async def submit_feedback(
         )
 
     # Create feedback record (would be stored in database)
-    feedback_id = f"feedback_{request.conversion_id}_{datetime.utcnow().timestamp()}"
+    feedback_id = f"feedback_{request.conversion_id}_{datetime.now(timezone.utc).timestamp()}"
 
     # Track analytics
     analytics = get_analytics_service()
@@ -182,7 +182,7 @@ async def submit_bug_report(
     - Expected vs actual behavior
     """
     # Create bug report (would be stored in database)
-    bug_id = f"bug_{datetime.utcnow().timestamp()}"
+    bug_id = f"bug_{datetime.now(timezone.utc).timestamp()}"
 
     logger.warning(f"Bug report from user {user_id}: {request.title} ({request.severity})")
 
@@ -216,7 +216,7 @@ async def submit_feature_request(
     - Similar tools (if any)
     """
     # Create feature request (would be stored in database)
-    feature_id = f"feature_{datetime.utcnow().timestamp()}"
+    feature_id = f"feature_{datetime.now(timezone.utc).timestamp()}"
 
     logger.info(f"Feature request from user {user_id}: {request.title}")
 

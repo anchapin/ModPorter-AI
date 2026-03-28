@@ -118,7 +118,7 @@ class ModelMetadataExtractor:
                     content_text=content_text,
                     content_metadata=metadata_content,
                     processing_status=ProcessingStatus.COMPLETED,
-                    indexed_at=datetime.utcnow(),
+                    indexed_at=datetime.now(timezone.utc),
                 )
             else:
                 # Fallback to dict if schema not available

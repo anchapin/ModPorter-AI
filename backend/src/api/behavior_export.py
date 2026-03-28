@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from io import BytesIO
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -100,7 +100,7 @@ async def export_behavior_pack(
             for file in behavior_files
         ],
         "metadata": {
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
             "conversion_status": conversion.status,
             "file_count": len(behavior_files),
             "include_templates": request.include_templates,
@@ -133,7 +133,7 @@ async def export_behavior_pack(
             file_count=len(behavior_files),
             template_count=template_count,
             export_size=len(json.dumps(export_data).encode("utf-8")),
-            exported_at=datetime.utcnow().isoformat(),
+            exported_at=datetime.now(timezone.utc).isoformat(),
         )
 
     elif request.export_format == "zip":
@@ -178,7 +178,7 @@ async def export_behavior_pack(
             file_count=len(behavior_files),
             template_count=template_count,
             export_size=len(zip_bytes),
-            exported_at=datetime.utcnow().isoformat(),
+            exported_at=datetime.now(timezone.utc).isoformat(),
         )
 
     else:  # mcaddon (default)
@@ -221,7 +221,7 @@ async def export_behavior_pack(
                 file_count=len(behavior_files),
                 template_count=template_count,
                 export_size=len(zip_bytes),
-                exported_at=datetime.utcnow().isoformat(),
+                exported_at=datetime.now(timezone.utc).isoformat(),
             )
 
         except Exception as e:

@@ -290,12 +290,12 @@ class TestTaskLifecycle:
 
         # Transition to processing
         task.status = TaskStatus.PROCESSING
-        task.started_at = datetime.utcnow()
+        task.started_at = datetime.now(timezone.utc)
         assert task.status == TaskStatus.PROCESSING
 
         # Transition to completed
         task.status = TaskStatus.COMPLETED
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         task.result = {"success": True}
         assert task.status == TaskStatus.COMPLETED
 

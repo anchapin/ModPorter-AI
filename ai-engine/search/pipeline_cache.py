@@ -22,7 +22,7 @@ class CachedResult:
 
     results: Any
     query_analysis: Any
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ttl: int = 3600
 
 
@@ -90,7 +90,7 @@ class MemoryCache:
 
     def _is_expired(self, cached: CachedResult) -> bool:
         """Check if cached result is expired."""
-        age = (datetime.utcnow() - cached.timestamp).total_seconds()
+        age = (datetime.now(timezone.utc) - cached.timestamp).total_seconds()
         return age > self.ttl
 
     def get_stats(self) -> Dict[str, Any]:

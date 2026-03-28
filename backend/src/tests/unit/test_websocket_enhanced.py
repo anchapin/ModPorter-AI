@@ -370,7 +370,7 @@ class TestMessageProtocol:
                 "status": "in_progress",
                 "progress": 50,
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         assert "type" in message

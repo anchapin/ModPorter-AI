@@ -149,7 +149,7 @@ class ResultStorage:
         Returns:
             Number of results cleaned up
         """
-        cutoff = datetime.utcnow() - timedelta(days=RESULT_EXPIRY_DAYS)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=RESULT_EXPIRY_DAYS)
 
         # Find expired results
         stmt = select(ConversionResult).where(ConversionResult.created_at < cutoff)

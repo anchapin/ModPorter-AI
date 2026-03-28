@@ -12,7 +12,7 @@ import os
 import zipfile
 import tarfile
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Any, BinaryIO
@@ -50,7 +50,7 @@ class SecurityThreat:
     severity: SecuritySeverity
     message: str
     details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -59,7 +59,7 @@ class SecurityScanResult:
 
     is_safe: bool = True
     threats: List[SecurityThreat] = field(default_factory=list)
-    scanned_at: datetime = field(default_factory=datetime.utcnow)
+    scanned_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     file_path: Optional[Path] = None
     total_files_scanned: int = 0
     total_size_scanned: int = 0

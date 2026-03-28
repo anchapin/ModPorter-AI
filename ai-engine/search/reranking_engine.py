@@ -478,7 +478,7 @@ class FeatureBasedReRanker:
 
         from datetime import datetime, timedelta
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         doc_age = now - result.document.updated_at
 
         # Score decreases with age
