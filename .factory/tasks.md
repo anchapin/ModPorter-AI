@@ -1,9 +1,15 @@
 # Current Tasks
 
-## In Progress
-- 🔄 Phase 15-02: Semantic Search Enhancement (Complete - 15 tests passing)
-
 ## Completed
+- ✅ Phase 16-01: QA Context Orchestration (11 tests passing)
+  - ✅ Plan 01: QA Context & Output Validation
+  - ✅ Plan 02: QAOrchestrator with timeout and circuit breaker
+  - ✅ Plan 03: Post-conversion QA integration hook
+- ✅ Phase 15-06: Cross-Reference Linking (20 tests passing)
+  - ✅ Task 1: Database Schema for Concept Graph (ConceptNode, ConceptRelationship)
+  - ✅ Task 2: Cross-Reference Detection Module (CrossReferenceDetector)
+  - ✅ Task 3: Related Documents API Endpoint (GET /chunks/{id}/related, POST /chunks/{id}/analyze, POST /graph/build)
+  - ✅ Task 4: Integration with HybridSearchEngine (include_related parameter)
 - ✅ Phase 15-01: Improved Document Indexing (24 tests passing)
 - ✅ Phase 15-02: Semantic Search Enhancement (Complete)
   - ✅ Task 1: HybridSearchEngine (15 tests passing)
@@ -66,4 +72,4 @@
   - ✅ Phase 04-G2: Beta Launch Infrastructure (6/6 tasks)
 
 ---
-*Last updated: 2026-03-20*
+*Last updated: 2026-03-27*
