@@ -1,5 +1,4 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
 
 # Automatically prepend issue number from branch name if available
 # Example: feature/689-enable-ai-commits -> [#689]
