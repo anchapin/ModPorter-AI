@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import from the smart_assumptions module
 import sys

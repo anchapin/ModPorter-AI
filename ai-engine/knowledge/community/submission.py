@@ -6,7 +6,7 @@ Manages user-submitted patterns, review workflow, and voting.
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from enum import Enum
 

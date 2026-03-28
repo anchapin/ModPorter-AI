@@ -7,7 +7,7 @@ Test complete conversion pipeline from Java to Bedrock.
 import asyncio
 import logging
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .test_scenarios import get_test_scenarios
 

@@ -8,7 +8,7 @@ import uuid
 import sys
 import os
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ai_engine_path = str(Path(__file__).parent.parent)

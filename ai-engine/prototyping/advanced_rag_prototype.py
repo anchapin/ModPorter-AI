@@ -12,7 +12,7 @@ import logging
 from typing import List, Dict, Any
 from pathlib import Path
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add the ai-engine directory to Python path for imports
 sys.path.append(str(Path(__file__).parent.parent))

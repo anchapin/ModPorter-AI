@@ -9,7 +9,7 @@ import logging
 import re
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import advanced RAG components
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy

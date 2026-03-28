@@ -13,7 +13,7 @@ from enum import Enum
 import numpy as np
 from collections import defaultdict
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
 from schemas.multimodal_schema import SearchResult, ContentType
 from agents.advanced_rag_agent import RAGResponse
