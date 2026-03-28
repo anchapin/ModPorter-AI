@@ -2,6 +2,7 @@
 Learning module for user correction and feedback processing.
 """
 
-from aiengine.learning.correction_store import CorrectionStore
+from learning.correction_store import CorrectionStore
+from learning.validation_workflow import CorrectionValidator, ValidationResult, validate_correction
 
-__all__ = ["CorrectionStore"]
+__all__ = ["CorrectionStore", "CorrectionValidator", "ValidationResult", "validate_correction"]

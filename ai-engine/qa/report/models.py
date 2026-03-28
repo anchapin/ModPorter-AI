@@ -71,6 +71,17 @@ class QualityScore:
 
 
 @dataclass
+class RefinementImprovement:
+    """Refinement improvement metrics."""
+
+    initial_score: float
+    final_score: float
+    delta: float
+    status: str
+    iteration_count: int
+
+
+@dataclass
 class QAReport:
     """Aggregated QA report from all agents."""
 
@@ -78,6 +89,7 @@ class QAReport:
     timestamp: datetime
     agent_results: List[AgentResult] = field(default_factory=list)
     quality_score: float = 0.0
+    refinement_improvement: Optional[RefinementImprovement] = None
 
     @property
     def total_issues(self) -> int:

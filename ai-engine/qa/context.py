@@ -1,7 +1,18 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from pathlib import Path
+from dataclasses import dataclass, field
+
+
+@dataclass
+class RefinementHistory:
+    iteration: int
+    initial_score: float
+    final_score: float
+    issues_detected: List[Dict[str, Any]] = field(default_factory=list)
+    translator_prompt_modifications: str = ""
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 class QAContext(BaseModel):
@@ -13,3 +24,8 @@ class QAContext(BaseModel):
     validation_results: Dict[str, Any] = {}
     created_at: datetime = Field(default_factory=datetime.now)
     current_agent: Optional[str] = None
+    refinement_iteration: int = 0
+    refinement_history: List[RefinementHistory] = []
+    refinement_enabled: bool = True
+    max_iterations: int = 3
+    refinement_completed: bool = False

@@ -1,8 +1,9 @@
 """Weighted quality score calculation."""
 
 from dataclasses import dataclass
-from typing import Dict, List
-from qa.report.models import AgentResult, QualityScore
+from typing import Dict, List, Optional, Any
+from qa.report.models import AgentResult, QualityScore, RefinementImprovement
+from qa.context import QAContext
 
 
 @dataclass
@@ -33,3 +34,28 @@ class WeightedScorer:
         if abs(total - 1.0) > 0.001:
             raise ValueError(f"Weights must sum to 1.0, got {total}")
         self.weights = weights
+
+
+def calculate_refinement_improvement(context: QAContext) -> Dict[str, Any]:
+    """Calculate improvement metrics from refinement history."""
+    if not context.refinement_history:
+        return {"improvement": None, "status": "no_refinement"}
+
+    initial_score = context.refinement_history[0].initial_score
+    final_score = context.refinement_history[-1].final_score
+    delta = final_score - initial_score
+
+    if delta > 5:
+        status = "improved"
+    elif delta < -5:
+        status = "degraded"
+    else:
+        status = "same"
+
+    return {
+        "initial_score": initial_score,
+        "final_score": final_score,
+        "delta": delta,
+        "status": status,
+        "iteration_count": len(context.refinement_history),
+    }
