@@ -88,19 +88,122 @@ class EntityConverter:
             "minecraft:physics": {},
         }
 
-        # Behavior mappings from Java to Bedrock
+        # Behavior mappings from Java to Bedrock (extended for comprehensive AI behavior conversion)
         self.behavior_mappings = {
+            # Movement behaviors
             "follow_player": "minecraft:behavior.follow_player",
+            "follow_owner": "minecraft:behavior.follow_owner",
             "look_at_player": "minecraft:behavior.look_at_player",
             "random_look_around": "minecraft:behavior.random_look_around",
             "random_stroll": "minecraft:behavior.random_stroll",
-            "panic": "minecraft:behavior.panic",
+            "random_float": "minecraft:behavior.float",
             "float": "minecraft:behavior.float",
-            "avoid_entity": "minecraft:behavior.avoid_entity",
+            "swim": "minecraft:behavior.swim",
+            "fly": "minecraft:behavior.fly",
+            "wander": "minecraft:behavior.wander",
+            "move_towards_target": "minecraft:behavior.move_towards_target",
+            "move_through_village": "minecraft:behavior.move_through_village",
+            "move_to_land": "minecraft:behavior.move_to_land",
+            "mount_pathing": "minecraft:behavior.mount_pathing",
+            # Combat behaviors
+            "panic": "minecraft:behavior.panic",
             "melee_attack": "minecraft:behavior.melee_attack",
             "ranged_attack": "minecraft:behavior.ranged_attack",
+            "attack_entity": "minecraft:behavior.attack_entity",
+            "attack_with_range": "minecraft:behavior.attack_with_range",
+            "knockback_roar": "minecraft:behavior.knockback_roar",
+            "charge_attack": "minecraft:behavior.charge",
+            "strafing": "minecraft:behavior.strafe",
+            "siege": "minecraft:behavior.siege",
+            # Social behaviors
             "breed": "minecraft:behavior.breed",
             "tempt": "minecraft:behavior.tempt",
+            "nudge": "minecraft:behavior.nudge",
+            "celebrate": "minecraft:behavior.celebrate",
+            "get_angry": "minecraft:behavior.get_angry",
+            "become_angry": "minecraft:behavior.become_angry",
+            # Environmental behaviors
+            "avoid_entity": "minecraft:behavior.avoid_entity",
+            "avoid_block": "minecraft:behavior.avoid_block",
+            "flee_sun": "minecraft:behavior.flee_sun",
+            "restrict_sun": "minecraft:behavior.restrict_sun",
+            "seek_shelter": "minecraft:behavior.seek_shelter",
+            "leave_water": "minecraft:behavior.leave_water",
+            "play_dead": "minecraft:behavior.play_dead",
+            # Entity-specific behaviors
+            "tame": "minecraft:behavior.tame",
+            "owner_hurt_by_target": "minecraft:behavior.owner_hurt_by_target",
+            "owner_hurt_target": "minecraft:behavior.owner_hurt_target",
+            "leash": "minecraft:behavior.leash",
+            "unleash": "minecraft:behavior.unleash",
+            "equipped_item_chance": "minecraft:behavior.equipped_item_chance",
+            # Goal compound behaviors
+            "find_mount": "minecraft:behavior.find_mount",
+            "jump_to_block": "minecraft:behavior.jump_to_block",
+            "lay_spawn": "minecraft:behavior.lay_spawn",
+            "lay_egg": "minecraft:behavior.lay_egg",
+            "item_consume": "minecraft:behavior.item_consume",
+            "pickup_items": "minecraft:behavior.pickup_items",
+            "trade": "minecraft:behavior.trade_with_player",
+            "look_at_trading": "minecraft:behavior.look_at_trading",
+            # Miscellaneous behaviors
+            "interact": "minecraft:behavior.interact",
+            "ocelot_sneeze": "minecraft:behavior.ocelot_sneeze",
+            "parrot_poop": "minecraft:behavior.parrot_poop",
+            "ram_attack": "minecraft:behavior.ram_attack",
+            "skeleton_ride": "minecraft:behavior.skeleton_ride",
+            "swell": "minecraft:behavior.swell",
+            "spit": "minecraft:behavior.spit",
+            "vex_copy_owner_target": "minecraft:behavior.vex_copy_owner_target",
+            "fish_jump": "minecraft:behavior.fish_jump",
+            "flop": "minecraft:behavior.flop",
+        }
+
+        # AI Goal type mappings (Java AI Goal -> Bedrock behavior with priority)
+        self.goal_mappings = {
+            # Core movement goals
+            "move": "minecraft:behavior.move_towards_target",
+            "wander": "minecraft:behavior.wander",
+            "stroll": "minecraft:behavior.wander",
+            "swim": "minecraft:behavior.swim",
+            "fly": "minecraft:behavior.fly",
+            "climb": "minecraft:behavior.climb",
+            "jump": "minecraft:behavior.jump",
+            "float": "minecraft:behavior.float",
+            # Targeting goals
+            "look_at_player": "minecraft:behavior.look_at_player",
+            "look_at_target": "minecraft:behavior.look_at_target",
+            "look_randomly": "minecraft:behavior.random_look_around",
+            # Attack goals
+            "melee_attack": "minecraft:behavior.melee_attack",
+            "ranged_attack": "minecraft:behavior.attack_with_range",
+            "hurt_target": "minecraft:behavior.attack_entity",
+            "attack": "minecraft:behavior.melee_attack",
+            # Social goals
+            "breed": "minecraft:behavior.breed",
+            "tempt": "minecraft:behavior.tempt",
+            "follow": "minecraft:behavior.follow_player",
+            "tame": "minecraft:behavior.tame",
+            # Survival goals
+            "panic": "minecraft:behavior.panic",
+            "flee": "minecraft:behavior.avoid_entity",
+            "avoid": "minecraft:behavior.avoid_entity",
+            "hide": "minecraft:behavior.seek_shelter",
+            "rest": "minecraft:behavior.restrict_sun",
+            "seek_water": "minecraft:behavior.leave_water",
+            # Interaction goals
+            "interact": "minecraft:behavior.interact",
+            "trade": "Offers:behavior.trade_with_player",
+            "open_door": "minecraft:behavior.door_interact",
+            "use_item": "minecraft:behavior.item_consume",
+            "pickup": "minecraft:behavior.pickup_items",
+            # Specialized goals
+            "celebrate": "minecraft:behavior.celebrate",
+            "rest": "minecraft:behavior.restrict_sun",
+            "eat": "minecraft:behavior.item_consume",
+            "graze": "minecraft:behavior.graze",
+            "sleep": "minecraft:behavior.sleep",
+            "raid": "minecraft:behavior.raid",
         }
 
     def convert_entities(self, java_entities: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -540,35 +643,158 @@ class EntityConverter:
                 components[bedrock_behavior] = behavior_config
 
     def _add_ai_goals(self, components: Dict[str, Any], ai_goals: List[Dict[str, Any]]):
-        """Add AI goals as behavior components."""
-        for goal in ai_goals:
-            goal_type = goal.get("type", "")
-            priority = goal.get("priority", 1)
+        """
+        Add AI goals as behavior components using comprehensive goal mappings.
 
-            # Map Java AI goals to Bedrock behaviors
-            if goal_type == "look_at_player":
-                components["minecraft:behavior.look_at_player"] = {
-                    "priority": priority,
-                    "look_distance": goal.get("range", 6.0),
-                }
-            elif goal_type == "random_look_around":
-                components["minecraft:behavior.random_look_around"] = {"priority": priority}
-            elif goal_type == "random_stroll":
-                components["minecraft:behavior.random_stroll"] = {
-                    "priority": priority,
-                    "speed_multiplier": goal.get("speed", 1.0),
-                }
-            elif goal_type == "panic":
-                components["minecraft:behavior.panic"] = {
-                    "priority": priority,
-                    "speed_multiplier": goal.get("speed_multiplier", 1.25),
-                }
-            elif goal_type == "melee_attack":
-                components["minecraft:behavior.melee_attack"] = {
-                    "priority": priority,
-                    "speed_multiplier": goal.get("speed_multiplier", 1.0),
-                    "track_target": goal.get("track_target", True),
-                }
+        Args:
+            components: Bedrock entity components dict
+            ai_goals: List of Java AI goal definitions
+        """
+        for goal in ai_goals:
+            goal_type = goal.get("type", "").lower()
+            priority = goal.get("priority", 1)
+            goal_config = goal.get("config", {})
+
+            # Try to find matching behavior using goal_mappings
+            bedrock_behavior = self.goal_mappings.get(goal_type)
+
+            if bedrock_behavior:
+                # Build behavior config from goal config and defaults
+                behavior_config = self._build_behavior_config(goal_type, priority, goal_config)
+                components[bedrock_behavior] = behavior_config
+            else:
+                # Fallback to legacy if-elif chain for additional goal types
+                self._add_legacy_goal(components, goal_type, priority, goal_config)
+
+    def _build_behavior_config(
+        self, goal_type: str, priority: int, goal_config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Build Bedrock behavior config from Java goal config.
+
+        Args:
+            goal_type: The goal type (e.g., "melee_attack")
+            priority: Goal priority
+            goal_config: Goal-specific configuration
+
+        Returns:
+            Bedrock behavior configuration dict
+        """
+        config = {"priority": priority}
+
+        # Common config mappings
+        speed_mappings = ["speed", "speed_multiplier", "movement_speed"]
+        for key in speed_mappings:
+            if key in goal_config:
+                config["speed_multiplier"] = goal_config[key]
+                break
+        else:
+            # Set default speed multipliers for common behaviors
+            if goal_type in ["melee_attack", "attack", "hurt_target"]:
+                config["speed_multiplier"] = 1.0
+            elif goal_type in ["follow", "follow_player"]:
+                config["speed_multiplier"] = 1.0
+            elif goal_type in ["wander", "stroll", "random_stroll"]:
+                config["speed_multiplier"] = 0.8
+            elif goal_type in ["panic", "flee", "avoid"]:
+                config["speed_multiplier"] = 1.25
+
+        # Range/distance mappings
+        if "range" in goal_config:
+            if goal_type in ["look_at_player", "look", "look_at_target"]:
+                config["look_distance"] = goal_config["range"]
+            elif goal_type in ["ranged_attack", "attack_with_range"]:
+                config["attack_radius"] = goal_config["range"]
+            elif goal_type in ["tempt", "follow"]:
+                config["within_radius"] = goal_config["range"]
+
+        if "distance" in goal_config:
+            if goal_type in ["follow", "follow_player"]:
+                config["start_distance"] = goal_config["distance"]
+                config["stop_distance"] = goal_config.get(
+                    "stop_distance", goal_config["distance"] / 2
+                )
+
+        # Track target mappings
+        if goal_type in ["melee_attack", "attack", "attack_entity"]:
+            config["track_target"] = goal_config.get("track_target", True)
+
+        if "reach_multiplier" in goal_config:
+            config["reach_multiplier"] = goal_config["reach_multiplier"]
+
+        # Add remaining config items
+        for key, value in goal_config.items():
+            if key not in [
+                "priority",
+                "speed",
+                "speed_multiplier",
+                "movement_speed",
+                "range",
+                "distance",
+                "stop_distance",
+                "track_target",
+                "reach_multiplier",
+            ]:
+                config[key] = value
+
+        return config
+
+    def _add_legacy_goal(
+        self, components: Dict[str, Any], goal_type: str, priority: int, goal_config: Dict[str, Any]
+    ):
+        """Handle legacy goal types not in goal_mappings."""
+        # Additional goal type mappings for backwards compatibility
+        legacy_mappings = {
+            "move": "minecraft:behavior.move_towards_target",
+            "look": "minecraft:behavior.look_at_player",
+            "swim": "minecraft:behavior.swim",
+            "fly": "minecraft:behavior.fly",
+            "climb": "minecraft:behavior.climb",
+            "jump": "minecraft:behavior.jump",
+            "flee": "minecraft:behavior.avoid_entity",
+            "hide": "minecraft:behavior.seek_shelter",
+            "rest": "minecraft:behavior.restrict_sun",
+            "seek_water": "minecraft:behavior.leave_water",
+            "breed": "minecraft:behavior.breed",
+            "tempt": "minecraft:behavior.tempt",
+            "interact": "minecraft:behavior.interact",
+            "trade": "Offers:behavior.trade_with_player",
+            "pickup": "minecraft:behavior.pickup_items",
+            "eat": "minecraft:behavior.item_consume",
+        }
+
+        bedrock_behavior = legacy_mappings.get(goal_type)
+        if bedrock_behavior:
+            config = {"priority": priority}
+            if "speed" in goal_config:
+                config["speed_multiplier"] = goal_config["speed"]
+            if "range" in goal_config:
+                config["look_distance"] = goal_config["range"]
+            components[bedrock_behavior] = config
+
+    def convert_ai_goals(self, java_goals: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        """
+        Convert Java AI goals to Bedrock behaviors.
+
+        Args:
+            java_goals: List of Java AI goal definitions
+
+        Returns:
+            Dictionary of Bedrock behavior components
+        """
+        result = {}
+        for goal in java_goals:
+            goal_type = goal.get("type", "").lower()
+            priority = goal.get("priority", 1)
+            goal_config = goal.get("config", {})
+
+            bedrock_behavior = self.goal_mappings.get(goal_type)
+            if bedrock_behavior:
+                result[bedrock_behavior] = self._build_behavior_config(
+                    goal_type, priority, goal_config
+                )
+
+        return result
 
     def _generate_entity_behaviors(self, java_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Generate separate behavior file for complex entities."""
