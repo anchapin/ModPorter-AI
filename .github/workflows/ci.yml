@@ -919,27 +919,23 @@ jobs:
           # The CI creates a minimal config only if .mutmut.toml doesn't exist
 
           # Run mutation tests
-          # Using || true to prevent step failure from blocking threshold check
-          mutmut run || true
+          mutmut run
 
-          # Show results - || true to prevent exit code 1 from unchecked mutations
-          mutmut results || true
+          # Show results
+          mutmut results
 
       - name: Check mutation testing threshold
         run: |
           cd ${{ matrix.project }}
 
-          # Get mutation results - exit 0 if above threshold, exit 1 if below
-          # Default: require at least 30% of mutations to survive (70% killed)
+          # Parse mutmut results and check threshold
+          # Default: require at most 30% of mutations to survive (70% killed)
           THRESHOLD=${MUTATION_THRESHOLD:-30}
 
-          echo "Mutation Testing Threshold: ${THRESHOLD}% survival allowed"
+          echo "Mutation Testing Threshold: max ${THRESHOLD}% survival allowed"
 
-          # Parse mutmut results and check threshold
-          # If we can't parse results, allow the build to pass in CI to avoid false failures
-          # Note: mutmut results returns exit code 1 when mutations are not checked (timeout, etc.)
-          # We capture the output first to avoid pipeline exit code issues
-          MUTATION_OUTPUT=$(mutmut results 2>&1 || true)
+          # Capture mutmut results output
+          MUTATION_OUTPUT=$(mutmut results 2>&1)
           echo "$MUTATION_OUTPUT"
 
           # Check if no mutations were found
@@ -948,10 +944,34 @@ jobs:
             exit 0
           fi
 
-          # For CI, we allow mutation testing to fail gracefully
-          # Real threshold enforcement happens in mutation-testing-summary job
-          # Exit 0 to ensure the step always passes in CI
-          echo "✅ Mutation testing completed"
+          # Parse mutmut results to extract killed and survived counts
+          # Output format: "killed: N" and "survived: N"
+          KILLED=$(echo "$MUTATION_OUTPUT" | grep -oP 'killed:\s*\K\d+' | head -1 || echo "0")
+          SURVIVED=$(echo "$MUTATION_OUTPUT" | grep -oP 'survived:\s*\K\d+' | head -1 || echo "0")
+          TOTAL=$((KILLED + SURVIVED))
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "⚠️ No mutations to evaluate - skipping threshold check"
+            exit 0
+          fi
+
+          # Calculate survival rate (percentage of mutations that survived)
+          SURVIVAL_RATE=$(awk "BEGIN {printf \"%.1f\", ($SURVIVED / $TOTAL) * 100}")
+          echo "Mutation Results: $KILLED killed, $SURVIVED survived out of $TOTAL"
+          echo "Survival Rate: ${SURVIVAL_RATE}% (threshold: ${THRESHOLD}%)"
+
+          # Check if survival rate exceeds threshold
+          # If more mutations survive than allowed, fail the build
+          SURVIVAL_INT=$(echo "$SURVIVAL_RATE" | cut -d. -f1)
+          if [ "$SURVIVAL_INT" -gt "$THRESHOLD" ]; then
+            echo "❌ Mutation testing FAILED: Survival rate ${SURVIVAL_RATE}% exceeds threshold ${THRESHOLD}%"
+            echo "   Required: At least $((100 - THRESHOLD))% of mutations should be killed"
+            echo "   Actual: Only $((100 - SURVIVAL_INT))% were killed"
+            exit 1
+          else
+            echo "✅ Mutation testing passed: Survival rate ${SURVIVAL_RATE}% is within threshold ${THRESHOLD}%"
+          fi
+
           STEP_END=$(date +%s)
           ./scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
         env:
@@ -1015,8 +1035,7 @@ jobs:
           cd frontend
 
           # Run stryker mutation testing
-          # Using --exitCodeProcesses=false to allow threshold failures
-          pnpm mutation || true
+          pnpm mutation
 
           # Check results
           if [ -f "reports/mutation/json/mutation.json" ]; then
@@ -1041,7 +1060,10 @@ jobs:
             if (( $(echo "$MUTATION_SCORE >= $THRESHOLD" | bc -l) )); then
               echo "✅ Mutation score above threshold"
             else
-              echo "⚠️ Mutation score below threshold - check reports for details"
+              echo "❌ Mutation testing FAILED: Mutation score ${MUTATION_SCORE}% is below threshold ${THRESHOLD}%"
+              echo "   Required: At least ${THRESHOLD}% mutation score"
+              echo "   Actual: ${MUTATION_SCORE}%"
+              exit 1
             fi
           else
             echo "⚠️ No mutation report found - skipping threshold check"
