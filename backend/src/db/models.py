@@ -740,3 +740,106 @@ class PatternSubmission(Base):
         nullable=False,
         index=True,
     )
+
+
+# ============================================
+# Authentication Models
+# ============================================
+
+
+class User(Base):
+    """User model for authentication"""
+
+    __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("'false'"),
+    )
+    conversion_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    # Email verification
+    verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    verification_token_expires: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    # Password reset
+    reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+
+
+class APIKey(Base):
+    """API Key model for programmatic access"""
+
+    __tablename__ = "api_keys"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default="API Key")
+    prefix: Mapped[str] = mapped_column(String(8), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("'true'"),
+    )
+    last_used: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    user = relationship("User", back_populates="api_keys")

@@ -20,7 +20,11 @@ class Settings(BaseSettings):
             # Default to SQLite for testing to avoid connection issues
             test_db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
             return test_db_url
-        return self.database_url_raw
+        url = self.database_url_raw
+        # Convert postgresql:// to postgresql+asyncpg:// for async SQLAlchemy
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def sync_database_url(self) -> str:
