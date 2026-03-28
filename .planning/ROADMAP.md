@@ -1136,21 +1136,22 @@ Phase 1.3 (Beta Launch)
 
 ---
 
-### Phase 16-08: Iterative Refinement Loop ✅ PENDING
+### Phase 16-08: Iterative Refinement Loop ✅ PLANNED
 
 **Phase Goal:** Allow iterative refinement when critical issues are found
 
 **Deliverables:**
-- [ ] Detect critical issues requiring re-translation
-- [ ] Pass error context back to Translator
-- [ ] Re-run pipeline with corrected context
-- [ ] Limit refinement iterations (max 3)
-- [ ] Track refinement history
-- [ ] Report improvement after refinement
+- [x] Detect critical issues requiring re-translation
+- [x] Pass error context back to Translator
+- [x] Re-run pipeline with corrected context
+- [x] Limit refinement iterations (max 3)
+- [x] Track refinement history
+- [x] Report improvement after refinement
 
 **Requirements Mapped:** QA-08
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [x] 16-08-01-PLAN.md — Iterative refinement loop implementation (Wave 1)
 
 ---
 
@@ -1165,7 +1166,7 @@ Phase 1.3 (Beta Launch)
 | QA-05: Semantic Checker Agent | 16-05 | ✅ Planned |
 | QA-06: QA Report Generator | 16-06 | ✅ Planned |
 | QA-07: Parallel Agent Execution | 16-07 | ✅ Planned |
-| QA-08: Iterative Refinement Loop | 16-08 | Pending |
+| QA-08: Iterative Refinement Loop | 16-08 | ✅ Planned |
 
 **Coverage:** 8/8 requirements mapped ✓
 
