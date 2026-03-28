@@ -818,8 +818,8 @@ Phase 1.3 (Beta Launch)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QA-01: QA Context & Orchestration | 16-01 | Pending |
-| QA-02: Translator Agent | 16-02 | Pending |
+| QA-01: QA Context & Orchestration | 16-01 | ✅ Complete |
+| QA-02: Translator Agent | 16-02 | ✅ Planned |
 | QA-03: Reviewer Agent | 16-03 | Pending |
 | QA-04: Tester Agent | 16-04 | Pending |
 | QA-05: Semantic Checker Agent | 16-05 | Pending |
@@ -1012,7 +1012,7 @@ Phase 1.3 (Beta Launch)
 
 ---
 
-### Phase 16-02: Translator Agent ✅ PENDING
+### Phase 16-02: Translator Agent ✅ PLANNED
 
 **Phase Goal:** Agent that generates Bedrock code from parsed Java AST with RAG augmentation
 
@@ -1028,7 +1028,8 @@ Phase 1.3 (Beta Launch)
 
 **Requirements Mapped:** QA-02
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [x] 16-02-01-PLAN.md — TranslatorAgent with RAG integration (Wave 1)
 
 ---
 
@@ -1152,8 +1153,8 @@ Phase 1.3 (Beta Launch)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QA-01: QA Context & Orchestration | 16-01 | Pending |
-| QA-02: Translator Agent | 16-02 | Pending |
+| QA-01: QA Context & Orchestration | 16-01 | ✅ Complete |
+| QA-02: Translator Agent | 16-02 | ✅ Planned |
 | QA-03: Reviewer Agent | 16-03 | Pending |
 | QA-04: Tester Agent | 16-04 | Pending |
 | QA-05: Semantic Checker Agent | 16-05 | Pending |
