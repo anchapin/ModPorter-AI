@@ -230,7 +230,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onClose,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isSkipped, setIsSkipped] = useState(false);
+  const [_isSkipped, setIsSkipped] = useState(false);
 
   // Load saved onboarding state
   useEffect(() => {
