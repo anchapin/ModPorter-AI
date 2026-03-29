@@ -25,6 +25,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -404,66 +405,81 @@ const ExperimentsPage: React.FC = () => {
                         </TableCell>
                         <TableCell>{experiment.traffic_allocation}%</TableCell>
                         <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditExperiment(experiment);
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteExperiment(experiment.id);
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                          {experiment.status === 'draft' && (
+                          <Tooltip title="Edit Experiment">
                             <IconButton
                               size="small"
+                              aria-label="Edit Experiment"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleExperimentStatusChange(
-                                  experiment.id,
-                                  'active'
-                                );
+                                handleEditExperiment(experiment);
                               }}
                             >
-                              <PlayIcon fontSize="small" />
+                              <EditIcon fontSize="small" />
                             </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Experiment">
+                            <IconButton
+                              size="small"
+                              aria-label="Delete Experiment"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteExperiment(experiment.id);
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {experiment.status === 'draft' && (
+                            <Tooltip title="Start Experiment">
+                              <IconButton
+                                size="small"
+                                aria-label="Start Experiment"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExperimentStatusChange(
+                                    experiment.id,
+                                    'active'
+                                  );
+                                }}
+                              >
+                                <PlayIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           )}
                           {experiment.status === 'active' && (
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExperimentStatusChange(
-                                  experiment.id,
-                                  'paused'
-                                );
-                              }}
-                            >
-                              <PauseIcon fontSize="small" />
-                            </IconButton>
+                            <Tooltip title="Pause Experiment">
+                              <IconButton
+                                size="small"
+                                aria-label="Pause Experiment"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExperimentStatusChange(
+                                    experiment.id,
+                                    'paused'
+                                  );
+                                }}
+                              >
+                                <PauseIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           )}
                           {(experiment.status === 'active' ||
                             experiment.status === 'paused') && (
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExperimentStatusChange(
-                                  experiment.id,
-                                  'completed'
-                                );
-                              }}
-                            >
-                              <StopIcon fontSize="small" />
-                            </IconButton>
+                            <Tooltip title="Stop Experiment">
+                              <IconButton
+                                size="small"
+                                aria-label="Stop Experiment"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExperimentStatusChange(
+                                    experiment.id,
+                                    'completed'
+                                  );
+                                }}
+                              >
+                                <StopIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           )}
                         </TableCell>
                       </TableRow>
@@ -534,23 +550,29 @@ const ExperimentsPage: React.FC = () => {
                             {variant.is_control ? 'Yes' : 'No'}
                           </TableCell>
                           <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditVariant(variant)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                handleDeleteVariant(
-                                  selectedExperiment.id,
-                                  variant.id
-                                )
-                              }
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                            <Tooltip title="Edit Variant">
+                              <IconButton
+                                size="small"
+                                aria-label="Edit Variant"
+                                onClick={() => handleEditVariant(variant)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Variant">
+                              <IconButton
+                                size="small"
+                                aria-label="Delete Variant"
+                                onClick={() =>
+                                  handleDeleteVariant(
+                                    selectedExperiment.id,
+                                    variant.id
+                                  )
+                                }
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))}

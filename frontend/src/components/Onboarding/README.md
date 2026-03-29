@@ -45,6 +45,7 @@ function App() {
 ## Customization
 
 Edit `onboardingSteps` array in `OnboardingFlow.tsx` to:
+
 - Add/remove steps
 - Change content
 - Modify checklist items
@@ -53,11 +54,13 @@ Edit `onboardingSteps` array in `OnboardingFlow.tsx` to:
 ## State Management
 
 Onboarding completion is stored in localStorage:
+
 ```javascript
 localStorage.setItem('onboarding_completed', 'true');
 ```
 
 To reset onboarding (for testing):
+
 ```javascript
 localStorage.removeItem('onboarding_completed');
 ```
