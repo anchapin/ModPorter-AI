@@ -316,8 +316,17 @@ export class RecipeValidation {
     result: string;
     complexity: 'simple' | 'medium' | 'complex';
   } {
-    const ingredientCount =
-      recipe.pattern?.flat().filter((slot) => slot.item).length || 0;
+    let ingredientCount = 0;
+    if (recipe.pattern) {
+      // ⚡ Bolt optimization: Avoid array allocations from .flat() and .filter() in hot validation code
+      for (let y = 0; y < recipe.pattern.length; y++) {
+        for (let x = 0; x < recipe.pattern[y].length; x++) {
+          if (recipe.pattern[y][x].item) {
+            ingredientCount++;
+          }
+        }
+      }
+    }
 
     let complexity: 'simple' | 'medium' | 'complex' = 'simple';
     if (ingredientCount > 3) {
@@ -369,15 +378,18 @@ export class RecipeValidation {
   }
 
   private extractIngredientIds(pattern: Recipe['pattern']): string[] {
-    return (
-      pattern
-        ?.flat()
-        .reduce((acc: string[], slot) => {
-          if (slot.item?.id) acc.push(slot.item.id);
-          return acc;
-        }, [])
-        .sort() || []
-    );
+    if (!pattern) return [];
+
+    // ⚡ Bolt optimization: Avoid array allocations from .flat() and .reduce() in hot validation code
+    const ids: string[] = [];
+    for (let y = 0; y < pattern.length; y++) {
+      for (let x = 0; x < pattern[y].length; x++) {
+        const id = pattern[y][x].item?.id;
+        if (id) ids.push(id);
+      }
+    }
+
+    return ids.sort();
   }
 
   private recipesAreIdentical(recipe1: Recipe, recipe2: Recipe): boolean {
