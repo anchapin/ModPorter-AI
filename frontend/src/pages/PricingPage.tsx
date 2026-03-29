@@ -107,7 +107,7 @@ const faqs = [
   {
     question: 'Can I get a refund?',
     answer:
-      "We offer a 30-day money-back guarantee for all paid plans. If you're not satisfied, contact support for a full refund. No questions asked.",
+      'We offer a 30-day money-back guarantee for all paid plans. If you\'re not satisfied, contact support for a full refund. No questions asked.',
   },
   {
     question: 'Do you offer discounts for education or non-profits?',
@@ -117,69 +117,15 @@ const faqs = [
 ];
 
 const comparison = [
-  {
-    feature: 'Conversions per month',
-    free: '5',
-    pro: 'Unlimited',
-    studio: 'Unlimited',
-    enterprise: 'Unlimited',
-  },
-  {
-    feature: 'Mod complexity',
-    free: 'Simple to moderate',
-    pro: 'Up to complex',
-    studio: 'Any complexity',
-    enterprise: 'Any complexity',
-  },
-  {
-    feature: 'API access',
-    free: 'No',
-    pro: '1,000 calls/mo',
-    studio: '10,000 calls/mo',
-    enterprise: 'Unlimited',
-  },
-  {
-    feature: 'Team seats',
-    free: '1',
-    pro: '1',
-    studio: '10',
-    enterprise: 'Unlimited',
-  },
-  {
-    feature: 'Support',
-    free: 'Community (Discord)',
-    pro: 'Email (24hr)',
-    studio: 'Slack (4hr)',
-    enterprise: 'Dedicated (1hr)',
-  },
-  {
-    feature: 'Storage',
-    free: '1 GB',
-    pro: '10 GB',
-    studio: '100 GB',
-    enterprise: 'Unlimited',
-  },
-  {
-    feature: 'Conversion history',
-    free: '7 days',
-    pro: '90 days',
-    studio: '1 year',
-    enterprise: 'Forever',
-  },
-  {
-    feature: 'White-label',
-    free: 'No',
-    pro: 'No',
-    studio: 'Yes',
-    enterprise: 'Yes',
-  },
-  {
-    feature: 'SLA guarantee',
-    free: 'No',
-    pro: 'No',
-    studio: 'No',
-    enterprise: '99.9%',
-  },
+  { feature: 'Conversions per month', free: '5', pro: 'Unlimited', studio: 'Unlimited', enterprise: 'Unlimited' },
+  { feature: 'Mod complexity', free: 'Simple to moderate', pro: 'Up to complex', studio: 'Any complexity', enterprise: 'Any complexity' },
+  { feature: 'API access', free: 'No', pro: '1,000 calls/mo', studio: '10,000 calls/mo', enterprise: 'Unlimited' },
+  { feature: 'Team seats', free: '1', pro: '1', studio: '10', enterprise: 'Unlimited' },
+  { feature: 'Support', free: 'Community (Discord)', pro: 'Email (24hr)', studio: 'Slack (4hr)', enterprise: 'Dedicated (1hr)' },
+  { feature: 'Storage', free: '1 GB', pro: '10 GB', studio: '100 GB', enterprise: 'Unlimited' },
+  { feature: 'Conversion history', free: '7 days', pro: '90 days', studio: '1 year', enterprise: 'Forever' },
+  { feature: 'White-label', free: 'No', pro: 'No', studio: 'Yes', enterprise: 'Yes' },
+  { feature: 'SLA guarantee', free: 'No', pro: 'No', studio: 'No', enterprise: '99.9%' },
 ];
 
 export const PricingPage: React.FC = () => {
@@ -218,15 +164,12 @@ export const PricingPage: React.FC = () => {
         <div className="container">
           <h1 className="pricing-title">Simple, Transparent Pricing</h1>
           <p className="pricing-subtitle">
-            Choose the plan that fits your needs. All plans include our core AI
-            conversion technology.
+            Choose the plan that fits your needs. All plans include our core AI conversion technology.
           </p>
 
           {/* Billing Toggle */}
           <div className="billing-toggle">
-            <span className={`billing-label ${!annualBilling ? 'active' : ''}`}>
-              Monthly
-            </span>
+            <span className={`billing-label ${!annualBilling ? 'active' : ''}`}>Monthly</span>
             <button
               className={`toggle-switch ${annualBilling ? 'active' : ''}`}
               onClick={() => setAnnualBilling(!annualBilling)}
@@ -250,9 +193,7 @@ export const PricingPage: React.FC = () => {
                 key={tier.name}
                 className={`pricing-card ${tier.popular ? 'popular' : ''}`}
               >
-                {tier.popular && (
-                  <div className="popular-badge">Most Popular</div>
-                )}
+                {tier.popular && <div className="popular-badge">Most Popular</div>}
                 <div className="card-header">
                   <h3 className="tier-name">{tier.name}</h3>
                   <div className="tier-price">
@@ -264,13 +205,7 @@ export const PricingPage: React.FC = () => {
                 <ul className="tier-features">
                   {tier.features.map((feature, index) => (
                     <li key={index} className="feature-item">
-                      <svg
-                        className="feature-icon"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
+                      <svg className="feature-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path
                           fillRule="evenodd"
                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -333,9 +268,7 @@ export const PricingPage: React.FC = () => {
               <div key={index} className="faq-item">
                 <button
                   className={`faq-question ${expandedFaq === index ? 'expanded' : ''}`}
-                  onClick={() =>
-                    setExpandedFaq(expandedFaq === index ? null : index)
-                  }
+                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
                 >
                   {faq.question}
                   <svg
@@ -369,10 +302,7 @@ export const PricingPage: React.FC = () => {
           <h2>Ready to convert your mods?</h2>
           <p>Join thousands of modders already using ModPorter AI</p>
           <div className="cta-buttons">
-            <button
-              className="cta-button primary"
-              onClick={() => (window.location.href = '/signup')}
-            >
+            <button className="cta-button primary" onClick={() => (window.location.href = '/signup')}>
               Start Free Trial
             </button>
             <button

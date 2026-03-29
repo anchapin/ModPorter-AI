@@ -17,7 +17,15 @@ from .validators.quality import QualityValidator, ValidationResult
 
 # Import from Phase 15-01
 import sys
-sys.path.append('/home/alex/Projects/ModPorter-AI/ai-engine')
+import os
+
+# Get the path to the ai-engine directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# backend/src/ingestion/pipeline.py -> backend/src/ingestion -> backend/src -> backend -> root
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+ai_engine_dir = os.path.join(root_dir, 'ai-engine')
+sys.path.append(ai_engine_dir)
+
 from indexing.chunking_strategies import ChunkingStrategyFactory
 from indexing.metadata_extractor import DocumentMetadataExtractor
 
