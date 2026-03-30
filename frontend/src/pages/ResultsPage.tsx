@@ -84,14 +84,6 @@ export const ResultsPage: React.FC = () => {
     console.log('Feedback submitted:', type, jobId);
   };
 
-  const getSuccessRateColor = (
-    rate: number
-  ): 'success' | 'warning' | 'error' => {
-    if (rate >= 80) return 'success';
-    if (rate >= 50) return 'warning';
-    return 'error';
-  };
-
   if (loading) {
     return (
       <Container maxWidth="md" className="results-page">
