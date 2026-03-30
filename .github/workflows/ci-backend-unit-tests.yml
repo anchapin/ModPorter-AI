@@ -1,0 +1,287 @@
+name: CI - Backend Unit Tests (Parallel Jobs)
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/**'
+      - 'backend/requirements*.txt'
+      - 'backend/pyproject.toml'
+      - 'backend/pytest.ini'
+      - '.github/workflows/ci-backend-unit-tests.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/**'
+      - 'backend/requirements*.txt'
+      - 'backend/pyproject.toml'
+      - 'backend/pytest.ini'
+      - '.github/workflows/ci-backend-unit-tests.yml'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for triggering workflow'
+        required: false
+        default: 'Manual trigger'
+
+env:
+  PYTHON_VERSION: '3.11'
+  CACHE_VERSION: v2
+
+jobs:
+  # Job 1: test_a-c* and test_d-m* (largest batches)
+  unit-tests-job1:
+    name: Unit Tests - Batch 1 (test_a-c* + test_d-m*)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-timeout
+
+      - name: Run Unit Tests - Batch 1 (test_a-c*)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_[a-c]*.py \
+            -v --tb=short --timeout=10 \
+            --cov=src --cov-report=json:coverage-batch1-ac.json \
+            --cov-report=term-missing || true
+
+      - name: Run Unit Tests - Batch 1 (test_d-m*)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_[d-m]*.py \
+            -v --tb=short --timeout=10 \
+            --cov=src --cov-append --cov-report=json:coverage-batch1-dm.json \
+            --cov-report=term-missing || true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-batch1
+          path: backend/coverage-batch*.json
+          if-no-files-found: ignore
+
+  # Job 2: test_s* (medium batch)
+  unit-tests-job2:
+    name: Unit Tests - Batch 2 (test_s*)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-timeout
+
+      - name: Run Unit Tests - Batch 2 (test_s*)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_[s]*.py \
+            -v --tb=short --timeout=10 \
+            --cov=src --cov-report=json:coverage-batch2.json \
+            --cov-report=term-missing || true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-batch2
+          path: backend/coverage-batch*.json
+          if-no-files-found: ignore
+
+  # Job 3: test_p-r* (small batch)
+  unit-tests-job3:
+    name: Unit Tests - Batch 3 (test_p-r*)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-timeout
+
+      - name: Run Unit Tests - Batch 3 (test_p-r*)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_[p-r]*.py \
+            -v --tb=short --timeout=10 \
+            --cov=src --cov-report=json:coverage-batch3.json \
+            --cov-report=term-missing || true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-batch3
+          path: backend/coverage-batch*.json
+          if-no-files-found: ignore
+
+  # Job 4: test_t-z* (small batch)
+  unit-tests-job4:
+    name: Unit Tests - Batch 4 (test_t-z*)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-timeout
+
+      - name: Run Unit Tests - Batch 4 (test_t-z*)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_[t-z]*.py \
+            -v --tb=short --timeout=10 \
+            --cov=src --cov-report=json:coverage-batch4.json \
+            --cov-report=term-missing || true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-batch4
+          path: backend/coverage-batch*.json
+          if-no-files-found: ignore
+
+  # Coverage aggregation job
+  aggregate-coverage:
+    name: Aggregate Coverage Results
+    runs-on: ubuntu-latest
+    needs: [unit-tests-job1, unit-tests-job2, unit-tests-job3, unit-tests-job4]
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install coverage tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage
+
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          path: coverage-artifacts
+
+      - name: Combine coverage reports
+        run: |
+          cd backend
+          # Combine all JSON coverage files
+          coverage combine coverage-artifacts/**/*.json 2>/dev/null || true
+          coverage json --pretty-print || true
+          coverage report || true
+          coverage html || true
+
+      - name: Upload combined coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-coverage
+          path: |
+            backend/htmlcov/
+            backend/.coverage
+          if-no-files-found: ignore
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage_path = 'coverage-artifacts/coverage-batch1/coverage-batch1-ac.json';
+            if (fs.existsSync(coverage_path)) {
+              const coverage = JSON.parse(fs.readFileSync(coverage_path, 'utf-8'));
+              const total = coverage.totals?.percent_covered ?? 'Unknown';
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 📊 Backend Unit Test Coverage\n\nCombined coverage from 4 parallel test batches: **${total}%**\n\nSee artifacts for detailed coverage reports.`
+              });
+            }

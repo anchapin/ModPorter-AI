@@ -109,6 +109,7 @@ class CacheService:
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_mod_analysis: {e}")
+            self._redis_available = False
 
     async def get_mod_analysis(self, mod_hash: str) -> Optional[dict]:
         try:
@@ -121,6 +122,7 @@ class CacheService:
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_mod_analysis: {e}")
+            self._redis_available = False
             self._cache_misses += 1
             return None
 
@@ -136,6 +138,7 @@ class CacheService:
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_conversion_result: {e}")
+            self._redis_available = False
 
     async def get_conversion_result(self, mod_hash: str) -> Optional[dict]:
         try:
@@ -207,6 +210,7 @@ class CacheService:
 
         except Exception as e:
             logger.warning(f"Redis operation failed for get_cache_stats: {e}")
+            self._redis_available = False
             stats = CacheStats(
                 hits=self._cache_hits,
                 misses=self._cache_misses,

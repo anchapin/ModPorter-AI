@@ -14,6 +14,7 @@ import numpy as np
 from collections import Counter, defaultdict
 import math
 import uuid
+from datetime import datetime, timezone, timedelta
 
 # Initialize logger first
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class RankingStrategy(str, Enum):
 
     WEIGHTED_SUM = "weighted_sum"
     RECIPROCAL_RANK_FUSION = "reciprocal_rank_fusion"
+    RRF = RECIPROCAL_RANK_FUSION  # Alias for convenience
     BAYESIAN_COMBINATION = "bayesian_combination"
     LEARNED_COMBINATION = "learned_combination"
 
@@ -594,6 +596,42 @@ class HybridSearchEngine:
                         )
 
             # Calculate context-aware score
+
+            # Filter: Skip documents that dont have required data for the search mode
+            should_skip = False
+
+            # For VECTOR_ONLY mode, require embeddings
+            if search_mode == SearchMode.VECTOR_ONLY:
+                doc_embeddings = embeddings.get(doc_id, [])
+                if not doc_embeddings:
+                    should_skip = True
+
+            # For KEYWORD_ONLY mode, require content text
+            elif search_mode == SearchMode.KEYWORD_ONLY:
+                if not document.content_text:
+                    should_skip = True
+
+            # Skip candidates with no meaningful scores (both vector and keyword are 0 or unavailable)
+            if not should_skip:
+                has_vector_score = search_mode != SearchMode.KEYWORD_ONLY and embeddings.get(doc_id, [])
+                has_keyword_score = search_mode != SearchMode.VECTOR_ONLY and document.content_text
+                
+                # If in hybrid/adaptive mode, require at least one score type to be non-zero
+                if search_mode in [SearchMode.HYBRID, SearchMode.ADAPTIVE]:
+                    if candidate.vector_score < 0.01 and candidate.keyword_score == 0:
+                        should_skip = True
+                # For vector-only, require embeddings and meaningful score
+                elif search_mode == SearchMode.VECTOR_ONLY:
+                    if not has_vector_score or candidate.vector_score < 0.01:
+                        should_skip = True
+                # For keyword-only, require content
+                elif search_mode == SearchMode.KEYWORD_ONLY:
+                    if not has_keyword_score:
+                        should_skip = True
+
+            if should_skip:
+                continue
+
             candidate.context_score = self._calculate_context_score(document, query)
             if candidate.context_score > 0:
                 candidate.explanation.append(f"Context bonus: {candidate.context_score:.3f}")
@@ -759,9 +797,14 @@ class HybridSearchEngine:
         # Boost for recent documents (if timestamp available)
         if hasattr(document, "updated_at") and document.updated_at:
             # Recent documents get a small boost
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
 
-            if document.updated_at > datetime.now(timezone.utc) - timedelta(days=30):
+            # Handle both timezone-naive and timezone-aware datetimes
+            doc_time = document.updated_at
+            if doc_time.tzinfo is None:
+                doc_time = doc_time.replace(tzinfo=timezone.utc)
+
+            if doc_time > datetime.now(timezone.utc) - timedelta(days=30):
                 context_score += 0.02
 
         return min(context_score, 0.3)  # Cap context score
@@ -932,7 +975,7 @@ class UnifiedSearchEngine:
             f"reranking={enable_reranking}, query_expansion={enable_query_expansion}"
         )
 
-    def search(
+    async def search(
         self,
         query: str,
         filters: Optional[Dict[str, Any]] = None,
@@ -975,7 +1018,7 @@ class UnifiedSearchEngine:
         all_candidates = []
         for eq in expanded_queries:
             search_query = SearchQuery(text=eq, filters=filters or {}, mode=mode, top_k=top_k)
-            candidates = self.hybrid_engine.search(search_query)
+            candidates = await self.hybrid_engine.search(search_query)
             all_candidates.extend(candidates)
 
         # Deduplicate and combine candidates from expanded queries

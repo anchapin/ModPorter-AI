@@ -8,7 +8,7 @@ multi-modal embeddings and metadata in the advanced RAG system.
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ContentType(str, Enum):
@@ -76,8 +76,7 @@ class MultiModalDocument(BaseModel):
     project_context: Optional[str] = Field(None, description="Project or context identifier")
     tags: List[str] = Field(default_factory=list, description="Content tags for filtering")
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class EmbeddingVector(BaseModel):
@@ -115,8 +114,7 @@ class EmbeddingVector(BaseModel):
     generation_time_ms: Optional[float] = Field(None, description="Time to generate embedding")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class ImageMetadata(BaseModel):
@@ -227,8 +225,7 @@ class SearchQuery(BaseModel):
         None, description="Preferred embedding models"
     )
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class SearchResult(BaseModel):
@@ -259,8 +256,7 @@ class SearchResult(BaseModel):
     # Metadata
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class HybridSearchConfig(BaseModel):

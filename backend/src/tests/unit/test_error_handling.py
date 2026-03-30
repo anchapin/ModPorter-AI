@@ -43,7 +43,7 @@ class TestErrorCategories:
             AssetError,
             LogicError,
             PackageError,
-            ValidationError,
+            ValidationException,
             RateLimitException,
             ConversionException,
             FileProcessingException,
@@ -69,8 +69,8 @@ class TestErrorCategories:
         assert exc.error_type == "package_error"
         assert exc.status_code == 500
 
-        # Test ValidationError
-        exc = ValidationError("Validation failed", "Check input")
+        # Test ValidationException
+        exc = ValidationException("Validation failed", "Check input")
         assert exc.error_type == "validation_error"
 
         # Test RateLimitException

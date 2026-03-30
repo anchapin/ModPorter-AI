@@ -261,7 +261,7 @@ async def test_get_cache_stats_redis_error(cache_service: CacheService):
     cache_service._client.keys.side_effect = Exception("Redis down")
 
     # Use absolute path for logger patch
-    with patch("src.services.cache.logger") as mock_logger:
+    with patch("services.cache.logger") as mock_logger:
         stats = await cache_service.get_cache_stats()
 
         assert isinstance(stats, CacheStats)
@@ -288,7 +288,7 @@ async def test_cache_mod_analysis_redis_error(cache_service: CacheService):
 
     cache_service._client.set.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
-    with patch("src.services.cache.logger") as mock_logger:
+    with patch("services.cache.logger") as mock_logger:
         await cache_service.cache_mod_analysis(MOD_HASH, ANALYSIS_DATA)
         mock_logger.warning.assert_called_once()
         assert cache_service._redis_available is False  # Should be False after error
@@ -302,7 +302,7 @@ async def test_get_mod_analysis_redis_error(cache_service: CacheService):
 
     cache_service._client.get.side_effect = Exception("Redis down")
     # Use absolute path for logger patch
-    with patch("src.services.cache.logger") as mock_logger:
+    with patch("services.cache.logger") as mock_logger:
         result = await cache_service.get_mod_analysis(MOD_HASH)
         assert result is None
         mock_logger.warning.assert_called_once()
@@ -337,7 +337,7 @@ async def test_set_progress_redis_error(cache_service: CacheService):
 
     cache_service._client.set.side_effect = Exception("Redis connection failed")
 
-    with patch("src.services.cache.logger") as mock_logger:
+    with patch("services.cache.logger") as mock_logger:
         await cache_service.set_progress(job_id, progress)
 
         mock_logger.warning.assert_called_once()

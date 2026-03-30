@@ -168,10 +168,11 @@ def get_qa_report(task_id: str, report_format: str = "json") -> Dict[str, Any]:
         "task_id": task_id,
         "conversion_id": task_info["conversion_id"],
         "generated_at": "simulated_report_generation_time",
-        "overall_quality_score": task_info.get("results_summary", {}).get(
+        "overall_quality_score": (task_info.get("results_summary") or {}).get(
             "overall_quality_score", 0.0
         ),
         "summary": task_info.get("results_summary", {}),
+
         "functional_tests": {"passed": 30, "failed": 2, "details": [...]},
         "performance_tests": {
             "cpu_avg": "25%",

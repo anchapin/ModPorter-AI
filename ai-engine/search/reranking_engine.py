@@ -40,11 +40,14 @@ class ReRankingFeature:
 class ReRankingResult:
     """Result of re-ranking with detailed explanation."""
 
+    document: Any  # The document that was reranked
     original_rank: int
     new_rank: int
     original_score: float
     reranked_score: float
+    final_score: float  # Combined/scored result
     features_used: List[ReRankingFeature]
+    relevance_features: Dict[str, Any]  # Additional features
     confidence: float
     explanation: str
 
@@ -156,11 +159,14 @@ class FeatureBasedReRanker:
 
             # Create re-ranking explanation
             reranking_result = ReRankingResult(
+                document=result.document,
                 original_rank=result.rank,
                 new_rank=0,  # Will be set after sorting
                 original_score=result.final_score,
                 reranked_score=new_score,
+                final_score=new_score,
                 features_used=features,
+                relevance_features={},
                 confidence=self._calculate_reranking_confidence(features),
                 explanation=self._generate_feature_explanation(
                     features, result.final_score, new_score
@@ -1089,12 +1095,16 @@ class CrossEncoderReRanker:
                         original_rank=result.rank,
                         new_rank=0,  # Will be set after sorting
                         original_score=result.final_score,
+                        reranked_score=float(score),
                         final_score=float(score),
+                        features_used=[ReRankingFeature(name="cross_encoder", weight=1.0, value=float(score), explanation=f"Cross-encoder score: {score:.4f}")],
                         relevance_features={
                             "cross_encoder_score": float(score),
                             "semantic_similarity": result.similarity_score,
                             "keyword_match": result.keyword_score,
                         },
+                        confidence=float(score),
+                        explanation=f"Cross-encoder score: {score:.4f}",
                     )
                 )
 
@@ -1136,12 +1146,23 @@ class CrossEncoderReRanker:
                     original_rank=result.rank,
                     new_rank=0,
                     original_score=result.final_score,
+                    reranked_score=score,
                     final_score=score,
+                    features_used=[
+                        ReRankingFeature(
+                            name="combined_score",
+                            value=score,
+                            weight=1.0,
+                            explanation=f"Combined semantic ({result.similarity_score:.3f}) and keyword ({result.keyword_score:.3f}) scores"
+                        )
+                    ],
                     relevance_features={
                         "combined_score": score,
                         "semantic_similarity": result.similarity_score,
                         "keyword_match": result.keyword_score,
                     },
+                    confidence=score,
+                    explanation=f"Fallback reranking with combined score: {score:.4f}",
                 )
             )
 

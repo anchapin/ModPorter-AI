@@ -127,7 +127,15 @@ async def submit_feedback(feedback: FeedbackRequest, db: AsyncSession = Depends(
             raise HTTPException(
                 status_code=404, detail=f"Conversion job with ID '{feedback.job_id}' not found"
             )
+    except HTTPException:
+        raise
     except Exception as e:
+        # Check if it's a "not found" exception from crud
+        if "not found" in str(e).lower():
+            logger.warning(f"Job not found via exception: {feedback.job_id}")
+            raise HTTPException(
+                status_code=404, detail=f"Conversion job with ID '{feedback.job_id}' not found"
+            )
         logger.error(f"Database error checking job {feedback.job_id}: {e}")
         raise HTTPException(status_code=500, detail="Error validating job ID")
 

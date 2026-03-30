@@ -6,7 +6,7 @@ Issue: #573 - Backend: WebSocket Real-Time Progress - Connection Management and 
 
 import pytest
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from websocket.enhanced_manager import (

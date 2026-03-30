@@ -467,11 +467,19 @@ class RecipeConverterAgent:
     def convert_recipe_tool(recipe_json: str) -> str:
         """Convert a Java recipe to Bedrock format."""
         try:
-            recipe_data = json.loads(recipe_json)
+            input_data = json.loads(recipe_json)
             agent = RecipeConverterAgent.get_instance()
 
-            namespace = recipe_data.pop("namespace", "mod")
-            recipe_name = recipe_data.pop("recipe_name", None)
+            # Handle case where data is wrapped in "recipe_data"
+            if "recipe_data" in input_data and isinstance(input_data["recipe_data"], dict):
+                recipe_data = input_data["recipe_data"]
+                # Prefer namespace/recipe_name from top level, fall back to nested
+                namespace = input_data.get("namespace") or recipe_data.pop("namespace", "mod")
+                recipe_name = input_data.get("recipe_name") or recipe_data.pop("recipe_name", None)
+            else:
+                recipe_data = input_data
+                namespace = recipe_data.pop("namespace", "mod")
+                recipe_name = recipe_data.pop("recipe_name", None)
 
             result = agent.convert_recipe(recipe_data, namespace, recipe_name)
 
@@ -489,9 +497,16 @@ class RecipeConverterAgent:
             agent = RecipeConverterAgent.get_instance()
 
             results = []
-            for recipe_data in recipes:
-                namespace = recipe_data.pop("namespace", "mod")
-                recipe_name = recipe_data.pop("recipe_name", None)
+            for item in recipes:
+                # Handle case where item is wrapped in "recipe_data"
+                if "recipe_data" in item and isinstance(item["recipe_data"], dict):
+                    recipe_data = item["recipe_data"]
+                    namespace = item.get("namespace") or recipe_data.pop("namespace", "mod")
+                    recipe_name = item.get("recipe_name") or recipe_data.pop("recipe_name", None)
+                else:
+                    recipe_data = item
+                    namespace = recipe_data.pop("namespace", "mod")
+                    recipe_name = recipe_data.pop("recipe_name", None)
 
                 converted = agent.convert_recipe(recipe_data, namespace, recipe_name)
                 results.append(converted)

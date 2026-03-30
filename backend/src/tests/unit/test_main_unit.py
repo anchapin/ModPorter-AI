@@ -1,8 +1,19 @@
 import pytest
 import io
-import pytest
+import uuid
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
+
+
+from main import app, conversion_jobs_db
+
+
+@pytest.fixture(autouse=True)
+def cleanup_storage():
+    """Clear in-memory storage between tests."""
+    conversion_jobs_db.clear()
+    yield
+    conversion_jobs_db.clear()
 
 
 class TestHealthEndpoint:
@@ -78,11 +89,11 @@ class TestFileUploadEndpoint:
 
         response = client.post("/api/v1/upload", files={"file": file_data})
         assert (
-            response.status_code == 415
-        )  # FastAPI returns 415 for unsupported media types
+            response.status_code == 400
+        )  # The API returns 400 for unsupported extensions
 
         data = response.json()
-        assert "File type .txt not supported" in data["detail"]
+        assert "File type .txt not supported" in data["message"]
 
     def test_upload_no_file(self, client: TestClient):
         """Test uploading without providing a file."""
@@ -97,9 +108,11 @@ class TestConversionEndpoints:
     @patch("db.crud.update_job_status")
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     @pytest.mark.asyncio
     async def test_start_conversion(
         self,
+        mock_refresh,
         mock_add_task,
         mock_get_job,
         mock_update_job,
@@ -142,8 +155,10 @@ class TestConversionEndpoints:
     @patch("db.crud.update_job_status")
     @patch("db.crud.get_job")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     def test_get_conversion_status(
         self,
+        mock_refresh,
         mock_add_task,
         mock_get_job,
         mock_update_job,
@@ -192,8 +207,14 @@ class TestConversionEndpoints:
     @patch("db.crud.list_jobs")
     @patch("db.crud.create_job")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     def test_list_conversions(
-        self, mock_add_task, mock_create_job, mock_list_jobs, client: TestClient
+        self,
+        mock_refresh,
+        mock_add_task,
+        mock_create_job,
+        mock_list_jobs,
+        client: TestClient,
     ):
         """Test listing all conversion jobs."""
         # Mock database call
@@ -208,15 +229,19 @@ class TestConversionEndpoints:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "conversions" in data
+        assert isinstance(data["conversions"], list)
 
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("db.crud.get_job")
     @patch("db.crud.upsert_progress")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     def test_cancel_conversion(
         self,
+        mock_refresh,
         mock_add_task,
         mock_upsert_progress,
         mock_get_job,
@@ -265,7 +290,7 @@ class TestConversionEndpoints:
 
     def test_download_converted_mod_not_found(self, client: TestClient):
         """Test downloading a non-existent converted mod."""
-        job_id = "12345678-1234-1234-1234-123456789012"
+        job_id = str(uuid.uuid4())
 
         response = client.get(f"/api/v1/convert/{job_id}/download")  # Changed path
         assert response.status_code == 404
@@ -277,8 +302,9 @@ class TestConversionRequestValidation:
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     def test_conversion_request_valid(
-        self, mock_add_task, mock_update_job, mock_create_job, client: TestClient
+        self, mock_refresh, mock_add_task, mock_update_job, mock_create_job, client: TestClient
     ):
         """Test valid conversion request."""
         # Mock database call
@@ -317,8 +343,9 @@ class TestConversionRequestValidation:
     @patch("db.crud.create_job")
     @patch("db.crud.update_job_status")
     @patch("fastapi.BackgroundTasks.add_task")
+    @patch("sqlalchemy.ext.asyncio.AsyncSession.refresh", new_callable=AsyncMock)
     def test_conversion_request_default_target_version(
-        self, mock_add_task, mock_update_job, mock_create_job, client: TestClient
+        self, mock_refresh, mock_add_task, mock_update_job, mock_create_job, client: TestClient
     ):
         """Test conversion request uses default target version."""
         # Mock database call

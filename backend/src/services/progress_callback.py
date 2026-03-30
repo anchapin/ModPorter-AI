@@ -75,8 +75,9 @@ class ProgressCallback:
         }
 
         # Store in history
-        if job_id in self._progress_history:
-            self._progress_history[job_id].append(progress_data)
+        if job_id not in self._progress_history:
+            self._progress_history[job_id] = []
+        self._progress_history[job_id].append(progress_data)
 
         # Notify subscribers
         if job_id in self._subscribers:

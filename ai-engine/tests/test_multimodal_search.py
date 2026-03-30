@@ -9,11 +9,15 @@ Tests:
 """
 
 import unittest
+import pytest
+import asyncio
 import tempfile
 import json
 import os
 import sys
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
+
+from search.multimodal_search_engine import MultiModalSearchEngine
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,7 +30,6 @@ class TestTextureMetadataExtractor(unittest.TestCase):
         """Set up test fixtures."""
         try:
             from PIL import Image
-
             self.Image = Image
             self.pil_available = True
         except ImportError:
@@ -40,9 +43,11 @@ class TestTextureMetadataExtractor(unittest.TestCase):
         self.assertIsNotNone(extractor)
         self.assertEqual(extractor.supported_formats, {"png", "jpg", "jpeg", "gif", "bmp"})
 
-    @unittest.skipUnless(hasattr(unittest.TestCase, "Image"), "PIL not available")
     def test_extract_dimensions(self):
         """Test extracting dimensions from PNG."""
+        if not self.pil_available:
+            self.skipTest("PIL not available")
+            
         from utils.texture_metadata_extractor import TextureMetadataExtractor
 
         # Create test image
@@ -55,28 +60,29 @@ class TestTextureMetadataExtractor(unittest.TestCase):
             os.unlink(f.name)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result["width"], 64)
-        self.assertEqual(result["height"], 64)
+        self.assertEqual(result.width, 64)
+        self.assertEqual(result.height, 64)
 
-    @unittest.skipUnless(hasattr(unittest.TestCase, "Image"), "PIL not available")
     def test_detect_transparency(self):
         """Test transparency detection."""
+        if not self.pil_available:
+            self.skipTest("PIL not available")
+
         from utils.texture_metadata_extractor import TextureMetadataExtractor
+        extractor = TextureMetadataExtractor()
 
         # Test RGBA with transparency
         img_rgba = self.Image.new("RGBA", (32, 32), (255, 0, 0, 128))
+        self.assertTrue(extractor._detect_transparency(img_rgba))
 
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            img_rgba.save(f.name)
-            extractor = TextureMetadataExtractor()
-            result = extractor.extract(f.name)
-            os.unlink(f.name)
+        # Test RGBA without transparency
+        img_opaque = self.Image.new("RGBA", (32, 32), (255, 0, 0, 255))
+        self.assertFalse(extractor._detect_transparency(img_opaque))
+        
+        # Test RGB (no alpha)
+        img_rgb = self.Image.new("RGB", (32, 32), (255, 0, 0))
+        self.assertFalse(extractor._detect_transparency(img_rgb))
 
-        self.assertIsNotNone(result)
-        # With partial transparency, min alpha < 255
-        self.assertTrue(result["has_transparency"] or not result["has_transparency"])
-
-    @unittest.skipUnless(hasattr(unittest.TestCase, "Image"), "PIL not available")
     def test_classify_category(self):
         """Test category classification from path."""
         from utils.texture_metadata_extractor import TextureMetadataExtractor
@@ -88,10 +94,14 @@ class TestTextureMetadataExtractor(unittest.TestCase):
         self.assertEqual(extractor._classify_category("/items/diamond_sword.png"), "items")
         self.assertEqual(extractor._classify_category("/entity/creeper.png"), "entities")
         self.assertEqual(extractor._classify_category("/gui/inventory.png"), "gui")
+        self.assertEqual(extractor._classify_category("/environment/sky.png"), "environment")
+        self.assertEqual(extractor._classify_category("/unknown/path.png"), "blocks") # Default
 
-    @unittest.skipUnless(hasattr(unittest.TestCase, "Image"), "PIL not available")
     def test_calculate_complexity(self):
         """Test visual complexity calculation."""
+        if not self.pil_available:
+            self.skipTest("PIL not available")
+
         from utils.texture_metadata_extractor import TextureMetadataExtractor
 
         # Create simple solid color image
@@ -99,7 +109,6 @@ class TestTextureMetadataExtractor(unittest.TestCase):
 
         # Create complex noise image
         import random
-
         img_complex_data = [tuple(random.randint(0, 255) for _ in range(3)) for _ in range(32 * 32)]
         img_complex = self.Image.new("RGB", (32, 32))
         img_complex.putdata(img_complex_data)
@@ -110,9 +119,44 @@ class TestTextureMetadataExtractor(unittest.TestCase):
         complexity_complex = extractor._calculate_complexity(img_complex)
 
         # Complex image should have higher complexity
-        self.assertGreaterEqual(complexity_complex, complexity_simple)
-        self.assertGreaterEqual(complexity_simple, 0)
-        self.assertLessEqual(complexity_simple, 1)
+        self.assertGreater(complexity_complex, complexity_simple)
+        self.assertEqual(complexity_simple, 0.0)
+        self.assertLessEqual(complexity_complex, 1.0)
+
+    def test_extract_color_palette(self):
+        """Test color palette extraction."""
+        if not self.pil_available:
+            self.skipTest("PIL not available")
+
+        from utils.texture_metadata_extractor import TextureMetadataExtractor
+        extractor = TextureMetadataExtractor()
+
+        # Create image with specific colors
+        img = self.Image.new("RGB", (32, 32), (255, 0, 0)) # Red
+        palette = extractor._extract_color_palette(img, num_colors=1)
+        
+        self.assertEqual(len(palette), 1)
+        self.assertEqual(palette[0].lower(), "#ff0000")
+
+    def test_detect_tileability(self):
+        """Test tileability detection."""
+        if not self.pil_available:
+            self.skipTest("PIL not available")
+
+        from utils.texture_metadata_extractor import TextureMetadataExtractor
+        extractor = TextureMetadataExtractor()
+
+        # Solid color image is perfectly tileable
+        img_tileable = self.Image.new("RGB", (32, 32), (255, 255, 255))
+        self.assertTrue(extractor._detect_tileability(img_tileable))
+
+        # Random noise is likely not tileable
+        import random
+        img_data = [tuple(random.randint(0, 255) for _ in range(3)) for _ in range(32 * 32)]
+        img_non_tileable = self.Image.new("RGB", (32, 32))
+        img_non_tileable.putdata(img_data)
+        # It's random, but statistically very unlikely to be tileable
+        self.assertFalse(extractor._detect_tileability(img_non_tileable, edge_threshold=0.01))
 
 
 class TestModelMetadataExtractor(unittest.TestCase):
@@ -211,9 +255,11 @@ class TestModelMetadataExtractor(unittest.TestCase):
             result = extract_model_metadata(tmp_file)
 
             self.assertIsNotNone(result)
-            self.assertEqual(result["geometry_count"], 1)
-            self.assertEqual(result["cube_count"], 3)
-            self.assertEqual(result["bone_count"], 2)
+            # Result is now a MultiModalDocument with metadata in content_metadata
+            metadata = result.content_metadata
+            self.assertEqual(metadata["geometry_count"], 1)
+            self.assertEqual(metadata["cube_count"], 3)
+            self.assertEqual(metadata["bone_count"], 2)
         finally:
             os.unlink(tmp_file)
 
@@ -233,10 +279,10 @@ class TestModelMetadataExtractor(unittest.TestCase):
             os.unlink(tmp_file)
 
 
-class TestMultiModalSearchEngine(unittest.TestCase):
+class TestMultiModalSearchEngine(unittest.IsolatedAsyncioTestCase):
     """Tests for MultiModalSearchEngine."""
 
-    def test_engine_initialization(self):
+    async def test_engine_initialization(self):
         """Test that engine initializes correctly."""
         from search.multimodal_search_engine import MultiModalSearchEngine
 
@@ -245,7 +291,7 @@ class TestMultiModalSearchEngine(unittest.TestCase):
         self.assertIsNotNone(engine.hybrid_engine)
         self.assertTrue(engine.enable_cross_modal)
 
-    def test_modality_weights(self):
+    async def test_modality_weights(self):
         """Test modality weight configuration."""
         from search.multimodal_search_engine import (
             MultiModalSearchEngine,
@@ -261,7 +307,7 @@ class TestMultiModalSearchEngine(unittest.TestCase):
         # Check engine has weights
         self.assertEqual(engine.modality_weights, DEFAULT_MODALITY_WEIGHTS)
 
-    def test_content_type_modality_mapping(self):
+    async def test_content_type_modality_mapping(self):
         """Test content type to modality mapping."""
         from search.multimodal_search_engine import MultiModalSearchEngine
         from schemas.multimodal_schema import ContentType
@@ -272,7 +318,7 @@ class TestMultiModalSearchEngine(unittest.TestCase):
         self.assertEqual(engine.content_type_modality[ContentType.CODE], "code")
         self.assertEqual(engine.content_type_modality[ContentType.IMAGE], "image")
 
-    def test_infer_modality_from_query(self):
+    async def test_infer_modality_from_query(self):
         """Test modality inference from query text."""
         from search.multimodal_search_engine import MultiModalSearchEngine
         from schemas.multimodal_schema import SearchQuery
@@ -294,21 +340,217 @@ class TestMultiModalSearchEngine(unittest.TestCase):
         modality = engine._infer_modality(query)
         self.assertEqual(modality, "documentation")
 
-    def test_search_by_modality(self):
-        """Test search by modality."""
+    async def test_search_by_modality_basic(self):
+        """Test search by modality returns a list."""
         from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
 
         engine = MultiModalSearchEngine()
 
-        results = engine.search_by_modality(
-            query_text="test query",
-            modalities=["texture", "code"],
-            top_k=10,
-        )
+        # Mock the hybrid_engine.search to avoid actual async calls
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["texture", "code"],
+                top_k=10,
+            )
 
         self.assertIsInstance(results, list)
 
-    def test_get_modality_stats(self):
+    async def test_search_by_modality_texture(self):
+        """Test search by texture modality."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="stone texture",
+                modalities=["texture"],
+                top_k=5,
+            )
+
+        self.assertIsInstance(results, list)
+        self.assertLessEqual(len(results), 5)
+
+    async def test_search_by_modality_code(self):
+        """Test search by code modality."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="function implementation",
+                modalities=["code"],
+                top_k=3,
+            )
+
+        self.assertIsInstance(results, list)
+        self.assertLessEqual(len(results), 3)
+
+    async def test_search_by_modality_documentation(self):
+        """Test search by documentation modality."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="how to configure",
+                modalities=["documentation"],
+                top_k=10,
+            )
+
+        self.assertIsInstance(results, list)
+
+    async def test_search_by_modality_text(self):
+        """Test search by text modality."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="story content",
+                modalities=["text"],
+                top_k=5,
+            )
+
+        self.assertIsInstance(results, list)
+
+    async def test_search_by_modality_model(self):
+        """Test search by model modality."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="3d model geometry",
+                modalities=["model"],
+                top_k=5,
+            )
+
+        self.assertIsInstance(results, list)
+
+    async def test_search_by_modality_case_insensitive(self):
+        """Test that modality names are case insensitive."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            # Test with uppercase
+            results_upper = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["TEXTURE", "CODE"],
+                top_k=5,
+            )
+
+            # Test with lowercase
+            results_lower = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["texture", "code"],
+                top_k=5,
+            )
+
+        # Both should return lists
+        self.assertIsInstance(results_upper, list)
+        self.assertIsInstance(results_lower, list)
+
+    async def test_search_by_modality_mixed_case(self):
+        """Test with mixed case modality names."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["TexTure", "CoDe"],
+                top_k=5,
+            )
+
+        self.assertIsInstance(results, list)
+
+    async def test_search_by_modality_top_k(self):
+        """Test that top_k parameter is respected."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results_1 = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["code"],
+                top_k=1,
+            )
+
+            results_10 = await engine.search_by_modality(
+                query_text="test query",
+                modalities=["code"],
+                top_k=10,
+            )
+
+        # Both should be lists
+        self.assertIsInstance(results_1, list)
+        self.assertIsInstance(results_10, list)
+
+    async def test_search_by_modality_multiple_modalities(self):
+        """Test search with multiple modalities."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+        from unittest.mock import AsyncMock, patch
+
+        engine = MultiModalSearchEngine()
+
+        with patch.object(engine.hybrid_engine, 'search', new_callable=AsyncMock) as mock_search:
+            mock_search.return_value = []
+            results = await engine.search_by_modality(
+                query_text="shader optimization",
+                modalities=["code", "documentation", "text"],
+                top_k=10,
+            )
+
+        self.assertIsInstance(results, list)
+
+    @patch('search.multimodal_search_engine.MultiModalSearchEngine.search')
+    async def test_search_by_modality_calls_search(self, mock_search):
+        """Test that search_by_modality calls the search method."""
+        from search.multimodal_search_engine import MultiModalSearchEngine
+
+        # Setup mock to return empty list
+        mock_search.return_value = []
+
+        engine = MultiModalSearchEngine()
+
+        results = await engine.search_by_modality(
+            query_text="test query",
+            modalities=["texture"],
+            top_k=5,
+        )
+
+        # Verify search was called
+        mock_search.assert_called_once()
+
+    async def test_get_modality_stats(self):
         """Test getting modality statistics."""
         from search.multimodal_search_engine import MultiModalSearchEngine
 
@@ -413,6 +655,7 @@ class TestIntegration(unittest.TestCase):
 
     def test_extractor_to_search_pipeline(self):
         """Test full pipeline from extraction to search."""
+        import asyncio
         from utils.texture_metadata_extractor import TextureMetadataExtractor
         from search.multimodal_search_engine import MultiModalSearchEngine
         from schemas.multimodal_schema import SearchQuery, ContentType
@@ -428,7 +671,7 @@ class TestIntegration(unittest.TestCase):
         )
 
         # Perform search
-        results = engine.search(query, {})
+        results = asyncio.run(engine.search(query, {}))
 
         self.assertIsInstance(results, list)
 

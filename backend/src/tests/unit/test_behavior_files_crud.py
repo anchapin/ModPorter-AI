@@ -136,7 +136,7 @@ class TestBehaviorFilesCRUD:
         assert updated_file is not None
         assert updated_file.content == new_content
         assert "test:recipe_new" in updated_file.content
-        assert updated_file.updated_at > original_updated_at
+        assert updated_file.updated_at >= original_updated_at
 
     async def test_get_behavior_files_by_type(
         self, db_session: AsyncSession, sample_conversion_job

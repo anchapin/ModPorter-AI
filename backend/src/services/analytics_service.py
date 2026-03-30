@@ -95,6 +95,30 @@ class AnalyticsService:
 
         return event
 
+    async def track_feedback_submitted(
+        self,
+        user_id: Optional[str] = None,
+        conversion_id: Optional[str] = None,
+        rating: Optional[int] = None,
+        feedback_type: Optional[str] = None,
+        event_properties: Optional[dict] = None,
+    ) -> Optional[AnalyticsEvent]:
+        """Track a feedback submission event."""
+        if self.db is None:
+            return None
+        props = event_properties or {}
+        if rating is not None:
+            props["rating"] = rating
+        if feedback_type is not None:
+            props["feedback_type"] = feedback_type
+        return await self.track_event(
+            event_type=AnalyticsEventType.FEEDBACK_SUBMIT,
+            event_category=AnalyticsEventType.CATEGORY_FEEDBACK,
+            user_id=user_id,
+            conversion_id=uuid.UUID(conversion_id) if conversion_id else None,
+            event_properties=props,
+        )
+
     async def get_events(
         self,
         event_type: Optional[str] = None,
@@ -295,3 +319,16 @@ class AnalyticsEvents:
     CATEGORY_FEEDBACK = "feedback"
     CATEGORY_EXPORT = "export"
     CATEGORY_USER_ACTION = "user_action"
+
+
+_analytics_service_instance = None
+
+
+def get_analytics_service(db: Optional[AsyncSession] = None) -> "AnalyticsService":
+    """Factory function to get or create an AnalyticsService instance."""
+    global _analytics_service_instance
+    if db is not None:
+        return AnalyticsService(db)
+    if _analytics_service_instance is None:
+        _analytics_service_instance = AnalyticsService(None)
+    return _analytics_service_instance

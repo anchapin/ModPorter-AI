@@ -1136,7 +1136,13 @@ class AssetConverterAgent:
 
         try:
             data = json.loads(asset_data)
-            asset_list = data.get("asset_list", [])
+            if isinstance(data, list):
+                # If it's a list, assume they are paths and convert to objects
+                asset_list = [{"path": p} for p in data]
+            elif isinstance(data, dict):
+                asset_list = data.get("asset_list", [])
+            else:
+                asset_list = [{"path": str(data)}]
 
             analysis_results = {
                 "textures": {"count": 0, "conversions_needed": [], "issues": []},
@@ -1910,7 +1916,12 @@ class AssetConverterAgent:
 
         try:
             data = json.loads(model_data)
-            models = data.get("models", [])
+            if isinstance(data, list):
+                models = [{"path": p} for p in data]
+            elif isinstance(data, dict):
+                models = data.get("models", [])
+            else:
+                models = [{"path": str(data)}]
 
             all_conversion_results = []
 
@@ -2102,7 +2113,12 @@ class AssetConverterAgent:
 
         try:
             data = json.loads(audio_data)
-            audio_files = data.get("audio_files", [])
+            if isinstance(data, list):
+                audio_files = data
+            elif isinstance(data, dict):
+                audio_files = data.get("audio_files", [])
+            else:
+                audio_files = [{"path": str(data)}]
 
             all_conversion_results = []
 

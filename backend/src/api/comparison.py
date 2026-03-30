@@ -13,7 +13,7 @@ try:
     project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
     ai_engine_path = os.path.join(project_root, "ai-engine")
     if ai_engine_path not in sys.path:
-        sys.path.insert(0, ai_engine_path)
+        sys.path.append(ai_engine_path)
 
     from engines.comparison_engine import ComparisonEngine
     from models.comparison import (

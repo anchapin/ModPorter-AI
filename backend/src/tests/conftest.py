@@ -3,7 +3,7 @@ import sys
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Add the src directory to the Python path
@@ -12,12 +12,110 @@ sys.path.insert(0, str(src_dir))
 
 # Set testing environment variable BEFORE importing main
 os.environ["TESTING"] = "true"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-12345678901234567890"
+os.environ["REFRESH_TOKEN_SECRET"] = "test-refresh-secret-key-for-testing-only-123456789012"
+os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-for-testing-only-123456789012345678"
+
+_mock_secrets = {
+    "SECRET_KEY": "test-secret-key-for-testing-only-12345678901234567890",
+    "REFRESH_TOKEN_SECRET": "test-refresh-secret-key-for-testing-only-123456789012",
+    "JWT_SECRET_KEY": "test-jwt-secret-key-for-testing-only-123456789012345678",
+}
+
+
+def _mock_get_secret(key: str) -> str:
+    return _mock_secrets.get(key, "")
+
+
+def pytest_configure(config):
+    import sys
+    from types import ModuleType
+    from unittest.mock import MagicMock
+
+    _mock_secrets_store = _mock_secrets
+
+    def _mock_get_secret(key: str) -> str:
+        return _mock_secrets_store.get(key) or ""
+
+    for _mod_name, _mock_class in [
+        ("markdown", MagicMock),
+        ("bs4", MagicMock),
+        ("aiohttp", MagicMock),
+        ("aiohttp.client_exceptions", MagicMock),
+        ("markdown.extensions", MagicMock),
+        ("bs4.builder", MagicMock),
+    ]:
+        if _mod_name not in sys.modules:
+            _mod = ModuleType(_mod_name)
+            sys.modules[_mod_name] = _mod
+
+    import markdown
+
+    class _MockMarkdown:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def convert(self, text):
+            return f"<html>{text}</html>"
+
+    markdown.Markdown = _MockMarkdown
+
+    import bs4
+
+    class _MockBeautifulSoup:
+        def __init__(self, *args, **kwargs):
+            self._text = str(args[0]) if args else ""
+
+        def find_all(self, *args, **kwargs):
+            return []
+
+        def find(self, *args, **kwargs):
+            return None
+
+        def get_text(self, *args, **kwargs):
+            return self._text
+
+    bs4.BeautifulSoup = _MockBeautifulSoup
+
+    try:
+        from core import secrets
+
+        original = secrets.get_secret
+
+        def patched(key: str) -> str:
+            return _mock_secrets_store.get(key) or original(key)
+
+        secrets.get_secret = patched
+        import core.auth
+
+        core.auth.get_secret = patched
+        import security.auth
+
+        security.auth.get_secret = patched
+        security.auth.SECRET_KEY = _mock_secrets_store["SECRET_KEY"]
+    except ImportError:
+        pass
+
 
 # Set up async engine for tests
 from config import settings
 
+from sqlalchemy import text, event
+from sqlalchemy.engine import Engine
+
 # Configuration depends on database type
 db_url = settings.database_url
+
+
+# Enable foreign keys for SQLite
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if db_url.startswith("sqlite"):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
 engine_kwargs = {
     "echo": False,
 }
@@ -64,12 +162,8 @@ def pytest_sessionstart(session):
                 async with test_engine.begin() as conn:
                     # Only add extensions for PostgreSQL
                     if not db_url.startswith("sqlite"):
-                        await conn.execute(
-                            text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
-                        )
-                        await conn.execute(
-                            text('CREATE EXTENSION IF NOT EXISTS "vector"')
-                        )
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
+                        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "vector"'))
                     await conn.run_sync(Base.metadata.create_all)
 
             # Create a new event loop for this operation
@@ -117,7 +211,7 @@ def client():
     # Mock the init_db function to prevent re-initialization during TestClient startup
     with patch("db.init_db.init_db", new_callable=AsyncMock):
         # Import dependencies
-        from src.main import app
+        from main import app
         from db.base import get_db
 
         # from db import models
@@ -151,10 +245,8 @@ def client():
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
     """Reset rate limiter state between tests to avoid interference."""
-    # Import here to avoid circular imports
     from services.rate_limiter import _rate_limiter
 
     if _rate_limiter:
-        # Clear the local state dictionary
         _rate_limiter._local_state.clear()
     yield

@@ -17,21 +17,31 @@ spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_p
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
-sys.modules["models"] = type(sys)("models")
-sys.modules["models.smart_assumptions"] = type(sys)("models.smart_assumptions")
-sys.modules["models.smart_assumptions"].SmartAssumptionEngine = type(
-    "SmartAssumptionEngine", (), {}
-)
+if "models" not in sys.modules:
+    sys.modules["models"] = type(sys)("models")
+if "models.smart_assumptions" not in sys.modules:
+    sys.modules["models.smart_assumptions"] = type(sys)("models.smart_assumptions")
+    sys.modules["models.smart_assumptions"].SmartAssumptionEngine = type(
+        "SmartAssumptionEngine", (), {}
+    )
 
-sys.modules["crewai"] = type(sys)("crewai")
-sys.modules["crewai.tools"] = type(sys)("crewai.tools")
+if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
+    mock_crewai = type(sys)("crewai")
+    mock_crewai.Agent = type("Agent", (), {})
+    mock_crewai.Crew = type("Crew", (), {})
+    mock_crewai.Task = type("Task", (), {})
+    mock_crewai.LLM = type("LLM", (), {})
+    sys.modules["crewai"] = mock_crewai
+    
+    if "crewai.tools" not in sys.modules:
+        mock_tools = type(sys)("crewai.tools")
+        def tool(func):
+            return func
+        mock_tools.tool = tool
+        mock_tools.BaseTool = type("BaseTool", (), {})
+        sys.modules["crewai.tools"] = mock_tools
 
 
-def tool(func):
-    return func
-
-
-sys.modules["crewai.tools"].tool = tool
 
 spec.loader.exec_module(qa_module)
 

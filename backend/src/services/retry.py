@@ -161,8 +161,16 @@ class RetryConfig:
         self.max_delay = max_delay
         self.exponential_base = exponential_base
         self.jitter = jitter
-        self.retryable_exceptions = retryable_exceptions or DEFAULT_RETRYABLE_EXCEPTIONS
-        self.non_retryable_exceptions = non_retryable_exceptions or DEFAULT_NON_RETRYABLE_EXCEPTIONS
+        self.retryable_exceptions = (
+            retryable_exceptions
+            if retryable_exceptions is not None
+            else DEFAULT_RETRYABLE_EXCEPTIONS
+        )
+        self.non_retryable_exceptions = (
+            non_retryable_exceptions
+            if non_retryable_exceptions is not None
+            else DEFAULT_NON_RETRYABLE_EXCEPTIONS
+        )
 
 
 def calculate_delay(attempt: int, config: RetryConfig) -> float:
@@ -211,7 +219,7 @@ async def retry_async(
         config: Retry configuration
         on_retry: Callback function called on each retry (error, attempt)
         job_id: Optional job ID for metrics tracking
-        **kwargs: Keyword arguments for func
+        **kwargs: Keyword arguments for func (including RetryConfig parameters)
 
     Returns:
         Result of func
@@ -220,7 +228,20 @@ async def retry_async(
         The last exception if all retries are exhausted
     """
     if config is None:
-        config = RetryConfig()
+        # Check for RetryConfig parameters in kwargs
+        config_params = {}
+        for param in [
+            "max_attempts",
+            "base_delay",
+            "max_delay",
+            "exponential_base",
+            "jitter",
+            "retryable_exceptions",
+            "non_retryable_exceptions",
+        ]:
+            if param in kwargs:
+                config_params[param] = kwargs.pop(param)
+        config = RetryConfig(**config_params)
 
     last_error = None
 
@@ -279,7 +300,7 @@ def retry_sync(
         *args: Positional arguments for func
         config: Retry configuration
         on_retry: Callback function called on each retry (error, attempt)
-        **kwargs: Keyword arguments for func
+        **kwargs: Keyword arguments for func (including RetryConfig parameters)
 
     Returns:
         Result of func
@@ -288,7 +309,20 @@ def retry_sync(
         The last exception if all retries are exhausted
     """
     if config is None:
-        config = RetryConfig()
+        # Check for RetryConfig parameters in kwargs
+        config_params = {}
+        for param in [
+            "max_attempts",
+            "base_delay",
+            "max_delay",
+            "exponential_base",
+            "jitter",
+            "retryable_exceptions",
+            "non_retryable_exceptions",
+        ]:
+            if param in kwargs:
+                config_params[param] = kwargs.pop(param)
+        config = RetryConfig(**config_params)
 
     last_error = None
 

@@ -7,10 +7,10 @@ Provides endpoints for pattern submission, review, voting, and library access.
 import logging
 import sys
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -234,7 +234,7 @@ async def get_pending_submissions(
 async def review_pattern(
     submission_id: str,
     request: PatternReviewRequest,
-    reviewer_id: str = Field(..., description="Reviewer user ID"),
+    reviewer_id: str = Query(..., description="Reviewer user ID"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -288,7 +288,7 @@ async def review_pattern(
 async def vote_on_pattern(
     submission_id: str,
     request: PatternVoteRequest,
-    user_id: str = Field(..., description="User voting on the pattern"),
+    user_id: str = Query(..., description="User voting on the pattern"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -635,7 +635,7 @@ class RelatedModalResponse(BaseModel):
     response_model=TextureMetadataResponse,
 )
 async def upload_texture_asset(
-    file_data: str = Field(..., description="Base64 encoded texture file"),
+    file_data: str = Body(..., description="Base64 encoded texture file"),
     request: TextureUploadRequest = Depends(
         lambda: TextureUploadRequest(
             file_name="texture.png",
@@ -715,7 +715,7 @@ async def upload_texture_asset(
     response_model=ModelMetadataResponse,
 )
 async def upload_model_asset(
-    file_data: str = Field(..., description="Base64 encoded model JSON file"),
+    file_data: str = Body(..., description="Base64 encoded model JSON file"),
     request: ModelUploadRequest = Depends(
         lambda: ModelUploadRequest(
             file_name="model.json",
@@ -839,7 +839,7 @@ async def search_multimodal(
         engine = MultiModalSearchEngine(db_session=db)
 
         # Perform search (empty documents would be populated from DB)
-        results = engine.search(query, {})
+        results = await engine.search(query, {})
 
         return MultimodalSearchResponse(
             results=[

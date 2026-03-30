@@ -938,8 +938,9 @@ class LogicTranslatorAgent:
         try:
             # Basic translation simulation
             # In real implementation, this would parse Java AST and convert to JavaScript
+            safe_java_code = java_code[:100] if java_code else ""
             result = {
-                "translated_javascript": f"// Translated from Java {code_type}\n// {java_code[:100]}...",
+                "translated_javascript": f"// Translated from Java {code_type}\n// {safe_java_code}...",
                 "conversion_notes": [
                     f"Translated {code_type} code from Java to JavaScript",
                     "Applied Bedrock API mappings",
@@ -1657,8 +1658,8 @@ world.afterEvents.itemUseOn.subscribe((event) => {{
 
         # Additional null safety transformations
         # Java: if (obj != null) → JS: if (obj)
-        js_code = js_code.replace("!= null", "!== null")
         js_code = js_code.replace("== null", "=== null")
+        js_code = js_code.replace("!= null", "!== null")
 
         # Java: obj.nullCheck() → JS: obj
         js_code = js_code.replace(".notNull()", "")
