@@ -556,6 +556,7 @@ jobs:
               find tests -name "*.py" | head -5 || echo "No backend test files found"
               
               echo "Running backend integration tests..."
+              export PYTHONPATH="src:../ai-engine"
               timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
               ;;
             "ai-engine")
