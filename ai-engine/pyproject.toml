@@ -204,7 +204,7 @@ description = "AI Engine with GPU acceleration support"
 authors = [{name = "ModPorter AI", email = "ai@modporter.dev"}]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
