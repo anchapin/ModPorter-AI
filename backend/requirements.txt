@@ -24,6 +24,7 @@ python-multipart==0.0.22
 tomli~=2.0.2  # TOML parsing for Python <3.11
 python-magic==0.4.27
 javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent
+markdown==3.7  # Markdown parsing for document ingestion
 
 # HTTP Client for file downloads
 httpx==0.28.1
