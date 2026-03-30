@@ -518,8 +518,8 @@ This roadmap defines the phased delivery plan for ModPorter-AI, organized into m
 - [x] 21-01-PLAN.md — AI Engine Core Agents (Wave 1)
 - [x] 21-02-PLAN.md — Backend Advanced Services (Wave 1)
 - [x] 21-03-PLAN.md — AI Engine Logic & RL (Wave 2)
-- [ ] 21-04-PLAN.md — Backend API & Data Persistence (Wave 2)
-- [ ] 21-05-PLAN.md — System-wide Utilities & Main Entrypoints (Wave 3)
+- [x] 21-04-PLAN.md — Backend API & Data Persistence (Wave 2)
+- [x] 21-05-PLAN.md — System-wide Utilities & Main Entrypoints (Wave 3)
 
 ---
 
