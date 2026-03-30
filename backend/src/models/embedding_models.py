@@ -93,11 +93,15 @@ class EnhancedSearchQuery(BaseModel):
     """Enhanced search query with hybrid search, re-ranking, and query expansion options."""
 
     query_text: str = Field(..., min_length=1, description="Search query text")
-    query_embedding: Optional[List[float]] = Field(None, description="Optional query embedding (will generate if not provided)")
+    query_embedding: Optional[List[float]] = Field(
+        None, description="Optional query embedding (will generate if not provided)"
+    )
     top_k: int = Field(default=10, ge=1, le=100, description="Number of results to return")
     use_hybrid: bool = Field(default=True, description="Combine vector + keyword search")
     use_reranker: bool = Field(default=True, description="Apply cross-encoder re-ranking")
-    expand_query: bool = Field(default=True, description="Expand query with synonyms and domain terms")
+    expand_query: bool = Field(
+        default=True, description="Expand query with synonyms and domain terms"
+    )
     search_mode: str = Field(default="hybrid", pattern="^(vector|keyword|hybrid)$")
     ranking_strategy: str = Field(default="weighted_sum", pattern="^(weighted_sum|rrf|ensemble)$")
 

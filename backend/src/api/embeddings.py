@@ -764,7 +764,8 @@ def get_hybrid_engine():
         import os
 
         ai_engine_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+            "ai-engine",
         )
         if ai_engine_path not in sys.path:
             sys.path.insert(0, ai_engine_path)
@@ -784,7 +785,8 @@ def get_reranker():
         import os
 
         ai_engine_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+            "ai-engine",
         )
         if ai_engine_path not in sys.path:
             sys.path.insert(0, ai_engine_path)
@@ -804,7 +806,8 @@ def get_query_expander():
         import os
 
         ai_engine_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+            "ai-engine",
         )
         if ai_engine_path not in sys.path:
             sys.path.insert(0, ai_engine_path)
@@ -831,6 +834,7 @@ async def search_similar_embeddings_enhanced(
     - Performance: Target latency < 500ms
 
     Parameters:
+    ----------
     - use_hybrid: If True (default), combine vector + keyword search. If False, vector-only.
     - use_reranker: If True (default), apply cross-encoder re-ranking to top results.
     - expand_query: If True (default), expand query with synonyms and domain terms.
@@ -839,6 +843,7 @@ async def search_similar_embeddings_enhanced(
     - ranking_strategy: How to combine scores ("weighted_sum", "rrf", or "ensemble").
 
     Returns:
+    -------
     - EnhancedSearchResponse with results, metadata, and performance metrics
     """
     import time
@@ -853,7 +858,9 @@ async def search_similar_embeddings_enhanced(
         if search_query.expand_query:
             expander = get_query_expander()
             expansion_result = expander.expand_query(
-                original_query, strategies=["domain_expansion", "synonym_expansion"], max_expansion_terms=10
+                original_query,
+                strategies=["domain_expansion", "synonym_expansion"],
+                max_expansion_terms=10,
             )
             expanded_query = expansion_result.expanded_query
             logger.info(f"Query expanded: '{original_query}' -> '{expanded_query}'")
@@ -868,7 +875,8 @@ async def search_similar_embeddings_enhanced(
             import os
 
             ai_engine_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "ai-engine",
             )
             if ai_engine_path not in sys.path:
                 sys.path.insert(0, ai_engine_path)
@@ -879,7 +887,8 @@ async def search_similar_embeddings_enhanced(
             query_embeddings = embedding_gen.generate_embeddings([expanded_query])
             if not query_embeddings or query_embeddings[0] is None:
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate query embedding"
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate query embedding",
                 )
             query_embedding = query_embeddings[0].embedding.tolist()
             logger.debug(f"Generated query embedding (dim: {len(query_embedding)})")
@@ -889,7 +898,9 @@ async def search_similar_embeddings_enhanced(
         # For now, fetch from database (should be fast with indexed queries)
         from sqlalchemy import select
 
-        result = await db.execute(select(DocumentEmbedding).where(DocumentEmbedding.embedding.isnot(None)).limit(1000))
+        result = await db.execute(
+            select(DocumentEmbedding).where(DocumentEmbedding.embedding.isnot(None)).limit(1000)
+        )
         documents_db = result.scalars().all()
 
         if not documents_db:
@@ -912,7 +923,8 @@ async def search_similar_embeddings_enhanced(
         import os
 
         ai_engine_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ai-engine"
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+            "ai-engine",
         )
         if ai_engine_path not in sys.path:
             sys.path.insert(0, ai_engine_path)
@@ -925,7 +937,10 @@ async def search_similar_embeddings_enhanced(
         for doc_db in documents_db:
             # Create MultiModalDocument from database record
             doc = MultiModalDocument(
-                id=str(doc_db.id), content=doc_db.document_source or "", content_type=ContentType.TEXT, metadata=doc_db.metadata_json or {}
+                id=str(doc_db.id),
+                content=doc_db.document_source or "",
+                content_type=ContentType.TEXT,
+                metadata=doc_db.metadata_json or {},
             )
             documents[doc.id] = doc
             embeddings_dict[doc.id] = doc_db.embedding
@@ -938,7 +953,11 @@ async def search_similar_embeddings_enhanced(
         # Map search mode string to enum
         from search.hybrid_search_engine import SearchMode
 
-        mode_map = {"vector": SearchMode.VECTOR_ONLY, "keyword": SearchMode.KEYWORD_ONLY, "hybrid": SearchMode.HYBRID}
+        mode_map = {
+            "vector": SearchMode.VECTOR_ONLY,
+            "keyword": SearchMode.KEYWORD_ONLY,
+            "hybrid": SearchMode.HYBRID,
+        }
         search_mode = mode_map.get(search_query.search_mode, SearchMode.HYBRID)
 
         # Determine top_k for retrieval (get more for re-ranking)
@@ -965,7 +984,9 @@ async def search_similar_embeddings_enhanced(
             # Re-rank top candidates (limit to 50 for performance)
             rerank_candidates = search_results[:50] if len(search_results) > 50 else search_results
 
-            reranked_results = reranker.rerank(query=expanded_query, results=rerank_candidates, top_k=search_query.top_k)
+            reranked_results = reranker.rerank(
+                query=expanded_query, results=rerank_candidates, top_k=search_query.top_k
+            )
 
             # Convert ReRankingResult back to EnhancedSearchResult format
             reranked = True
@@ -1003,7 +1024,7 @@ async def search_similar_embeddings_enhanced(
                     reranked=False,
                     expanded_query=expanded_query if expanded_query != original_query else None,
                 )
-                for result in search_results[:search_query.top_k]
+                for result in search_results[: search_query.top_k]
             ]
 
         # Calculate latency
@@ -1035,4 +1056,6 @@ async def search_similar_embeddings_enhanced(
 
     except Exception as e:
         logger.error(f"Error in enhanced search: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}"
+        )

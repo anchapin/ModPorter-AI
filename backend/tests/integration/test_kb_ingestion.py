@@ -16,6 +16,7 @@ from db.models import DocumentEmbedding
 
 # Import ingestion components
 import sys
+
 sys.path.insert(0, "src")
 from ingestion.pipeline import IngestionPipeline
 from ingestion.sources.base import RawDocument, DocumentType
@@ -35,6 +36,7 @@ pytestmark = pytest.mark.asyncio
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 async def mock_ingestion_db():
     """Create async test database session for ingestion tests."""
@@ -46,9 +48,7 @@ async def mock_ingestion_db():
         poolclass=StaticPool,
     )
 
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Create tables
     async with engine.begin() as conn:
@@ -149,6 +149,7 @@ const player = minecraft.Player;
 @pytest.fixture
 def mock_aiohttp_response():
     """Mock aiohttp response for testing HTTP requests."""
+
     class MockResponse:
         def __init__(self, status=200, text="<html>Mock content</html>"):
             self.status = status
@@ -183,7 +184,9 @@ class TestSourceAdapters:
         # Test validate_config
         assert forge.validate_config({"version": "1.20.1", "sections": ["intro"]}) is True
         assert fabric.validate_config({"version": "1.20.1", "sections": ["intro"]}) is True
-        assert bedrock.validate_config({"namespaces": ["minecraft"], "game_version": "1.21.0"}) is True
+        assert (
+            bedrock.validate_config({"namespaces": ["minecraft"], "game_version": "1.21.0"}) is True
+        )
 
         # Test invalid config
         assert forge.validate_config({"sections": "not-a-list"}) is False
@@ -226,7 +229,7 @@ class TestQualityValidator:
         validator = QualityValidator()
         result = validator.validate(
             "This is meaningful content with enough text to pass validation.",
-            {"title": "Test", "source": "test"}
+            {"title": "Test", "source": "test"},
         )
 
         assert result.is_valid is True
@@ -235,10 +238,7 @@ class TestQualityValidator:
     async def test_quality_validator_rejects_short_content(self):
         """Test validator rejects content that's too short."""
         validator = QualityValidator()
-        result = validator.validate(
-            "Short",
-            {"title": "Test", "source": "test"}
-        )
+        result = validator.validate("Short", {"title": "Test", "source": "test"})
 
         assert result.is_valid is False
         assert len(result.errors) > 0
@@ -248,10 +248,7 @@ class TestQualityValidator:
         """Test validator rejects content that's too long."""
         validator = QualityValidator()
         long_content = "x" * 100001  # Over MAX_LENGTH
-        result = validator.validate(
-            long_content,
-            {"title": "Test", "source": "test"}
-        )
+        result = validator.validate(long_content, {"title": "Test", "source": "test"})
 
         assert result.is_valid is False
         assert len(result.errors) > 0
@@ -262,7 +259,7 @@ class TestQualityValidator:
         validator = QualityValidator()
         result = validator.validate(
             "This is meaningful content with enough text to pass validation.",
-            {}  # No metadata
+            {},  # No metadata
         )
 
         # Should still be valid (no errors) but have warnings
@@ -281,7 +278,9 @@ class TestIngestionPipeline:
             mock_response = AsyncMock()
             mock_response.status = 200
             mock_response.headers = {"Content-Type": "text/html"}
-            mock_response.text = AsyncMock(return_value="<html><body>Mock Forge docs content</body></html>")
+            mock_response.text = AsyncMock(
+                return_value="<html><body>Mock Forge docs content</body></html>"
+            )
             mock_get.return_value.__aenter__.return_value = mock_response
 
             # Create pipeline
@@ -294,7 +293,7 @@ class TestIngestionPipeline:
                     "version": "1.20.1",
                     "sections": ["getting-started"],
                     "max_pages": 1,
-                }
+                },
             )
 
             # Verify result
@@ -310,7 +309,9 @@ class TestIngestionPipeline:
             mock_response = AsyncMock()
             mock_response.status = 200
             mock_response.headers = {"Content-Type": "text/html"}
-            mock_response.text = AsyncMock(return_value="<html><body>Mock Bedrock API docs</body></html>")
+            mock_response.text = AsyncMock(
+                return_value="<html><body>Mock Bedrock API docs</body></html>"
+            )
             mock_get.return_value.__aenter__.return_value = mock_response
 
             # Create pipeline
@@ -323,7 +324,7 @@ class TestIngestionPipeline:
                     "namespaces": ["minecraft"],
                     "game_version": "1.21.0",
                     "max_pages": 1,
-                }
+                },
             )
 
             # Verify result
@@ -394,7 +395,9 @@ class TestIngestionPipeline:
         assert "metadata" in processed
 
         # Chunk the processed content
-        chunks = pipeline._chunk_document(processed["content"], "semantic", sample_markdown_doc.title)
+        chunks = pipeline._chunk_document(
+            processed["content"], "semantic", sample_markdown_doc.title
+        )
 
         assert len(chunks) > 0
         assert all(hasattr(chunk, "content") for chunk in chunks)

@@ -18,6 +18,7 @@ from db import crud
 # Add ai-engine to path
 import sys
 import os
+
 ai_engine_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
     "ai-engine",
@@ -42,9 +43,7 @@ async def test_db():
         poolclass=StaticPool,
     )
 
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Create tables
     async with engine.begin() as conn:
@@ -103,7 +102,9 @@ def sample_description():
 
 
 @pytest.mark.asyncio
-async def test_submit_pattern(test_db, sample_java_pattern, sample_bedrock_pattern, sample_description):
+async def test_submit_pattern(
+    test_db, sample_java_pattern, sample_bedrock_pattern, sample_description
+):
     """Test submitting a valid pattern."""
     manager = CommunityPatternManager()
 
@@ -160,7 +161,9 @@ async def test_submit_malicious_pattern(test_db):
 
 
 @pytest.mark.asyncio
-async def test_review_pattern_approve(test_db, sample_java_pattern, sample_bedrock_pattern, sample_description):
+async def test_review_pattern_approve(
+    test_db, sample_java_pattern, sample_bedrock_pattern, sample_description
+):
     """Test approving a pattern submission."""
     manager = CommunityPatternManager()
 
@@ -197,7 +200,9 @@ async def test_review_pattern_approve(test_db, sample_java_pattern, sample_bedro
 
 
 @pytest.mark.asyncio
-async def test_review_pattern_reject(test_db, sample_java_pattern, sample_bedrock_pattern, sample_description):
+async def test_review_pattern_reject(
+    test_db, sample_java_pattern, sample_bedrock_pattern, sample_description
+):
     """Test rejecting a pattern submission."""
     manager = CommunityPatternManager()
 
@@ -231,7 +236,9 @@ async def test_review_pattern_reject(test_db, sample_java_pattern, sample_bedroc
 
 
 @pytest.mark.asyncio
-async def test_vote_on_pattern(test_db, sample_java_pattern, sample_bedrock_pattern, sample_description):
+async def test_vote_on_pattern(
+    test_db, sample_java_pattern, sample_bedrock_pattern, sample_description
+):
     """Test voting on a pattern submission."""
     manager = CommunityPatternManager()
 
@@ -269,7 +276,9 @@ async def test_vote_on_pattern(test_db, sample_java_pattern, sample_bedrock_patt
 
 
 @pytest.mark.asyncio
-async def test_get_pending_submissions(test_db, sample_java_pattern, sample_bedrock_pattern, sample_description):
+async def test_get_pending_submissions(
+    test_db, sample_java_pattern, sample_bedrock_pattern, sample_description
+):
     """Test getting pending submissions."""
     manager = CommunityPatternManager()
 
@@ -292,7 +301,7 @@ async def test_get_pending_submissions(test_db, sample_java_pattern, sample_bedr
             java_pattern=sample_java_pattern,
             bedrock_pattern=sample_bedrock_pattern,
             description=f"Approved pattern {i}: {sample_description}",
-            contributor_id=f"user{i+5}",
+            contributor_id=f"user{i + 5}",
             tags=["item"],
             category="item",
         )

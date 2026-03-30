@@ -28,9 +28,7 @@ async def mock_ingestion_db():
         poolclass=StaticPool,
     )
 
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Create tables
     async with engine.begin() as conn:
@@ -135,6 +133,7 @@ def mock_aiohttp_response():
 
     Returns a mock that simulates successful HTTP responses.
     """
+
     class MockResponse:
         def __init__(self, status=200, text="<html>Mock content</html>"):
             self.status = status

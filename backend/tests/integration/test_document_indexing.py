@@ -28,9 +28,7 @@ async def test_db():
         poolclass=StaticPool,
     )
 
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Create tables
     async with engine.begin() as conn:
@@ -178,9 +176,7 @@ async def test_get_document_with_chunks(test_db):
     )
 
     # Retrieve document
-    retrieved_parent, retrieved_chunks = await crud.get_document_with_chunks(
-        test_db, parent_doc.id
-    )
+    retrieved_parent, retrieved_chunks = await crud.get_document_with_chunks(test_db, parent_doc.id)
 
     assert retrieved_parent is not None, "Parent document should be retrieved"
     assert retrieved_parent.id == parent_doc.id, "Parent ID should match"
@@ -339,9 +335,7 @@ async def test_chunk_metadata_preservation(test_db):
     )
 
     # Retrieve and verify metadata
-    retrieved_parent, retrieved_chunks = await crud.get_document_with_chunks(
-        test_db, parent_doc.id
-    )
+    retrieved_parent, retrieved_chunks = await crud.get_document_with_chunks(test_db, parent_doc.id)
 
     chunk_meta = retrieved_chunks[0].metadata_json
     assert chunk_meta["heading_context"] == ["Introduction", "Getting Started"]
