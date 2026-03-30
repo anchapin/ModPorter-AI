@@ -32,3 +32,7 @@
 **Vulnerability:** A hardcoded `SECRET_KEY` was used as a default, or the application might fall back to an insecure default if the secret was not available.
 **Learning:** When removing hardcoded cryptographic secrets to use environment variables, the application must fail securely if the variable is unset. Falling back to an insecure default negates the purpose of externalized secrets.
 **Prevention:** Raise an explicit error (e.g., `ValueError`) during initialization if critical cryptographic secrets are missing, rather than using fallback values.
+## 2024-05-30 - Remove Hardcoded Default Fallback for SECRET_KEY
+**Vulnerability:** A hardcoded default secret key (`dev-secret-key-do-not-use-in-production-change-me`) was used as a fallback if `SECRET_KEY` was not configured in the environment.
+**Learning:** Hardcoded fallbacks undermine security by ensuring the application runs silently in an insecure state, rather than explicitly failing fast and forcing administrators to properly secure deployments.
+**Prevention:** All required cryptographic secrets (like `SECRET_KEY`) must strictly raise an exception (e.g., `ValueError`) during initialization if omitted.
