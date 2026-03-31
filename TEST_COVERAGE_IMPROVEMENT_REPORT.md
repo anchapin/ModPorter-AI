@@ -36,3 +36,24 @@ Improved test coverage for core agents in the `ai-engine` and verified coverage 
 - **Tool Wrapper Bypass**: Used `.func` or `.fn` attribute to call the underlying functions of `@tool` decorated methods for unit testing.
 - **Manual Coverage Measurement**: Used `coverage run -m pytest` to avoid `ImportError: cannot load module more than once per process` issues with `pytest-cov` and `numpy` on Python 3.13.
 - **Corrected Mock Data**: Updated mock response structures to match the actual expected JSON format of the agents.
+
+---
+
+## Additional Tests - March 31, 2026
+
+### New Structural Tests Added
+
+| Test File | Tests | Target Module |
+|-----------|-------|---------------|
+| `tests/test_backend_auth_api.py` | 20 | `backend/src/api/auth.py` |
+| `tests/test_backend_conversions_api.py` | 12 | `backend/src/api/conversions.py` |
+| `tests/test_aiengine_agents_structure.py` | 22 | `ai-engine/agents/*.py` |
+
+### Test Approach
+These tests use static source analysis (AST parsing, file content validation) to validate module structure, imports, classes, and endpoints. This approach is appropriate for modules with complex dependencies that require full application context.
+
+### Verification
+```bash
+pytest tests/test_backend_auth_api.py tests/test_backend_conversions_api.py tests/test_aiengine_agents_structure.py --override-ini="addopts="
+# Result: 54 passed
+```
