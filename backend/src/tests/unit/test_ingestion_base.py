@@ -3,7 +3,7 @@ Unit tests for ingestion source base module.
 """
 
 import pytest
-from backend.src.ingestion.sources.base import (
+from src.ingestion.sources.base import (
     DocumentType,
     RawDocument,
     BaseSourceAdapter,

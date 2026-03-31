@@ -80,9 +80,8 @@ from sqlalchemy.engine import Engine
 db_url = settings.database_url
 
 
-# Enable foreign keys for SQLite
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+# Enable foreign keys for SQLite - only for the test engine
+def _set_sqlite_pragma(dbapi_connection, connection_record):
     if db_url.startswith("sqlite"):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")

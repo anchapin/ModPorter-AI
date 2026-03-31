@@ -4,7 +4,7 @@ Unit tests for query monitoring module.
 
 import pytest
 from unittest.mock import MagicMock, patch
-from backend.src.db.query_monitor import (
+from src.db.query_monitor import (
     QueryMonitor,
     QueryMetrics,
     QueryMonitorStack,
@@ -240,7 +240,7 @@ class TestTrackQueryContext:
 
     def test_track_queries_above_threshold(self, caplog):
         """Test logging when query count exceeds threshold."""
-        with patch('backend.src.db.query_monitor._query_stack') as mock_stack:
+        with patch('src.db.query_monitor._query_stack') as mock_stack:
             mock_context = {
                 "name": "test",
                 "start_time": 0,
@@ -293,7 +293,7 @@ class TestModuleFunctions:
         """Test enabling and disabling monitoring."""
         disable_query_monitoring()
         
-        from backend.src.db.query_monitor import _query_monitor
+        from src.db.query_monitor import _query_monitor
         assert _query_monitor.enabled is False
         
         enable_query_monitoring()

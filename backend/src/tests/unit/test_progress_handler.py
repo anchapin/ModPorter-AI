@@ -5,7 +5,7 @@ Unit tests for WebSocket progress handler module.
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime, timezone
-from backend.src.websocket.progress_handler import (
+from src.websocket.progress_handler import (
     AgentStatus,
     ProgressMessageData,
     ProgressMessage,
@@ -164,7 +164,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_progress(self):
         """Test broadcasting progress."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_progress(
@@ -182,7 +182,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_agent_start(self):
         """Test broadcasting agent start."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_agent_start(
@@ -195,7 +195,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_agent_start_custom_message(self):
         """Test broadcasting agent start with custom message."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_agent_start(
@@ -212,7 +212,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_agent_update(self):
         """Test broadcasting agent update."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_agent_update(
@@ -231,7 +231,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_agent_complete(self):
         """Test broadcasting agent completion."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_agent_complete(
@@ -248,7 +248,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_agent_failed(self):
         """Test broadcasting agent failure."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_agent_failed(
@@ -266,7 +266,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_conversion_complete(self):
         """Test broadcasting conversion complete."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_conversion_complete(
@@ -282,7 +282,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_conversion_failed(self):
         """Test broadcasting conversion failure."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
             
             await ProgressHandler.broadcast_conversion_failed(
@@ -299,7 +299,7 @@ class TestProgressHandler:
     @pytest.mark.asyncio
     async def test_broadcast_error_handling(self):
         """Test error handling in broadcast."""
-        with patch("backend.src.websocket.progress_handler.manager") as mock_manager:
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock(side_effect=Exception("Connection error"))
             
             # Should not raise exception, just log error

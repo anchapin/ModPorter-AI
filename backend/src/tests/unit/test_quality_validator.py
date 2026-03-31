@@ -3,7 +3,7 @@ Unit tests for quality validator.
 """
 
 import pytest
-from backend.src.ingestion.validators.quality import (
+from src.ingestion.validators.quality import (
     QualityValidator,
     ValidationResult,
 )
