@@ -1,9 +1,8 @@
-
-import { 
-  uploadFile, 
-  getConversionStatus, 
-  convertMod, 
-  getAddonDetails 
+import {
+  uploadFile,
+  getConversionStatus,
+  convertMod,
+  getAddonDetails,
 } from './api';
 import { beforeEach, describe, test, expect, vi, afterEach } from 'vitest';
 
@@ -19,9 +18,11 @@ describe('API Service - Comprehensive', () => {
 
   describe('uploadFile', () => {
     test('should upload file successfully', async () => {
-      const mockFile = new File(['test content'], 'test.jar', { type: 'application/java-archive' });
+      const mockFile = new File(['test content'], 'test.jar', {
+        type: 'application/java-archive',
+      });
       const mockResponse = { filename: 'test.jar', file_id: 'file-123' };
-      
+
       const mockFetch = vi.mocked(global.fetch);
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -30,24 +31,27 @@ describe('API Service - Comprehensive', () => {
 
       const result = await uploadFile(mockFile);
       expect(result).toEqual(mockResponse);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/upload'), expect.objectContaining({
-        method: 'POST',
-        body: expect.any(FormData),
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/upload'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.any(FormData),
+        })
+      );
     });
   });
 
   describe('getConversionStatus', () => {
     test('should get status successfully', async () => {
       const jobId = 'job-123';
-      const apiResponse = { 
-        conversion_id: jobId, 
-        status: 'completed', 
+      const apiResponse = {
+        conversion_id: jobId,
+        status: 'completed',
         progress: 100,
         message: 'Done',
-        created_at: '2026-01-01'
+        created_at: '2026-01-01',
       };
-      
+
       const mockFetch = vi.mocked(global.fetch);
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -62,7 +66,7 @@ describe('API Service - Comprehensive', () => {
         message: 'Done',
         created_at: '2026-01-01',
         error: undefined,
-        stage: 'completed'
+        stage: 'completed',
       });
     });
   });
@@ -71,8 +75,12 @@ describe('API Service - Comprehensive', () => {
     test('should start conversion successfully using unified endpoint', async () => {
       const mockFile = new File(['test'], 'test.jar');
       const params = { file: mockFile, target_version: '1.20.0' };
-      const apiResponse = { conversion_id: 'job-123', status: 'queued', estimated_time_seconds: 60 };
-      
+      const apiResponse = {
+        conversion_id: 'job-123',
+        status: 'queued',
+        estimated_time_seconds: 60,
+      };
+
       const mockFetch = vi.mocked(global.fetch);
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -82,10 +90,13 @@ describe('API Service - Comprehensive', () => {
       const result = await convertMod(params);
       expect(result.job_id).toBe('job-123');
       expect(result.status).toBe('queued');
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/conversions'), expect.objectContaining({
-        method: 'POST',
-        body: expect.any(FormData),
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/conversions'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.any(FormData),
+        })
+      );
     });
   });
 
@@ -93,7 +104,7 @@ describe('API Service - Comprehensive', () => {
     test('should get addon details successfully', async () => {
       const addonId = 'addon-123';
       const mockResponse = { id: addonId, name: 'My Addon' };
-      
+
       const mockFetch = vi.mocked(global.fetch);
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -102,7 +113,9 @@ describe('API Service - Comprehensive', () => {
 
       const result = await getAddonDetails(addonId);
       expect(result).toEqual(mockResponse);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining(`/addons/${addonId}`));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/addons/${addonId}`)
+      );
     });
   });
 });
