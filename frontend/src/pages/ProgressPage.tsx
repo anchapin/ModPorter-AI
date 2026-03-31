@@ -130,7 +130,6 @@ export const ProgressPage: React.FC = () => {
     }
   };
 
-
   if (loading) {
     return (
       <Container maxWidth="sm" className="progress-page">
