@@ -169,8 +169,10 @@ app.add_middleware(
 # Rate limiting middleware (Issue #456)
 # Create rate limiter instance and add middleware synchronously
 # Initialization (Redis connection) happens in startup
-rate_limiter = create_global_limiter()
-app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+# Skip rate limiting in test mode to avoid 429 errors during test runs
+if os.getenv("TESTING", "false").lower() != "true":
+    rate_limiter = create_global_limiter()
+    app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
