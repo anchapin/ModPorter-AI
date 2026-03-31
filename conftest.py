@@ -158,23 +158,11 @@ def clean_db():
 @pytest.fixture(autouse=True)
 def mock_external_deps():
     """Mock external dependencies that might not be available"""
-    # Mock modules at sys.modules level
     import sys
     old_modules = {}
     
-    # Try to mock if modules don't exist
-    try:
-        import markdown
-    except ImportError:
-        sys.modules['markdown'] = MagicMock()
-        old_modules['markdown'] = 'new'
-    
-    try:
-        import bs4
-    except ImportError:
-        sys.modules['bs4'] = MagicMock()
-        old_modules['bs4'] = 'new'
-    
+    # Don't mock markdown/bs4 - they need to run real code for ingestion processor tests
+    # Only mock aiohttp if not available
     try:
         import aiohttp
     except ImportError:

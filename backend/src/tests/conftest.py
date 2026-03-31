@@ -37,45 +37,18 @@ def pytest_configure(config):
     def _mock_get_secret(key: str) -> str:
         return _mock_secrets_store.get(key) or ""
 
+    # Only mock aiohttp if not available - don't mock markdown/bs4 
+    # since ingestion processor tests need real code
     for _mod_name, _mock_class in [
-        ("markdown", MagicMock),
-        ("bs4", MagicMock),
         ("aiohttp", MagicMock),
         ("aiohttp.client_exceptions", MagicMock),
-        ("markdown.extensions", MagicMock),
-        ("bs4.builder", MagicMock),
     ]:
         if _mod_name not in sys.modules:
             _mod = ModuleType(_mod_name)
             sys.modules[_mod_name] = _mod
 
-    import markdown
-
-    class _MockMarkdown:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def convert(self, text):
-            return f"<html>{text}</html>"
-
-    markdown.Markdown = _MockMarkdown
-
-    import bs4
-
-    class _MockBeautifulSoup:
-        def __init__(self, *args, **kwargs):
-            self._text = str(args[0]) if args else ""
-
-        def find_all(self, *args, **kwargs):
-            return []
-
-        def find(self, *args, **kwargs):
-            return None
-
-        def get_text(self, *args, **kwargs):
-            return self._text
-
-    bs4.BeautifulSoup = _MockBeautifulSoup
+    # Note: markdown and bs4 are NOT mocked anymore - they run real code
+    # This allows ingestion processor tests to use actual markdown/BeautifulSoup
 
     try:
         from core import secrets

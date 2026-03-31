@@ -1,0 +1,476 @@
+__vite_ssr_exportName__("default", () => { try { return __vite_ssr_export_default__ } catch {} });
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["Fragment","jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js", {"importedNames":["default","useState"]});
+"use strict";
+
+
+const FeatureMapper = ({ features }) => {
+  const [selectedMapping, setSelectedMapping] = (0,__vite_ssr_import_1__.useState)(null);
+  const [filterType, setFilterType] = (0,__vite_ssr_import_1__.useState)("all");
+  const getConfidenceColor = (score) => {
+    if (!score) return "#gray";
+    if (score >= 0.8) return "#4ade80";
+    if (score >= 0.6) return "#fbbf24";
+    return "#f87171";
+  };
+  const getConfidenceLabel = (score) => {
+    if (!score) return "Unknown";
+    if (score >= 0.8) return "High";
+    if (score >= 0.6) return "Medium";
+    return "Low";
+  };
+  const filteredFeatures = features.filter((feature) => {
+    if (filterType === "all") return true;
+    return feature.mapping_type === filterType;
+  });
+  const mappingTypeCounts = __vite_ssr_import_1__.default.useMemo(() => {
+    return features.reduce(
+      (acc, feature) => {
+        acc[feature.mapping_type] = (acc[feature.mapping_type] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+  }, [features]);
+  const mappingTypes = Object.keys(mappingTypeCounts);
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+    "div",
+    {
+      style: {
+        padding: "20px",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        margin: "20px 0"
+      },
+      children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h2", { style: { marginBottom: "20px", color: "#1f2937" }, children: [
+          "Feature Mappings (",
+          features.length,
+          ")"
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+          lineNumber: 61,
+          columnNumber: 7
+        }, this),
+        features.length === 0 ? /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { style: { color: "#6b7280", fontStyle: "italic" }, children: "No feature mappings available." }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+          lineNumber: 66,
+          columnNumber: 9
+        }, this) : /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_0__.Fragment), { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { style: { marginBottom: "20px" }, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+              "label",
+              {
+                htmlFor: "mapping-filter",
+                style: { marginRight: "10px", fontWeight: "bold" },
+                children: "Filter by type:"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                lineNumber: 73,
+                columnNumber: 13
+              },
+              this
+            ),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+              "select",
+              {
+                id: "mapping-filter",
+                value: filterType,
+                onChange: (e) => setFilterType(e.target.value),
+                style: {
+                  padding: "5px 10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px"
+                },
+                children: [
+                  /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "all", children: [
+                    "All Types (",
+                    features.length,
+                    ")"
+                  ] }, void 0, true, {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                    lineNumber: 89,
+                    columnNumber: 15
+                  }, this),
+                  mappingTypes.map((type) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: type, children: [
+                    type,
+                    " (",
+                    mappingTypeCounts[type],
+                    ")"
+                  ] }, type, true, {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                    lineNumber: 91,
+                    columnNumber: 17
+                  }, this))
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                lineNumber: 79,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+            lineNumber: 72,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { style: { display: "grid", gap: "15px" }, children: filteredFeatures.map((feature) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+            "div",
+            {
+              "data-testid": `feature-card-${feature.id}`,
+              style: {
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                padding: "15px",
+                backgroundColor: selectedMapping === feature.id ? "#f3f4f6" : "#ffffff",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              },
+              onClick: () => setSelectedMapping(
+                selectedMapping === feature.id ? null : feature.id
+              ),
+              children: [
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                  "div",
+                  {
+                    style: {
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                      marginBottom: "10px"
+                    },
+                    children: [
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                        "span",
+                        {
+                          style: {
+                            backgroundColor: "#e5e7eb",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "bold"
+                          },
+                          children: feature.mapping_type
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 127,
+                          columnNumber: 19
+                        },
+                        this
+                      ),
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px"
+                          },
+                          children: [
+                            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                              "span",
+                              {
+                                style: {
+                                  width: "8px",
+                                  height: "8px",
+                                  borderRadius: "50%",
+                                  backgroundColor: getConfidenceColor(
+                                    feature.confidence_score
+                                  )
+                                }
+                              },
+                              void 0,
+                              false,
+                              {
+                                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                                lineNumber: 145,
+                                columnNumber: 21
+                              },
+                              this
+                            ),
+                            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { style: { fontSize: "12px", color: "#6b7280" }, children: [
+                              getConfidenceLabel(feature.confidence_score),
+                              feature.confidence_score && ` (${(feature.confidence_score * 100).toFixed(0)}%)`
+                            ] }, void 0, true, {
+                              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                              lineNumber: 155,
+                              columnNumber: 21
+                            }, this)
+                          ]
+                        },
+                        void 0,
+                        true,
+                        {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 138,
+                          columnNumber: 19
+                        },
+                        this
+                      )
+                    ]
+                  },
+                  void 0,
+                  true,
+                  {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                    lineNumber: 119,
+                    columnNumber: 17
+                  },
+                  this
+                ),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                  "div",
+                  {
+                    style: {
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto 1fr",
+                      gap: "10px",
+                      alignItems: "center"
+                    },
+                    children: [
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { children: [
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                          "div",
+                          {
+                            style: {
+                              fontWeight: "bold",
+                              color: "#dc2626",
+                              marginBottom: "5px"
+                            },
+                            children: "Java Feature"
+                          },
+                          void 0,
+                          false,
+                          {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 172,
+                            columnNumber: 21
+                          },
+                          this
+                        ),
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                          "div",
+                          {
+                            style: {
+                              backgroundColor: "#fef2f2",
+                              padding: "8px",
+                              borderRadius: "4px",
+                              fontSize: "14px"
+                            },
+                            children: feature.java_feature || "Unknown"
+                          },
+                          void 0,
+                          false,
+                          {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 181,
+                            columnNumber: 21
+                          },
+                          this
+                        )
+                      ] }, void 0, true, {
+                        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                        lineNumber: 171,
+                        columnNumber: 19
+                      }, this),
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                        "div",
+                        {
+                          style: {
+                            fontSize: "20px",
+                            color: "#6b7280",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          },
+                          children: "→"
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 193,
+                          columnNumber: 19
+                        },
+                        this
+                      ),
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { children: [
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                          "div",
+                          {
+                            style: {
+                              fontWeight: "bold",
+                              color: "#059669",
+                              marginBottom: "5px"
+                            },
+                            children: "Bedrock Equivalent"
+                          },
+                          void 0,
+                          false,
+                          {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 206,
+                            columnNumber: 21
+                          },
+                          this
+                        ),
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                          "div",
+                          {
+                            style: {
+                              backgroundColor: "#f0fdf4",
+                              padding: "8px",
+                              borderRadius: "4px",
+                              fontSize: "14px"
+                            },
+                            children: feature.bedrock_equivalent || "Unknown"
+                          },
+                          void 0,
+                          false,
+                          {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 215,
+                            columnNumber: 21
+                          },
+                          this
+                        )
+                      ] }, void 0, true, {
+                        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                        lineNumber: 205,
+                        columnNumber: 19
+                      }, this)
+                    ]
+                  },
+                  void 0,
+                  true,
+                  {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                    lineNumber: 163,
+                    columnNumber: 17
+                  },
+                  this
+                ),
+                selectedMapping === feature.id && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                  "div",
+                  {
+                    "data-testid": `details-${feature.id}`,
+                    style: {
+                      marginTop: "15px",
+                      padding: "10px",
+                      backgroundColor: "#f9fafb",
+                      borderRadius: "4px"
+                    },
+                    children: [
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { style: { margin: "0 0 8px 0", color: "#374151" }, children: "Mapping Details" }, void 0, false, {
+                        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                        lineNumber: 238,
+                        columnNumber: 21
+                      }, this),
+                      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { style: { fontSize: "14px", color: "#6b7280" }, children: [
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+                          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "ID:" }, void 0, false, {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 243,
+                            columnNumber: 25
+                          }, this),
+                          " ",
+                          feature.id
+                        ] }, void 0, true, {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 242,
+                          columnNumber: 23
+                        }, this),
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+                          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Confidence Score:" }, void 0, false, {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 246,
+                            columnNumber: 25
+                          }, this),
+                          " ",
+                          feature.confidence_score ? `${(feature.confidence_score * 100).toFixed(1)}%` : "Not specified"
+                        ] }, void 0, true, {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 245,
+                          columnNumber: 23
+                        }, this),
+                        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+                          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Mapping Strategy:" }, void 0, false, {
+                            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                            lineNumber: 252,
+                            columnNumber: 25
+                          }, this),
+                          " ",
+                          feature.mapping_type.replace(/_/g, " ").toLowerCase()
+                        ] }, void 0, true, {
+                          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                          lineNumber: 251,
+                          columnNumber: 23
+                        }, this)
+                      ] }, void 0, true, {
+                        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                        lineNumber: 241,
+                        columnNumber: 21
+                      }, this)
+                    ]
+                  },
+                  void 0,
+                  true,
+                  {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+                    lineNumber: 229,
+                    columnNumber: 19
+                  },
+                  this
+                )
+              ]
+            },
+            feature.id,
+            true,
+            {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+              lineNumber: 101,
+              columnNumber: 15
+            },
+            this
+          )) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+            lineNumber: 99,
+            columnNumber: 11
+          }, this),
+          filteredFeatures.length === 0 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { style: { color: "#6b7280", fontStyle: "italic" }, children: "No mappings match the selected filter." }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+            lineNumber: 263,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+          lineNumber: 70,
+          columnNumber: 9
+        }, this)
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ComparisonView/FeatureMapper.tsx",
+      lineNumber: 53,
+      columnNumber: 5
+    },
+    this
+  );
+};
+const __vite_ssr_export_default__ = FeatureMapper;
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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UTtBQUFBLFlBRGY7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxVQTZKQSxDQUNELEtBaEtIO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBaUtBO0FBQUEsVUFFQyxpQkFBaUIsV0FBVyxLQUMzQixpREFBQyxPQUFFLE9BQU8sRUFBRSxPQUFPLFdBQVcsV0FBVyxTQUFTLEdBQUcsc0RBQXJEO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBRUE7QUFBQSxhQW5NSjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBcU1BO0FBQUE7QUFBQTtBQUFBLElBdE5KO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQXdOQTtBQUVKO0FBRUEsb0NBQWUiLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkZlYXR1cmVNYXBwZXIudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCwgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcblxuaW50ZXJmYWNlIEZlYXR1cmVNYXBwaW5nRGF0YSB7XG4gIGlkOiBzdHJpbmc7XG4gIGphdmFfZmVhdHVyZTogc3RyaW5nO1xuICBiZWRyb2NrX2VxdWl2YWxlbnQ6IHN0cmluZztcbiAgbWFwcGluZ190eXBlOiBzdHJpbmc7XG4gIGNvbmZpZGVuY2Vfc2NvcmU6IG51bWJlciB8IG51bGw7XG59XG5cbmludGVyZmFjZSBGZWF0dXJlTWFwcGVyUHJvcHMge1xuICBmZWF0dXJlczogRmVhdHVyZU1hcHBpbmdEYXRhW107XG59XG5cbmNvbnN0IEZlYXR1cmVNYXBwZXI6IFJlYWN0LkZDPEZlYXR1cmVNYXBwZXJQcm9wcz4gPSAoeyBmZWF0dXJlcyB9KSA9PiB7XG4gIGNvbnN0IFtzZWxlY3RlZE1hcHBpbmcsIHNldFNlbGVjdGVkTWFwcGluZ10gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2ZpbHRlclR5cGUsIHNldEZpbHRlclR5cGVdID0gdXNlU3RhdGU8c3RyaW5nPignYWxsJyk7XG5cbiAgY29uc3QgZ2V0Q29uZmlkZW5jZUNvbG9yID0gKHNjb3JlOiBudW1iZXIgfCBudWxsKSA9PiB7XG4gICAgaWYgKCFzY29yZSkgcmV0dXJuICcjZ3JheSc7XG4gICAgaWYgKHNjb3JlID49IDAuOCkgcmV0dXJuICcjNGFkZTgwJzsgLy8gZ3JlZW5cbiAgICBpZiAoc2NvcmUgPj0gMC42KSByZXR1cm4gJyNmYmJmMjQnOyAvLyB5ZWxsb3dcbiAgICByZXR1cm4gJyNmODcxNzEnOyAvLyByZWRcbiAgfTtcblxuICBjb25zdCBnZXRDb25maWRlbmNlTGFiZWwgPSAoc2NvcmU6IG51bWJlciB8IG51bGwpID0+IHtcbiAgICBpZiAoIXNjb3JlKSByZXR1cm4gJ1Vua25vd24nO1xuICAgIGlmIChzY29yZSA+PSAwLjgpIHJldHVybiAnSGlnaCc7XG4gICAgaWYgKHNjb3JlID49IDAuNikgcmV0dXJuICdNZWRpdW0nO1xuICAgIHJldHVybiAnTG93JztcbiAgfTtcblxuICBjb25zdCBmaWx0ZXJlZEZlYXR1cmVzID0gZmVhdHVyZXMuZmlsdGVyKChmZWF0dXJlKSA9PiB7XG4gICAgaWYgKGZpbHRlclR5cGUgPT09ICdhbGwnKSByZXR1cm4gdHJ1ZTtcbiAgICByZXR1cm4gZmVhdHVyZS5tYXBwaW5nX3R5cGUgPT09IGZpbHRlclR5cGU7XG4gIH0pO1xuXG4gIC8vIOKaoSBCb2x0IG9wdGltaXphdGlvbjogUHJlLWNhbGN1bGF0ZSBjb3VudHMgaW4gYSBzaW5nbGUgTyhOKSBwYXNzXG4gIC8vIGluc3RlYWQgb2YgY2FsbGluZyAuZmlsdGVyKCkubGVuZ3RoIGZvciBldmVyeSBtYXBwaW5nIHR5cGUuXG4gIGNvbnN0IG1hcHBpbmdUeXBlQ291bnRzID0gUmVhY3QudXNlTWVtbygoKSA9PiB7XG4gICAgcmV0dXJuIGZlYXR1cmVzLnJlZHVjZShcbiAgICAgIChhY2MsIGZlYXR1cmUpID0+IHtcbiAgICAgICAgYWNjW2ZlYXR1cmUubWFwcGluZ190eXBlXSA9IChhY2NbZmVhdHVyZS5tYXBwaW5nX3R5cGVdIHx8IDApICsgMTtcbiAgICAgICAgcmV0dXJuIGFjYztcbiAgICAgIH0sXG4gICAgICB7fSBhcyBSZWNvcmQ8c3RyaW5nLCBudW1iZXI+XG4gICAgKTtcbiAgfSwgW2ZlYXR1cmVzXSk7XG5cbiAgY29uc3QgbWFwcGluZ1R5cGVzID0gT2JqZWN0LmtleXMobWFwcGluZ1R5cGVDb3VudHMpO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdlxuICAgICAgc3R5bGU9e3tcbiAgICAgICAgcGFkZGluZzogJzIwcHgnLFxuICAgICAgICBib3JkZXI6ICcxcHggc29saWQgI2U1ZTdlYicsXG4gICAgICAgIGJvcmRlclJhZGl1czogJzhweCcsXG4gICAgICAgIG1hcmdpbjogJzIwcHggMCcsXG4gICAgICB9fVxuICAgID5cbiAgICAgIDxoMiBzdHlsZT17eyBtYXJnaW5Cb3R0b206ICcyMHB4JywgY29sb3I6ICcjMWYyOTM3JyB9fT5cbiAgICAgICAgRmVhdHVyZSBNYXBwaW5ncyAoe2ZlYXR1cmVzLmxlbmd0aH0pXG4gICAgICA8L2gyPlxuXG4gICAgICB7ZmVhdHVyZXMubGVuZ3RoID09PSAwID8gKFxuICAgICAgICA8cCBzdHlsZT17eyBjb2xvcjogJyM2YjcyODAnLCBmb250U3R5bGU6ICdpdGFsaWMnIH19PlxuICAgICAgICAgIE5vIGZlYXR1cmUgbWFwcGluZ3MgYXZhaWxhYmxlLlxuICAgICAgICA8L3A+XG4gICAgICApIDogKFxuICAgICAgICA8PlxuICAgICAgICAgIHsvKiBGaWx0ZXIgQ29udHJvbHMgKi99XG4gICAgICAgICAgPGRpdiBzdHlsZT17eyBtYXJnaW5Cb3R0b206ICcyMHB4JyB9fT5cbiAgICAgICAgICAgIDxsYWJlbFxuICAgICAgICAgICAgICBodG1sRm9yPVwibWFwcGluZy1maWx0ZXJcIlxuICAgICAgICAgICAgICBzdHlsZT17eyBtYXJnaW5SaWdodDogJzEwcHgnLCBmb250V2VpZ2h0OiAnYm9sZCcgfX1cbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgRmlsdGVyIGJ5IHR5cGU6XG4gICAgICAgICAgICA8L2xhYmVsPlxuICAgICAgICAgICAgPHNlbGVjdFxuICAgICAgICAgICAgICBpZD1cIm1hcHBpbmctZmlsdGVyXCJcbiAgICAgICAgICAgICAgdmFsdWU9e2ZpbHRlclR5cGV9XG4gICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0RmlsdGVyVHlwZShlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgcGFkZGluZzogJzVweCAxMHB4JyxcbiAgICAgICAgICAgICAgICBib3JkZXI6ICcxcHggc29saWQgI2QxZDVkYicsXG4gICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAnNHB4JyxcbiAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImFsbFwiPkFsbCBUeXBlcyAoe2ZlYXR1cmVzLmxlbmd0aH0pPC9vcHRpb24+XG4gICAgICAgICAgICAgIHttYXBwaW5nVHlwZXMubWFwKCh0eXBlKSA9PiAoXG4gICAgICAgICAgICAgICAgPG9wdGlvbiBrZXk9e3R5cGV9IHZhbHVlPXt0eXBlfT5cbiAgICAgICAgICAgICAgICAgIHt0eXBlfSAoe21hcHBpbmdUeXBlQ291bnRzW3R5cGVdfSlcbiAgICAgICAgICAgICAgICA8L29wdGlvbj5cbiAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICA8L3NlbGVjdD5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHsvKiBGZWF0dXJlIE1hcHBpbmcgQ2FyZHMgKi99XG4gICAgICAgICAgPGRpdiBzdHlsZT17eyBkaXNwbGF5OiAnZ3JpZCcsIGdhcDogJzE1cHgnIH19PlxuICAgICAgICAgICAge2ZpbHRlcmVkRmVhdHVyZXMubWFwKChmZWF0dXJlKSA9PiAoXG4gICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICBrZXk9e2ZlYXR1cmUuaWR9XG4gICAgICAgICAgICAgICAgZGF0YS10ZXN0aWQ9e2BmZWF0dXJlLWNhcmQtJHtmZWF0dXJlLmlkfWB9XG4gICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgIGJvcmRlcjogJzFweCBzb2xpZCAjZTVlN2ViJyxcbiAgICAgICAgICAgICAgICAgIGJvcmRlclJhZGl1czogJzhweCcsXG4gICAgICAgICAgICAgICAgICBwYWRkaW5nOiAnMTVweCcsXG4gICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kQ29sb3I6XG4gICAgICAgICAgICAgICAgICAgIHNlbGVjdGVkTWFwcGluZyA9PT0gZmVhdHVyZS5pZCA/ICcjZjNmNGY2JyA6ICcjZmZmZmZmJyxcbiAgICAgICAgICAgICAgICAgIGN1cnNvcjogJ3BvaW50ZXInLFxuICAgICAgICAgICAgICAgICAgdHJhbnNpdGlvbjogJ2FsbCAwLjJzJyxcbiAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+XG4gICAgICAgICAgICAgICAgICBzZXRTZWxlY3RlZE1hcHBpbmcoXG4gICAgICAgICAgICAgICAgICAgIHNlbGVjdGVkTWFwcGluZyA9PT0gZmVhdHVyZS5pZCA/IG51bGwgOiBmZWF0dXJlLmlkXG4gICAgICAgICAgICAgICAgICApXG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgICAgICAgICAgICAgICAgICBqdXN0aWZ5Q29udGVudDogJ3NwYWNlLWJldHdlZW4nLFxuICAgICAgICAgICAgICAgICAgICBhbGlnbkl0ZW1zOiAnc3RhcnQnLFxuICAgICAgICAgICAgICAgICAgICBtYXJnaW5Cb3R0b206ICcxMHB4JyxcbiAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kQ29sb3I6ICcjZTVlN2ViJyxcbiAgICAgICAgICAgICAgICAgICAgICBwYWRkaW5nOiAnNHB4IDhweCcsXG4gICAgICAgICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAnNHB4JyxcbiAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogJzEycHgnLFxuICAgICAgICAgICAgICAgICAgICAgIGZvbnRXZWlnaHQ6ICdib2xkJyxcbiAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAge2ZlYXR1cmUubWFwcGluZ190eXBlfVxuICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgIGRpc3BsYXk6ICdmbGV4JyxcbiAgICAgICAgICAgICAgICAgICAgICBhbGlnbkl0ZW1zOiAnY2VudGVyJyxcbiAgICAgICAgICAgICAgICAgICAgICBnYXA6ICc1cHgnLFxuICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICA8c3BhblxuICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgICB3aWR0aDogJzhweCcsXG4gICAgICAgICAgICAgICAgICAgICAgICBoZWlnaHQ6ICc4cHgnLFxuICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAnNTAlJyxcbiAgICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmRDb2xvcjogZ2V0Q29uZmlkZW5jZUNvbG9yKFxuICAgICAgICAgICAgICAgICAgICAgICAgICBmZWF0dXJlLmNvbmZpZGVuY2Vfc2NvcmVcbiAgICAgICAgICAgICAgICAgICAgICAgICksXG4gICAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgICAgPjwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gc3R5bGU9e3sgZm9udFNpemU6ICcxMnB4JywgY29sb3I6ICcjNmI3MjgwJyB9fT5cbiAgICAgICAgICAgICAgICAgICAgICB7Z2V0Q29uZmlkZW5jZUxhYmVsKGZlYXR1cmUuY29uZmlkZW5jZV9zY29yZSl9XG4gICAgICAgICAgICAgICAgICAgICAge2ZlYXR1cmUuY29uZmlkZW5jZV9zY29yZSAmJlxuICAgICAgICAgICAgICAgICAgICAgICAgYCAoJHsoZmVhdHVyZS5jb25maWRlbmNlX3Njb3JlICogMTAwKS50b0ZpeGVkKDApfSUpYH1cbiAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICBkaXNwbGF5OiAnZ3JpZCcsXG4gICAgICAgICAgICAgICAgICAgIGdyaWRUZW1wbGF0ZUNvbHVtbnM6ICcxZnIgYXV0byAxZnInLFxuICAgICAgICAgICAgICAgICAgICBnYXA6ICcxMHB4JyxcbiAgICAgICAgICAgICAgICAgICAgYWxpZ25JdGVtczogJ2NlbnRlcicsXG4gICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgZm9udFdlaWdodDogJ2JvbGQnLFxuICAgICAgICAgICAgICAgICAgICAgICAgY29sb3I6ICcjZGMyNjI2JyxcbiAgICAgICAgICAgICAgICAgICAgICAgIG1hcmdpbkJvdHRvbTogJzVweCcsXG4gICAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIEphdmEgRmVhdHVyZVxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kQ29sb3I6ICcjZmVmMmYyJyxcbiAgICAgICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6ICc4cHgnLFxuICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAnNHB4JyxcbiAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRTaXplOiAnMTRweCcsXG4gICAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIHtmZWF0dXJlLmphdmFfZmVhdHVyZSB8fCAnVW5rbm93bid9XG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogJzIwcHgnLFxuICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiAnIzZiNzI4MCcsXG4gICAgICAgICAgICAgICAgICAgICAgZGlzcGxheTogJ2ZsZXgnLFxuICAgICAgICAgICAgICAgICAgICAgIGFsaWduSXRlbXM6ICdjZW50ZXInLFxuICAgICAgICAgICAgICAgICAgICAgIGp1c3RpZnlDb250ZW50OiAnY2VudGVyJyxcbiAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAg4oaSXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgICBmb250V2VpZ2h0OiAnYm9sZCcsXG4gICAgICAgICAgICAgICAgICAgICAgICBjb2xvcjogJyMwNTk2NjknLFxuICAgICAgICAgICAgICAgICAgICAgICAgbWFyZ2luQm90dG9tOiAnNXB4JyxcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgQmVkcm9jayBFcXVpdmFsZW50XG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmRDb2xvcjogJyNmMGZkZjQnLFxuICAgICAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogJzhweCcsXG4gICAgICAgICAgICAgICAgICAgICAgICBib3JkZXJSYWRpdXM6ICc0cHgnLFxuICAgICAgICAgICAgICAgICAgICAgICAgZm9udFNpemU6ICcxNHB4JyxcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAge2ZlYXR1cmUuYmVkcm9ja19lcXVpdmFsZW50IHx8ICdVbmtub3duJ31cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgIHtzZWxlY3RlZE1hcHBpbmcgPT09IGZlYXR1cmUuaWQgJiYgKFxuICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICBkYXRhLXRlc3RpZD17YGRldGFpbHMtJHtmZWF0dXJlLmlkfWB9XG4gICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgbWFyZ2luVG9wOiAnMTVweCcsXG4gICAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogJzEwcHgnLFxuICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmRDb2xvcjogJyNmOWZhZmInLFxuICAgICAgICAgICAgICAgICAgICAgIGJvcmRlclJhZGl1czogJzRweCcsXG4gICAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgIDxoNCBzdHlsZT17eyBtYXJnaW46ICcwIDAgOHB4IDAnLCBjb2xvcjogJyMzNzQxNTEnIH19PlxuICAgICAgICAgICAgICAgICAgICAgIE1hcHBpbmcgRGV0YWlsc1xuICAgICAgICAgICAgICAgICAgICA8L2g0PlxuICAgICAgICAgICAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGZvbnRTaXplOiAnMTRweCcsIGNvbG9yOiAnIzZiNzI4MCcgfX0+XG4gICAgICAgICAgICAgICAgICAgICAgPHA+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c3Ryb25nPklEOjwvc3Ryb25nPiB7ZmVhdHVyZS5pZH1cbiAgICAgICAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgICAgICAgICAgPHA+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c3Ryb25nPkNvbmZpZGVuY2UgU2NvcmU6PC9zdHJvbmc+eycgJ31cbiAgICAgICAgICAgICAgICAgICAgICAgIHtmZWF0dXJlLmNvbmZpZGVuY2Vfc2NvcmVcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPyBgJHsoZmVhdHVyZS5jb25maWRlbmNlX3Njb3JlICogMTAwKS50b0ZpeGVkKDEpfSVgXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDogJ05vdCBzcGVjaWZpZWQnfVxuICAgICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgICA8cD5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxzdHJvbmc+TWFwcGluZyBTdHJhdGVneTo8L3N0cm9uZz57JyAnfVxuICAgICAgICAgICAgICAgICAgICAgICAge2ZlYXR1cmUubWFwcGluZ190eXBlLnJlcGxhY2UoL18vZywgJyAnKS50b0xvd2VyQ2FzZSgpfVxuICAgICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICkpfVxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAge2ZpbHRlcmVkRmVhdHVyZXMubGVuZ3RoID09PSAwICYmIChcbiAgICAgICAgICAgIDxwIHN0eWxlPXt7IGNvbG9yOiAnIzZiNzI4MCcsIGZvbnRTdHlsZTogJ2l0YWxpYycgfX0+XG4gICAgICAgICAgICAgIE5vIG1hcHBpbmdzIG1hdGNoIHRoZSBzZWxlY3RlZCBmaWx0ZXIuXG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgKX1cbiAgICAgICAgPC8+XG4gICAgICApfVxuICAgIDwvZGl2PlxuICApO1xufTtcblxuZXhwb3J0IGRlZmF1bHQgRmVhdHVyZU1hcHBlcjtcbiJdLCJmaWxlIjoiL3NyYy9jb21wb25lbnRzL0NvbXBhcmlzb25WaWV3L0ZlYXR1cmVNYXBwZXIudHN4In0=
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL0NvbXBhcmlzb25WaWV3L0ZlYXR1cmVNYXBwZXIudHN4IiwiL3NyYy9jb21wb25lbnRzL0NvbXBhcmlzb25WaWV3L0ZlYXR1cmVNYXBwZXIudHN4IixbXV0=
