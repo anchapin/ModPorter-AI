@@ -168,3 +168,4 @@ AGENTS.MD
 ai-engine/tests/test_smart_assumptions.py
 
 .worktrees/
+node-compile-cache/
