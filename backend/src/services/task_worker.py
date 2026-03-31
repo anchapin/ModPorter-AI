@@ -151,6 +151,8 @@ async def handle_asset_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any
 # Main worker entry point
 async def main():
     """Main entry point for the worker"""
+    import signal
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -166,24 +168,33 @@ async def main():
     worker.register_handler("conversion", handle_conversion_task)
     worker.register_handler("asset_conversion", handle_asset_conversion_task)
 
-    # Handle shutdown signals
-    def signal_handler():
-        logger.info("Received shutdown signal")
-        worker._running = False
+    # Handle shutdown signals properly
+    shutdown_event = asyncio.Event()
 
-    # Note: In production, properly set up signal handlers
+    def signal_handler(signum, frame):
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        shutdown_event.set()
+
+    # Register signal handlers for graceful shutdown
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        try:
+            loop.add_signal_handler(sig, lambda s=sig: signal_handler(s, None))
+        except NotImplementedError:
+            # Windows doesn't support add_signal_handler
+            pass
 
     # Start worker
     await worker.start()
 
     try:
-        # Keep running until interrupted
-        while worker._running:
-            await asyncio.sleep(1)
+        # Keep running until shutdown signal
+        await shutdown_event.wait()
+        logger.info("Shutdown signal received")
     except KeyboardInterrupt:
-        logger.info("Interrupted")
+        logger.info("Interrupted by keyboard")
     finally:
-        await worker.stop()
+        await worker.stop(timeout=30.0)
 
 
 if __name__ == "__main__":

@@ -489,7 +489,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
     try:
         # This would contain the actual function generation logic
         # For now, it's a placeholder
-        print(f"Generating functions for event system: {system_id}")
+        logger.info(f"Generating functions for event system: {system_id}")
 
         # In a full implementation, this would:
         # 1. Parse the event system configuration
@@ -498,7 +498,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
         # 4. Store generated functions as behavior files
 
     except Exception as e:
-        print(f"Background function generation failed: {e}")
+        logger.error(f"Background function generation failed: {e}")
 
 
 @router.get("/events/systems/{system_id}/debug", summary="Get debug information for event system")

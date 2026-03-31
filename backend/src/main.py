@@ -102,8 +102,12 @@ async def lifespan(app: FastAPI):
         await init_db()
         logger.info("Database initialized")
     yield
-    # Shutdown
-    logger.info("Application shutdown")
+    # Shutdown - properly close all connections
+    logger.info("Application shutdown initiated")
+    await close_rate_limiter()
+    logger.info("Rate limiter closed")
+    # Add any other graceful shutdown cleanup here
+    logger.info("Application shutdown complete")
 
 
 # Cache service instance
@@ -186,13 +190,6 @@ async def startup_event():
 
     await init_rate_limiter()
     logger.info("Rate limiting middleware initialized")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close rate limiter on shutdown"""
-    await close_rate_limiter()
-    logger.info("Rate limiter closed")
 
 
 # Include API routers
@@ -363,8 +360,8 @@ async def upload_file(file: UploadFile = File(...)):
                         detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
                     )
                 buffer.write(chunk)
-    except Exception:
-        # Log the error for debugging
+    except (OSError, IOError) as e:
+        # File system error during upload
         raise HTTPException(status_code=500, detail="Could not save file")
     finally:
         file.file.close()
