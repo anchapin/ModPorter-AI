@@ -1,0 +1,391 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/alex/Projects/ModPorter-AI/ai-engine
+configfile: pytest.ini
+plugins: hypothesis-6.151.10, anyio-4.13.0, docker-3.2.5, cov-7.1.0, langsmith-0.7.22, timeout-2.4.0, asyncio-1.3.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 334 items
+
+tests/unit/test_bedrock_patterns.py .....                                [  1%]
+tests/unit/test_conversion_crew.py .............                         [  5%]
+tests/unit/test_correction_learning.py ...........................       [ 13%]
+tests/unit/test_crew_integration.py ....................                 [ 19%]
+tests/unit/test_feature_flags.py ....................................... [ 31%]
+.                                                                        [ 31%]
+tests/unit/test_gpu_config.py ....................                       [ 37%]
+tests/unit/test_java_patterns.py .....                                   [ 38%]
+tests/unit/test_multimodal_embedding.py ...................              [ 44%]
+tests/unit/test_pattern_base.py .............                            [ 48%]
+tests/unit/test_pattern_mappings.py ............                         [ 52%]
+tests/unit/test_progress_callback.py ...........                         [ 55%]
+tests/unit/test_rag_crew.py ................                             [ 60%]
+tests/unit/test_rate_limiter.py ......................                   [ 66%]
+tests/unit/test_smart_assumptions.py ............                        [ 70%]
+tests/unit/test_strategy_selector.py ..............                      [ 74%]
+tests/unit/test_task_graph.py ........................                   [ 81%]
+tests/unit/test_token_optimizer.py ...........................           [ 89%]
+tests/unit/test_validation_agent.py .....                                [ 91%]
+tests/unit/test_worker_pool.py .............................             [100%]
+
+=============================== warnings summary ===============================
+../.venv/lib/python3.13/site-packages/google/rpc/__init__.py:18
+  /home/alex/Projects/ModPorter-AI/.venv/lib/python3.13/site-packages/google/rpc/__init__.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    import pkg_resources
+
+../.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:3148
+  /home/alex/Projects/ModPorter-AI/.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:3148: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:3148
+  /home/alex/Projects/ModPorter-AI/.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:3148: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.logging')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:2560
+../.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:2560
+  /home/alex/Projects/ModPorter-AI/.venv/lib/python3.13/site-packages/pkg_resources/__init__.py:2560: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../.venv/lib/python3.13/site-packages/google/rpc/__init__.py:20
+  /home/alex/Projects/ModPorter-AI/.venv/lib/python3.13/site-packages/google/rpc/__init__.py:20: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.rpc')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    pkg_resources.declare_namespace(__name__)
+
+tests/unit/test_rag_crew.py::TestRAGCrew::test_initialization_basic
+tests/unit/test_rag_crew.py::TestRAGCrew::test_run
+tests/unit/test_rag_crew.py::TestRAGCrew::test_execute_query
+tests/unit/test_rag_crew.py::TestRAGCrew::test_get_available_tools
+tests/unit/test_rag_crew.py::TestRAGCrew::test_get_tool_registry_export
+tests/unit/test_rag_crew.py::TestRAGCrew::test_test_web_search_integration
+tests/unit/test_rag_crew.py::TestRAGCrew::test_get_system_status
+  /home/alex/Projects/ModPorter-AI/ai-engine/tools/web_search_tool.py:42: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+    object.__setattr__(self, "_ddgs", DDGS())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.12-final-0 _______________
+
+Name                                                  Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------
+__init__.py                                               0      0   100%
+__main__.py                                               3      3     0%   5-8
+agent_metrics/__init__.py                                 6      6     0%   6-28
+agent_metrics/alerts.py                                 153    153     0%   5-405
+agent_metrics/dashboard.py                              135    135     0%   5-291
+agent_metrics/llm_usage_tracker.py                      152    152     0%   5-394
+agent_metrics/memory_monitor.py                         167    167     0%   5-389
+agent_metrics/performance_monitor.py                    162    162     0%   5-385
+agents/__init__.py                                       51     24    53%   8-10, 17-18, 25-27, 33-34, 40-41, 47-48, 54-55, 61-62, 82-87
+agents/addon_validator.py                               316    272    14%   70-120, 125-158, 162-203, 207-227, 231-255, 261-282, 290-312, 319-351, 357-373, 380-436, 440-455, 459-465, 472-473, 482-484, 493-510, 514-560, 564-594, 598-616, 620-627, 712-719
+agents/advanced_rag_agent.py                            258    258     0%   8-778
+agents/asset_converter.py                              1897   1803     5%   15-17, 82-84, 88, 103, 107-110, 114-119, 129-348, 352-458, 471-547, 560-635, 639-664, 668-669, 678-913, 924-1208, 1216-1604, 1617-1970, 1982-2165, 2178-2265, 2289-2338, 2347-2380, 2392-2423, 2438-2471, 2485-2490, 2493-2747, 2756-2845, 2849-2875, 2888-2914, 2926-2977, 2998-3064, 3076-3119, 3135-3179, 3183-3184, 3205-3310, 3314-3325, 3331-3389, 3403-3436, 3448-3502, 3518-3543, 3547, 3552-3557, 3561-3564, 3568-3594, 3598-3615, 3619-3725, 3729-3730, 3741-3775, 3795-3888, 3908-3920, 3932-3945, 3961-3972, 3984-3995, 4012-4077, 4090-4107, 4133-4194, 4214-4290
+agents/bedrock_architect.py                             206    161    22%   44-46, 54, 70-118, 124-172, 178-253, 259-270, 276-353, 357-366, 370-410, 418, 424, 430, 436, 443-525
+agents/bedrock_builder.py                               180    180     0%   6-388
+agents/bedrock_manifest_generator.py                    127     85    33%   129-162, 173-201, 212-233, 237-255, 259-280, 286-289, 293-298, 316-330, 345-361
+agents/block_item_generator.py                          366    248    32%   180-193, 205-218, 230-244, 259-310, 325-373, 388-442, 457-513, 528-587, 591-650, 654-705, 709-719, 723-741, 756-772, 786-791, 804-824, 828-843, 849-858, 862-867, 871-876, 882-887, 898-931
+agents/curseforge_parser.py                             107    107     0%   6-256
+agents/entity_converter.py                              308    250    19%   219-242, 256, 268, 272-327, 331-395, 400-442, 447-478, 482-530, 534-561, 566-631, 635-643, 653-667, 683-740, 747-773, 785-797, 803, 807-823, 839-883
+agents/file_packager.py                                 284    257    10%   15-16, 77-78, 82-84, 96-150, 160-210, 214-233, 237-256, 260-281, 285-299, 304-328, 332-396, 400-450, 454-462, 474-543
+agents/gameplay_comparison_agent.py                     264    264     0%   12-673
+agents/java_analyzer.py                                1449   1361     6%   24, 33, 98-100, 105, 124-208, 212-228, 242-354, 366-460, 485-540, 549-556, 561-583, 590-597, 608-625, 630-660, 664-681, 686-699, 713-726, 740-785, 800-863, 875-909, 921-982, 995-1055, 1067-1160, 1182-1257, 1271-1315, 1327-1355, 1373-1421, 1435-1504, 1519-1590, 1602-1613, 1617-1672, 1684-1711, 1723-1754, 1758-1781, 1785-1841, 1845-1859, 1863-1870, 1884-2309, 2323-2429, 2443-2659, 2673-2765, 2779-2950, 2954-2993
+agents/knowledge_base_agent.py                            8      2    75%   14, 20
+agents/logic_translator.py                              932    787    16%   572, 879-903, 908-910, 938-959, 974-975, 981-982, 988-989, 995-996, 1002-1003, 1009-1010, 1014-1019, 1023-1029, 1033-1044, 1048-1103, 1107-1154, 1158-1169, 1173-1205, 1209-1226, 1230-1288, 1294-1304, 1308-1326, 1330-1348, 1352-1400, 1404-1417, 1421-1434, 1438-1451, 1455-1463, 1469, 1482, 1495, 1507, 1519, 1531, 1541, 1554, 1567, 1576, 1588, 1602, 1619-1632, 1636-1649, 1653-1670, 1674-1680, 1705-1749, 1758-1777, 1783-1822, 1826-1867, 1881-1912, 1926-1939, 1953-1962, 1976-1985, 1989, 2013-2058, 2067-2089, 2095-2142, 2146-2183, 2187-2198, 2218-2268, 2277-2293, 2299-2348, 2352-2387, 2391-2433, 2437-2445, 2465-2502, 2508-2538, 2548-2572, 2582-2617, 2627-2650, 2660-2693, 2702-2706, 2710-2716, 2733-2759, 2763-2790, 2794-2825, 2829-2881, 2885-2921, 2925-2939, 2943-2953, 2961-2973, 2979-2991, 2997-3007, 3013-3025, 3031, 3035
+agents/mod_dependency_analyzer.py                       257    257     0%   11-589
+agents/modpack_conflict_detector.py                     281    281     0%   11-635
+agents/modpack_orchestrator.py                          184    184     0%   11-465
+agents/modrinth_parser.py                               120    120     0%   6-269
+agents/online_research_agent.py                         336    336     0%   12-844
+agents/packaging_agent.py                               431    351    19%   104-106, 110, 139-166, 178-282, 286-325, 329-368, 372-441, 445-540, 555-634, 645-696, 702-703, 709-710, 716-717, 723-724, 730-731, 739-762, 768-804, 810-836, 842-861, 867-894, 917-946, 960-998, 1012-1030
+agents/packaging_validator.py                           361    288    20%   54, 58, 148-149, 164-167, 181-255, 259-297, 303-374, 380-412, 418-450, 454-579, 583-603, 607-636, 640-669, 673-688, 692-708, 712-746, 750-758, 762-777, 790-795, 806-850
+agents/qa_agent.py                                      161    161     0%   2-337
+agents/qa_validator.py                                  827    739    11%   68-74, 78, 82, 86-92, 216-218, 222, 387-510, 514-592, 599-755, 762-866, 873-963, 967-1031, 1038-1133, 1137-1173, 1180-1391, 1395-1412, 1416-1489, 1493-1523, 1527-1547, 1551-1567, 1571, 1575, 1579-1589, 1593-1620, 1624, 1636-1663, 1667-1734, 1738-1812, 1818-1888, 1894-1961, 1975-1976, 1994-1997, 2003-2004, 2010-2011, 2017-2018, 2024-2025
+agents/rag_agents.py                                     41     34    17%   7-42, 47-65, 68-86, 92-109
+agents/recipe_converter.py                              287    287     0%   8-612
+agents/validation_agent.py                              266     71    73%   20, 53-54, 60-62, 65, 67, 115-120, 132-134, 146, 196, 201, 231, 233-237, 239, 244, 248, 252-253, 258, 263, 268, 271, 274-275, 278, 282-283, 288, 300, 302, 347, 361, 370, 373, 377, 379, 381, 398-469
+agents/variant_loader.py                                 50     28    44%   32, 37-38, 43-51, 56-65, 81-85, 97-101
+benchmarking/__init__.py                                  0      0   100%
+benchmarking/indexing_benchmark.py                      134    134     0%   8-282
+benchmarking/metrics_collector.py                        88     88     0%   1-208
+benchmarking/performance_system.py                      222    222     0%   1-489
+benchmarking/scenarios/__init__.py                        0      0   100%
+benchmarking/search_benchmark.py                        191    191     0%   8-362
+cli/__init__.py                                           0      0   100%
+cli/main.py                                              70     70     0%   6-162
+config/__init__.py                                        0      0   100%
+conftest.py                                              19      2    89%   23, 28
+converters/__init__.py                                    2      2     0%   8-14
+converters/advancement_converter.py                     189    189     0%   8-606
+converters/command_converter.py                         301    301     0%   8-706
+converters/dimension_converter.py                       155    155     0%   8-767
+converters/gui_converter.py                             203    203     0%   8-782
+converters/particle_converter.py                        169    169     0%   8-562
+converters/potion_converter.py                          145    145     0%   8-543
+converters/rendering_converter.py                       232    232     0%   8-721
+converters/sound_converter.py                           172    172     0%   8-576
+converters/villager_converter.py                        184    184     0%   8-560
+converters/weapon_tool_converter.py                     292    292     0%   9-912
+crew/__init__.py                                         13      8    38%   10-14, 20-24
+crew/conversion_crew.py                                 403    117    71%   56-58, 101-103, 113, 147-151, 168-176, 200-208, 230-238, 333-334, 367-371, 377-528, 564-565, 601-618, 648-659, 705-706, 710, 736-741, 752-754, 763, 796, 803-828, 834-837, 899-902, 952-953, 968-970, 976-1019, 1112-1126, 1179, 1203, 1240, 1297, 1330-1336, 1367, 1378-1380
+crew/rag_crew.py                                        167     32    81%   155-158, 161, 164, 188, 194-196, 291, 327, 339-340, 359-361, 368-392
+demo_advanced_rag.py                                    162    162     0%   8-296
+docs/__init__.py                                          0      0   100%
+engines/__init__.py                                       0      0   100%
+engines/comparison_engine.py                            104    104     0%   1-305
+indexing/__init__.py                                      4      4     0%   12-30
+indexing/benchmark.py                                    78     78     0%   7-141
+indexing/chunk_prioritizer.py                           117    117     0%   9-400
+indexing/chunking_strategies.py                         187    187     0%   10-456
+indexing/metadata_extractor.py                          149    149     0%   9-338
+knowledge/__init__.py                                     3      0   100%
+knowledge/community/__init__.py                           3      3     0%   7-14
+knowledge/community/submission.py                        95     95     0%   7-294
+knowledge/community/validation.py                        87     87     0%   7-273
+knowledge/cross_reference.py                            166    136    18%   72-76, 80-85, 89-97, 112-175, 198-247, 266-307, 324-373, 390-414, 439-464
+knowledge/patterns/__init__.py                           16      0   100%
+knowledge/patterns/advancement_patterns.py               78     29    63%   45, 287-299, 311, 323-326, 336-342, 351-361, 378, 391, 404, 414
+knowledge/patterns/base.py                               86      3    97%   156, 160, 162
+knowledge/patterns/bedrock_patterns.py                   54      0   100%
+knowledge/patterns/command_patterns.py                   86     31    64%   351-365, 377, 389-393, 403-409, 418-428, 445, 458, 471, 481
+knowledge/patterns/dimension_patterns.py                 78     33    58%   43, 365-377, 389, 401, 411-417, 429-432, 441-455, 472, 485, 498, 511, 521
+knowledge/patterns/entity_behavior_patterns.py           78     22    72%   387, 392, 405-432, 453-478, 488, 549
+knowledge/patterns/gui_patterns.py                       75     33    56%   42, 351-363, 375, 387, 397-403, 415-418, 427-441, 458, 471, 484, 497, 507
+knowledge/patterns/java_patterns.py                      56      0   100%
+knowledge/patterns/mappings.py                           86      0   100%
+knowledge/patterns/particle_patterns.py                  75     29    61%   42, 312-324, 336, 348-351, 361-367, 376-386, 403, 416, 429, 439
+knowledge/patterns/potion_patterns.py                    71     28    61%   297-308, 320, 332-335, 345-351, 360-370, 387, 400, 413, 423
+knowledge/patterns/rendering_patterns.py                 74     31    58%   251-265, 277, 289-293, 303-309, 318-328, 345, 358, 373, 383
+knowledge/patterns/sound_patterns.py                     78     29    63%   45, 317-329, 341, 351-357, 369-372, 381-393, 410, 423, 436, 446
+knowledge/patterns/villager_patterns.py                  85     40    53%   259-279, 291, 303-312, 322-328, 337-347, 364, 377, 390, 400
+knowledge/patterns/weapon_tool_patterns.py               71     31    56%   403-417, 429, 441-445, 455-461, 470-480, 497, 510, 525, 535
+knowledge/schema.py                                      54      4    93%   118, 174, 185, 190
+learning/__init__.py                                      3      0   100%
+learning/correction_store.py                             91     16    82%   16, 81, 85, 128, 132, 163, 167, 176, 195-204
+learning/validation_workflow.py                         136     12    91%   95-96, 98-99, 171, 196, 209, 218-219, 237, 249-255
+main.py                                                 324    324     0%   6-748
+models/__init__.py                                        4      0   100%
+models/comparison.py                                     25      4    84%   34-60
+models/document.py                                       13      2    85%   18-19
+models/smart_assumptions.py                             415    147    65%   72, 147-149, 169, 172, 175, 178, 183, 187, 190, 194, 215-219, 237-245, 266, 445-446, 454-462, 509, 553-668, 674-684, 717-725, 753-757, 771-775, 805-820, 850-856, 892-893, 917-922, 955, 979, 981, 1000-1005, 1039-1042, 1051-1062, 1082, 1086, 1108-1111, 1115-1118, 1144, 1184-1187, 1213-1218, 1238, 1251-1262, 1274-1280, 1299-1304
+models/validation.py                                     31      3    90%   63-83
+orchestration/__init__.py                                 5      0   100%
+orchestration/crew_integration.py                       271     25    91%   168-170, 214-216, 257-259, 301-303, 352-354, 399-401, 435-437, 576, 582-585
+orchestration/monitoring.py                             221    221     0%   6-602
+orchestration/orchestrator.py                           267    224    16%   97-135, 143-203, 211-275, 283-292, 302, 307-341, 346-374, 386-424, 429-481, 486-567, 573-593, 597, 606-628, 636-654
+orchestration/strategy_selector.py                      135      2    99%   239, 285
+orchestration/task_graph.py                             185      8    96%   192, 288-302, 323-324, 328
+orchestration/worker_pool.py                            210     11    95%   121-123, 134, 293, 350-353, 356, 365-366, 370
+qa/__init__.py                                            9      9     0%   1-10
+qa/context.py                                            27     27     0%   1-31
+qa/fixer.py                                             171    171     0%   8-404
+qa/hooks.py                                              59     59     0%   1-117
+qa/orchestrator.py                                      291    291     0%   1-562
+qa/report/__init__.py                                     4      4     0%   3-14
+qa/report/aggregator.py                                  32     32     0%   3-79
+qa/report/exporters/__init__.py                           5      5     0%   3-8
+qa/report/exporters/base.py                              18     18     0%   3-33
+qa/report/exporters/html_exporter.py                     22     22     0%   3-48
+qa/report/exporters/json_exporter.py                     23     23     0%   3-68
+qa/report/exporters/markdown_exporter.py                 36     36     0%   3-60
+qa/report/models.py                                      64     64     0%   3-106
+qa/report/scorer.py                                      30     30     0%   3-55
+qa/reviewer.py                                          190    190     0%   8-563
+qa/semantic_checker.py                                  249    249     0%   8-579
+qa/translator.py                                        176    176     0%   8-416
+qa/validators.py                                         10     10     0%   1-14
+rl/__init__.py                                           13     13     0%   17-85
+rl/agent_optimizer.py                                   364    364     0%   6-848
+rl/data_collection.py                                   342    342     0%   11-985
+rl/quality_scorer.py                                    290    290     0%   6-592
+rl/reward_system.py                                     152    152     0%   6-413
+rl/training_loop.py                                     309    309     0%   6-666
+schemas/__init__.py                                       2      0   100%
+schemas/multimodal_schema.py                            119      1    99%   293
+scripts/__init__.py                                       0      0   100%
+scripts/benchmark_optimizations.py                      117    117     0%   11-238
+scripts/demonstrate_packaging_validation.py              50     50     0%   12-166
+scripts/populate_kb.py                                   64     64     0%   2-143
+search/__init__.py                                        8      0   100%
+search/adaptive_fusion.py                               124    124     0%   8-307
+search/context_manager.py                               117     76    35%   34, 80-82, 94, 113-141, 160-169, 199-203, 224-240, 245-252, 267-273, 285-296, 311-332, 336-337, 341, 351, 354
+search/cross_modal_retriever.py                         131    131     0%   10-485
+search/feedback_reranker.py                             152    112    26%   17, 55-59, 81-114, 121-166, 173-204, 219, 223-234, 247-285, 295-296
+search/hybrid_search_engine.py                          480    409    15%   26, 37-44, 79-80, 92-94, 98, 142, 157, 182-205, 220-282, 288-297, 301-335, 340-351, 367-396, 415-464, 476-488, 501-511, 542-702, 707-723, 729-773, 777-810, 817-853, 860-884, 893-910, 958-973, 1002-1081, 1085-1086, 1090-1091, 1095-1101
+search/multi_stage_reranker.py                          180    180     0%   8-347
+search/multimodal_search_engine.py                      175    175     0%   10-543
+search/pipeline_cache.py                                148    148     0%   8-271
+search/query_complexity_analyzer.py                     119     86    28%   174-177, 189-190, 195-258, 269-271, 275, 279, 284-293, 297, 301, 305-317, 330-367, 372-377, 391-392
+search/query_expansion.py                               254    200    21%   60-62, 66, 113, 122, 143-215, 227-229, 233, 250, 265, 294-344, 356-358, 362-389, 405-465, 470-496, 500-513, 517-530, 534-543, 547-564, 576-580, 605-718, 722-745, 764-801, 805-811
+search/query_rewriter.py                                 79     79     0%   8-191
+search/rag_pipeline.py                                  231    231     0%   8-423
+search/reranking_engine.py                              654    568    13%   64-65, 69, 92, 123-192, 198-214, 220-245, 251-276, 282-326, 332-364, 370-390, 396-414, 423-436, 442-478, 482-507, 516-530, 537-557, 563-607, 614-646, 652-671, 676-688, 694-712, 724-725, 730-751, 757-774, 779-796, 802-826, 830-839, 851-853, 869-902, 908-957, 999-1018, 1022-1047, 1063-1126, 1135-1179, 1183, 1188, 1219-1225, 1229-1241, 1249-1306, 1312, 1318-1336, 1358-1366, 1374-1423, 1429-1443, 1449-1461, 1467-1485
+search/rescore/__init__.py                                2      2     0%   12-21
+search/rescore/reranking.py                              98     98     0%   12-290
+setup.py                                                  4      4     0%   17-62
+templates/__init__.py                                     0      0   100%
+templates/bedrock/__init__.py                             0      0   100%
+templates/template_engine.py                            266    266     0%   6-571
+test_integration.py                                     157    157     0%   10-276
+testing/__init__.py                                       0      0   100%
+testing/behavioral_framework.py                         389    389     0%   9-784
+testing/comprehensive_testing_framework.py              565    565     0%   13-1201
+testing/minecraft_environment.py                         49     49     0%   1-110
+testing/qa_framework.py                                 121    121     0%   1-273
+testing/rag_evaluator.py                                 74     74     0%   1-129
+testing/scenarios/__init__.py                             0      0   100%
+testing/scenarios/behavioral/__init__.py                  0      0   100%
+tests/__init__.py                                         0      0   100%
+tests/crew/__init__.py                                    0      0   100%
+tests/e2e/__init__.py                                     7      7     0%   5-27
+tests/e2e/test_e2e_conversion.py                         42     42     0%   7-91
+tests/e2e/test_scenarios.py                               8      8     0%   7-40
+tests/fixtures/__init__.py                                2      2     0%   3-5
+tests/fixtures/search_fixtures.py                        36     36     0%   8-260
+tests/fixtures/test_jar_generator.py                     54     54     0%   3-191
+tests/integration/__init__.py                             0      0   100%
+tests/integration/test_basic.py                           9      9     0%   3-21
+tests/integration/test_basic_integration.py              30     30     0%   3-59
+tests/integration/test_comprehensive_integration.py     171    171     0%   6-398
+tests/integration/test_imports.py                        24     24     0%   3-64
+tests/integration/test_mvp_pipeline_integration.py      206    206     0%   6-507
+tests/integration/test_performance_benchmarks.py        182    182     0%   6-406
+tests/integration/test_z_ai_integration.py              116    116     0%   5-186
+tests/orchestration/__init__.py                           0      0   100%
+tests/orchestration/test_orchestration_enhanced.py      386    386     0%   12-700
+tests/orchestration/test_task_graph.py                  184    184     0%   5-328
+tests/test_advanced_chunker.py                           63     63     0%   5-141
+tests/test_advanced_rag_integration.py                  272    272     0%   8-588
+tests/test_advancement_conversion.py                    142    142     0%   8-321
+tests/test_agent_metrics.py                             188    188     0%   5-353
+tests/test_agent_orchestration_comprehensive.py         277    277     0%   6-555
+tests/test_agents_unit.py                               297    297     0%   6-592
+tests/test_asset_converter.py                           421    421     0%   5-753
+tests/test_bedrock_addon_generation.py                  274    274     0%   7-668
+tests/test_bedrock_builder_mvp.py                       142    142     0%   6-302
+tests/test_bedrock_scraper.py                           128    128     0%   8-229
+tests/test_bedrock_scraper_tool.py                       89     89     0%   5-170
+tests/test_bedrock_templates.py                         117    117     0%   7-213
+tests/test_behavioral_framework.py                       97     97     0%   5-196
+tests/test_chunk_prioritizer.py                          87     87     0%   5-220
+tests/test_chunking_strategies.py                       146    146     0%   8-300
+tests/test_command_conversion.py                        286    286     0%   8-502
+tests/test_comprehensive_testing.py                     183    183     0%   11-421
+tests/test_conversion_crew_expanded.py                   69     69     0%   8-147
+tests/test_cross_reference_comprehensive.py             127    127     0%   6-212
+tests/test_curseforge_parser.py                         121    121     0%   10-237
+tests/test_data_collection.py                           225    225     0%   10-553
+tests/test_dimension_conversion.py                      199    199     0%   8-378
+tests/test_embedding_generation.py                       57     57     0%   8-116
+tests/test_embedding_generator.py                        92     92     0%   7-174
+tests/test_embedding_generator_comprehensive.py         297    297     0%   6-589
+tests/test_entity_ai_conversion.py                      144    144     0%   7-348
+tests/test_fixer_agent.py                               179    179     0%   3-382
+tests/test_gameplay_comparison_agent.py                 221    221     0%   13-595
+tests/test_gui_conversion.py                            166    166     0%   8-313
+tests/test_health.py                                     14     14     0%   3-27
+tests/test_hybrid_search_engine.py                      160    160     0%   8-361
+tests/test_issue_570_logic_translation.py               267    267     0%   14-724
+tests/test_issue_654_logic_translation.py               230    230     0%   11-696
+tests/test_java_analyzer_ast.py                         159    159     0%   6-375
+tests/test_java_analyzer_coverage.py                    179    179     0%   2-268
+tests/test_java_analyzer_mvp.py                         115    115     0%   6-222
+tests/test_knowledge.py                                 172    172     0%   5-342
+tests/test_logic_translator_coverage.py                 123    123     0%   2-181
+tests/test_main_entry.py                                 83     83     0%   8-199
+tests/test_metadata_extractor.py                        119    119     0%   5-314
+tests/test_mod_dependency_analyzer.py                   101    101     0%   11-270
+tests/test_modpack_conflict_detector.py                 154    154     0%   11-339
+tests/test_modpack_orchestrator.py                      256    256     0%   10-539
+tests/test_modrinth_parser.py                           126    126     0%   10-243
+tests/test_multimodal_search.py                         332    332     0%   11-680
+tests/test_mvp_conversion.py                            286    286     0%   22-727
+tests/test_online_research_agent.py                     284    284     0%   13-602
+tests/test_orchestrator_comprehensive.py                137    137     0%   5-200
+tests/test_packaging_agent.py                           161    161     0%   5-293
+tests/test_packaging_validation.py                      223    223     0%   13-591
+tests/test_packaging_validation_standalone.py           110    110     0%   6-273
+tests/test_particle_conversion.py                       155    155     0%   8-292
+tests/test_pipeline_cache.py                            104    104     0%   5-203
+tests/test_potion_conversion.py                         138    138     0%   8-291
+tests/test_qa_agent.py                                   63     63     0%   2-101
+tests/test_qa_comprehensive.py                          178    178     0%   5-407
+tests/test_qa_integration.py                             63     63     0%   1-95
+tests/test_qa_orchestrator.py                            64     64     0%   1-115
+tests/test_qa_validation_framework.py                   123    123     0%   5-237
+tests/test_qa_validator.py                              183    183     0%   5-355
+tests/test_qa_validator_standalone.py                   195    195     0%   5-370
+tests/test_qa_validator_tool.py                          51     51     0%   5-102
+tests/test_rag_evaluator.py                             256    256     0%   8-453
+tests/test_recipe_converter.py                          170    170     0%   2-361
+tests/test_rendering_conversion.py                      175    175     0%   9-393
+tests/test_reviewer_agent.py                            160    160     0%   3-352
+tests/test_rl_components.py                             159    159     0%   5-288
+tests/test_search_integration.py                        111    111     0%   8-318
+tests/test_search_tool_comprehensive.py                 397    397     0%   6-809
+tests/test_semantic_checker_agent.py                    147    147     0%   3-366
+tests/test_sound_conversion.py                          175    175     0%   8-415
+tests/test_template_engine.py                           108    108     0%   7-263
+tests/test_templates.py                                 112    112     0%   8-219
+tests/test_texture_conversion_direct.py                 145    145     0%   6-291
+tests/test_texture_conversion_integration.py            108    108     0%   5-249
+tests/test_texture_conversion_standalone.py             219    219     0%   5-377
+tests/test_texture_pipeline.py                           75     75     0%   5-196
+tests/test_token_optimizer.py                           141    141     0%   5-208
+tests/test_translator_agent.py                          120    120     0%   3-288
+tests/test_variant_loader.py                             48     48     0%   2-70
+tests/test_vector_db_client.py                           76     76     0%   5-121
+tests/test_vector_db_client_comprehensive.py            382    382     0%   6-634
+tests/test_villager_conversion.py                       171    171     0%   8-350
+tests/test_weapon_tool_conversion.py                    179    179     0%   8-318
+tests/test_web_search_tool.py                           129    129     0%   6-229
+tests/unit/__init__.py                                    0      0   100%
+tests/unit/test_bedrock_patterns.py                      29      0   100%
+tests/unit/test_conversion_crew.py                      122      0   100%
+tests/unit/test_correction_learning.py                  242      0   100%
+tests/unit/test_crew_integration.py                     170      0   100%
+tests/unit/test_feature_flags.py                        264      7    97%   322, 327, 362, 367, 390, 416, 481
+tests/unit/test_gpu_config.py                           154      0   100%
+tests/unit/test_java_patterns.py                         29      0   100%
+tests/unit/test_multimodal_embedding.py                 145      0   100%
+tests/unit/test_pattern_base.py                          77      0   100%
+tests/unit/test_pattern_mappings.py                      63      0   100%
+tests/unit/test_progress_callback.py                    115      0   100%
+tests/unit/test_rag_crew.py                             117      0   100%
+tests/unit/test_rate_limiter.py                         172      0   100%
+tests/unit/test_smart_assumptions.py                     68      0   100%
+tests/unit/test_strategy_selector.py                     81      0   100%
+tests/unit/test_task_graph.py                           152      0   100%
+tests/unit/test_token_optimizer.py                      157      0   100%
+tests/unit/test_validation_agent.py                      50      0   100%
+tests/unit/test_worker_pool.py                          209      0   100%
+tools/__init__.py                                         2      0   100%
+tools/bedrock_scraper_tool.py                           120     92    23%   54-93, 105-136, 155-187, 198-225, 236-265, 269-277, 281-287, 291-299, 303-309, 323-324, 334-335, 345-346
+tools/qa_validator.py                                   200    200     0%   13-614
+tools/search_tool.py                                    275    227    17%   62-102, 116-161, 175-221, 233-264, 277-305, 317-340, 355-385, 406-413, 431-484, 500-520, 536-544, 548-560, 565-586
+tools/tool_utils.py                                     155    130    16%   32-41, 50-74, 86-133, 137-139, 151-178, 187-192, 204-216, 228-279, 288-309, 321-338, 353-356, 366-367, 380-381, 394-395
+tools/web_search_tool.py                                101     74    27%   47, 59-103, 115-138, 156-187, 200-201, 222-271, 286-287, 300-302, 316-318
+tracing.py                                              145    145     0%   8-347
+training_manager.py                                     172    172     0%   1-321
+utils/__init__.py                                         7      3    57%   14-16
+utils/advanced_chunker.py                               267    215    19%   59-72, 85-129, 133-163, 167-180, 186-209, 213-226, 238-241, 254-259, 263-351, 355-370, 374-399, 403-435, 440-468, 472-511, 515-545, 549-563, 575-578, 595-606, 610-620
+utils/assumption_reporter.py                            144    144     0%   8-547
+utils/bedrock_docs_scraper.py                           508    461     9%   38-94, 115-154, 163-192, 201-216, 222-298, 304-312, 318-340, 347-388, 394-456, 462-555, 561-613, 629-666, 674-760, 768-769, 775-808, 816-833, 839-854, 860-877, 883-916, 922-932, 939-964, 970-1009, 1015-1032, 1039-1073, 1079-1118, 1124-1132, 1138, 1148-1149, 1154-1186, 1198
+utils/chunker.py                                         19     19     0%   1-34
+utils/config.py                                          34      0   100%
+utils/conversion_cache.py                               214    214     0%   8-414
+utils/embedding_generator.py                            285    183    36%   45, 50, 56, 62, 81-82, 85-86, 90-104, 108-124, 128, 132, 152-155, 159-169, 173-184, 189-194, 200, 211-213, 218-230, 236-243, 249-270, 276-284, 290-297, 303-332, 338-354, 378-381, 386-403, 419-425, 439-446, 467-479, 484, 499-500, 503-513, 516-521, 524-527, 530-533, 543-548
+utils/error_recovery.py                                 182    182     0%   11-445
+utils/feature_flags.py                                  203     21    90%   150-153, 165, 265, 270-274, 290, 306, 341-342, 370, 411-412, 419-421, 602
+utils/gpu_config.py                                     193     68    65%   98-103, 127-128, 134, 139-147, 155-156, 160-165, 170, 176-177, 181, 185, 210-235, 239, 271-272, 282-287, 291-292, 303, 337-351, 356
+utils/logging_config.py                                 391    266    32%   48-121, 128-129, 133-171, 211-217, 221-224, 230-234, 266-312, 341-343, 356-362, 372, 379-380, 385, 392-418, 465-467, 471-472, 476-477, 481-523, 536-545, 549-558, 562-570, 574-576, 586-588, 604-608, 612-613, 636-664, 687-721, 731-734, 746-754, 758-766, 770-783, 787-790, 800-805, 816-821, 835-836, 841, 846, 856-867, 880-881, 898, 912-915
+utils/model_metadata_extractor.py                       149    149     0%   9-358
+utils/multimodal_embedding_generator.py                 223     16    93%   364-366, 383, 400, 457, 465-467, 470-471, 492, 588, 601, 603-604
+utils/progress_callback.py                               95      3    97%   27-29
+utils/rate_limiter.py                                   292     79    73%   185, 227-230, 258, 265, 322, 355-357, 386-388, 409, 411, 413, 416, 439-440, 487-508, 519-528, 534-542, 546, 550, 554, 567, 579-608, 620-656
+utils/texture_metadata_extractor.py                     126    126     0%   9-421
+utils/token_optimizer.py                                227    134    41%   188-211, 217-235, 244-246, 256-284, 288-303, 317-324, 334-357, 361-363, 380-394, 398-405, 409-413, 427-431, 435-438, 442-461, 465, 474-493, 504-507, 522-536, 546-547, 552-553
+utils/vector_db_client.py                               131    100    24%   58-62, 64, 68-69, 87-154, 171-210, 226-249, 253-257, 264-292, 303
+-----------------------------------------------------------------------------------
+TOTAL                                                 49701  41572    16%
+====================== 334 passed, 13 warnings in 24.21s =======================

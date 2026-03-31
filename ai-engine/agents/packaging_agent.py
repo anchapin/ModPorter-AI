@@ -324,11 +324,20 @@ class PackagingAgent:
             logger.error(f"Component analysis error: {e}")
             return json.dumps({"success": False, "error": f"Component analysis failed: {str(e)}"})
 
-    def create_package_structure(self, structure_data: Dict[str, Any]) -> str:
+    def create_package_structure(self, structure_data: Any) -> str:
         """Create package structure for Bedrock addon."""
         try:
-            output_dir = structure_data.get("output_dir")
-            mod_name = structure_data.get("mod_name", "converted_mod")
+            # Handle both JSON string and direct input
+            if isinstance(structure_data, str):
+                try:
+                    data = json.loads(structure_data)
+                except json.JSONDecodeError:
+                    return json.dumps({"success": False, "error": "Invalid JSON input for structure_data"})
+            else:
+                data = structure_data
+
+            output_dir = data.get("output_dir")
+            mod_name = data.get("mod_name", "converted_mod")
 
             if not output_dir:
                 raise ValueError("output_dir is required for creating package structure")
@@ -441,12 +450,22 @@ class PackagingAgent:
                 data = build_data
 
             output_path = data.get("output_path")
+            mod_name = data.get("mod_name", "converted_mod")
             source_directories = data.get("source_directories", [])
             behavior_pack_path = data.get("behavior_pack_path")
             resource_pack_path = data.get("resource_pack_path")
 
             if not output_path:
                 raise ValueError("Missing required output_path for building .mcaddon")
+
+            # Handle directory as output_path
+            output_file = Path(output_path)
+            if output_file.is_dir():
+                output_path = os.path.join(output_path, f"{mod_name}.mcaddon")
+            elif not str(output_path).endswith(".mcaddon") and not str(output_path).endswith(".zip"):
+                 # Check if it's a directory that doesn't exist yet but looks like one
+                 if "/" in str(output_path) and not os.path.exists(os.path.dirname(output_path)):
+                     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 # Handle source_directories (new format)

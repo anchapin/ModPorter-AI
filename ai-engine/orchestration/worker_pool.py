@@ -79,10 +79,11 @@ class WorkerPool:
 
         # Auto-detect max workers based on type
         if max_workers is None:
+            cpu_count = multiprocessing.cpu_count() or 1
             if worker_type == WorkerType.PROCESS:
-                max_workers = multiprocessing.cpu_count()
+                max_workers = cpu_count
             else:
-                max_workers = min(32, (multiprocessing.cpu_count() or 1) + 4)
+                max_workers = min(32, cpu_count + 4)
 
         self.max_workers = max_workers
         self.executor: Optional[Union[ThreadPoolExecutor, ProcessPoolExecutor]] = None
@@ -200,7 +201,9 @@ class WorkerPool:
 
             except Exception as e:
                 # Record failure stats
-                if self.enable_monitoring and worker_id in self.worker_stats:
+                if self.enable_monitoring:
+                    if worker_id not in self.worker_stats:
+                        self.worker_stats[worker_id] = WorkerStats()
                     self.worker_stats[worker_id].update_failure()
 
                 logger.error(f"Worker {worker_id} failed task {task.task_id}: {e}")

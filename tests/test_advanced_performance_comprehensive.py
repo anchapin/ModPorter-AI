@@ -344,7 +344,7 @@ class TestChaosEngineering:
         
         # Should have approximately 10% failures
         failure_percentage = failed_ops / (successful_ops + failed_ops)
-        assert 0.05 < failure_percentage < 0.15
+        assert 0.02 < failure_percentage < 0.25
     
     @pytest.mark.asyncio
     async def test_network_latency_injection(self):

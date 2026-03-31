@@ -98,7 +98,7 @@ class TestVectorDBClientInitialization:
         custom_url = "http://localhost:8000/api/v1"
         
         with patch('utils.vector_db_client.httpx.AsyncClient'):
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator'):
                     client = VectorDBClient(base_url=custom_url)
                     
@@ -108,7 +108,7 @@ class TestVectorDBClientInitialization:
     async def test_initialization_custom_timeout(self):
         """Test initialization with custom timeout."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_async_client:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator'):
                     client = VectorDBClient(timeout=60.0)
                     
@@ -177,7 +177,7 @@ class TestDocumentIndexing:
     async def test_index_document_success(self, sample_document):
         """Test successful document indexing."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -209,7 +209,7 @@ class TestDocumentIndexing:
     async def test_index_document_status_200(self, sample_document):
         """Test document indexing with 200 status (already exists)."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -241,7 +241,7 @@ class TestDocumentIndexing:
     async def test_index_document_failure(self, sample_document):
         """Test document indexing failure."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -274,7 +274,7 @@ class TestDocumentIndexing:
     async def test_index_document_embedding_failure(self, sample_document):
         """Test document indexing when embedding generation fails."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = None
@@ -304,7 +304,7 @@ class TestDocumentSearch:
     async def test_search_documents_success(self):
         """Test successful document search."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -339,7 +339,7 @@ class TestDocumentSearch:
     async def test_search_documents_with_filter(self):
         """Test search with source filter."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -375,7 +375,7 @@ class TestDocumentSearch:
     async def test_search_documents_embedding_failure(self):
         """Test search when embedding generation fails."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = None
@@ -398,7 +398,7 @@ class TestDocumentSearch:
     async def test_search_documents_http_error(self):
         """Test search with HTTP error."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -431,7 +431,7 @@ class TestEmbeddingGeneration:
     async def test_get_embedding_success(self):
         """Test successful embedding generation."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     test_embedding = [0.1] * 768
                     mock_gen = MagicMock()
@@ -459,7 +459,7 @@ class TestEmbeddingGeneration:
     async def test_get_embedding_failure(self):
         """Test embedding generation failure."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = None
@@ -486,7 +486,7 @@ class TestCaching:
     async def test_cache_embedding(self):
         """Test that embeddings are cached."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     test_embedding = np.array([0.1] * 768, dtype=np.float32)
                     mock_gen = MagicMock()
@@ -516,7 +516,7 @@ class TestCaching:
     async def test_cache_hit_on_search(self):
         """Test that cached embeddings are used in search."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     test_embedding = np.array([0.1] * 768, dtype=np.float32)
                     mock_gen = MagicMock()
@@ -555,7 +555,7 @@ class TestClientClosing:
     async def test_close_client(self):
         """Test closing the client."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen_creator.return_value = mock_gen
@@ -579,7 +579,7 @@ class TestErrorHandling:
     async def test_request_error_handling(self):
         """Test handling of request errors."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(
@@ -608,7 +608,7 @@ class TestErrorHandling:
     async def test_generic_exception_handling(self):
         """Test handling of generic exceptions."""
         with patch('utils.vector_db_client.httpx.AsyncClient') as mock_client_class:
-            with patch('utils.vector_db_client.get_embedding_config'):
+            with patch('utils.vector_db_client.get_embedding_config', return_value={}):
                 with patch.object(VectorDBClient, '_create_embedding_generator') as mock_gen_creator:
                     mock_gen = MagicMock()
                     mock_gen.generate_embedding.return_value = MagicMock(

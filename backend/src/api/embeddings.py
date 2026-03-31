@@ -64,13 +64,17 @@ async def create_or_get_embedding(
     )
     if existing_embedding:
         from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
 
         # We need to manually convert Pydantic model for JSONResponse
         # existing_response = DocumentEmbeddingResponse.from_orm(existing_embedding) # pydantic v1
         existing_response = DocumentEmbeddingResponse.model_validate(
             existing_embedding
         )  # pydantic v2
-        return JSONResponse(content=existing_response.model_dump(), status_code=status.HTTP_200_OK)
+        return JSONResponse(
+            content=jsonable_encoder(existing_response.model_dump()),
+            status_code=status.HTTP_200_OK,
+        )
 
     db_embedding = await crud.create_document_embedding(
         db=db,
@@ -111,7 +115,7 @@ async def search_similar_embeddings(
 # Generate embeddings endpoint
 @router.post(
     "/embeddings/generate",
-    response_model=List[float],
+    response_model=List[List[float]],
     status_code=status.HTTP_200_OK,
 )
 async def generate_embeddings(

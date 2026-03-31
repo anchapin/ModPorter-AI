@@ -18,6 +18,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from agents.packaging_agent import PackagingAgent
 
 
+@pytest.fixture
+def temp_dir():
+    """Create temporary directory for testing."""
+    tmpdir = tempfile.mkdtemp()
+    yield tmpdir
+    import shutil
+
+    shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 class TestPackagingAgent:
     """Test cases for PackagingAgent packaging functionality"""
 
@@ -25,15 +35,6 @@ class TestPackagingAgent:
     def agent(self):
         """Create PackagingAgent instance for testing."""
         return PackagingAgent.get_instance()
-
-    @pytest.fixture
-    def temp_dir(self):
-        """Create temporary directory for testing."""
-        tmpdir = tempfile.mkdtemp()
-        yield tmpdir
-        import shutil
-
-        shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_singleton_pattern(self):
         """Test singleton pattern for PackagingAgent"""

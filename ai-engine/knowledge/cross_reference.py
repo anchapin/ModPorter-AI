@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 JAVA_PATTERNS = {
-    "class": re.compile(r"(?:public|private|protected)?\s*(?:static)?\s*class\s+(\w+)"),
-    "method": re.compile(r"(?:public|private|protected)?\s*(?:static)?\s+(?:\w+)\s+(\w+)\s*\("),
+    "class": re.compile(r"class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w,\s]+)?"),
+    "method": re.compile(r"(?:public|private|protected|static|\s)+\s+[\w<>[\]]+\s+(\w+)\s*\("),
     "extends": re.compile(r"class\s+\w+\s+extends\s+(\w+)"),
-    "implements": re.compile(r"class\s+\w+\s+implements\s+([\w,\s]+)"),
+    "implements": re.compile(r"(?:class\s+\w+\s+(?:extends\s+\w+\s+)?)?implements\s+([\w,\s]+)"),
     "import": re.compile(r"import\s+([\w.]+);"),
     "method_call": re.compile(r"(\w+)\s*\("),
     "variable": re.compile(r"(?:private|public|protected)?\s*(?:\w+)\s+(\w+)\s*="),
@@ -125,7 +125,7 @@ class CrossReferenceDetector:
             concepts.append(
                 DetectedConcept(
                     name=match.group(1),
-                    concept_type="concept",
+                    concept_type="class",
                     confidence=0.85,
                     context=chunk_content[max(0, match.start() - 50) : match.end() + 50],
                 )
@@ -444,7 +444,7 @@ class CrossReferenceDetector:
 
             similarities = []
             for chunk_id, embeddings in existing_embeddings.items():
-                if embeddings:
+                if embeddings is not None and (isinstance(embeddings, list) or isinstance(embeddings, np.ndarray)):
                     doc_embedding = (
                         np.array(embeddings[0])
                         if isinstance(embeddings, list)

@@ -7,7 +7,7 @@ Stores conversion results in database and file system.
 import logging
 import os
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import uuid
 

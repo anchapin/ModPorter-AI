@@ -1,224 +1,142 @@
 """
-Tests for feedback_analytics.py to boost coverage.
-
-Covers:
-- FeedbackAnalyticsService class
-- Feedback, bug report, feature request management
-- Satisfaction score calculation
-- Feedback aggregation methods
+Comprehensive unit tests for services/feedback_analytics.py to improve coverage.
 """
 
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
-from unittest import mock
-
-try:
-    from datetime import timezone
-except ImportError:
-    timezone = None
-
+from datetime import datetime, timedelta, timezone
 from services.feedback_analytics import (
     FeedbackAnalyticsService,
-    FeedbackMetrics,
+    get_feedback_analytics,
+    FeedbackMetrics
 )
 
 
-class TestFeedbackAnalyticsService:
-    """Test FeedbackAnalyticsService class."""
+class TestFeedbackAnalyticsServiceCoverage:
+    """Tests for FeedbackAnalyticsService."""
 
     @pytest.fixture
     def service(self):
-        """Create feedback analytics service."""
+        """Create a fresh service instance."""
         return FeedbackAnalyticsService()
 
-    def test_service_initialization(self):
-        """Test service initializes with empty data."""
-        service = FeedbackAnalyticsService()
-        assert service._feedback_data == []
-        assert service._bug_reports == []
-        assert service._feature_requests == []
-
-
-class TestAddFeedback:
-    """Test adding feedback data."""
-
-    @pytest.fixture
-    def service(self):
-        return FeedbackAnalyticsService()
-
-    def test_add_feedback_basic(self, service):
-        """Test adding basic feedback."""
-        feedback = {
-            "conversion_id": "conv-123",
-            "rating": 5,
-            "timestamp": datetime.now(),
-            "comment": "Great conversion!",
-        }
-
-        service.add_feedback(feedback)
-
+    def test_add_methods(self, service):
+        """Test adding different types of feedback."""
+        service.add_feedback({"conversion_id": "c1", "rating": 5})
         assert len(service._feedback_data) == 1
-        assert service._feedback_data[0]["conversion_id"] == "conv-123"
-
-    def test_add_multiple_feedback(self, service):
-        """Test adding multiple feedback entries."""
-        for i in range(5):
-            feedback = {
-                "conversion_id": f"conv-{i}",
-                "rating": i + 1,
-                "timestamp": datetime.now() if timezone is None else datetime.now(timezone.utc),
-            }
-            service.add_feedback(feedback)
-
-        assert len(service._feedback_data) == 5
-
-    def test_add_feedback_no_timestamp(self, service):
-        """Test adding feedback without timestamp."""
-        feedback = {"conversion_id": "conv-no-ts", "rating": 4}
-
-        service.add_feedback(feedback)
-
-        assert len(service._feedback_data) == 1
-
-
-class TestAddBugReports:
-    """Test adding bug reports."""
-
-    @pytest.fixture
-    def service(self):
-        return FeedbackAnalyticsService()
-
-    def test_add_bug_report_basic(self, service):
-        """Test adding basic bug report."""
-        bug = {
-            "title": "Crash on startup",
-            "conversion_id": "conv-123",
-            "severity": "high",
-            "timestamp": datetime.now(),
-        }
-
-        service.add_bug_report(bug)
-
+        
+        service.add_bug_report({"title": "Bug 1", "severity": "high"})
         assert len(service._bug_reports) == 1
-        assert service._bug_reports[0]["title"] == "Crash on startup"
-
-    def test_add_multiple_bug_reports(self, service):
-        """Test adding multiple bug reports."""
-        for i in range(3):
-            bug = {
-                "title": f"Bug {i}",
-                "conversion_id": f"conv-{i}",
-                "severity": "medium",
-                "timestamp": datetime.now() if timezone is None else datetime.now(timezone.utc),
-            }
-            service.add_bug_report(bug)
-
-        assert len(service._bug_reports) == 3
-
-
-class TestAddFeatureRequests:
-    """Test adding feature requests."""
-
-    @pytest.fixture
-    def service(self):
-        return FeedbackAnalyticsService()
-
-    def test_add_feature_request_basic(self, service):
-        """Test adding basic feature request."""
-        feature = {
-            "title": "Add support for custom entities",
-            "conversion_id": "conv-123",
-            "priority": "high",
-            "timestamp": datetime.now(),
-        }
-
-        service.add_feature_request(feature)
-
+        
+        service.add_feature_request({"title": "Feature 1"})
         assert len(service._feature_requests) == 1
-        assert service._feature_requests[0]["title"] == "Add support for custom entities"
-
-    def test_add_multiple_feature_requests(self, service):
-        """Test adding multiple feature requests."""
-        for i in range(4):
-            feature = {
-                "title": f"Feature {i}",
-                "conversion_id": f"conv-{i}",
-                "priority": "low",
-                "timestamp": datetime.now() if timezone is None else datetime.now(timezone.utc),
-            }
-            service.add_feature_request(feature)
-
-        assert len(service._feature_requests) == 4
-
-
-class TestSatisfactionScore:
-    """Test satisfaction score calculation."""
-
-    @pytest.fixture
-    def service(self):
-        return FeedbackAnalyticsService()
 
     def test_get_satisfaction_score_empty(self, service):
-        """Test satisfaction score with no feedback."""
-        start = datetime.now() - timedelta(days=7)
-        end = datetime.now()
+        """Test score calculation with no data."""
+        score = service.get_satisfaction_score(datetime.now(), datetime.now())
+        assert score["average"] == 0.0
+        assert score["count"] == 0
 
-        with patch("services.feedback_analytics.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime.now()
-            mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
-            result = service.get_satisfaction_score(start, end)
+    def test_get_satisfaction_score_calculation(self, service):
+        """Test average and NPS calculation."""
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(days=1)
+        end = now + timedelta(days=1)
+        
+        # 2 promoters (5, 4), 1 neutral (3), 1 detractor (1)
+        service.add_feedback({"rating": 5, "timestamp": now})
+        service.add_feedback({"rating": 4, "timestamp": now})
+        service.add_feedback({"rating": 3, "timestamp": now})
+        service.add_feedback({"rating": 1, "timestamp": now})
+        # Outside range
+        service.add_feedback({"rating": 5, "timestamp": now - timedelta(days=2)})
+        
+        score = service.get_satisfaction_score(start, end)
+        
+        assert score["count"] == 4
+        assert score["average"] == (5 + 4 + 3 + 1) / 4
+        assert score["distribution"][5] == 1
+        assert score["promoters"] == 2
+        assert score["detractors"] == 1
+        # NPS = (2/4 - 1/4) * 100 = 25
+        assert score["nps"] == 25.0
 
-        assert result["average"] == 0.0
-        assert result["count"] == 0
-        assert result["distribution"] == {}
+    def test_get_feedback_by_type(self, service):
+        """Test grouping feedback by type."""
+        now = datetime.now(timezone.utc)
+        service.add_feedback({"feedback_type": "ui", "timestamp": now})
+        service.add_feedback({"feedback_type": "ui", "timestamp": now})
+        service.add_feedback({"feedback_type": "api", "timestamp": now})
+        
+        by_type = service.get_feedback_by_type(now - timedelta(minutes=1), now + timedelta(minutes=1))
+        assert by_type["ui"] == 2
+        assert by_type["api"] == 1
 
+    def test_get_bug_summary(self, service):
+        """Test bug summary aggregation."""
+        now = datetime.now(timezone.utc)
+        service.add_bug_report({"severity": "critical", "status": "fixed", "timestamp": now})
+        service.add_bug_report({"severity": "high", "status": "new", "timestamp": now})
+        
+        summary = service.get_bug_summary(now - timedelta(minutes=1), now + timedelta(minutes=1))
+        assert summary["total"] == 2
+        assert summary["critical_count"] == 1
+        assert summary["by_status"]["fixed"] == 1
 
-class TestFeedbackByType:
-    """Test feedback categorization by type."""
+    def test_get_feature_request_summary(self, service):
+        """Test feature request summary and sorting."""
+        now = datetime.now(timezone.utc)
+        service.add_feature_request({"title": "F1", "votes": 10, "category": "core", "timestamp": now})
+        service.add_feature_request({"title": "F2", "votes": 50, "category": "ui", "timestamp": now})
+        
+        summary = service.get_feature_request_summary(now - timedelta(minutes=1), now + timedelta(minutes=1))
+        assert summary["total"] == 2
+        assert summary["top_features"][0]["title"] == "F2" # Most votes first
+        assert summary["by_category"]["core"] == 1
 
-    @pytest.fixture
-    def service(self):
-        return FeedbackAnalyticsService()
+    def test_get_conversion_feedback_correlation(self, service):
+        """Test correlation analysis and insights."""
+        now = datetime.now(timezone.utc)
+        # Fast conversion, high rating
+        service.add_feedback({
+            "rating": 5, 
+            "timestamp": now,
+            "properties": {"model_used": "gpt-4", "duration_seconds": 30}
+        })
+        # Slow conversion, low rating
+        service.add_feedback({
+            "rating": 2, 
+            "timestamp": now,
+            "properties": {"model_used": "gpt-3.5", "duration_seconds": 400}
+        })
+        
+        corr = service.get_conversion_feedback_correlation(now - timedelta(minutes=1), now + timedelta(minutes=1))
+        
+        assert corr["by_model"]["gpt-4"] == 5.0
+        assert corr["by_model"]["gpt-3.5"] == 2.0
+        assert corr["by_duration"]["fast"] == 5.0
+        assert corr["by_duration"]["slow"] == 2.0
+        
+        assert len(corr["insights"]) >= 2
+        assert any("gpt-4" in i for i in corr["insights"])
+        assert any("Faster conversions" in i for i in corr["insights"])
 
-    def test_get_feedback_by_type_empty(self, service):
-        """Test get_feedback_by_type with no data."""
-        start = datetime.now(timezone.utc) - timedelta(days=7)
-        end = datetime.now(timezone.utc)
+    def test_get_weekly_report(self, service):
+        """Test generation of comprehensive weekly report."""
+        now = datetime.now(timezone.utc)
+        week_start = now - timedelta(days=now.weekday()) # Monday
+        
+        service.add_feedback({"rating": 5, "timestamp": now, "feedback_type": "general"})
+        
+        report = service.get_weekly_report(week_start)
+        
+        assert "satisfaction" in report
+        assert "period" in report
+        assert report["total_feedback"] == 1
+        assert "generated_at" in report
 
-        result = service.get_feedback_by_type(start, end)
-
-        assert result == {}
-
-
-class TestFeedbackMetrics:
-    """Test FeedbackMetrics dataclass."""
-
-    def test_feedback_metrics_creation(self):
-        """Test FeedbackMetrics creation."""
-        metrics = FeedbackMetrics(
-            total_feedback=100,
-            average_rating=4.5,
-            rating_distribution={1: 5, 2: 10, 3: 20, 4: 35, 5: 30},
-            feedback_by_type={"bug_report": 30, "general": 70},
-            response_rate=0.85,
-            satisfaction_trend="improving",
-        )
-
-        assert metrics.total_feedback == 100
-        assert metrics.average_rating == 4.5
-        assert metrics.satisfaction_trend == "improving"
-
-    def test_feedback_metrics_defaults(self):
-        """Test FeedbackMetrics with default values."""
-        metrics = FeedbackMetrics(
-            total_feedback=0,
-            average_rating=0.0,
-            rating_distribution={},
-            feedback_by_type={},
-            response_rate=0.0,
-            satisfaction_trend="stable",
-        )
-
-        assert metrics.total_feedback == 0
-        assert metrics.satisfaction_trend == "stable"
+    def test_get_feedback_analytics_singleton(self):
+        """Test singleton accessor."""
+        s1 = get_feedback_analytics()
+        s2 = get_feedback_analytics()
+        assert s1 is s2
+        assert isinstance(s1, FeedbackAnalyticsService)

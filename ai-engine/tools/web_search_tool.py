@@ -7,7 +7,7 @@ import logging
 import asyncio
 from typing import Dict, List, Any, Optional
 from crewai.tools import BaseTool
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 import json
 from pydantic import Field
 

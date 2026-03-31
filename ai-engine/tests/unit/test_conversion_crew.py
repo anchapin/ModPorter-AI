@@ -1,5 +1,6 @@
 
 import pytest
+import json
 from unittest.mock import MagicMock, patch, PropertyMock
 from pathlib import Path
 from crew.conversion_crew import ModPorterConversionCrew
@@ -97,18 +98,133 @@ class TestModPorterConversionCrew:
             assert res["status"] == "completed"
             assert res["block_json"] == {"format_version": "1.20.10"}
 
-    def test_convert_block_mvp_failure(self, mock_crewai, mock_agents):
+    def test_initialization_ollama(self, mock_crewai, mock_agents):
+        """Test initialization with Ollama enabled."""
+        with patch.dict('os.environ', {'USE_OLLAMA': 'true', 'OLLAMA_MODEL': 'llama3'}):
+            crew = ModPorterConversionCrew()
+            assert mock_crewai['create_ollama_llm'].called
+            # Check if ollama_model was passed correctly
+            args, kwargs = mock_crewai['create_ollama_llm'].call_args
+            assert kwargs['model'] == 'llama3'
+
+    def test_convert_mod_original_path(self, mock_crewai, mock_agents):
+        """Test convert_mod falling back to original crew."""
+        with patch.dict('os.environ', {'USE_ENHANCED_ORCHESTRATION': 'false'}):
+            crew = ModPorterConversionCrew()
+            
+            # Mock original crew kickoff
+            mock_crew_instance = mock_crewai['Crew'].return_value
+            mock_result = MagicMock()
+            mock_result.raw = "success"
+            mock_result.tasks_output = []
+            mock_crew_instance.kickoff.return_value = mock_result
+            
+            # Manually set crew to avoid _setup_crew issues
+            crew.crew = mock_crew_instance
+            
+            with patch('pathlib.Path.exists', return_value=True), \
+                 patch('tempfile.mkdtemp', return_value="/tmp/test"), \
+                 patch('shutil.rmtree'):
+                
+                res = crew.convert_mod(Path("/app/test.jar"), Path("/app/out"))
+                assert res["status"] == "completed"
+                assert mock_crew_instance.kickoff.called
+
+    def test_convert_mod_file_not_found(self, mock_crewai, mock_agents):
+        """Test convert_mod with missing file."""
+        with patch.dict('os.environ', {'USE_ENHANCED_ORCHESTRATION': 'false'}):
+            crew = ModPorterConversionCrew()
+            with patch('pathlib.Path.exists', return_value=False):
+                res = crew.convert_mod(Path("missing.jar"), Path("out"))
+                assert res["status"] == "failed"
+                assert "Mod file not found" in res["error"]
+
+    def test_extract_plan_components(self, mock_crewai, mock_agents):
+        """Test plan component extraction from crew result."""
         crew = ModPorterConversionCrew()
         
-        crew.java_analyzer_agent.analyze_jar_for_mvp.return_value = {
-            "success": False,
-            "errors": ["Some error"]
-        }
+        # Mock crew result with tasks_output
+        mock_result = MagicMock()
+        mock_task_output = MagicMock()
+        mock_task_output.raw = json.dumps({
+            "components": [
+                {
+                    "original_feature_id": "feat1",
+                    "original_feature_type": "block",
+                    "assumption_type": "proxy",
+                    "bedrock_equivalent": "stone",
+                    "impact_level": "low",
+                    "user_explanation": "exp"
+                }
+            ]
+        })
+        mock_result.tasks_output = [MagicMock(), mock_task_output] # Plan is index 1
         
-        with patch('pathlib.Path.exists', return_value=True), \
-             patch('pathlib.Path.mkdir'):
+        components = crew._extract_plan_components(mock_result)
+        assert len(components) == 1
+        assert components[0].original_feature_id == "feat1"
+
+    def test_format_conversion_report(self, mock_crewai, mock_agents):
+        """Test conversion report formatting."""
+        crew = ModPorterConversionCrew()
+        mock_result = MagicMock()
+        mock_task_output = MagicMock()
+        mock_task_output.raw = "Success result"
+        mock_result.tasks_output = [mock_task_output]
+        
+        from models.smart_assumptions import ConversionPlanComponent
+        comp = ConversionPlanComponent(
+            original_feature_id="f", original_feature_type="t", 
+            assumption_type="a", bedrock_equivalent="e", 
+            impact_level="low", user_explanation="exp"
+        )
+        
+        # Mock smart_assumption_engine
+        crew.smart_assumption_engine = MagicMock()
+        mock_report = MagicMock()
+        mock_report.assumptions_applied = []
+        crew.smart_assumption_engine.generate_assumption_report.return_value = mock_report
+        
+        report = crew._format_conversion_report(mock_result, [comp])
+        assert report["status"] == "completed"
+        assert "overall_success_rate" in report
+
+    def test_get_conversion_crew_status(self, mock_crewai, mock_agents):
+        """Test status retrieval."""
+        crew = ModPorterConversionCrew()
+        crew.smart_assumption_engine = MagicMock()
+        status = crew.get_conversion_crew_status()
+        assert status["agents_initialized"]["java_analyzer"] is True
+        assert status["smart_assumption_engine"]["initialized"] is True
+
+    def test_convert_blocks_batch_mvp(self, mock_crewai, mock_agents):
+        """Test batch conversion MVP."""
+        crew = ModPorterConversionCrew()
+        with patch.object(crew, 'convert_block_mvp') as mock_convert:
+            mock_convert.return_value = {"status": "completed", "output_path": "out.json"}
             
-            res = crew.convert_block_mvp(Path("test.jar"), Path("out/"))
-            
-            assert res["status"] == "failed"
-            assert "Some error" in res["errors"][0]
+            res = crew.convert_blocks_batch_mvp([Path("a.jar"), Path("b.jar")], Path("out/"))
+            assert res["total"] == 2
+            assert res["successful"] == 2
+            assert len(res["conversions"]) == 2
+
+    def test_get_pipeline_status(self, mock_crewai, mock_agents):
+        """Test pipeline status retrieval."""
+        crew = ModPorterConversionCrew()
+        status = crew.get_pipeline_status()
+        assert status["pipeline_type"] == "mvp_block_conversion"
+        assert "stages" in status
+
+    @pytest.mark.asyncio
+    async def test_report_progress(self, mock_crewai, mock_agents):
+        """Test progress reporting."""
+        mock_callback = MagicMock()
+        mock_callback.send_progress = AsyncMock()
+        crew = ModPorterConversionCrew(progress_callback=mock_callback)
+        
+        await crew._report_progress("agent", "status", 50, "msg")
+        mock_callback.send_progress.assert_called_once_with(
+            agent="agent", status="status", progress=50, message="msg"
+        )
+
+from unittest.mock import AsyncMock

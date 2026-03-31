@@ -100,7 +100,7 @@ class TestOpenAIEmbeddingGenerator:
     
     def test_initialization_with_default_model(self):
         """Test OpenAIEmbeddingGenerator initialization."""
-        with patch('utils.embedding_generator.OpenAI'):
+        with patch('openai.OpenAI'):
             gen = OpenAIEmbeddingGenerator()
             
             assert gen.model == "text-embedding-ada-002"
@@ -108,7 +108,7 @@ class TestOpenAIEmbeddingGenerator:
     
     def test_initialization_with_custom_model(self):
         """Test initialization with custom model."""
-        with patch('utils.embedding_generator.OpenAI'):
+        with patch('openai.OpenAI'):
             gen = OpenAIEmbeddingGenerator(
                 model="text-embedding-3-small",
                 dimensions=512
@@ -119,21 +119,22 @@ class TestOpenAIEmbeddingGenerator:
     
     def test_dimensions_property(self):
         """Test dimensions property."""
-        with patch('utils.embedding_generator.OpenAI'):
+        with patch('openai.OpenAI'):
             gen = OpenAIEmbeddingGenerator(dimensions=768)
             
             assert gen.dimensions == 768
     
     def test_model_name_property(self):
         """Test model_name property."""
-        with patch('utils.embedding_generator.OpenAI'):
+        with patch('openai.OpenAI'):
             gen = OpenAIEmbeddingGenerator(model="test-model")
             
             assert gen.model_name == "test-model"
     
+    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'})
     def test_generate_embedding_success(self):
         """Test successful embedding generation."""
-        with patch('utils.embedding_generator.OpenAI') as mock_openai:
+        with patch('openai.OpenAI') as mock_openai:
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             
@@ -152,7 +153,7 @@ class TestOpenAIEmbeddingGenerator:
     
     def test_generate_embedding_no_client(self):
         """Test generate_embedding when client is None."""
-        with patch('utils.embedding_generator.OpenAI'):
+        with patch('openai.OpenAI'):
             gen = OpenAIEmbeddingGenerator()
             gen._client = None
             
@@ -160,9 +161,10 @@ class TestOpenAIEmbeddingGenerator:
             
             assert result is None
     
+    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'})
     def test_generate_embeddings_batch(self):
         """Test batch embedding generation."""
-        with patch('utils.embedding_generator.OpenAI') as mock_openai:
+        with patch('openai.OpenAI') as mock_openai:
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             
@@ -188,7 +190,10 @@ class TestLocalEmbeddingGenerator:
     
     def test_initialization_with_default_model(self):
         """Test LocalEmbeddingGenerator initialization."""
-        with patch('utils.embedding_generator.SentenceTransformer'):
+        with patch('sentence_transformers.SentenceTransformer') as mock_st:
+            mock_model = MagicMock()
+            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_st.return_value = mock_model
             gen = LocalEmbeddingGenerator()
             
             assert gen._model_name == "all-MiniLM-L6-v2"
@@ -196,7 +201,7 @@ class TestLocalEmbeddingGenerator:
     
     def test_initialization_with_custom_model(self):
         """Test initialization with custom model."""
-        with patch('utils.embedding_generator.SentenceTransformer'):
+        with patch('sentence_transformers.SentenceTransformer'):
             gen = LocalEmbeddingGenerator(
                 model="paraphrase-MiniLM-L6-v2",
                 dimensions=512
@@ -206,14 +211,14 @@ class TestLocalEmbeddingGenerator:
     
     def test_model_name_property(self):
         """Test model_name property."""
-        with patch('utils.embedding_generator.SentenceTransformer'):
+        with patch('sentence_transformers.SentenceTransformer'):
             gen = LocalEmbeddingGenerator()
             
             assert gen.model_name == "all-MiniLM-L6-v2"
     
     def test_generate_embedding_success(self):
         """Test successful local embedding generation."""
-        with patch('utils.embedding_generator.SentenceTransformer') as mock_st:
+        with patch('sentence_transformers.SentenceTransformer') as mock_st:
             mock_model = MagicMock()
             mock_st.return_value = mock_model
             mock_model.encode.return_value = np.array([0.1] * 384, dtype=np.float32)
@@ -228,7 +233,7 @@ class TestLocalEmbeddingGenerator:
     
     def test_generate_embedding_fallback(self):
         """Test fallback embedding generation."""
-        with patch('utils.embedding_generator.SentenceTransformer'):
+        with patch('sentence_transformers.SentenceTransformer'):
             gen = LocalEmbeddingGenerator()
             gen._model = None
             
@@ -239,7 +244,7 @@ class TestLocalEmbeddingGenerator:
     
     def test_fallback_embedding_deterministic(self):
         """Test that fallback embedding is deterministic."""
-        with patch('utils.embedding_generator.SentenceTransformer'):
+        with patch('sentence_transformers.SentenceTransformer'):
             gen = LocalEmbeddingGenerator()
             gen._model = None
             
@@ -253,7 +258,7 @@ class TestLocalEmbeddingGenerator:
     
     def test_generate_embeddings_batch(self):
         """Test batch local embedding generation."""
-        with patch('utils.embedding_generator.SentenceTransformer') as mock_st:
+        with patch('sentence_transformers.SentenceTransformer') as mock_st:
             mock_model = MagicMock()
             mock_st.return_value = mock_model
             
@@ -359,7 +364,7 @@ class TestEmbeddingStorage:
     
     def test_storage_initialization(self):
         """Test EmbeddingStorage initialization."""
-        with patch('utils.embedding_generator.psycopg2'):
+        with patch('psycopg2.connect'):
             storage = EmbeddingStorage(table_name="test_embeddings")
             
             assert storage.table_name == "test_embeddings"

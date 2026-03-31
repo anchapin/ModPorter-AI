@@ -164,7 +164,7 @@ class TestQAValidatorAgent:
 
     def test_generate_qa_report_tool(self, agent):
         """Test generate_qa_report_tool"""
-        input_data = json.dumps({"mod_info": {"name": "Test Mod"}})
+        input_data = json.dumps({"mod_info": {"name": "Test Mod"}, "mcaddon_path": "test.mcaddon"})
         result = agent.generate_qa_report_tool.run(report_data=input_data)
         result_data = json.loads(result)
         assert result_data.get("success") is True
@@ -265,15 +265,12 @@ class TestQAValidatorEdgeCases:
     def agent(self):
         return QAValidatorAgent.get_instance()
 
-    def test_validate_manifest_invalid_json(self, agent, temp_dir):
+    def test_validate_manifest_invalid_json(self, agent, tmp_path):
+        temp_dir = str(tmp_path)
         """Test validate_manifest with invalid JSON"""
-        manifest_path = os.path.join(temp_dir, "invalid.json")
-        with open(manifest_path, "w") as f:
-            f.write("not valid json")
-
-        result = agent._validate_manifest(manifest_path)
-        assert result.get("valid") is False
-
+        manifest = {"invalid": "json"}
+        result = agent._validate_manifest_schema(manifest, "manifest.json")
+        assert "errors" in result or "warnings" in result
     def test_validate_block_invalid_components(self, agent):
         """Test block validation with invalid components"""
         block_def = {
@@ -282,38 +279,42 @@ class TestQAValidatorEdgeCases:
             "components": {"invalid_component": {}},
         }
 
-        result = agent._validate_block_definition(block_def)
+        result = agent._validate_block_definition(block_def, "test/path.json")
         assert "warnings" in result
 
     def test_validate_item_missing_description(self, agent):
         """Test item validation with missing description"""
         item_def = {"format_version": "1.20.0"}
 
-        result = agent._validate_item_definition(item_def)
+        result = agent._validate_item_definition(item_def, "test/path.json")
         assert "errors" in result or "warnings" in result
 
     def test_quality_score_calculation_low_scores(self, agent):
         """Test quality score calculation with low scores"""
         validation_results = {
-            "structural": {"passed": False, "score": 30},
-            "asset_validity": {"passed": False, "score": 20},
-            "semantic_accuracy": {"passed": False, "score": 10},
-            "best_practices": {"passed": False, "score": 40},
+            "validations": {
+                "structural": {"passed": 3, "score": 30, "checks": 10},
+                "asset_validity": {"passed": 2, "score": 20, "checks": 10},
+                "semantic_accuracy": {"passed": 1, "score": 10, "checks": 10},
+                "best_practices": {"passed": 4, "score": 40, "checks": 10},
+                "bedrock_compatibility": {"passed": 0, "score": 0, "checks": 10},
+            }
         }
-
-        score = agent._calculate_quality_score(validation_results)
+        score = agent._calculate_overall_score(validation_results)
         assert score < 50
 
     def test_quality_score_calculation_high_scores(self, agent):
         """Test quality score calculation with high scores"""
         validation_results = {
-            "structural": {"passed": True, "score": 95},
-            "asset_validity": {"passed": True, "score": 90},
-            "semantic_accuracy": {"passed": True, "score": 88},
-            "best_practices": {"passed": True, "score": 92},
+            "validations": {
+                "structural": {"passed": 9, "score": 95, "checks": 10},
+                "asset_validity": {"passed": 9, "score": 90, "checks": 10},
+                "semantic_accuracy": {"passed": 8, "score": 88, "checks": 10},
+                "best_practices": {"passed": 9, "score": 92, "checks": 10},
+                "bedrock_compatibility": {"passed": 10, "score": 100, "checks": 10},
+            }
         }
-
-        score = agent._calculate_quality_score(validation_results)
+        score = agent._calculate_overall_score(validation_results)
         assert score > 85
 
 
@@ -324,7 +325,8 @@ class TestQAValidatorIntegration:
     def agent(self):
         return QAValidatorAgent.get_instance()
 
-    def test_full_validation_workflow(self, agent, temp_dir):
+    def test_full_validation_workflow(self, agent, tmp_path):
+        temp_dir = str(tmp_path)
         """Test full validation workflow"""
         # Create a minimal valid addon
         addon_path = os.path.join(temp_dir, "valid_addon.mcaddon")

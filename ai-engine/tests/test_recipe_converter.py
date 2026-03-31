@@ -254,6 +254,163 @@ class TestRecipeConverterAgent:
         assert result_data["success"] is True
         assert result_data["total_count"] == 1
 
+    def test_convert_smithing_recipe(self):
+        """Test conversion of a smithing recipe."""
+        java_recipe = {
+            "type": "minecraft:smithing_transform",
+            "base": {"item": "minecraft:netherite_ingot"},
+            "addition": {"item": "minecraft:diamond_pickaxe"},
+            "template": {"item": "minecraft:netherite_upgrade_smithing_template"},
+            "result": {"item": "minecraft:netherite_pickaxe"}
+        }
+
+        result = self.agent.convert_recipe(java_recipe, "test_mod", "netherite_pickaxe")
+
+        assert "minecraft:recipe_smithing_transform" in result
+        recipe = result["minecraft:recipe_smithing_transform"]
+        assert recipe["base"]["item"] == "minecraft:netherite_ingot"
+        assert recipe["addition"]["item"] == "minecraft:diamond_pickaxe"
+
+    def test_convert_recipe_no_name(self):
+        """Test recipe name extraction when not provided."""
+        java_recipe = {
+            "type": "minecraft:crafting_shaped",
+            "pattern": ["X"],
+            "key": {"X": {"item": "minecraft:stone"}},
+            "result": {"item": "minecraft:test_item"},
+        }
+        result = self.agent.convert_recipe(java_recipe, "test_mod")
+        assert result["minecraft:recipe_shaped"]["description"]["identifier"] == "test_mod:test_item"
+
+    def test_map_item_id_tool_list(self):
+        """Test map_item_id_tool with a list of mappings."""
+        from agents.recipe_converter import RecipeConverterAgent
+        mappings = json.dumps([
+            {"java": "mod:item1", "bedrock": "mod:bedrock1"},
+            {"java": "mod:item2", "bedrock": "mod:bedrock2"}
+        ])
+
+        tool_func = RecipeConverterAgent.map_item_id_tool
+        if hasattr(tool_func, "fn"):
+            result = tool_func.fn(mappings)
+        else:
+            result = tool_func(mappings)
+
+        result_data = json.loads(result)
+        assert result_data["success"] is True
+        assert self.agent._map_java_item_to_bedrock("mod:item1") == "mod:bedrock1"
+
+    def test_validate_recipe_all_types(self):
+        """Test validation for various recipe types."""
+        types = [
+            "minecraft:recipe_shapeless",
+            "minecraft:recipe_furnace",
+            "minecraft:recipe_furnace_blast",
+            "minecraft:recipe_furnace_smoke",
+            "minecraft:recipe_campfire",
+            "minecraft:recipe_stonecutter",
+        ]
+        
+        for rt in types:
+            recipe = {
+                "format_version": "1.20.10",
+                rt: {
+                    "description": {"identifier": "test:recipe"},
+                    "ingredients": [{"item": "minecraft:stone"}],
+                    "result": {"item": "minecraft:stone"}
+                }
+            }
+            result = self.agent.validate_recipe_tool.fn(json.dumps(recipe)) if hasattr(self.agent.validate_recipe_tool, "fn") else self.agent.validate_recipe_tool(json.dumps(recipe))
+            assert json.loads(result)["valid"] is True
+
+    def test_convert_recipe_tool_nested_data(self):
+        """Test convert_recipe_tool with nested recipe_data."""
+        from agents.recipe_converter import RecipeConverterAgent
+        input_data = json.dumps({
+            "recipe_data": {
+                "type": "minecraft:crafting_shaped",
+                "pattern": ["X"],
+                "key": {"X": {"item": "minecraft:stone"}},
+                "result": {"item": "minecraft:stone"},
+                "namespace": "nested_ns",
+                "recipe_name": "nested_name"
+            }
+        })
+        
+        result = RecipeConverterAgent.convert_recipe_tool.fn(input_data) if hasattr(RecipeConverterAgent.convert_recipe_tool, "fn") else RecipeConverterAgent.convert_recipe_tool(input_data)
+        result_data = json.loads(result)
+        assert result_data["success"] is True
+        assert "nested_ns:nested_name" in str(result_data["converted_recipe"])
+
+    def test_get_tools(self):
+        """Test get_tools returns all tools."""
+        tools = self.agent.get_tools()
+        assert len(tools) == 4
+        assert any(t.name == "convert_recipe_tool" for t in tools)
+
+    def test_convert_unknown_recipe_type(self):
+        """Test handling of unknown recipe type."""
+        java_recipe = {"type": "minecraft:unknown_type"}
+        result = self.agent.convert_recipe(java_recipe, "test_mod", "test")
+        assert result["success"] is False
+        assert "Unknown recipe category" in result["error"]
+
+    def test_convert_recipe_tool_error(self):
+        """Test convert_recipe_tool error handling."""
+        from agents.recipe_converter import RecipeConverterAgent
+        # Invalid JSON should cause error
+        result = RecipeConverterAgent.convert_recipe_tool("invalid json")
+        result_data = json.loads(result)
+        assert result_data["success"] is False
+        assert "error" in result_data
+
+    def test_convert_recipes_batch_tool_error(self):
+        """Test convert_recipes_batch_tool error handling."""
+        from agents.recipe_converter import RecipeConverterAgent
+        # Invalid JSON should cause error
+        result = RecipeConverterAgent.convert_recipes_batch_tool("invalid json")
+        result_data = json.loads(result)
+        assert result_data["success"] is False
+        assert "error" in result_data
+
+    def test_map_item_id_tool_error(self):
+        """Test map_item_id_tool error handling."""
+        from agents.recipe_converter import RecipeConverterAgent
+        # Invalid JSON should cause error
+        result = RecipeConverterAgent.map_item_id_tool("invalid json")
+        result_data = json.loads(result)
+        assert result_data["success"] is False
+        assert "error" in result_data
+
+    def test_validate_recipe_tool_error(self):
+        """Test validate_recipe_tool error handling."""
+        from agents.recipe_converter import RecipeConverterAgent
+        # Invalid JSON should cause error
+        result = RecipeConverterAgent.validate_recipe_tool("invalid json")
+        result_data = json.loads(result)
+        assert result_data["valid"] is False
+        assert len(result_data["issues"]) > 0
+
+    def test_convert_shapeless_string_ingredients(self):
+        """Test shapeless conversion with string ingredients."""
+        java_recipe = {
+            "type": "minecraft:crafting_shapeless",
+            "ingredients": ["minecraft:apple"],
+            "result": {"item": "minecraft:golden_apple"}
+        }
+        result = self.agent.convert_recipe(java_recipe, "test_mod", "apple")
+        assert result["minecraft:recipe_shapeless"]["ingredients"][0]["item"] == "minecraft:apple"
+
+    def test_convert_smelting_string_ingredient(self):
+        """Test smelting conversion with string ingredient."""
+        java_recipe = {
+            "type": "minecraft:smelting",
+            "ingredient": "minecraft:iron_ore",
+            "result": "minecraft:iron_ingot"
+        }
+        result = self.agent.convert_recipe(java_recipe, "test_mod", "iron")
+        assert result["minecraft:recipe_furnace"]["ingredients"][0]["item"] == "minecraft:iron_ore"
+
 class TestRecipeConverterTools:
     """Test the CrewAI tools provided by RecipeConverterAgent."""
 

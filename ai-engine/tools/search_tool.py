@@ -230,10 +230,10 @@ class SearchTool:
         or simply "player events".
         `api_category` is optional and can be things like 'Scripting API', 'Gametest Framework', etc.
         """
-        SearchTool.get_instance()
         query = ""
         api_category = None
         try:
+            SearchTool.get_instance()
             if isinstance(query_data, str):
                 try:
                     data = json.loads(query_data)
@@ -274,9 +274,9 @@ class SearchTool:
         '{"component_name": "minecraft:behavior.float_wander"}'
         or simply "minecraft:behavior.float_wander".
         """
-        SearchTool.get_instance()
         component_name = ""
         try:
+            SearchTool.get_instance()
             if isinstance(query_data, str):
                 try:
                     data = json.loads(query_data)
@@ -314,9 +314,9 @@ class SearchTool:
         Input can be a simple query string describing the element or a JSON string:
         '{"query": "potion effects"}' or simply "potion effects".
         """
-        SearchTool.get_instance()
         query = ""
         try:
+            SearchTool.get_instance()
             if isinstance(query_data, str):
                 try:
                     data = json.loads(query_data)
@@ -352,9 +352,9 @@ class SearchTool:
         Input can be a simple schema name string or a JSON string:
         '{"schema_name": "entity definition"}' or "entity definition".
         """
-        SearchTool.get_instance()  # Not strictly needed since we call static SearchTool.semantic_search
         schema_name = ""
         try:
+            SearchTool.get_instance()
             if isinstance(query_data, str):
                 try:
                     data = json.loads(query_data)

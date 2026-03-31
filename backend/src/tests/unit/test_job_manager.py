@@ -3,13 +3,27 @@ import pytest
 import json
 import uuid
 from unittest.mock import MagicMock, patch, AsyncMock
-from services.job_manager import JobManager, Job, JobStatus, JobOptions, ConversionMode
+from services.job_manager import JobManager, Job, JobStatus, JobOptions, ConversionMode, TargetVersion, OutputFormat
 
 class TestJobManager:
     @pytest.fixture
     def manager(self):
         with patch('services.job_manager.StorageManager'):
             return JobManager()
+
+    def test_target_version_enum(self):
+        assert TargetVersion.V1_19 == "1.19"
+        assert TargetVersion.V1_20 == "1.20"
+        assert TargetVersion.V1_21 == "1.21"
+
+    def test_output_format_enum(self):
+        assert OutputFormat.MCADDON == "mcaddon"
+        assert OutputFormat.ZIP == "zip"
+
+    def test_job_options_defaults(self):
+        options = JobOptions()
+        assert options.target_version == TargetVersion.V1_20
+        assert options.output_format == OutputFormat.MCADDON
 
     @pytest.mark.asyncio
     async def test_create_job(self, manager):

@@ -4,14 +4,17 @@ Unit tests for token_optimizer.py.
 
 import unittest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from utils.token_optimizer import (
     PromptCache, 
     ContextTrimmer, 
     CostTracker, 
     TokenOptimizer,
     TokenUsage,
-    TOKEN_PRICING
+    TOKEN_PRICING,
+    get_llm_stats,
+    optimize_llm_call,
+    record_llm_response
 )
 
 class TestPromptCache(unittest.TestCase):
@@ -165,16 +168,18 @@ class TestTokenOptimizer(unittest.TestCase):
         mock_optimizer.model = "test-model"
         mock_get_token_optimizer.return_value = mock_optimizer
         
+        # Mock optimize_prompt for all calls
+        mock_optimizer.optimize_prompt.return_value = ("optimized", [{"item": 2}])
+        
         # Test cache hit
         mock_optimizer.enable_caching = True
         mock_optimizer.get_cached_result.return_value = "cached_response"
         result = optimize_llm_call("test prompt")
         self.assertTrue(result["cache_hit"])
-        self.assertEqual(mock_optimizer.get_cached_result.call_count, 1) # Only called once for cache hit
+        self.assertEqual(mock_optimizer.get_cached_result.call_count, 1)
         
         # Test no cache hit, then optimize
         mock_optimizer.get_cached_result.return_value = None
-        mock_optimizer.optimize_prompt.return_value = ("optimized", [{"item": 2}])
         result = optimize_llm_call("test prompt")
         self.assertFalse(result["cache_hit"])
         self.assertEqual(result["optimized_prompt"], "optimized")

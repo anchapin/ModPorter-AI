@@ -39,12 +39,18 @@ pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Required imports 
 def mock_java_analyzer():
     """Create a mock JavaAnalyzerAgent."""
     agent = AsyncMock(spec=JavaAnalyzerAgent)
-    agent.analyze_jar = AsyncMock(return_value={
-        "success": True,
-        "classes": ["BlockEntity", "CustomBlock"],
-        "methods": 42,
-        "imports": ["net.minecraft.block", "net.minecraft.entity"]
-    })
+
+    async def side_effect(arg):
+        if arg is None:
+            raise ValueError("Invalid input")
+        return {
+            "success": True,
+            "classes": ["BlockEntity", "CustomBlock"],
+            "methods": 42,
+            "imports": ["net.minecraft.block", "net.minecraft.entity"]
+        }
+
+    agent.analyze_jar = AsyncMock(side_effect=side_effect)
     return agent
 
 

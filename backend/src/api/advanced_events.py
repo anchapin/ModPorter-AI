@@ -7,8 +7,10 @@ from db import crud
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class EventType(str, Enum):

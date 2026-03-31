@@ -78,6 +78,20 @@ class TestCommandConversion:
         assert result.command_type == CommandType.GIVE
         assert "/give" in result.bedrock_command
 
+    def test_determine_command_type_all(self):
+        """Test all branches of _determine_command_type."""
+        converter = CommandConverter()
+        assert converter._determine_command_type("teleport") == CommandType.TELEPORT
+        assert converter._determine_command_type("spawnpoint") == CommandType.SPAWNPOINT
+        assert converter._determine_command_type("spreadplayers") == CommandType.SPREADPLAYERS
+        assert converter._determine_command_type("execute") == CommandType.EXECUTE
+        assert converter._determine_command_type("trigger") == CommandType.TRIGGER
+        assert converter._determine_command_type("scoreboard") == CommandType.SCOREBOARD
+        assert converter._determine_command_type("effect") == CommandType.EFFECT
+        assert converter._determine_command_type("give") == CommandType.GIVE
+        assert converter._determine_command_type("difficulty") == CommandType.GAMERULE
+        assert converter._determine_command_type("unknown") == CommandType.FUNCTION
+
 
 class TestFunctionConversion:
     """Test cases for function conversion."""
@@ -107,6 +121,20 @@ class TestFunctionConversion:
         commands = converter.extract_function_body(java_method)
         assert len(commands) == 2
 
+    def test_extract_function_body_with_strings(self):
+        """Test function body extraction with mix of dicts and strings."""
+        converter = CommandConverter()
+        java_method = {
+            "body": [
+                {"name": "say", "args": ["hello"]},
+                "say world"
+            ]
+        }
+        commands = converter.extract_function_body(java_method)
+        assert len(commands) == 2
+        assert "/say hello" in commands[0]
+        assert "say world" == commands[1]
+
     def test_generate_function_file(self):
         """Test function file generation."""
         converter = CommandConverter()
@@ -121,13 +149,6 @@ class TestFunctionConversion:
         assert converter.map_java_to_bedrock("teleport") == "tp"
         assert converter.map_java_to_bedrock("summon") == "summon"
         assert converter.map_java_to_bedrock("experience") == "xp"
-
-    def test_convert_trigger(self):
-        """Test trigger conversion."""
-        converter = CommandConverter()
-        java_trigger = {"objective": "kills", "action": "add", "value": 1}
-        result = converter.convert_trigger(java_trigger)
-        assert "/trigger kills add 1" == result
 
 
 class TestScoreboardConversion:
@@ -146,6 +167,16 @@ class TestScoreboardConversion:
         assert len(commands) > 0
         assert "scoreboard objectives add kills" in commands[0]
 
+    def test_convert_objective_with_display(self):
+        """Test objective conversion with display slot."""
+        converter = ScoreboardConverter()
+        java_obj = {
+            "name": "test",
+            "displaySlot": "sidebar"
+        }
+        commands = converter.convert_objective(java_obj)
+        assert any("setdisplay sidebar test" in c for c in commands)
+
     def test_convert_score(self):
         """Test score conversion."""
         converter = ScoreboardConverter()
@@ -159,6 +190,65 @@ class TestScoreboardConversion:
         java_score = {"player": "@s", "objective": "points", "value": 10, "operation": "add"}
         result = converter.convert_score(java_score)
         assert "/scoreboard players add @s points 10" == result
+
+    def test_convert_score_operations(self):
+        """Test all score operation branches."""
+        converter = ScoreboardConverter()
+        assert "remove" in converter.convert_score({"operation": "remove", "value": 1})
+        assert "set" in converter.convert_score({"operation": "other"})
+
+    def test_convert_operation(self):
+        """Test scoreboard operation conversion."""
+        converter = ScoreboardConverter()
+        java_op = {
+            "target": "@s",
+            "objective": "obj1",
+            "operation": "+=",
+            "source": "@a",
+            "sourceObjective": "obj2"
+        }
+        result = converter.convert_operation(java_op)
+        assert "/scoreboard players operation @s obj1 += @a obj2" == result
+
+    def test_convert_player_trigger(self):
+        """Test ScoreboardConverter.convert_player_trigger."""
+        converter = ScoreboardConverter()
+        res = converter.convert_player_trigger({"objective": "obj", "value": 5})
+        assert "/trigger obj add 5" == res
+
+    def test_map_display_slot(self):
+        """Test display slot mapping."""
+        converter = ScoreboardConverter()
+        assert converter.map_display_slot("SIDEBAR") == "sidebar"
+        assert converter.map_display_slot("custom") == "custom"
+
+    def test_convert_team_add(self):
+        """Test team add command."""
+        converter = ScoreboardConverter()
+        java_team = {"action": "add", "name": "red", "displayName": "Red Team"}
+        commands = converter.convert_team(java_team)
+        assert "/team add red Red Team" in commands
+
+    def test_convert_team_join(self):
+        """Test team join command."""
+        converter = ScoreboardConverter()
+        java_team = {"action": "join", "name": "blue", "members": ["Alex", "Steve"]}
+        commands = converter.convert_team(java_team)
+        assert "/team join blue Alex" in commands
+        assert "/team join blue Steve" in commands
+
+    def test_convert_team_leave(self):
+        """Test team leave command."""
+        converter = ScoreboardConverter()
+        java_team = {"action": "leave", "members": ["Alex"]}
+        commands = converter.convert_team(java_team)
+        assert "/team leave Alex" in commands
+
+    def test_convert_team_remove_empty(self):
+        """Test team remove and empty commands."""
+        converter = ScoreboardConverter()
+        assert "/team remove red" in converter.convert_team({"action": "remove", "name": "red"})
+        assert "/team empty blue" in converter.convert_team({"action": "empty", "name": "blue"})
 
 
 class TestExecuteConversion:
@@ -181,12 +271,137 @@ class TestExecuteConversion:
         assert "execute as @e[type=zombie]" in result
         assert "run kill @s" in result
 
+    def test_convert_conditional_block(self):
+        """Test block conditional conversion."""
+        converter = ExecuteConverter()
+        java_conditional = {
+            "type": "block",
+            "value": {"position": "10 20 30", "block": "stone"},
+            "command": "say yes"
+        }
+        result = converter.convert_conditional(java_conditional)
+        assert "/execute if block 10 20 30 stone run say yes" == result
+
+    def test_convert_conditional_score(self):
+        """Test score conditional conversion."""
+        converter = ExecuteConverter()
+        java_conditional = {
+            "type": "score",
+            "value": {"player": "@p", "objective": "test", "compare": "=", "target": "10"},
+            "command": "say winner"
+        }
+        result = converter.convert_conditional(java_conditional)
+        assert "/execute if score @p test = 10 run say winner" == result
+
+    def test_convert_conditional_fallback(self):
+        """Test execute conditional fallback."""
+        converter = ExecuteConverter()
+        assert "/execute run say hi" == converter.convert_conditional({"type": "unknown", "command": "say hi"})
+
     def test_convert_selector(self):
         """Test selector conversion."""
         converter = ExecuteConverter()
         assert converter.convert_selector("@a") == "@a"
         assert converter.convert_selector("@p") == "@p"
         assert converter.convert_selector("@e") == "@e"
+
+    def test_map_condition_type(self):
+        """Test condition type mapping."""
+        converter = ExecuteConverter()
+        assert converter.map_condition_type("ENTITY") == "entity"
+
+
+class TestArgumentParser:
+    """Test cases for ArgumentParser."""
+
+    def test_parse_player(self):
+        """Test player argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("player", "Alex") == "Alex"
+        assert parser.parse("player", {"name": "Steve"}) == "Steve"
+        assert parser.parse("player", {}) == "@p"
+
+    def test_parse_coordinate(self):
+        """Test coordinate argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("coordinate", 10) == "10"
+        assert parser.parse("coordinate", [1, 2, 3]) == "1 2 3"
+        assert parser.parse("coordinate", {"x": 10, "y": 20, "z": 30}) == "10 20 30"
+        assert parser.parse("coordinate", "invalid") == "0 0 0"
+
+    def test_parse_item(self):
+        """Test item argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("item", "minecraft:apple") == "minecraft:apple"
+        assert parser.parse("item", {"id": "diamond", "count": 64}) == "diamond 64"
+
+    def test_parse_selector(self):
+        """Test selector argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("selector", "@a[m=creative]") == "@a[m=creative]"
+        assert parser.parse("selector", {"type": "@e"}) == "@e"
+
+    def test_parse_nbt(self):
+        """Test NBT argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("nbt", "{}") == "{}"
+        assert parser.parse("nbt", {"Health": 20, "Name": "Zombie"}) == '{Health:20,Name:"Zombie"}'
+
+    def test_parse_score(self):
+        """Test score argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("score", {"player": "@s", "objective": "test"}) == "@s test"
+        assert parser.parse("score", "10") == "10"
+
+    def test_parse_objective(self):
+        """Test objective argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("objective", "Kills") == "kills"
+
+    def test_parse_default(self):
+        """Test default argument parsing."""
+        parser = ArgumentParser()
+        assert parser.parse("unknown", "value") == "value"
+
+
+class TestCommandConverterExtended:
+    """Extended test cases for CommandConverter."""
+
+    def test_convert_argument_complex(self):
+        """Test complex argument conversion in CommandConverter."""
+        converter = CommandConverter()
+        # Test selector dict
+        assert converter.convert_argument({"selector": "@a"}) == "@a"
+        # Test coordinate dict
+        assert converter.convert_argument({"coordinate": {"x": 1, "y": 2, "z": 3}}) == "1 2 3"
+        # Test NBT dict
+        assert converter.convert_argument({"nbt": {"key": "val"}}) == '{key:"val"}'
+        # Test generic dict
+        assert converter.convert_argument({"value": "generic"}) == "generic"
+        # Test coordinate list
+        assert converter.convert_argument([1.5, 2.5, 3.5]) == "1.5 2.5 3.5"
+        # Test generic list
+        assert converter.convert_argument(["a", "b", "c"]) == "a b c"
+        # Test direct value
+        assert converter.convert_argument(42) == "42"
+
+    def test_convert_coordinate_types(self):
+        """Test different coordinate input types in CommandConverter."""
+        converter = CommandConverter()
+        assert converter._convert_coordinate(10.5) == "10.5"
+        assert converter._convert_coordinate("invalid") == "0 0 0"
+
+    def test_convert_nbt_nested(self):
+        """Test nested NBT conversion."""
+        converter = CommandConverter()
+        nbt = {"Outer": {"Inner": 1}, "List": "val", "Num": 42}
+        result = converter._convert_nbt(nbt)
+        assert "{Outer:{Inner:1},List:\"val\",Num:42}" == result
+
+    def test_map_scoreboard_objective_complex(self):
+        """Test scoreboard objective mapping with dots and spaces."""
+        converter = CommandConverter()
+        assert converter.map_scoreboard_objective("My Objective.1") == "my_objective_1"
 
 
 class TestCommandPatterns:
