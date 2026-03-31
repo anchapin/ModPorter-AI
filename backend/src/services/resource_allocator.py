@@ -212,7 +212,7 @@ class ResourceAllocatorStats:
         self.allocation_by_mode: Dict[ConversionMode, int] = defaultdict(int)
         self.node_utilization: Dict[str, float] = {}
         self.wait_queue_depth = 0
-        self.last_updated: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+        self.last_updated: datetime = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert stats to dictionary."""
@@ -509,7 +509,7 @@ class ResourceAllocator:
             )
 
         # Round-robin selection
-        node_id = list(healthy_nodes.keys())[self._round_robin_index.get("global", 0) % len(healthy_nodes)]
+        node_id = healthy_nodes[self._round_robin_index.get("global", 0) % len(healthy_nodes)].node_id
         self._round_robin_index["global"] = (self._round_robin_index.get("global", 0) + 1) % len(healthy_nodes)
 
         node = self._nodes[node_id]

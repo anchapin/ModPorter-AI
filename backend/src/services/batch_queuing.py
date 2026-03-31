@@ -282,6 +282,10 @@ class IntelligentBatchQueue:
         async with self._lock:
             job_id = job_id or str(uuid.uuid4())
 
+            # Extract mode from mode_classification if not provided
+            if mode is None and mode_classification is not None:
+                mode = mode_classification.mode
+
             job = BatchJob(
                 job_id=job_id,
                 user_id=user_id,
@@ -298,7 +302,7 @@ class IntelligentBatchQueue:
 
             # Store job
             self._jobs[job_id] = job
-            self._stats.total_jobs_enqueued
+            self._stats.total_jobs_enqueued += 1
             self._stats.last_updated = datetime.now(timezone.utc)
 
             # Add to mode-specific queue if enabled

@@ -282,14 +282,14 @@ class TestIntelligentBatchQueue:
     @pytest.mark.asyncio
     async def test_get_next_job(self, queue, sample_mod_data):
         """Test getting next job from queue."""
+        # Disable mode grouping before enqueueing so job goes to global queue
+        queue.enable_mode_grouping = False
         job_id = await queue.enqueue_job(
             user_id="user-1",
             mod_data=sample_mod_data,
             mode=ConversionMode.SIMPLE,
         )
 
-        # Without mode grouping, jobs go to global queue
-        queue.enable_mode_grouping = False
         job = await queue.get_next_job()
 
         assert job is not None
@@ -591,9 +591,9 @@ class TestQueuePriority:
         """Test that priorities order correctly."""
         priorities = [
             QueuePriority.LOW,
-            QueuePriority.CRITICAL,
             QueuePriority.NORMAL,
             QueuePriority.HIGH,
+            QueuePriority.CRITICAL,
         ]
 
         scores = [p.to_score() for p in priorities]
