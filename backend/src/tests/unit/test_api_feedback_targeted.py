@@ -383,22 +383,20 @@ class TestReviewCorrection:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_review_correction_not_found(self, client, mock_db):
         """Test reviewing non-existent correction."""
         from db.models import CorrectionSubmission
-        from sqlalchemy import select
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+        # Mock execute to return our result regardless of what query is passed
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch("api.feedback.select", return_value=select(MagicMock())):
-            request_data = {"status": "approved"}
-            response = client.put(
-                f"/feedback/corrections/{uuid.uuid4()}/review",
-                json=request_data,
-            )
+        request_data = {"status": "approved"}
+        response = client.put(
+            f"/feedback/corrections/{uuid.uuid4()}/review",
+            json=request_data,
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -412,27 +410,22 @@ class TestApplyCorrection:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_apply_correction_not_found(self, client, mock_db):
         """Test applying non-existent correction."""
         from db.models import CorrectionSubmission
-        from sqlalchemy import select
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch("api.feedback.select", return_value=select(MagicMock())):
-            correction_id = str(uuid.uuid4())
-            response = client.post(f"/feedback/corrections/{correction_id}/apply")
+        correction_id = str(uuid.uuid4())
+        response = client.post(f"/feedback/corrections/{correction_id}/apply")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_apply_correction_not_approved(self, client, mock_db):
         """Test applying unapproved correction."""
         from db.models import CorrectionSubmission
-        from sqlalchemy import select
 
         mock_correction = MagicMock(spec=CorrectionSubmission)
         mock_correction.status = "pending"
@@ -441,9 +434,8 @@ class TestApplyCorrection:
         mock_result.scalar_one_or_none.return_value = mock_correction
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch("api.feedback.select", return_value=select(MagicMock())):
-            correction_id = str(uuid.uuid4())
-            response = client.post(f"/feedback/corrections/{correction_id}/apply")
+        correction_id = str(uuid.uuid4())
+        response = client.post(f"/feedback/corrections/{correction_id}/apply")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 

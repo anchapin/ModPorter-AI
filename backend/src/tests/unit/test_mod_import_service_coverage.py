@@ -206,17 +206,24 @@ class TestModImportService:
             assert result is not None
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_get_mod_info_curseforge_search_fallback(self, service, mock_curseforge):
         """Test CurseForge mod info with search fallback."""
-        mock_curseforge.get_mod_info = AsyncMock(side_effect=ValueError("Invalid ID"))
+        # When called with a non-numeric ID (slug), raise ValueError
+        # When called with a numeric ID, return success
+        async def mock_get_mod_info(mod_id):
+            if not isinstance(mod_id, int):
+                raise ValueError("Invalid ID")
+            return {"data": {"name": "Test Mod", "id": mod_id}}
+        
+        mock_curseforge.get_mod_info = AsyncMock(side_effect=mock_get_mod_info)
         mock_curseforge.search_mods = AsyncMock(return_value={"data": {"mods": [{"id": 123}]}})
 
         with patch.object(service, "curseforge", mock_curseforge):
             result = await service.get_mod_info(ModPlatform.CURSEFORGE, "slug-name")
 
-            # Should have called search and then get_mod_info with found ID
-            mock_curseforge.search_mods.assert_called()
+            # Should have called search first, then get_mod_info with found ID
+            mock_curseforge.search_mods.assert_called_once()
+            assert result is not None
 
     @pytest.mark.asyncio
     async def test_get_mod_info_modrinth(self, service, mock_modrinth):
@@ -360,7 +367,6 @@ class TestEdgeCases:
         result = service.detect_platform("")
         assert result == ModPlatform.UNKNOWN
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_detect_platform_none(self):
         """Test detecting platform from None."""
         service = ModImportService()

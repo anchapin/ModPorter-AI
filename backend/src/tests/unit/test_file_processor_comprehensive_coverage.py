@@ -386,24 +386,34 @@ class TestDownloadFromUrl:
     """Test URL download functionality."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="known fixture issue - passes in isolation", strict=False)
     async def test_download_from_url_success(self):
         """Test successful download from URL."""
         processor = FileProcessor()
 
         with patch("httpx.AsyncClient") as mock_client_class:
-            mock_response = AsyncMock()
+            # Create a proper async iterator for body streaming
+            async def mock_async_gen():
+                yield b"PK\x03\x04"
+                yield b"content"
+            
+            # Create response with all needed attributes
+            mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.headers = {"Content-Disposition": "attachment; filename=test.zip"}
             mock_response.url = MagicMock(path="/test.zip")
-            mock_response.aiter_bytes = lambda: AsyncMock(
-                return_value=iter([b"PK\x03\x04", b"content"])
-            )
+            mock_response.aiter_bytes = MagicMock(return_value=mock_async_gen())
+            # raise_for_status should do nothing for 200
+            mock_response.raise_for_status = MagicMock()
 
-            mock_client = AsyncMock()
-            mock_client.__aenter__.return_value = mock_response
-            mock_client.__aexit__.return_value = None
-            mock_client.get.return_value = mock_response
+            # Create async client using proper async context manager pattern
+            async def mock_client_get(*args, **kwargs):
+                return mock_response
+            
+            mock_client = MagicMock()
+            mock_client.get = mock_client_get
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            
             mock_client_class.return_value = mock_client
 
             result = await processor.download_from_url("https://example.com/test.zip", "job-123")
@@ -628,7 +638,6 @@ class TestCleanupTempFiles:
         result = processor.cleanup_temp_files("non-existent-job")
         assert result is True
 
-    @pytest.mark.xfail(reason="known fixture issue - passes in isolation", strict=False)
     def test_cleanup_temp_files_permission_error(self, tmp_path):
         """Test cleanup with permission error."""
         processor = FileProcessor()
@@ -638,18 +647,21 @@ class TestCleanupTempFiles:
         temp_dir = Path(f"/tmp/conversions/{job_id}")
         temp_dir.mkdir(parents=True, exist_ok=True)
 
-        # Make directory read-only to cause permission error
-        temp_dir.chmod(0o444)
-
         try:
-            result = processor.cleanup_temp_files(job_id)
-            # Result depends on permissions
+            # Mock shutil.rmtree to raise PermissionError
+            with patch("shutil.rmtree") as mock_rmtree:
+                mock_rmtree.side_effect = PermissionError("Permission denied")
+                
+                result = processor.cleanup_temp_files(job_id)
+                
+                # Should return False when permission error occurs
+                assert result is False
+                mock_rmtree.assert_called_once()
         finally:
-            # Restore permissions for cleanup
-            temp_dir.chmod(0o755)
+            # Cleanup: restore permissions and remove directory
             if temp_dir.exists():
+                temp_dir.chmod(0o755)
                 import shutil
-
                 shutil.rmtree(temp_dir)
 
 
@@ -657,21 +669,20 @@ class TestEdgeCases:
     """Test edge cases and error handling."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="known fixture issue - passes in isolation", strict=False)
     async def test_scan_malware_resolved_path_escape(self, tmp_path):
         """Test path traversal through resolved path."""
         processor = FileProcessor()
 
-        # Create a zip with a file that resolves outside target
+        # Create a zip with a file using path traversal that will resolve outside target
         malicious_path = tmp_path / "escape.zip"
         with zipfile.ZipFile(malicious_path, "w") as zf:
-            zf.writestr("..%2F..%2Ftest.txt", "escape attempt")
+            # Literal path traversal - this will be detected by the "../" check
+            zf.writestr("../escape.txt", "escape attempt")
 
         result = await processor.scan_for_malware(malicious_path, "zip")
         # Should detect path traversal
         assert result.is_safe is False
 
-    @pytest.mark.xfail(reason="known fixture issue - passes in isolation", strict=False)
     def test_validate_upload_read_error(self):
         """Test validation with file read error."""
         processor = FileProcessor()
@@ -680,6 +691,8 @@ class TestEdgeCases:
         mock_file.filename = "test.jar"
         mock_file.size = 1000
         mock_file.content_type = "application/java-archive"
+        # First set the file attribute, then set side_effect on read
+        mock_file.file = MagicMock()
         mock_file.file.read.side_effect = IOError("Read error")
 
         result = processor.validate_upload(mock_file)

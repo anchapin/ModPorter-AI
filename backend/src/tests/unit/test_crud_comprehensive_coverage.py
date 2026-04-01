@@ -225,13 +225,12 @@ class TestFeedbackCRUD:
         mock_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_enhanced_feedback_minimal(self):
         """Test creating feedback with minimal data."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         def mock_refresh(feedback):
             feedback.id = uuid.uuid4()
@@ -438,13 +437,13 @@ class TestDocumentChunkCRUD:
         assert len(created_chunks) == 2
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_get_document_with_chunks(self):
         """Test getting document with chunks."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
         mock_parent = MagicMock(spec=DocumentEmbedding)
         mock_chunks = [MagicMock(spec=DocumentEmbedding), MagicMock(spec=DocumentEmbedding)]
+        mock_result.scalar_one_or_none.return_value = mock_parent
         mock_result.scalars.return_value.all.return_value = mock_chunks
         mock_session.execute.return_value = mock_result
 
@@ -650,13 +649,12 @@ class TestExperimentVariantCRUD:
         assert variant is not None
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_experiment_variant_as_control(self):
         """Test creating control variant."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         # Mock existing control check
         mock_result = MagicMock()
@@ -792,13 +790,12 @@ class TestBehaviorFileCRUD:
     """Test behavior file CRUD operations."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_behavior_file(self):
         """Test creating behavior file."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         conversion_id = str(uuid.uuid4())
         behavior_file = await crud.create_behavior_file(
@@ -953,12 +950,12 @@ class TestBehaviorFileCRUD:
         assert deleted is True
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_delete_behavior_file_not_found(self):
         """Test deleting non-existent behavior file."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+        mock_result.rowcount = 0
         mock_session.execute.return_value = mock_result
 
         file_id = str(uuid.uuid4())
@@ -1010,13 +1007,12 @@ class TestAddonAssetCRUD:
             await crud.get_addon_asset(session=mock_session, asset_id="invalid")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_addon_asset(self):
         """Test creating addon asset."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         addon_id = str(uuid.uuid4())
         asset = await crud.create_addon_asset(
@@ -1125,13 +1121,12 @@ class TestAssetCRUD:
         assert asset == mock_asset
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_asset(self):
         """Test creating asset."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         conversion_id = str(uuid.uuid4())
         asset = await crud.create_asset(
@@ -1218,13 +1213,12 @@ class TestPatternSubmissionCRUD:
     """Test pattern submission CRUD operations."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_create_pattern_submission(self):
         """Test creating pattern submission."""
         mock_session = AsyncMock(spec=AsyncSession)
         mock_session.add = MagicMock()
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         submission = await crud.create_pattern_submission(
             session=mock_session,
@@ -1275,7 +1269,6 @@ class TestPatternSubmissionCRUD:
         assert submissions == []
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_update_pattern_submission_status(self):
         """Test updating pattern submission status."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -1284,7 +1277,7 @@ class TestPatternSubmissionCRUD:
         mock_result.scalar_one_or_none.return_value = mock_submission
         mock_session.execute.return_value = mock_result
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         submission_id = str(uuid.uuid4())
         updated = await crud.update_pattern_submission_status(
@@ -1316,7 +1309,6 @@ class TestPatternSubmissionCRUD:
             )
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_vote_on_pattern_upvote(self):
         """Test upvoting pattern."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -1326,7 +1318,7 @@ class TestPatternSubmissionCRUD:
         mock_result.scalar_one_or_none.return_value = mock_submission
         mock_session.execute.return_value = mock_result
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         submission_id = str(uuid.uuid4())
         updated = await crud.vote_on_pattern(
@@ -1338,7 +1330,6 @@ class TestPatternSubmissionCRUD:
         assert updated.upvotes == 1
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_vote_on_pattern_downvote(self):
         """Test downvoting pattern."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -1348,7 +1339,7 @@ class TestPatternSubmissionCRUD:
         mock_result.scalar_one_or_none.return_value = mock_submission
         mock_session.execute.return_value = mock_result
         mock_session.commit = AsyncMock()
-        mock_session.refresh = MagicMock()
+        mock_session.refresh = AsyncMock()
 
         submission_id = str(uuid.uuid4())
         updated = await crud.vote_on_pattern(

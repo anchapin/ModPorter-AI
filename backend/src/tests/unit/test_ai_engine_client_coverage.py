@@ -5,7 +5,7 @@ Targeting uncovered lines in AIEngineClient class.
 
 import pytest
 import uuid
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch, mock_open
 import httpx
 
 
@@ -300,7 +300,6 @@ class TestAIEngineClientDownloadConvertedFile:
     """Tests for download_converted_file method."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_download_success(self):
         """Test successful file download."""
         from services.ai_engine_client import AIEngineClient
@@ -317,7 +316,14 @@ class TestAIEngineClientDownloadConvertedFile:
         with patch.object(client, "_get_client", new_callable=AsyncMock) as mock_get:
             mock_http_client = AsyncMock()
             mock_http_client.post = AsyncMock(return_value=mock_start_response)
-            mock_http_client.get = AsyncMock(return_value=mock_download_response)
+
+            # Use side_effect to return completed status for polling
+            mock_http_client.get = AsyncMock(
+                return_value=MagicMock(
+                    status_code=200,
+                    json=MagicMock(return_value={"status": "completed", "progress": 100})
+                )
+            )
             mock_get.return_value = mock_http_client
 
             with patch("services.ai_engine_client.open", mock_open()):
@@ -415,14 +421,14 @@ class TestCloseAIEngineClient:
     """Tests for close_ai_engine_client function."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_close_global_client(self):
         """Test closing global client."""
+        import services.ai_engine_client as ai_module
         from services.ai_engine_client import get_ai_engine_client, close_ai_engine_client
-        from services.ai_engine_client import _ai_engine_client
 
         client = get_ai_engine_client()
 
         await close_ai_engine_client()
 
-        assert _ai_engine_client is None
+        # Access the actual module global, not an imported binding
+        assert ai_module._ai_engine_client is None

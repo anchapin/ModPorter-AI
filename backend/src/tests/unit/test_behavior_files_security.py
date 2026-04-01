@@ -5,6 +5,7 @@ import zipfile
 import io
 import json
 from datetime import datetime
+from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import crud
 from api.behavior_export import export_behavior_pack, ExportRequest
@@ -72,11 +73,8 @@ class TestBehaviorFilesSecurity:
             )
             assert file.file_path == path
 
-    @pytest.mark.xfail(
-        reason="known fixture issue - sample_conversion_job fixture error", strict=False
-    )
     async def test_export_zip_sanitization(
-        self, db_session: AsyncSession, sample_conversion_job, mocker
+        self, db_session: AsyncSession, sample_conversion_job
     ):
         """Test that zip export sanitizes paths."""
 
@@ -89,43 +87,28 @@ class TestBehaviorFilesSecurity:
         malicious_file.created_at = datetime.now()
         malicious_file.updated_at = datetime.now()
 
-        # Mock dependencies using AsyncMock because these functions are awaited
-        from unittest.mock import AsyncMock
+        # Use patch as context manager instead of pytest-mock mocker fixture
+        with patch("db.crud.get_behavior_files_by_conversion", new_callable=AsyncMock, return_value=[malicious_file]):
+            with patch("db.crud.get_job", new_callable=AsyncMock, return_value=sample_conversion_job):
+                with patch("db.crud.get_addon_details", new_callable=AsyncMock, return_value=None):
+                    with patch("services.cache.CacheService.set_export_data", new_callable=AsyncMock, return_value=True) as mock_set:
+                        # Execute export
+                        request = ExportRequest(
+                            conversion_id=str(sample_conversion_job.id),
+                            export_format="zip",
+                            include_templates=False,
+                        )
 
-        mocker.patch(
-            "db.crud.get_behavior_files_by_conversion",
-            side_effect=AsyncMock(return_value=[malicious_file]),
-        )
-        mocker.patch("db.crud.get_job", side_effect=AsyncMock(return_value=sample_conversion_job))
-        mocker.patch(
-            "db.crud.get_addon_details",
-            side_effect=AsyncMock(return_value=None),
-            create=True,
-        )
+                        await export_behavior_pack(request, db_session)
 
-        # Mock CacheService.set_export_data
-        mock_set = mocker.patch(
-            "services.cache.CacheService.set_export_data",
-            side_effect=AsyncMock(return_value=True),
-        )
+                        # Verify zip content passed to cache
+                        assert mock_set.called
+                        zip_content = mock_set.call_args[0][1]
 
-        # Execute export
-        request = ExportRequest(
-            conversion_id=str(sample_conversion_job.id),
-            export_format="zip",
-            include_templates=False,
-        )
-
-        await export_behavior_pack(request, db_session)
-
-        # Verify zip content passed to cache
-        assert mock_set.called
-        zip_content = mock_set.call_args[0][1]
-
-        # Verify zip content
-        with zipfile.ZipFile(io.BytesIO(zip_content), "r") as zf:
-            names = zf.namelist()
-            # The path "../../evil.sh" should be sanitized to "evil.sh"
-            assert "evil.sh" in names
-            assert "../../evil.sh" not in names
-            print(f"Sanitized paths in zip: {names}")
+                        # Verify zip content
+                        with zipfile.ZipFile(io.BytesIO(zip_content), "r") as zf:
+                            names = zf.namelist()
+                            # The path "../../evil.sh" should be sanitized to "evil.sh"
+                            assert "evil.sh" in names
+                            assert "../../evil.sh" not in names
+                            print(f"Sanitized paths in zip: {names}")

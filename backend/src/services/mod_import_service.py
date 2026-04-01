@@ -36,6 +36,9 @@ class ModImportService:
         Returns:
             ModPlatform enum value
         """
+        if url is None:
+            return ModPlatform.UNKNOWN
+        
         url_lower = url.lower()
 
         if "curseforge.com" in url_lower:

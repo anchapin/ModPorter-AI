@@ -418,7 +418,6 @@ class TestCreateMcaddonZip:
     @patch("services.addon_exporter.os.path.exists")
     @patch("services.addon_exporter.os.path.join")
     @patch("services.addon_exporter.zipfile.ZipFile")
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_create_mcaddon_zip_with_blocks(self, mock_zipfile, mock_join, mock_exists):
         """Test mcaddon ZIP with blocks."""
         from services.addon_exporter import create_mcaddon_zip
@@ -429,6 +428,7 @@ class TestCreateMcaddonZip:
         mock_block = MagicMock(spec=AddonBlock)
         mock_block.identifier = "custom:test_block"
         mock_block.properties = {}
+        mock_block.behavior = None
 
         mock_addon = MagicMock(spec=AddonDetails)
         mock_addon.name = "BlockAddon"
