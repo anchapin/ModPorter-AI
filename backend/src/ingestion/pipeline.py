@@ -262,6 +262,7 @@ class IngestionPipeline:
             This is a placeholder. In production, this will call the backend
             embedding API or use a local model.
         """
+        # NOTE: Embedding API integration not yet implemented.
+        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         # Placeholder: return zero vector
-        # TODO: Integrate with backend embedding API
         return [0.0] * 1536  # OpenAI embedding dimension

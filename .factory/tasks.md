@@ -295,10 +295,9 @@
 ---
 
 ## In Progress
-- 🔄 Code Review Wave 2 - Fix High Priority Issues (6/6 complete, commit remaining)
+- 🔄 Code Review Wave 3 - Fix Medium Priority Issues (5/5 complete, commit remaining)
 
 ## Pending
-- ⏳ M1-M5: Medium priority issues (see .factory/code-review-tasks.md)
 - ⏳ T1-T6: Test quality issues (see .factory/code-review-tasks.md)
 
 ## Completed

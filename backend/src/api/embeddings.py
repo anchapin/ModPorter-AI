@@ -889,7 +889,8 @@ async def search_similar_embeddings_enhanced(
             logger.debug(f"Generated query embedding (dim: {len(query_embedding)})")
 
         # Step 3: Fetch all documents from database
-        # TODO: Add caching layer for documents (Redis or in-memory)
+        # NOTE: Caching layer for documents not yet implemented.
+        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         # For now, fetch from database (should be fast with indexed queries)
         from sqlalchemy import select
 

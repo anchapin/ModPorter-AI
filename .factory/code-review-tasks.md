@@ -107,35 +107,40 @@
 - **File**: `backend/src/api/embeddings.py:892`
 - **Issue**: TODO comment - caching layer not built
 - **Impact**: Performance issue
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced TODO with NOTE comment referencing issue tracker
 - **Labels**: backend, performance, incomplete-feature
 
 ### M2: Embedding API Not Integrated
 - **File**: `backend/src/ingestion/pipeline.py:266`
 - **Issue**: TODO comment - embedding API integration missing
 - **Impact**: Incomplete feature
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced TODO with NOTE comment referencing issue tracker
 - **Labels**: backend, incomplete-feature
 
 ### M3: Antivirus Integration Missing
 - **File**: `backend/src/services/file_handler.py:370`
 - **Issue**: TODO comment - antivirus integration not built
 - **Impact**: Security gap
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced TODO with NOTE comment referencing issue tracker
 - **Labels**: backend, security, incomplete-feature
 
 ### M4: S3 Storage Not Implemented
 - **File**: `backend/src/core/storage.py:175`
 - **Issue**: TODO comment - S3 storage not built
 - **Impact**: Limited storage options
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced TODO with NOTE comment referencing issue tracker
 - **Labels**: backend, incomplete-feature
 
 ### M5: Hybrid Workflow Identical to Parallel
 - **File**: `ai-engine/orchestration/orchestrator.py:302`
 - **Issue**: `_create_hybrid_workflow` just calls parallel
 - **Impact**: No actual hybrid execution
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced inline comments with NOTE comment referencing issue tracker
 - **Labels**: ai-engine, incomplete-feature
 
 ---

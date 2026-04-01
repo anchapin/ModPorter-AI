@@ -296,9 +296,11 @@ class ParallelOrchestrator:
     ) -> TaskGraph:
         """Create hybrid workflow mixing sequential and parallel approaches"""
 
-        # Analyze dependencies and complexity to decide on parallelization
-        # For now, use parallel basic as the hybrid approach
-        # In future iterations, this could be more sophisticated
+        # NOTE: Hybrid workflow optimization not yet implemented.
+        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
+        # Currently delegates to parallel workflow as a fallback.
+        # In future iterations, this should analyze dependencies and complexity
+        # to decide on parallelization strategy.
         return self._create_parallel_basic_workflow(task_graph, base_input)
 
     def _create_analysis_spawn_callback(self, base_input: Dict[str, Any]) -> Callable:

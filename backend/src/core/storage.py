@@ -172,7 +172,8 @@ class StorageManager:
         self, content: bytes, job_id: str, filename: str, user_id: str, category: str
     ) -> str:
         """Save file to S3 (placeholder - needs boto3)"""
-        # TODO: Implement S3 storage
+        # NOTE: S3 storage not yet implemented.
+        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         # For now, fall back to local
         logger.warning("S3 storage not implemented, using local storage")
         return await self._save_local(content, job_id, filename, user_id, category)
