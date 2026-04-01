@@ -121,7 +121,6 @@ class TestCategorizeError:
 
 
 class TestCreateErrorResponse:
-    @pytest.mark.xfail(reason="Flaky - has singleton pollution in parallel test runs")
     def test_create_error_response_from_exception(self):
         exc = ModPorterException("Test error")
         mock_request = MagicMock(spec=Request)

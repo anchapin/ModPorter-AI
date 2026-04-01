@@ -493,7 +493,7 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Singleton pollution - fails in serial suite due to class attribute corruption from earlier test files", strict=False)
+    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available class attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
         # Create mock BEFORE importing CacheService
@@ -614,7 +614,7 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Singleton pollution - fails in serial suite due to class attribute corruption from earlier test files", strict=False)
+    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available class attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
         # Create mock BEFORE importing CacheService
