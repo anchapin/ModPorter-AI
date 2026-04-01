@@ -493,7 +493,7 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Flaky: module-level state pollution with xdist loadscope", strict=False)
+    @pytest.mark.serial
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
         mock_client = MagicMock()
@@ -614,7 +614,7 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Flaky: module-level state pollution with xdist loadscope", strict=False)
+    @pytest.mark.serial
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
         mock_client = MagicMock()

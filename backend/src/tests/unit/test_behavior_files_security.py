@@ -72,7 +72,7 @@ class TestBehaviorFilesSecurity:
                 content="{}",
             )
             assert file.file_path == path
-
+    @pytest.mark.serial
     async def test_export_zip_sanitization(
         self, db_session: AsyncSession, sample_conversion_job
     ):

@@ -120,7 +120,7 @@ class TestCategorizeError:
         assert category is not None
 
 
-class TestCreateErrorResponse:
+    @pytest.mark.serial
     def test_create_error_response_from_exception(self):
         exc = ModPorterException("Test error")
         mock_request = MagicMock(spec=Request)
