@@ -271,14 +271,24 @@ docker-compose -f docker-compose.test.yml up -d test-postgres
 ```
 
 ### Run Tests
+
+**Important:** The test suite uses a parallel/serial split architecture:
+- Most tests run in **parallel** for speed (2772 tests)
+- A few tests with module-level state pollution run **serially** (4 tests)
+
 ```bash
-# Run all tests (parallel mode - REQUIRED for stability)
+# Run all tests (parallel + serial)
 pnpm run test
 
-# Backend tests (parallel by default via pytest.ini)
+# Backend tests - parallel run (default, ~2772 tests)
+# These run with: -n auto --dist=loadscope -m "not integration and not serial"
 cd backend && pytest
 
-# Backend tests in serial mode (some tests have known serial-mode failures)
+# Backend tests - serial run (4 tests with module-level state issues)
+# These run with: -n0 -m serial
+cd backend && pytest -m serial
+
+# Backend tests - serial mode only (for debugging)
 cd backend && pytest -n0
 
 # Frontend tests
@@ -288,7 +298,15 @@ cd frontend && pnpm test
 cd ai-engine && pytest
 ```
 
-**Note:** Backend tests run in parallel by default (`-n auto --dist=loadfile`) for test stability. Some tests (`test_cache_module_coverage.py`) have known singleton pollution issues that cause failures in serial mode. These are marked with `xfail` and will show as XPASS in parallel mode.
+**Test Stability:** The parallel test suite runs with ZERO flaky failures. The serial tests (`-m serial`) handle tests that pollute module-level state.
+
+### Test Markers
+| Marker | Description |
+|--------|-------------|
+| `integration` | Integration tests (excluded from default run) |
+| `serial` | Tests that must run serially (not in parallel) due to module-level state pollution |
+| `unit` | Unit tests |
+| `asyncio` | Async tests |
 
 ### Test Database Management
 ```bash
@@ -314,10 +332,13 @@ pytest tests/test_mvp_conversion.py
 
 ### Docker Tests
 ```bash
-# Run tests in Docker containers (parallel mode)
+# Run tests in Docker containers (parallel mode - default)
 docker compose exec backend pytest
 
-# Run tests in serial mode (for debugging flaky tests)
+# Run serial tests only
+docker compose exec backend pytest -m serial
+
+# Run tests in serial mode (for debugging)
 docker compose exec backend pytest -n0
 
 # Run tests with coverage
