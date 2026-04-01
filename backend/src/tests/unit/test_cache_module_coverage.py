@@ -493,7 +493,7 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Test uses reload() causing module pollution - passes in isolation but fails in suite")
+    @pytest.mark.xfail(reason="Module pollution from earlier test files - passes in isolation but fails in suite")
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
         with patch("services.cache.aioredis") as mock_redis:
@@ -502,12 +502,9 @@ class TestCacheServiceExport:
             mock_client.get = AsyncMock(return_value=encoded)
             mock_redis.from_url.return_value = mock_client
 
-            from importlib import reload
-            import services.cache
+            from services.cache import CacheService
 
-            reload(services.cache)
-
-            service = services.cache.CacheService()
+            service = CacheService()
             service._client = mock_client
             service._redis_available = True
 
@@ -613,7 +610,7 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Test uses reload() causing module pollution - passes in isolation but fails in suite")
+    @pytest.mark.xfail(reason="Module pollution from earlier test files - passes in isolation but fails in suite")
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
         with patch("services.cache.aioredis") as mock_redis:
@@ -621,12 +618,9 @@ class TestCacheServiceAIEngine:
             mock_client.get = AsyncMock(return_value='{"progress": 50}')
             mock_redis.from_url.return_value = mock_client
 
-            from importlib import reload
-            import services.cache
+            from services.cache import CacheService
 
-            reload(services.cache)
-
-            service = services.cache.CacheService()
+            service = CacheService()
             service._client = mock_client
             service._redis_available = True
 

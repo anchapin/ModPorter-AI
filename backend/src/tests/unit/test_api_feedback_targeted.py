@@ -348,23 +348,15 @@ class TestGetCorrection:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.xfail(reason="Test has flawed mock design - local sqlalchemy.select import can't be patched")
     def test_get_correction_not_found(self, client, mock_db):
         """Test getting non-existent correction."""
-        from sqlalchemy import select
-        from db.models import CorrectionSubmission
-
-        # Create mock query chain
-        mock_query = MagicMock()
-        mock_query.where.return_value = mock_query
+        # Create mock result that returns None (not found)
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute = AsyncMock(return_value=mock_result)
 
-        # Patch sqlalchemy.select to return our mock query
-        with patch("sqlalchemy.select", return_value=mock_query):
-            mock_db.execute = AsyncMock(return_value=mock_result)
-            correction_id = str(uuid.uuid4())
-            response = client.get(f"/feedback/corrections/{correction_id}")
+        correction_id = str(uuid.uuid4())
+        response = client.get(f"/feedback/corrections/{correction_id}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 

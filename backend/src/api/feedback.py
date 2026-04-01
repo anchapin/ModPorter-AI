@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from db.base import get_db
 from db import crud
 from db.models import CorrectionSubmission
+from sqlalchemy import select
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -526,7 +527,6 @@ async def submit_correction(
     correction: CorrectionSubmissionRequest, db: AsyncSession = Depends(get_db)
 ):
     """Submit a correction for a conversion output."""
-    from sqlalchemy import select
     from datetime import datetime
 
     logger.info(f"Receiving correction for job {correction.job_id}")
@@ -592,7 +592,7 @@ async def list_corrections(
     db: AsyncSession = Depends(get_db),
 ):
     """List corrections with optional filters."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func
 
     logger.info(f"Fetching corrections: job_id={job_id}, status={status}, user_id={user_id}")
 
@@ -685,7 +685,6 @@ async def review_correction(
     correction_id: str, review: CorrectionReviewRequest, db: AsyncSession = Depends(get_db)
 ):
     """Review a correction (approve or reject)."""
-    from sqlalchemy import select
     from datetime import datetime
 
     if review.status not in ["approved", "rejected"]:
@@ -729,7 +728,6 @@ async def review_correction(
 @router.post("/feedback/corrections/{correction_id}/apply")
 async def apply_correction(correction_id: str, db: AsyncSession = Depends(get_db)):
     """Manually apply a correction to the knowledge base."""
-    from sqlalchemy import select
     from datetime import datetime
 
     try:
