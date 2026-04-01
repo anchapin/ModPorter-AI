@@ -437,7 +437,6 @@ class TestGetExperimentVariant:
 class TestUpdateExperimentVariant:
     """Tests for PUT /experiments/{experiment_id}/variants/{variant_id} endpoint."""
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_update_variant_success(self, client, mock_db):
         """Test successful variant update."""
         from db import crud
@@ -470,8 +469,8 @@ class TestUpdateExperimentVariant:
                 crud, "update_experiment_variant", new_callable=AsyncMock, return_value=mock_updated
             ),
         ):
-            exp_id = str(uuid.uuid4())
-            var_id = str(uuid.uuid4())
+            exp_id = str(mock_experiment.id)
+            var_id = str(mock_variant.id)
             request_data = {"name": "Updated Variant"}
             response = client.put(f"/experiments/{exp_id}/variants/{var_id}", json=request_data)
 
@@ -481,7 +480,6 @@ class TestUpdateExperimentVariant:
 class TestDeleteExperimentVariant:
     """Tests for DELETE /experiments/{experiment_id}/variants/{variant_id} endpoint."""
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_delete_variant_success(self, client, mock_db):
         """Test successful variant deletion."""
         from db import crud
@@ -504,8 +502,8 @@ class TestDeleteExperimentVariant:
                 crud, "delete_experiment_variant", new_callable=AsyncMock, return_value=True
             ),
         ):
-            exp_id = str(uuid.uuid4())
-            var_id = str(uuid.uuid4())
+            exp_id = str(mock_experiment.id)
+            var_id = str(mock_variant.id)
             response = client.delete(f"/experiments/{exp_id}/variants/{var_id}")
 
         assert response.status_code == status.HTTP_200_OK

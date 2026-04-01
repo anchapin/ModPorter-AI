@@ -30,7 +30,6 @@ from utils.dependency_detector import (
 class TestImportVisitor:
     """Test ImportVisitor AST visitor."""
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_visit_import(self):
         """Test visiting import statements."""
         source = """

@@ -58,11 +58,13 @@ class ImportVisitor(ast.NodeVisitor):
     def visit_Import(self, node: ast.Import):
         """Visit import statements."""
         for alias in node.names:
+            # Use alias name if present, otherwise use the module name
+            # This allows looking up imports by the name used in code
             name = alias.asname if alias.asname else alias.name
             full_name = alias.name.split(".")[0]
-            if full_name not in self.imports:
-                self.imports[full_name] = []
-            self.imports[full_name].append((node.lineno, name))
+            if name not in self.imports:
+                self.imports[name] = []
+            self.imports[name].append((node.lineno, full_name))
 
     def visit_ImportFrom(self, node: ast.ImportFrom):
         """Visit from...import statements."""

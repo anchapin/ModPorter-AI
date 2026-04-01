@@ -1,6 +1,7 @@
 from typing import Optional, List
 from uuid import UUID as PyUUID  # For type hinting UUID objects
 import uuid
+import os
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.orm import selectinload
@@ -8,6 +9,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from db import models
 from db.models import DocumentEmbedding
 from datetime import datetime, timezone
+
+# Base path for addon assets storage
+BASE_ASSET_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "addon_assets")
 
 
 async def create_job(
@@ -893,6 +897,24 @@ async def list_jobs(
     )
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+# Addon CRUD operations
+async def get_addon_details(
+    session: AsyncSession, addon_id: uuid.UUID
+) -> Optional[models.Addon]:
+    """Get addon details with all blocks, assets, and recipes."""
+    stmt = (
+        select(models.Addon)
+        .options(
+            selectinload(models.Addon.blocks).selectinload(models.AddonBlock.behavior),
+            selectinload(models.Addon.assets),
+            selectinload(models.Addon.recipes),
+        )
+        .where(models.Addon.id == addon_id)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 # Addon Asset CRUD operations

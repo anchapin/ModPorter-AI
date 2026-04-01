@@ -428,6 +428,7 @@ class TestCreateMcaddonZip:
 
         mock_block = MagicMock(spec=AddonBlock)
         mock_block.identifier = "custom:test_block"
+        mock_block.properties = {}
 
         mock_addon = MagicMock(spec=AddonDetails)
         mock_addon.name = "BlockAddon"

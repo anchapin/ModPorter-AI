@@ -221,7 +221,6 @@ class TestAgentPerformance:
 
             assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_get_specific_agent_invalid_type(self, client):
         """Test getting performance for invalid agent type."""
         with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
@@ -280,7 +279,6 @@ class TestSubmitCorrection:
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_submit_correction_success(self, client, mock_db):
         """Test successful correction submission."""
         from db import crud
@@ -303,7 +301,7 @@ class TestSubmitCorrection:
         with patch.object(crud, "get_job", new_callable=AsyncMock, return_value=mock_job):
             with patch("api.feedback.CorrectionSubmission", return_value=mock_correction):
                 request_data = {
-                    "job_id": str(uuid.uuid4()),
+                    "job_id": str(mock_job.id),
                     "original_output": "test",
                     "corrected_output": "test2",
                 }
@@ -350,17 +348,21 @@ class TestGetCorrection:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
+    @pytest.mark.xfail(reason="Test has flawed mock design - local sqlalchemy.select import can't be patched")
     def test_get_correction_not_found(self, client, mock_db):
         """Test getting non-existent correction."""
-        from db.models import CorrectionSubmission
         from sqlalchemy import select
+        from db.models import CorrectionSubmission
 
+        # Create mock query chain
+        mock_query = MagicMock()
+        mock_query.where.return_value = mock_query
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
-        mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch("api.feedback.select", return_value=select(MagicMock())):
+        # Patch sqlalchemy.select to return our mock query
+        with patch("sqlalchemy.select", return_value=mock_query):
+            mock_db.execute = AsyncMock(return_value=mock_result)
             correction_id = str(uuid.uuid4())
             response = client.get(f"/feedback/corrections/{correction_id}")
 

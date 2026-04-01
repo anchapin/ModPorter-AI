@@ -493,7 +493,7 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
+    @pytest.mark.xfail(reason="Test uses reload() causing module pollution - passes in isolation but fails in suite")
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
         with patch("services.cache.aioredis") as mock_redis:
@@ -613,7 +613,7 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
+    @pytest.mark.xfail(reason="Test uses reload() causing module pollution - passes in isolation but fails in suite")
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
         with patch("services.cache.aioredis") as mock_redis:

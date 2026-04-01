@@ -115,23 +115,24 @@ async def get_conversion_behavior_files(
             "children": {},
         }
 
-    def dict_to_tree_nodes(node_dict: Dict[str, Any]) -> List[BehaviorFileTreeNode]:
-        """Convert dictionary structure to tree nodes"""
-        nodes = []
-        for key, value in node_dict.items():
-            children = dict_to_tree_nodes(value["children"]) if value["children"] else []
-            node = BehaviorFileTreeNode(
-                id=value.get("id", ""),
-                name=value["name"],
-                path=value["path"],
-                type=value["type"],
-                file_type=value.get("file_type", ""),
-                children=children,
-            )
-            nodes.append(node)
-        return sorted(nodes, key=lambda x: (x.type == "file", x.name))
-
     return dict_to_tree_nodes(tree_root)
+
+
+def dict_to_tree_nodes(node_dict: Dict[str, Any]) -> List[BehaviorFileTreeNode]:
+    """Convert dictionary structure to tree nodes"""
+    nodes = []
+    for key, value in node_dict.items():
+        children = dict_to_tree_nodes(value["children"]) if value["children"] else []
+        node = BehaviorFileTreeNode(
+            id=value.get("id", ""),
+            name=value["name"],
+            path=value["path"],
+            type=value["type"],
+            file_type=value.get("file_type", ""),
+            children=children,
+        )
+        nodes.append(node)
+    return sorted(nodes, key=lambda x: (x.type == "file", x.name))
 
 
 @router.get(

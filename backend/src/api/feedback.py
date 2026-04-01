@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 
 from db.base import get_db
 from db import crud
+from db.models import CorrectionSubmission
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -330,6 +331,22 @@ async def get_agent_performance():
 @router.get("/ai/performance/agents/{agent_type}")
 async def get_specific_agent_performance(agent_type: str):
     """Get detailed performance metrics for a specific agent type."""
+    # Dynamic import with better error handling
+    # Do this BEFORE validating agent_type so import errors are caught first
+    ai_engine_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
+    )
+    if ai_engine_path not in sys.path:
+        sys.path.append(ai_engine_path)
+
+    try:
+        from rl.agent_optimizer import create_agent_optimizer
+    except ImportError as ie:
+        logger.error(f"Failed to import RL optimizer components: {ie}")
+        raise HTTPException(
+            status_code=503, detail="Agent performance monitoring is not available"
+        )
+
     try:
         logger.info(f"Fetching performance metrics for agent: {agent_type}")
 
@@ -345,21 +362,6 @@ async def get_specific_agent_performance(agent_type: str):
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid agent type. Must be one of: {', '.join(valid_agent_types)}",
-            )
-
-        # Dynamic import with better error handling
-        ai_engine_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
-        )
-        if ai_engine_path not in sys.path:
-            sys.path.append(ai_engine_path)
-
-        try:
-            from rl.agent_optimizer import create_agent_optimizer
-        except ImportError as ie:
-            logger.error(f"Failed to import RL optimizer components: {ie}")
-            raise HTTPException(
-                status_code=503, detail="Agent performance monitoring is not available"
             )
 
         optimizer = create_agent_optimizer()
@@ -524,7 +526,6 @@ async def submit_correction(
     correction: CorrectionSubmissionRequest, db: AsyncSession = Depends(get_db)
 ):
     """Submit a correction for a conversion output."""
-    from db.models import CorrectionSubmission
     from sqlalchemy import select
     from datetime import datetime
 
@@ -591,7 +592,6 @@ async def list_corrections(
     db: AsyncSession = Depends(get_db),
 ):
     """List corrections with optional filters."""
-    from db.models import CorrectionSubmission
     from sqlalchemy import select, func
 
     logger.info(f"Fetching corrections: job_id={job_id}, status={status}, user_id={user_id}")
@@ -685,7 +685,6 @@ async def review_correction(
     correction_id: str, review: CorrectionReviewRequest, db: AsyncSession = Depends(get_db)
 ):
     """Review a correction (approve or reject)."""
-    from db.models import CorrectionSubmission
     from sqlalchemy import select
     from datetime import datetime
 
@@ -730,7 +729,6 @@ async def review_correction(
 @router.post("/feedback/corrections/{correction_id}/apply")
 async def apply_correction(correction_id: str, db: AsyncSession = Depends(get_db)):
     """Manually apply a correction to the knowledge base."""
-    from db.models import CorrectionSubmission
     from sqlalchemy import select
     from datetime import datetime
 
