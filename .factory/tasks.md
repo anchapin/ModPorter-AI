@@ -295,13 +295,18 @@
 ---
 
 ## In Progress
-- 🔄 Codebase Improvements - Address 15 identified issues (see .factory/improvements.md)
+- 🔄 None — security fixes in progress
 
 ## Pending
-- ⏳ None — all 15 issues addressed
+- ⏳ None
 
 ## Completed
-- ✅ IMP-01: Implement real auth — get_current_user_id() replaced with proper JWT validation
+- ✅ SEC-01: markdown 3.7→3.8.1 — GHSA-5wmx-573v-2qwq (Medium, in-project, backend)
+- ✅ SEC-02: handlebars 4.7.8→4.7.9 — 1 Critical + 5 High vulns (dev only, eslint-plugin-boundaries)
+- ✅ SEC-03: picomatch@2.3.x — verified NO user-facing exposure (dev/build only, locked by micromatch)
+- ✅ SEC-04: dompurify@3.2.7 — already overridden to 3.3.2 in package.json overrides
+- ✅ All 15 codebase improvements (IMP-01 through IMP-15) — 2026-04-01
+- ✅ All 22 code review issues (C1-C5, H1-H6, M1-M5, T1-T6) — 2026-04-01
 - ✅ IMP-02: Fix jobs subsystem auth stub bypass — same fix, both jobs.py and upload.py now use real auth
 - ✅ IMP-03: SearchServiceError exception + propagation chain for search failures (High)
 - ✅ IMP-04: Added asyncio.CancelledError/TimeoutError re-raise guards in 3 critical async files (orchestrator, worker_pool, crew_integration) (High)

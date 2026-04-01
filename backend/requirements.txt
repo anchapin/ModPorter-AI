@@ -26,7 +26,7 @@ python-magic==0.4.27
 javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent
 
 # Document processing for ingestion pipeline
-markdown==3.7
+markdown==3.8.1
 beautifulsoup4==4.13.3
 
 # HTTP Client for file downloads
