@@ -331,23 +331,27 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
   }, [assumptions.category_breakdown]);
 
   const filteredAssumptions = useMemo(() => {
-    let filtered = assumptions.assumptions || [];
-
-    // Apply impact filter
-    if (impactFilter !== 'all') {
-      filtered = filtered.filter(
-        (assumption) => assumption.impact_level?.toLowerCase() === impactFilter
-      );
+    const allAssumptions = assumptions.assumptions || [];
+    if (impactFilter === 'all' && categoryFilter === 'all') {
+      return allAssumptions;
     }
 
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(
-        (assumption) => assumption.assumption_type === categoryFilter
-      );
-    }
-
-    return filtered;
+    // ⚡ Bolt: Single pass filter to avoid O(2N) complexity and intermediate array allocations
+    return allAssumptions.filter((assumption) => {
+      if (
+        impactFilter !== 'all' &&
+        assumption.impact_level?.toLowerCase() !== impactFilter
+      ) {
+        return false;
+      }
+      if (
+        categoryFilter !== 'all' &&
+        assumption.assumption_type !== categoryFilter
+      ) {
+        return false;
+      }
+      return true;
+    });
   }, [assumptions.assumptions, impactFilter, categoryFilter]);
 
   const averageConfidence = useMemo(() => {
